@@ -281,6 +281,21 @@ Prompt for Claude Code on Linux (paste as is):
 > on the ESP. At the end show `ls -la /boot/EFI/OC/Kexts /boot/EFI/OC/Kexts-backup` and the boot-args, then tell me to
 > reboot into macOS.
 
+## Next steps (2026-10-12): after the reboot into 1.14.2 + local patches
+
+State on the machine (nothing of this is loaded until the reboot): upstream NullMoth **1.14.2**, NVRMFB = VRAM-clear
+patch + AUX-brightness hook, `NVRMEdpBL.kext`, `nvrmacpibl=1` in boot-args. Read `NULLMOTH.md` ("Local patches on top of
+upstream"), `VRAM-GRANT-STALL.md`, `OLED-BRIGHTNESS-DPCD.md`.
+
+1. Boots? Both displays up (OLED 2880x1800 @ 120 Hz, Mi Monitor 1920x1080 @ 144 Hz). If not: boot-arg `nvrmedpbl=0`, or
+   `scripts/macos-edpbl-install.sh --undo`, or the picker's "Start once without NVIDIA driver".
+2. Brightness: the checklist in `OLED-BRIGHTNESS-DPCD.md` ("Verify after the reboot"); then switch RogControl's software
+   dimming off and record the result in that file.
+3. `scripts/macos-nvrmfb-vramclear-ab.sh` (root): MB/s for `clear_mode` 0 and 1; record in `VRAM-GRANT-STALL.md`; re-check
+   the stall picture and `tools/framepace.swift`.
+4. Report upstream: the VRAM clear (branch `nvrmfb-vram-clear-nontemporal`) and the AUX backlight (branch
+   `nvrm-edp-aux-backlight`, commit `3501a25`) as PRs from the fork; nothing is pushed yet.
+
 ## NullMoth update to 1.12.0 (manual route, EFI part done 2026-10-11)
 
 Installed on the Mac: 1.9.0. Target: 1.12.0 (`SHA256SUMS.txt` of the release lists `nullmoth-nvidia-1.12.0.tar.gz`
@@ -366,3 +381,11 @@ means "no framebuffer", not "kernel hung" (the diag worker kept writing).
 * Do not re-run 1401 "Build" on the ESP; take a backup (`config.plist.<name>`) before every ESP config edit.
 * NVRAM-based `itl*` variables do not land in the NVIDIA-driver configuration; use `ITLLOG.BIN`.
 * Windows boots through OpenCore too: OC ACPI patches apply to Windows as well.
+* NullMoth driver changes are upstream-first: build from the fork (`thanhnndev/nvidia-macos-driver`), install the release
+  package with its own `install.sh`, then layer the machine patch with a script that checks hashes, backs up and has
+  `--undo` (`scripts/macos-edpbl-install.sh`, `macos-nvrmfb-vramclear-patch.sh`). Never edit installed kexts by hand.
+* Root steps are run by the agent through `osascript -e 'do shell script "<wrapper file>" with administrator privileges'`
+  (the user types the password in the dialog); do not ask the user to run `sudo` in a terminal. Put the commands in a
+  wrapper file: `$?` inside the `-e` string breaks AppleScript quoting.
+* One branch per concern in the fork (VRAM clear, AUX backlight); a local combined tree only for the build. Leave other
+  sessions' work (Wi-Fi, Bluetooth, RogControl) untouched.

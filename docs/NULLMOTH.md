@@ -1,4 +1,4 @@
-# NullMoth driver: what we know (2026-10-11)
+# NullMoth driver: what we know (2026-10-12)
 
 **Read the vendor's source first.** The driver is published with source at
 <https://github.com/nullmoth/nvidia-macos-driver> (PolyForm Noncommercial; release notes in `docs/RELEASE-*.md`). The
@@ -6,7 +6,10 @@ first pass of this page was derived from the installed binaries (`strings`, `llv
 WindowServer`; that was the wrong starting point, and the lag hypothesis it produced was not the best lead. The
 component and recovery sections below stay valid; the lag section was replaced (2026-10-11).
 
-Installed here: **1.14.0** (2026-10-11 19:57, `nullmoth-setup.sh` 1.14 run as root with `--pkg` (SHA-256 checked against
+**Current state (2026-10-12): upstream 1.14.2 + two machine-local patches, loaded after the next reboot.** See
+"Local patches on top of upstream" below; the 1.14.0 paragraph that follows is the history of the first 1.14 install.
+
+Installed before that: **1.14.0** (2026-10-11 19:57, `nullmoth-setup.sh` 1.14 run as root with `--pkg` (SHA-256 checked against
 the release `SHA256SUMS.txt`), `--tool NullMothSafe.efi` (1.14 build), `--logo off`). Backup of the previous install:
 `/Library/NullMoth/backup-20261011-195719.*`; ESP config backups `config.plist.pre-nm114-20261011-195530` (ours) and
 `config.plist.nullmoth-20261011-195710` (the setup's). Config changes by the setup: the "1401: Remove NVIDIA driver" entry
@@ -21,6 +24,23 @@ vramclear patch below is obsolete (the script refuses any binary that is not 1.1
 Rules that apply (see `HANDOFF.md`): do not disable the driver and do not guess at boot-args/quirks. The goal is a
 working NullMoth driver; a change needs a root cause and the owner's agreement.
 
+## Local patches on top of upstream (2026-10-12)
+
+Rule: **upstream first.** Install the release package with its own `install.sh` (backs up, has `uninstall.sh`), then
+layer the machine patch; every patch is a commit in the fork `thanhnndev/nvidia-macos-driver` (the PR is the primary
+artifact, the machine install is the same commit) and has its own undo. Do not hand-edit installed kexts.
+
+| Layer | What | Where | Undo |
+|---|---|---|---|
+| upstream **1.14.2** | release package `~/efi-audit/upgrade-1.14.2/pkg` (SHA-256 checked), boot-arg `nvrmacpibl=1` added (1.14.1 made the NBCI backlight tables opt-in) | backup `/Library/NullMoth/backup-20261012-134122.*` | `uninstall.sh <backup>` |
+| VRAM clear | `nvu_zero_stream` (`movnti`) in `vramGrant`, `debug.nvrmfb_clear_mode`; `VRAM-GRANT-STALL.md` | fork branch `nvrmfb-vram-clear-nontemporal` (`49633c9`) | `scripts/macos-nvrmfb-vramclear-patch.sh --undo` |
+| OLED brightness | DPCD brightness for AUX-only panels; `OLED-BRIGHTNESS-DPCD.md` | fork branch `nvrm-edp-aux-backlight` (`3501a25` upstream PR, `2c07cf7` local kext packaging) | `scripts/macos-edpbl-install.sh --undo` |
+
+Installed NVRMFB is the combined build of both (sha256 in `~/efi-audit/brightness/stage/SHA256SUMS`). The NVMTLDriver
+bundle is upstream's again: Codex's upload-copy candidate (PR #139) was evaluated and dropped, see `WINDOWSERVER-CPU.md`.
+Build / dry run / install: `scripts/macos-build-nullmoth-local.sh`, `macos-aux-kc-dryrun.sh`, `macos-edpbl-install.sh`.
+NVRM itself cannot be rebuilt here (the RM objects are only in NullMoth's build tree), hence the extra kext.
+
 ## Components
 
 Current WindowServer CPU follow-up on 1.14.0: [WINDOWSERVER-CPU.md](WINDOWSERVER-CPU.md). A reversible hide/restore
@@ -34,6 +54,7 @@ Repeat with no active Codex turn before attributing persistent repainting to the
 | `NVRMFB.kext` | Display framebuffer (NVKMS underneath). Publishes timings/flip path to WindowServer. |
 | `NVAccel.kext` | `IOAccelerator` + Metal plugin glue. |
 | `NVRMAGDC.kext` | AGDC (graphics-driver control) personality. |
+| `NVRMEdpBL.kext` | **Ours, not part of upstream** (`kexts/NVRMEdpBL` in the fork): AUX (DPCD) brightness for the OLED, see `OLED-BRIGHTNESS-DPCD.md`. |
 | `NVMTLDriver.bundle` | Metal driver in user space: Metal calls translated to Vulkan, using Mesa NVK (`nvkmd_nvrm` backend, Mesa 26.3.0-devel). |
 | `NVIDIAShared.bundle` | AIR -> NVVM -> PTX -> sm_120 JIT. Uses NVIDIA's closed `nvvm`/`ptxjit` libraries. |
 | `/Library/NullMoth/` | Installer state, `nullmoth-setup.sh`, recover daemon, allow-list. |
