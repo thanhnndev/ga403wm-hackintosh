@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 // Copyright (c) 2026 thanhnndev and contributors
-// ItlWiFi: menu bar Wi-Fi control for itlmt7925: a popover with the current network, speed test, scan list, join with a
+// ItlWiFi: menu bar Wi-Fi control for itlmt7925: a popover with the current network, scan list, join with a
 // password (inline), disconnect / forget, open at login. SwiftUI in an NSPopover; SF Symbols only.
 // Talks to the kext through its user client (ABI: kexts/itlmt7925/itl_uc_abi.h) and reads the wifi-* registry properties.
 // Saved passwords live in ~/Library/Application Support/ItlWiFi/networks.json (mode 0600), never in the kext's Info.plist and
@@ -501,6 +501,7 @@ struct NetworkRow: View {
 
 struct ContentView: View {
     @ObservedObject var m: WifiModel
+    let showSpeedTest: () -> Void
     var statusLine: String {
         switch m.st.state {
         case "connected": return m.st.ssid
@@ -566,11 +567,6 @@ struct ContentView: View {
                 .padding(.horizontal, 14).padding(.vertical, 4)
             }
 
-            if m.connected || m.speed != nil {
-                SectionTitle(text: "Speed")
-                SpeedCard(m: m)
-            }
-
             SectionTitle(text: "Networks")
             ScrollView {
                 VStack(spacing: 0) {
@@ -612,6 +608,26 @@ struct ContentView: View {
                 NSPasteboard.general.clearContents(); NSPasteboard.general.setString(m.st.ssid, forType: .string)
             }
         }
+        Divider()
+        Button("Speed Test…", action: showSpeedTest).disabled(!m.connected && m.speed == nil)
+    }
+}
+
+// Auxiliary tool: only shown in its own window from the existing network actions menu.
+struct SpeedTestView: View {
+    @ObservedObject var m: WifiModel
+    var body: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 12) {
+                Text(m.connected ? m.st.ssid : "Wi-Fi is not connected")
+                    .font(.system(size: 13, weight: .medium))
+                    .padding(.horizontal, 14)
+                SpeedCard(m: m)
+            }
+            .padding(.vertical, 16)
+            .frame(maxWidth: .infinity, alignment: .leading)
+        }
+        .frame(minWidth: 400, minHeight: 220)
     }
 }
 
@@ -621,11 +637,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     let item = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
     let popover = NSPopover()
     let model = WifiModel()
+    private var speedWindow: NSWindow?
 
     func applicationDidFinishLaunching(_ n: Notification) {
         popover.behavior = .transient
         popover.animates = false
-        popover.contentViewController = NSHostingController(rootView: ContentView(m: model))
+        popover.contentViewController = NSHostingController(rootView: ContentView(m: model, showSpeedTest: { [weak self] in self?.showSpeedTest() }))
         item.button?.target = self
         item.button?.action = #selector(toggle)
         model.onChange = { [weak self] in self?.updateIcon() }
@@ -639,6 +656,22 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         model.updateOrder(force: true)
         popover.show(relativeTo: b.bounds, of: b, preferredEdge: .minY)
         popover.contentViewController?.view.window?.makeKey()
+    }
+
+    func showSpeedTest() {
+        popover.performClose(nil)
+        if speedWindow == nil {
+            let window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 400, height: 300),
+                                  styleMask: [.titled, .closable, .miniaturizable, .resizable], backing: .buffered, defer: false)
+            window.title = "Speed Test"
+            window.contentMinSize = NSSize(width: 400, height: 220)
+            window.isReleasedWhenClosed = false
+            window.contentViewController = NSHostingController(rootView: SpeedTestView(m: model))
+            window.center()
+            speedWindow = window
+        }
+        NSApp.activate(ignoringOtherApps: true)
+        speedWindow?.makeKeyAndOrderFront(nil)
     }
 
     func updateIcon() {
@@ -655,8 +688,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         img?.isTemplate = true
         b.image = img
         b.alphaValue = alpha
-        var tip = s.state == "connected" ? "\(s.ssid) · channel \(s.channel)" + (s.rssi == 0 ? "" : " · \(s.rssi) dBm") : s.state
-        if let r = model.speed, r.error == nil { tip += " · ↓\(SpeedTest.fmt(r.downMbps)) ↑\(SpeedTest.fmt(r.upMbps)) Mb/s" }
+        let tip = s.state == "connected" ? "\(s.ssid) · channel \(s.channel)" + (s.rssi == 0 ? "" : " · \(s.rssi) dBm") : s.state
         b.toolTip = tip
     }
 }
