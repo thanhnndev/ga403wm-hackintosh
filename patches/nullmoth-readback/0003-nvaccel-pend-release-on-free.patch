@@ -1,0 +1,99 @@
+diff --git a/kexts/NVRM/accel/nvrm-accel.cpp b/kexts/NVRM/accel/nvrm-accel.cpp
+index de89307..77b7875 100644
+--- a/kexts/NVRM/accel/nvrm-accel.cpp
++++ b/kexts/NVRM/accel/nvrm-accel.cpp
+@@ -54,6 +54,9 @@ void clock_interval_to_deadline(uint32_t interval, uint32_t scale_factor, uint64
+ }
+ static volatile SInt64 gCntVmAlloc, gCntVmAllocBytes, gCntVmDealloc, gCntVmDeallocBytes, gCntVmRefused,
+                        gCntResNew, gCntResFree, gCntMapCommit, gCntMapRelease, gCntMapFree;
++#include "nvsv_pend.h"   // surfaces whose VRAM copy is newer than system memory; entries are dropped when their resource is freed
++static struct nvsv_pend gNVSVPend;
++static IOSimpleLock *gNVSVPendLock;
+ static void nvaccelInstallSysctl(void);
+ static int gNvAccelArmed = 0;
+ // 1 once the headless check restored the plugin name without arming (no NVIDIA display head). The Metal plugin reads it:
+@@ -748,6 +751,11 @@ void *NVResource::getApertureMemoryDescriptor(unsigned long long *a0)
+ 
+ void NVResource::free()
+ {
++    if (gNVSVPendLock) {   // a freed resource has nothing left to page off; without this the entry would stay for the whole uptime
++        IOSimpleLockLock(gNVSVPendLock);
++        nvsv_pend_release(&gNVSVPend, this);
++        IOSimpleLockUnlock(gNVSVPendLock);
++    }
+     if (fApDesc) { fApDesc->release(); fApDesc = nullptr; }
+     OSAddAtomic64(1, &gCntResFree);
+     IOAccelResource2::free();
+@@ -1065,7 +1073,6 @@ enum { NVSV_W_OK = 0, NVSV_W_NO_SURFACE, NVSV_W_FAMLOCK, NVSV_W_NO_CACHE, NVSV_W
+ #define NVSV_DIRTY_STATUS(w) (0x80000010u + (unsigned)(w))
+ static SInt64 gCntSsDirty[NVSV_W_N];       // [0] = surfaces marked newest in VRAM, [w] = refusals by reason
+ static SInt64 gCntSsShare[8];              // SURF_VRAM: [0] ok [1] bad version [2] off [3] no surface [4] no cache [5] no vram [6] too small [7] RM refused
+-static SInt64 gCntSsPendCount, gCntSsPendHigh, gCntSsPendFull, gCntSsPendAdd, gCntSsPendDel, gCntSsPendRelease;
+ static SInt64 gCntSsPageoffOk, gCntSsPageoffFail, gCntSsPageoffStaged, gCntSsPageoffFamily, gCntSsPageoffCeUs, gCntSsPageoffCpuUs, gCntSsPageoffBytes;
+ static SInt64 gCntSsFamLockN, gCntSsFamLockWaitNs, gCntSsFamLockHoldNs;
+ NVACCEL_CNT(nvaccel_ss_dirty_ok,          gCntSsDirty[NVSV_W_OK],         "dirty exports accepted (VRAM marked newest, the plugin skipped the readback)");
+@@ -1089,12 +1096,12 @@ NVACCEL_CNT(nvaccel_ss_share_no_cache,    gCntSsShare[4],  "SURF_VRAM refused: n
+ NVACCEL_CNT(nvaccel_ss_share_no_vram,     gCntSsShare[5],  "SURF_VRAM refused: the resource has no RM VRAM (not wired, or VRAM exhausted)");
+ NVACCEL_CNT(nvaccel_ss_share_too_small,   gCntSsShare[6],  "SURF_VRAM refused: the plugin asked for more bytes than the VRAM block holds");
+ NVACCEL_CNT(nvaccel_ss_share_rm,          gCntSsShare[7],  "SURF_VRAM refused: NVRM would not duplicate the memory object");
+-NVACCEL_CNT(nvaccel_ss_pend_count,        gCntSsPendCount, "surfaces whose VRAM copy is newer than system memory right now");
+-NVACCEL_CNT(nvaccel_ss_pend_high,         gCntSsPendHigh,  "most surfaces pending at once since boot (table size 512)");
+-NVACCEL_CNT(nvaccel_ss_pend_full,         gCntSsPendFull,  "dirty exports that found the pending table full");
+-NVACCEL_CNT(nvaccel_ss_pend_add,          gCntSsPendAdd,   "pending-table insertions");
+-NVACCEL_CNT(nvaccel_ss_pend_del,          gCntSsPendDel,   "pending-table removals by page-off");
+-NVACCEL_CNT(nvaccel_ss_pend_release,      gCntSsPendRelease, "pending-table removals because the resource was freed");
++NVACCEL_CNT(nvaccel_ss_pend_count, gNVSVPend.count, "surfaces whose VRAM copy is newer than system memory right now");
++NVACCEL_CNT(nvaccel_ss_pend_high, gNVSVPend.high,  "most surfaces pending at once since boot (table size 512)");
++NVACCEL_CNT(nvaccel_ss_pend_full, gNVSVPend.full,  "dirty exports that found the pending table full");
++NVACCEL_CNT(nvaccel_ss_pend_add, gNVSVPend.adds,   "pending-table insertions");
++NVACCEL_CNT(nvaccel_ss_pend_del, gNVSVPend.dels,   "pending-table removals by page-off");
++NVACCEL_CNT(nvaccel_ss_pend_release, gNVSVPend.released, "pending-table removals because the resource was freed");
+ NVACCEL_CNT(nvaccel_ss_pageoff_ok,        gCntSsPageoffOk,     "VRAM -> system memory page-offs done on the copy engine");
+ NVACCEL_CNT(nvaccel_ss_pageoff_fail,      gCntSsPageoffFail,   "page-offs that failed");
+ NVACCEL_CNT(nvaccel_ss_pageoff_staged,    gCntSsPageoffStaged, "page-offs that used the physically contiguous staging buffer");
+@@ -1273,32 +1280,12 @@ static void nvFamUnlock(NVAccel *a)
+     IOLockUnlock(*(IOLock *volatile *)((unsigned char *)a + 0x88));
+ }
+ static unsigned gNVSVLockMiss;
+-enum { kNVSVPend = 512 };
+-static unsigned gNVSVPendId[kNVSVPend];
+-static IOSimpleLock *gNVSVPendLock;
+-static bool nvSVPend(unsigned id, int op)
++// op 0 = the page-off copied the newest data to system memory, 1 = a dirty export marks `owner`'s surface pending, 2 = test.
++static bool nvSVPend(unsigned id, int op, const void *owner = nullptr)
+ {
+-    if (!id) return op == 1 ? false : false;
+-    if (!gNVSVPendLock) return op == 1 ? false : false;
+-    bool r = false; int freeSlot = -1;
++    if (!id || !gNVSVPendLock) return false;
+     IOSimpleLockLock(gNVSVPendLock);
+-    for (int i = 0; i < kNVSVPend; i++) {
+-        if (gNVSVPendId[i] == id) {
+-            r = true;
+-            if (op == 0) { gNVSVPendId[i] = 0; OSAddAtomic64(-1, &gCntSsPendCount); OSAddAtomic64(1, &gCntSsPendDel); }
+-            break;
+-        }
+-        if (!gNVSVPendId[i] && freeSlot < 0) freeSlot = i;
+-    }
+-    if (op == 1 && !r) {
+-        if (freeSlot >= 0) {
+-            gNVSVPendId[freeSlot] = id; r = true;
+-            OSAddAtomic64(1, &gCntSsPendAdd);
+-            const SInt64 c = OSAddAtomic64(1, &gCntSsPendCount) + 1;
+-            if (c > gCntSsPendHigh) gCntSsPendHigh = c;
+-        } else OSAddAtomic64(1, &gCntSsPendFull);
+-    }
+-    else if (op == 1) r = true;
++    const bool r = nvsv_pend_op(&gNVSVPend, id, owner, op == 0 ? NVSV_PEND_DEL : op == 1 ? NVSV_PEND_ADD : NVSV_PEND_TEST) != 0;
+     IOSimpleLockUnlock(gNVSVPendLock);
+     return r;
+ }
+@@ -1319,7 +1306,7 @@ static unsigned nvAccelSurfDirty(void *cache, NVResource *res, unsigned plane)
+     if (plane > 15) return NVSV_DIRTY_STATUS(NVSV_W_PLANE);
+     if (!gNVSVPendLock) gNVSVPendLock = IOSimpleLockAlloc();
+     if (!gNVSVPendLock) return NVSV_DIRTY_STATUS(NVSV_W_OFF);
+-    if (!nvSVPend(_ZNK9IOSurface12getSurfaceIDEv(*(void *volatile *)((unsigned char *)cache + 0x10)), 1)) return NVSV_DIRTY_STATUS(NVSV_W_PEND_FULL);
++    if (!nvSVPend(_ZNK9IOSurface12getSurfaceIDEv(*(void *volatile *)((unsigned char *)cache + 0x10)), 1, res)) return NVSV_DIRTY_STATUS(NVSV_W_PEND_FULL);
+     _ZN20IOSurfaceDeviceCache10setCurrentEv(cache);
+     valid[6] |= (unsigned short)(1u << plane);
+     valid[0] &= (unsigned short)~(1u << plane);

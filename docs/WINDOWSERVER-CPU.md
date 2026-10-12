@@ -213,3 +213,9 @@ on all 24 CPUs; VRAM clear now 1043–1094 MB/s (~9–10x prior movnti throughpu
 WindowServer measured 33.4% of one CPU / 34.5 flips/s; zero failures/drops.
 This confirms the clear bottleneck fix, not a measured reduction in compositor CPU
 under an identical workload. Full record: WINDOWSERVER-RESEARCH.md.
+
+## Readback follow-up (2026-10-12, cloud session)
+
+Source-level study of why IOSurfaces are still read back from the GPU after the PAT fix, per-surface instrumentation, one conditional kernel fix and
+host tests: [WINDOWSERVER-READBACK.md](WINDOWSERVER-READBACK.md), patches in `patches/nullmoth-readback/`. Nothing there was run on the machine yet; the
+first step is the read-only `scripts/macos-ws-readback-collect.py`.

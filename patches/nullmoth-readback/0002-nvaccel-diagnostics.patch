@@ -1,0 +1,229 @@
+diff --git a/kexts/NVRM/accel/nvrm-accel.cpp b/kexts/NVRM/accel/nvrm-accel.cpp
+index 23297f3..de89307 100644
+--- a/kexts/NVRM/accel/nvrm-accel.cpp
++++ b/kexts/NVRM/accel/nvrm-accel.cpp
+@@ -1056,6 +1056,55 @@ SYSCTL_INT(_debug, OID_AUTO, nvaccel_iop_async, CTLFLAG_RW | CTLFLAG_LOCKED, &gI
+ NVACCEL_CNT(nvaccel_iop_async_flips,   gCntIopAsync,        "swaps completed asynchronously");
+ NVACCEL_CNT(nvaccel_iop_async_refused, gCntIopAsyncRefused, "async swaps NVKMS refused (that frame stayed off the panel)");
+ NVACCEL_CNT(nvaccel_iop_async_drop,    gCntIopAsyncDrop,    "frames dropped because a flip was still in flight (never expected)");
++
++// ---- surface-share diagnostics (readback investigation; counters only, nothing is logged per call) ----
++// Why a dirty export (nvSurfVram cmd NVRM_ESC_SURF_DIRTY) was refused. The status handed back to the Metal plugin is
++// NVSV_DIRTY_STATUS(why) = 0x80000010 + why: any non-zero value still means "refused, copy the pixels out" as before.
++enum { NVSV_W_OK = 0, NVSV_W_NO_SURFACE, NVSV_W_FAMLOCK, NVSV_W_NO_CACHE, NVSV_W_NO_RES, NVSV_W_NO_VM, NVSV_W_NO_HANDLE,
++       NVSV_W_TYPE, NVSV_W_FLAG, NVSV_W_NO_VALID, NVSV_W_PLANE, NVSV_W_PEND_FULL, NVSV_W_OFF, NVSV_W_N };
++#define NVSV_DIRTY_STATUS(w) (0x80000010u + (unsigned)(w))
++static SInt64 gCntSsDirty[NVSV_W_N];       // [0] = surfaces marked newest in VRAM, [w] = refusals by reason
++static SInt64 gCntSsShare[8];              // SURF_VRAM: [0] ok [1] bad version [2] off [3] no surface [4] no cache [5] no vram [6] too small [7] RM refused
++static SInt64 gCntSsPendCount, gCntSsPendHigh, gCntSsPendFull, gCntSsPendAdd, gCntSsPendDel, gCntSsPendRelease;
++static SInt64 gCntSsPageoffOk, gCntSsPageoffFail, gCntSsPageoffStaged, gCntSsPageoffFamily, gCntSsPageoffCeUs, gCntSsPageoffCpuUs, gCntSsPageoffBytes;
++static SInt64 gCntSsFamLockN, gCntSsFamLockWaitNs, gCntSsFamLockHoldNs;
++NVACCEL_CNT(nvaccel_ss_dirty_ok,          gCntSsDirty[NVSV_W_OK],         "dirty exports accepted (VRAM marked newest, the plugin skipped the readback)");
++NVACCEL_CNT(nvaccel_ss_dirty_no_surface,  gCntSsDirty[NVSV_W_NO_SURFACE], "dirty refused 0x80000011: the task cannot look the surface up");
++NVACCEL_CNT(nvaccel_ss_dirty_famlock,     gCntSsDirty[NVSV_W_FAMLOCK],    "dirty refused 0x80000012: accelerator lock unavailable");
++NVACCEL_CNT(nvaccel_ss_dirty_no_cache,    gCntSsDirty[NVSV_W_NO_CACHE],   "dirty refused 0x80000013: no IOSurface device cache for the surface");
++NVACCEL_CNT(nvaccel_ss_dirty_no_res,      gCntSsDirty[NVSV_W_NO_RES],     "dirty refused 0x80000014: the cache has no NVResource");
++NVACCEL_CNT(nvaccel_ss_dirty_no_vm,       gCntSsDirty[NVSV_W_NO_VM],      "dirty refused 0x80000015: the resource has no NVVidMemory");
++NVACCEL_CNT(nvaccel_ss_dirty_no_handle,   gCntSsDirty[NVSV_W_NO_HANDLE],  "dirty refused 0x80000016: the vidmem has no RM VRAM behind it");
++NVACCEL_CNT(nvaccel_ss_dirty_type,        gCntSsDirty[NVSV_W_TYPE],       "dirty refused 0x80000017: resource type is not 0xc0 (IOSurface)");
++NVACCEL_CNT(nvaccel_ss_dirty_flag,        gCntSsDirty[NVSV_W_FLAG],       "dirty refused 0x80000018: resource flag 0x8000 set");
++NVACCEL_CNT(nvaccel_ss_dirty_no_valid,    gCntSsDirty[NVSV_W_NO_VALID],   "dirty refused 0x80000019: resource has no valid-plane bitmap");
++NVACCEL_CNT(nvaccel_ss_dirty_plane,       gCntSsDirty[NVSV_W_PLANE],      "dirty refused 0x8000001a: plane above 15");
++NVACCEL_CNT(nvaccel_ss_dirty_pend_full,   gCntSsDirty[NVSV_W_PEND_FULL],  "dirty refused 0x8000001b: the pending-surface table is full");
++NVACCEL_CNT(nvaccel_ss_dirty_off,         gCntSsDirty[NVSV_W_OFF],        "dirty refused 0x8000001c: bad version, no task/accelerator/RM handles");
++NVACCEL_CNT(nvaccel_ss_share_ok,          gCntSsShare[0],  "SURF_VRAM: family VRAM shared with a client");
++NVACCEL_CNT(nvaccel_ss_share_bad_version, gCntSsShare[1],  "SURF_VRAM refused: ABI version");
++NVACCEL_CNT(nvaccel_ss_share_off,         gCntSsShare[2],  "SURF_VRAM refused: no task/accelerator/RM handles/IOSurfaceRoot or accelerator lock");
++NVACCEL_CNT(nvaccel_ss_share_no_surface,  gCntSsShare[3],  "SURF_VRAM refused: the task cannot look the surface up");
++NVACCEL_CNT(nvaccel_ss_share_no_cache,    gCntSsShare[4],  "SURF_VRAM refused: no device cache / NVResource for the surface");
++NVACCEL_CNT(nvaccel_ss_share_no_vram,     gCntSsShare[5],  "SURF_VRAM refused: the resource has no RM VRAM (not wired, or VRAM exhausted)");
++NVACCEL_CNT(nvaccel_ss_share_too_small,   gCntSsShare[6],  "SURF_VRAM refused: the plugin asked for more bytes than the VRAM block holds");
++NVACCEL_CNT(nvaccel_ss_share_rm,          gCntSsShare[7],  "SURF_VRAM refused: NVRM would not duplicate the memory object");
++NVACCEL_CNT(nvaccel_ss_pend_count,        gCntSsPendCount, "surfaces whose VRAM copy is newer than system memory right now");
++NVACCEL_CNT(nvaccel_ss_pend_high,         gCntSsPendHigh,  "most surfaces pending at once since boot (table size 512)");
++NVACCEL_CNT(nvaccel_ss_pend_full,         gCntSsPendFull,  "dirty exports that found the pending table full");
++NVACCEL_CNT(nvaccel_ss_pend_add,          gCntSsPendAdd,   "pending-table insertions");
++NVACCEL_CNT(nvaccel_ss_pend_del,          gCntSsPendDel,   "pending-table removals by page-off");
++NVACCEL_CNT(nvaccel_ss_pend_release,      gCntSsPendRelease, "pending-table removals because the resource was freed");
++NVACCEL_CNT(nvaccel_ss_pageoff_ok,        gCntSsPageoffOk,     "VRAM -> system memory page-offs done on the copy engine");
++NVACCEL_CNT(nvaccel_ss_pageoff_fail,      gCntSsPageoffFail,   "page-offs that failed");
++NVACCEL_CNT(nvaccel_ss_pageoff_staged,    gCntSsPageoffStaged, "page-offs that used the physically contiguous staging buffer");
++NVACCEL_CNT(nvaccel_ss_pageoff_family,    gCntSsPageoffFamily, "page-offs handed to the family implementation (scanout, no RM handle, pages not wireable)");
++NVACCEL_CNT(nvaccel_ss_pageoff_ce_us,     gCntSsPageoffCeUs,   "microseconds on the copy engine in page-offs");
++NVACCEL_CNT(nvaccel_ss_pageoff_cpu_us,    gCntSsPageoffCpuUs,  "microseconds of CPU copying out of the staging buffer in page-offs");
++NVACCEL_CNT(nvaccel_ss_pageoff_bytes,     gCntSsPageoffBytes,  "bytes moved by page-offs");
++NVACCEL_CNT(nvaccel_ss_famlock_n,         gCntSsFamLockN,      "SURF_VRAM / dirty calls that took the accelerator lock");
++NVACCEL_CNT(nvaccel_ss_famlock_wait_ns,   gCntSsFamLockWaitNs, "nanoseconds those calls waited for the accelerator lock");
++NVACCEL_CNT(nvaccel_ss_famlock_hold_ns,   gCntSsFamLockHoldNs, "nanoseconds those calls then held it (flips that find it busy are copied)");
+ static int gCrcHead = 0;
+ SYSCTL_INT(_debug, OID_AUTO, nvaccel_crc_head, CTLFLAG_RW | CTLFLAG_LOCKED, &gCrcHead, 0, "b85k-crc: which head debug.nvaccel_crc reads");
+ static int nvaccel_crc_sysctl SYSCTL_HANDLER_ARGS;
+@@ -1096,6 +1145,26 @@ static void nvaccelInstallSysctl(void)
+     sysctl_register_oid(&sysctl__debug_nvaccel_iop_ok_h4);      sysctl_register_oid(&sysctl__debug_nvaccel_igpu);
+     sysctl_register_oid(&sysctl__debug_nvaccel_heads_published); sysctl_register_oid(&sysctl__debug_nvaccel_heads_registered);
+     sysctl_register_oid(&sysctl__debug_nvaccel_heads_piped);
++    sysctl_register_oid(&sysctl__debug_nvaccel_ss_dirty_ok);       sysctl_register_oid(&sysctl__debug_nvaccel_ss_dirty_no_surface);
++    sysctl_register_oid(&sysctl__debug_nvaccel_ss_dirty_famlock);  sysctl_register_oid(&sysctl__debug_nvaccel_ss_dirty_no_cache);
++    sysctl_register_oid(&sysctl__debug_nvaccel_ss_dirty_no_res);   sysctl_register_oid(&sysctl__debug_nvaccel_ss_dirty_no_vm);
++    sysctl_register_oid(&sysctl__debug_nvaccel_ss_dirty_no_handle); sysctl_register_oid(&sysctl__debug_nvaccel_ss_dirty_type);
++    sysctl_register_oid(&sysctl__debug_nvaccel_ss_dirty_flag);     sysctl_register_oid(&sysctl__debug_nvaccel_ss_dirty_no_valid);
++    sysctl_register_oid(&sysctl__debug_nvaccel_ss_dirty_plane);    sysctl_register_oid(&sysctl__debug_nvaccel_ss_dirty_pend_full);
++    sysctl_register_oid(&sysctl__debug_nvaccel_ss_dirty_off);
++    sysctl_register_oid(&sysctl__debug_nvaccel_ss_share_ok);       sysctl_register_oid(&sysctl__debug_nvaccel_ss_share_bad_version);
++    sysctl_register_oid(&sysctl__debug_nvaccel_ss_share_off);      sysctl_register_oid(&sysctl__debug_nvaccel_ss_share_no_surface);
++    sysctl_register_oid(&sysctl__debug_nvaccel_ss_share_no_cache); sysctl_register_oid(&sysctl__debug_nvaccel_ss_share_no_vram);
++    sysctl_register_oid(&sysctl__debug_nvaccel_ss_share_too_small); sysctl_register_oid(&sysctl__debug_nvaccel_ss_share_rm);
++    sysctl_register_oid(&sysctl__debug_nvaccel_ss_pend_count);     sysctl_register_oid(&sysctl__debug_nvaccel_ss_pend_high);
++    sysctl_register_oid(&sysctl__debug_nvaccel_ss_pend_full);      sysctl_register_oid(&sysctl__debug_nvaccel_ss_pend_add);
++    sysctl_register_oid(&sysctl__debug_nvaccel_ss_pend_del);       sysctl_register_oid(&sysctl__debug_nvaccel_ss_pend_release);
++    sysctl_register_oid(&sysctl__debug_nvaccel_ss_pageoff_ok);     sysctl_register_oid(&sysctl__debug_nvaccel_ss_pageoff_fail);
++    sysctl_register_oid(&sysctl__debug_nvaccel_ss_pageoff_staged); sysctl_register_oid(&sysctl__debug_nvaccel_ss_pageoff_family);
++    sysctl_register_oid(&sysctl__debug_nvaccel_ss_pageoff_ce_us);  sysctl_register_oid(&sysctl__debug_nvaccel_ss_pageoff_cpu_us);
++    sysctl_register_oid(&sysctl__debug_nvaccel_ss_pageoff_bytes);
++    sysctl_register_oid(&sysctl__debug_nvaccel_ss_famlock_n);      sysctl_register_oid(&sysctl__debug_nvaccel_ss_famlock_wait_ns);
++    sysctl_register_oid(&sysctl__debug_nvaccel_ss_famlock_hold_ns);
+     gSysctlInstalled = true;
+     ALOG("sysctl debug.nvaccelfb installed -- `sudo sysctl -w debug.nvaccelfb=1` registers the framebuffer");
+ #endif
+@@ -1171,6 +1240,7 @@ static IOReturn nvAccelGpuVaCall(const char *fn, struct NVRMGpuVaRequest *g)
+ 
+ #define NVRM_SS_KERNEL_ABI 1
+ #include "../nvrm_surfshare_abi.h"
++#include <mach/mach_time.h>
+ extern "C" {
+ void *_ZN13IOSurfaceRoot13lookupSurfaceEjP4task(void *root, unsigned int id, task_t task);
+ void *_ZN22IOGraphicsAccelerator223deviceCacheForIOSurfaceEP9IOSurfacej(void *accel, void *surface, unsigned int plane);
+@@ -1213,10 +1283,21 @@ static bool nvSVPend(unsigned id, int op)
+     bool r = false; int freeSlot = -1;
+     IOSimpleLockLock(gNVSVPendLock);
+     for (int i = 0; i < kNVSVPend; i++) {
+-        if (gNVSVPendId[i] == id) { r = true; if (op == 0) gNVSVPendId[i] = 0; break; }
++        if (gNVSVPendId[i] == id) {
++            r = true;
++            if (op == 0) { gNVSVPendId[i] = 0; OSAddAtomic64(-1, &gCntSsPendCount); OSAddAtomic64(1, &gCntSsPendDel); }
++            break;
++        }
+         if (!gNVSVPendId[i] && freeSlot < 0) freeSlot = i;
+     }
+-    if (op == 1 && !r) { if (freeSlot >= 0) { gNVSVPendId[freeSlot] = id; r = true; } }
++    if (op == 1 && !r) {
++        if (freeSlot >= 0) {
++            gNVSVPendId[freeSlot] = id; r = true;
++            OSAddAtomic64(1, &gCntSsPendAdd);
++            const SInt64 c = OSAddAtomic64(1, &gCntSsPendCount) + 1;
++            if (c > gCntSsPendHigh) gCntSsPendHigh = c;
++        } else OSAddAtomic64(1, &gCntSsPendFull);
++    }
+     else if (op == 1) r = true;
+     IOSimpleLockUnlock(gNVSVPendLock);
+     return r;
+@@ -1232,15 +1313,19 @@ static unsigned nvAccelSurfDirty(void *cache, NVResource *res, unsigned plane)
+     unsigned char type = r[0x14];
+     unsigned int fl = *(volatile unsigned int *)(r + 0xc);
+     volatile unsigned short *valid = *(unsigned short *volatile *)(r + 0x30);
+-    if (type != 0xc0 || (fl & 0x8000) || !valid || plane > 15) return NVRM_SS_NO_CACHE;
++    if (type != 0xc0) return NVSV_DIRTY_STATUS(NVSV_W_TYPE);
++    if (fl & 0x8000) return NVSV_DIRTY_STATUS(NVSV_W_FLAG);
++    if (!valid) return NVSV_DIRTY_STATUS(NVSV_W_NO_VALID);
++    if (plane > 15) return NVSV_DIRTY_STATUS(NVSV_W_PLANE);
+     if (!gNVSVPendLock) gNVSVPendLock = IOSimpleLockAlloc();
+-    if (!nvSVPend(_ZNK9IOSurface12getSurfaceIDEv(*(void *volatile *)((unsigned char *)cache + 0x10)), 1)) return NVRM_SS_NO_CACHE;
++    if (!gNVSVPendLock) return NVSV_DIRTY_STATUS(NVSV_W_OFF);
++    if (!nvSVPend(_ZNK9IOSurface12getSurfaceIDEv(*(void *volatile *)((unsigned char *)cache + 0x10)), 1)) return NVSV_DIRTY_STATUS(NVSV_W_PEND_FULL);
+     _ZN20IOSurfaceDeviceCache10setCurrentEv(cache);
+     valid[6] |= (unsigned short)(1u << plane);
+     valid[0] &= (unsigned short)~(1u << plane);
+     return 0;
+ }
+-static IOReturn nvAccelSurfVram(struct NVRMSurfShareEsc *p, task_t task, unsigned cmd)
++static IOReturn nvAccelSurfVramImpl(struct NVRMSurfShareEsc *p, task_t task, unsigned cmd)
+ {
+     p->hSrcClient = p->hSrcMemory = 0;
+     if (p->version != NVRM_SURFSHARE_VERSION) { p->status = NVRM_SS_BAD_VERSION; return kIOReturnSuccess; }
+@@ -1254,19 +1339,26 @@ static IOReturn nvAccelSurfVram(struct NVRMSurfShareEsc *p, task_t task, unsigne
+     }
+     void *surf = _ZN13IOSurfaceRoot13lookupSurfaceEjP4task(gNVSVRoot, p->surfaceID, task);
+     if (!surf) { p->status = NVRM_SS_NO_SURFACE; gNVSVRefused++; return kIOReturnSuccess; }
+-    if (!nvFamLock(a, false)) { ((OSObject *)surf)->release(); p->status = NVRM_SS_OFF; return kIOReturnSuccess; }
++    const uint64_t flWait0 = mach_absolute_time();
++    const bool flGot = nvFamLock(a, false);
++    const uint64_t flHeld0 = mach_absolute_time();      // x86 Mach time is nanoseconds
++    OSAddAtomic64(1, &gCntSsFamLockN); OSAddAtomic64((SInt64)(flHeld0 - flWait0), &gCntSsFamLockWaitNs);
++    if (!flGot) { ((OSObject *)surf)->release(); p->status = cmd == NVRM_ESC_SURF_DIRTY ? NVSV_DIRTY_STATUS(NVSV_W_FAMLOCK) : NVRM_SS_OFF; return kIOReturnSuccess; }
+     void *cache = _ZN22IOGraphicsAccelerator223deviceCacheForIOSurfaceEP9IOSurfacej((void *)a, surf, p->plane);
+     OSObject *ctx = cache ? *(OSObject *volatile *)((unsigned char *)cache + 0x20) : nullptr;
+     NVResource *res = OSDynamicCast(NVResource, ctx);
+     NVVidMemory *vm = res ? nvres_vidmem(res) : nullptr;
+     if (cmd == NVRM_ESC_SURF_DIRTY) {
+-        p->status = (cache && res && vm && vm->fRmHandle) ? nvAccelSurfDirty(cache, res, p->plane) : NVRM_SS_NO_CACHE;
++        p->status = !cache ? NVSV_DIRTY_STATUS(NVSV_W_NO_CACHE) : !res ? NVSV_DIRTY_STATUS(NVSV_W_NO_RES)
++                  : !vm ? NVSV_DIRTY_STATUS(NVSV_W_NO_VM) : !vm->fRmHandle ? NVSV_DIRTY_STATUS(NVSV_W_NO_HANDLE)
++                  : nvAccelSurfDirty(cache, res, p->plane);
+         if (p->status == 0) gNVSVDirty++; else gNVSVDirtyRefused++;
+         if (gNVSVDirty + gNVSVDirtyRefused <= 6 || ((gNVSVDirty + gNVSVDirtyRefused) & 4095) == 0)
+             ALOG("surfvram dirty: surface %u plane %u type 0x%x -> %#x (dirty %u, refused %u)", p->surfaceID, p->plane,
+                  res ? (unsigned)((volatile unsigned char *)res)[0x14] : 0u, p->status, gNVSVDirty, gNVSVDirtyRefused);
+         if (cache) ((OSObject *)cache)->release();
+         nvFamUnlock(a);
++        OSAddAtomic64((SInt64)(mach_absolute_time() - flHeld0), &gCntSsFamLockHoldNs);
+         ((OSObject *)surf)->release();
+         return kIOReturnSuccess;
+     }
+@@ -1290,9 +1382,29 @@ static IOReturn nvAccelSurfVram(struct NVRMSurfShareEsc *p, task_t task, unsigne
+              p->surfaceID, p->plane, cache, res, vm, vm ? vm->fBytes : 0ull, p->hSrcClient, p->hSrcMemory, p->status, gNVSVOk, gNVSVRefused);
+     if (cache) ((OSObject *)cache)->release();
+     nvFamUnlock(a);
++    OSAddAtomic64((SInt64)(mach_absolute_time() - flHeld0), &gCntSsFamLockHoldNs);
+     ((OSObject *)surf)->release();
+     return kIOReturnSuccess;
+ }
++// Counts every outcome in one place so no return path of the implementation can be missed.
++static IOReturn nvAccelSurfVram(struct NVRMSurfShareEsc *p, task_t task, unsigned cmd)
++{
++    const IOReturn r = nvAccelSurfVramImpl(p, task, cmd);
++    const unsigned st = p->status;
++    if (cmd == NVRM_ESC_SURF_DIRTY) {
++        unsigned w = NVSV_W_OFF;
++        if (st == 0) w = NVSV_W_OK;
++        else if (st >= NVSV_DIRTY_STATUS(0) && st < NVSV_DIRTY_STATUS(NVSV_W_N)) w = st - NVSV_DIRTY_STATUS(0);
++        else if (st == NVRM_SS_NO_SURFACE) w = NVSV_W_NO_SURFACE;
++        OSAddAtomic64(1, &gCntSsDirty[w]);
++    } else {
++        unsigned c = 7;
++        if (st == 0) c = 0;
++        else if (st >= NVRM_SS_BAD_VERSION && st <= NVRM_SS_TOO_SMALL) c = st - NVRM_SS_BAD_VERSION + 1;
++        OSAddAtomic64(1, &gCntSsShare[c]);
++    }
++    return r;
++}
+ 
+ #include <mach/mach_time.h>
+ static IOLock *volatile gNVSVStageLock;
+@@ -1333,6 +1445,7 @@ void NVResource::pageoff(IOAccelEvent *ev, bool a1, bool *out, unsigned long lon
+     struct NVRMRmHandles h; nvSVZero(&h, sizeof h);
+     void *surf = (r[0x14] == 0xc0 && cache) ? *(void *volatile *)((unsigned char *)cache + 0x10) : nullptr;
+     if (!surf || !vm || !vm->fRmHandle || vm->fScanout || !vm->fBytes || !nvAccelRmHandles(&h)) {
++        OSAddAtomic64(1, &gCntSsPageoffFamily);
+         IOAccelResource2::pageoff(ev, a1, out, a3);
+         return;
+     }
+@@ -1340,6 +1453,7 @@ void NVResource::pageoff(IOAccelEvent *ev, bool a1, bool *out, unsigned long lon
+     if (!md || md->prepare(kIODirectionNone) != kIOReturnSuccess) {
+         gNVSVPageoffFail++;
+         ALOG("surfvram pageoff: res %p surface pages could not be wired (md %p) -- family pageoff instead", this, md);
++        OSAddAtomic64(1, &gCntSsPageoffFamily);
+         IOAccelResource2::pageoff(ev, a1, out, a3);
+         return;
+     }
+@@ -1410,7 +1524,10 @@ void NVResource::pageoff(IOAccelEvent *ev, bool a1, bool *out, unsigned long lon
+         volatile unsigned short *valid = *(unsigned short *volatile *)(r + 0x30);
+         if (valid) valid[0] |= 1;
+         gNVSVPageoff++;
+-    } else gNVSVPageoffFail++;
++        OSAddAtomic64(1, &gCntSsPageoffOk); OSAddAtomic64((SInt64)len, &gCntSsPageoffBytes);
++        OSAddAtomic64((SInt64)usec, &gCntSsPageoffCeUs); OSAddAtomic64((SInt64)cpuUs, &gCntSsPageoffCpuUs);
++        if (staged) OSAddAtomic64(1, &gCntSsPageoffStaged);
++    } else { gNVSVPageoffFail++; OSAddAtomic64(1, &gCntSsPageoffFail); }
+     if (out) *out = ok;
+     if (gNVSVPageoff + gNVSVPageoffFail <= 8 || ((gNVSVPageoff + gNVSVPageoffFail) & 1023) == 0)
+         ALOG("surfvram pageoff: res %p %llu B on the copy engine -> %#x in %llu us%s + cpu %llu us (ok %u, failed %u, staged %u)",

@@ -43,6 +43,11 @@ jobs:
           clang++ -std=c++17 -Wall -I../kexts/itlmt7925 ba_test.cpp ../kexts/itlmt7925/itl_ba.cpp -o ba_test
           ./ba_test
 
+      - name: Host readback tests (IOSurface statistics, pending-page-off table, sync protocol model, collector logic)
+        run: |
+          make -C test/readback test CC=gcc
+          python3 -I test/readback/collect_test.py
+
       - name: Build kexts
         run: bash scripts/build.sh
 

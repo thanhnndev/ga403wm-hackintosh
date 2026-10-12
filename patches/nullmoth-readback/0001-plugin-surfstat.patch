@@ -1,0 +1,259 @@
+diff --git a/plugin/NVMTLDevice.m b/plugin/NVMTLDevice.m
+index 1d8c482..d26eae7 100644
+--- a/plugin/NVMTLDevice.m
++++ b/plugin/NVMTLDevice.m
+@@ -21,6 +21,7 @@
+ #include <time.h>
+ #include "nvmtl_sample_positions.h"
+ #include "nvmtl_log_failure.h"
++#include "nvmtl_surfstat.h"
+ #include <sys/sysctl.h>
+ #ifndef NVMTL_RELEASE
+ #define NVMTL_RELEASE 0
+@@ -711,6 +712,8 @@ static void nvmtl_vram_tag_set(IOSurfaceRef surf, NSUInteger plane, uint32_t see
+ static int nvmtl_surface_image_create(NVMTLTexture *t, IOSurfaceRef surf, NSUInteger plane, uint32_t w, uint32_t h,
+                                       uint32_t vkf, uint32_t bpp, int a8, int stex)
+ {
++    const int ss = surf ? nvss_active() : 0; const uint64_t ss0 = ss ? NVSS_NOW_NS() : 0;
++    int ssWhy = NVSS_P_NONE, ssIw = NVSS_IW_NONE, ssVk = 0;
+     if (surf && plane == 0 && IOSurfaceGetPlaneCount(surf) <= 1 && nvmtl_vk_surface_share_on()) {
+         size_t row = IOSurfaceGetBytesPerRow(surf), sh = IOSurfaceGetHeight(surf);
+         if ((size_t)w * (bpp ? bpp : 4) <= row && h <= sh && row % 32 == 0) {
+@@ -724,12 +727,21 @@ static int nvmtl_surface_image_create(NVMTLTexture *t, IOSurfaceRef surf, NSUInt
+                     static unsigned n; if (n++ < 8 || n % 2000 == 0)
+                         nvlog("item 7: surface %u %ux%u pitch %zu -> the family's VRAM%s (vram %llu, private %llu)", (unsigned)IOSurfaceGetID(surf),
+                               w, h, row, current ? ", already current (no upload)" : "", g_surf_vram, g_surf_private);
++                    if (ss) nvss_ev_wrap((uint32_t)IOSurfaceGetID(surf), 0, w, h, (uint32_t)row, bpp, vkf, NVSS_P_NONE, NVSS_IW_NONE, 0, NVSS_NOW_NS() - ss0);
+                     return 0;
+                 }
+                 nvmtl_vk_buffer_destroy(&vb);
+-            }
++                ssWhy = NVSS_P_ALIAS;
++            } else if (ss) { ssWhy = NVSS_P_IMPORT; ssIw = nvmtl_vk_surface_vram_why(&ssVk); }
+         }
+     }
++    if (ss) {
++        const unsigned long pc = (unsigned long)IOSurfaceGetPlaneCount(surf);
++        if (ssWhy == NVSS_P_NONE)
++            ssWhy = nvss_share_precheck(nvmtl_vk_surface_share_on(), pc, (unsigned long)plane, w, bpp, h, IOSurfaceGetBytesPerRow(surf), IOSurfaceGetHeight(surf));
++        if (ssWhy == NVSS_P_NONE) ssWhy = NVSS_P_IMPORT;      /* eligible by geometry but not shared: cannot happen without a failed step above */
++        nvss_ev_wrap((uint32_t)IOSurfaceGetID(surf), (uint32_t)plane, w, h, (uint32_t)IOSurfaceGetBytesPerRowOfPlane(surf, plane), bpp, vkf, ssWhy, ssIw, ssVk, NVSS_NOW_NS() - ss0);
++    }
+     g_surf_private++;
+     return nvmtl_vk_image_create_typed(w, h, vkf, bpp, a8, 1, stex, 2u, 1u, &t->_i);
+ }
+diff --git a/plugin/NVMTLObjects.m b/plugin/NVMTLObjects.m
+index 5a54a75..409ad6e 100644
+--- a/plugin/NVMTLObjects.m
++++ b/plugin/NVMTLObjects.m
+@@ -1146,21 +1146,28 @@ void nvmtl_texture_desc_swizzle(NVMTLTexture *t, MTLTextureDescriptor *d) {
+ - (void)nvmtlSurfaceIn {
+     NVMTLTexture *r = _parent ? _parent : self;
+     if (!r->_surf) return;
++    const int ss = nvss_active();
+     const uint32_t vgen = r->_vramOn ? 0 : nvmtl_vram_gen(r->_surf, r->_plane);
+-    if (r->_surfSynced && IOSurfaceGetSeed(r->_surf) == r->_surfSeed && (r->_vramOn || vgen == r->_surfGen)) return;
+-    if (![r nvmtlSurfaceCopyable]) return;
++    if (r->_surfSynced && IOSurfaceGetSeed(r->_surf) == r->_surfSeed && (r->_vramOn || vgen == r->_surfGen)) { if (ss) nvss_ev_in(0, 0, NVSS_I_SKIP_SEEN, 0, 0, 0, 0); return; }
++    if (![r nvmtlSurfaceCopyable]) { if (ss) nvss_ev_in((uint32_t)IOSurfaceGetID(r->_surf), (uint32_t)r->_plane, NVSS_I_NOCOPYABLE, 0, 0, 0, 0); return; }
+     { uint32_t now = IOSurfaceGetSeed(r->_surf);
+       if (r->_vramOn && nvmtl_vram_tag_current(r->_surf, r->_plane, now)) {
+           r->_surfSeed = now; r->_surfSynced = YES; g_surfin_skip++;
+           static unsigned ns; if (ns++ < 6 || ns % 2000 == 0) nvlog("item 7: surface-in SKIPPED (shared VRAM current at seed %u): %llu skipped, %llu copied", now, g_surfin_skip, g_surfin_copy);
++          if (ss) nvss_ev_in((uint32_t)IOSurfaceGetID(r->_surf), (uint32_t)r->_plane, NVSS_I_SKIP_TAG, 0, 0, 0, 0);
+           return; } }
++    const uint64_t ss0 = ss ? NVSS_NOW_NS() : 0;
++    const int ssCause = !ss ? 0 : !r->_surfSynced ? NVSS_I_COPY_NEWTEX : IOSurfaceGetSeed(r->_surf) != r->_surfSeed ? NVSS_I_COPY_SEED : NVSS_I_COPY_GEN;
+     uint32_t seed = 0;
+-    if (IOSurfaceLock(r->_surf, kIOSurfaceLockReadOnly, &seed) != kIOReturnSuccess) { nvlog("G13 surface-in: IOSurfaceLock FAILED"); return; }
++    if (IOSurfaceLock(r->_surf, kIOSurfaceLockReadOnly, &seed) != kIOReturnSuccess) { nvlog("G13 surface-in: IOSurfaceLock FAILED");
++        if (ss) nvss_ev_in((uint32_t)IOSurfaceGetID(r->_surf), (uint32_t)r->_plane, NVSS_I_FAIL, 0, 0, 0, NVSS_NOW_NS() - ss0); return; }
+     void *base = IOSurfaceGetBaseAddressOfPlane(r->_surf, (uint32_t)r->_plane);
+     size_t row = IOSurfaceGetBytesPerRowOfPlane(r->_surf, (uint32_t)r->_plane);
+     int rc = (base && row) ? nvmtl_vk_image_write(r->_q, &r->_i, base, row) : -1;
+     if (!rc && r->_i.bpp == 4) { char tag[24]; snprintf(tag, sizeof tag, "in%u-", (unsigned)IOSurfaceGetID(r->_surf)); nvmtl_frame_dump(tag, base, row, r->_i.w, r->_i.h); }
+     IOSurfaceUnlock(r->_surf, kIOSurfaceLockReadOnly, NULL);
++    if (ss) { uint64_t g = 0, c = 0; nvmtl_vk_xfer_last(&g, &c);
++        nvss_ev_in((uint32_t)IOSurfaceGetID(r->_surf), (uint32_t)r->_plane, rc ? NVSS_I_FAIL : ssCause, (uint64_t)r->_i.w * (r->_i.bpp ? r->_i.bpp : 4) * r->_i.h, g, c, NVSS_NOW_NS() - ss0); }
+     if (rc) { nvlog("G13 surface-in: upload FAILED (%ux%u) — retried at the next use", r->_i.w, r->_i.h); return; }
+     r->_surfSeed = seed; r->_surfSynced = YES; r->_surfGen = vgen;
+     g_surfin_copy++; if (r->_vramOn) nvmtl_vram_tag_set(r->_surf, r->_plane, seed);
+@@ -1169,22 +1176,36 @@ void nvmtl_texture_desc_swizzle(NVMTLTexture *t, MTLTextureDescriptor *d) {
+ - (BOOL)nvmtlSurfaceOut {
+     NVMTLTexture *r = _parent ? _parent : self;
+     if (!r->_surf) return YES;
+-    if (![r nvmtlSurfaceCopyable]) return NO;
+-    if (r->_vramOn && !nvmtl_vk_surface_dirty((uint32_t)IOSurfaceGetID(r->_surf), (uint32_t)r->_plane)) {
++    const int ss = nvss_active();
++    const uint32_t ssId = ss ? (uint32_t)IOSurfaceGetID(r->_surf) : 0, ssPlane = (uint32_t)r->_plane;
++    if (![r nvmtlSurfaceCopyable]) { if (ss) nvss_ev_out(ssId, ssPlane, NVSS_O_NOCOPYABLE, 0, 0, 0, 0, 0, 0); return NO; }
++    const uint64_t ssD0 = ss ? NVSS_NOW_NS() : 0;
++    int ssDirtyOk = 0; uint32_t ssStatus = 0;
++    if (r->_vramOn) { ssDirtyOk = !nvmtl_vk_surface_dirty((uint32_t)IOSurfaceGetID(r->_surf), (uint32_t)r->_plane); if (!ssDirtyOk) ssStatus = nvmtl_vk_surface_dirty_status(); }
++    if (ssDirtyOk) {
+         uint32_t seed = IOSurfaceGetSeed(r->_surf);
+         r->_surfSeed = seed; r->_surfSynced = YES;
+         r->_surfGen = nvmtl_vram_tag_bump(r->_surf, r->_plane, seed);
+         static unsigned nd; if (nd++ < 6 || nd % 5000 == 0) nvlog("surface-out -> dirty, no copy (%ux%u surface %u seed %u, #%u)", r->_i.w, r->_i.h, (unsigned)IOSurfaceGetID(r->_surf), seed, nd);
++        if (ss) nvss_ev_out(ssId, ssPlane, NVSS_O_DIRTY, 0, 0, 0, 0, NVSS_NOW_NS() - ssD0, 0);
+         return YES;
+     }
++    const uint64_t ssDirtyNs = ss ? NVSS_NOW_NS() - ssD0 : 0;
+     uint64_t t0 = clock_gettime_nsec_np(CLOCK_MONOTONIC_RAW);
+     uint32_t lockopt = nvmtl_noseed() ? kIOSurfaceLockReadOnly : 0;
+-    if (IOSurfaceLock(r->_surf, lockopt, NULL) != kIOReturnSuccess) { nvlog("G13 surface-out: IOSurfaceLock FAILED"); return NO; }
++    const uint64_t ssL0 = ss ? NVSS_NOW_NS() : 0;
++    if (IOSurfaceLock(r->_surf, lockopt, NULL) != kIOReturnSuccess) { nvlog("G13 surface-out: IOSurfaceLock FAILED");
++        if (ss) nvss_ev_out(ssId, ssPlane, NVSS_O_FAIL, 0, 0, 0, NVSS_NOW_NS() - ssL0, ssDirtyNs, ssStatus); return NO; }
++    const uint64_t ssLockNs = ss ? NVSS_NOW_NS() - ssL0 : 0;
+     void *base = IOSurfaceGetBaseAddressOfPlane(r->_surf, (uint32_t)r->_plane);
+     size_t row = IOSurfaceGetBytesPerRowOfPlane(r->_surf, (uint32_t)r->_plane);
+     int rc = (base && row) ? nvmtl_vk_image_read(r->_q, &r->_i, base, row) : -1;
++    uint64_t ssG = 0, ssC = 0; if (ss) nvmtl_vk_xfer_last(&ssG, &ssC);
+     if (!rc && r->_i.bpp == 4) { char tag[24]; snprintf(tag, sizeof tag, "out%u-", (unsigned)IOSurfaceGetID(r->_surf)); nvmtl_frame_dump(tag, base, row, r->_i.w, r->_i.h); }
++    const uint64_t ssU0 = ss ? NVSS_NOW_NS() : 0;
+     uint32_t seed = 0; IOReturn unlocked = IOSurfaceUnlock(r->_surf, lockopt, &seed); if (lockopt) seed = IOSurfaceGetSeed(r->_surf);
++    if (ss) nvss_ev_out(ssId, ssPlane, (rc || unlocked != kIOReturnSuccess) ? NVSS_O_FAIL : r->_vramOn ? NVSS_O_COPY_REFUSED : NVSS_O_COPY_PRIVATE,
++                        (uint64_t)r->_i.w * (r->_i.bpp ? r->_i.bpp : 4) * r->_i.h, ssG, ssC, ssLockNs + (NVSS_NOW_NS() - ssU0), ssDirtyNs, ssStatus);
+     if (rc || unlocked != kIOReturnSuccess) { nvlog("G13 surface-out: readback FAILED (%ux%u)", r->_i.w, r->_i.h); return NO; }
+     r->_surfSeed = seed; r->_surfSynced = YES;
+     r->_surfGen = r->_vramOn ? r->_surfGen : nvmtl_vram_gen(r->_surf, r->_plane);
+@@ -4708,7 +4729,11 @@ destinationBytesPerImage:(NSUInteger)img options:(MTLBlitOption)opt {
+     static int ws = -1;
+     if (ws < 0) ws = (getprogname() && !strcmp(getprogname(), "WindowServer")) ? 1 : 0;
+     [self commit];
+-    if (ws) [self waitUntilCompleted]; else [self waitUntilScheduled];
++    if (ws) {
++        const int ss = nvss_active(); const uint64_t w0 = ss ? NVSS_NOW_NS() : 0;
++        [self waitUntilCompleted];
++        if (ss) nvss_ev_commit_wait(NVSS_NOW_NS() - w0);
++    } else [self waitUntilScheduled];
+     return self.status != MTLCommandBufferStatusError;
+ }
+ - (void)commit { [self nvmtlSubmitWithEvents]; }
+diff --git a/plugin/nvmtl_vk.c b/plugin/nvmtl_vk.c
+index 5cef2f7..af6996a 100644
+--- a/plugin/nvmtl_vk.c
++++ b/plugin/nvmtl_vk.c
+@@ -1761,9 +1761,12 @@ int nvmtl_vk_surface_share_on(void)
+     }
+     return on;
+ }
++static __thread uint32_t g_surf_dirty_status;
++uint32_t nvmtl_vk_surface_dirty_status(void) { return g_surf_dirty_status; }
+ int nvmtl_vk_surface_dirty(uint32_t surfaceID, uint32_t plane)
+ {
+     static int on = -1;
++    g_surf_dirty_status = 0;
+     if (on < 0) {
+         const char *e = getenv("NVMTL_NO_SURFACE_PAGEOFF");
+         on = pnvk_surface_dirty && !(e && e[0] == '1') && !nvmtl_gpu_headless();
+@@ -1771,22 +1774,26 @@ int nvmtl_vk_surface_dirty(uint32_t surfaceID, uint32_t plane)
+               on ? "marked newest; a CPU lock / the display pipe pages it off (Apple's page-off)" : "copied out eagerly (old)",
+               pnvk_surface_dirty ? "present" : "ABSENT", e ?: "unset");
+     }
+-    if (!on || !g_dev) return -1;
++    if (!on || !g_dev) { g_surf_dirty_status = on ? 0xFFFF0002u : 0xFFFF0001u; return -1; }   /* 0xFFFF000x: refused before the kernel was asked */
+     uint32_t st = pnvk_surface_dirty(g_dev, surfaceID, plane);
++    g_surf_dirty_status = st;
+     if (st) { static unsigned n; if (n++ < 8 || n % 2000 == 0) nvlog("surface %u dirty refused (%#x) - copy-out (%u so far)", surfaceID, st, n); }
+     return st ? -1 : 0;
+ }
++static __thread int g_surf_why, g_surf_vkres;
++int nvmtl_vk_surface_vram_why(int *vkres) { if (vkres) *vkres = g_surf_vkres; return g_surf_why; }
+ int nvmtl_vk_surface_vram(uint32_t surfaceID, uint32_t plane, size_t need, nvk_buffer *out)
+ {
+     memset(out, 0, sizeof *out);
+-    if (!nvmtl_vk_surface_share_on() || !need) return -1;
++    g_surf_why = 0; g_surf_vkres = 0;       /* diagnostics: 1 share off / no size, 2 no device-local type, 3 no fd, 4 import refused (vkres), 5 buffer over the import refused */
++    if (!nvmtl_vk_surface_share_on() || !need) { g_surf_why = 1; return -1; }
+     uint32_t all = g_memp.memoryTypeCount >= 32 ? 0xffffffffu : ((1u << g_memp.memoryTypeCount) - 1u);
+     int mt = memtype(all, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+-    if (mt < 0) return -1;
++    if (mt < 0) { g_surf_why = 2; return -1; }
+     nvmtl_vram_rec r = { 3, surfaceID, plane, 0, (uint64_t)need };
+     VkImportMemoryFdInfoKHR imp = { VK_STRUCTURE_TYPE_IMPORT_MEMORY_FD_INFO_KHR, NULL, VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_FD_BIT,
+                                     open("/dev/null", O_RDONLY | O_CLOEXEC) };
+-    if (imp.fd < 0) return -1;
++    if (imp.fd < 0) { g_surf_why = 3; return -1; }
+     VkMemoryAllocateInfo mai = { VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO, &imp, need, (uint32_t)mt };
+     VkDeviceMemory m = VK_NULL_HANDLE;
+     pnvk_stage_import(&r);
+@@ -1794,6 +1801,7 @@ int nvmtl_vk_surface_vram(uint32_t surfaceID, uint32_t plane, size_t need, nvk_b
+     pnvk_stage_import(NULL);
+     if (vr != VK_SUCCESS) {
+         close(imp.fd);
++        g_surf_why = 4; g_surf_vkres = (int)vr;
+         static unsigned n; if (n++ < 8 || n % 1000 == 0)
+             nvlog("item 7: surface %u plane %u: family VRAM import refused (%d) - private image + copies (%u so far)", surfaceID, plane, (int)vr, n);
+         return -1;
+@@ -1804,6 +1812,7 @@ int nvmtl_vk_surface_vram(uint32_t surfaceID, uint32_t plane, size_t need, nvk_b
+     if (pvkCreateBuffer(g_dev, &bci, NULL, &b) != VK_SUCCESS || pvkBindBufferMemory(g_dev, b, m, 0) != VK_SUCCESS) {
+         if (b) pvkDestroyBuffer(g_dev, b, NULL);
+         pvkFreeMemory(g_dev, m, NULL);
++        g_surf_why = 5;
+         nvlog("item 7: surface %u: a buffer over the imported VRAM was refused - private", surfaceID);
+         return -1;
+     }
+@@ -5524,8 +5533,12 @@ static nvmtl_upstage *nvmtl_upstage_get(size_t size)
+     return st;
+ }
+ 
++static __thread uint64_t g_xfer_gpu_ns, g_xfer_cpu_ns;
++void nvmtl_vk_xfer_last(uint64_t *gpu_ns, uint64_t *cpu_ns) { if (gpu_ns) *gpu_ns = g_xfer_gpu_ns; if (cpu_ns) *cpu_ns = g_xfer_cpu_ns; }
+ int nvmtl_vk_image_write(nvk_queue *q, nvk_image *img, const void *src, size_t row_bytes)
+ {
++    g_xfer_gpu_ns = g_xfer_cpu_ns = 0;
++    const int xs = nvss_active(); const uint64_t x0 = xs ? NVSS_NOW_NS() : 0;
+     const size_t bpp = img->bpp ? img->bpp : 4;
+     const uint32_t cols = nvmtl_blocks(img->w, img->bw), rows = nvmtl_blocks(img->h, img->bh);
+     if (row_bytes < (size_t)cols * bpp) { nvlog("image_write: bytesPerRow %zu < %u blocks * %zu B", row_bytes, cols, bpp); return -1; }
+@@ -5536,6 +5549,7 @@ int nvmtl_vk_image_write(nvk_queue *q, nvk_image *img, const void *src, size_t r
+     if (row_bytes == tight) memcpy(dst, src, tight * (size_t)rows);   /* a 4K surface is 2160 rows of 15 KB: one pass, not 2160 calls */
+     else for (uint32_t y = 0; y < rows; y++)
+         memcpy(dst + (size_t)y * tight, (const uint8_t *)src + (size_t)y * row_bytes, tight);
++    const uint64_t x1 = xs ? NVSS_NOW_NS() : 0;
+     nvk_cmdbuf *const c = &sl->cb;
+     if (nvmtl_vk_cmd_begin(q, c)) return -1;
+     VkImageSubresourceRange range = { nvmtl_barrier_aspect(img), 0, 1, 0, 1 };
+@@ -5552,6 +5566,7 @@ int nvmtl_vk_image_write(nvk_queue *q, nvk_image *img, const void *src, size_t r
+     pvkCmdPipelineBarrier(c->cb, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0, 0, NULL, 0, NULL, 1, &toRead);
+     img->layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+     const int rc = nvmtl_vk_submit_wait_at(c, "surface upload");
++    if (xs) { g_xfer_cpu_ns = x1 - x0; g_xfer_gpu_ns = NVSS_NOW_NS() - x1; }
+     if (sl->buf.size > NVMTL_UPSTAGE_KEEP) { nvmtl_vk_buffer_destroy(&sl->buf); memset(&sl->buf, 0, sizeof sl->buf); }
+     return rc;
+ }
+@@ -5570,6 +5585,8 @@ int nvmtl_vk_copy_buffer(nvk_queue *q, nvk_buffer *src, size_t srcOff, nvk_buffe
+ 
+ int nvmtl_vk_image_read(nvk_queue *q, nvk_image *img, void *dst, size_t row_bytes)
+ {
++    g_xfer_gpu_ns = g_xfer_cpu_ns = 0;
++    const int xs = nvss_active(); const uint64_t x0 = xs ? NVSS_NOW_NS() : 0;
+     const size_t bpp = img->bpp ? img->bpp : 4;
+     const uint32_t cols = nvmtl_blocks(img->w, img->bw), rows = nvmtl_blocks(img->h, img->bh);
+     if (row_bytes < (size_t)cols * bpp) { nvlog("image_read: bytesPerRow %zu < %u blocks * %zu B", row_bytes, cols, bpp); return -1; }
+@@ -5590,8 +5607,10 @@ int nvmtl_vk_image_read(nvk_queue *q, nvk_image *img, void *dst, size_t row_byte
+     VkBufferImageCopy bic = { 0, 0, 0, { nvmtl_copy_aspect(img), 0, 0, 1 }, { 0, 0, 0 }, { img->w, img->h, 1 } };
+     pvkCmdCopyImageToBuffer(c.cb, img->img, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, stage.buf, 1, &bic);
+     if (nvmtl_vk_submit_wait(&c)) return -1;
++    const uint64_t x1 = xs ? NVSS_NOW_NS() : 0;
+     const uint8_t *src = (const uint8_t *)stage.map;
+     for (uint32_t y = 0; y < rows; y++) memcpy((uint8_t *)dst + y * row_bytes, src + (size_t)y * cols * bpp, (size_t)cols * bpp);
++    if (xs) { g_xfer_gpu_ns = x1 - x0; g_xfer_cpu_ns = NVSS_NOW_NS() - x1; }
+     return 0;
+ }
+ 
+diff --git a/plugin/nvmtl_vk.h b/plugin/nvmtl_vk.h
+index 8df79be..bb8b94c 100644
+--- a/plugin/nvmtl_vk.h
++++ b/plugin/nvmtl_vk.h
+@@ -333,3 +333,8 @@ int nvmtl_vk_cmd_image_gen_mipmaps(nvk_cmdbuf *c, nvk_image *img);
+ int nvmtl_vk_surface_share_on(void);
+ int nvmtl_vk_surface_vram(uint32_t surfaceID, uint32_t plane, size_t need, nvk_buffer *out);
+ int nvmtl_vk_surface_dirty(uint32_t surfaceID, uint32_t plane);
++/* readback diagnostics (nvmtl_surfstat.h): why the last nvmtl_vk_surface_vram / _dirty call on this thread failed, and the
++ * GPU-wait / CPU-copy nanoseconds of the last nvmtl_vk_image_read / _write on this thread (0 unless statistics are on) */
++int nvmtl_vk_surface_vram_why(int *vkres);
++uint32_t nvmtl_vk_surface_dirty_status(void);
++void nvmtl_vk_xfer_last(uint64_t *gpu_ns, uint64_t *cpu_ns);
