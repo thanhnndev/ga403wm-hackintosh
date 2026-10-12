@@ -161,3 +161,16 @@ Undo (then reboot): `sudo bash scripts/macos-ws-upload-install.sh --undo`.
 The installer never restarts WindowServer itself. A disk replacement does not change code already mapped by the
 running WindowServer. Verify the next boot's sample driver UUID against the candidate, compare CPU time/flips under
 the same workload, and check rendering, app launches, display sleep and both displays before promoting the draft.
+
+## Follow-up 2026-10-12: the upload candidate was the wrong layer; the lead is `vramGrant`
+
+* Codex's candidate (PR #139, streaming-store copy in `nvmtl_vk_image_write`) was evaluated and dropped: the copy is a
+  small part of the WindowServer cost and the kernel side (system time >= user time, 46-63k page faults/s) is where the
+  time goes. The installed `NVMTLDriver.bundle` is upstream's again (the candidate is in
+  `/Library/NullMoth/ws-upload-test/previous.bundle` and in the upgrade backup). `scripts/macos-ws-upload-install.sh`
+  must not be run on 1.14.2.
+* Measured instead: every IOSurface grant in `vramGrant` clears through BAR1 at ~110 MB/s while holding the global
+  `NVRMDisplayGate`, 26 % of wall time and ~70 ms stalls for 7.6 MB, with flips and cursor updates queued behind it.
+  Evidence, candidate fix and the A/B to run: [VRAM-GRANT-STALL.md](VRAM-GRANT-STALL.md).
+* Still open: the page faults in WindowServer (a plain IOSurface read-back in user space faults 0 times, DTrace is blocked by
+  SIP), and whether the `movnti` clear is actually faster on this BAR (needs the reboot and the A/B).
