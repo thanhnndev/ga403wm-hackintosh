@@ -62,4 +62,21 @@ want ItlDiag "${TARGETS[@]+"${TARGETS[@]}"}" && build_kext ItlDiag kexts/ItlDiag
 want AmdCppc "${TARGETS[@]+"${TARGETS[@]}"}" && build_kext AmdCppc kexts/AmdCppc kmod_info.c AmdCppc.cpp
 want MtkBtFw "${TARGETS[@]+"${TARGETS[@]}"}" && build_kext MtkBtFw kexts/MtkBtFw kmod_info.c MtkBtFw.cpp fw_blob.c
 want AsusWmi "${TARGETS[@]+"${TARGETS[@]}"}" && build_kext AsusWmi kexts/AsusWmi kmod_info.c AsusWmi.cpp
+# BtLeDlFix is a Lilu plugin: Lilu headers + plugin_start.cpp come from acidanthera/Lilu (cloned into build/Lilu).
+if want BtLeDlFix "${TARGETS[@]+"${TARGETS[@]}"}"; then
+  LILU_DIR="${LILU:-build/Lilu}"
+  [ -d "$LILU_DIR" ] || git clone --depth 1 https://github.com/acidanthera/Lilu "$LILU_DIR"
+  mkdir -p build/BtLeDlFix.kext/Contents/MacOS
+  cp kexts/BtLeDlFix/Info.plist build/BtLeDlFix.kext/Contents/Info.plist
+  LILU_DEFS="-DPRODUCT_NAME=BtLeDlFix -DMODULE_VERSION=1.0.0 -DLILU_KEXT"
+  clang++ $COMMON $CXXFLAGS $LILU_DEFS -I"$LILU_DIR/Lilu" -c kexts/BtLeDlFix/BtLeDlFix.cpp -o "$OBJ/BtLeDlFix_main.o"
+  clang++ $COMMON $CXXFLAGS $LILU_DEFS -I"$LILU_DIR/Lilu" -c "$LILU_DIR/Lilu/Library/plugin_start.cpp" -o "$OBJ/BtLeDlFix_start.o"
+  clang   $COMMON -c kexts/BtLeDlFix/kmod_info.c -o "$OBJ/BtLeDlFix_kmod.o"
+  clang++ -arch x86_64 -mmacosx-version-min="$LINK_MIN" -nostdlib -Xlinker -kext -Xlinker -no_data_const \
+    -L"$SDK_DIR/Library/x86_64" -lkmodc++ -lkmod -lcc_kext "$OBJ/BtLeDlFix_main.o" "$OBJ/BtLeDlFix_start.o" "$OBJ/BtLeDlFix_kmod.o" \
+    -o build/BtLeDlFix.kext/Contents/MacOS/BtLeDlFix
+  echo "built build/BtLeDlFix.kext"
+  echo "--- undefined symbols (BtLeDlFix)"
+  nm -um build/BtLeDlFix.kext/Contents/MacOS/BtLeDlFix | head -40 || true
+fi
 exit 0

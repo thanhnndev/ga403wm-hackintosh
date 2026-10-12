@@ -269,9 +269,13 @@
 				<key>disable-gpu</key>
 				<true/>
 				<key>class-code</key>
-				<data>/////w==</data>
+				<data>
+				/////w==
+				</data>
 				<key>name</key>
-				<data>I2Rpc3BsYXkA</data>
+				<data>
+				I2Rpc3BsYXkA
+				</data>
 				<key>IOName</key>
 				<string>#display</string>
 			</dict>
@@ -807,6 +811,24 @@
 				<string></string>
 				<key>MinKernel</key>
 				<string></string>
+				<key>PlistPath</key>
+				<string>Contents/Info.plist</string>
+			</dict>
+			<dict>
+				<key>Arch</key>
+				<string>x86_64</string>
+				<key>BundlePath</key>
+				<string>BtLeDlFix.kext</string>
+				<key>Comment</key>
+				<string>Lilu plugin: bluetoothd skips the LE Data Length Change wait (BLE mouse on MT7925)</string>
+				<key>Enabled</key>
+				<true/>
+				<key>ExecutablePath</key>
+				<string>Contents/MacOS/BtLeDlFix</string>
+				<key>MaxKernel</key>
+				<string></string>
+				<key>MinKernel</key>
+				<string>21.0.0</string>
 				<key>PlistPath</key>
 				<string>Contents/Info.plist</string>
 			</dict>
