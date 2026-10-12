@@ -298,17 +298,24 @@ int itlmt7925::m3HwPrep()
     for (unsigned i = 0; i < n5; i++, w += 8) put16(w, ch5[i]);
     int rc = m3Cmd(UNI_SET_DOMAIN_INFO, dom, (size_t)(w - dom), "set_domain");
     if (rc) return rc;
-    if (!clcCc[0]) {
+    // Transmit power tables (SAR, CLC, rate limits) are best effort: the firmware runs on its own defaults without them, and a
+    // table step that fails must not keep the station from joining (the first build with them failed every join on the
+    // efuse read). Two tries per boot, then the defaults.
+    if (!clcCc[0] && pwrTries < 2) {
+        pwrTries++;
         sarInit();
         uint8_t encap = 0;
-        rc = efuseRead(0xa71, &encap);
-        if (rc) { m3log("efuse hw type failed rc=%d", rc); return rc; }
-        hwEncap = encap & 3;
-        rc = m3Clc("00", 1);                               // world, indoor; same domain as set_domain
-        if (!rc) rc = m3TxPower();
-        if (rc) clcCc[0] = 0;                               // retry the complete setup on the next join
+        int prc = efuseRead(0xa71, &encap);
+        if (prc) {
+            m3log("efuse hw type failed rc=%d: power tables skipped (try %u)", prc, pwrTries);
+        } else {
+            hwEncap = encap & 3;
+            prc = m3Clc("00", 1);                          // world, indoor; same domain as set_domain
+            if (!prc) prc = m3TxPower();
+            if (prc) { clcCc[0] = 0; m3log("power tables failed rc=%d (try %u): firmware defaults", prc, pwrTries); }
+        }
     }
-    return rc;
+    return 0;
 }
 
 // ---------------------------------------------------------------------------------------------

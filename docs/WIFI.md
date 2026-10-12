@@ -213,9 +213,13 @@ loop that owns the connection after the first scan. **Not yet run on hardware.**
 * Scanning while connected uses the firmware scan with split dwell; the radio leaves the AP's channel briefly.
 
 The app (`macos/ItlWiFi/`, Swift, no Xcode project): Wi-Fi icon in the menu bar (bars from the signal), network list
-(strongest BSS per SSID, security, channel), password prompt, "Remember" stores the passphrase in the login keychain
-(service `com.itlmt7925.wifi`), auto-join of saved networks when not connected, Disconnect, Forget, Open at Login
-(a user LaunchAgent).
+(strongest BSS per SSID, security, channel), a join form that replaces the list while it is open (what was typed is kept),
+"Remember" stores the passphrase in `~/Library/Application Support/ItlWiFi/networks.json` (mode 0600; the keychain was used
+first and prompted on every rebuilt, ad-hoc signed app), right-click menu on every network (Connect, Connect with a different
+password, Forget, Copy name), auto-join of saved networks when not connected, Disconnect, Open at Login (a user LaunchAgent).
+The list keeps its order between scans (new networks are inserted by saved / signal band, a full re-sort happens when the popover
+opens or after the Scan button), so a click lands on the row that was under the pointer. A failed attempt is explained from
+`wifi-events` (`hw-prep-fail`, `auth-fail`, `hs-fail` ...).
 
 ```bash
 bash scripts/build.sh itlmt7925 && bash scripts/macos-install-kext.sh itlmt7925   # ESP; keeps your plist credentials
@@ -243,6 +247,15 @@ The driver logs to the verbose console, to properties on its registry entry (`m1
 firmware NVRAM, which survives a hang or panic and can be read from Windows or Linux. See `docs/DEBUGGING.md`. A successful run
 ends with `RESULT rc=0 link up;ethernet interface created` in `itlk0..itlk7` and a line like
 `up=145s rxd=5905 eapol=2 eth=5903 drop=0 tx=4698 fail=0` in `itls0`.
+
+## Power tables are best effort (2026-10-12)
+
+The first build with SAR / CLC / rate power limits (`itlmt7925_pwr.cpp`) made them mandatory: the efuse read of the hardware
+type (0xa71) was rejected by the driver's own response checks and every join ended in `hw-prep-fail`
+(`efuse hw type failed rc=-5` in `m3-log`). Linux (`mt7925_mcu_read_eeprom`) takes `data[off % 16]` of the 124-byte event and
+checks no header field; the driver now does the same, keeps the first bytes of the event in `m3-log` when `tag`/`addr`/`valid`
+are not what was asked, and a failure of any power-table step no longer stops the join (two tries per boot, then the firmware's
+defaults, which is what the earlier measurements ran on).
 
 ## Hardware notes learned on the way
 

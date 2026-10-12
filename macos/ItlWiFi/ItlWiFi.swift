@@ -3,12 +3,13 @@
 // ItlWiFi: menu bar Wi-Fi control for itlmt7925: a popover with the current network, speed test, scan list, join with a
 // password (inline), disconnect / forget, open at login. SwiftUI in an NSPopover; SF Symbols only.
 // Talks to the kext through its user client (ABI: kexts/itlmt7925/itl_uc_abi.h) and reads the wifi-* registry properties.
-// Passwords are kept in the login keychain (service com.itlmt7925.wifi, account = SSID), never in the kext's Info.plist.
+// Saved passwords live in ~/Library/Application Support/ItlWiFi/networks.json (mode 0600), never in the kext's Info.plist and
+// not in the keychain: this app is ad-hoc signed, so every rebuild is a new code identity and the keychain asked the user
+// ("ItlWiFi wants to use your confidential information ...") for each item again.
 // Build: scripts/build-itlwifi.sh
 import AppKit
 import SwiftUI
 import IOKit
-import Security
 
 // ---- driver access -------------------------------------------------------------------------------------------------------
 struct WifiNet { let ssid: String; let channel: Int; let rssi: Int; let security: String
@@ -18,6 +19,7 @@ struct WifiNet { let ssid: String; let channel: Int; let rssi: Int; let security
 struct WifiStatus {
     var present = false, state = "absent", error = "", ssid = "", channel = 0, rssi = 0, rate = 0, scanGen = 0
     var nets: [WifiNet] = []
+    var events: [String] = []                   // wifi-events: "<seconds since boot>s <what happened>", oldest first
 }
 
 enum Driver {
@@ -36,6 +38,7 @@ enum Driver {
         s.state = prop("wifi-state") as? String ?? "off"
         s.error = prop("wifi-error") as? String ?? ""
         s.ssid = prop("wifi-ssid") as? String ?? ""
+        s.events = (prop("wifi-events") as? String ?? "").split(separator: "\n").map(String.init)
         s.channel = num("wifi-channel"); s.rssi = num("wifi-rssi"); s.rate = num("wifi-rate"); s.scanGen = num("wifi-scan-gen")
         for d in prop("wifi-networks") as? [[String: Any]] ?? [] {
             guard let ssid = d["ssid"] as? String, !ssid.isEmpty else { continue }
@@ -74,32 +77,22 @@ enum Driver {
     }
 }
 
-// ---- keychain ------------------------------------------------------------------------------------------------------------
-enum Keychain {
-    static let service = "com.itlmt7925.wifi"
-    static func query(_ ssid: String) -> [String: Any] {
-        [kSecClass as String: kSecClassGenericPassword, kSecAttrService as String: service, kSecAttrAccount as String: ssid]
+// ---- saved networks -------------------------------------------------------------------------------------------------------
+// A small JSON file in the user's Application Support folder, readable only by the user (0600 in a 0700 folder). The keychain
+// was used first and prompted on every rebuilt (new ad-hoc signature) app; see the header.
+enum SavedStore {
+    static var dir: URL { FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent("Library/Application Support/ItlWiFi") }
+    static var file: URL { dir.appendingPathComponent("networks.json") }
+    static func load() -> [String: String] {
+        guard let d = try? Data(contentsOf: file), let m = try? JSONDecoder().decode([String: String].self, from: d) else { return [:] }
+        return m
     }
-    static func get(_ ssid: String) -> String? {
-        var q = query(ssid); q[kSecReturnData as String] = true; q[kSecMatchLimit as String] = kSecMatchLimitOne
-        var out: CFTypeRef?
-        guard SecItemCopyMatching(q as CFDictionary, &out) == errSecSuccess, let d = out as? Data else { return nil }
-        return String(data: d, encoding: .utf8)
-    }
-    static func set(_ ssid: String, _ psk: String) {
-        SecItemDelete(query(ssid) as CFDictionary)
-        var q = query(ssid); q[kSecValueData as String] = Data(psk.utf8)
-        q[kSecAttrLabel as String] = "Wi-Fi \(ssid) (itlmt7925)"
-        SecItemAdd(q as CFDictionary, nil)
-    }
-    static func remove(_ ssid: String) { SecItemDelete(query(ssid) as CFDictionary) }
-    static func known() -> [String] {
-        var q: [String: Any] = [kSecClass as String: kSecClassGenericPassword, kSecAttrService as String: service,
-                                kSecReturnAttributes as String: true, kSecMatchLimit as String: kSecMatchLimitAll]
-        var out: CFTypeRef?
-        guard SecItemCopyMatching(q as CFDictionary, &out) == errSecSuccess, let a = out as? [[String: Any]] else { return [] }
-        q.removeAll()
-        return a.compactMap { $0[kSecAttrAccount as String] as? String }
+    static func save(_ m: [String: String]) {
+        guard let d = try? JSONEncoder().encode(m) else { return }
+        try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true, attributes: [.posixPermissions: 0o700])
+        let tmp = dir.appendingPathComponent("networks.json.tmp")
+        guard FileManager.default.createFile(atPath: tmp.path, contents: d, attributes: [.posixPermissions: 0o600]) else { return }
+        _ = try? FileManager.default.replaceItemAt(file, withItemAt: tmp)
     }
 }
 
@@ -119,6 +112,8 @@ enum LoginItem {
 }
 
 // ---- model -----------------------------------------------------------------------------------------------------------------
+enum JoinTarget: Equatable { case network(String), other }
+
 @MainActor
 final class WifiModel: ObservableObject {
     @Published var st = WifiStatus()
@@ -126,40 +121,96 @@ final class WifiModel: ObservableObject {
     @Published var speedRunning = false
     @Published var speedServer = "auto"
     @Published var speedPath = SpeedPath.internet
-    @Published var expanded: String?            // SSID whose password row is open; "" = "Other network"
+    @Published var joinTarget: JoinTarget?      // the join form is showing (instead of the list)
     @Published var message: String?
     @Published var loginEnabled = LoginItem.enabled
-    @Published var known = Set(Keychain.known())
+    @Published var saved = SavedStore.load()    // ssid -> passphrase
+    @Published var order: [String] = []         // SSIDs in the order the list shows them (see updateOrder)
+    var drafts: [String: String] = [:]          // what was typed in the join form, kept while the app runs ("" key: Other Network)
     var pending: (ssid: String, psk: String, remember: Bool)?
     var userOff = false
     var autoTried = Set<String>()
     var onChange: (() -> Void)?
     private var timer: Timer?
+    private var seen: [String: WifiNet] = [:]   // last sighting of each SSID in the list
+    private var missing: [String: Int] = [:]    // consecutive refreshes an SSID was absent
+    private var eventsAtJoin = Set<String>()
+    private var failShown = false
+    private var pendingSince = Date()
+    private var reorderNext = false
+
+    var known: Set<String> { Set(saved.keys) }
 
     init() {
         refresh()
+        updateOrder(force: true)
         timer = Timer.scheduledTimer(withTimeInterval: 3, repeats: true) { [weak self] _ in Task { @MainActor in self?.refresh() } }
         DispatchQueue.main.asyncAfter(deadline: .now() + 2) { [weak self] in self?.autoJoin() }
     }
 
     var connected: Bool { st.state == "connected" }
     var busy: Bool { st.state == "connecting" || st.state == "scanning" }
+    var connectingSSID: String? { pending != nil && !connected ? pending?.ssid : nil }
 
     func refresh() {
         let old = st
         st = Driver.status()
-        if let p = pending, connected, st.ssid == p.ssid {
-            if p.remember { Keychain.set(p.ssid, p.psk); known = Set(Keychain.known()) }
-            pending = nil
-        } else if let p = pending, st.state == "failed", st.ssid == p.ssid, old.state != "failed" {
-            pending = nil
-            message = "Could not join \(p.ssid): " + (st.error.isEmpty ? "the connection failed." : st.error)
+        let rescanned = st.scanGen != old.scanGen
+        updateOrder(force: reorderNext && rescanned)
+        if reorderNext && rescanned { reorderNext = false }
+        if let p = pending {
+            let fresh = st.events.filter { !eventsAtJoin.contains($0) }
+            if connected && st.ssid == p.ssid {
+                if p.remember { saved[p.ssid] = p.psk; SavedStore.save(saved) }
+                pending = nil; message = nil
+                if joinTarget != nil { joinTarget = nil }
+            } else if !failShown, let why = fresh.last(where: { Self.isFailure($0) }) {
+                failShown = true
+                message = "Could not join \(p.ssid): " + Self.friendly(why)
+            } else if Date().timeIntervalSince(pendingSince) > 60 && !busy {
+                pending = nil
+                if !failShown { message = "Could not join \(p.ssid): no answer from the access point." }
+            }
         }
-        if (st.state == "idle" || st.state == "failed") && !userOff && pending == nil && st.scanGen != old.scanGen { autoJoin() }
+        if (st.state == "idle" || st.state == "failed") && !userOff && pending == nil && rescanned { autoJoin() }
         onChange?()
     }
 
+    // ---- list order -------------------------------------------------------------------------------------------------------
+    // The driver's list is re-sorted by signal after every scan, so rows moved under the pointer: the click landed on another
+    // network. The order here only changes when it must: new networks are inserted by (saved, signal band), vanished ones go
+    // after three refreshes without them, and a full re-sort happens when the popover opens or after the user's own Scan.
+    private func tier(_ n: WifiNet) -> Int {
+        let band = n.rssi == 0 ? 1 : n.rssi >= -60 ? 3 : n.rssi >= -72 ? 2 : 1
+        return (known.contains(n.ssid) ? 10 : 0) + band
+    }
+
+    func updateOrder(force: Bool) {
+        let present = Dictionary(st.nets.map { ($0.ssid, $0) }, uniquingKeysWith: { a, _ in a })
+        for (k, v) in present { seen[k] = v; missing[k] = 0 }
+        for k in order where present[k] == nil { missing[k, default: 0] += 1 }
+        if force {
+            order = seen.values.filter { present[$0.ssid] != nil }.sorted {
+                let (a, b) = (tier($0), tier($1))
+                if a != b { return a > b }
+                if $0.rssi != $1.rssi { return $0.rssi > $1.rssi }
+                return $0.ssid.localizedCaseInsensitiveCompare($1.ssid) == .orderedAscending
+            }.map { $0.ssid }
+            seen = seen.filter { present[$0.key] != nil }
+            return
+        }
+        order.removeAll { (missing[$0] ?? 0) >= 3 }
+        for n in st.nets where !order.contains(n.ssid) {
+            let t = tier(n)
+            if let i = order.firstIndex(where: { seen[$0].map(tier) ?? 0 < t }) { order.insert(n.ssid, at: i) } else { order.append(n.ssid) }
+        }
+    }
+
+    var rows: [WifiNet] { order.compactMap { seen[$0] }.filter { !(connected && $0.ssid == st.ssid) } }
+
+    // ---- actions ----------------------------------------------------------------------------------------------------------
     func scan() {
+        reorderNext = true
         let kr = Driver.call(.scan)
         if kr != KERN_SUCCESS && kr != kIOReturnBusy { message = "Scan failed: " + explain(kr) }
     }
@@ -167,16 +218,17 @@ final class WifiModel: ObservableObject {
     func select(_ n: WifiNet) {
         message = nil
         if connected && st.ssid == n.ssid { return }
-        if let psk = Keychain.get(n.ssid) { join(n.ssid, psk, remember: false); return }
-        expanded = expanded == n.ssid ? nil : n.ssid
+        if let psk = saved[n.ssid] { join(n.ssid, psk, remember: false); return }
+        joinTarget = .network(n.ssid)
     }
 
     func join(_ ssid: String, _ psk: String, remember: Bool) {
         guard (1...32).contains(ssid.utf8.count) else { message = "The network name must be 1-32 bytes."; return }
         guard (8...63).contains(psk.utf8.count) else { message = "The password must be 8-63 characters."; return }
+        eventsAtJoin = Set(st.events)
         let kr = Driver.join(ssid: ssid, psk: psk)
         if kr != KERN_SUCCESS { message = "Could not join \(ssid): " + explain(kr); return }
-        userOff = false; expanded = nil; message = nil
+        userOff = false; message = nil; failShown = false; pendingSince = Date()
         pending = (ssid, psk, remember)
         refresh()
     }
@@ -184,12 +236,13 @@ final class WifiModel: ObservableObject {
     func disconnect() {
         let kr = Driver.call(.disconnect)
         if kr != KERN_SUCCESS { message = "Disconnect failed: " + explain(kr); return }
-        userOff = true
+        userOff = true; pending = nil
         refresh()
     }
 
     func forget(_ ssid: String) {
-        Keychain.remove(ssid); known = Set(Keychain.known())
+        saved[ssid] = nil; SavedStore.save(saved); drafts[ssid] = nil
+        autoTried.insert(ssid)
         if st.ssid == ssid && (connected || busy) { disconnect() }
     }
 
@@ -208,8 +261,8 @@ final class WifiModel: ObservableObject {
     // At start and after scans while not connected: join the strongest saved network in range, once per network.
     func autoJoin() {
         guard st.present, !userOff, pending == nil, st.state == "idle" || st.state == "failed" else { return }
-        guard let n = st.nets.first(where: { known.contains($0.ssid) && $0.joinable && !autoTried.contains($0.ssid) }),
-              let psk = Keychain.get(n.ssid) else { return }
+        guard let n = st.nets.first(where: { saved[$0.ssid] != nil && $0.joinable && !autoTried.contains($0.ssid) }),
+              let psk = saved[n.ssid] else { return }
         autoTried.insert(n.ssid)
         join(n.ssid, psk, remember: false)
     }
@@ -222,6 +275,21 @@ final class WifiModel: ObservableObject {
         case kIOReturnUnsupported: return "this itlmt7925 build has no runtime control."
         default: return String(format: "IOKit error 0x%08x", kr)
         }
+    }
+
+    // wifi-events lines that mean the attempt failed, and what they mean in words
+    static func isFailure(_ line: String) -> Bool {
+        line.contains("connect failed") || line.contains("failed rc=") || line.contains("no configured network") || line.contains("lost after")
+    }
+    static func friendly(_ line: String) -> String {
+        if line.contains("hw-prep-fail") { return "the driver could not set up the radio. Restart the Mac so the updated driver loads." }
+        if line.contains("roc-fail") { return "the access point did not answer on its channel. Move closer and try again." }
+        if line.contains("auth-fail") { return "the access point rejected the connection." }
+        if line.contains("assoc-fail") { return "the access point refused the association." }
+        if line.contains("hs-fail") || line.contains("handshake") { return "the password was not accepted (or the key exchange failed)." }
+        if line.contains("no configured network") || line.contains("nocred") { return "the network is not in range." }
+        if line.contains("lost after") { return "the connection dropped." }
+        return line.drop(while: { $0.isNumber || $0 == "s" }).trimmingCharacters(in: .whitespaces)
     }
 }
 
@@ -263,27 +331,77 @@ struct SignalIcon: View {
     }
 }
 
-struct PasswordRow: View {
+// The join form replaces the list while it is open: nothing in it moves when a scan finishes, and what was typed is kept
+// (WifiModel.drafts) when the user goes back or the popover closes.
+struct JoinView: View {
     @ObservedObject var m: WifiModel
-    let ssid: String?                           // nil: ask for the name too
+    let target: JoinTarget
     @State private var name = ""
     @State private var psk = ""
     @State private var remember = true
+    @State private var reveal = false
+    @FocusState private var focus: Field?
+    enum Field { case name, psk }
+
+    var ssid: String { if case .network(let s) = target { return s } else { return name } }
+    var key: String { if case .network(let s) = target { return s } else { return "" } }
+    var attempting: Bool { m.pending != nil && m.pending?.ssid == ssid && !m.connected && m.message == nil }
+    var valid: Bool { (1...32).contains(ssid.utf8.count) && (8...63).contains(psk.utf8.count) }
+
     var body: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            if ssid == nil { TextField("Network name", text: $name).textFieldStyle(.roundedBorder) }
-            SecureField("Password", text: $psk).textFieldStyle(.roundedBorder).onSubmit(go)
-            HStack {
-                Toggle("Remember", isOn: $remember).toggleStyle(.checkbox).font(.system(size: 12))
+        VStack(alignment: .leading, spacing: 10) {
+            HStack(spacing: 6) {
+                Button { m.joinTarget = nil } label: { Label("Wi-Fi", systemImage: "chevron.left") }
+                    .buttonStyle(.borderless).font(.system(size: 12))
                 Spacer()
-                Button("Cancel") { m.expanded = nil }.controlSize(.small)
-                Button("Join", action: go).controlSize(.small).keyboardShortcut(.defaultAction)
-                    .disabled(psk.utf8.count < 8 || (ssid == nil && name.isEmpty))
+            }
+            VStack(alignment: .leading, spacing: 2) {
+                Text(target == .other ? "Join a Hidden Network" : "Join “\(ssid)”").font(.system(size: 14, weight: .semibold)).lineLimit(2)
+                Text("Enter the Wi-Fi password.").font(.system(size: 11)).foregroundStyle(.secondary)
+            }
+            if target == .other {
+                TextField("Network name", text: $name).textFieldStyle(.roundedBorder).focused($focus, equals: .name)
+            }
+            HStack(spacing: 6) {
+                Group {
+                    if reveal { TextField("Password", text: $psk) } else { SecureField("Password", text: $psk) }
+                }
+                .textFieldStyle(.roundedBorder).focused($focus, equals: .psk).onSubmit(go)
+                Button { reveal.toggle() } label: { Image(systemName: reveal ? "eye.slash" : "eye") }
+                    .buttonStyle(.borderless).help(reveal ? "Hide password" : "Show password")
+            }
+            Toggle("Remember this network", isOn: $remember).toggleStyle(.checkbox).font(.system(size: 12))
+
+            if let msg = m.message {
+                HStack(alignment: .top, spacing: 6) {
+                    Image(systemName: "exclamationmark.triangle.fill").foregroundStyle(.orange)
+                    Text(msg).font(.system(size: 11)).fixedSize(horizontal: false, vertical: true)
+                }
+                .padding(8).frame(maxWidth: .infinity, alignment: .leading)
+                .background(RoundedRectangle(cornerRadius: 6).fill(Color.orange.opacity(0.12)))
+            }
+            HStack {
+                if attempting {
+                    ProgressView().controlSize(.small)
+                    Text("Connecting…").font(.system(size: 11)).foregroundStyle(.secondary)
+                }
+                Spacer()
+                Button("Cancel") { m.message = nil; m.joinTarget = nil }.controlSize(.regular)
+                Button(attempting ? "Connecting…" : "Join", action: go).controlSize(.regular)
+                    .keyboardShortcut(.defaultAction).disabled(!valid || attempting)
             }
         }
-        .padding(.horizontal, 14).padding(.vertical, 6)
+        .padding(14)
+        .frame(width: 330)
+        .onAppear {
+            psk = m.drafts[key] ?? ""
+            if case .other = target { name = m.drafts["\u{0}name"] ?? "" }
+            focus = (target == .other && name.isEmpty) ? .name : .psk
+        }
+        .onChange(of: psk) { m.drafts[key] = $0 }
+        .onChange(of: name) { m.drafts["\u{0}name"] = $0 }
     }
-    func go() { m.join(ssid ?? name, psk, remember: remember) }
+    func go() { if valid && !attempting { m.join(ssid, psk, remember: remember) } }
 }
 
 struct SpeedCard: View {
@@ -338,6 +456,49 @@ struct SpeedCard: View {
     }
 }
 
+struct NetworkRow: View {
+    @ObservedObject var m: WifiModel
+    let n: WifiNet
+    var saved: Bool { m.known.contains(n.ssid) }
+    var connecting: Bool { m.connectingSSID == n.ssid }
+
+    var body: some View {
+        HoverRow(action: n.joinable ? { m.select(n) } : nil) {
+            HStack(spacing: 10) {
+                SignalIcon(rssi: n.rssi)
+                VStack(alignment: .leading, spacing: 1) {
+                    Text(n.ssid).font(.system(size: 13)).lineLimit(1).foregroundStyle(n.joinable ? .primary : .secondary)
+                    Text(sub).font(.system(size: 10)).foregroundStyle(.secondary).lineLimit(1)
+                }
+                Spacer()
+                if connecting { ProgressView().controlSize(.small) }
+                else if n.locked { Image(systemName: "lock.fill").font(.system(size: 10)).foregroundStyle(.secondary) }
+            }
+        }
+        .contextMenu {
+            Text("\(n.channel > 14 ? "5 GHz" : "2.4 GHz") · channel \(n.channel)" + (n.rssi == 0 ? "" : " · \(n.rssi) dBm") + " · " + n.security.uppercased())
+            Divider()
+            if n.joinable {
+                Button(saved ? "Connect" : "Connect…") { m.select(n) }
+                if saved { Button("Connect with a Different Password…") { m.message = nil; m.joinTarget = .network(n.ssid) } }
+            }
+            if saved { Button("Forget This Network") { m.forget(n.ssid) } }
+            Divider()
+            Button("Copy Network Name") {
+                NSPasteboard.general.clearContents(); NSPasteboard.general.setString(n.ssid, forType: .string)
+            }
+        }
+    }
+    var sub: String {
+        var s = n.channel > 14 ? "5 GHz" : "2.4 GHz"
+        if n.rssi != 0 { s += " · \(n.rssi) dBm" }
+        s += n.locked ? " · " + n.security.uppercased() : " · Open"
+        if saved { s += " · Saved" }
+        if !n.joinable { s += " · not supported yet" }
+        return s
+    }
+}
+
 struct ContentView: View {
     @ObservedObject var m: WifiModel
     var statusLine: String {
@@ -352,6 +513,10 @@ struct ContentView: View {
         }
     }
     var body: some View {
+        if let t = m.joinTarget { JoinView(m: m, target: t) } else { list }
+    }
+
+    var list: some View {
         VStack(alignment: .leading, spacing: 0) {
             HStack {
                 VStack(alignment: .leading, spacing: 1) {
@@ -380,14 +545,12 @@ struct ContentView: View {
                         }
                         Spacer()
                         if m.connected || m.busy {
-                            Menu {
-                                Button("Disconnect") { m.disconnect() }
-                                if m.known.contains(m.st.ssid) { Button("Forget This Network") { m.forget(m.st.ssid) } }
-                            } label: { Image(systemName: "ellipsis.circle") }
-                            .menuStyle(.borderlessButton).menuIndicator(.hidden).fixedSize()
+                            Menu { currentActions } label: { Image(systemName: "ellipsis.circle") }
+                                .menuStyle(.borderlessButton).menuIndicator(.hidden).fixedSize()
                         }
                     }
                 }
+                .contextMenu { if m.connected || m.busy { currentActions } }
             } else {
                 Text(statusLine).font(.system(size: 12)).foregroundStyle(.secondary).padding(.horizontal, 14).padding(.vertical, 6)
             }
@@ -411,26 +574,12 @@ struct ContentView: View {
             SectionTitle(text: "Networks")
             ScrollView {
                 VStack(spacing: 0) {
-                    if m.st.nets.isEmpty {
+                    if m.rows.isEmpty {
                         Text("No networks found yet").font(.system(size: 12)).foregroundStyle(.secondary)
                             .padding(.horizontal, 14).padding(.vertical, 6).frame(maxWidth: .infinity, alignment: .leading)
                     }
-                    ForEach(m.st.nets.filter { !(m.connected && $0.ssid == m.st.ssid) }.prefix(20), id: \.ssid) { n in
-                        HoverRow(action: n.joinable ? { m.select(n) } : nil) {
-                            HStack(spacing: 10) {
-                                SignalIcon(rssi: n.rssi)
-                                VStack(alignment: .leading, spacing: 1) {
-                                    Text(n.ssid).font(.system(size: 13)).lineLimit(1)
-                                        .foregroundStyle(n.joinable ? .primary : .secondary)
-                                    Text(sub(n)).font(.system(size: 10)).foregroundStyle(.secondary)
-                                }
-                                Spacer()
-                                if n.locked { Image(systemName: "lock.fill").font(.system(size: 10)).foregroundStyle(.secondary) }
-                            }
-                        }
-                        if m.expanded == n.ssid { PasswordRow(m: m, ssid: n.ssid) }
-                    }
-                    HoverRow(action: { m.expanded = m.expanded == "" ? nil : "" }) {
+                    ForEach(m.rows.prefix(30), id: \.ssid) { n in NetworkRow(m: m, n: n) }
+                    HoverRow(action: { m.message = nil; m.joinTarget = .other }) {
                         HStack(spacing: 10) {
                             ZStack { Circle().fill(Color.primary.opacity(0.1)).frame(width: 26, height: 26)
                                      Image(systemName: "ellipsis").font(.system(size: 12, weight: .semibold)) }
@@ -438,10 +587,9 @@ struct ContentView: View {
                             Spacer()
                         }
                     }
-                    if m.expanded == "" { PasswordRow(m: m, ssid: nil) }
                 }
             }
-            .frame(height: listHeight)
+            .frame(height: 300)          // fixed: a list that grows or shrinks would move rows under the pointer
 
             Divider().padding(.top, 6)
             HStack {
@@ -454,18 +602,16 @@ struct ContentView: View {
         }
         .frame(width: 330)
     }
-    // the list grows with its rows (38 pt each, plus the open password row) and scrolls beyond 320 pt
-    var listHeight: CGFloat {
-        let rows = m.st.nets.filter { !(m.connected && $0.ssid == m.st.ssid) }.prefix(20).count + 1
-        return min(CGFloat(max(rows, 2)) * 38 + (m.expanded != nil ? (m.expanded == "" ? 110 : 80) : 0), 320)
-    }
-    func sub(_ n: WifiNet) -> String {
-        var s = n.channel > 14 ? "5 GHz" : "2.4 GHz"
-        if n.rssi != 0 { s += " · \(n.rssi) dBm" }
-        s += n.locked ? " · " + n.security.uppercased() : " · Open"
-        if m.known.contains(n.ssid) { s += " · Saved" }
-        if !n.joinable { s += " · not supported yet" }
-        return s
+
+    @ViewBuilder var currentActions: some View {
+        Button("Disconnect") { m.disconnect() }
+        if m.known.contains(m.st.ssid) { Button("Forget This Network") { m.forget(m.st.ssid) } }
+        if !m.st.ssid.isEmpty {
+            Divider()
+            Button("Copy Network Name") {
+                NSPasteboard.general.clearContents(); NSPasteboard.general.setString(m.st.ssid, forType: .string)
+            }
+        }
     }
 }
 
@@ -490,6 +636,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         guard let b = item.button else { return }
         if popover.isShown { popover.performClose(nil); return }
         model.refresh()
+        model.updateOrder(force: true)
         popover.show(relativeTo: b.bounds, of: b, preferredEdge: .minY)
         popover.contentViewController?.view.window?.makeKey()
     }

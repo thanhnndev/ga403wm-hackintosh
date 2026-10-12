@@ -96,8 +96,18 @@ int itlmt7925::efuseRead(uint32_t off, uint8_t *val)
     uint32_t evl = 0;
     int rc = uniSend(UNI_EFUSE_CTRL, req, sizeof(req), true, ev, sizeof(ev), &evl, 3000);
     if (rc) return rc;
-    if (evl < 44 + 48 + 16 || ev[44 + 4] != 1 || ev[44 + 5] != 0 || le32(ev + 44 + 12) != a ||
-        !le32(ev + 44 + 16)) return ITL_EIO;                  // rxd, then rsv, tag, len, ver, addr, valid, size, magic, type, rsv1[4]
+    // Linux (mt7925_mcu_read_eeprom) only takes data[off % 16] of the 124-byte event: rsv[4], tag, len, ver, addr, valid, size,
+    // magic, type, rsv1[4], data[32] after the 44-byte RXD, and checks none of the header fields. Do the same; when a header
+    // field is not what was asked for, keep the first bytes in m3-log (bytes 40..135: end of the RXD + the payload).
+    if (evl < 44 + 48 + 16) { m3log("efuse ev too short len=%u", evl); return ITL_EIO; }
+    if (ev[44 + 4] != 1 || ev[44 + 5] != 0 || le32(ev + 44 + 12) != a || !le32(ev + 44 + 16)) {
+        for (uint32_t o = 40; o < 136 && o < evl; o += 32) {
+            char hex[2 * 32 + 1];
+            uint32_t n = evl - o < 32 ? evl - o : 32;
+            for (uint32_t i2 = 0; i2 < n; i2++) snprintf(hex + 2 * i2, 3, "%02x", ev[o + i2]);
+            m3log("efuse ev len=%u want=%x +%u: %s", evl, a, o, hex);
+        }
+    }
     *val = ev[44 + 48 + (off & 15)];
     return 0;
 }
