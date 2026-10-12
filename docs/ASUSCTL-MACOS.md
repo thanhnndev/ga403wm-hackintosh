@@ -145,3 +145,13 @@ for checking what `WMNB` does with each device id on this BIOS, and for the EC f
   (`debug.asuswmi.key=0x20` / `0x10` moved the value) drive it; "Dim the built-in OLED in software" turns it off.
   NBCI on this BIOS: function 0 bitmap 0x00110001 (0, 0x10, 0x14); 0x14 = display 0x8000A450, 0x200, 0, 0, 5, 1, 1000,
   50, 1000, 11 levels 50..1000, 0, 11 levels 100..1000.
+
+## Findings 2026-10-12 (OLED brightness root cause)
+
+* The OLED is an **AUX-only** panel: eDP DPCD `0x702 = 0x86` has no PWM-pin capability and has AUX brightness set, so the
+  only control is DPCD `0x722/0x723` in mode `0x721 = 2`. RM's `SET_BACKLIGHT_BRIGHTNESS` (GSP firmware) returns success
+  and leaves `0x721 = 0`. That is why `nvKmsSetBacklight` "worked" and the panel did not change, and it is not an EC or
+  ACPI matter. Writing the registers by hand dims the panel (confirmed by eye).
+* RogControl's `Dimmer` (software overlay, above) is therefore a **workaround** and stacks on top of the real brightness
+  once `NVRMEdpBL` loads: turn "Dim the built-in OLED in software" off then. Details, evidence, fix, install and undo:
+  [OLED-BRIGHTNESS-DPCD.md](OLED-BRIGHTNESS-DPCD.md). `AsusWmi` keeps leaving the EC level alone on the brightness keys.
