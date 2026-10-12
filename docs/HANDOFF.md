@@ -398,3 +398,21 @@ One live round: Zen 5 all-worker load 4.89–4.91 GHz, Zen 5c 3.33 GHz; actual s
 AC Performance EPP128. A single worker mostly ran on Zen 5c (~3.2 GHz); do not claim a pinned
 5.1 GHz single-core benchmark. AmdCppc 0.2.0 installed on ESP (backup 20261012-170224), not yet
 loaded: running kext remains 0.1.0 until reboot. See CPU-POWER.md for validation and rollback.
+
+## WindowServer PAT research (2026-10-12 17:29, reboot pending)
+
+ESP and repo PAT patch now set PA6=WC instead of UC-: table 0001010600070106.
+Only one entry changes; do not switch to the all-WB Shaneee variant. AmdCppc 0.2.1
+is installed on ESP for read-only debug.amdcppc.cache diagnostics; live remains 0.2.0.
+Backup config.plist.pre-pat-pa6-20261012-172936-498961; kext backup 20261012-172936.
+After reboot, run scripts/macos-ws-pat-check.sh through osascript administrator privileges.
+It checks the actual PAT on all 24 CPUs, runs clear A/B and a desktop CPU interval.
+No live PAT read / post-fix speedup yet: probe was blocked by approval, hot-unload was
+refused because AmdCppc is retained. CPU policy daemon was restored. See WINDOWSERVER-RESEARCH.md.
+
+### PAT reboot validation completed (2026-10-12 17:43)
+
+AmdCppc 0.2.1 and corrected PAT are active: PA6=1 on all 24 CPUs.
+Clear mode 1 now 1043–1094 MB/s (~9–10x before); mode 0 1008–1048 MB/s.
+WindowServer 33.4% of one CPU, 34.5 flips/s, zero errors/drops. clear_mode=1 restored.
+No further reboot is needed for these changes; see WINDOWSERVER-RESEARCH.md.

@@ -202,6 +202,33 @@ static void refresh()
     if (gSelf) gSelf->setProperty("report", gReport);
 }
 
+// Read-only cache-type audit: the AMD boot PAT patch can override XNU's WC slot.
+struct CacheRegs { bool ok; uint64_t pat, mtrrDef; };
+static CacheRegs gCache[kMaxCpu];
+static void sampleCache(void *)
+{
+    int c = cpu_number();
+    if (c < 0 || c >= kMaxCpu) return;
+    gCache[c].ok = rd(0x277, &gCache[c].pat) && rd(0x2ff, &gCache[c].mtrrDef);
+}
+static int cache_sysctl SYSCTL_HANDLER_ARGS
+{
+    IOLockLock(gLock);
+    mp_rendezvous_no_intrs(sampleCache, nullptr);
+    static char report[8192]; size_t n = 0;
+    for (int c = 0; c < gNcpu && n + 128 < sizeof(report); c++) {
+        if (!gRegs[c].present) continue;
+        const CacheRegs &r = gCache[c];
+        n += (size_t)snprintf(report + n, sizeof(report) - n,
+            "%scpu%d PAT=%016llx PA6=%llu MTRRdef=%llx valid=%d",
+            n ? " | " : "", c, r.pat, (r.pat >> 48) & 255, r.mtrrDef, r.ok);
+    }
+    report[n] = 0;
+    int e = SYSCTL_OUT(req, report, n + 1);
+    IOLockUnlock(gLock);
+    return e;
+}
+
 static int report_sysctl SYSCTL_HANDLER_ARGS
 {
     if (gLock) IOLockLock(gLock);
@@ -361,6 +388,7 @@ static int write_sysctl SYSCTL_HANDLER_ARGS
 }
 
 SYSCTL_NODE(_debug, OID_AUTO, amdcppc, CTLFLAG_RW | CTLFLAG_LOCKED, 0, "AmdCppc");
+SYSCTL_PROC(_debug_amdcppc, OID_AUTO, cache, CTLTYPE_STRING | CTLFLAG_RD | CTLFLAG_LOCKED, nullptr, 0, cache_sysctl, "A", "read-only PAT/MTRR cache audit");
 SYSCTL_PROC(_debug_amdcppc, OID_AUTO, report, CTLTYPE_STRING | CTLFLAG_RD | CTLFLAG_LOCKED, nullptr, 0, report_sysctl, "A", "registers");
 SYSCTL_PROC(_debug_amdcppc, OID_AUTO, freq, CTLTYPE_STRING | CTLFLAG_RD | CTLFLAG_LOCKED, nullptr, 0, freq_sysctl, "A", "effective clock");
 SYSCTL_PROC(_debug_amdcppc, OID_AUTO, temp, CTLTYPE_STRING | CTLFLAG_RD | CTLFLAG_LOCKED, nullptr, 0, temp_sysctl, "A", "Tctl");
@@ -402,6 +430,7 @@ bool AmdCppc::start(IOService *provider)
     refresh();
     IOLog("AmdCppc: %d CPUs: %s\n", gNcpu, gReport);
     sysctl_register_oid(&sysctl__debug_amdcppc);
+    sysctl_register_oid(&sysctl__debug_amdcppc_cache);
     sysctl_register_oid(&sysctl__debug_amdcppc_report);
     sysctl_register_oid(&sysctl__debug_amdcppc_freq);
     sysctl_register_oid(&sysctl__debug_amdcppc_temp);
@@ -427,6 +456,7 @@ void AmdCppc::stop(IOService *provider)
     sysctl_unregister_oid(&sysctl__debug_amdcppc_temp);
     sysctl_unregister_oid(&sysctl__debug_amdcppc_freq);
     sysctl_unregister_oid(&sysctl__debug_amdcppc_report);
+    sysctl_unregister_oid(&sysctl__debug_amdcppc_cache);
     sysctl_unregister_oid(&sysctl__debug_amdcppc);
     gSelf = nullptr;
     if (gRoot) { gRoot->release(); gRoot = nullptr; }

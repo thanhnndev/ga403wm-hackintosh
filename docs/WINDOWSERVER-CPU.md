@@ -174,3 +174,42 @@ the same workload, and check rendering, app launches, display sleep and both dis
   Evidence, candidate fix and the A/B to run: [VRAM-GRANT-STALL.md](VRAM-GRANT-STALL.md).
 * Still open: the page faults in WindowServer (a plain IOSurface read-back in user space faults 0 times, DTrace is blocked by
   SIP), and whether the `movnti` clear is actually faster on this BAR (needs the reboot and the A/B).
+
+## Reboot follow-up (2026-10-12 17:11–17:15)
+
+AmdCppc 0.2.0 + autonomous CPPC policy is active; the new NVRMFB clear path is loaded.
+Visible-desktop WindowServer measurements: 30.2% of one logical CPU / 32.2 flips/s over 10.95 s;
+later 24.57% / 26.47 flips/s over 12.09 s. The historical 70–80% measurements used other workloads
+and CPU clocks, so this is not a controlled before/after claim.
+
+A 6-second root-authorized sample still shows CGXUpdateDisplay → CompositorMetal → QuartzCore →
+NVMTLTexture nvmtlSurfaceIn → nvmtl_vk_image_write, with upload copies and Vulkan submission waits.
+2914 of 3641 main-thread observations were in the message-receive branch. These sample counts are
+elapsed stack observations, not CPU percentages, and are not evidence of a continuously spinning
+main thread. CPU includes all WindowServer threads and kernel work on those threads.
+
+Kitty briefly showed 87.6% in ps, but its separate sample mostly found event/poll waits, so that
+snapshot is insufficient to call Kitty the sustained cause. NSRunningApplication.hide returned
+false for Kitty (0 successfully hidden instances); the output labeled kitty-hidden (68.4%) is an
+invalid isolation result and must not be used to infer causality. Kitty subsequently was no longer
+running, without this investigation terminating it.
+
+Driver clear A/B: mode 0 78–82 MB/s vs mode 1 109–113 MB/s. The optimization helps, but slow clears
+still hold the global display gate. In the later desktop interval, clears occupied 4.69% of wall
+time (driver-wide, not attributable entirely to WindowServer). See VRAM-GRANT-STALL.md. No new
+iop_fail or iop_async_drop; clear_mode restored to 1. Driver and desktop both contribute; this
+inspection does not isolate a particular app's repaint source or prove a driver busy loop.
+
+Artifacts: build/ws-reboot-audit/{windowserver.sample.txt,kitty.sample.txt,clear-ab.txt,steady.json};
+visible measurement ~/efi-audit/ws-cpu-20261012-171154-021688/measurement.json. No driver replacement,
+WindowServer restart or persistent refresh-rate change was performed.
+
+Research continuation: WINDOWSERVER-RESEARCH.md identifies a concrete mismatch between
+the configured AMD PAT table and XNU's write-combining slot. PA6-only correction is
+staged in EFI; next boot's actual PAT read and clear throughput will validate it.
+
+Post-reboot PAT validation (2026-10-12 17:43): AmdCppc 0.2.1 loaded, PA6 WC read
+on all 24 CPUs; VRAM clear now 1043–1094 MB/s (~9–10x prior movnti throughput).
+WindowServer measured 33.4% of one CPU / 34.5 flips/s; zero failures/drops.
+This confirms the clear bottleneck fix, not a measured reduction in compositor CPU
+under an identical workload. Full record: WINDOWSERVER-RESEARCH.md.
