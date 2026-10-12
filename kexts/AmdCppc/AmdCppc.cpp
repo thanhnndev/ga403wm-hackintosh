@@ -20,11 +20,15 @@
 //   sysctl debug.amdcppc.epp=<0..255>  CPPC request on every CPU: max = highest perf, min = lowest non-linear, desired = 0
 //                                      (autonomous), EPP = value (0 performance .. 128 balanced .. 255 power save). Only when
 //                                      CPPC is enabled.
-// Every MSR access goes through rdmsr_carefully / a #GP-safe write path only for registers that were read successfully first.
+// Reads are #GP-safe. Writes use wrmsr64 after preflight; a successful read does NOT guarantee a fault-safe write.
+// Writes are restricted to Strix Point with CPPC capability and validated fields.
+// AmdCppcPolicy provides autonomous EPP policy and sleep/wake restoration outside the kernel.
 #include <IOKit/IOService.h>
 #include <IOKit/IOLib.h>
 #include <IOKit/pci/IOPCIDevice.h>
 #include <sys/sysctl.h>
+#include <IOKit/IOMessage.h>
+#include <IOKit/pwr_mgt/RootDomain.h>
 #include <i386/proc_reg.h>
 #include <string.h>
 
@@ -51,10 +55,10 @@ int cpu_number(void);
 #define HWCR_CPB_DIS       (1ull << 25)
 
 static const int kMaxCpu = 64;
-struct CpuRegs { bool ok[8]; uint64_t hwcr, pctl, pstat, pdef0, cap1, en, req, aperf, mperf; };
+struct CpuRegs { bool supported; bool present; bool ok[8]; uint64_t hwcr, pctl, pstat, pdef0, cap1, en, req, aperf, mperf; };
 static CpuRegs gRegs[kMaxCpu];
 static int gNcpu;
-static char gReport[1536];
+static char gReport[32768];
 
 static bool rd(uint32_t m, uint64_t *v)
 {
@@ -64,11 +68,28 @@ static bool rd(uint32_t m, uint64_t *v)
     return true;
 }
 
+static bool supportedCpu()
+{
+    uint32_t a = 0, b = 0, c = 0, d = 0;
+    __asm__ volatile("cpuid" : "+a"(a), "=b"(b), "=c"(c), "=d"(d));
+    if (b != 0x68747541 || d != 0x69746e65 || c != 0x444d4163) return false;
+    a = 1;
+    __asm__ volatile("cpuid" : "+a"(a), "=b"(b), "=c"(c), "=d"(d));
+    unsigned family = ((a >> 8) & 15) + ((a >> 20) & 255);
+    unsigned model = ((a >> 4) & 15) | ((a >> 12) & 240);
+    if (family != 0x1a || model != 0x24) return false; // Strix Point only
+    a = 0x80000008;
+    __asm__ volatile("cpuid" : "+a"(a), "=b"(b), "=c"(c), "=d"(d));
+    return (b & (1u << 27)) != 0; // AMD CPPC full-MSR support
+}
+
 static void readAll(void *)
 {
     int c = cpu_number();
     if (c < 0 || c >= kMaxCpu) return;
     CpuRegs &r = gRegs[c];
+    r.present = true;
+    r.supported = supportedCpu();
     r.ok[0] = rd(MSR_HWCR, &r.hwcr);
     r.ok[1] = rd(MSR_PSTATE_CTL, &r.pctl);
     r.ok[2] = rd(MSR_PSTATE_STAT, &r.pstat);
@@ -77,7 +98,6 @@ static void readAll(void *)
     r.ok[5] = rd(MSR_CPPC_ENABLE, &r.en);
     r.ok[6] = rd(MSR_CPPC_REQ, &r.req);
     r.ok[7] = rd(MSR_APERF, &r.aperf) && rd(MSR_MPERF, &r.mperf);
-    if (c + 1 > gNcpu) gNcpu = c + 1;
 }
 
 // Writes: each action only touches a register this CPU could read (so it exists), and only the documented fields.
@@ -100,7 +120,7 @@ static void writeAll(void *arg)
         if (r.ok[5] && !(r.en & 1)) wrmsr64(MSR_CPPC_ENABLE, 1);
         break;
     case W_EPP:
-        if (r.ok[4] && r.ok[6] && (r.en & 1)) {
+        if (r.ok[4] && r.ok[5] && r.ok[6] && (r.en & 1)) {
             uint64_t highest = (r.cap1 >> 24) & 0xff, lownl = (r.cap1 >> 8) & 0xff;
             uint64_t req = (r.req & ~0xffffffffull) | highest | (lownl << 8) | (0ull << 16) | ((w->val & 0xff) << 24);
             wrmsr64(MSR_CPPC_REQ, req);
@@ -116,12 +136,12 @@ static void buildReport()
     gReport[0] = 0;
     bool done[kMaxCpu] = {};
     for (int c = 0; c < gNcpu && n + 200 < sizeof(gReport); c++) {
-        if (done[c]) continue;
+        if (done[c] || !gRegs[c].present) continue;
         const CpuRegs &r = gRegs[c];
         int same = 0;
         for (int k = c; k < gNcpu; k++) {
             const CpuRegs &o = gRegs[k];
-            if (o.hwcr == r.hwcr && o.pctl == r.pctl && o.pdef0 == r.pdef0 && o.cap1 == r.cap1 && o.en == r.en && o.req == r.req) {
+            if (o.present && o.supported == r.supported && !memcmp(o.ok, r.ok, sizeof(r.ok)) && o.hwcr == r.hwcr && o.pctl == r.pctl && o.pstat == r.pstat && o.pdef0 == r.pdef0 && o.cap1 == r.cap1 && o.en == r.en && o.req == r.req) {
                 done[k] = true; same++;
             }
         }
@@ -175,6 +195,9 @@ static IOLock *gLock;
 static void refresh()
 {
     mp_rendezvous_no_intrs(readAll, nullptr);
+    // Reduce after the rendezvous: concurrent callbacks must not race on gNcpu.
+    gNcpu = 0;
+    for (int c = 0; c < kMaxCpu; c++) if (gRegs[c].present) gNcpu = c + 1;
     buildReport();
     if (gSelf) gSelf->setProperty("report", gReport);
 }
@@ -294,16 +317,47 @@ static int write_sysctl SYSCTL_HANDLER_ARGS
     int what = (int)arg2, v = -1;
     int e = sysctl_handle_int(oidp, &v, 0, req);
     if (e || !req->newptr) return e;
-    if (what == W_PSTATE && (v < 0 || v > 7)) return EINVAL;
+    if (what == W_PSTATE && v != 0) return EINVAL;
     if (what == W_EPP && (v < 0 || v > 255)) return EINVAL;
+    if (what == W_BOOST && v != 0 && v != 1) return EINVAL;
+    if (what == W_CPPC_EN && v != 1) return EINVAL;
     if (gLock) IOLockLock(gLock);
-    mp_rendezvous_no_intrs(readAll, nullptr);                // fresh copies: writes only modify current values
+    refresh(); // preflight current values on every CPU
+    // Preflight all CPUs before any writes; never silently succeed on unsupported/off CPPC.
+    for (int c = 0; c < gNcpu; c++) {
+        const CpuRegs &r = gRegs[c];
+        if (!r.present) continue;
+        bool ok = what == W_PSTATE ? r.ok[1] : what == W_BOOST ? r.ok[0] :
+                  what == W_CPPC_EN ? r.ok[5] : r.ok[4] && r.ok[5] && r.ok[6] && (r.en & 1);
+        if (what == W_EPP || what == W_CPPC_EN) {
+            unsigned low = r.cap1 & 255, nl = (r.cap1 >> 8) & 255;
+            unsigned nom = (r.cap1 >> 16) & 255, high = (r.cap1 >> 24) & 255;
+            ok = ok && r.ok[4] && low && low <= nl && nl <= nom && nom <= high;
+        }
+        if (what == W_PSTATE) {
+            // Only the validated enabled P0 definition is exposed by this driver.
+            ok = ok && v == 0 && r.ok[3] && (r.pdef0 >> 63);
+        }
+        ok = ok && r.supported;
+        if (!ok) { if (gLock) IOLockUnlock(gLock); return ENOTSUP; }
+    }
     WriteReq w = { what, (uint64_t)v };
     mp_rendezvous_no_intrs(writeAll, &w);
     refresh();
-    IOLog("AmdCppc: %s=%d -> %s\n", oidp->oid_name, v, gReport);
+    for (int c = 0; c < gNcpu; c++) {
+        const CpuRegs &r = gRegs[c];
+        if (!r.present) continue;
+        bool applied = what == W_PSTATE ? r.ok[1] && (r.pctl & 7) == (uint64_t)v :
+                       what == W_BOOST ? r.ok[0] && !(r.hwcr & HWCR_CPB_DIS) == (bool)v :
+                       what == W_CPPC_EN ? r.ok[5] && (r.en & 1) :
+                       r.ok[6] && (r.req & 0xff) == ((r.cap1 >> 24) & 0xff) &&
+                       ((r.req >> 8) & 0xff) == ((r.cap1 >> 8) & 0xff) &&
+                       ((r.req >> 16) & 0xff) == 0 && ((r.req >> 24) & 0xff) == (uint64_t)v;
+        if (!applied) e = EIO;
+    }
+    IOLog("AmdCppc: %s=%d status=%d -> %s\n", oidp->oid_name, v, e, gReport);
     if (gLock) IOLockUnlock(gLock);
-    return 0;
+    return e;
 }
 
 SYSCTL_NODE(_debug, OID_AUTO, amdcppc, CTLFLAG_RW | CTLFLAG_LOCKED, 0, "AmdCppc");
@@ -316,6 +370,21 @@ SYSCTL_PROC(_debug_amdcppc, OID_AUTO, boost, CTLTYPE_INT | CTLFLAG_RW | CTLFLAG_
 SYSCTL_PROC(_debug_amdcppc, OID_AUTO, cppc, CTLTYPE_INT | CTLFLAG_RW | CTLFLAG_LOCKED, nullptr, W_CPPC_EN, write_sysctl, "I", "1 = enable CPPC");
 SYSCTL_PROC(_debug_amdcppc, OID_AUTO, epp, CTLTYPE_INT | CTLFLAG_RW | CTLFLAG_LOCKED, nullptr, W_EPP, write_sysctl, "I", "CPPC EPP");
 
+// Wake invalidates the energy/time baseline; defer hardware access to normal readers/policy.
+static IONotifier *gPowerNotifier;
+static IOReturn powerNotify(void *, void *, UInt32 message, IOService *, void *argument, vm_size_t)
+{
+    if (message == kIOMessageSystemHasPoweredOn) {
+        IOLockLock(gLock);
+        gLastEnergy = gLastNs = gLastMw = 0;
+        memset(gF0, 0, sizeof(gF0)); memset(gF1, 0, sizeof(gF1));
+        IOLockUnlock(gLock);
+    }
+    if (message == kIOMessageSystemWillSleep || message == kIOMessageCanSystemSleep)
+        acknowledgeSleepWakeNotification(argument);
+    return kIOReturnSuccess;
+}
+
 class AmdCppc : public IOService {
     OSDeclareDefaultStructors(AmdCppc)
 public:
@@ -327,8 +396,9 @@ OSDefineMetaClassAndStructors(AmdCppc, IOService)
 bool AmdCppc::start(IOService *provider)
 {
     if (!IOService::start(provider)) return false;
-    gSelf = this;
     gLock = IOLockAlloc();
+    if (!gLock) { IOService::stop(provider); return false; }
+    gSelf = this;
     refresh();
     IOLog("AmdCppc: %d CPUs: %s\n", gNcpu, gReport);
     sysctl_register_oid(&sysctl__debug_amdcppc);
@@ -340,12 +410,15 @@ bool AmdCppc::start(IOService *provider)
     sysctl_register_oid(&sysctl__debug_amdcppc_boost);
     sysctl_register_oid(&sysctl__debug_amdcppc_cppc);
     sysctl_register_oid(&sysctl__debug_amdcppc_epp);
+    gPowerNotifier = registerSleepWakeInterest(powerNotify, this);
+    if (!gPowerNotifier) { stop(provider); return false; }
     registerService();
     return true;
 }
 
 void AmdCppc::stop(IOService *provider)
 {
+    if (gPowerNotifier) { gPowerNotifier->remove(); gPowerNotifier = nullptr; }
     sysctl_unregister_oid(&sysctl__debug_amdcppc_epp);
     sysctl_unregister_oid(&sysctl__debug_amdcppc_cppc);
     sysctl_unregister_oid(&sysctl__debug_amdcppc_boost);
@@ -357,5 +430,6 @@ void AmdCppc::stop(IOService *provider)
     sysctl_unregister_oid(&sysctl__debug_amdcppc);
     gSelf = nullptr;
     if (gRoot) { gRoot->release(); gRoot = nullptr; }
+    if (gLock) { IOLockFree(gLock); gLock = nullptr; }
     IOService::stop(provider);
 }

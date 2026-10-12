@@ -389,3 +389,12 @@ means "no framebuffer", not "kernel hung" (the diag worker kept writing).
   wrapper file: `$?` inside the `-e` string breaks AppleScript quoting.
 * One branch per concern in the fork (VRAM clear, AUX backlight); a local combined tree only for the build. Leave other
   sessions' work (Wi-Fi, Bluetooth, RogControl) untouched.
+
+## CPU policy update (2026-10-12)
+
+AmdCppcPolicy LaunchDaemon is installed and active: enables CPPC and sets autonomous EPP by
+ASUS profile / power source, verifies all 24 CPUs, pauses during sleep and restores after wake.
+One live round: Zen 5 all-worker load 4.89–4.91 GHz, Zen 5c 3.33 GHz; actual sleep/wake restored
+AC Performance EPP128. A single worker mostly ran on Zen 5c (~3.2 GHz); do not claim a pinned
+5.1 GHz single-core benchmark. AmdCppc 0.2.0 installed on ESP (backup 20261012-170224), not yet
+loaded: running kext remains 0.1.0 until reboot. See CPU-POWER.md for validation and rollback.
