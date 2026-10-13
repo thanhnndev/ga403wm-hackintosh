@@ -193,3 +193,36 @@ Reviewed0.1.2 staged through an administrator wrapper; backup previous bundle
 No hot-unload, GPU republish, device power/link calls, MMIO, modesetting or
 framebuffer writes attempted. Next trial includes initial capture and repeated
 admin refresh in one session instead of rebooting for each diagnostic snapshot.
+
+### Step02 runtime validation completed (2026-10-13)
+
+**PASS: diagnostic census, not framebuffer/acceleration.** Probe0.1.2 captures
+one physical1002:150e revc1, subsystem1043:3998 at FirstMatch, ServiceState0x1e.
+BAR0/2/5 config decoding agrees with descriptors:0x880000000/256MiB,
+0x890800000/2MiB,0xdc300000/512KiB. BAR4 is I/O0xe000/256B.
+PCIConfig256 and VFCT identities validated offline.
+
+Trace `out/890m-trace/step02-20261013T090147.620403Z/`: initial generation3,
+non-admin refresh returns0xe00002c1 (NotPrivileged); administrator wrapper
+performs three refreshes successfully, generations4/5/6. PCI config and VFCT
+hashes identical across all four snapshots. VFCT parser PASS with Linux hashes.
+`runtime-validation.json` records assertions/results. Final independent capture:
+`out/890m-trace/step02-20261013T090433.432071Z/`.
+
+Initial console: physical flag set,2880x1800/stride11520/depth32/scale2,
+rotation0, offset0, physical base0x880000000, raster20736000 bytes within BAR0.
+After desktop comes up, refresh reports1920x1080/stride7680/depth32/scale0,
+physical flag clear and virtual base. Do not treat a virtual base as a physical
+ownership failure. The first validation attempt incorrectly required every
+console snapshot to remain physical and stopped on an assertion; corrected
+review separates boot GOP from live console and retains all raw snapshots.
+
+Owner observation: machine in Hybrid; HDMI runs the desktop; internal OLED
+still frozen at Apple logo. Owner reports NVIDIA patch failure, but the probe
+does not identify its root cause. Do not claim laptop display is working or
+that console metadata alone proves native890M scanout ownership.
+
+**Next gate:** Step03 fixed boot framebuffer adoption feasibility and complete
+IOFramebuffer API/lifetime review. Preserve boot evidence, maintain current
+Hybrid/external desktop, use refresh for further census instead of rebooting.
+No firmware init, GPU MMIO, display register or framebuffer writes performed.

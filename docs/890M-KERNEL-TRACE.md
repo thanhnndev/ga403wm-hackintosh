@@ -118,3 +118,13 @@ finite complete generation and valid VFCT. Test admin refresh and non-admin deni
 preserve each attempt. Framebuffer adoption, MMIO, indirect access and hardware
 engine initialization remain gated on that evidence. Do not ask for repeated
 reboots to compensate for a missing observation mechanism.
+
+## Runtime follow-up:0.1.2 passed the census gate
+
+FirstMatch capture has one physical target and matching BAR config/descriptors.
+Non-admin refresh denied, three admin refreshes succeed; generations3/4/5/6
+have identical PCI/VFCT hashes. Boot GOP is physical2880x1800 within BAR0;
+current console later becomes virtual1920x1080. Owner confirms HDMI desktop and
+OLED frozen on boot logo in Hybrid. This distinction prevents comparing a live
+virtual console pointer to physical BARs or claiming native OLED display support.
+Evidence and remaining framebuffer gate are recorded in the latest890M trace.

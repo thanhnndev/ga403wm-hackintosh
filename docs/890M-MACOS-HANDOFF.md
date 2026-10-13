@@ -6,6 +6,23 @@ Step-by-step history: [890M trace](890M-TRACE.md).
 
 ## Current state
 
+**Latest2026-10-13: Step02 runtime census PASS on0.1.2.** One physical target,
+1002:150e revc1/subsystem1043:3998; BAR config agrees with OS descriptors.
+Initial FirstMatch generation3 and three admin refreshes4/5/6 have identical
+PCI config/VFCT hashes. Non-admin refresh returns NotPrivileged. No reboot
+needed for further probe snapshots while this version remains loaded.
+Evidence: `out/890m-trace/step02-20261013T090147.620403Z/runtime-validation.json`.
+
+Owner confirms Hybrid: HDMI has the desktop; internal OLED is still frozen on
+the Apple boot logo. Owner attributes this to the NVIDIA patch; probe has not
+established that cause. Initial console2880x1800 physical0x880000000 lies in
+890M BAR0. Later console1920x1080 is virtual: do not compare its virtual base
+to PCI physical BARs. Preserve initial evidence before refreshing.
+This is a boot GOP feasibility result, **not** native OLED framebuffer support.
+Next work is Step03 fixed boot framebuffer adoption design and IOFramebuffer
+contract review; keep Hybrid and the existing external desktop configuration.
+No GPU engine initialization, MMIO or scanout writes have been tested.
+
 Latest deep review: [kernel call-chain trace](890M-KERNEL-TRACE.md).
 Loaded0.1.1 proved the physical target exists in FirstPublish but its immediate
 Matched census still missed it. Actual kernel disassembly and same-session
