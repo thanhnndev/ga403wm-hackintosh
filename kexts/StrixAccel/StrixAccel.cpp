@@ -24,8 +24,11 @@
 #include <kern/thread_call.h>
 #include <kern/clock.h>
 #include <mach/kmod.h>
+#include <libkern/version.h>
+#include "../../include/StrixNativeABI.h"
+#include "StrixABIProfile.h"
 
-#define STRIXACCEL_VERSION "0.1.0"
+#define STRIXACCEL_VERSION "0.1.1"
 
 #include "IOAccelFamily2_decl.h"
 
@@ -108,6 +111,9 @@ public:
     bool start(IOService *provider) override;
     void stop(IOService *provider) override;
     void free() override;
+    IOReturn newUserClient(task_t task, void *securityID, unsigned int type, IOUserClient **handler) override;
+    IOReturn queryNativeInfo(s89n_info *info);
+    IOReturn readFoundation(s89n_foundation *info);
 
     IOMemoryDescriptor *getStampMemory(unsigned int *n) override;
     IOAccelEventMachine2 *newEventMachine() override;
@@ -134,6 +140,22 @@ public:
     static bool onFramebuffer(void *target, void *ref, IOService *svc, IONotifier *n);
     bool layoutGate();
 };
+
+// Read-only S89N endpoint. No userspace BAR maps, GPU BOs or submissions.
+// The admin-only foundation selector reads three fixed bootstrap registers.
+class StrixNativeClient : public IOUserClient {
+    OSDeclareDefaultStructors(StrixNativeClient)
+    bool negotiated = false;
+public:
+    IOReturn clientClose() override { terminate(); return kIOReturnSuccess; }
+    IOReturn externalMethod(uint32_t selector, IOExternalMethodArguments *args,
+                           IOExternalMethodDispatch *dispatch = nullptr,
+                           OSObject *target = nullptr, void *reference = nullptr) override;
+    static IOReturn hello(OSObject *target, void *, IOExternalMethodArguments *args);
+    static IOReturn query(OSObject *target, void *, IOExternalMethodArguments *args);
+    static IOReturn foundation(OSObject *target, void *, IOExternalMethodArguments *args);
+};
+OSDefineMetaClassAndStructors(StrixNativeClient, IOUserClient)
 
 class StrixEventMachine : public IOAccelEventMachineFast2 {
     OSDeclareDefaultStructors(StrixEventMachine)
@@ -266,6 +288,14 @@ STRIXACCEL_FWD_IOAccelMemoryMap(StrixMemoryMap)
 // ---------------------------------------------------------------------------------------------------------------------
 bool StrixAccelerator::layoutGate()
 {
+    // Class sizes alone cannot detect reordered private slots after an OS update.
+    auto root = IORegistryEntry::getRegistryRoot();
+    auto kernelBuild = root ? OSDynamicCast(OSString, root->getProperty("IOKitBuildVersion")) : nullptr;
+    if (version_major != STRIXABI_DARWIN_MAJOR || !kernelBuild ||
+        !kernelBuild->isEqualTo(STRIXABI_KERNEL_BUILD)) {
+        SLOG("gate FAIL: OS build does not match reviewed profile %s", STRIXABI_PROFILE_ID);
+        return false;
+    }
     if (gGate) return gGate == 1;
     struct Gate {
         const char *ours, *fam;
@@ -345,6 +375,9 @@ bool StrixAccelerator::start(IOService *provider)
     }
     setProperty("StrixAccel,Gate", "PASS");
     setProperty("StrixAccel,Version", STRIXACCEL_VERSION);
+    setProperty("StrixAccel,ABIProfile", STRIXABI_PROFILE_ID);
+    setProperty("StrixNative,ABIMajor", S89N_ABI_MAJOR, 32);
+    setProperty("StrixNative,MetalReady", false);
 
     // 32 stamps, page backed: user clients may map the stamp memory
     stampMD = IOBufferMemoryDescriptor::withOptions(kIODirectionInOut | kIOMemoryKernelUserShared, 4096, 4096);
@@ -535,6 +568,136 @@ void StrixAccelerator::teardownDevice(IOPCIDevice *)
 {
     SLOG("teardownDevice");
     pci = nullptr;
+}
+
+IOReturn StrixAccelerator::queryNativeInfo(s89n_info *info)
+{
+    if (!info || stopping || isInactive()) return kIOReturnNotReady;
+    auto device = OSDynamicCast(IOPCIDevice, getProvider());
+    if (!device || device->configRead32(0) != 0x150e1002) return kIOReturnNotReady;
+    bzero(info, sizeof(*info));
+    info->magic = S89N_MAGIC; info->major = S89N_ABI_MAJOR; info->minor = S89N_ABI_MINOR;
+    info->size = sizeof(*info);
+    info->capabilities = S89N_CAP_FOUNDATION_READ | (gCounters[kCPipes] ? S89N_CAP_DISPLAY_PIPE : 0);
+    info->accelerator_registry_id = getRegistryEntryID(); info->pci_registry_id = device->getRegistryEntryID();
+    info->vendor_device = device->configRead32(0); info->revision_class = device->configRead32(8);
+    info->subsystem = device->configRead32(0x2c);
+    info->readiness = S89N_READY_DISPLAY_ONLY; info->backend = S89N_BACKEND_NONE;
+    // Expected target from Linux captures; discovered IP remains0 until read on macOS.
+    info->expected_gc_ip = 0x000b0500;
+    strlcpy(info->os_build, STRIXABI_OS_BUILD, sizeof(info->os_build));
+    return kIOReturnSuccess;
+}
+
+IOReturn StrixAccelerator::readFoundation(s89n_foundation *info)
+{
+    if (!info || stopping || isInactive()) return kIOReturnNotReady;
+    auto device = OSDynamicCast(IOPCIDevice, getProvider());
+    if (!device || device->configRead32(0) != 0x150e1002) return kIOReturnNotReady;
+    if (!(device->configRead32(4) & 2)) return kIOReturnNotReady; // Never enable memory decoding ourselves.
+    // Linux amdgpu_discovery.c: fixed bootstrap registers, consistent across SOCs.
+    // No arbitrary offsets, indirect MM_INDEX transport, mailbox writes or waits.
+    constexpr unsigned offsets[] = {0xde3 * 4, 0x16a00 * 4, 0x16061 * 4};
+    auto resources = OSDynamicCast(OSArray, device->getProperty("IODeviceMemory"));
+    if (!resources) return kIOReturnNotReady;
+    for (unsigned i = 0; i < resources->getCount(); ++i) {
+        auto memory = OSDynamicCast(IOMemoryDescriptor, resources->getObject(i));
+        if (!memory || (memory->getTag() & 255) != 0x24) continue;
+        uint32_t bar = device->configRead32(0x24);
+        if ((bar & 1) || (bar & 6) || memory->getLength() < offsets[1] + sizeof(uint32_t))
+            return kIOReturnBadArgument;
+        IOByteCount segment = 0;
+        if (memory->getPhysicalSegment(0, &segment, kIOMemoryMapperNone) != (bar & ~15u) ||
+            segment < memory->getLength()) return kIOReturnBadArgument;
+        auto map = memory->map(kIOMapInhibitCache | kIOMapReadOnly);
+        if (!map) return kIOReturnNoMemory;
+        auto bytes = reinterpret_cast<volatile uint8_t *>(map->getVirtualAddress());
+        if (!bytes) { map->release(); return kIOReturnNoMemory; }
+        bzero(info, sizeof(*info)); info->magic = S89N_MAGIC; info->size = sizeof(*info);
+        info->rcc_memsize_mib = *reinterpret_cast<volatile uint32_t *>(bytes + offsets[0]);
+        info->ip_discovery_version = *reinterpret_cast<volatile uint32_t *>(bytes + offsets[1]);
+        info->psp_discovery_status = *reinterpret_cast<volatile uint32_t *>(bytes + offsets[2]);
+        map->release();
+        return info->rcc_memsize_mib == 0xffffffff ? kIOReturnNotReady : kIOReturnSuccess;
+    }
+    return kIOReturnNotFound;
+}
+
+IOReturn StrixAccelerator::newUserClient(task_t task, void *securityID, unsigned int type, IOUserClient **handler)
+{
+    if (type != S89N_UC_TYPE) return IOGraphicsAccelerator2::newUserClient(task, securityID, type, handler);
+    if (!handler) return kIOReturnBadArgument;
+    *handler = nullptr;
+    if (stopping || isInactive()) return kIOReturnNotReady;
+    auto client = OSTypeAlloc(StrixNativeClient);
+    if (!client) return kIOReturnNoMemory;
+    if (!client->initWithTask(task, securityID, type)) {
+        client->release(); return kIOReturnNoResources;
+    }
+    // Serialize Hello/Query/close through the kernel user-client IPC lock.
+    client->setProperty("IOUserClientDefaultLocking", true);
+    client->setProperty("IOUserClientDefaultLockingSetProperties", true);
+    client->setProperty("IOUserClientDefaultLockingSingleThreadExternalMethod", true);
+    if (!client->attach(this)) {
+        client->release(); return kIOReturnNoResources;
+    }
+    if (!client->start(this)) {
+        client->detach(this); client->release(); return kIOReturnNoResources;
+    }
+    *handler = client;
+    return kIOReturnSuccess;
+}
+
+IOReturn StrixNativeClient::externalMethod(uint32_t selector, IOExternalMethodArguments *args,
+                                         IOExternalMethodDispatch *, OSObject *, void *)
+{
+    static const IOExternalMethodDispatch methods[] = {
+        {hello, 0, sizeof(s89n_hello_request), 0, sizeof(s89n_hello_reply)},
+        {query, 0, 0, 0, sizeof(s89n_info)},
+        {foundation, 0, 0, 0, sizeof(s89n_foundation)}
+    };
+    if (!args || selector >= S89N_SELECTOR_COUNT || isInactive()) return kIOReturnUnsupported;
+    return IOUserClient::externalMethod(selector, args,
+        const_cast<IOExternalMethodDispatch *>(&methods[selector]), this, nullptr);
+}
+
+IOReturn StrixNativeClient::hello(OSObject *target, void *, IOExternalMethodArguments *args)
+{
+    auto client = OSDynamicCast(StrixNativeClient, target);
+    if (!client || !args->structureInput || !args->structureOutput) return kIOReturnBadArgument;
+    client->negotiated = false;
+    const auto request = static_cast<const s89n_hello_request *>(args->structureInput);
+    if (request->reserved[0] || request->reserved[1]) return kIOReturnBadArgument;
+    if (request->major != S89N_ABI_MAJOR || request->minor > S89N_ABI_MINOR) return kIOReturnUnsupported;
+    auto provider = OSDynamicCast(StrixAccelerator, client->getProvider());
+    s89n_info info {};
+    IOReturn result = provider ? provider->queryNativeInfo(&info) : kIOReturnNotReady;
+    if (result != kIOReturnSuccess) return result;
+    auto reply = static_cast<s89n_hello_reply *>(args->structureOutput);
+    bzero(reply, sizeof(*reply));
+    reply->magic = S89N_MAGIC; reply->major = S89N_ABI_MAJOR; reply->minor = S89N_ABI_MINOR;
+    reply->size = sizeof(*reply); reply->capabilities = info.capabilities;
+    client->negotiated = true; return kIOReturnSuccess;
+}
+
+IOReturn StrixNativeClient::query(OSObject *target, void *, IOExternalMethodArguments *args)
+{
+    auto client = OSDynamicCast(StrixNativeClient, target);
+    if (!client || !args->structureOutput) return kIOReturnBadArgument;
+    if (!client->negotiated) return kIOReturnNotReady;
+    auto provider = OSDynamicCast(StrixAccelerator, client->getProvider());
+    return provider ? provider->queryNativeInfo(static_cast<s89n_info *>(args->structureOutput)) : kIOReturnNotReady;
+}
+
+IOReturn StrixNativeClient::foundation(OSObject *target, void *, IOExternalMethodArguments *args)
+{
+    auto client = OSDynamicCast(StrixNativeClient, target);
+    if (!client || !args->structureOutput) return kIOReturnBadArgument;
+    if (!client->negotiated) return kIOReturnNotReady;
+    if (IOUserClient::clientHasPrivilege(current_task(), kIOClientPrivilegeAdministrator) != kIOReturnSuccess)
+        return kIOReturnNotPrivileged;
+    auto provider = OSDynamicCast(StrixAccelerator, client->getProvider());
+    return provider ? provider->readFoundation(static_cast<s89n_foundation *>(args->structureOutput)) : kIOReturnNotReady;
 }
 
 IOAccelDisplayMachine *StrixAccelerator::newDisplayMachine()

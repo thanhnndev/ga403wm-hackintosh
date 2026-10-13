@@ -191,11 +191,11 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--kc", default=DEFAULT_KC)
     ap.add_argument("--family", default=DEFAULT_FAMILY)
-    ap.add_argument("--symbols-from", action="append",
-                    default=["/System/Library/KernelCollections/BootKernelExtensions.kc"])
+    ap.add_argument("--symbols-from", action="append")
     ap.add_argument("--class", dest="classes", action="append")
     ap.add_argument("--out", default="-")
     a = ap.parse_args()
+    a.symbols_from = a.symbols_from or ["/System/Library/KernelCollections/BootKernelExtensions.kc"]
     classes = a.classes or DEFAULT_CLASSES
 
     kc = KC(a.kc)
