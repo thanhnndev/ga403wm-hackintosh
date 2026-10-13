@@ -6,6 +6,25 @@ Step-by-step history: [890M trace](890M-TRACE.md).
 
 ## Current state
 
+**Latest2026-10-13: OLED desktop works in Hybrid without HDMI, owner confirmed.**
+Loaded StrixGOP0.1.3 and StrixAccel0.1.0; accelerator runtime gate PASS, one pipe.
+CoreGraphics reports one active built-in display:1440x900 logical HiDPI,
+2880x1800 backing pixels, nominal120Hz. This is a native display integration
+milestone; StrixAccel still has no GPU command submission/GL/CL/Metal backend.
+Do not change the working graphics configuration as a blind bisect.
+
+An EDID capability bug is now fixed in source0.1.4: IODisplay asks
+kConnectionSupportsHLDDCSense with NULL output; the old framebuffer rejected
+that query, preventing EDID acquisition.0.1.4 preserves the exact installed
+profile/EDID and is staged in AuxKC, reboot pending. Live remains0.1.3; no driver
+unload or reboot performed. Working bundle backup:
+`/Library/StrixGOP-backup-013-20261013-2110.kext`.
+Baseline and candidate evidence:
+`out/890m-trace/step04-live-baseline-20261013T141023.592596Z/`.
+Next boot: verify AppleDisplay actually receives EDID, vendor/product/name,
+unchanged HiDPI raster and owner-confirmed visible OLED. The EDID is still
+synthesized; do not describe its colorimetry as measured panel data.
+
 **Latest: Step03 implemented and staged for its first runtime trial.**
 [StrixGOP trial](890M-GOP-TRIAL.md) contains the implementation contract, test
 evidence, precise state and recovery.0.1.1 is present in AuxKC, installed at

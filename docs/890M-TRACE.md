@@ -257,3 +257,152 @@ Next reboot is the fixed-mode OLED trial. It permits IOGraphics/WindowServer
 writes to the bounded boot raster; it is not a read-only probe. No hardware
 modeset, MMIO, GPU allocator or engine initialization implemented. Require live
 service/controller checks and owner verification of visible OLED/colors/cursor.
+
+### Step03 live diagnosis on 0.1.1 and 0.1.2 rebuild (2026-10-13)
+
+0.1.1 attached and published `StrixGOPFramebuffer` (OpenGLIndex 1,
+`Controller,Enabled=Yes`, raster 20738048 B at BAR0 `0x880000000`) alongside
+`NVRMFramebuffer` (OpenGLIndex 0). CoreGraphics lists two active online
+displays: HDMI 1920x1080@60 main plus OLED 2880x1800 built-in at origin
+1920,0. Per-display `screencapture -D1/-D2` both succeed and the OLED shadow
+shows the desktop wallpaper plus menu bar, so WindowServer composition to the
+Strix framebuffer works. The physical OLED stays frozen on the Apple boot
+logo: scanout presentation, not matching/composition, is the broken path.
+
+Root cause in the 0.1.1 contract: `getInformationForDisplayMode` reported
+refresh 0 (`IOFB0Hz=Yes`, CG 0.0 Hz) with no timing info, and the single mode
+lacked `HiResFlag`. WindowServer/CoreDisplay floods
+`Unable to find display pipe for IOFB service 0x100000f3b` (~48k lines in
+5 min); the single `IOAccelDisplayMachine/Pipe` belongs to NVAccel, and with
+no usable timing CoreDisplay never schedules presentation to the Strix
+aperture. EFI `disable-gpu`/class-code spoof remains live on `VGA@0` but does
+not block Strix (probe reads real PCI config `1002:150e` rev `c1`); NVIDIA
+hooks (`-nvrmnobootscreen`, 4 heads, `NVRMEdpBL`) explain the frozen logo
+retention, not the missing pipe. Evidence (screenshots, census, pipe-error
+sample): `out/890m-trace/step03-runtime-20261013T094047.427864Z/`.
+
+0.1.2 (this change, no MMIO/modeset/allocator): two modes sharing the boot
+raster — mode 1 at 60 Hz (base DTD 652.270 MHz, 2980x3648), mode 2 at
+120 Hz (DisplayID 652.264 MHz, 2980x1824, the boot scanout, default) — with
+`refreshRate`, `FixedRateLCD` detailed timing and `HiResFlag` so WindowServer
+can build both a usable pipe schedule and real 1440x900 HiDPI on the native
+2880x1800 backing. `setDisplayMode` accepts either with no hardware change.
+Build trace `out/890m-trace/step03-build-20261013T101935.211038Z/`:
+PROFILED-LINKED, 369 imports, zero missing, clean `-Wall -Wextra -Werror`.
+
+**Status: STAGED — install plus reboot pending, no 0.1.2 runtime pass.**
+Next: back up `/Library/StrixGOPTrial`, install the 0.1.2 bundle, rebuild
+AuxKC, reboot Hybrid, then `bash scripts/macos-strix-gop-collect.sh` and
+require pipe-error silence, CG 60/120 Hz (not 0 Hz), HiDPI 1440x900 offered,
+and owner confirmation of live OLED updates. Recovery via `-strixgopoff`
+off-config on ESP.
+
+### Step03 0.1.2 runtime findings and 0.1.3 (2026-10-13)
+
+0.1.2 runtime (after reboot): AuxKC contained `com.itlmt7925.strixgop` 0.1.2 but
+no instance existed and no `StrixGOP` log line appeared. kernelmanagerd logged
+"Validate approval" only for `/Library/Extensions` kexts and "unstaged bundle path"
+for `/Library/StrixGOPTrial`; KextPolicy already had `allowed=1`, so the bundle
+location, not approval, is the suspect. Forced `kmutil load -b` attached the kext
+(fb0 registered with GPUWrangler, Controller,Enabled, pixel clock 652264000, 120/60
+Hz + HiDPI modes visible) but the OLED stayed on the boot logo and CoreGraphics
+reported the panel as vendor `0x756e6b6e` ("unkn"): no EDID, so unknown color
+profile. IOFramebuffer power state read 0/flags 0.
+
+0.1.3 (no MMIO/modeset): EDID over `hasDDCConnect`/`getDDCBlock` +
+`kConnectionSupportsHLDDCSense` (validated header/checksum, from `PanelEDID` in the
+personality); explicit acks for power/capture/connection attributes with a bounded
+log of every attribute IOGraphics sends; read-only 32x32 sparse sampler of the
+boot raster published as `Sample,*` properties (hash, non-black count, changed since
+enable) to show whether WindowServer writes the scanned aperture. Runner gains
+`--edid <file>` (real, preferred) and `--synthesize-edid` (identity 0x4c83/0x419c
++ Step01 timing only; sRGB primaries/gamma/size are NOT measured). Build trace
+`out/890m-trace/step03-build-20261013T103926.816163Z/` (synthesized EDID, 368
+imports, 0 missing). Installed to `/Library/Extensions/StrixGOP.kext` and AuxKC
+rebuilt via `kmutil load --no-authorization` (code 28, reboot required); old trial
+dir kept at `/Library/StrixGOPTrial-pre-013-20261013-174021`.
+
+**Status: STAGED — reboot pending.** After reboot: confirm auto-attach (no manual
+load), then read `Sample,ChangedSinceEnable` and the `StrixGOP: ...attr=` log lines.
+Replace the synthesized EDID by copying the Linux
+`/sys/class/drm/card2-eDP-2/edid` and re-running the runner with `--edid`.
+
+### Step04 — root cause confirmed on 0.1.3 and the native StrixAccel (2026-10-13)
+
+0.1.3 after reboot: auto-attaches, 120/60 Hz + HiDPI offered, EDID served
+(`PanelEDID` synthesized, 1 block), but `Sample,ChangedSinceEnable = 0` (WindowServer
+never wrote the scanned aperture) and WindowServer logs, per refresh,
+`(CoreDisplay) Unable to find display pipe for IOFB service / regID: ...`. The
+framebuffer is healthy; it has **no IOAccelerator / IOAccelDisplayPipe**. NVAccel
+owns the only pipe (HDMI), so the OLED is never presented to. AppleDisplay still keys
+the panel as vendor `0x756e6b6e` ("unkn"): the "unknown" colour profile is a
+separate item, expected to follow once the pipe exists and the display is brought up
+by WindowServer.
+
+Architecture decision (native, not the NVIDIA/NullMoth route): `kexts/StrixAccel`
+is a display-only accelerator on IOAcceleratorFamily2 itself:
+
+- `StrixAccelerator : IOGraphicsAccelerator2`, matched on `IOPCIDevice 1002:150e`
+  in its own match category (`IOAccelerator`, next to StrixGOP's `StrixGOP`), no GPU
+  access at all (`configureDevice` only records the provider).
+- Family classes subclassed from a header **generated from this machine's kernel
+  collection** (`tools/ioaccel_gen_header.py`, `tools/ioaccel_layout.py`, 24H32,
+  IOAcceleratorFamily2 485.2): exact vtable slot order, mangled names, instance
+  sizes. Slots the family does not export are forwarded through the family's own
+  vtable by naked tail-jumps. A runtime gate compares family class sizes and checks
+  our vtables for unfilled pure slots; it fails closed (`StrixAccel,Gate = FAIL`).
+- Display flow: CoreDisplay opens the pipe user client, each transaction carries the
+  plane-0 IOSurface; `StrixDisplayPipe::submitTransaction` copies it into the GOP
+  raster (2880x1800, stride 11520, XRGB8888; `l10r` converted, tiled / other formats
+  counted and skipped) and completes synchronously. `StrixDisplayMachine` is kept by
+  the accelerator and fed framebuffers by (a) a scan at start, (b) a publish
+  notification, (c) a bounded poll, because the family only walks existing children.
+- Kill switch `-strixaccoff` (probe + start). ESP recovery config
+  `EFI/OC/config.plist.strix-off-20261013` has `-strixgopoff -strixaccoff`.
+- Evidence counters on the accelerator in ioreg: `StrixAccel,Gate`, `,Pipes`,
+  `,Transactions`, `,Copied`, `,Skipped`, `,Tiled`, `,UnsupportedFormat`,
+  `,Raster,Width/Height/Stride`, plus `StrixAccel:` log lines (first 16 transactions
+  with surface id/size/stride/fourcc).
+
+Build/link: `bash scripts/build.sh StrixAccel`; 669 imports, 0 missing; one import
+(`thread_call_cancel_wait`) was rejected by kmutil as private KPI and removed.
+`kmutil libraries -p build/StrixAccel.kext --arch x86_64` is the offline check for
+this (every import must resolve to a declared library, not `kpi.private`).
+Installed to `/Library/Extensions/StrixAccel.kext`; AuxKC rebuilt (code 28, reboot
+required); AuxKC lists strixgop, strixaccel, pataudit.
+
+**Status: STAGED — reboot pending.** After reboot read, in this order:
+`ioreg -rc StrixAccelerator -l | grep StrixAccel` (Gate PASS, Pipes>=1,
+Transactions rising, Copied rising), `Sample,ChangedSinceEnable` on
+StrixGOPFramebuffer, `log show --last 5m --predicate 'eventMessage CONTAINS
+"StrixAccel"'`. If Skipped/Tiled/UnsupportedFormat rise, the logged fourcc/stride
+tells which IOSurface layout WindowServer uses for this pipe and the copy is extended
+from that, not guessed.
+
+### Step04 owner-confirmed OLED desktop and EDID capability correction (2026-10-13)
+
+Owner reports successful Hybrid boot with OLED desktop, HDMI disconnected.
+Live readback: StrixGOP0.1.3, StrixAccel0.1.0, Gate PASS, Pipes1;
+CoreGraphics one active built-in display,1440x900 logical /2880x1800 backing,
+nominal120Hz. Sparse raster sample has1024 changed pixels versus enable baseline.
+Preserved native implementation supplied by the owner's Sonnet session.
+
+Counters snapshot: Transactions41, Skipped41, ValidateFail41, Copied0. These
+published counters are not proof that the native copySurface path presents the
+visible desktop. No GFX command submission/Metal backend exists in this code;
+GL/CL/2D/video context factories are stubs. Actual presentation/render performance
+must be traced rather than attributed to successful copy transactions.
+
+Found a concrete display identity defect: public IOGraphics IODisplay.cpp calls
+getAttributeForConnection(kConnectionSupportsHLDDCSense, NULL) before reading
+EDID. StrixGOP rejected NULL before handling that capability. The driver had
+EDID,Blocks1, but AppleDisplay contained no EDID/vendor/product properties.
+Moved capability handling before the NULL output rejection; other getters still
+require an output pointer. Built0.1.4 with strict warnings,368 imports/no missing
+defined symbols. Exact installed BootGOPProfile and synthesized PanelEDID retained.
+
+Evidence: `out/890m-trace/step04-live-baseline-20261013T141023.592596Z/`, including
+live snapshots, display census, working-tree diff and candidate validation.
+Backed up working0.1.3 package and AuxKC before staging0.1.4. kmutil result28;
+AuxKC inspection confirms0.1.4, while loaded driver remains0.1.3. No hot unload,
+live graphics change, EFI change or forced reboot. Naming fix runtime pending.

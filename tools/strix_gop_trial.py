@@ -54,9 +54,52 @@ def boot_profile(raw):
             'PixelFormat': 'XRGB8888'}
 
 
+def checked_edid(raw):
+    if len(raw) not in (128, 256) or raw[:8] != bytes([0, 255, 255, 255, 255, 255, 255, 0]):
+        raise ValueError('EDID must be 128/256 bytes with a valid header')
+    for i in range(0, len(raw), 128):
+        if sum(raw[i:i + 128]) & 255:
+            raise ValueError('EDID block %d checksum mismatch' % (i // 128))
+    return raw
+
+
+def synthesize_edid(profile):
+    """Identity+timing-only base block (panel ATNA40CU05-0, Step01 timings).
+
+    Chromaticity/gamma/size are NOT measured data: the result is labelled
+    synthesized and exists only so macOS can bind the panel identity
+    (vendor 0x4c83 / product 0x419c) until the real EDID is supplied."""
+    if (profile['Width'], profile['Height']) != (2880, 1800):
+        raise ValueError('Synthesized EDID is only defined for the 2880x1800 panel')
+    b = bytearray(128)
+    b[0:8] = bytes([0, 255, 255, 255, 255, 255, 255, 0])
+    b[8:10] = bytes([0x4c, 0x83]); b[10:12] = struct.pack('<H', 0x419c)
+    b[16], b[17] = 1, 33          # week 1, 2023
+    b[18], b[19] = 1, 4           # EDID 1.4
+    b[20] = 0xa5                  # digital, 8 bpc, DisplayPort
+    b[21], b[22], b[23] = 30, 19, 120
+    b[24] = 0x02                  # RGB 4:4:4, preferred timing native
+    b[25:35] = bytes([0xee, 0x91, 0xa3, 0x54, 0x4c, 0x99, 0x26, 0x0f, 0x50, 0x54])  # sRGB primaries
+    b[38:54] = bytes([1, 1] * 8)
+    # DTD: 652.270 MHz, 2880x1800, htotal 2980, vtotal 3648 (60 Hz base mode).
+    b[54:56] = struct.pack('<H', 65227)
+    b[56:59] = bytes([2880 & 255, 100 & 255, ((2880 >> 8) << 4) | (100 >> 8)])
+    b[59:62] = bytes([1800 & 255, 1848 & 255, ((1800 >> 8) << 4) | (1848 >> 8)])
+    b[62:66] = bytes([48, 32, (3 << 4) | 5, 0])
+    b[66:69] = bytes([302 & 255, 189, ((302 >> 8) << 4) | (189 >> 8)])
+    b[71] = 0x1e
+    b[72:77] = bytes([0, 0, 0, 0xfc, 0]); b[77:90] = b'ATNA40CU05-0\n'
+    b[90:95] = bytes([0, 0, 0, 0x10, 0]); b[108:113] = bytes([0, 0, 0, 0x10, 0])
+    b[127] = (-sum(b[:127])) & 255
+    return checked_edid(bytes(b))
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('snapshot', type=pathlib.Path)
+    parser.add_argument('--edid', type=pathlib.Path, help='real panel EDID (128/256 bytes)')
+    parser.add_argument('--synthesize-edid', action='store_true',
+                        help='embed an identity/timing-only EDID (not measured colorimetry)')
     args = parser.parse_args()
     root = pathlib.Path(__file__).resolve().parents[1]
     out = root / 'out/890m-trace' / ('step03-build-' + datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%S.%fZ'))
@@ -85,6 +128,17 @@ def main():
         personality = plist['IOKitPersonalities']['StrixGOP']
         personality['BootGOPProfile'] = profile
         personality['AdoptBootGOP'] = True
+        if args.edid:
+            edid = checked_edid(args.edid.read_bytes()); source = 'real:' + str(args.edid)
+        elif args.synthesize_edid:
+            edid = synthesize_edid(profile); source = 'synthesized'
+        else:
+            edid = None
+        if edid:
+            personality['PanelEDID'] = edid
+            personality['PanelEDIDSource'] = source
+            manifest['edid'] = {'source': source, 'sha256': hashlib.sha256(edid).hexdigest(),
+                                'bytes': len(edid)}
         info.write_bytes(plistlib.dumps(plist))
         binary = bundle / 'Contents/MacOS/StrixGOP'
         def run(command, name):
