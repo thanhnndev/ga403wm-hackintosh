@@ -3,6 +3,13 @@
 Where the work stands, what is proven, what is open, and how to get data. Written to continue on the macOS side.
 No SMBIOS values, passphrases, MACs or neighbour SSIDs belong in this file.
 
+## Radeon 890M research continuation (2026-10-13)
+
+For the Cobalt64/890M work on branch `research/890m-cobalt64`, read
+[890M macOS handoff](890M-MACOS-HANDOFF.md) and [step trace](890M-TRACE.md).
+Step01 passed against real VFCT/VBIOS/EDID. Next: macOS build of StrixProbe and
+symbol review; no probe installation or GPU initialization has been performed.
+
 ## Machine and boot chain
 
 * ASUS ROG Zephyrus G14 GA403WM, Ryzen AI 9 HX 370 (Strix Point), RTX 5060 Laptop (GB206), MT7925 Wi-Fi/BT,

@@ -33,13 +33,14 @@ mkdir -p "$OBJ"
 # Bundle layout: build/<name>.kext/Contents/{Info.plist,MacOS/<name>}
 build_kext() {
   local name="$1" dir="$2"; shift 2
-  local out="build/$name.kext" objs=()
+  local out="build/$name.kext" objs=() extra_cxx=()
+  [ "$name" != StrixProbe ] || extra_cxx+=(-fno-c++-static-destructors)
   rm -rf "$out"; mkdir -p "$out/Contents/MacOS"
   cp "$dir/Info.plist" "$out/Contents/Info.plist"
   for src in "$@"; do
     local o="$OBJ/${name}_$(basename "${src%.*}").o"
     case "$src" in
-      *.cpp) clang++ $COMMON $CXXFLAGS -I"$dir" -c "$dir/$src" -o "$o" ;;
+      *.cpp) clang++ $COMMON $CXXFLAGS ${extra_cxx[@]+"${extra_cxx[@]}"} -I"$dir" -c "$dir/$src" -o "$o" ;;
       *.c)   clang   $COMMON -I"$dir" -c "$dir/$src" -o "$o" ;;
     esac
     objs+=("$o")
@@ -62,4 +63,8 @@ want ItlDiag "${TARGETS[@]+"${TARGETS[@]}"}" && build_kext ItlDiag kexts/ItlDiag
 want AmdCppc "${TARGETS[@]+"${TARGETS[@]}"}" && build_kext AmdCppc kexts/AmdCppc kmod_info.c AmdCppc.cpp
 want MtkBtFw "${TARGETS[@]+"${TARGETS[@]}"}" && build_kext MtkBtFw kexts/MtkBtFw kmod_info.c MtkBtFw.cpp fw_blob.c
 want AsusWmi "${TARGETS[@]+"${TARGETS[@]}"}" && build_kext AsusWmi kexts/AsusWmi kmod_info.c AsusWmi.cpp
+# Research probe is explicit-only, excluded from the default production build.
+if [ ${#TARGETS[@]} -gt 0 ] && want StrixProbe "${TARGETS[@]}"; then
+  build_kext StrixProbe kexts/StrixProbe kmod_info.c StrixProbe.cpp
+fi
 exit 0
