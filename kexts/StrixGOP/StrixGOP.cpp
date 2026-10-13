@@ -5,6 +5,7 @@
 #include <IOKit/pci/IOPCIDevice.h>
 #include <IOKit/IODeviceMemory.h>
 #include <libkern/OSByteOrder.h>
+#include <pexpert/pexpert.h>
 #include "GopLayout.h"
 
 class StrixGOPFramebuffer : public IOFramebuffer {
@@ -38,6 +39,7 @@ public:
 OSDefineMetaClassAndStructors(StrixGOPFramebuffer, IOFramebuffer)
 
 IOService *StrixGOPFramebuffer::probe(IOService *provider, SInt32 *score) {
+    if (PE_parse_boot_argn("-strixgopoff", nullptr, 0)) return nullptr;
     if (getProperty("AdoptBootGOP") != kOSBooleanTrue) return nullptr;
     auto pci = OSDynamicCast(IOPCIDevice, provider);
     if (!pci || pci->configRead32(0) != 0x150e1002 ||
@@ -91,7 +93,7 @@ bool StrixGOPFramebuffer::start(IOService *provider) {
     auto pci = OSDynamicCast(IOPCIDevice, provider);
     if (!pci || !readProfile(pci)) return false;
     setProperty("TraceStep", "890M-03");
-    setProperty("StrixGOPVersion", "0.1.0");
+    setProperty("StrixGOPVersion", "0.1.1");
     setProperty("HardwareModesetting", false);
     setProperty("Acceleration", false);
     setProperty("Aperture,Base", layout.barBase + layout.offset, 64);

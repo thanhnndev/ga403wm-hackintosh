@@ -226,3 +226,34 @@ that console metadata alone proves native890M scanout ownership.
 IOFramebuffer API/lifetime review. Preserve boot evidence, maintain current
 Hybrid/external desktop, use refresh for further census instead of rebooting.
 No firmware init, GPU MMIO, display register or framebuffer writes performed.
+
+## Step03 — fixed boot GOP framebuffer implementation (2026-10-13)
+
+Implemented `StrixGOPFramebuffer`, explicit-only build, checked geometry contract,
+snapshot-derived profile runner, collector and tests. Full contract/runtime state:
+[GOP trial](890M-GOP-TRIAL.md). Cobalt64 init ladder remains separate.
+
+Real boot snapshot accepted; live virtual HDMI snapshot rejected.13 geometry
+boundary cases pass ASan/UBSan;6 profile tests pass (including malformed PCI/BAR,
+incomplete/ambiguous snapshot, bounds and real fixtures). Strict kernel build,
+x86_64 KEXTBUNDLE/kmod/plist checks pass. Final370 imports resolve through
+kmutil to declared KPI/IOPCI/IOGraphics providers, not merely a flat symbol list.
+
+First0.1.0 build trace `out/890m-trace/step03-build-20261013T091355.770833Z/`.
+Runtime load attempt normal exit27, no-authorization exit28 (requires reboot).
+Added opt-out before attachment and rebuilt0.1.1; final trace
+`out/890m-trace/step03-build-20261013T091914.471933Z/`. Installed hash verified;
+AuxKC inspection confirms0.1.1. No native framebuffer service currently loaded.
+Off-config saved on ESP and validated; active config unchanged. Previous trial
+package retained at `/Library/StrixGOPTrial-pre-011-20261013` for evidence.
+
+Pre-reboot collector first failed on ioreg's empty output for a missing class;
+preserved that attempt, fixed empty handling. Re-run correctly records
+ACQUISITION-FAILED-no-unique-framebuffer at
+`out/890m-trace/step03-runtime-20261013T092321.661092Z/`.
+
+**Status: IMPLEMENTED/BUILT/STAGED — actual framebuffer runtime pending.**
+Next reboot is the fixed-mode OLED trial. It permits IOGraphics/WindowServer
+writes to the bounded boot raster; it is not a read-only probe. No hardware
+modeset, MMIO, GPU allocator or engine initialization implemented. Require live
+service/controller checks and owner verification of visible OLED/colors/cursor.

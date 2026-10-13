@@ -6,6 +6,16 @@ Step-by-step history: [890M trace](890M-TRACE.md).
 
 ## Current state
 
+**Latest: Step03 implemented and staged for its first runtime trial.**
+[StrixGOP trial](890M-GOP-TRIAL.md) contains the implementation contract, test
+evidence, precise state and recovery.0.1.1 is present in AuxKC, installed at
+`/Library/StrixGOPTrial/StrixGOP.kext`; kmutil returned28, reboot required.
+Current session still has no StrixGOP framebuffer. Next normal Hybrid boot tests
+the actual fixed-mode OLED framebuffer. Run `scripts/macos-strix-gop-collect.sh`
+first, and inspect matching/controller state before changing anything.
+Active EFI config unchanged; ESP off-config `config.plist.strixgop-off-20261013`
+adds `-strixgopoff` to prevent attachment. This trial lives in AuxKC, not EFI.
+
 **Latest2026-10-13: Step02 runtime census PASS on0.1.2.** One physical target,
 1002:150e revc1/subsystem1043:3998; BAR config agrees with OS descriptors.
 Initial FirstMatch generation3 and three admin refreshes4/5/6 have identical
