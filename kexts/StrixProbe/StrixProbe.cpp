@@ -15,12 +15,29 @@ class StrixProbe : public IOService {
 public:
     IOService *probe(IOService *provider, SInt32 *score) override;
     bool start(IOService *provider) override;
+    void stop(IOService *provider) override;
 private:
+    IONotifier *pciNotifier = nullptr;
+    static bool pciPublished(void *target, void *, IOService *service, IONotifier *);
     void capturePCI();
     void captureConsole();
     void captureVFCT();
 };
 OSDefineMetaClassAndStructors(StrixProbe, IOService)
+
+bool StrixProbe::pciPublished(void *target, void *, IOService *service, IONotifier *) {
+    auto pci = OSDynamicCast(IOPCIDevice, service);
+    if (!pci || pci->configRead32((UInt8)0) != 0x150e1002) return true;
+    auto self = static_cast<StrixProbe *>(target);
+    self->capturePCI();
+    self->setProperty("PCI,Acquisition", "target-publish-notification");
+    return true;
+}
+
+void StrixProbe::stop(IOService *provider) {
+    if (pciNotifier) { pciNotifier->remove(); pciNotifier = nullptr; }
+    IOService::stop(provider);
+}
 
 IOService *StrixProbe::probe(IOService *provider, SInt32 *score) {
     int enabled = 0;
@@ -141,10 +158,17 @@ void StrixProbe::captureVFCT() {
 bool StrixProbe::start(IOService *provider) {
     if (!IOService::start(provider)) return false;
     setProperty("TraceStep", "890M-02");
-    setProperty("ProbeVersion", "0.1.0");
+    setProperty("ProbeVersion", "0.1.1");
     setProperty("GPUWrites", false);
     setProperty("IPDiscovery,Status", "not-acquired-no-mmio-or-indirect-writes");
     capturePCI(); captureConsole(); captureVFCT();
+    auto matching = serviceMatching("IOPCIDevice");
+    if (matching) {
+        pciNotifier = addMatchingNotification(gIOFirstPublishNotification, matching,
+                                             pciPublished, this);
+        matching->release();
+    }
+    setProperty("PCI,NotificationInstalled", pciNotifier != nullptr);
     registerService();
     IOLog("StrixProbe: step02 snapshot published; no driver init, MMIO or GPU power changes\n");
     return true;

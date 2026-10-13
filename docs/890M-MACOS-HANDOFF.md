@@ -6,6 +6,13 @@ Step-by-step history: [890M trace](890M-TRACE.md).
 
 ## Current state
 
+Latest2026-10-13: first runtime0.1.0 captured valid VFCT/VBIOS matching Linux,
+but PCI snapshot was too early or otherwise unavailable. Later IORegistry
+contains890M; GOP candidate matches its BAR0. Probe0.1.1 now staged with a
+PCI publish notification retry; reboot pending. Run collect after reboot,
+require ProbeVersion0.1.1 and PCI,MatchCount1 before framebuffer work.
+Previous bundle backup: `EFI/OC/Kexts-backup/StrixProbe.kext.20261013-0836`.
+
 Update2026-10-13: macOS link and offline defined-symbol review completed;
 StrixProbe staged on ESP with `strix-probe=1`, config backup
 `config.plist.pre-strixprobe-20261013-0832`. Reboot pending. Owner reports

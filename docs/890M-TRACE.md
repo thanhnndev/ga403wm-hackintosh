@@ -134,3 +134,32 @@ Next: reboot macOS in Hybrid, run `bash scripts/macos-strix-probe-collect.sh`,
 review unique PCI target, console ownership candidates and VFCT offline.
 Recovery: restore the named config backup; removing `strix-probe=1` disables
 service matching. No Cobalt64 load, GPU MMIO or power changes performed.
+
+### Step02 first macOS runtime and notification retry (2026-10-13)
+
+Capture: `out/890m-trace/step02-20261013T083428.872962Z/`.
+Probe0.1.0 loaded and published its service. VFCT21636 bytes and selected
+VBIOS21504 bytes parse successfully, hashes exactly match Step01 Linux inputs.
+Five Atom display paths include eDP. PCI snapshot reports zero targets; this
+is an acquisition failure, not hardware absence. A later user-space PCI census
+finds one registry entry with vendor1002/device150e and hiding properties intact.
+Publication timing is suspected; physical config identity remains unverified.
+
+Console2880x1800, depth32, rowBytes11520, raw base0x880000001, aligned candidate
+0x880000000; PE length0. Registry assigned-addresses decode as BAR0 base
+0x880000000/length0x10000000, BAR2 base0x890800000/length0x200000,
+I/O BAR4 base0xe000/length0x100, BAR5 base0xdc300000/length0x80000.
+Console candidate matches the iGPU BAR0 and its20736000-byte raster fits.
+This is evidence for GOP feasibility, not proof of surface ownership/pixel
+format, cache policy, safe writes or framebuffer adoption.
+
+Probe0.1.1 adds persistent gIOFirstPublishNotification for PCI, recapturing on
+physical1002:150e publication; initial snapshot retained as fallback. Notifier
+is removed synchronously in stop. API checked against Apple kernel docs and
+the pinned SDK. No provider open or GPU writes added.
+Build trace: `out/890m-trace/step02-build-20261013T083535.102099Z/`;
+307 imports, zero missing from Boot KC defined external symbols; link PASS.
+Parser tests12 PASS/2 skipped. Updated bundle staged on ESP; previous bundle
+at `EFI/OC/Kexts-backup/StrixProbe.kext.20261013-0836`; config unchanged.
+**Next gate: reboot and capture0.1.1; require one physical PCI target.**
+No runtime success claimed for0.1.1, no GPU initialization or framebuffer writes.
