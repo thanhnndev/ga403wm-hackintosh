@@ -34,7 +34,7 @@ mkdir -p "$OBJ"
 build_kext() {
   local name="$1" dir="$2"; shift 2
   local out="build/$name.kext" objs=() extra_cxx=()
-  [ "$name" != StrixProbe ] || extra_cxx+=(-fno-c++-static-destructors -Wall -Wextra -Werror -MMD)
+  case "$name" in StrixProbe|StrixGOP) extra_cxx+=(-fno-c++-static-destructors -Wall -Wextra -Werror -MMD) ;; esac
   rm -rf "$out"; mkdir -p "$out/Contents/MacOS"
   cp "$dir/Info.plist" "$out/Contents/Info.plist"
   for src in "$@"; do
@@ -66,5 +66,8 @@ want AsusWmi "${TARGETS[@]+"${TARGETS[@]}"}" && build_kext AsusWmi kexts/AsusWmi
 # Research probe is explicit-only, excluded from the default production build.
 if [ ${#TARGETS[@]} -gt 0 ] && want StrixProbe "${TARGETS[@]}"; then
   build_kext StrixProbe kexts/StrixProbe kmod_info.c StrixProbe.cpp
+fi
+if [ ${#TARGETS[@]} -gt 0 ] && want StrixGOP "${TARGETS[@]}"; then
+  build_kext StrixGOP kexts/StrixGOP kmod_info.c StrixGOP.cpp
 fi
 exit 0
