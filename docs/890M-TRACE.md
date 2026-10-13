@@ -104,3 +104,33 @@ excludes the research probe. Linux checks: shell syntax PASS; all14 parser tests
 PASS; C++/C object compilation previously PASS. macOS link/load and VFCT getter
 availability remain unverified. Build script deliberately does not install or
 modify EFI. Review the returned trace before deciding the runtime trial.
+
+### Step02 macOS link and ESP staging (2026-10-13)
+
+Host: macOS15.8.1, 24H32, x86_64; owner reports Hybrid mode.
+First attempt `out/890m-trace/step02-build-20261013T082821.661548Z/`
+linked but validation falsely rejected Apple's `KEXTBUNDLE` spelling.
+Preserved that trace; accept both header spellings and explicitly cast BAR
+register offsets to UInt8 to remove the compiler warning.
+
+Second attempt `out/890m-trace/step02-build-20261013T082905.536427Z/`:
+LINKED-symbol-review-pending, plist valid, x86_64 KEXTBUNDLE, `_kmod_info`
+present, no forbidden destructor/exception imports. All306 imports occur in
+BootKernelExtensions.kc **defined external** symbols (`nm -gUj`), zero missing.
+This is an offline symbol check, not load-time dependency validation.
+`kextutil -n -t` redirects to kmutil and rejects -n; `kextlibs` cannot find
+standalone libraries on this installation. Neither is counted as a pass.
+Parser suite:12 PASS,2 local Linux capture tests skipped.
+
+Separate local config passed OpenCore1.0.9 ocvalidate. Installed exact probe
+bundle to the mounted ESP through an administrator wrapper, then applied that
+config: one Kernel/Add entry and `strix-probe=1`; DeviceProperties preserved.
+Backup: `/Volumes/ESP/EFI/OC/config.plist.pre-strixprobe-20261013-0832`.
+Binary hash and staged/live config equality verified after installation.
+Local test config contains private machine settings and remains ignored under out/.
+
+**Status: STAGED — reboot pending, no runtime/hardware pass.**
+Next: reboot macOS in Hybrid, run `bash scripts/macos-strix-probe-collect.sh`,
+review unique PCI target, console ownership candidates and VFCT offline.
+Recovery: restore the named config backup; removing `strix-probe=1` disables
+service matching. No Cobalt64 load, GPU MMIO or power changes performed.

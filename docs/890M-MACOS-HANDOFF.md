@@ -6,6 +6,13 @@ Step-by-step history: [890M trace](890M-TRACE.md).
 
 ## Current state
 
+Update2026-10-13: macOS link and offline defined-symbol review completed;
+StrixProbe staged on ESP with `strix-probe=1`, config backup
+`config.plist.pre-strixprobe-20261013-0832`. Reboot pending. Owner reports
+Hybrid mode; current hiding properties preserved. See the latest Step02 trace.
+After reboot run `bash scripts/macos-strix-probe-collect.sh` first.
+The original build instructions and pre-staging state below remain historical.
+
 - Step 01 **PASS** on the real Linux captures: VFCT contains the 21504-byte
   VBIOS for PCI1002:150e at65:00.0, byte-for-byte equal to the debugfs dump.
   AtomBIOS identifies the eDP path; EDID decodes 2880×1800 at60/120Hz.

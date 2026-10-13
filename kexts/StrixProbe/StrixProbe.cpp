@@ -61,7 +61,7 @@ void StrixProbe::capturePCI() {
         for (auto key : keys)
             if (auto value = pci->getProperty(key)) entry->setObject(key, value);
         for (unsigned bar = 0; bar < 6; ++bar) {
-            UInt8 reg = 0x10 + 4 * bar;
+            UInt8 reg = static_cast<UInt8>(0x10 + 4 * bar);
             char key[40];
             snprintf(key, sizeof(key), "BAR%u,Config", bar);
             put(key, pci->configRead32(reg), 32);

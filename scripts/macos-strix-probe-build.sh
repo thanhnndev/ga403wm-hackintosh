@@ -39,7 +39,7 @@ status = 'BUILD-FAILED' if build_exit else 'VALIDATION-FAILED' if validate_exit 
 if not build_exit:
     symbols = (out / 'undefined-symbols.txt').read_text()
     headers = (out / 'macho-header.txt').read_text()
-    if 'KEXT_BUNDLE' not in headers or re.search(r'___cxa_atexit|___cxa_throw|___gxx_personality', symbols):
+    if not re.search(r'\bKEXT_?BUNDLE\b', headers) or re.search(r'___cxa_atexit|___cxa_throw|___gxx_personality', symbols):
         status = 'VALIDATION-FAILED'; validate_exit = 1
     hashes['build/StrixProbe.kext/Contents/MacOS/StrixProbe'] = hashlib.sha256(
         pathlib.Path('build/StrixProbe.kext/Contents/MacOS/StrixProbe').read_bytes()).hexdigest()
