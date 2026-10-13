@@ -6,6 +6,30 @@ Step-by-step history: [890M trace](890M-TRACE.md).
 
 ## Current state
 
+Latest deep review: [kernel call-chain trace](890M-KERNEL-TRACE.md).
+Loaded0.1.1 proved the physical target exists in FirstPublish but its immediate
+Matched census still missed it. Actual kernel disassembly and same-session
+userspace matching confirm the state-ordering cause. Reviewed0.1.2 is now
+staged on ESP, not runtime tested; config unchanged, no reboot performed.
+Backup bundle: `EFI/OC/Kexts-backup/StrixProbe.kext.20261013-0855`.
+It captures callback device directly, FirstMatch, and offers admin-only refresh.
+Read the kernel trace before any further install/reboot or framebuffer work.
+
+After next normal Hybrid boot:
+
+```sh
+clang -Wall -Wextra -Werror -framework IOKit -framework CoreFoundation \
+  tools/strix_probe_ctl.c -o build/strix-probe-ctl
+build/strix-probe-ctl --inspect
+bash scripts/macos-strix-probe-collect.sh
+```
+
+Require version0.1.2, exactly one physical target, BAR descriptors and a complete
+generation. Then test `--refresh` as admin via the documented administrator
+wrapper workflow; non-admin call should return NotPrivileged. Collect again
+without reboot, check generation increased and source identity remains correct.
+Loaded0.1.1 does not support refresh; the helper checks and refuses to send it.
+
 Latest2026-10-13: first runtime0.1.0 captured valid VFCT/VBIOS matching Linux,
 but PCI snapshot was too early or otherwise unavailable. Later IORegistry
 contains890M; GOP candidate matches its BAR0. Probe0.1.1 now staged with a

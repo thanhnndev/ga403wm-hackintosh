@@ -30,7 +30,7 @@ if [ "$BUILD_EXIT" -eq 0 ]; then
   tar -czf "$TRACE_DIR/StrixProbe.kext.tar.gz" -C build StrixProbe.kext
 fi
 python3 - "$TRACE_DIR" "$BUILD_EXIT" "$VALIDATE_EXIT" <<'PY'
-import hashlib, json, pathlib, re, subprocess, sys
+import hashlib, json, pathlib, re, shlex, subprocess, sys
 out = pathlib.Path(sys.argv[1]); build_exit = int(sys.argv[2]); validate_exit = int(sys.argv[3])
 sources = ['scripts/build.sh', 'scripts/macos-strix-probe-build.sh',
            'kexts/StrixProbe/StrixProbe.cpp', 'kexts/StrixProbe/kmod_info.c', 'kexts/StrixProbe/Info.plist']
@@ -43,11 +43,23 @@ if not build_exit:
         status = 'VALIDATION-FAILED'; validate_exit = 1
     hashes['build/StrixProbe.kext/Contents/MacOS/StrixProbe'] = hashlib.sha256(
         pathlib.Path('build/StrixProbe.kext/Contents/MacOS/StrixProbe').read_bytes()).hexdigest()
+    defined = subprocess.run(['nm', '-gUj', 'build/StrixProbe.kext/Contents/MacOS/StrixProbe'],
+                             capture_output=True, text=True, check=True).stdout.splitlines()
+    if '_kmod_info' not in defined or 'X86_64' not in headers:
+        status = 'VALIDATION-FAILED'; validate_exit = 1
+deps = pathlib.Path('build/obj/StrixProbe_StrixProbe.d')
+dependency_hashes = {}
+if not build_exit and deps.exists():
+    (out / 'compiler-dependencies.txt').write_bytes(deps.read_bytes())
+    for name in shlex.split(deps.read_text().replace('\\\n', '').split(':', 1)[1]):
+        path = pathlib.Path(name)
+        dependency_hashes[name] = hashlib.sha256(path.read_bytes()).hexdigest()
 sdk = pathlib.Path(__import__('os').environ.get('MACKERNELSDK', 'build/MacKernelSDK'))
 sdk_rev = subprocess.run(['git', '-C', str(sdk), 'rev-parse', 'HEAD'], capture_output=True, text=True)
 manifest = {'step': '890M-02', 'status': status, 'build_exit': build_exit,
             'validation_exit': validate_exit, 'sdk_commit': sdk_rev.stdout.strip(),
             'source_and_binary_hashes': hashes, 'installed': False, 'runtime_tested': False,
+            'compiler_dependency_hashes': dependency_hashes,
             'build_command': ['bash', 'scripts/build.sh', 'StrixProbe']}
 (out / 'manifest.json').write_text(json.dumps(manifest, indent=2) + '\n')
 print(status + ': ' + str(out))

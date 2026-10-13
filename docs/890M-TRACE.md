@@ -163,3 +163,33 @@ Parser tests12 PASS/2 skipped. Updated bundle staged on ESP; previous bundle
 at `EFI/OC/Kexts-backup/StrixProbe.kext.20261013-0836`; config unchanged.
 **Next gate: reboot and capture0.1.1; require one physical PCI target.**
 No runtime success claimed for0.1.1, no GPU initialization or framebuffer writes.
+
+### Step02 second runtime and deep kernel review (2026-10-13)
+
+Runtime0.1.1 capture `out/890m-trace/step02-20261013T083948.414944Z/`:
+notification installed, target-publish-notification observed, PCI count still0.
+VFCT valid, same hashes; GOP unchanged. This proves the callback config identity
+test passed, while its nested Matched census omitted the callback target.
+XNU source and actual kernel disassembly establish FirstPublish/Matched ordering;
+later same-session userspace API matching finds exactly one registry target.
+
+Owner requested deeper review before more reboots. Followed relevant SDK/XNU/PCI
+call chains, lifetime, locking, privilege dispatch, descriptors and console flags.
+Full findings, pinned references and limitations: [kernel trace](890M-KERNEL-TRACE.md).
+No claim of manually reading every unrelated SDK header.
+
+Final0.1.2 build `out/890m-trace/step02-build-20261013T085331.994874Z/`:
+263 compiler dependency hashes; Wall/Wextra/Werror compilation; valid x86_64
+KEXTBUNDLE/kmod descriptor;316 imports, zero missing among Boot KC definitions.
+Direct callback census plus FirstMatch, serialized generations, admin-only
+refresh, explicit physical console flags, and resource getter side-effect avoidance.
+Collector now retains live PCI and OS/kernel evidence. Helper inspect works on
+loaded0.1.1; refresh refuses unsupported endpoint without sending a request.
+Parser12 PASS/2 fixture skips, helper strict compile, shell syntax/diff checks PASS.
+
+Reviewed0.1.2 staged through an administrator wrapper; backup previous bundle
+`EFI/OC/Kexts-backup/StrixProbe.kext.20261013-0855`; config unchanged.
+**Status: reboot pending;0.1.2 runtime/refresh authorization unverified.**
+No hot-unload, GPU republish, device power/link calls, MMIO, modesetting or
+framebuffer writes attempted. Next trial includes initial capture and repeated
+admin refresh in one session instead of rebooting for each diagnostic snapshot.

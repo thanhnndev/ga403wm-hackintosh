@@ -34,7 +34,7 @@ mkdir -p "$OBJ"
 build_kext() {
   local name="$1" dir="$2"; shift 2
   local out="build/$name.kext" objs=() extra_cxx=()
-  [ "$name" != StrixProbe ] || extra_cxx+=(-fno-c++-static-destructors)
+  [ "$name" != StrixProbe ] || extra_cxx+=(-fno-c++-static-destructors -Wall -Wextra -Werror -MMD)
   rm -rf "$out"; mkdir -p "$out/Contents/MacOS"
   cp "$dir/Info.plist" "$out/Contents/Info.plist"
   for src in "$@"; do
