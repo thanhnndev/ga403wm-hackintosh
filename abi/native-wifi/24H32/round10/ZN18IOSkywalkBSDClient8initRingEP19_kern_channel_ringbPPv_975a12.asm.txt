@@ -1,0 +1,31 @@
+# 0xffffff8002975a12 __ZN18IOSkywalkBSDClient8initRingEP19__kern_channel_ringbPPv
+ffffff8002975a12: push     rbp
+ffffff8002975a13: mov      rbp, rsp
+ffffff8002975a16: push     r15
+ffffff8002975a18: push     r14
+ffffff8002975a1a: push     rbx
+ffffff8002975a1b: push     rax
+ffffff8002975a1c: mov      rbx, rcx
+ffffff8002975a1f: mov      r15, rsi
+ffffff8002975a22: mov      rax, qword ptr [rdi]
+ffffff8002975a25: call     qword ptr [rax + 0x890]
+ffffff8002975a2b: test     rax, rax
+ffffff8002975a2e: je       0xffffff8002975a4d
+ffffff8002975a30: mov      r14, rax
+ffffff8002975a33: mov      rax, qword ptr [rax]
+ffffff8002975a36: mov      rdi, r14
+ffffff8002975a39: mov      rsi, r15
+ffffff8002975a3c: call     qword ptr [rax + 0x1b8]
+ffffff8002975a42: test     eax, eax
+ffffff8002975a44: jne      0xffffff8002975a52
+ffffff8002975a46: mov      qword ptr [rbx], r14
+ffffff8002975a49: xor      eax, eax
+ffffff8002975a4b: jmp      0xffffff8002975a52  ; __ZN18IOSkywalkBSDClient8initRingEP19__kern_channel_ringbPPv+0x40
+ffffff8002975a4d: mov      eax, 0xe00002f0
+ffffff8002975a52: add      rsp, 8
+ffffff8002975a56: pop      rbx
+ffffff8002975a57: pop      r14
+ffffff8002975a59: pop      r15
+ffffff8002975a5b: pop      rbp
+ffffff8002975a5c: ret      
+ffffff8002975a5d: nop      

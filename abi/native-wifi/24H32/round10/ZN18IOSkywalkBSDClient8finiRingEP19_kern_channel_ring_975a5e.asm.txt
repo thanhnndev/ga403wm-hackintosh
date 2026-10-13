@@ -1,0 +1,13 @@
+# 0xffffff8002975a5e __ZN18IOSkywalkBSDClient8finiRingEP19__kern_channel_ring
+ffffff8002975a5e: push     rbp
+ffffff8002975a5f: mov      rbp, rsp
+ffffff8002975a62: mov      rdi, rsi
+ffffff8002975a65: call     0xffffff80009cb320  ; _kern_channel_ring_get_context
+ffffff8002975a6a: test     rax, rax
+ffffff8002975a6d: je       0xffffff8002975a7c
+ffffff8002975a6f: mov      rcx, qword ptr [rax]
+ffffff8002975a72: mov      rdi, rax
+ffffff8002975a75: pop      rbp
+ffffff8002975a76: jmp      qword ptr [rcx + 0x1c0]
+ffffff8002975a7c: pop      rbp
+ffffff8002975a7d: ret      

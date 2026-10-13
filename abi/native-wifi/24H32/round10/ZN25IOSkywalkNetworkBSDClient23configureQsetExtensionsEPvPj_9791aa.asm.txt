@@ -1,0 +1,17 @@
+# 0xffffff80029791aa __ZN25IOSkywalkNetworkBSDClient23configureQsetExtensionsEPvPj
+ffffff80029791aa: push     rbp
+ffffff80029791ab: mov      rbp, rsp
+ffffff80029791ae: mov      eax, 0xe00002c2
+ffffff80029791b3: test     rsi, rsi
+ffffff80029791b6: je       0xffffff80029791d3
+ffffff80029791b8: cmp      dword ptr [rdx], 0x18
+ffffff80029791bb: jne      0xffffff80029791d3
+ffffff80029791bd: cmp      dword ptr [rsi], 1
+ffffff80029791c0: jne      0xffffff80029791d3
+ffffff80029791c2: lea      rax, [rip + 0x53]  ; 0xffffff800297921c
+ffffff80029791c9: mov      qword ptr [rsi + 0x10], rax
+ffffff80029791cd: mov      qword ptr [rsi + 8], rdi
+ffffff80029791d1: xor      eax, eax
+ffffff80029791d3: pop      rbp
+ffffff80029791d4: ret      
+ffffff80029791d5: nop      

@@ -1,0 +1,15 @@
+# 0xffffff800297779a __ZN25IOSkywalkNetworkBSDClient4initEP12OSDictionary
+ffffff800297779a: push     rbp
+ffffff800297779b: mov      rbp, rsp
+ffffff800297779e: push     rbx
+ffffff800297779f: push     rax
+ffffff80029777a0: mov      rbx, rdi
+ffffff80029777a3: lea      rax, [rip + 0x328ce]  ; 0xffffff80029aa078
+ffffff80029777aa: call     qword ptr [rax + 0x258]
+ffffff80029777b0: test     al, al
+ffffff80029777b2: je       0xffffff80029777bf
+ffffff80029777b4: mov      qword ptr [rbx + 0x120], 0
+ffffff80029777bf: add      rsp, 8
+ffffff80029777c3: pop      rbx
+ffffff80029777c4: pop      rbp
+ffffff80029777c5: ret      

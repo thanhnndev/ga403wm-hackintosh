@@ -1,0 +1,30 @@
+# 0xffffff80029793f4 __ZN25IOSkywalkNetworkBSDClient17setAggressivenessEmm
+ffffff80029793f4: push     rbp
+ffffff80029793f5: mov      rbp, rsp
+ffffff80029793f8: push     r15
+ffffff80029793fa: push     r14
+ffffff80029793fc: push     rbx
+ffffff80029793fd: push     rax
+ffffff80029793fe: mov      rbx, rdx
+ffffff8002979401: mov      r14, rsi
+ffffff8002979404: mov      r15, rdi
+ffffff8002979407: cmp      rsi, 4
+ffffff800297940b: jne      0xffffff800297942e
+ffffff800297940d: mov      rdi, qword ptr [r15 + 0x90]
+ffffff8002979414: mov      rsi, qword ptr [r15 + 0x118]
+ffffff800297941b: mov      rax, qword ptr [rdi]
+ffffff800297941e: xor      edx, edx
+ffffff8002979420: xor      ecx, ecx
+ffffff8002979422: xor      r8d, r8d
+ffffff8002979425: xor      r9d, r9d
+ffffff8002979428: call     qword ptr [rax + 0x1c8]
+ffffff800297942e: lea      rax, [rip + 0x30c43]  ; 0xffffff80029aa078
+ffffff8002979435: mov      rdi, r15
+ffffff8002979438: mov      rsi, r14
+ffffff800297943b: mov      rdx, rbx
+ffffff800297943e: add      rsp, 8
+ffffff8002979442: pop      rbx
+ffffff8002979443: pop      r14
+ffffff8002979445: pop      r15
+ffffff8002979447: pop      rbp
+ffffff8002979448: jmp      qword ptr [rax + 0x7d0]

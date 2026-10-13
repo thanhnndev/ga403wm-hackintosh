@@ -1,0 +1,10 @@
+# 0xffffff80029785a0 __ZN25IOSkywalkNetworkBSDClient9if_outputEP7__ifnetP6__mbuf
+ffffff80029785a0: test     rsi, rsi
+ffffff80029785a3: je       0xffffff80029785b2
+ffffff80029785a5: push     rbp
+ffffff80029785a6: mov      rbp, rsp
+ffffff80029785a9: mov      rdi, rsi
+ffffff80029785ac: call     0xffffff800092d4e0  ; _mbuf_freem
+ffffff80029785b1: pop      rbp
+ffffff80029785b2: mov      eax, 0x13
+ffffff80029785b7: ret      

@@ -1,0 +1,8 @@
+# 0xffffff80029a0eaf __ZN25IOSkywalkNetworkBSDClient24reportInterfaceWakeFlagsEv.cold.1
+ffffff80029a0eaf: push     rbp
+ffffff80029a0eb0: mov      rbp, rsp
+ffffff80029a0eb3: lea      rdi, [rip + 0x44fb]  ; ""IOSkywalkNetworkBSDClient: not on work loop" @%s:%d"
+ffffff80029a0eba: lea      rsi, [rip + 0x4529]  ; "IOSkywalkNetworkBSDClient.cpp"
+ffffff80029a0ec1: mov      edx, 0x6ec
+ffffff80029a0ec6: xor      eax, eax
+ffffff80029a0ec8: call     0xffffff8000bd073c  ; _panic

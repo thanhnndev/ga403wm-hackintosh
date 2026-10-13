@@ -1,0 +1,15 @@
+# 0xffffff800297928a __ZN25IOSkywalkNetworkBSDClient13setPowerStateEmP9IOService
+ffffff800297928a: push     rbp
+ffffff800297928b: mov      rbp, rsp
+ffffff800297928e: mov      rdx, rsi
+ffffff8002979291: mov      rax, qword ptr [rdi + 0x90]
+ffffff8002979298: mov      rsi, qword ptr [rdi + 0x110]
+ffffff800297929f: mov      r10, qword ptr [rax]
+ffffff80029792a2: mov      rdi, rax
+ffffff80029792a5: xor      ecx, ecx
+ffffff80029792a7: xor      r8d, r8d
+ffffff80029792aa: xor      r9d, r9d
+ffffff80029792ad: call     qword ptr [r10 + 0x1c8]
+ffffff80029792b4: xor      eax, eax
+ffffff80029792b6: pop      rbp
+ffffff80029792b7: ret      

@@ -1,0 +1,29 @@
+# 0xffffff8002978d3a __ZN25IOSkywalkNetworkBSDClient12disconnectedEv
+ffffff8002978d3a: push     rbp
+ffffff8002978d3b: mov      rbp, rsp
+ffffff8002978d3e: push     rbx
+ffffff8002978d3f: push     rax
+ffffff8002978d40: mov      rbx, rdi
+ffffff8002978d43: mov      rdi, qword ptr [rdi + 0x90]
+ffffff8002978d4a: mov      rdx, qword ptr [rbx + 0xe8]
+ffffff8002978d51: mov      rax, qword ptr [rdi]
+ffffff8002978d54: lea      rsi, [rip - 0x5f]
+ffffff8002978d5b: xor      ecx, ecx
+ffffff8002978d5d: xor      r8d, r8d
+ffffff8002978d60: xor      r9d, r9d
+ffffff8002978d63: call     qword ptr [rax + 0x1c8]
+ffffff8002978d69: test     eax, eax
+ffffff8002978d6b: je       0xffffff8002978d74
+ffffff8002978d6d: add      rsp, 8
+ffffff8002978d71: pop      rbx
+ffffff8002978d72: pop      rbp
+ffffff8002978d73: ret      
+ffffff8002978d74: mov      rdi, qword ptr [rbx + 0xe8]
+ffffff8002978d7b: mov      rax, qword ptr [rdi]
+ffffff8002978d7e: mov      rax, qword ptr [rax + 0x868]
+ffffff8002978d85: mov      rsi, rbx
+ffffff8002978d88: xor      edx, edx
+ffffff8002978d8a: add      rsp, 8
+ffffff8002978d8e: pop      rbx
+ffffff8002978d8f: pop      rbp
+ffffff8002978d90: jmp      rax

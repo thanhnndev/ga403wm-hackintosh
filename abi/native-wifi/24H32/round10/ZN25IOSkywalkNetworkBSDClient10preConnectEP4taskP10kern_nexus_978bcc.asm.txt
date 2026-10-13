@@ -1,0 +1,37 @@
+# 0xffffff8002978bcc __ZN25IOSkywalkNetworkBSDClient10preConnectEP4taskP10kern_nexus
+ffffff8002978bcc: push     rbp
+ffffff8002978bcd: mov      rbp, rsp
+ffffff8002978bd0: push     r14
+ffffff8002978bd2: push     rbx
+ffffff8002978bd3: mov      rbx, rdi
+ffffff8002978bd6: mov      rdi, qword ptr [rdi + 0xe8]
+ffffff8002978bdd: mov      rax, qword ptr [rdi]
+ffffff8002978be0: mov      rdx, rbx
+ffffff8002978be3: xor      ecx, ecx
+ffffff8002978be5: call     qword ptr [rax + 0x860]
+ffffff8002978beb: mov      ecx, eax
+ffffff8002978bed: mov      eax, 0xe00002cd
+ffffff8002978bf2: test     ecx, ecx
+ffffff8002978bf4: jne      0xffffff8002978c41
+ffffff8002978bf6: mov      rdi, qword ptr [rbx + 0x90]
+ffffff8002978bfd: mov      rdx, qword ptr [rbx + 0xe8]
+ffffff8002978c04: mov      rax, qword ptr [rdi]
+ffffff8002978c07: lea      rsi, [rip - 0xb6]
+ffffff8002978c0e: xor      ecx, ecx
+ffffff8002978c10: xor      r8d, r8d
+ffffff8002978c13: xor      r9d, r9d
+ffffff8002978c16: call     qword ptr [rax + 0x1c8]
+ffffff8002978c1c: mov      r14d, eax
+ffffff8002978c1f: mov      eax, 0
+ffffff8002978c24: test     r14d, r14d
+ffffff8002978c27: je       0xffffff8002978c41
+ffffff8002978c29: mov      rdi, qword ptr [rbx + 0xe8]
+ffffff8002978c30: mov      rax, qword ptr [rdi]
+ffffff8002978c33: mov      rsi, rbx
+ffffff8002978c36: xor      edx, edx
+ffffff8002978c38: call     qword ptr [rax + 0x868]
+ffffff8002978c3e: mov      eax, r14d
+ffffff8002978c41: pop      rbx
+ffffff8002978c42: pop      r14
+ffffff8002978c44: pop      rbp
+ffffff8002978c45: ret      

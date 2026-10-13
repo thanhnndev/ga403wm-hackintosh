@@ -1,0 +1,8 @@
+# 0xffffff80029a0f09 __ZN25IOSkywalkNetworkBSDClient21adjustInterfaceEnableEv.cold.1
+ffffff80029a0f09: push     rbp
+ffffff80029a0f0a: mov      rbp, rsp
+ffffff80029a0f0d: lea      rdi, [rip + 0x44a1]  ; ""IOSkywalkNetworkBSDClient: not on work loop" @%s:%d"
+ffffff80029a0f14: lea      rsi, [rip + 0x44cf]  ; "IOSkywalkNetworkBSDClient.cpp"
+ffffff80029a0f1b: mov      edx, 0x2e6
+ffffff80029a0f20: xor      eax, eax
+ffffff80029a0f22: call     0xffffff8000bd073c  ; _panic

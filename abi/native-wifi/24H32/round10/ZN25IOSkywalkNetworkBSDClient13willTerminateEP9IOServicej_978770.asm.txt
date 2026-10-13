@@ -1,0 +1,41 @@
+# 0xffffff8002978770 __ZN25IOSkywalkNetworkBSDClient13willTerminateEP9IOServicej
+ffffff8002978770: push     rbp
+ffffff8002978771: mov      rbp, rsp
+ffffff8002978774: push     r15
+ffffff8002978776: push     r14
+ffffff8002978778: push     rbx
+ffffff8002978779: push     rax
+ffffff800297877a: mov      ebx, edx
+ffffff800297877c: mov      r14, rsi
+ffffff800297877f: mov      r15, rdi
+ffffff8002978782: mov      rdi, qword ptr [rdi + 0x90]
+ffffff8002978789: test     rdi, rdi
+ffffff800297878c: je       0xffffff80029787ac
+ffffff800297878e: mov      rax, qword ptr [rdi]
+ffffff8002978791: call     qword ptr [rax + 0x168]
+ffffff8002978797: test     rax, rax
+ffffff800297879a: je       0xffffff80029787ac
+ffffff800297879c: mov      rcx, qword ptr [rax]
+ffffff800297879f: mov      rdi, rax
+ffffff80029787a2: call     qword ptr [rcx + 0x138]
+ffffff80029787a8: test     al, al
+ffffff80029787aa: je       0xffffff80029787ee
+ffffff80029787ac: cmp      dword ptr [r15 + 0x128], 0
+ffffff80029787b4: je       0xffffff80029787cf
+ffffff80029787b6: mov      rdi, qword ptr [r15 + 0x90]
+ffffff80029787bd: lea      rsi, [r15 + 0x13d]
+ffffff80029787c4: mov      rax, qword ptr [rdi]
+ffffff80029787c7: xor      edx, edx
+ffffff80029787c9: call     qword ptr [rax + 0x1e8]
+ffffff80029787cf: lea      rax, [rip + 0x318a2]  ; 0xffffff80029aa078
+ffffff80029787d6: mov      rdi, r15
+ffffff80029787d9: mov      rsi, r14
+ffffff80029787dc: mov      edx, ebx
+ffffff80029787de: add      rsp, 8
+ffffff80029787e2: pop      rbx
+ffffff80029787e3: pop      r14
+ffffff80029787e5: pop      r15
+ffffff80029787e7: pop      rbp
+ffffff80029787e8: jmp      qword ptr [rax + 0x410]
+ffffff80029787ee: call     0xffffff80029a0ecd  ; __ZN25IOSkywalkNetworkBSDClient13willTerminateEP9IOServicej.cold.1
+ffffff80029787f3: nop      

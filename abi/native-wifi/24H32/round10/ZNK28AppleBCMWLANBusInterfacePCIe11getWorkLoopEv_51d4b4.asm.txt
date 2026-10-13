@@ -1,0 +1,6 @@
+# 0xffffff800151d4b4 __ZNK28AppleBCMWLANBusInterfacePCIe11getWorkLoopEv
+ffffff800151d4b4: push     rbp
+ffffff800151d4b5: mov      rbp, rsp
+ffffff800151d4b8: mov      rax, qword ptr [rdi]
+ffffff800151d4bb: pop      rbp
+ffffff800151d4bc: jmp      qword ptr [rax + 0x868]

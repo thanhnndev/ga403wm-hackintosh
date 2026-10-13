@@ -1,0 +1,75 @@
+# 0xffffff8002978410 __ZN25IOSkywalkNetworkBSDClient24reportInterfaceWakeFlagsEv
+ffffff8002978410: push     rbp
+ffffff8002978411: mov      rbp, rsp
+ffffff8002978414: push     r15
+ffffff8002978416: push     r14
+ffffff8002978418: push     r12
+ffffff800297841a: push     rbx
+ffffff800297841b: mov      rbx, rdi
+ffffff800297841e: mov      rdi, qword ptr [rdi + 0x90]
+ffffff8002978425: test     rdi, rdi
+ffffff8002978428: je       0xffffff800297844c
+ffffff800297842a: mov      rax, qword ptr [rdi]
+ffffff800297842d: call     qword ptr [rax + 0x168]
+ffffff8002978433: test     rax, rax
+ffffff8002978436: je       0xffffff800297844c
+ffffff8002978438: mov      rcx, qword ptr [rax]
+ffffff800297843b: mov      rdi, rax
+ffffff800297843e: call     qword ptr [rcx + 0x138]
+ffffff8002978444: test     al, al
+ffffff8002978446: je       0xffffff800297851e
+ffffff800297844c: cmp      byte ptr [rbx + 0x13c], 1
+ffffff8002978453: jne      0xffffff8002978462
+ffffff8002978455: cmp      byte ptr [rbx + 0x140], 0
+ffffff800297845c: jne      0xffffff8002978515
+ffffff8002978462: cmp      qword ptr [rbx + 0xf8], 0
+ffffff800297846a: je       0xffffff8002978515
+ffffff8002978470: mov      rdi, rbx
+ffffff8002978473: call     0xffffff8002979334  ; __ZN25IOSkywalkNetworkBSDClient21getSupportedWakeFlagsEv
+ffffff8002978478: mov      r14d, eax
+ffffff800297847b: mov      rdi, qword ptr [rbx + 0xf8]
+ffffff8002978482: call     0xffffff800069da90  ; _ifnet_get_wake_flags
+ffffff8002978487: and      eax, 1
+ffffff800297848a: cmp      r14d, eax
+ffffff800297848d: je       0xffffff8002978515
+ffffff8002978493: mov      rdi, qword ptr [rbx + 0xf8]
+ffffff800297849a: mov      esi, r14d
+ffffff800297849d: mov      edx, 1
+ffffff80029784a2: call     0xffffff800069d8a0  ; _ifnet_set_wake_flags
+ffffff80029784a7: mov      r12, qword ptr [rbx + 0x120]
+ffffff80029784ae: call     0xffffff8000ad5ec0  ; __ZN9IOService15getPMRootDomainEv
+ffffff80029784b3: mov      r15, rax
+ffffff80029784b6: test     r12, r12
+ffffff80029784b9: je       0xffffff80029784dd
+ffffff80029784bb: mov      rsi, qword ptr [rbx + 0x120]
+ffffff80029784c2: and      r14d, 1
+ffffff80029784c6: neg      r14d
+ffffff80029784c9: movzx    edx, r14b
+ffffff80029784cd: mov      rdi, r15
+ffffff80029784d0: pop      rbx
+ffffff80029784d1: pop      r12
+ffffff80029784d3: pop      r14
+ffffff80029784d5: pop      r15
+ffffff80029784d7: pop      rbp
+ffffff80029784d8: jmp      0xffffff8000b8f740  ; __ZN14IOPMrootDomain19setPMAssertionLevelEyj
+ffffff80029784dd: and      r14d, 1
+ffffff80029784e1: neg      r14d
+ffffff80029784e4: movzx    r14d, r14b
+ffffff80029784e8: mov      rdi, qword ptr [rbx + 0xe8]
+ffffff80029784ef: mov      rax, qword ptr [rdi]
+ffffff80029784f2: call     qword ptr [rax + 0x908]
+ffffff80029784f8: mov      esi, 0x100
+ffffff80029784fd: mov      rdi, r15
+ffffff8002978500: mov      edx, r14d
+ffffff8002978503: mov      rcx, rbx
+ffffff8002978506: mov      r8, rax
+ffffff8002978509: call     0xffffff8000b8f4f0  ; __ZN14IOPMrootDomain17createPMAssertionEyjP9IOServicePKc
+ffffff800297850e: mov      qword ptr [rbx + 0x120], rax
+ffffff8002978515: pop      rbx
+ffffff8002978516: pop      r12
+ffffff8002978518: pop      r14
+ffffff800297851a: pop      r15
+ffffff800297851c: pop      rbp
+ffffff800297851d: ret      
+ffffff800297851e: call     0xffffff80029a0eaf  ; __ZN25IOSkywalkNetworkBSDClient24reportInterfaceWakeFlagsEv.cold.1
+ffffff8002978523: nop      

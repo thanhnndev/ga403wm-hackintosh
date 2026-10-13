@@ -1,0 +1,47 @@
+# 0xffffff8002975858 __ZN18IOSkywalkBSDClient4freeEv
+ffffff8002975858: push     rbp
+ffffff8002975859: mov      rbp, rsp
+ffffff800297585c: push     rbx
+ffffff800297585d: push     rax
+ffffff800297585e: mov      rbx, rdi
+ffffff8002975861: mov      rdi, qword ptr [rdi + 0x88]
+ffffff8002975868: test     rdi, rdi
+ffffff800297586b: je       0xffffff8002975873
+ffffff800297586d: mov      rax, qword ptr [rdi]
+ffffff8002975870: call     qword ptr [rax + 0x28]
+ffffff8002975873: mov      qword ptr [rbx + 0x88], 0
+ffffff800297587e: mov      rdi, qword ptr [rbx + 0x98]
+ffffff8002975885: test     rdi, rdi
+ffffff8002975888: je       0xffffff8002975890
+ffffff800297588a: mov      rax, qword ptr [rdi]
+ffffff800297588d: call     qword ptr [rax + 0x28]
+ffffff8002975890: mov      qword ptr [rbx + 0x98], 0
+ffffff800297589b: mov      rdi, qword ptr [rbx + 0xa0]
+ffffff80029758a2: test     rdi, rdi
+ffffff80029758a5: je       0xffffff80029758ad
+ffffff80029758a7: mov      rax, qword ptr [rdi]
+ffffff80029758aa: call     qword ptr [rax + 0x28]
+ffffff80029758ad: mov      qword ptr [rbx + 0xa0], 0
+ffffff80029758b8: mov      rdi, qword ptr [rbx + 0xa8]
+ffffff80029758bf: test     rdi, rdi
+ffffff80029758c2: je       0xffffff80029758ca
+ffffff80029758c4: mov      rax, qword ptr [rdi]
+ffffff80029758c7: call     qword ptr [rax + 0x28]
+ffffff80029758ca: mov      qword ptr [rbx + 0xa8], 0
+ffffff80029758d5: mov      rdi, qword ptr [rbx + 0x90]
+ffffff80029758dc: test     rdi, rdi
+ffffff80029758df: je       0xffffff80029758e7
+ffffff80029758e1: mov      rax, qword ptr [rdi]
+ffffff80029758e4: call     qword ptr [rax + 0x28]
+ffffff80029758e7: mov      qword ptr [rbx + 0x90], 0
+ffffff80029758f2: mov      rdi, qword ptr [rbx + 0xb0]
+ffffff80029758f9: test     rdi, rdi
+ffffff80029758fc: je       0xffffff800297590e
+ffffff80029758fe: call     0xffffff8000ab6ee0  ; _IOLockFree
+ffffff8002975903: mov      qword ptr [rbx + 0xb0], 0
+ffffff800297590e: mov      rax, qword ptr [rip + 0x317fb]  ; 0xffffff80029a7110
+ffffff8002975915: mov      rdi, rbx
+ffffff8002975918: add      rsp, 8
+ffffff800297591c: pop      rbx
+ffffff800297591d: pop      rbp
+ffffff800297591e: jmp      qword ptr [rax + 0xa0]

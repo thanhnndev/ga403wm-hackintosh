@@ -1,0 +1,26 @@
+# 0xffffff80029791d6 __ZN25IOSkywalkNetworkBSDClient14advisoryEnableEb
+ffffff80029791d6: push     rbp
+ffffff80029791d7: mov      rbp, rsp
+ffffff80029791da: push     rbx
+ffffff80029791db: push     rax
+ffffff80029791dc: mov      rbx, rdi
+ffffff80029791df: mov      rdi, qword ptr [rdi + 0xe8]
+ffffff80029791e6: test     rdi, rdi
+ffffff80029791e9: je       0xffffff800297920f
+ffffff80029791eb: mov      rax, qword ptr [rdi]
+ffffff80029791ee: movzx    esi, sil
+ffffff80029791f2: call     qword ptr [rax + 0x920]
+ffffff80029791f8: mov      rcx, qword ptr [rbx]
+ffffff80029791fb: mov      rcx, qword ptr [rcx + 0x788]
+ffffff8002979202: mov      rdi, rbx
+ffffff8002979205: mov      esi, eax
+ffffff8002979207: add      rsp, 8
+ffffff800297920b: pop      rbx
+ffffff800297920c: pop      rbp
+ffffff800297920d: jmp      rcx
+ffffff800297920f: mov      eax, 0x16
+ffffff8002979214: add      rsp, 8
+ffffff8002979218: pop      rbx
+ffffff8002979219: pop      rbp
+ffffff800297921a: ret      
+ffffff800297921b: nop      

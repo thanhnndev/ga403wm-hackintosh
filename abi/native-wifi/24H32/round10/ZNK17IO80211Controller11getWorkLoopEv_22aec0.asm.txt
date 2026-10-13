@@ -1,0 +1,6 @@
+# 0xffffff800222aec0 __ZNK17IO80211Controller11getWorkLoopEv
+ffffff800222aec0: push     rbp
+ffffff800222aec1: mov      rbp, rsp
+ffffff800222aec4: mov      rax, qword ptr [rdi]
+ffffff800222aec7: pop      rbp
+ffffff800222aec8: jmp      qword ptr [rax + 0xc68]

@@ -1,0 +1,42 @@
+# 0xffffff800297893e __ZN25IOSkywalkNetworkBSDClient17gatedPrepareNexusEP7__ifnet
+ffffff800297893e: push     rbp
+ffffff800297893f: mov      rbp, rsp
+ffffff8002978942: push     r15
+ffffff8002978944: push     r14
+ffffff8002978946: push     rbx
+ffffff8002978947: push     rax
+ffffff8002978948: mov      r15, rsi
+ffffff800297894b: mov      rbx, rdi
+ffffff800297894e: mov      rdi, qword ptr [rdi + 0xe8]
+ffffff8002978955: mov      rax, qword ptr [rdi]
+ffffff8002978958: xor      edx, edx
+ffffff800297895a: call     qword ptr [rax + 0x8e8]
+ffffff8002978960: mov      r14d, eax
+ffffff8002978963: test     eax, eax
+ffffff8002978965: jne      0xffffff80029789b1
+ffffff8002978967: mov      eax, 0xaaaaaaaa
+ffffff800297896c: lea      rdx, [rbp - 0x20]
+ffffff8002978970: mov      dword ptr [rdx], eax
+ffffff8002978972: lea      rsi, [rbp - 0x1c]
+ffffff8002978976: mov      dword ptr [rsi], eax
+ffffff8002978978: mov      qword ptr [rbx + 0xf8], r15
+ffffff800297897f: mov      rdi, qword ptr [rbx + 0xe8]
+ffffff8002978986: mov      rax, qword ptr [rdi]
+ffffff8002978989: call     qword ptr [rax + 0x948]
+ffffff800297898f: test     eax, eax
+ffffff8002978991: jne      0xffffff80029789b1
+ffffff8002978993: mov      esi, dword ptr [rbp - 0x1c]
+ffffff8002978996: mov      edx, dword ptr [rbp - 0x20]
+ffffff8002978999: mov      rdi, r15
+ffffff800297899c: call     0xffffff8000622a00  ; _bpfattach
+ffffff80029789a1: mov      byte ptr [rbx + 0x143], 1
+ffffff80029789a8: mov      eax, dword ptr [rbp - 0x1c]
+ffffff80029789ab: mov      dword ptr [rbx + 0x138], eax
+ffffff80029789b1: mov      eax, r14d
+ffffff80029789b4: add      rsp, 8
+ffffff80029789b8: pop      rbx
+ffffff80029789b9: pop      r14
+ffffff80029789bb: pop      r15
+ffffff80029789bd: pop      rbp
+ffffff80029789be: ret      
+ffffff80029789bf: nop      

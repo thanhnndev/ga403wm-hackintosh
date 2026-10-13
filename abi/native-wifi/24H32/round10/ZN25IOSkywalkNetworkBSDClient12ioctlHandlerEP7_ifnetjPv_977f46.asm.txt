@@ -1,0 +1,190 @@
+# 0xffffff8002977f46 __ZN25IOSkywalkNetworkBSDClient12ioctlHandlerEP7__ifnetjPv
+ffffff8002977f46: push     rbp
+ffffff8002977f47: mov      rbp, rsp
+ffffff8002977f4a: push     r15
+ffffff8002977f4c: push     r14
+ffffff8002977f4e: push     r13
+ffffff8002977f50: push     r12
+ffffff8002977f52: push     rbx
+ffffff8002977f53: sub      rsp, 0x28
+ffffff8002977f57: mov      r14, rcx
+ffffff8002977f5a: mov      r15d, edx
+ffffff8002977f5d: mov      qword ptr [rbp - 0x48], rsi
+ffffff8002977f61: mov      rbx, rdi
+ffffff8002977f64: mov      rdi, qword ptr [rdi + 0x90]
+ffffff8002977f6b: test     rdi, rdi
+ffffff8002977f6e: je       0xffffff8002977f92
+ffffff8002977f70: mov      rax, qword ptr [rdi]
+ffffff8002977f73: call     qword ptr [rax + 0x168]
+ffffff8002977f79: test     rax, rax
+ffffff8002977f7c: je       0xffffff8002977f92
+ffffff8002977f7e: mov      rcx, qword ptr [rax]
+ffffff8002977f81: mov      rdi, rax
+ffffff8002977f84: call     qword ptr [rcx + 0x138]
+ffffff8002977f8a: test     al, al
+ffffff8002977f8c: je       0xffffff8002978241
+ffffff8002977f92: mov      rax, qword ptr [rbx + 0xf0]
+ffffff8002977f99: mov      r13d, 2
+ffffff8002977f9f: test     byte ptr [rax + 0x40], 4
+ffffff8002977fa3: je       0xffffff8002977fca
+ffffff8002977fa5: xor      eax, eax
+ffffff8002977fa7: lea      rcx, [rip + 0x2ec42]  ; 0xffffff80029a6bf0
+ffffff8002977fae: cmp      dword ptr [rcx + rax*8], r15d
+ffffff8002977fb2: je       0xffffff8002977fc5
+ffffff8002977fb4: inc      rax
+ffffff8002977fb7: cmp      rax, 4
+ffffff8002977fbb: jne      0xffffff8002977fae
+ffffff8002977fbd: mov      r13d, 1
+ffffff8002977fc3: jmp      0xffffff8002977fca  ; __ZN25IOSkywalkNetworkBSDClient12ioctlHandlerEP7__ifnetjPv+0x84
+ffffff8002977fc5: mov      r13d, dword ptr [rcx + rax*8 + 4]
+ffffff8002977fca: mov      qword ptr [rbp - 0x40], r14
+ffffff8002977fce: mov      dword ptr [rbp - 0x2c], r15d
+ffffff8002977fd2: cmp      r15d, 0x80206910
+ffffff8002977fd9: setne    r14b
+ffffff8002977fdd: mov      rdi, qword ptr [rbx + 0xe8]
+ffffff8002977fe4: mov      rax, qword ptr [rdi]
+ffffff8002977fe7: call     qword ptr [rax + 0x870]
+ffffff8002977fed: mov      r12d, 0x52
+ffffff8002977ff3: test     r14b, al
+ffffff8002977ff6: jne      0xffffff8002978168
+ffffff8002977ffc: xor      ecx, ecx
+ffffff8002977ffe: test     al, al
+ffffff8002978000: cmovne   r13d, ecx
+ffffff8002978004: cmp      byte ptr [rbx + 0x13c], 1
+ffffff800297800b: jne      0xffffff8002978017
+ffffff800297800d: cmp      r13d, 1
+ffffff8002978011: je       0xffffff8002978168
+ffffff8002978017: lea      rsi, [rbx + 0x13d]
+ffffff800297801e: mov      r12d, 0x10
+ffffff8002978024: cmp      byte ptr [rsi], 0
+ffffff8002978027: jne      0xffffff8002978038
+ffffff8002978029: cmp      byte ptr [rbx + 0x13c], 1
+ffffff8002978030: jne      0xffffff800297809d
+ffffff8002978032: cmp      r13d, 2
+ffffff8002978036: jne      0xffffff800297809d
+ffffff8002978038: inc      dword ptr [rbx + 0x128]
+ffffff800297803e: mov      rdi, qword ptr [rbx + 0x90]
+ffffff8002978045: mov      rax, qword ptr [rdi]
+ffffff8002978048: mov      r15, rsi
+ffffff800297804b: mov      edx, 2
+ffffff8002978050: call     qword ptr [rax + 0x1e0]
+ffffff8002978056: dec      dword ptr [rbx + 0x128]
+ffffff800297805c: mov      r14d, eax
+ffffff800297805f: mov      rdi, qword ptr [rbx + 0xe8]
+ffffff8002978066: mov      rax, qword ptr [rdi]
+ffffff8002978069: call     qword ptr [rax + 0x870]
+ffffff800297806f: cmp      dword ptr [rbp - 0x2c], 0x80206910
+ffffff8002978076: setne    cl
+ffffff8002978079: mov      edx, 0
+ffffff800297807e: cmovne   edx, r13d
+ffffff8002978082: test     al, al
+ffffff8002978084: cmovne   r13d, edx
+ffffff8002978088: test     cl, al
+ffffff800297808a: jne      0xffffff8002978147
+ffffff8002978090: test     r14d, r14d
+ffffff8002978093: mov      rsi, r15
+ffffff8002978096: je       0xffffff8002978024
+ffffff8002978098: jmp      0xffffff800297814a  ; __ZN25IOSkywalkNetworkBSDClient12ioctlHandlerEP7__ifnetjPv+0x204
+ffffff800297809d: mov      qword ptr [rbp - 0x38], rsi
+ffffff80029780a1: mov      byte ptr [rsi], 1
+ffffff80029780a4: cmp      dword ptr [rbp - 0x2c], 0x80206910
+ffffff80029780ab: mov      r13, qword ptr [rbp - 0x48]
+ffffff80029780af: mov      r14, qword ptr [rbp - 0x40]
+ffffff80029780b3: je       0xffffff800297817a
+ffffff80029780b9: mov      rdi, qword ptr [rbx + 0xe8]
+ffffff80029780c0: mov      rax, qword ptr [rdi]
+ffffff80029780c3: mov      rsi, r13
+ffffff80029780c6: mov      r15d, dword ptr [rbp - 0x2c]
+ffffff80029780ca: mov      edx, r15d
+ffffff80029780cd: mov      rcx, r14
+ffffff80029780d0: call     qword ptr [rax + 0x910]
+ffffff80029780d6: mov      r12d, eax
+ffffff80029780d9: cmp      r15d, 0x80206910
+ffffff80029780e0: jne      0xffffff800297813e
+ffffff80029780e2: mov      rdi, r13
+ffffff80029780e5: call     0xffffff800069cde0  ; _ifnet_flags
+ffffff80029780ea: mov      r15d, eax
+ffffff80029780ed: mov      eax, r15d
+ffffff80029780f0: and      eax, 0x41
+ffffff80029780f3: cmp      ax, 0x40
+ffffff80029780f7: jne      0xffffff800297813e
+ffffff80029780f9: mov      r14b, byte ptr [rbx + 0x141]
+ffffff8002978100: mov      byte ptr [rbx + 0x141], 0
+ffffff8002978107: mov      rdi, rbx
+ffffff800297810a: call     0xffffff80029789c0  ; __ZN25IOSkywalkNetworkBSDClient21adjustInterfaceEnableEv
+ffffff800297810f: and      r15d, 0xffbe
+ffffff8002978116: mov      rdi, r13
+ffffff8002978119: mov      esi, r15d
+ffffff800297811c: mov      edx, 0x40
+ffffff8002978121: call     0xffffff800069ccc0  ; _ifnet_set_flags
+ffffff8002978126: cmp      r14b, 1
+ffffff800297812a: jne      0xffffff800297813e
+ffffff800297812c: mov      rdi, qword ptr [rbx + 0xe8]
+ffffff8002978133: mov      rax, qword ptr [rdi]
+ffffff8002978136: xor      esi, esi
+ffffff8002978138: call     qword ptr [rax + 0x930]
+ffffff800297813e: mov      rsi, qword ptr [rbp - 0x38]
+ffffff8002978142: mov      byte ptr [rsi], 0
+ffffff8002978145: jmp      0xffffff800297814a  ; __ZN25IOSkywalkNetworkBSDClient12ioctlHandlerEP7__ifnetjPv+0x204
+ffffff8002978147: mov      rsi, r15
+ffffff800297814a: cmp      dword ptr [rbx + 0x128], 0
+ffffff8002978151: je       0xffffff8002978168
+ffffff8002978153: mov      rdi, qword ptr [rbx + 0x90]
+ffffff800297815a: mov      rax, qword ptr [rdi]
+ffffff800297815d: mov      edx, 1
+ffffff8002978162: call     qword ptr [rax + 0x1e8]
+ffffff8002978168: mov      eax, r12d
+ffffff800297816b: add      rsp, 0x28
+ffffff800297816f: pop      rbx
+ffffff8002978170: pop      r12
+ffffff8002978172: pop      r13
+ffffff8002978174: pop      r14
+ffffff8002978176: pop      r15
+ffffff8002978178: pop      rbp
+ffffff8002978179: ret      
+ffffff800297817a: mov      rdi, r13
+ffffff800297817d: call     0xffffff800069cde0  ; _ifnet_flags
+ffffff8002978182: mov      r12d, eax
+ffffff8002978185: mov      rax, qword ptr [rbx + 0xf0]
+ffffff800297818c: test     byte ptr [rax + 0x1b], 0x10
+ffffff8002978190: jne      0xffffff800297819a
+ffffff8002978192: mov      al, byte ptr [rbx + 0x13e]
+ffffff8002978198: jmp      0xffffff800297819c  ; __ZN25IOSkywalkNetworkBSDClient12ioctlHandlerEP7__ifnetjPv+0x256
+ffffff800297819a: xor      eax, eax
+ffffff800297819c: test     r12b, 0x40
+ffffff80029781a0: jne      0xffffff80029780b9
+ffffff80029781a6: or       al, r12b
+ffffff80029781a9: test     al, 1
+ffffff80029781ab: je       0xffffff80029780b9
+ffffff80029781b1: cmp      byte ptr [rbx + 0x141], 0
+ffffff80029781b8: jne      0xffffff80029781ef
+ffffff80029781ba: mov      rdi, qword ptr [rbx + 0xe8]
+ffffff80029781c1: mov      rax, qword ptr [rdi]
+ffffff80029781c4: mov      esi, 1
+ffffff80029781c9: call     qword ptr [rax + 0x930]
+ffffff80029781cf: test     eax, eax
+ffffff80029781d1: jne      0xffffff80029781ef
+ffffff80029781d3: or       r12d, 0x40
+ffffff80029781d7: mov      byte ptr [rbx + 0x141], 1
+ffffff80029781de: movzx    esi, r12w
+ffffff80029781e2: mov      rdi, r13
+ffffff80029781e5: mov      edx, 0x40
+ffffff80029781ea: call     0xffffff800069ccc0  ; _ifnet_set_flags
+ffffff80029781ef: cmp      byte ptr [rbx + 0x141], 1
+ffffff80029781f6: jne      0xffffff80029780b9
+ffffff80029781fc: mov      rdi, rbx
+ffffff80029781ff: call     0xffffff80029789c0  ; __ZN25IOSkywalkNetworkBSDClient21adjustInterfaceEnableEv
+ffffff8002978204: test     eax, eax
+ffffff8002978206: je       0xffffff80029780b9
+ffffff800297820c: and      r12d, 0xffbf
+ffffff8002978213: mov      rdi, qword ptr [rbx + 0xe8]
+ffffff800297821a: mov      rax, qword ptr [rdi]
+ffffff800297821d: xor      esi, esi
+ffffff800297821f: call     qword ptr [rax + 0x930]
+ffffff8002978225: mov      byte ptr [rbx + 0x141], 0
+ffffff800297822c: mov      rdi, r13
+ffffff800297822f: mov      esi, r12d
+ffffff8002978232: mov      edx, 0x40
+ffffff8002978237: call     0xffffff800069ccc0  ; _ifnet_set_flags
+ffffff800297823c: jmp      0xffffff80029780b9  ; __ZN25IOSkywalkNetworkBSDClient12ioctlHandlerEP7__ifnetjPv+0x173
+ffffff8002978241: call     0xffffff80029a0e91  ; __ZN25IOSkywalkNetworkBSDClient12ioctlHandlerEP7__ifnetjPv.cold.1

@@ -1,0 +1,16 @@
+# 0xffffff8002978c46 __ZN25IOSkywalkNetworkBSDClient15connectedActionEP25IOSkywalkNetworkInterfacePvS2_S2_
+ffffff8002978c46: push     rbp
+ffffff8002978c47: mov      rbp, rsp
+ffffff8002978c4a: push     rbx
+ffffff8002978c4b: push     rax
+ffffff8002978c4c: mov      rbx, rdi
+ffffff8002978c4f: mov      byte ptr [rdi + 0x13f], 1
+ffffff8002978c56: call     0xffffff80029789c0  ; __ZN25IOSkywalkNetworkBSDClient21adjustInterfaceEnableEv
+ffffff8002978c5b: test     eax, eax
+ffffff8002978c5d: je       0xffffff8002978c66
+ffffff8002978c5f: mov      byte ptr [rbx + 0x13f], 0
+ffffff8002978c66: add      rsp, 8
+ffffff8002978c6a: pop      rbx
+ffffff8002978c6b: pop      rbp
+ffffff8002978c6c: ret      
+ffffff8002978c6d: nop      

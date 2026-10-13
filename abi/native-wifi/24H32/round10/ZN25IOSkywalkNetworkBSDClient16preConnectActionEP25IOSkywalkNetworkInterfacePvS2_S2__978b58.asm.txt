@@ -1,0 +1,35 @@
+# 0xffffff8002978b58 __ZN25IOSkywalkNetworkBSDClient16preConnectActionEP25IOSkywalkNetworkInterfacePvS2_S2_
+ffffff8002978b58: push     rbp
+ffffff8002978b59: mov      rbp, rsp
+ffffff8002978b5c: push     r14
+ffffff8002978b5e: push     rbx
+ffffff8002978b5f: mov      ebx, 0xe00002d5
+ffffff8002978b64: cmp      byte ptr [rdi + 0x13e], 0
+ffffff8002978b6b: jne      0xffffff8002978bc4
+ffffff8002978b6d: mov      r14, rdi
+ffffff8002978b70: mov      byte ptr [rdi + 0x13e], 1
+ffffff8002978b77: mov      rax, qword ptr [rdi + 0xf0]
+ffffff8002978b7e: xor      ebx, ebx
+ffffff8002978b80: test     byte ptr [rax + 0x1b], 0x10
+ffffff8002978b84: jne      0xffffff8002978bc4
+ffffff8002978b86: mov      al, byte ptr [r14 + 0x141]
+ffffff8002978b8d: test     al, al
+ffffff8002978b8f: jne      0xffffff8002978bc4
+ffffff8002978b91: mov      rsi, qword ptr [r14 + 0xf8]
+ffffff8002978b98: test     rsi, rsi
+ffffff8002978b9b: je       0xffffff8002978bb3
+ffffff8002978b9d: mov      rdi, r14
+ffffff8002978ba0: mov      edx, 0x80206910
+ffffff8002978ba5: xor      ecx, ecx
+ffffff8002978ba7: call     0xffffff8002977f46  ; __ZN25IOSkywalkNetworkBSDClient12ioctlHandlerEP7__ifnetjPv
+ffffff8002978bac: mov      al, byte ptr [r14 + 0x141]
+ffffff8002978bb3: test     al, 1
+ffffff8002978bb5: jne      0xffffff8002978bc4
+ffffff8002978bb7: mov      byte ptr [r14 + 0x13e], 0
+ffffff8002978bbf: mov      ebx, 0xe00002d7
+ffffff8002978bc4: mov      eax, ebx
+ffffff8002978bc6: pop      rbx
+ffffff8002978bc7: pop      r14
+ffffff8002978bc9: pop      rbp
+ffffff8002978bca: ret      
+ffffff8002978bcb: nop      

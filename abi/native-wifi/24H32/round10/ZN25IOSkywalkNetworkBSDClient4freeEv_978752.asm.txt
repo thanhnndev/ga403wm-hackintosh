@@ -1,0 +1,8 @@
+# 0xffffff8002978752 __ZN25IOSkywalkNetworkBSDClient4freeEv
+ffffff8002978752: push     rbp
+ffffff8002978753: mov      rbp, rsp
+ffffff8002978756: mov      qword ptr [rdi + 0xe8], 0
+ffffff8002978761: lea      rax, [rip + 0x31910]  ; 0xffffff80029aa078
+ffffff8002978768: pop      rbp
+ffffff8002978769: jmp      qword ptr [rax + 0xa0]
+ffffff800297876f: nop      

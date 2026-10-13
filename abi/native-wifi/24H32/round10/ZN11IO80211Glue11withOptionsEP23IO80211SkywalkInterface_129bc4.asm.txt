@@ -1,0 +1,37 @@
+# 0xffffff8002129bc4 __ZN11IO80211Glue11withOptionsEP23IO80211SkywalkInterface
+ffffff8002129bc4: push     rbp
+ffffff8002129bc5: mov      rbp, rsp
+ffffff8002129bc8: push     r15
+ffffff8002129bca: push     r14
+ffffff8002129bcc: push     rbx
+ffffff8002129bcd: push     rax
+ffffff8002129bce: mov      r14, rdi
+ffffff8002129bd1: lea      rdi, [rip + 0x2d37e8]  ; 0xffffff80023fd3c0
+ffffff8002129bd8: mov      esi, 0x20
+ffffff8002129bdd: call     0xffffff8000a4be90  ; _OSObject_typed_operator_new
+ffffff8002129be2: mov      rbx, rax
+ffffff8002129be5: lea      r15, [rip + 0x2cce1c]  ; 0xffffff80023f6a08
+ffffff8002129bec: mov      rdi, rax
+ffffff8002129bef: mov      rsi, r15
+ffffff8002129bf2: call     0xffffff8000a4c000  ; __ZN8OSObjectC2EPK11OSMetaClass
+ffffff8002129bf7: lea      rax, [rip + 0x29915a]  ; 0xffffff80023c2d58
+ffffff8002129bfe: mov      qword ptr [rbx], rax
+ffffff8002129c01: mov      rdi, r15
+ffffff8002129c04: call     0xffffff8000a4a700  ; __ZNK11OSMetaClass19instanceConstructedEv
+ffffff8002129c09: mov      rdi, rbx
+ffffff8002129c0c: mov      rsi, r14
+ffffff8002129c0f: call     0xffffff8002129c32  ; __ZN11IO80211Glue15initWithOptionsEP23IO80211SkywalkInterface
+ffffff8002129c14: test     al, al
+ffffff8002129c16: jne      0xffffff8002129c23
+ffffff8002129c18: mov      rax, qword ptr [rbx]
+ffffff8002129c1b: mov      rdi, rbx
+ffffff8002129c1e: call     qword ptr [rax + 0x28]
+ffffff8002129c21: xor      ebx, ebx
+ffffff8002129c23: mov      rax, rbx
+ffffff8002129c26: add      rsp, 8
+ffffff8002129c2a: pop      rbx
+ffffff8002129c2b: pop      r14
+ffffff8002129c2d: pop      r15
+ffffff8002129c2f: pop      rbp
+ffffff8002129c30: ret      
+ffffff8002129c31: nop      

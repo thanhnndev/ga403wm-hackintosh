@@ -1,0 +1,36 @@
+# 0xffffff8002978ae4 __ZN25IOSkywalkNetworkBSDClient16disableInterfaceEP25IOSkywalkNetworkInterface
+ffffff8002978ae4: push     rbp
+ffffff8002978ae5: mov      rbp, rsp
+ffffff8002978ae8: push     r14
+ffffff8002978aea: push     rbx
+ffffff8002978aeb: mov      r14, rsi
+ffffff8002978aee: mov      rbx, rdi
+ffffff8002978af1: mov      rdi, qword ptr [rdi + 0x90]
+ffffff8002978af8: test     rdi, rdi
+ffffff8002978afb: je       0xffffff8002978b1b
+ffffff8002978afd: mov      rax, qword ptr [rdi]
+ffffff8002978b00: call     qword ptr [rax + 0x168]
+ffffff8002978b06: test     rax, rax
+ffffff8002978b09: je       0xffffff8002978b1b
+ffffff8002978b0b: mov      rcx, qword ptr [rax]
+ffffff8002978b0e: mov      rdi, rax
+ffffff8002978b11: call     qword ptr [rcx + 0x138]
+ffffff8002978b17: test     al, al
+ffffff8002978b19: je       0xffffff8002978b53
+ffffff8002978b1b: mov      rax, qword ptr [rbx + 0xe8]
+ffffff8002978b22: mov      rax, qword ptr [rax + 0xb8]
+ffffff8002978b29: mov      rdi, qword ptr [rax + 0x20]
+ffffff8002978b2d: test     rdi, rdi
+ffffff8002978b30: je       0xffffff8002978b39
+ffffff8002978b32: xor      esi, esi
+ffffff8002978b34: call     0xffffff8002987a0e  ; __ZN25IOSkywalkNetworkKDPPoller13handleRequestENS_11RequestTypeE
+ffffff8002978b39: mov      rax, qword ptr [r14]
+ffffff8002978b3c: mov      rdi, r14
+ffffff8002978b3f: xor      esi, esi
+ffffff8002978b41: call     qword ptr [rax + 0x858]
+ffffff8002978b47: mov      byte ptr [rbx + 0x140], 0
+ffffff8002978b4e: pop      rbx
+ffffff8002978b4f: pop      r14
+ffffff8002978b51: pop      rbp
+ffffff8002978b52: ret      
+ffffff8002978b53: call     0xffffff80029a0f45  ; __ZN25IOSkywalkNetworkBSDClient16disableInterfaceEP25IOSkywalkNetworkInterface.cold.1

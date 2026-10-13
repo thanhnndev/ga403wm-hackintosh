@@ -1,0 +1,24 @@
+# 0xffffff80029790bc __ZN25IOSkywalkNetworkBSDClient24setBSDClientInfoForQueueEP20IOSkywalkPacketQueue
+ffffff80029790bc: test     rsi, rsi
+ffffff80029790bf: je       0xffffff800297910a
+ffffff80029790c1: push     rbp
+ffffff80029790c2: mov      rbp, rsp
+ffffff80029790c5: sub      rsp, 0x10
+ffffff80029790c9: lea      rdx, [rbp - 0x10]
+ffffff80029790cd: mov      qword ptr [rdx + 8], 0
+ffffff80029790d5: mov      rax, qword ptr [rdi + 0xf8]
+ffffff80029790dc: mov      qword ptr [rdx], rax
+ffffff80029790df: mov      eax, dword ptr [rdi + 0x138]
+ffffff80029790e5: mov      dword ptr [rdx + 8], eax
+ffffff80029790e8: mov      al, byte ptr [rdi + 0x143]
+ffffff80029790ee: mov      byte ptr [rdx + 0xc], al
+ffffff80029790f1: mov      rax, qword ptr [rsi]
+ffffff80029790f4: mov      rdi, rsi
+ffffff80029790f7: mov      esi, 0x50000
+ffffff80029790fc: xor      ecx, ecx
+ffffff80029790fe: call     qword ptr [rax + 0x218]
+ffffff8002979104: add      rsp, 0x10
+ffffff8002979108: pop      rbp
+ffffff8002979109: ret      
+ffffff800297910a: mov      eax, 0xe00002c2
+ffffff800297910f: ret      

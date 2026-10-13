@@ -1,0 +1,78 @@
+# 0xffffff8002975a7e __ZN18IOSkywalkBSDClient31registerNexusControllerProviderEPKhPKcPK8RingVarsPK9AttrEntrymP24kern_nexus_provider_initm
+ffffff8002975a7e: push     rbp
+ffffff8002975a7f: mov      rbp, rsp
+ffffff8002975a82: push     r15
+ffffff8002975a84: push     r14
+ffffff8002975a86: push     r13
+ffffff8002975a88: push     r12
+ffffff8002975a8a: push     rbx
+ffffff8002975a8b: sub      rsp, 0x28
+ffffff8002975a8f: mov      r13, r9
+ffffff8002975a92: mov      rbx, r8
+ffffff8002975a95: mov      r14, rdx
+ffffff8002975a98: mov      r15, rsi
+ffffff8002975a9b: mov      r12, rdi
+ffffff8002975a9e: mov      rdx, qword ptr [rbp + 0x10]
+ffffff8002975aa2: lea      rdi, [rbp - 0x30]
+ffffff8002975aa6: mov      qword ptr [rdi], 0
+ffffff8002975aad: lea      rax, [rip + 0xdb]  ; 0xffffff8002975b8f
+ffffff8002975ab4: mov      qword ptr [rdx + 8], rax
+ffffff8002975ab8: lea      rax, [rip + 0x120]  ; 0xffffff8002975bdf
+ffffff8002975abf: mov      qword ptr [rdx + 0x10], rax
+ffffff8002975ac3: lea      rax, [rip + 0x149]  ; 0xffffff8002975c13
+ffffff8002975aca: mov      qword ptr [rdx + 0x18], rax
+ffffff8002975ace: lea      rax, [rip + 0x157]  ; 0xffffff8002975c2c
+ffffff8002975ad5: mov      qword ptr [rdx + 0x20], rax
+ffffff8002975ad9: xor      eax, eax
+ffffff8002975adb: cmp      dword ptr [rcx + 0x1c], 2
+ffffff8002975adf: sete     al
+ffffff8002975ae2: mov      dword ptr [r12 + 0xe0], eax
+ffffff8002975aea: call     0xffffff80009e87f0  ; _kern_nexus_attr_create
+ffffff8002975aef: test     eax, eax
+ffffff8002975af1: jne      0xffffff8002975b3f
+ffffff8002975af3: mov      qword ptr [rbp - 0x38], r15
+ffffff8002975af7: mov      qword ptr [rbp - 0x40], r14
+ffffff8002975afb: test     r13, r13
+ffffff8002975afe: je       0xffffff8002975b2a
+ffffff8002975b00: mov      r14d, 1
+ffffff8002975b06: xor      eax, eax
+ffffff8002975b08: shl      rax, 4
+ffffff8002975b0c: mov      rdi, qword ptr [rbp - 0x30]
+ffffff8002975b10: mov      esi, dword ptr [rbx + rax]
+ffffff8002975b13: mov      rax, qword ptr [rbx + rax + 8]
+ffffff8002975b18: mov      edx, dword ptr [rax]
+ffffff8002975b1a: call     0xffffff80009e88d0  ; _kern_nexus_attr_set
+ffffff8002975b1f: mov      eax, r14d
+ffffff8002975b22: inc      r14d
+ffffff8002975b25: cmp      rax, r13
+ffffff8002975b28: jb       0xffffff8002975b08
+ffffff8002975b2a: lea      rdi, [r12 + 0xb8]
+ffffff8002975b32: call     0xffffff80009e8a80  ; _kern_nexus_controller_create
+ffffff8002975b37: test     eax, eax
+ffffff8002975b39: mov      rcx, qword ptr [rbp + 0x10]
+ffffff8002975b3d: je       0xffffff8002975b60
+ffffff8002975b3f: xor      ebx, ebx
+ffffff8002975b41: mov      rdi, qword ptr [rbp - 0x30]
+ffffff8002975b45: test     rdi, rdi
+ffffff8002975b48: je       0xffffff8002975b4f
+ffffff8002975b4a: call     0xffffff80009e8a50  ; _kern_nexus_attr_destroy
+ffffff8002975b4f: mov      eax, ebx
+ffffff8002975b51: add      rsp, 0x28
+ffffff8002975b55: pop      rbx
+ffffff8002975b56: pop      r12
+ffffff8002975b58: pop      r13
+ffffff8002975b5a: pop      r14
+ffffff8002975b5c: pop      r15
+ffffff8002975b5e: pop      rbp
+ffffff8002975b5f: ret      
+ffffff8002975b60: mov      r8, qword ptr [rbp + 0x18]
+ffffff8002975b64: mov      rdi, qword ptr [r12 + 0xb8]
+ffffff8002975b6c: mov      r9, qword ptr [rbp - 0x30]
+ffffff8002975b70: add      r12, 0xc0
+ffffff8002975b77: mov      qword ptr [rsp], r12
+ffffff8002975b7b: mov      rsi, qword ptr [rbp - 0x38]
+ffffff8002975b7f: mov      rdx, qword ptr [rbp - 0x40]
+ffffff8002975b83: call     0xffffff80009e8b90  ; _kern_nexus_controller_register_provider
+ffffff8002975b88: test     eax, eax
+ffffff8002975b8a: sete     bl
+ffffff8002975b8d: jmp      0xffffff8002975b41  ; __ZN18IOSkywalkBSDClient31registerNexusControllerProviderEPKhPKcPK8RingVarsPK9AttrEntrymP24kern_nexus_provider_initm+0xc3

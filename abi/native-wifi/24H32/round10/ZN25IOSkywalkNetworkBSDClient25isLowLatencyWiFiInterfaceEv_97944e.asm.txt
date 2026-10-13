@@ -1,0 +1,8 @@
+# 0xffffff800297944e __ZN25IOSkywalkNetworkBSDClient25isLowLatencyWiFiInterfaceEv
+ffffff800297944e: push     rbp
+ffffff800297944f: mov      rbp, rsp
+ffffff8002979452: mov      rax, qword ptr [rdi + 0xf0]
+ffffff8002979459: mov      al, byte ptr [rax + 0x1a]
+ffffff800297945c: and      al, 1
+ffffff800297945e: pop      rbp
+ffffff800297945f: ret      

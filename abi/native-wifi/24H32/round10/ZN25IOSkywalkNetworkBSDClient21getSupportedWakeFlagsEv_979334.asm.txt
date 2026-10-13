@@ -1,0 +1,56 @@
+# 0xffffff8002979334 __ZN25IOSkywalkNetworkBSDClient21getSupportedWakeFlagsEv
+ffffff8002979334: push     rbp
+ffffff8002979335: mov      rbp, rsp
+ffffff8002979338: push     rbx
+ffffff8002979339: sub      rsp, 0x18
+ffffff800297933d: mov      rbx, rdi
+ffffff8002979340: movabs   rax, 0xaaaaaaaaaaaaaaaa
+ffffff800297934a: mov      qword ptr [rbp - 0x18], rax
+ffffff800297934e: mov      rdi, qword ptr [rdi + 0x90]
+ffffff8002979355: test     rdi, rdi
+ffffff8002979358: je       0xffffff8002979378
+ffffff800297935a: mov      rax, qword ptr [rdi]
+ffffff800297935d: call     qword ptr [rax + 0x168]
+ffffff8002979363: test     rax, rax
+ffffff8002979366: je       0xffffff8002979378
+ffffff8002979368: mov      rcx, qword ptr [rax]
+ffffff800297936b: mov      rdi, rax
+ffffff800297936e: call     qword ptr [rcx + 0x138]
+ffffff8002979374: test     al, al
+ffffff8002979376: je       0xffffff80029793ef
+ffffff8002979378: mov      dword ptr [rbp - 0xc], 0
+ffffff800297937f: xor      eax, eax
+ffffff8002979381: cmp      byte ptr [rbx + 0x141], 1
+ffffff8002979388: jne      0xffffff80029793e8
+ffffff800297938a: mov      rdi, qword ptr [rbx + 0xe8]
+ffffff8002979391: mov      rax, qword ptr [rdi]
+ffffff8002979394: lea      rsi, [rbp - 0xc]
+ffffff8002979398: call     qword ptr [rax + 0x958]
+ffffff800297939e: test     eax, eax
+ffffff80029793a0: je       0xffffff80029793a7
+ffffff80029793a2: mov      eax, dword ptr [rbp - 0xc]
+ffffff80029793a5: jmp      0xffffff80029793e8  ; __ZN25IOSkywalkNetworkBSDClient21getSupportedWakeFlagsEv+0xb4
+ffffff80029793a7: mov      rax, qword ptr [rbx]
+ffffff80029793aa: lea      rdx, [rbp - 0x18]
+ffffff80029793ae: mov      esi, 4
+ffffff80029793b3: mov      rdi, rbx
+ffffff80029793b6: call     qword ptr [rax + 0x7c8]
+ffffff80029793bc: mov      ecx, eax
+ffffff80029793be: mov      eax, dword ptr [rbp - 0xc]
+ffffff80029793c1: test     ecx, ecx
+ffffff80029793c3: jne      0xffffff80029793e8
+ffffff80029793c5: and      eax, dword ptr [rbp - 0x18]
+ffffff80029793c8: test     al, 1
+ffffff80029793ca: je       0xffffff80029793e8
+ffffff80029793cc: mov      rcx, qword ptr [rbx + 0xe8]
+ffffff80029793d3: mov      rcx, qword ptr [rcx + 0xb8]
+ffffff80029793da: mov      ecx, dword ptr [rcx + 0x38]
+ffffff80029793dd: and      ecx, 3
+ffffff80029793e0: xor      edx, edx
+ffffff80029793e2: cmp      ecx, 1
+ffffff80029793e5: cmove    eax, edx
+ffffff80029793e8: add      rsp, 0x18
+ffffff80029793ec: pop      rbx
+ffffff80029793ed: pop      rbp
+ffffff80029793ee: ret      
+ffffff80029793ef: call     0xffffff80029a0f81  ; __ZN25IOSkywalkNetworkBSDClient21getSupportedWakeFlagsEv.cold.1

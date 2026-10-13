@@ -1,0 +1,30 @@
+# 0xffffff8002979156 __ZN25IOSkywalkNetworkBSDClient26configureInterfaceAdvisoryEPvPj
+ffffff8002979156: mov      eax, 0xe00002c2
+ffffff800297915b: test     rsi, rsi
+ffffff800297915e: je       0xffffff80029791a9
+ffffff8002979160: cmp      dword ptr [rdx], 0x28
+ffffff8002979163: jne      0xffffff80029791a9
+ffffff8002979165: push     rbp
+ffffff8002979166: mov      rbp, rsp
+ffffff8002979169: push     r14
+ffffff800297916b: push     rbx
+ffffff800297916c: mov      rbx, rsi
+ffffff800297916f: cmp      dword ptr [rsi], 1
+ffffff8002979172: jne      0xffffff80029791a5
+ffffff8002979174: mov      r14, rdi
+ffffff8002979177: mov      rdi, qword ptr [rdi + 0xe8]
+ffffff800297917e: test     rdi, rdi
+ffffff8002979181: je       0xffffff80029791a5
+ffffff8002979183: mov      rsi, qword ptr [rbx + 8]
+ffffff8002979187: mov      rdx, qword ptr [rbx + 0x18]
+ffffff800297918b: call     0xffffff8002982e5c  ; __ZN25IOSkywalkNetworkInterface26setInterfaceAdvisoryNoticeEPvPFiS0_PK24ifnet_interface_advisoryE
+ffffff8002979190: test     eax, eax
+ffffff8002979192: jne      0xffffff80029791a5
+ffffff8002979194: lea      rax, [rip + 0x3b]  ; 0xffffff80029791d6
+ffffff800297919b: mov      qword ptr [rbx + 0x20], rax
+ffffff800297919f: mov      qword ptr [rbx + 0x10], r14
+ffffff80029791a3: xor      eax, eax
+ffffff80029791a5: pop      rbx
+ffffff80029791a6: pop      r14
+ffffff80029791a8: pop      rbp
+ffffff80029791a9: ret      

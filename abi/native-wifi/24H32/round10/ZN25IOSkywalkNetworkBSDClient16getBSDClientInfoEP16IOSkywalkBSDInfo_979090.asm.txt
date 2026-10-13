@@ -1,0 +1,15 @@
+# 0xffffff8002979090 __ZN25IOSkywalkNetworkBSDClient16getBSDClientInfoEP16IOSkywalkBSDInfo
+ffffff8002979090: push     rbp
+ffffff8002979091: mov      rbp, rsp
+ffffff8002979094: xor      eax, eax
+ffffff8002979096: mov      qword ptr [rsi + 8], rax
+ffffff800297909a: mov      qword ptr [rsi], rax
+ffffff800297909d: mov      rax, qword ptr [rdi + 0xf8]
+ffffff80029790a4: mov      qword ptr [rsi], rax
+ffffff80029790a7: mov      eax, dword ptr [rdi + 0x138]
+ffffff80029790ad: mov      dword ptr [rsi + 8], eax
+ffffff80029790b0: mov      al, byte ptr [rdi + 0x143]
+ffffff80029790b6: mov      byte ptr [rsi + 0xc], al
+ffffff80029790b9: pop      rbp
+ffffff80029790ba: ret      
+ffffff80029790bb: nop      

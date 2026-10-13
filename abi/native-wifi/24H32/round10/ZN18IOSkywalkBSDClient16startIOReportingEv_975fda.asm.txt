@@ -1,0 +1,30 @@
+# 0xffffff8002975fda __ZN18IOSkywalkBSDClient16startIOReportingEv
+ffffff8002975fda: push     rbp
+ffffff8002975fdb: mov      rbp, rsp
+ffffff8002975fde: push     r14
+ffffff8002975fe0: push     rbx
+ffffff8002975fe1: mov      rbx, rdi
+ffffff8002975fe4: mov      rdi, qword ptr [rdi + 0xb0]
+ffffff8002975feb: call     0xffffff800052f900  ; _lck_mtx_lock
+ffffff8002975ff0: mov      rdx, qword ptr [rbx + 0x88]
+ffffff8002975ff7: mov      rdi, qword ptr [rdx + 0x98]
+ffffff8002975ffe: mov      rax, qword ptr [rdx + 0xa0]
+ffffff8002976005: xor      r14d, r14d
+ffffff8002976008: cmp      rax, rdi
+ffffff800297600b: cmovne   r14, rax
+ffffff800297600f: test     rdi, rdi
+ffffff8002976012: je       0xffffff800297601c
+ffffff8002976014: mov      rsi, rbx
+ffffff8002976017: call     0xffffff800297dbb6  ; __ZN25IOSkywalkPacketBufferPool23checkInReportingServiceEP9IOServicePK18IOSkywalkInterface
+ffffff800297601c: test     r14, r14
+ffffff800297601f: je       0xffffff8002976033
+ffffff8002976021: mov      rdx, qword ptr [rbx + 0x88]
+ffffff8002976028: mov      rdi, r14
+ffffff800297602b: mov      rsi, rbx
+ffffff800297602e: call     0xffffff800297dbb6  ; __ZN25IOSkywalkPacketBufferPool23checkInReportingServiceEP9IOServicePK18IOSkywalkInterface
+ffffff8002976033: mov      byte ptr [rbx + 0xe4], 1
+ffffff800297603a: mov      rdi, qword ptr [rbx + 0xb0]
+ffffff8002976041: pop      rbx
+ffffff8002976042: pop      r14
+ffffff8002976044: pop      rbp
+ffffff8002976045: jmp      0xffffff800052fc50  ; _lck_mtx_unlock

@@ -1,0 +1,80 @@
+# 0xffffff80029787f4 __ZN25IOSkywalkNetworkBSDClient12didTerminateEP9IOServicejPb
+ffffff80029787f4: push     rbp
+ffffff80029787f5: mov      rbp, rsp
+ffffff80029787f8: push     r15
+ffffff80029787fa: push     r14
+ffffff80029787fc: push     r12
+ffffff80029787fe: push     rbx
+ffffff80029787ff: mov      r14, rcx
+ffffff8002978802: mov      r15d, edx
+ffffff8002978805: mov      r12, rsi
+ffffff8002978808: mov      rbx, rdi
+ffffff800297880b: mov      rdi, qword ptr [rdi + 0x90]
+ffffff8002978812: test     rdi, rdi
+ffffff8002978815: je       0xffffff8002978839
+ffffff8002978817: mov      rax, qword ptr [rdi]
+ffffff800297881a: call     qword ptr [rax + 0x168]
+ffffff8002978820: test     rax, rax
+ffffff8002978823: je       0xffffff8002978839
+ffffff8002978825: mov      rcx, qword ptr [rax]
+ffffff8002978828: mov      rdi, rax
+ffffff800297882b: call     qword ptr [rcx + 0x138]
+ffffff8002978831: test     al, al
+ffffff8002978833: je       0xffffff8002978921
+ffffff8002978839: cmp      dword ptr [rbx + 0x128], 0
+ffffff8002978840: je       0xffffff800297885b
+ffffff8002978842: mov      rdi, qword ptr [rbx + 0x90]
+ffffff8002978849: lea      rsi, [rbx + 0x13d]
+ffffff8002978850: mov      rax, qword ptr [rdi]
+ffffff8002978853: xor      edx, edx
+ffffff8002978855: call     qword ptr [rax + 0x1e8]
+ffffff800297885b: mov      rsi, qword ptr [rbx + 0xf8]
+ffffff8002978862: test     rsi, rsi
+ffffff8002978865: je       0xffffff8002978900
+ffffff800297886b: cmp      qword ptr [rbx + 0xb8], 0
+ffffff8002978873: je       0xffffff80029788d7
+ffffff8002978875: lea      r14, [rbx + 0xd0]
+ffffff800297887c: mov      rdi, r14
+ffffff800297887f: call     0xffffff8000a84c20  ; _uuid_is_null
+ffffff8002978884: test     eax, eax
+ffffff8002978886: jne      0xffffff8002978897
+ffffff8002978888: mov      rdi, qword ptr [rbx + 0xb8]
+ffffff800297888f: mov      rsi, r14
+ffffff8002978892: call     0xffffff80009e9960  ; _kern_nexus_controller_free_provider_instance
+ffffff8002978897: lea      r14, [rbx + 0xc0]
+ffffff800297889e: mov      rdi, r14
+ffffff80029788a1: call     0xffffff8000a84c20  ; _uuid_is_null
+ffffff80029788a6: test     eax, eax
+ffffff80029788a8: jne      0xffffff80029788b9
+ffffff80029788aa: mov      rdi, qword ptr [rbx + 0xb8]
+ffffff80029788b1: mov      rsi, r14
+ffffff80029788b4: call     0xffffff80009e9330  ; _kern_nexus_controller_deregister_provider
+ffffff80029788b9: mov      rdi, qword ptr [rbx + 0xb8]
+ffffff80029788c0: call     0xffffff80009e9f40  ; _kern_nexus_controller_destroy
+ffffff80029788c5: mov      qword ptr [rbx + 0xb8], 0
+ffffff80029788d0: mov      rsi, qword ptr [rbx + 0xf8]
+ffffff80029788d7: mov      rdi, qword ptr [rbx + 0xe8]
+ffffff80029788de: mov      rax, qword ptr [rdi]
+ffffff80029788e1: xor      edx, edx
+ffffff80029788e3: call     qword ptr [rax + 0x8f0]
+ffffff80029788e9: mov      rdi, qword ptr [rbx + 0xf8]
+ffffff80029788f0: call     0xffffff800064c570  ; _ifnet_detach
+ffffff80029788f5: mov      al, 1
+ffffff80029788f7: pop      rbx
+ffffff80029788f8: pop      r12
+ffffff80029788fa: pop      r14
+ffffff80029788fc: pop      r15
+ffffff80029788fe: pop      rbp
+ffffff80029788ff: ret      
+ffffff8002978900: lea      rax, [rip + 0x31771]  ; 0xffffff80029aa078
+ffffff8002978907: mov      rdi, rbx
+ffffff800297890a: mov      rsi, r12
+ffffff800297890d: mov      edx, r15d
+ffffff8002978910: mov      rcx, r14
+ffffff8002978913: pop      rbx
+ffffff8002978914: pop      r12
+ffffff8002978916: pop      r14
+ffffff8002978918: pop      r15
+ffffff800297891a: pop      rbp
+ffffff800297891b: jmp      qword ptr [rax + 0x418]
+ffffff8002978921: call     0xffffff80029a0eeb  ; __ZN25IOSkywalkNetworkBSDClient12didTerminateEP9IOServicejPb.cold.1

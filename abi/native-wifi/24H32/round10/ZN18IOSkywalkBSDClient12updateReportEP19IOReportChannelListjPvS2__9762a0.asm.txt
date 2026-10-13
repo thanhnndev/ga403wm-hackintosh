@@ -1,0 +1,49 @@
+# 0xffffff80029762a0 __ZN18IOSkywalkBSDClient12updateReportEP19IOReportChannelListjPvS2_
+ffffff80029762a0: push     rbp
+ffffff80029762a1: mov      rbp, rsp
+ffffff80029762a4: push     r15
+ffffff80029762a6: push     r14
+ffffff80029762a8: push     r13
+ffffff80029762aa: push     r12
+ffffff80029762ac: push     rbx
+ffffff80029762ad: push     rax
+ffffff80029762ae: mov      r15, r8
+ffffff80029762b1: mov      qword ptr [rbp - 0x30], rcx
+ffffff80029762b5: mov      r12d, edx
+ffffff80029762b8: mov      r13, rsi
+ffffff80029762bb: mov      rbx, rdi
+ffffff80029762be: mov      rdi, qword ptr [rdi + 0xb0]
+ffffff80029762c5: call     0xffffff800052f900  ; _lck_mtx_lock
+ffffff80029762ca: mov      r14d, 0xe00002d8
+ffffff80029762d0: cmp      byte ptr [rbx + 0xe4], 1
+ffffff80029762d7: jne      0xffffff8002976315
+ffffff80029762d9: mov      r14, r15
+ffffff80029762dc: mov      rdi, rbx
+ffffff80029762df: call     0xffffff800297613c  ; __ZN18IOSkywalkBSDClient16copyAllReportersEv
+ffffff80029762e4: test     rax, rax
+ffffff80029762e7: je       0xffffff800297630f
+ffffff80029762e9: mov      r15, rax
+ffffff80029762ec: mov      rdi, rax
+ffffff80029762ef: mov      rsi, r13
+ffffff80029762f2: mov      edx, r12d
+ffffff80029762f5: mov      rcx, qword ptr [rbp - 0x30]
+ffffff80029762f9: mov      r8, r14
+ffffff80029762fc: call     0xffffff8000b47b00  ; __ZN10IOReporter16updateAllReportsEP5OSSetP19IOReportChannelListjPvS4_
+ffffff8002976301: mov      r14d, eax
+ffffff8002976304: mov      rax, qword ptr [r15]
+ffffff8002976307: mov      rdi, r15
+ffffff800297630a: call     qword ptr [rax + 0x28]
+ffffff800297630d: jmp      0xffffff8002976315  ; __ZN18IOSkywalkBSDClient12updateReportEP19IOReportChannelListjPvS2_+0x75
+ffffff800297630f: mov      r14d, 0xe00002bd
+ffffff8002976315: mov      rdi, qword ptr [rbx + 0xb0]
+ffffff800297631c: call     0xffffff800052fc50  ; _lck_mtx_unlock
+ffffff8002976321: mov      eax, r14d
+ffffff8002976324: add      rsp, 8
+ffffff8002976328: pop      rbx
+ffffff8002976329: pop      r12
+ffffff800297632b: pop      r13
+ffffff800297632d: pop      r14
+ffffff800297632f: pop      r15
+ffffff8002976331: pop      rbp
+ffffff8002976332: ret      
+ffffff8002976333: nop      

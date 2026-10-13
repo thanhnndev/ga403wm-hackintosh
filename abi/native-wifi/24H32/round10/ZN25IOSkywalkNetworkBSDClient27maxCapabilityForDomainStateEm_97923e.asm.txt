@@ -1,0 +1,28 @@
+# 0xffffff800297923e __ZN25IOSkywalkNetworkBSDClient27maxCapabilityForDomainStateEm
+ffffff800297923e: push     rbp
+ffffff800297923f: mov      rbp, rsp
+ffffff8002979242: push     r15
+ffffff8002979244: push     r14
+ffffff8002979246: push     rbx
+ffffff8002979247: push     rax
+ffffff8002979248: mov      r15, rsi
+ffffff800297924b: mov      rbx, rdi
+ffffff800297924e: lea      rax, [rip + 0x30e23]  ; 0xffffff80029aa078
+ffffff8002979255: call     qword ptr [rax + 0x800]
+ffffff800297925b: mov      r14, rax
+ffffff800297925e: test     r15b, 2
+ffffff8002979262: je       0xffffff800297927b
+ffffff8002979264: mov      rax, qword ptr [rbx + 0xf0]
+ffffff800297926b: mov      eax, dword ptr [rax + 0x40]
+ffffff800297926e: and      eax, 2
+ffffff8002979271: je       0xffffff800297927b
+ffffff8002979273: mov      rdi, rbx
+ffffff8002979276: call     0xffffff8000aeb600  ; __ZN9IOService10makeUsableEv
+ffffff800297927b: mov      rax, r14
+ffffff800297927e: add      rsp, 8
+ffffff8002979282: pop      rbx
+ffffff8002979283: pop      r14
+ffffff8002979285: pop      r15
+ffffff8002979287: pop      rbp
+ffffff8002979288: ret      
+ffffff8002979289: nop      

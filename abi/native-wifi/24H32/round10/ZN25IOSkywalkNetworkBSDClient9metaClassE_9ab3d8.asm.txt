@@ -1,0 +1,4 @@
+# 0xffffff80029ab3d8 __ZN25IOSkywalkNetworkBSDClient9metaClassE
+ffffff80029ab3d8: cmp      byte ptr [rax - 0x75], ch
+ffffff80029ab3db: add      al, byte ptr [rax]
+ffffff80029ab3dd: add      byte ptr [rax], al

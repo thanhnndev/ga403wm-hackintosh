@@ -1,0 +1,4 @@
+# 0xffffff80029aa068 __ZN18IOSkywalkBSDClient9metaClassE
+ffffff80029aa068: fsub     dword ptr [rdi - 0x75]
+ffffff80029aa06b: add      al, byte ptr [rax]
+ffffff80029aa06d: add      byte ptr [rax], al

@@ -1,0 +1,47 @@
+# 0xffffff80029789c0 __ZN25IOSkywalkNetworkBSDClient21adjustInterfaceEnableEv
+ffffff80029789c0: push     rbp
+ffffff80029789c1: mov      rbp, rsp
+ffffff80029789c4: push     r14
+ffffff80029789c6: push     rbx
+ffffff80029789c7: mov      rbx, rdi
+ffffff80029789ca: mov      rdi, qword ptr [rdi + 0x90]
+ffffff80029789d1: test     rdi, rdi
+ffffff80029789d4: je       0xffffff80029789f4
+ffffff80029789d6: mov      rax, qword ptr [rdi]
+ffffff80029789d9: call     qword ptr [rax + 0x168]
+ffffff80029789df: test     rax, rax
+ffffff80029789e2: je       0xffffff80029789f4
+ffffff80029789e4: mov      rcx, qword ptr [rax]
+ffffff80029789e7: mov      rdi, rax
+ffffff80029789ea: call     qword ptr [rcx + 0x138]
+ffffff80029789f0: test     al, al
+ffffff80029789f2: je       0xffffff8002978a54
+ffffff80029789f4: xor      eax, eax
+ffffff80029789f6: cmp      byte ptr [rbx + 0x141], 1
+ffffff80029789fd: mov      r14d, 0
+ffffff8002978a03: jne      0xffffff8002978a1e
+ffffff8002978a05: cmp      byte ptr [rbx + 0x13f], 1
+ffffff8002978a0c: jne      0xffffff8002978a1b
+ffffff8002978a0e: mov      r14b, byte ptr [rbx + 0x142]
+ffffff8002978a15: xor      r14b, 1
+ffffff8002978a19: jmp      0xffffff8002978a1e  ; __ZN25IOSkywalkNetworkBSDClient21adjustInterfaceEnableEv+0x5e
+ffffff8002978a1b: xor      r14d, r14d
+ffffff8002978a1e: cmp      byte ptr [rbx + 0x140], r14b
+ffffff8002978a25: je       0xffffff8002978a4f
+ffffff8002978a27: mov      rsi, qword ptr [rbx + 0xe8]
+ffffff8002978a2e: mov      rdi, rbx
+ffffff8002978a31: test     r14b, r14b
+ffffff8002978a34: je       0xffffff8002978a41
+ffffff8002978a36: call     0xffffff8002978a5a  ; __ZN25IOSkywalkNetworkBSDClient15enableInterfaceEP25IOSkywalkNetworkInterface
+ffffff8002978a3b: test     eax, eax
+ffffff8002978a3d: jne      0xffffff8002978a4f
+ffffff8002978a3f: jmp      0xffffff8002978a46  ; __ZN25IOSkywalkNetworkBSDClient21adjustInterfaceEnableEv+0x86
+ffffff8002978a41: call     0xffffff8002978ae4  ; __ZN25IOSkywalkNetworkBSDClient16disableInterfaceEP25IOSkywalkNetworkInterface
+ffffff8002978a46: mov      byte ptr [rbx + 0x140], r14b
+ffffff8002978a4d: xor      eax, eax
+ffffff8002978a4f: pop      rbx
+ffffff8002978a50: pop      r14
+ffffff8002978a52: pop      rbp
+ffffff8002978a53: ret      
+ffffff8002978a54: call     0xffffff80029a0f09  ; __ZN25IOSkywalkNetworkBSDClient21adjustInterfaceEnableEv.cold.1
+ffffff8002978a59: nop      
