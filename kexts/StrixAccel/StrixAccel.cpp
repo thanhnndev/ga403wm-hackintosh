@@ -28,7 +28,7 @@
 #include "../../include/StrixNativeABI.h"
 #include "StrixABIProfile.h"
 
-#define STRIXACCEL_VERSION "0.1.11"
+#define STRIXACCEL_VERSION "0.1.12"
 
 #include "IOAccelFamily2_decl.h"
 
@@ -671,7 +671,6 @@ void StrixAccelerator::publishCounters()
     setProperty("StrixAccel,AGDC,GpuCap", (unsigned long long)strix_agdc::gStats.gpuCap, 32);
     setProperty("StrixAccel,AGDC,LinkConfig", (unsigned long long)strix_agdc::gStats.linkConfig, 32);
     setProperty("StrixAccel,AGDC,FbCap", (unsigned long long)strix_agdc::gStats.fbCap, 32);
-    setProperty("StrixAccel,AGDC,FbCapEmpty", (unsigned long long)strix_agdc::gStats.fbCapEmpty, 32);
     setProperty("StrixAccel,AGDC,Refused", (unsigned long long)strix_agdc::gStats.refused, 32);
     setProperty("StrixAccel,AGDC,RefusedSeen", strix_agdc::gRefusedSeen);
     setProperty("StrixAccel,AGDC,ClientSet", (unsigned long long)strix_agdc::gStats.clientSet, 32);

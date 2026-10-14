@@ -745,6 +745,23 @@ Three "unfinished driver" symptoms, all identity data — no hardware access:
 live 0.1.10), override reinstalled with embedded EDID. **Reboot pending.**
 After reboot verify: Chipset Model "AMD Radeon 890M", VRAM 512 MB, built-in 14-inch, `FbCapEmpty`
 rising with `Refused` limited to 0x3/0x941/0x925, unchanged present performance.
+
+### Step07 result: 0.1.11 broke the pipe — the 0x711 empty-success was the cause (2026-10-14)
+
+Yes, my change broke it — owning it. After the 0.1.11 reboot: OLED recognised in Settings,
+brightness adjustable, but frozen on the Apple logo; `Pipes=1`, AGDC up, `LinkConfig=13`,
+`FbCap=13`, `VendorInfo=16`, `GpuCap=7`, yet `Transactions=0`, `Copied=0`, `Begin=0`,
+`ChangedSinceEnable=0`, and **no `IOAccelDisplayPipeUserClient2` under the accelerator**:
+WindowServer built the IOPresentment map (~12 builds: 195 empty 0x711 answers + 13 scaler answers)
+but never opened the pipe. Evidence: `out/890m-trace/step04-accel-20261014T050026Z/`.
+Identity fixes verified working in the same boot (Chipset Model "AMD Radeon 890M", VRAM 512 MB),
+and the EDID override is innocent (display recognised, brightness fine) — kept.
+Root cause: answering 0x711 non-0x10 with success+count=0. The poller completes every query but
+the resulting map never yields a pipe; with `Unsupported` (0.1.10 and earlier) the pipe opens.
+The review subagent's "caller skips the feature" assumption was wrong — lesson: never change AGDC
+success/refusal shape without a reboot test, no matter how safe it reads.
+0.1.12 = 0.1.10 AGDC behaviour exactly (refusal restored, `FbCapEmpty` removed) + model/VRAM kept;
+installed (kmutil rc=28, AuxKC 0.1.12), **reboot pending**. If OLED returns, cause is confirmed.
 Choppiness note: copy max 6.6 ms is inside the 8.3 ms budget and full-frame 8 ms hits once per
 ~15 s — the remaining judder suspect is WindowServer pacing to the main HDMI 144 Hz display while
 the OLED runs 120 Hz. Test: make OLED main (or match rates) and compare; needs owner eyes.
