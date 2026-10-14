@@ -89,7 +89,9 @@ static Stats gStats;
 // once when the pipe is created (WindowServer start), so a change applies after the next WindowServer restart.
 // With every stage unclaimed CoreDisplay runs the whole colour pipe itself (RunFullDisplayPipe + LUT build per
 // dirty frame, ~1100% WindowServer CPU on the OLED); claimed stages are handed to us as tables on the transaction.
-static volatile int32_t gCapMask = 7;            // bit0 CSC, bit1 gamma, bit2 linearization (boot-arg strixcaps=N)
+// Claim mask = the 0x711 type bits themselves: 0x1 CSC, 0x2 gamma, 0x4 linearization, 0x8 pipeline scaler,
+// 0x400 format convert, 0x1000 plane CSC, 0x2000 3D LUT (boot-arg strixcaps=N, 0..0xffff).
+static volatile int32_t gCapMask = 0x340f;
 static volatile int32_t gCapWsOnly = 1;          // claim stages only for WindowServer (other IOPresentment users keep the refusal)
 static volatile int32_t gCapAlt = 1;             // also offer alternative linearization type entries (CoreDisplay picks)
 static volatile SInt32 gCapSeen, gCapFromWS, gCapFromOther, gCapLastPid;
@@ -275,7 +277,9 @@ IOReturn StrixDeviceControl::vendor_doDeviceAttribute(unsigned int cmd, unsigned
         const uint32_t idx = q->fbIndex, type = q->type;
         gStats.lastCapIndex = (SInt32)idx;
         gStats.lastCapType = (SInt32)type;
-        const bool colourType = (type == kFbCapCSC || type == kFbCapGamma || type == kFbCapLinearization);
+        const bool colourType = (type == kFbCapCSC || type == kFbCapGamma || type == kFbCapLinearization ||
+                                 type == 0x400 || type == 0x1000 || type == 0x2000);
+        const bool scalerClaim = (type == 0x8) && (gCapMask & 0x8);
         char who[20];
         proc_selfname(who, sizeof who);
         const bool isWS = strcmp(who, "WindowServer") == 0;
@@ -288,7 +292,8 @@ IOReturn StrixDeviceControl::vendor_doDeviceAttribute(unsigned int cmd, unsigned
             snprintf(gCapSeq + n, sizeof gCapSeq - n, "%s%s:%#x", n ? "," : "", isWS ? "ws" : who, type);
         }
         if (gCapSeen < 40) SLOG("AGDC: 0x711 fb %u type %#x count %u from %s[%d]", idx, type, q->count, who, pid);
-        if (colourType && (gCapMask & (int32_t)type) && idx == 0 && framebuffer() && (isWS || !gCapWsOnly)) {
+        const bool claimOk = (isWS || !gCapWsOnly);
+        if (colourType && (gCapMask & (int32_t)type) && idx == 0 && framebuffer() && claimOk) {
             // Entry layout read back from IOPresentmentCapabilitiesDisplayPipe::IOPresentmentCreate{Linearization,
             // Gamma,CSC}Dictionary: +0 flags, +4 plane mask (u64), +0xc update period (float), +0x10 type,
             // +0x14 fixed format, +0x18 configuration id, +0x20 min (float) / pixel format (CSC), +0x24 max
@@ -306,7 +311,8 @@ IOReturn StrixDeviceControl::vendor_doDeviceAttribute(unsigned int cmd, unsigned
             p32(0x00, (uint32_t)gCapFlags);
             p64(0x04, 1);                                 // plane 0 (the desktop)
             p32(0x10, (uint32_t)(type == kFbCapLinearization ? gCapLinType :
-                                 type == kFbCapGamma ? gCapGammaType : gCapCscType));
+                                 type == kFbCapGamma ? gCapGammaType :
+                                 type == kFbCapCSC ? gCapCscType : 1));
             p32(0x14, (uint32_t)gCapFixedFmt);
             p32(0x18, 1);
             if (type == kFbCapLinearization && gCapAlt) {
@@ -322,7 +328,8 @@ IOReturn StrixDeviceControl::vendor_doDeviceAttribute(unsigned int cmd, unsigned
                 }
                 c->count = 3;
             }
-            if (type == kFbCapCSC) {
+            if (type == kFbCapCSC || type == 0x1000) {
+                p32(0x20, (uint32_t)gCapFixedFmt);
                 p32(0x24, 0);
                 p32(0x28, oneBits);
             } else {
@@ -339,7 +346,7 @@ IOReturn StrixDeviceControl::vendor_doDeviceAttribute(unsigned int cmd, unsigned
             OSIncrementAtomic(&gStats.fbCap);
             return kIOReturnSuccess;
         }
-        if (type != kFbCapPlaneScaler) {
+        if (type != kFbCapPlaneScaler && !(scalerClaim && claimOk)) {
             noteRefused(cmd, in, inSize, outBytes);      // learn which capability types IOPresentment polls
             return kIOReturnUnsupported;
         }
@@ -352,6 +359,7 @@ IOReturn StrixDeviceControl::vendor_doDeviceAttribute(unsigned int cmd, unsigned
         c->type = type;
         c->count = 1;
         auto put = [&](unsigned off, uint32_t v) { memcpy(&c->entry[0][off], &v, sizeof v); };
+        if (scalerClaim) OSIncrementAtomic(&gCapServed);
         put(0x000, 0x80004);                             // scaler descriptor id
         put(0x01c, 1);                                   // enabled
         put(0x024, t.vActive); put(0x028, t.hActive);    // max source

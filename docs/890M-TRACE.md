@@ -991,3 +991,10 @@ OLED-only boot (gate 0.1.1, `GateState=plugin-name-restored` at 21 s, WindowServ
 no `IOPresentment` traffic; WindowServer composites with `CompositorSW::CompositeLayersToDestination` straight to the
 framebuffer, NVMTL used for rendering and fence waits only.  Load tool: 119.7 fps, p99 8.37 ms, WindowServer about 155 %
 of one CPU (versus 1150 % through the pipe).  `scripts/macos-strix-0114-verify.sh` now skips displays that are absent.
+
+StrixAccel 0.1.15 (installed, reboot pending): claim mask is now the 0x711 type bits themselves, default 0x340f
+(CSC 0x1, gamma 0x2, linearization 0x4, pipeline scaler 0x8, format convert 0x400, plane CSC 0x1000, 3D LUT 0x2000).
+Boot-arg `strixcaps=N` overrides, `strixcaps=7` is the 0.1.14 behaviour, `-strixaccoff` disables.  Test on a boot WITH
+HDMI (the OLED-only boot never opens the pipe): `bash scripts/macos-strix-0114-verify.sh`; the verdict line
+"oled-melt" must drop well below 1100 %.  If it does not, the spindump recipe above (`spindump WindowServer 5 10`) shows
+the next stage to claim.

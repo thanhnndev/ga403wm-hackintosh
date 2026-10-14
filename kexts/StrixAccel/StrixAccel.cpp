@@ -28,7 +28,7 @@
 #include "../../include/StrixNativeABI.h"
 #include "StrixABIProfile.h"
 
-#define STRIXACCEL_VERSION "0.1.14"
+#define STRIXACCEL_VERSION "0.1.15"
 
 #include "IOAccelFamily2_decl.h"
 
@@ -441,7 +441,7 @@ bool StrixAccelerator::start(IOService *provider)
     if (PE_parse_boot_argn("-strixaccoff", nullptr, 0)) return false;
     {
         uint32_t caps;
-        if (PE_parse_boot_argn("strixcaps", &caps, sizeof caps)) strix_agdc::gCapMask = int32_t(caps & 7);
+        if (PE_parse_boot_argn("strixcaps", &caps, sizeof caps)) strix_agdc::gCapMask = int32_t(caps & 0xffff);
         if (PE_parse_boot_argn("strixcapall", nullptr, 0)) strix_agdc::gCapWsOnly = 0;
     }
     if (!OSDynamicCast(IOPCIDevice, provider)) return false;
@@ -620,7 +620,7 @@ IOReturn StrixAccelerator::setProperties(OSObject *props)
     num("StrixAccel,Mode", 0, 1, &gTuneMode);
     num("StrixAccel,Async", 0, 1, &gTuneAsync);
     num("StrixAccel,Probe", 0, 1, &gTuneProbe);
-    num("StrixAccel,Caps", 0, 7, &strix_agdc::gCapMask);
+    num("StrixAccel,Caps", 0, 0xffff, &strix_agdc::gCapMask);
     num("StrixAccel,CapWsOnly", 0, 1, &strix_agdc::gCapWsOnly);
     num("StrixAccel,CapAlt", 0, 1, &strix_agdc::gCapAlt);
     num("StrixAccel,CapLinType", 1, 0x3fff, &strix_agdc::gCapLinType);
