@@ -15,6 +15,7 @@ VoodooI2CServices before VoodooI2C, VoodooI2CHID last.
 | `ItlXhciKick.kext` | `com.itlmt7925.xhcikick` | services the second xHCI event ring of single-vector AMD controllers (`docs/USB-XHCI-LAG.md`) | **yes**, without it USB keyboards/mice lag ~2 s |
 | `ItlDiag.kext` | `com.itlmt7925.diag` | boot diagnostics, NVRAM digest, optional USB-stick log (`docs/DEBUGGING.md`); **disabled** in the reference config | no |
 | `AsusWmi.kext` | `com.itlmt7925.asuswmi` | ASUS WMI/EC/HID: profiles, fan curves, charge limit, keyboard light, Slash (`docs/ASUSCTL-MACOS.md`) | for RogControl |
+| `StrixAmp.kext` | `com.itlmt7925.strixamp` | I2C access to the two CS35L56 speaker amps (user client for `strixampctl`, `docs/AUDIO-ROG.md`); injected after VoodooI2C | for the speakers |
 | `AmdCppc.kext` | `com.itlmt7925.amdcppc` | Zen 5 CPPC/boost/EPP control, clocks, Tctl, RAPL (`docs/CPU-POWER.md`) | for full CPU speed |
 | `MtkBtFw.kext` | `com.itlmt7925.mtkbtfw` | loads the MT7925 Bluetooth firmware over USB (`docs/BLUETOOTH.md`) | for Bluetooth |
 | `BtLeDlFix.kext` | `com.itlmt7925.btledlfix` | Lilu plugin: BLE mice with `bluetoothd` (`docs/BLUETOOTH.md`) | experimental |

@@ -8,8 +8,8 @@
 	<key>CFBundleInfoDictionaryVersion</key><string>6.0</string>
 	<key>CFBundleName</key><string>StrixAmp</string>
 	<key>CFBundlePackageType</key><string>KEXT</string>
-	<key>CFBundleShortVersionString</key><string>0.0.1</string>
-	<key>CFBundleVersion</key><string>0.0.1</string>
+	<key>CFBundleShortVersionString</key><string>0.2.0</string>
+	<key>CFBundleVersion</key><string>0.2.0</string>
 	<key>IOKitPersonalities</key>
 	<dict>
 		<key>StrixAmp</key>
@@ -17,10 +17,14 @@
 			<key>CFBundleIdentifier</key><string>com.itlmt7925.strixamp</string>
 			<key>IOClass</key><string>StrixAmp</string>
 			<key>IOProviderClass</key><string>VoodooI2CDeviceNub</string>
-			<key>IONameMatch</key><string>CSC3556</string>
+			<!-- VoodooI2C publishes CSC3556 as the IOName *property* of the nub (registry name stays SPKR), so IONameMatch never
+			     matches; VoodooI2CHID matches by property too. -->
+			<key>IOPropertyMatch</key>
+			<dict><key>IOName</key><string>CSC3556</string></dict>
 			<key>IOProbeScore</key><integer>1000</integer>
 		</dict>
 	</dict>
+	<key>OSBundleRequired</key><string>Root</string>
 	<key>OSBundleLibraries</key>
 	<dict>
 		<key>com.alexandred.VoodooI2C</key><string>2.0.0</string>

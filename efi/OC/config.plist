@@ -889,6 +889,24 @@
 				<key>PlistPath</key>
 				<string>Contents/Info.plist</string>
 			</dict>
+			<dict>
+				<key>Arch</key>
+				<string>x86_64</string>
+				<key>BundlePath</key>
+				<string>StrixAmp.kext</string>
+				<key>Comment</key>
+				<string>CS35L56 speaker amp I2C access for strixampctl (docs/AUDIO-ROG.md)</string>
+				<key>Enabled</key>
+				<true/>
+				<key>ExecutablePath</key>
+				<string>Contents/MacOS/StrixAmp</string>
+				<key>MaxKernel</key>
+				<string></string>
+				<key>MinKernel</key>
+				<string>24.0.0</string>
+				<key>PlistPath</key>
+				<string>Contents/Info.plist</string>
+			</dict>
 		</array>
 		<key>Block</key>
 		<array/>
@@ -2112,7 +2130,7 @@
 				AAAAAAAAAAAAAAAAAAA=
 				</data>
 				<key>boot-args</key>
-				<string>-vi2c-force-polling nvfb=1 nvaccel=1 nvfbheads=4 -nvkmsnosmooth amfi_get_out_of_my_way=0x1 amfi=0x80 ipc_control_port_options=0 itlmt_m1=0 -nvrmnobootscreen nvrmacpibl=1 itlmt_m2=1 itlmt_m3=1 itlmt_fast=6</string>
+				<string>-vi2c-force-polling nvfb=1 nvaccel=1 nvfbheads=4 -nvkmsnosmooth amfi_get_out_of_my_way=0x1 amfi=0x80 ipc_control_port_options=0 itlmt_m1=0 -nvrmnobootscreen nvrmacpibl=1 itlmt_m2=1 itlmt_m3=1 itlmt_fast=6 alcverbs=1 strixamp_trace=1</string>
 				<key>csr-active-config</key>
 				<data>
 				QwoAAA==
