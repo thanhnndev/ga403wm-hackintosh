@@ -695,3 +695,25 @@ async diff won the healthy bench and stays default.
 Installed 2026-10-14 via admin dialog (`installed: 0.1.10`, kmutil rc=28, AuxKC confirms 0.1.10,
 live stays 0.1.9 until reboot), **reboot pending — not done this turn**.
 Next after reboot: re-run the safe bench to re-test block64/512 and confirm the winner.
+
+### Step06 final: 0.1.10 safe bench confirms the defaults (2026-10-14)
+
+0.1.10 live after reboot (Gate PASS, Version 0.1.10, Pipes 1, Transactions=Copied, NoPlane 0,
+ValidateFail 0). Full safe bench, 8 configs x 6 s full load, display-link ~119 fps on every
+config (no stall), probe healthy (SrcRead 629 us, ShadowRead 602 us, ApertureWrite 2101 us):
+
+- sync full: copy 1954 us / submit 1957 us / 20250 KB.
+- sync diff: copy 1586 us / submit 1589 us / 2687 KB.
+- **async diff (default 1/1/0/128): copy 1444 us / submit 1 us / 2307 KB — winner.**
+- async full: copy 1917 us / submit 1 us / 20250 KB.
+- async diff copyback: copy 1615 us / submit 2 us / 2484 KB.
+- async diff writethru: copy 1665 us / submit 2 us / 2400 KB.
+- async diff block512: copy 1795 us / submit 2 us / 3839 KB (coarse blocks over-write).
+- async diff block64: copy 1774 us / submit 2 us / 2175 KB (less written, more compare overhead).
+
+Coalesced=0 on every async config: the worker (1.4-1.9 ms/frame) keeps up, no dropped frames.
+Block=128 is the sweet spot; default SrcCache beats copyback/writethru. No code change: the
+0.1.10 defaults (Mode=1, Async=1, SrcCache=0, Block=128) are confirmed final for this path.
+Evidence: `out/890m-trace/step06-bench-0110-20261014T113000Z/`.
+Remaining choppiness (if any) is now a pacing question (no vblank source / flip completion),
+not copy cost: present async already decouples WindowServer (submit 1 us).
