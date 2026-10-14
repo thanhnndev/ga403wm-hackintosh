@@ -15,15 +15,22 @@
 	<key>CFBundlePackageType</key>
 	<string>KEXT</string>
 	<key>CFBundleShortVersionString</key>
-	<string>0.1.1</string>
+	<string>0.1.9</string>
 	<key>CFBundleVersion</key>
-	<string>0.1.1</string>
+	<string>0.1.9</string>
 	<key>IOKitPersonalities</key>
 	<dict>
 		<key>StrixAccel</key>
 		<dict>
 			<key>CFBundleIdentifier</key>
 			<string>com.itlmt7925.strixaccel</string>
+			<key>IOAccelDisplayPipeCapabilities</key>
+			<dict>
+				<key>DisplayPipeSupported</key>
+				<integer>1</integer>
+				<key>TransactionsSupported</key>
+				<integer>1</integer>
+			</dict>
 			<key>IOClass</key>
 			<string>StrixAccelerator</string>
 			<key>IOMatchCategory</key>
@@ -36,6 +43,8 @@
 	</dict>
 	<key>OSBundleLibraries</key>
 	<dict>
+		<key>com.apple.AppleGraphicsDeviceControl</key>
+		<string>1.0.0</string>
 		<key>com.apple.iokit.IOAcceleratorFamily2</key>
 		<string>2.0.0</string>
 		<key>com.apple.iokit.IOGraphicsFamily</key>

@@ -406,3 +406,257 @@ live snapshots, display census, working-tree diff and candidate validation.
 Backed up working0.1.3 package and AuxKC before staging0.1.4. kmutil result28;
 AuxKC inspection confirms0.1.4, while loaded driver remains0.1.3. No hot unload,
 live graphics change, EFI change or forced reboot. Naming fix runtime pending.
+
+### Step04 transaction failure root cause analysis and StrixAccel 0.1.2 diagnostics (2026-10-13)
+
+Evidence `out/890m-trace/step04-accel-20261013T154304Z/` (StrixAccel 0.1.1, boot 22:38):
+Transactions 24 = Skipped 24 = ValidateFail 24 = Begin 24, Copied 0; the family logs
+`set_transaction_args ... returning error 0xe00002bc` every ~17 ms. Static trace of
+`IOAccelDisplayPipeTransaction2::set_transaction_args` (family 485.2, 24H32):
+
+- The error is **not** a family exit. The family exits 0xe00002c2 (IOSurface ID lookup
+  failed) and 0xe00002bd (deviceCacheForIOSurface NULL) never occur; the 0xe00002bc is the
+  return value of `pipe->vtable[276]` (`validateTransaction`), i.e. our own check
+  (identical to `AppleParavirtDisplayPipe::validateTransaction`): `getPlaneIOSurface(0,0)==NULL`.
+- Plane state lives at txn+0x38, 0x70 bytes per plane: +0x10 deviceCache[2], +0x20 IOSurface[2],
+  +0x30 resource[2], +0x40 gamma, +0x48..0x78 geometry. `getPlaneIOSurface(p,i)` reads +0x20.
+- The plane loop only runs for planes whose bit is set in the accumulated txn flags (+0x48);
+  other planes are copied from the pipe's current state (pipe+0x240). Per-plane arg type
+  1 = IOSurface IDs (fills +0x20 via deviceCacheForIOSurface), 2 = IOAccelSurface ID (fills only
+  the resource slots), 0 = clear. So plane 0 has no IOSurface because WindowServer either does not
+  include plane 0 or sends a type-2/0 plane; which of these is unknown until observed.
+- "Unable to find display pipe for IOFB service / regID 0x14803 / 0x1000004a6" (0x1000004a6 is
+  StrixGOPFramebuffer) is logged once, ~2 s before the transactions start; transactions do reach
+  our pipe afterwards, so it is not the failing step.
+
+StrixAccel 0.1.2 (installed, kmutil 28, reboot pending): `validateTransaction`/`submitTransaction`
+choose the first full-size (>=1024x600) IOSurface among planes 0/1, idx 0/1; failures stay failures
+(keeps the safe CoreDisplay CPU fallback); the first 12 failing transactions (and every 600th)
+log flags, both planes' raw slots for the txn and the pipe's current state, the surface geometry
+and the resource class (`StrixAccel: txn N validate-FAIL ...`). Next: read these lines
+(`bash scripts/macos-strix-accel-collect.sh`), then make the resource-backed (type 2) or
+carry-over case presentable.
+
+### Step04 StrixAccel 0.1.2 runtime result: CoreDisplay never finds a pipe because the capability is not advertised (2026-10-13)
+
+Evidence `out/890m-trace/step04-accel-20261013T160604Z/` (StrixAccel 0.1.2, Gate PASS, Pipes 1,
+Transactions 89 = ValidateFail 89 = Skipped 89, Copied 0):
+
+- Every transaction is `flags 0x80` (bit 7 = pipe-level postgamma update): plane bits 0/1 are
+  never set and both the transaction's and the pipe's current plane state are entirely zero
+  (no IOSurface, no resource). WindowServer never sent a plane to this pipe; the ~17 ms
+  cadence is a failing gamma update being retried, not frame presents.
+- WindowServer keeps logging `[CoreDisplay] Unable to find display pipe for IOFB service /
+  regID 0x15003 / <StrixGOPFramebuffer id>`, so presents go through the CPU path to the aperture
+  (the lag).
+- Cause: working accelerators publish `IOAccelDisplayPipeCapabilities = {DisplayPipeSupported=1,
+  TransactionsSupported=1}` (AppleParavirtGPU `AcceleratorProperties`, AppleIntelKBLGraphics /
+  ICLGraphics personalities). StrixAccelerator did not, so CoreDisplay does not consider it a
+  display-pipe accelerator.
+
+StrixAccel 0.1.3 (installed, kmutil 28, reboot pending): publishes the capability dict (personality
+and `setProperty` in start); `validateTransaction` accepts transactions with no plane bit (gamma/CSC
+only; counted as `StrixAccel,NoPlane`) and rejects planes copySurface cannot present (tiled /
+non-BGRA-l10r) so the caller keeps its CPU path. Expected next: `Unable to find display pipe` gone,
+`txn N validate-ok` / `surface ... fmt` lines, Copied rising.
+
+### Step05 Native OLED brightness over DCN35 DPAUX (StrixGOP 0.1.5, 2026-10-13)
+
+Why the NVIDIA path is not enough: `NVRMEdpBL` writes DPCD through RM's AUX channel, which belongs
+to the dGPU. In Hybrid mode the mux routes the eDP panel to the 890M, so those writes never reach
+it. Panel facts (DPCD 0x700: `05 9b 86`): eDP 1.4b, adjustable TCON, **no PWM pin**
+(0x702 bit 0 clear), AUX level supported (bit 1), 16-bit level (bit 2), PWMGEN 11 bits (max 2047).
+Only `0x721 = 2` and `0x722/0x723 = level` can dim it.
+
+macOS side (port of the NVRMFB recipe, own implementation):
+- `StrixBacklightHandler : IODisplayParameterHandler`, named `backlight`, attached to the
+  framebuffer **before** `IOFramebuffer::start` (IOFramebuffer::open looks for it,
+  `gIOFBHaveBacklight`). The framebuffer also answers `getAppleSense` with `kGenericLCD`
+  (connection flags were already `kIOConnectionBuiltIn`) so IOGraphics builds an
+  `AppleBacklightDisplay` instead of a plain `AppleDisplay`: slider, Fn keys, dim/sleep.
+- `doIntegerSet` runs the DPCD writes from a thread call (IODisplay holds the framebuffer lock);
+  percent clamped to >= 5, level = pct * max / 100, **level first, then mode** (same order NVRMEdpBL
+  proved on 2026-10-12).
+
+Hardware side (`kexts/StrixGOP/DcnAux.h`, no new family dependency):
+- BAR5 (0xdc300000, 512 KiB) mapped read/write with `mapDeviceMemoryWithRegister`; memory space
+  must already be enabled (config command bit 1), nothing is enabled or powered by us.
+- DP_AUX0..4 registers from amdgpu `dcn_3_5_0_offset.h`: DMU segment 2 base 0x34C0 dwords (IP
+  discovery of this unit) + AUX_CONTROL 0x1f50, stride 0x1c per instance; sequence from
+  `dce_aux.c` (acquire incl. DMCU arbitration status, SW_DATA header/address/length/payload with
+  autoincrement quirk, GO, poll DONE, reply byte count, read reply, release; retries 7 defer / 2
+  invalid / 3 timeout). Native action nibbles 0x80 write / 0x90 read.
+- Discovery in `start()` is **read-only**: per channel DPCD 0x000 (must be DP 1.0..1.4) then
+  0x700; pass 0 = channels the firmware left enabled, pass 1 = the others with AUX_CONTROL restored.
+  Published as `Aux,Ch0..4` (`pass ctl arb rc sw dpcd edp`), `Aux,Channel`, `Aux,EdpCaps`,
+  `Aux,Status`. The handler (and so the slider) only exists when an AUX-only panel was found.
+- Counters: `Backlight,Writes/Failures/LastRc/Percent/Level/Max`; log lines `StrixGOP: aux ...`,
+  `StrixGOP: backlight N% = level L of M` (first 8 writes).
+
+Kill switches: `-strixauxoff` (whole brightness part, framebuffer unchanged), `-strixgopoff`
+(framebuffer inert, ESP `EFI/OC/config.plist.strix-off-20261013` has it).
+Install `scripts/macos-strix-gop-install.sh` (keeps the installed personality: BootGOPProfile, EDID;
+backup `~/efi-audit/strixgop-backup`, `--undo`). Installed, kmutil 28, **reboot pending**
+together with StrixAccel 0.1.3.
+
+Open until a reboot: which DP_AUX instance is the eDP; whether DMCUB holds the arbitration (status 2
+is skipped and reported, not forced); whether BAR5 reads are sane before the display clocks settle.
+Verify: `bash scripts/macos-strix-brightness-collect.sh`.
+
+### Step06 Boot verification of 0.1.5/0.1.3 and the AGDC root cause (StrixAccel 0.1.4, 2026-10-14)
+
+Verified after the reboot (StrixGOP 0.1.5 + StrixAccel 0.1.3):
+- Native brightness works at driver level: `Aux,Ch0` is the eDP channel, `Backlight,Writes=9`,
+  `Failures=0`, max level 2047. (Slider/Fn behaviour is for the owner to confirm visually.)
+- StrixAccel: `Pipes=1`, `Transactions=91`, `NoPlane=91`, `Copied=0`, `ValidateFail=0`. WindowServer
+  opens `IOAccelDisplayPipeUserClient2` but every transaction is gamma-only (no plane) -> CPU
+  composition, which is the remaining lag; About This Mac graphics stays "unknown".
+
+Root cause of "no plane ever sent" (traced in CoreDisplay/IOPresentment with lldb on a helper
+process, plus `iop-getmap`):
+- `CoreDisplay::FindDisplayPipeForService` keys `gDisplayPipes` by IOFB registry ID and builds the
+  pipe lazily with `IOPresentmentCreateForRegistryID(0, regID)` + `IOPresentmentInitialize`.
+- IOPresentment's association map (`ioPresentmentCreateAssociationMap` / `IOPresentmentGetMap`)
+  requires an `AppleGraphicsDeviceControl` (AGDC) service per GPU. None exists for the Strix:
+  WindowServer logs "Unable to get AGDC information, 0x10000003", "Unable to locate service
+  dependencies", "Unable to acquire map"; `IOPresentmentGetMap()` returns NULL.
+- AGDC user-client protocol seen (type 2): cmd 1 vendor info (0x2c bytes; vendorClass must be 1 or
+  2), 0x980 GPU capability (0xdc bytes; framebuffer slot table), 0x921 link config (0xb0 bytes,
+  id = slot), 0x711 framebuffer extended capability (0x196c bytes; type 0x10 = plane scaler, polled
+  once per feature), 0x925 / 0x988 / 0x3fc link capability queries (unknown, refused + counted).
+
+StrixAccel 0.1.4 (`kexts/StrixAccel/StrixAgdc.h`, `AppleGraphicsDeviceControl_decl.h`):
+- `StrixDeviceControl : AppleGraphicsDeviceControl` (0x110-byte base from kext 8.1.10), created
+  from the accelerator's scan thread call, attached/started on the Strix IOPCIDevice, terminated in
+  `stop()`. New dependency `com.apple.AppleGraphicsDeviceControl` 1.0.0.
+- Answers cmd 1 (AMD 0x1002, class 2), 0x980 (slot 0 = the StrixGOP framebuffer), 0x921 (timing
+  from the framebuffer's current mode, 2880x1800 @ 60/120), 0x711 type 0x10; everything else
+  -> `kIOReturnUnsupported` with the command remembered.
+- Accelerator properties: `StrixAccel,AGDC,Up/Commands/VendorInfo/GpuCap/LinkConfig/FbCap/Refused/
+  RefusedSeen/BadSize/NoFramebuffer`.
+- Build note: `strnstr` is not exported to kexts (kmutil bind failure, rc 31); `kmutil libraries`
+  does not catch that, only the real `kmutil load` does.
+
+Installed with `scripts/macos-strix-accel-install.sh` (kmutil rc 28 = AuxKC rebuilt), **reboot pending**.
+Verify next: `iop-getmap` -> MAP PRESENT, WindowServer log free of IOPresentment/AGDC errors,
+`StrixAccel,AGDC,*` counters, then `Copied > 0` and `NoPlane` no longer equal to `Transactions`.
+
+Known low-priority bug (note only): About This Mac -> Displays shows the built-in panel as
+"47 inch" (wrong; the panel is a 2880x1800 14-class OLED). Likely from the display size derived by
+IOKit/Display from the EDID/physical size path; revisit after the pipe works.
+
+### Step06 result of StrixAccel 0.1.4 and 0.1.5 (2026-10-14)
+
+0.1.4 booted: `StrixDeviceControl` is up under the Strix VGA node (`StrixAccel,AGDC,Up=Yes`), the
+AGDC user client reaches it (34 commands: VendorInfo 15, GpuCap 8), `Pipes=2`. But CoreDisplay
+still logs "Unable to find display pipe for IOFB service / regID 0x10503 / 0x100000443" and
+IOPresentment still logs "Unable to get AGDC information, 0x10000003"; LinkConfig=0, FbCap=0 (never
+asked), Copied=0, NoPlane=93.
+
+Unknown commands that reached the vendor method (all refused with Unsupported):
+- 0x3 (in 0 / out 4) and 0x941 (in 48 / out 48), once at 08:45:02 from a boot-time client;
+- **0x2001 (in 4 / out 0)**, issued 7x by WindowServer's thread immediately before every
+  "Unable to get AGDC information" line — this is the call that makes IOPresentment give up, so it
+  never reaches 0x921/0x711.
+- AGDC itself blocks unauthorised clients (`PerfPowerServices` blocked), unrelated.
+
+From the AGDC kext (`filtered_doDeviceAttribute`, otool on a carved Mach-O of the KC entry): 0x2001
+falls through the size-checked switch and is forwarded as-is; 0x941 requires a 0x30-byte buffer.
+
+0.1.5: command 0x2001 is accepted (value logged, `StrixAccel,AGDC,ClientSet/ClientSetValue`),
+refused commands log a hex dump of their input, `LinkIndex/CapIndex/CapType` published. Installed
+(kmutil 28), reboot pending. Expect: no more "Unable to get AGDC information", LinkConfig/FbCap > 0,
+then a DisplayPipe for regID 0x100000443 and plane transactions.
+
+### Step06 result of StrixAccel 0.1.5 and the class-code root cause (2026-10-14)
+
+0.1.5 booted. AGDC works end to end: `StrixAccel,AGDC,Up=Yes`, VendorInfo 12, GpuCap 6, ClientSet 4
+(value 1, the `0x2001` WindowServer sends), only 0x3 and 0x941 still refused (boot-time client).
+`IOAccelDisplayPipeUserClient2` is now a child of the accelerator, so a client really opens the pipe.
+Yet CoreDisplay still said "Unable to find display pipe" and LinkConfig/FbCap stayed 0.
+
+Entitled probe (`iop-getmap`, ad-hoc signed with `com.apple.private.gpuwrangler`; AMFI is off): the
+IOPresentment map is PRESENT but `IOAccelerator = 0`, while IOFramebuffer = 0x100000475 and AGDC =
+0x100000500 are found.  AGDC itself needs `com.apple.private.applegraphicsdevicecontrol...` /
+`gpuwrangler` or `agdc_entitle`; unentitled clients never get a connection.
+
+Disassembly of `IOPresentment` (lldb on the helper): `ioPresentmentFindIOServiceMatch` runs
+`IOServiceMatching(class)`, reads `IOAccelIndex` (running counter when absent) and calls
+`ioPresentmentGetNodeMap`, which walks the IOService **parents** (iterator flags 3) of every entry,
+reads each parent's own `class-code` and keeps only parents whose code is a display class
+(0x30000, 0x30001, 0x00100, 0x30100, 0x38000, 0x30200).  Those PCI registry IDs form the node
+that ioPresentmentMatch later compares across accelerator/framebuffer/AGDC.
+
+Root cause: our PCI node `VGA@0` carries the EFI hide spoof `class-code = FFFFFFFF` (+ `disable-gpu`,
+`name #display`), so StrixAccelerator, StrixGOPFramebuffer and the AGDC service all get an empty node
+and never associate.  The NVIDIA side is fine (`PEGP class-code 0x30000`).  Checked with a parents
+walker (`parents.c`): VGA = 0xffffffff, GPPA = 0x60400.
+
+0.1.6 (StrixAccel): `restoreClassCode()` publishes the hardware class code read from config space
+(0x030000) on the PCI node before the accelerator registers and puts the spoof back in stop().
+Properties `StrixAccel,ClassCodeHW` / `StrixAccel,ClassCodeSpoof`.  The spoof still keeps the stock
+AMD/Apple drivers from matching at boot (they match at publication, before our start).
+Verify: `./parents 0x<fb id>` shows VGA class-code 0x30000, `iop-getmap` IOAccelerator != 0,
+`LinkConfig/FbCap > 0`, no "Unable to find display pipe", `Copied > 0`.
+
+### Step06 brightness check (StrixGOP 0.1.5, 2026-10-14)
+
+Driver path works: `IODisplaySetFloatParameter(brightness, 0.3)` -> handler -> `Backlight,Percent=30`,
+level 614/2047, LastRc 0; restored to 1.0.  All earlier logged writes were 100 % (the first 8 are
+logged only).  Physical dimming is NOT verified, and the Fn-key path is untested.
+0.1.6 (StrixGOP) adds evidence: `Aux,Dpcd700/720/300..350` dumps (eDP caps, display control, sink
+extension block), post-write readback of DPCD 0x720..0x723 (`Backlight,Readback`), logs of the raw
+`doIntegerSet` key/value (first 40) and 40 write lines.
+Next: if readback shows the level accepted but the panel does not dim, the OLED needs the
+luminance/nits path (DPCD 0x32F region) instead of the 0x722 level; the dump decides.
+
+### Step06 result of StrixAccel 0.1.6 / StrixGOP 0.1.6 (2026-10-14)
+
+Booted with the class-code fix (hardware class code is **0x038000**, not 0x030000): `LinkConfig=13`,
+`FbCap=13`, `NoPlane=0`, `Copied == Transactions` (plane transactions now flow, CPU copy into the
+GOP aperture); user confirms OLED + HDMI both work and **brightness works** (DPCD readback
+`0002027b` = level 635 after a 31 % write).  Display is still choppy.
+Remaining refusals: 0x3, 0x941 (boot client, zero input), 0x925 (in 12: `01 00 00 00`), and 0x711
+for fb-capability types 0x1,0x2,0x4,0x8,0x20,0x40,0x80,0x100..0x8000 (only 0x10 is answered).
+DPCD dumps: 0x700=`059b8614`, 0x720=`000100000b0b0b00000002a300ffff03`, 0x310..=`1e0000170`,
+0x340=`01770100` (luminance block, unused so far).
+
+0.1.7 (StrixAccel): the present path copied the full 20.7 MB frame to the write-combined aperture on
+every transaction.  Now a shadow of the aperture is kept and only 128-byte blocks that changed are
+written (full refresh on mode change and every 1800 frames).  Timing/dirty counters:
+`StrixAccel,Copy,AvgUs/MaxUs/AvgKB/Frames/FullFrames` and log `txn N: copy diff X us, wrote Y KB`.
+Installed, kmutil 28, reboot pending.  If lag stays, measured copy time tells whether the cost is
+the copy (then threaded/async copy) or pacing (no vblank source / flip completion).
+
+### Step06 result of StrixAccel 0.1.7 (2026-10-14)
+
+Both displays up (OLED via iGPU, Mi Monitor 1080p144 via NVIDIA, main display).  600 transactions,
+Copy avg **12.6 ms**, max 25.4 ms, avg written only 260 KB/frame, 2 full frames.  So the time is not the
+write volume: it is reading/comparing 2 x 20.7 MB (xnu `bcmp` is a `repe cmps` loop) and/or a slow source
+or aperture mapping.  At 144 Hz the budget is 6.9 ms, and the copy runs on WindowServer's thread, so it
+also stalls the HDMI display.
+0.1.8: 64-bit unrolled compare, per-phase timers (`Copy,DiffCompareUsAvg`, `DiffWriteUsAvg`,
+`FullFrameUs`) and a one-off probe at txn 3/300 (`Probe,SrcReadUs`, `ShadowReadUs`, `ApertureWriteUs`).
+Decision after reboot: if source read is slow -> source is uncached/VRAM (need cached remap or GPU copy
+elsewhere); if aperture write is slow -> aperture mapping/cache attr; otherwise async present worker.
+
+## Step06 StrixAccel 0.1.9 — one-reboot batch, live-tunable present path
+
+Why: 0.1.7 measured avg 12.6 ms / max 25 ms per present while writing only ~260 KB, i.e. the cost is source
+read/compare/mapping, and the copy ran synchronously on WindowServer's thread (it also stalls the HDMI display at
+144 Hz, budget 6.9 ms).  Instead of one probe per reboot, 0.1.9 ships every known candidate behind runtime tunables.
+
+- Async present: `submitTransaction` retains the newest surface, parks it in `pending` (older un-started frame is
+  coalesced), `thread_call_enter(worker)` and returns.  The worker copies under the pipe lock.  `free()` cancels the
+  call and waits on `workerBusy`.  WindowServer no longer waits for the copy: slow copy => dropped OLED frames, never
+  an HDMI stall.
+- Tunables (properties written on `StrixAccelerator`, `tools/strix_accel_tune.c`):
+  `Mode` 0 full / 1 diff-vs-shadow, `Async` 0/1, `SrcCache` 0 default / 1 copyback / 2 write-through / 3 inhibit /
+  4 write-combine (mapping flushed via generation counter, falls back if refused), `Block` 32..4096,
+  `Probe=1` runs the bandwidth probe on the next frame, `Reset=1` zeroes the copy counters.
+- New counters: `StrixAccel,Present,Submits/SubmitUsAvg/SubmitUsMax/Coalesced`, `StrixAccel,Tune,*`.
+- Tooling: `tools/strix_present_load.swift` (animated load on the Built-in screen, prints fps/p95/p99),
+  `scripts/macos-strix-present-bench.sh` (cycles 9 configs live, prints per-config counters, restores defaults).
+- Defaults after boot: Mode=1, Async=1, SrcCache=0, Block=128.
+- Recovery: boot-arg `-strixaccoff`, or `Async=0 Mode=0` live.
+- Installed 2026-10-14 (kmutil rc=28), reboot pending.  After reboot: `bash scripts/macos-strix-present-bench.sh`.

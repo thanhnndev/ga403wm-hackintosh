@@ -28,7 +28,7 @@
 #include "../../include/StrixNativeABI.h"
 #include "StrixABIProfile.h"
 
-#define STRIXACCEL_VERSION "0.1.1"
+#define STRIXACCEL_VERSION "0.1.9"
 
 #include "IOAccelFamily2_decl.h"
 
@@ -81,13 +81,26 @@ extern const uintptr_t fam_ztv_MemoryMap[] __asm__("__ZTV16IOAccelMemoryMap");
 
 #define SLOG(fmt, ...) IOLog("StrixAccel: " fmt "\n", ##__VA_ARGS__)
 
+// Runtime tunables (IORegistryEntrySetCFProperties on the accelerator, see StrixAccelerator::setProperties and
+// tools/strix_accel_tune.c): every present-path experiment is a property write, not a reboot.
+static volatile int32_t gTuneMode = 1;       // 0 = full-frame copy, 1 = block diff against a shadow
+static volatile int32_t gTuneAsync = 1;      // 1 = present on a worker thread (latest frame wins), 0 = in WindowServer's thread
+static volatile int32_t gTuneSrcCache = 0;   // source mapping cache: 0 default, 1 copyback, 2 write-through, 3 inhibit, 4 write-combine
+static volatile int32_t gTuneProbe = 0;      // 1 = run the bandwidth probe on the next presented frame
+static volatile int32_t gTuneBlock = 128;    // diff block size in bytes (multiple of 8)
+static volatile int32_t gCacheGen = 0;       // bumped when the source cache mode changes: pipes drop their mappings
+static volatile int32_t gCoalesced = 0;      // frames replaced by a newer one before the worker got to them
+static volatile int64_t gSubmitNs, gSubmitMaxNs, gSubmitCalls;
+static volatile int64_t gCmpNs, gWriteNs, gFullNs, gProbeSrcNs, gProbeShNs, gProbeWcNs;
+static volatile int64_t gCopyNs, gCopyMaxNs, gWrittenBytes, gCopyCalls, gFullFrames, gCopyBlocks;
 static volatile int32_t gGate;        // 0 unchecked, 1 pass, 2 fail (fail closed for the rest of the boot)
-static volatile int32_t gCounters[8]; // 0 pipes, 1 txn, 2 copied, 3 skipped, 4 begin, 5 validate fail, 6 tiled, 7 unsupported fmt
+static volatile int32_t gCounters[9]; // 0 pipes, 1 txn, 2 copied, 3 skipped, 4 begin, 5 validate fail, 6 tiled, 7 unsupported fmt, 8 no-plane
 
-enum { kCPipes, kCTxn, kCCopied, kCSkipped, kCBegin, kCValidateFail, kCTiled, kCFormat };
+enum { kCPipes, kCTxn, kCCopied, kCSkipped, kCBegin, kCValidateFail, kCTiled, kCFormat, kCNoPlane };
 
 class StrixAccelerator;
 class StrixDisplayMachine;
+class StrixDeviceControl;
 
 // ---------------------------------------------------------------------------------------------------------------------
 // classes
@@ -102,6 +115,7 @@ public:
     volatile uint32_t *stampVA;
     StrixDisplayMachine *machine;      // retained
     IONotifier *fbNotifier;
+    StrixDeviceControl *agdc;          // retained; created from the scan thread call
     thread_call_t scanCall;
     volatile int32_t stopping;
     volatile int32_t scanTicks;
@@ -120,6 +134,9 @@ public:
     IOAccelTask *createUserGPUTask() override;
     IOAccelTask *createKernelGPUTask() override;
     void populateAccelConfig(IOAccelConfig *cfg) override;
+    uint32_t savedClassCode;
+    bool classCodeRestored;
+    void restoreClassCode(IOService *provider);
     bool configureDevice(IOPCIDevice *dev) override;
     void teardownDevice(IOPCIDevice *dev) override;
     IOAccelDisplayMachine *newDisplayMachine() override;
@@ -136,6 +153,7 @@ public:
 
     void scan(const char *why);
     void publishCounters();
+    IOReturn setProperties(OSObject *props) override;
     static void scanTick(thread_call_param_t self, thread_call_param_t);
     static bool onFramebuffer(void *target, void *ref, IOService *svc, IONotifier *n);
     bool layoutGate();
@@ -220,6 +238,9 @@ public:
     uintptr_t updateGPUPageTable() override;
 };
 
+// IOSurface is only forward-declared by the family header; it is an OSObject at offset 0.
+static inline void strix_surf_release(IOSurface *s) { reinterpret_cast<OSObject *>(s)->release(); }
+
 class StrixDisplayPipe : public IOAccelDisplayPipe {
     OSDeclareDefaultStructors(StrixDisplayPipe)
 public:
@@ -241,6 +262,22 @@ public:
     bool fbReady;
     uint64_t tick;
     SurfMap cache[kCache];
+    // Copy shadow: what we last wrote to the aperture (+ one row of scratch).  The aperture is write-combined VRAM, so
+    // a full 20 MB frame per transaction is the expensive part; only blocks that differ from the shadow are written.
+    IOBufferMemoryDescriptor *shadowMD;
+    uint8_t *shadow;
+    bool shadowValid;
+    unsigned sinceFull;
+    // Async present: submitTransaction parks the newest surface here and returns; the worker copies it.
+    thread_call_t worker;
+    IOLock *qlock;
+    IOSurface *pending;
+    unsigned pendingN;
+    volatile int32_t workerBusy;
+    volatile int32_t closing;
+    int32_t cacheGen;
+    static void workerFire(thread_call_param_t self, thread_call_param_t);
+    void presentPending();
 
     bool init(IOGraphicsAccelerator2 *accel, IOAccelDisplayMachine *machine, IOFramebuffer *fb, unsigned int index) override;
     void free() override;
@@ -251,9 +288,12 @@ public:
     void beginTransaction(IOAccelEvent *ev) override;
 
     bool prepareFramebuffer();
+    uint8_t *ensureShadow();
     uint8_t *mapSurface(IOSurface *s, uint32_t id);
     bool copySurface(IOSurface *s, unsigned n);
 };
+
+#include "StrixAgdc.h"
 
 OSDefineMetaClassAndStructors(StrixAccelerator, IOGraphicsAccelerator2)
 OSDefineMetaClassAndStructors(StrixEventMachine, IOAccelEventMachineFast2)
@@ -365,6 +405,32 @@ IOService *StrixAccelerator::probe(IOService *provider, SInt32 *score)
     return IOService::probe(provider, score);
 }
 
+// The EFI hides the iGPU from stock drivers with class-code FFFFFFFF on the PCI node.  IOPresentment (CoreDisplay's
+// display-pipe path) walks the IOService parents of every accelerator, framebuffer and AGDC service and only accepts a
+// PCI node whose class-code is a display class; with the spoof it finds no PCI node, so the accelerator never joins the
+// association map ("IOAccelerator = 0") and CoreDisplay reports "Unable to find display pipe".  The hardware value is
+// still in config space, so publish that on the node once our own driver owns the device and put the spoof back on stop.
+void StrixAccelerator::restoreClassCode(IOService *provider)
+{
+    auto dev = OSDynamicCast(IOPCIDevice, provider);
+    if (!dev) return;
+    uint32_t hw = dev->configRead32(8) >> 8;
+    uint32_t cur = 0;
+    if (OSData *d = OSDynamicCast(OSData, dev->getProperty("class-code"))) {
+        if (d->getLength() >= 4) memcpy(&cur, d->getBytesNoCopy(), 4);
+    }
+    setProperty("StrixAccel,ClassCodeHW", hw, 32);
+    setProperty("StrixAccel,ClassCodeSpoof", cur, 32);
+    if ((hw >> 16) != 0x03 || cur == hw) return;
+    if (OSData *v = OSData::withBytes(&hw, 4)) {
+        dev->setProperty("class-code", v);
+        v->release();
+        savedClassCode = cur;
+        classCodeRestored = true;
+        SLOG("class-code 0x%08x -> 0x%08x on the PCI node (IOPresentment node map)", cur, hw);
+    }
+}
+
 bool StrixAccelerator::start(IOService *provider)
 {
     if (PE_parse_boot_argn("-strixaccoff", nullptr, 0)) return false;
@@ -375,9 +441,22 @@ bool StrixAccelerator::start(IOService *provider)
     }
     setProperty("StrixAccel,Gate", "PASS");
     setProperty("StrixAccel,Version", STRIXACCEL_VERSION);
+    restoreClassCode(provider);
     setProperty("StrixAccel,ABIProfile", STRIXABI_PROFILE_ID);
     setProperty("StrixNative,ABIMajor", S89N_ABI_MAJOR, 32);
     setProperty("StrixNative,MetalReady", false);
+    // CoreDisplay only looks for a display pipe (and sends plane transactions) on accelerators that advertise this; the
+    // personality carries it too, but the property must not depend on how the match dictionary was merged.
+    if (OSDictionary *caps = OSDictionary::withCapacity(2)) {
+        OSNumber *one = OSNumber::withNumber(1ULL, 32);
+        if (one) {
+            caps->setObject("DisplayPipeSupported", one);
+            caps->setObject("TransactionsSupported", one);
+            one->release();
+        }
+        setProperty("IOAccelDisplayPipeCapabilities", caps);
+        caps->release();
+    }
 
     // 32 stamps, page backed: user clients may map the stamp memory
     stampMD = IOBufferMemoryDescriptor::withOptions(kIODirectionInOut | kIOMemoryKernelUserShared, 4096, 4096);
@@ -408,9 +487,7 @@ bool StrixAccelerator::start(IOService *provider)
     registerService();
     scan("start");
     if (scanCall) {
-        uint64_t dl;
-        clock_interval_to_deadline(500, NSEC_PER_MSEC, &dl);
-        thread_call_enter_delayed(scanCall, dl);
+        thread_call_enter(scanCall);    // creates the AGDC service off the registry thread
     }
     publishCounters();
     return true;
@@ -419,6 +496,13 @@ bool StrixAccelerator::start(IOService *provider)
 void StrixAccelerator::stop(IOService *provider)
 {
     OSIncrementAtomic(&stopping);
+    if (classCodeRestored) {
+        if (OSData *v = OSData::withBytes(&savedClassCode, 4)) {
+            provider->setProperty("class-code", v);
+            v->release();
+        }
+        classCodeRestored = false;
+    }
     if (fbNotifier) {
         fbNotifier->remove();
         fbNotifier = nullptr;
@@ -429,6 +513,10 @@ void StrixAccelerator::stop(IOService *provider)
         thread_call_cancel(c);
         while (inTick) IOSleep(10);   // a callout that was already running finishes before we free
         thread_call_free(c);
+    }
+    if (agdc) {
+        strixAgdcDown(agdc);
+        agdc = nullptr;
     }
     IOGraphicsAccelerator2::stop(provider);
 }
@@ -471,6 +559,9 @@ void StrixAccelerator::scanTick(thread_call_param_t self, thread_call_param_t)
     if (!a || a->stopping) return;
     OSIncrementAtomic(&a->inTick);
     int32_t n = OSIncrementAtomic(&a->scanTicks);
+    if (!a->stopping && !a->agdc && a->getProvider()) {
+        a->agdc = strixAgdcUp(a->getProvider());
+    }
     if (!a->stopping) {
         a->scan("poll");
         a->publishCounters();
@@ -494,6 +585,42 @@ bool StrixAccelerator::onFramebuffer(void *target, void *, IOService *svc, IONot
     return true;
 }
 
+IOReturn StrixAccelerator::setProperties(OSObject *props)
+{
+    // Live tunables: `strix_accel_tune Mode=1 Async=1 SrcCache=0 Block=128 Probe=1 Reset=1`.  Local development machine,
+    // so no privilege gate; every value is clamped.
+    OSDictionary *d = OSDynamicCast(OSDictionary, props);
+    if (!d) return IOGraphicsAccelerator2::setProperties(props);
+    auto num = [&](const char *key, int32_t lo, int32_t hi, volatile int32_t *dst) -> bool {
+        OSNumber *v = OSDynamicCast(OSNumber, d->getObject(key));
+        if (!v) return false;
+        int64_t x = int64_t(v->unsigned64BitValue());
+        if (x < lo) x = lo;
+        if (x > hi) x = hi;
+        *dst = int32_t(x);
+        return true;
+    };
+    num("StrixAccel,Mode", 0, 1, &gTuneMode);
+    num("StrixAccel,Async", 0, 1, &gTuneAsync);
+    num("StrixAccel,Probe", 0, 1, &gTuneProbe);
+    num("StrixAccel,Block", 32, 4096, &gTuneBlock);
+    volatile int32_t cm = gTuneSrcCache;
+    if (num("StrixAccel,SrcCache", 0, 4, &cm) && cm != gTuneSrcCache) {
+        gTuneSrcCache = cm;
+        OSIncrementAtomic(&gCacheGen);
+    }
+    OSNumber *r = OSDynamicCast(OSNumber, d->getObject("StrixAccel,Reset"));
+    if (r && r->unsigned64BitValue()) {
+        gCopyNs = gCopyMaxNs = gWrittenBytes = gCopyCalls = gFullFrames = gCopyBlocks = 0;
+        gCmpNs = gWriteNs = gFullNs = 0;
+        gSubmitNs = gSubmitMaxNs = gSubmitCalls = 0;
+        gCoalesced = 0;
+    }
+    SLOG("tune: mode=%d async=%d srccache=%d block=%d", (int)gTuneMode, (int)gTuneAsync, (int)gTuneSrcCache, (int)gTuneBlock);
+    publishCounters();
+    return kIOReturnSuccess;
+}
+
 void StrixAccelerator::publishCounters()
 {
     setProperty("StrixAccel,Pipes", (unsigned long long)gCounters[kCPipes], 32);
@@ -504,6 +631,44 @@ void StrixAccelerator::publishCounters()
     setProperty("StrixAccel,ValidateFail", (unsigned long long)gCounters[kCValidateFail], 32);
     setProperty("StrixAccel,Tiled", (unsigned long long)gCounters[kCTiled], 32);
     setProperty("StrixAccel,UnsupportedFormat", (unsigned long long)gCounters[kCFormat], 32);
+    setProperty("StrixAccel,NoPlane", (unsigned long long)gCounters[kCNoPlane], 32);
+    setProperty("StrixAccel,Tune,Mode", (unsigned long long)gTuneMode, 32);
+    setProperty("StrixAccel,Tune,Async", (unsigned long long)gTuneAsync, 32);
+    setProperty("StrixAccel,Tune,SrcCache", (unsigned long long)gTuneSrcCache, 32);
+    setProperty("StrixAccel,Tune,Block", (unsigned long long)gTuneBlock, 32);
+    if (gCopyCalls) {
+        setProperty("StrixAccel,Copy,AvgUs", (unsigned long long)(uint64_t(gCopyNs) / 1000 / uint64_t(gCopyCalls)), 32);
+        setProperty("StrixAccel,Copy,MaxUs", (unsigned long long)(uint64_t(gCopyMaxNs) / 1000), 32);
+        setProperty("StrixAccel,Copy,AvgKB", (unsigned long long)(uint64_t(gWrittenBytes) / 1024 / uint64_t(gCopyCalls)), 32);
+        setProperty("StrixAccel,Copy,Frames", (unsigned long long)gCopyCalls, 32);
+        setProperty("StrixAccel,Present,SubmitUsAvg", (unsigned long long)(gSubmitCalls ? uint64_t(gSubmitNs) / 1000 / uint64_t(gSubmitCalls) : 0), 32);
+        setProperty("StrixAccel,Present,SubmitUsMax", (unsigned long long)(uint64_t(gSubmitMaxNs) / 1000), 32);
+        setProperty("StrixAccel,Present,Submits", (unsigned long long)gSubmitCalls, 32);
+        setProperty("StrixAccel,Present,Coalesced", (unsigned long long)gCoalesced, 32);
+        unsigned long long diffFrames = (unsigned long long)(gCopyCalls > gFullFrames ? gCopyCalls - gFullFrames : 1);
+        setProperty("StrixAccel,Copy,DiffCompareUsAvg", (unsigned long long)(uint64_t(gCmpNs) / 1000 / diffFrames), 32);
+        setProperty("StrixAccel,Copy,DiffWriteUsAvg", (unsigned long long)(uint64_t(gWriteNs) / 1000 / diffFrames), 32);
+        setProperty("StrixAccel,Copy,FullFrameUs", (unsigned long long)(uint64_t(gFullNs) / 1000), 32);
+        setProperty("StrixAccel,Probe,SrcReadUs", (unsigned long long)(uint64_t(gProbeSrcNs) / 1000), 32);
+        setProperty("StrixAccel,Probe,ShadowReadUs", (unsigned long long)(uint64_t(gProbeShNs) / 1000), 32);
+        setProperty("StrixAccel,Probe,ApertureWriteUs", (unsigned long long)(uint64_t(gProbeWcNs) / 1000), 32);
+        setProperty("StrixAccel,Copy,FullFrames", (unsigned long long)gFullFrames, 32);
+    }
+    setProperty("StrixAccel,AGDC,Up", agdc != nullptr);
+    setProperty("StrixAccel,AGDC,Commands", (unsigned long long)strix_agdc::gStats.commands, 32);
+    setProperty("StrixAccel,AGDC,VendorInfo", (unsigned long long)strix_agdc::gStats.vendorInfo, 32);
+    setProperty("StrixAccel,AGDC,GpuCap", (unsigned long long)strix_agdc::gStats.gpuCap, 32);
+    setProperty("StrixAccel,AGDC,LinkConfig", (unsigned long long)strix_agdc::gStats.linkConfig, 32);
+    setProperty("StrixAccel,AGDC,FbCap", (unsigned long long)strix_agdc::gStats.fbCap, 32);
+    setProperty("StrixAccel,AGDC,Refused", (unsigned long long)strix_agdc::gStats.refused, 32);
+    setProperty("StrixAccel,AGDC,RefusedSeen", strix_agdc::gRefusedSeen);
+    setProperty("StrixAccel,AGDC,ClientSet", (unsigned long long)strix_agdc::gStats.clientSet, 32);
+    setProperty("StrixAccel,AGDC,ClientSetValue", (unsigned long long)(uint32_t)strix_agdc::gStats.lastClientSetValue, 32);
+    setProperty("StrixAccel,AGDC,LinkIndex", (unsigned long long)(uint32_t)strix_agdc::gStats.lastLinkIndex, 32);
+    setProperty("StrixAccel,AGDC,CapIndex", (unsigned long long)(uint32_t)strix_agdc::gStats.lastCapIndex, 32);
+    setProperty("StrixAccel,AGDC,CapType", (unsigned long long)(uint32_t)strix_agdc::gStats.lastCapType, 32);
+    setProperty("StrixAccel,AGDC,BadSize", (unsigned long long)strix_agdc::gStats.badSize, 32);
+    setProperty("StrixAccel,AGDC,NoFramebuffer", (unsigned long long)strix_agdc::gStats.noFramebuffer, 32);
 }
 
 IOMemoryDescriptor *StrixAccelerator::getStampMemory(unsigned int *n)
@@ -828,13 +993,37 @@ bool StrixDisplayPipe::init(IOGraphicsAccelerator2 *accel, IOAccelDisplayMachine
     bool ok = IOAccelDisplayPipe::init(accel, m, fb, index);
     owner = OSDynamicCast(StrixAccelerator, accel);
     lock = IOLockAlloc();
+    qlock = IOLockAlloc();
+    worker = thread_call_allocate(&StrixDisplayPipe::workerFire, this);
+    cacheGen = gCacheGen;
     SLOG("pipe init(fb=%p index=%u) -> %d", fb, index, ok);
     if (ok && lock) OSIncrementAtomic(&gCounters[kCPipes]);
-    return ok && lock;
+    return ok && lock && qlock && worker;
 }
 
 void StrixDisplayPipe::free()
 {
+    OSIncrementAtomic(&closing);
+    if (worker) {
+        thread_call_cancel(worker);
+        IOSleep(5);
+        while (workerBusy) IOSleep(5);
+        thread_call_free(worker);
+        worker = nullptr;
+    }
+    if (pending) {
+        strix_surf_release(pending);
+        pending = nullptr;
+    }
+    if (qlock) {
+        IOLockFree(qlock);
+        qlock = nullptr;
+    }
+    if (shadowMD) {
+        shadowMD->release();
+        shadowMD = nullptr;
+        shadow = nullptr;
+    }
     for (auto &c : cache) {
         if (c.map) c.map->release();
         if (c.md) {
@@ -860,6 +1049,7 @@ void StrixDisplayPipe::free()
 
 uintptr_t StrixDisplayPipe::initFramebufferResource(unsigned int index, IOAccelResource2 *res)
 {
+    shadowValid = false;   // a mode change may have repainted or moved the raster
     // AppleParavirtDisplayPipe::initFramebufferResource: wrap the framebuffer's own memory in an IOAccelSysMemory
     IOFramebuffer *fb = strix_pipe_getFramebuffer(this);
     IODeviceMemory *md = fb ? fb->getApertureRange(kIOFBSystemAperture) : nullptr;   // one reference for us
@@ -910,6 +1100,17 @@ bool StrixDisplayPipe::prepareFramebuffer()
 
 uint8_t *StrixDisplayPipe::mapSurface(IOSurface *s, uint32_t id)
 {
+    if (cacheGen != gCacheGen) {   // the source cache mode changed: drop every mapping, remap on demand
+        cacheGen = gCacheGen;
+        for (auto &c : cache) {
+            if (c.map) c.map->release();
+            if (c.md) {
+                if (c.prepared) c.md->complete();
+                c.md->release();
+            }
+            c = SurfMap{};
+        }
+    }
     ++tick;
     SurfMap *victim = &cache[0];
     for (auto &c : cache) {
@@ -929,7 +1130,16 @@ uint8_t *StrixDisplayPipe::mapSurface(IOSurface *s, uint32_t id)
     *victim = SurfMap{};
     md->retain();
     bool prepared = md->prepare() == kIOReturnSuccess;
-    IOMemoryMap *map = md->map(kIOMapAnywhere | kIOMapReadOnly);
+    IOOptionBits co = 0;
+    switch (gTuneSrcCache) {
+    case 1: co = kIOMapCopybackCache; break;
+    case 2: co = kIOMapWriteThruCache; break;
+    case 3: co = kIOMapInhibitCache; break;
+    case 4: co = kIOMapWriteCombineCache; break;
+    default: break;
+    }
+    IOMemoryMap *map = md->map(kIOMapAnywhere | kIOMapReadOnly | co);
+    if (!map && co) map = md->map(kIOMapAnywhere | kIOMapReadOnly);   // that cache mode is not allowed for this memory
     if (!map) {
         if (prepared) md->complete();
         md->release();
@@ -942,6 +1152,45 @@ uint8_t *StrixDisplayPipe::mapSurface(IOSurface *s, uint32_t id)
     victim->prepared = prepared;
     victim->used = tick;
     return reinterpret_cast<uint8_t *>(map->getVirtualAddress());
+}
+
+// bcmp in xnu is a "repe cmps" loop; a plain 64-bit OR-of-XOR loop is several times faster on the 20 MB per frame.
+static inline bool strix_equal(const uint8_t *a, const uint8_t *b, size_t n)
+{
+    const uint64_t *x = reinterpret_cast<const uint64_t *>(a), *y = reinterpret_cast<const uint64_t *>(b);
+    uint64_t acc = 0;
+    size_t q = n / 8;
+    while (q >= 8) {
+        acc |= (x[0] ^ y[0]) | (x[1] ^ y[1]) | (x[2] ^ y[2]) | (x[3] ^ y[3]) |
+               (x[4] ^ y[4]) | (x[5] ^ y[5]) | (x[6] ^ y[6]) | (x[7] ^ y[7]);
+        x += 8; y += 8; q -= 8;
+    }
+    while (q--) acc |= *x++ ^ *y++;
+    for (size_t i = n & ~size_t(7); i < n; ++i) acc |= uint64_t(a[i] ^ b[i]);
+    return acc == 0;
+}
+
+static inline uint64_t strix_ns(uint64_t t0)
+{
+    uint64_t ns = 0;
+    absolutetime_to_nanoseconds(mach_absolute_time() - t0, &ns);
+    return ns;
+}
+
+uint8_t *StrixDisplayPipe::ensureShadow()
+{
+    if (shadow) return shadow;
+    const size_t bytes = size_t(fbWidth) * fbHeight * 4 + size_t(fbWidth) * 4;
+    shadowMD = IOBufferMemoryDescriptor::inTaskWithOptions(kernel_task, kIODirectionInOut, bytes, PAGE_SIZE);
+    if (!shadowMD) return nullptr;
+    shadow = static_cast<uint8_t *>(shadowMD->getBytesNoCopy());
+    if (!shadow) {
+        shadowMD->release();
+        shadowMD = nullptr;
+        return nullptr;
+    }
+    shadowValid = false;
+    return shadow;
 }
 
 bool StrixDisplayPipe::copySurface(IOSurface *s, unsigned n)
@@ -975,29 +1224,183 @@ bool StrixDisplayPipe::copySurface(IOSurface *s, unsigned n)
     uint8_t *dst = reinterpret_cast<uint8_t *>(fbMap->getVirtualAddress());
     const uint32_t cols = w < fbWidth ? w : fbWidth;
     const uint32_t rows = h < fbHeight ? h : fbHeight;
+    const size_t rowBytes = size_t(cols) * 4;
+    const size_t kBlock = size_t(gTuneBlock < 32 ? 32 : (gTuneBlock > 4096 ? 4096 : (gTuneBlock & ~7)));
+    uint8_t *sh = ensureShadow();
+    uint32_t *rowTmp = sh ? reinterpret_cast<uint32_t *>(sh + size_t(fbWidth) * fbHeight * 4) : nullptr;
+    if (!plain && !rowTmp) return false;   // l10r needs a scratch row
+    bool full = gTuneMode == 0 || !shadowValid || !sh || ++sinceFull >= 1800;   // a periodic full refresh also heals anything else that wrote the aperture
+    if (full) sinceFull = 0;
+    const uint64_t t0 = mach_absolute_time();
+    uint64_t written = 0, blocks = 0, writeNs = 0;
+    if (gTuneProbe) {   // on-demand bandwidth probe: where is the time going?
+        gTuneProbe = 0;
+        uint64_t sum = 0, p0 = mach_absolute_time();
+        for (uint32_t y = 0; y < rows; ++y) {
+            const uint64_t *q = reinterpret_cast<const uint64_t *>(src + uint64_t(y) * bpr);
+            for (uint32_t i = 0; i < cols / 2; i += 8) sum += q[i] + q[i + 1] + q[i + 2] + q[i + 3];
+        }
+        gProbeSrcNs = int64_t(strix_ns(p0));
+        if (sh) {
+            p0 = mach_absolute_time();
+            for (uint32_t y = 0; y < rows; ++y) {
+                const uint64_t *q = reinterpret_cast<const uint64_t *>(sh + size_t(y) * fbWidth * 4);
+                for (uint32_t i = 0; i < cols / 2; i += 8) sum += q[i] + q[i + 1] + q[i + 2] + q[i + 3];
+            }
+            gProbeShNs = int64_t(strix_ns(p0));
+        }
+        gProbeWcNs = int64_t(sum & 1);   // keeps the reads alive
+        if (plain) {                     // write the same rows back (identical pixels): time the aperture write alone
+            p0 = mach_absolute_time();
+            for (uint32_t y = 0; y < rows; ++y)
+                bcopy(src + uint64_t(y) * bpr, dst + uint64_t(y) * fbStride, size_t(cols) * 4);
+            __asm__ volatile("sfence" ::: "memory");
+            gProbeWcNs = int64_t(strix_ns(p0));
+        }
+    }
     for (uint32_t y = 0; y < rows; ++y) {
         const uint8_t *sp = src + uint64_t(y) * bpr;
         uint8_t *dp = dst + uint64_t(y) * fbStride;
-        if (plain) {
-            bcopy(sp, dp, size_t(cols) * 4);
-        } else {
+        uint8_t *shp = sh ? sh + size_t(y) * fbWidth * 4 : nullptr;
+        if (!plain) {
             const uint32_t *s32 = reinterpret_cast<const uint32_t *>(sp);
-            uint32_t *d32 = reinterpret_cast<uint32_t *>(dp);
             for (uint32_t x = 0; x < cols; ++x) {
                 uint32_t v = s32[x];
-                d32[x] = 0xff000000u | (((v >> 22) & 0xff) << 16) | (((v >> 12) & 0xff) << 8) | ((v >> 2) & 0xff);
+                rowTmp[x] = 0xff000000u | (((v >> 22) & 0xff) << 16) | (((v >> 12) & 0xff) << 8) | ((v >> 2) & 0xff);
             }
+            sp = reinterpret_cast<const uint8_t *>(rowTmp);
+        }
+        if (full) {
+            bcopy(sp, dp, rowBytes);
+            if (shp) bcopy(sp, shp, rowBytes);
+            written += rowBytes;
+            continue;
+        }
+        size_t x = 0;
+        while (x < rowBytes) {
+            size_t blk = rowBytes - x < kBlock ? rowBytes - x : kBlock;
+            if (strix_equal(sp + x, shp + x, blk)) {
+                x += blk;
+                continue;
+            }
+            const size_t start = x;
+            x += blk;
+            while (x < rowBytes) {          // extend the run to the next unchanged block
+                blk = rowBytes - x < kBlock ? rowBytes - x : kBlock;
+                if (strix_equal(sp + x, shp + x, blk)) break;
+                x += blk;
+            }
+            const uint64_t w0 = mach_absolute_time();
+            bcopy(sp + start, dp + start, x - start);
+            bcopy(sp + start, shp + start, x - start);
+            writeNs += strix_ns(w0);
+            written += x - start;
+            ++blocks;
         }
     }
+    if (sh) shadowValid = true;
     __asm__ volatile("sfence" ::: "memory");   // flush the write-combining buffers
+    uint64_t ns = 0;
+    absolutetime_to_nanoseconds(mach_absolute_time() - t0, &ns);
+    if (full) gFullNs = int64_t(ns); else { gWriteNs += int64_t(writeNs); gCmpNs += int64_t(ns - writeNs); }
+    OSAddAtomic64(int64_t(ns), &gCopyNs);
+    OSAddAtomic64(int64_t(written), &gWrittenBytes);
+    OSAddAtomic64(1, &gCopyCalls);
+    OSAddAtomic64(int64_t(blocks), &gCopyBlocks);
+    if (full) OSAddAtomic64(1, &gFullFrames);
+    if (int64_t(ns) > gCopyMaxNs) gCopyMaxNs = int64_t(ns);
+    if (n <= 16 || (n % 240) == 0)
+        SLOG("txn %u: copy %s %llu us, wrote %llu KB in %llu runs (avg %llu us / %llu KB over %lld frames)", n,
+             full ? "FULL" : "diff", ns / 1000, written / 1024, blocks, uint64_t(gCopyNs) / 1000 / uint64_t(gCopyCalls),
+             uint64_t(gWrittenBytes) / 1024 / uint64_t(gCopyCalls), (long long)gCopyCalls);
     return true;
+}
+
+// Raw views of the family's transaction/pipe plane state (IOAccelDisplayPipeTransaction2 +0x38 -> 2 planes of 0x70 bytes:
+// +0x10 deviceCache[2], +0x20 IOSurface[2], +0x30 resource[2], +0x40 gamma, +0x48..0x78 geometry). Layout from
+// IOAccelDisplayPipeTransaction2::set_transaction_args / getPlaneIOSurface (macOS 15 24H32, family 485.2); diagnostics only.
+static const uint8_t *strix_txn_planes(const IOAccelDisplayPipeTransaction2 *t)
+{
+    return *reinterpret_cast<const uint8_t *const *>(reinterpret_cast<const uint8_t *>(t) + 0x38);
+}
+
+static void strix_dump_plane(const char *tag, unsigned n, unsigned p, const uint8_t *pl)
+{
+    if (!pl) return;
+    const uint64_t *q = reinterpret_cast<const uint64_t *>(pl + p * 0x70);
+    SLOG("txn %u %s plane%u: devCache %llx %llx surf %llx %llx res %llx %llx gamma %llx geom %llx %llx %llx %llx %llx %llx", n,
+         tag, p, q[2], q[3], q[4], q[5], q[6], q[7], q[8], q[9], q[10], q[11], q[12], q[13], q[14]);
+}
+
+static IOSurface *strix_pick_surface(const IOAccelDisplayPipeTransaction2 *t)
+{
+    // plane 0 is the desktop; plane 1 only counts when it is a full-size surface (never a cursor/overlay)
+    for (unsigned p = 0; p < 2; ++p) {
+        for (unsigned i = 0; i < 2; ++i) {
+            IOSurface *s = strix_txn_getPlaneIOSurface(t, p, i);
+            if (!s) continue;
+            if (strix_surf_getWidth(s) >= 1024 && strix_surf_getHeight(s) >= 600) return s;
+        }
+    }
+    return nullptr;
+}
+
+static void strix_diag_txn(const IOAccelDisplayPipe *pipe, const IOAccelDisplayPipeTransaction2 *t, unsigned n, const char *what)
+{
+    const uint8_t *tb = reinterpret_cast<const uint8_t *>(t);
+    SLOG("txn %u %s: flags %llx +50 %x +54 %x", n, what, *reinterpret_cast<const uint64_t *>(tb + 0x48),
+         *reinterpret_cast<const uint32_t *>(tb + 0x50), *reinterpret_cast<const uint32_t *>(tb + 0x54));
+    const uint8_t *tp = strix_txn_planes(t);
+    for (unsigned p = 0; p < 2; ++p) strix_dump_plane("txn", n, p, tp);
+    const uint8_t *pp = *reinterpret_cast<const uint8_t *const *>(reinterpret_cast<const uint8_t *>(pipe) + 0x240);
+    for (unsigned p = 0; p < 2; ++p) strix_dump_plane("pipe", n, p, pp);
+    for (unsigned p = 0; p < 2; ++p) {
+        for (unsigned i = 0; i < 2; ++i) {
+            IOSurface *s = strix_txn_getPlaneIOSurface(t, p, i);
+            if (s)
+                SLOG("txn %u plane%u[%u] surface %u %ux%u bpr %u fmt 0x%x bpe %u", n, p, i, strix_surf_getSurfaceID(s),
+                     strix_surf_getWidth(s), strix_surf_getHeight(s), strix_surf_getBytesPerRow(s), strix_surf_getPixelFormat(s),
+                     strix_surf_getBytesPerElement(s));
+            const uint64_t *q = tp ? reinterpret_cast<const uint64_t *>(tp + p * 0x70) : nullptr;
+            const OSObject *r = q ? reinterpret_cast<const OSObject *>(q[6 + i]) : nullptr;
+            if (r) SLOG("txn %u plane%u[%u] resource class %s", n, p, i, r->getMetaClass()->getClassName());
+        }
+    }
+}
+
+static volatile int32_t gValidateSeen;
+
+static inline uint64_t strix_txn_flags(const IOAccelDisplayPipeTransaction2 *t)
+{
+    return *reinterpret_cast<const uint64_t *>(reinterpret_cast<const uint8_t *>(t) + 0x48);   // bit p = plane p carried
+}
+
+// Only surfaces copySurface() can present are accepted; anything else fails the transaction so the caller keeps its CPU path.
+static bool strix_surface_supported(IOSurface *s)
+{
+    const uint32_t fmt = strix_surf_getPixelFormat(s), bpe = strix_surf_getBytesPerElement(s);
+    const bool plain = fmt == fourcc('B', 'G', 'R', 'A') || (fmt == 0 && bpe == 4);
+    const bool l10r = fmt == fourcc('l', '1', '0', 'r');
+    if (!plain && !l10r) return false;
+    if (strix_surf_isTiled(s)) return false;
+    return strix_surf_getBytesPerRow(s) >= strix_surf_getWidth(s) * 4;
 }
 
 uintptr_t StrixDisplayPipe::validateTransaction(IOAccelDisplayPipeTransaction2 *t)
 {
-    // AppleParavirtDisplayPipe::validateTransaction: a transaction without a plane-0 IOSurface is an error
-    if (strix_txn_getPlaneIOSurface(t, 0, 0)) return 0;
+    const unsigned v = unsigned(OSIncrementAtomic(&gValidateSeen)) + 1;
+    if (!(strix_txn_flags(t) & 3)) {
+        // pipe-level update only (gamma/CSC tables): nothing to present, nothing wrong
+        if (v <= 4) strix_diag_txn(this, t, v, "validate-noplane");
+        return 0;
+    }
+    IOSurface *s = strix_pick_surface(t);
+    if (s && strix_surface_supported(s)) {
+        if (v <= 4 || (v % 1200) == 0) strix_diag_txn(this, t, v, "validate-ok");
+        return 0;
+    }
     OSIncrementAtomic(&gCounters[kCValidateFail]);
+    if (v <= 12 || (v % 600) == 0) strix_diag_txn(this, t, v, s ? "validate-FAIL-unsupported" : "validate-FAIL-nosurface");
     return 0xE00002BC;
 }
 
@@ -1006,18 +1409,72 @@ bool StrixDisplayPipe::isTransactionComplete(IOAccelDisplayPipeTransaction2 *)
     return true;   // submitTransaction completes synchronously
 }
 
-IOReturn StrixDisplayPipe::submitTransaction(IOAccelDisplayPipeTransaction2 *t)
+void StrixDisplayPipe::presentPending()
 {
-    const unsigned n = unsigned(OSIncrementAtomic(&gCounters[kCTxn])) + 1;
-    IOSurface *s = strix_txn_getPlaneIOSurface(t, 0, 0);
-    bool copied = false;
-    if (s && lock) {
+    for (;;) {
+        IOLockLock(qlock);
+        IOSurface *s = pending;
+        const unsigned n = pendingN;
+        pending = nullptr;
+        IOLockUnlock(qlock);
+        if (!s) return;
+        bool copied = false;
         IOLockLock(lock);
         copied = copySurface(s, n);
         IOLockUnlock(lock);
+        strix_surf_release(s);
+        OSIncrementAtomic(&gCounters[copied ? kCCopied : kCSkipped]);
+        if (owner && (n <= 8 || (n % 120) == 0)) owner->publishCounters();
     }
-    OSIncrementAtomic(&gCounters[copied ? kCCopied : kCSkipped]);
-    if (owner && (n <= 8 || (n % 120) == 0)) owner->publishCounters();
+}
+
+void StrixDisplayPipe::workerFire(thread_call_param_t self, thread_call_param_t)
+{
+    auto p = static_cast<StrixDisplayPipe *>(self);
+    OSIncrementAtomic(&p->workerBusy);
+    if (!p->closing) p->presentPending();
+    OSDecrementAtomic(&p->workerBusy);
+}
+
+IOReturn StrixDisplayPipe::submitTransaction(IOAccelDisplayPipeTransaction2 *t)
+{
+    const unsigned n = unsigned(OSIncrementAtomic(&gCounters[kCTxn])) + 1;
+    if (!(strix_txn_flags(t) & 3)) {
+        OSIncrementAtomic(&gCounters[kCNoPlane]);   // no plane changed: what is on screen is still current
+        if (owner && n <= 8) owner->publishCounters();
+        return kIOReturnSuccess;
+    }
+    const uint64_t t0 = mach_absolute_time();
+    IOSurface *s = strix_pick_surface(t);
+    if (s && gTuneAsync && worker && qlock && !closing) {
+        // The caller is WindowServer: park the newest surface and return. A frame the worker has not started yet is
+        // replaced (coalesced), so a slow copy can only drop frames, never queue them or stall the other display.
+        reinterpret_cast<OSObject *>(s)->retain();
+        IOLockLock(qlock);
+        IOSurface *old = pending;
+        pending = s;
+        pendingN = n;
+        IOLockUnlock(qlock);
+        if (old) {
+            strix_surf_release(old);
+            OSIncrementAtomic(&gCoalesced);
+        }
+        thread_call_enter(worker);
+    } else {
+        bool copied = false;
+        if (s && lock) {
+            IOLockLock(lock);
+            copied = copySurface(s, n);
+            IOLockUnlock(lock);
+        }
+        OSIncrementAtomic(&gCounters[copied ? kCCopied : kCSkipped]);
+        if (!s && n <= 8) strix_diag_txn(this, t, n, "submit-nosurface");
+        if (owner && (n <= 8 || (n % 120) == 0)) owner->publishCounters();
+    }
+    const int64_t ns = int64_t(strix_ns(t0));
+    OSAddAtomic64(ns, &gSubmitNs);
+    OSAddAtomic64(1, &gSubmitCalls);
+    if (ns > gSubmitMaxNs) gSubmitMaxNs = ns;
     return kIOReturnSuccess;
 }
 
