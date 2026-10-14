@@ -28,7 +28,7 @@
 #include "../../include/StrixNativeABI.h"
 #include "StrixABIProfile.h"
 
-#define STRIXACCEL_VERSION "0.1.12"
+#define STRIXACCEL_VERSION "0.1.14"
 
 #include "IOAccelFamily2_decl.h"
 
@@ -296,6 +296,7 @@ public:
 };
 
 #include "StrixAgdc.h"
+static volatile SInt32 gGammaSeen, gPipeOnlySeen;
 
 OSDefineMetaClassAndStructors(StrixAccelerator, IOGraphicsAccelerator2)
 OSDefineMetaClassAndStructors(StrixEventMachine, IOAccelEventMachineFast2)
@@ -438,6 +439,11 @@ void StrixAccelerator::restoreClassCode(IOService *provider)
 bool StrixAccelerator::start(IOService *provider)
 {
     if (PE_parse_boot_argn("-strixaccoff", nullptr, 0)) return false;
+    {
+        uint32_t caps;
+        if (PE_parse_boot_argn("strixcaps", &caps, sizeof caps)) strix_agdc::gCapMask = int32_t(caps & 7);
+        if (PE_parse_boot_argn("strixcapall", nullptr, 0)) strix_agdc::gCapWsOnly = 0;
+    }
     if (!OSDynamicCast(IOPCIDevice, provider)) return false;
     if (!layoutGate()) {
         setProperty("StrixAccel,Gate", "FAIL");
@@ -614,6 +620,14 @@ IOReturn StrixAccelerator::setProperties(OSObject *props)
     num("StrixAccel,Mode", 0, 1, &gTuneMode);
     num("StrixAccel,Async", 0, 1, &gTuneAsync);
     num("StrixAccel,Probe", 0, 1, &gTuneProbe);
+    num("StrixAccel,Caps", 0, 7, &strix_agdc::gCapMask);
+    num("StrixAccel,CapWsOnly", 0, 1, &strix_agdc::gCapWsOnly);
+    num("StrixAccel,CapAlt", 0, 1, &strix_agdc::gCapAlt);
+    num("StrixAccel,CapLinType", 1, 0x3fff, &strix_agdc::gCapLinType);
+    num("StrixAccel,CapGammaType", 1, 0x3fff, &strix_agdc::gCapGammaType);
+    num("StrixAccel,CapCscType", 1, 0x3fff, &strix_agdc::gCapCscType);
+    num("StrixAccel,CapFixedFmt", 0, 0xff, &strix_agdc::gCapFixedFmt);
+    num("StrixAccel,CapTableSize", 2, 65536, &strix_agdc::gCapTableSize);
     num("StrixAccel,Block", 32, 4096, &gTuneBlock);
     volatile int32_t cm = gTuneSrcCache;
     if (num("StrixAccel,SrcCache", 0, 4, &cm) && cm != gTuneSrcCache) {
@@ -647,6 +661,15 @@ void StrixAccelerator::publishCounters()
     setProperty("StrixAccel,Tune,Async", (unsigned long long)gTuneAsync, 32);
     setProperty("StrixAccel,Tune,SrcCache", (unsigned long long)gTuneSrcCache, 32);
     setProperty("StrixAccel,Tune,Block", (unsigned long long)gTuneBlock, 32);
+    setProperty("StrixAccel,Tune,Caps", (unsigned long long)strix_agdc::gCapMask, 32);
+    setProperty("StrixAccel,Tune,CapLinType", (unsigned long long)strix_agdc::gCapLinType, 32);
+    setProperty("StrixAccel,AGDC,CapServed", (unsigned long long)strix_agdc::gCapServed, 32);
+    setProperty("StrixAccel,AGDC,CapFromWS", (unsigned long long)strix_agdc::gCapFromWS, 32);
+    setProperty("StrixAccel,AGDC,CapFromOther", (unsigned long long)strix_agdc::gCapFromOther, 32);
+    setProperty("StrixAccel,AGDC,CapLastClient", strix_agdc::gCapLastName);
+    setProperty("StrixAccel,AGDC,CapSeq", strix_agdc::gCapSeq);
+    setProperty("StrixAccel,Txn,GammaSeen", (unsigned long long)gGammaSeen, 32);
+    setProperty("StrixAccel,Txn,PipeOnlySeen", (unsigned long long)gPipeOnlySeen, 32);
     if (gCopyCalls) {
         setProperty("StrixAccel,Copy,AvgUs", (unsigned long long)(uint64_t(gCopyNs) / 1000 / uint64_t(gCopyCalls)), 32);
         setProperty("StrixAccel,Copy,MaxUs", (unsigned long long)(uint64_t(gCopyMaxNs) / 1000), 32);
@@ -1379,6 +1402,27 @@ static void strix_diag_txn(const IOAccelDisplayPipe *pipe, const IOAccelDisplayP
 
 static volatile int32_t gValidateSeen;
 
+// Pipe-level colour updates (tables CoreDisplay hands us once a stage is claimed): log the plane gamma pointer and
+// the first bytes behind it so the next boot answers "identity or not" without another probe.
+static void strix_trace_tables(const IOAccelDisplayPipeTransaction2 *t, unsigned v, bool planeCarried)
+{
+    const uint8_t *tp = strix_txn_planes(t);
+    if (!tp) return;
+    for (unsigned p = 0; p < 2; ++p) {
+        const uint64_t *q = reinterpret_cast<const uint64_t *>(tp + p * 0x70);
+        const uint64_t g = q[8];
+        if (!g) continue;
+        const int k = OSIncrementAtomic(&gGammaSeen);
+        if (k < 12) {
+            SLOG("txn %u %s plane%u gamma %llx", v, planeCarried ? "plane" : "pipe-only", p, g);
+            if (g >= 0xffffff8000000000ull && !(g & 7)) {
+                const uint32_t *w = reinterpret_cast<const uint32_t *>(g);
+                SLOG("  gamma bytes: %08x %08x %08x %08x %08x %08x %08x %08x", w[0], w[1], w[2], w[3], w[4], w[5], w[6], w[7]);
+            }
+        }
+    }
+}
+
 static inline uint64_t strix_txn_flags(const IOAccelDisplayPipeTransaction2 *t)
 {
     return *reinterpret_cast<const uint64_t *>(reinterpret_cast<const uint8_t *>(t) + 0x48);   // bit p = plane p carried
@@ -1400,12 +1444,15 @@ uintptr_t StrixDisplayPipe::validateTransaction(IOAccelDisplayPipeTransaction2 *
     const unsigned v = unsigned(OSIncrementAtomic(&gValidateSeen)) + 1;
     if (!(strix_txn_flags(t) & 3)) {
         // pipe-level update only (gamma/CSC tables): nothing to present, nothing wrong
-        if (v <= 4) strix_diag_txn(this, t, v, "validate-noplane");
+        const int k = OSIncrementAtomic(&gPipeOnlySeen);
+        if (k < 16) strix_diag_txn(this, t, v, "validate-noplane");
+        strix_trace_tables(t, v, false);
         return 0;
     }
     IOSurface *s = strix_pick_surface(t);
     if (s && strix_surface_supported(s)) {
         if (v <= 4 || (v % 1200) == 0) strix_diag_txn(this, t, v, "validate-ok");
+        strix_trace_tables(t, v, true);
         return 0;
     }
     OSIncrementAtomic(&gCounters[kCValidateFail]);

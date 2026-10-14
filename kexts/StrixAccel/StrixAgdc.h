@@ -13,6 +13,9 @@
 #pragma once
 #include "AppleGraphicsDeviceControl_decl.h"
 
+extern "C" int proc_selfpid(void);
+extern "C" void proc_selfname(char *buf, int size);
+
 namespace strix_agdc {
 
 enum : unsigned {
@@ -22,6 +25,11 @@ enum : unsigned {
     kCmdGpuCap     = 0x980,
     kCmdClientSet  = 0x2001,      // 4-byte input, no output; refusing it made IOPresentment give up (Step06)
     kFbCapPlaneScaler = 0x10,
+    // Other 0x711 capability types IOPresentment polls (__GatherAGDCDisplayPipelineCapabilities, 24H32):
+    // 0x1 CSC, 0x2 gamma, 0x4 linearization, 0x8 pipeline scaler, 0x20 rotation, 0x40 inline buffer,
+    // 0x80/0x100 queue, 0x200 mirror, 0x400 format convert, 0x800 HDR scaler, 0x1000 plane CSC,
+    // 0x2000 3D LUT, 0x4000 pixel processing, 0x8000 cursor.
+    kFbCapCSC = 0x1, kFbCapGamma = 0x2, kFbCapLinearization = 0x4,
     kMaxFramebuffers  = 4,        // IOPresentment's map holds 8; one panel needs one
 };
 
@@ -76,6 +84,24 @@ struct Stats {
     volatile SInt32 noFramebuffer, badSize, clientSet, lastClientSetValue;
 };
 static Stats gStats;
+
+// Live tunables (StrixAccel,Caps*): which colour-pipe stages the pipe claims to do in hardware.  CoreDisplay asks
+// once when the pipe is created (WindowServer start), so a change applies after the next WindowServer restart.
+// With every stage unclaimed CoreDisplay runs the whole colour pipe itself (RunFullDisplayPipe + LUT build per
+// dirty frame, ~1100% WindowServer CPU on the OLED); claimed stages are handed to us as tables on the transaction.
+static volatile int32_t gCapMask = 7;            // bit0 CSC, bit1 gamma, bit2 linearization (boot-arg strixcaps=N)
+static volatile int32_t gCapWsOnly = 1;          // claim stages only for WindowServer (other IOPresentment users keep the refusal)
+static volatile int32_t gCapAlt = 1;             // also offer alternative linearization type entries (CoreDisplay picks)
+static volatile SInt32 gCapSeen, gCapFromWS, gCapFromOther, gCapLastPid;
+static char gCapLastName[20] = "";
+static char gCapSeq[160] = "";                   // "ws:0x1,ws:0x2,..." first queries with the answering client
+static volatile int32_t gCapLinType = 0x4;       // AGDCLinearizationType bit reported
+static volatile int32_t gCapGammaType = 0x1;
+static volatile int32_t gCapCscType = 0x1;
+static volatile int32_t gCapFixedFmt = 0;
+static volatile int32_t gCapTableSize = 1024;
+static volatile int32_t gCapFlags = 0x80004;     // same descriptor flags the plane scaler is accepted with
+static volatile SInt32 gCapServed;
 static volatile SInt32 gRefusedLogged;
 static char gRefusedSeen[128] = "";      // "0x3fc,0x925,..." distinct refused commands, bounded
 
@@ -249,6 +275,70 @@ IOReturn StrixDeviceControl::vendor_doDeviceAttribute(unsigned int cmd, unsigned
         const uint32_t idx = q->fbIndex, type = q->type;
         gStats.lastCapIndex = (SInt32)idx;
         gStats.lastCapType = (SInt32)type;
+        const bool colourType = (type == kFbCapCSC || type == kFbCapGamma || type == kFbCapLinearization);
+        char who[20];
+        proc_selfname(who, sizeof who);
+        const bool isWS = strcmp(who, "WindowServer") == 0;
+        const int pid = proc_selfpid();
+        OSIncrementAtomic(isWS ? &gCapFromWS : &gCapFromOther);
+        gCapLastPid = pid;
+        strlcpy(gCapLastName, who, sizeof gCapLastName);
+        if (OSIncrementAtomic(&gCapSeen) < 64 && (!isWS || colourType)) {
+            size_t n = strlen(gCapSeq);
+            snprintf(gCapSeq + n, sizeof gCapSeq - n, "%s%s:%#x", n ? "," : "", isWS ? "ws" : who, type);
+        }
+        if (gCapSeen < 40) SLOG("AGDC: 0x711 fb %u type %#x count %u from %s[%d]", idx, type, q->count, who, pid);
+        if (colourType && (gCapMask & (int32_t)type) && idx == 0 && framebuffer() && (isWS || !gCapWsOnly)) {
+            // Entry layout read back from IOPresentmentCapabilitiesDisplayPipe::IOPresentmentCreate{Linearization,
+            // Gamma,CSC}Dictionary: +0 flags, +4 plane mask (u64), +0xc update period (float), +0x10 type,
+            // +0x14 fixed format, +0x18 configuration id, +0x20 min (float) / pixel format (CSC), +0x24 max
+            // (float) / min (CSC), +0x28 max table size / max (CSC).
+            auto c = reinterpret_cast<FbExtCap *>(out);
+            bzero(c, sizeof *c);
+            c->fbIndex = idx;
+            c->type = type;
+            c->count = 1;
+            auto p32 = [&](unsigned off, uint32_t v) { memcpy(&c->entry[0][off], &v, sizeof v); };
+            auto p64 = [&](unsigned off, uint64_t v) { memcpy(&c->entry[0][off], &v, sizeof v); };
+            const float one = 1.0f;
+            uint32_t oneBits;
+            memcpy(&oneBits, &one, sizeof oneBits);
+            p32(0x00, (uint32_t)gCapFlags);
+            p64(0x04, 1);                                 // plane 0 (the desktop)
+            p32(0x10, (uint32_t)(type == kFbCapLinearization ? gCapLinType :
+                                 type == kFbCapGamma ? gCapGammaType : gCapCscType));
+            p32(0x14, (uint32_t)gCapFixedFmt);
+            p32(0x18, 1);
+            if (type == kFbCapLinearization && gCapAlt) {
+                // alternative table-based linearization descriptors: CoreDisplay chooses, we log which one the
+                // transactions then exercise (config id differs so the choice is visible in the kernel log)
+                static const uint32_t alt[2] = { 0x8, 0x40 };
+                for (unsigned a = 0; a < 2; ++a) {
+                    uint8_t *e = &c->entry[1 + a][0];
+                    memcpy(e, &c->entry[0][0], 0x32c);
+                    memcpy(e + 0x10, &alt[a], 4);
+                    const uint32_t cid = 2 + a;
+                    memcpy(e + 0x18, &cid, 4);
+                }
+                c->count = 3;
+            }
+            if (type == kFbCapCSC) {
+                p32(0x24, 0);
+                p32(0x28, oneBits);
+            } else {
+                p32(0x20, 0);
+                p32(0x24, oneBits);
+                p32(0x28, (uint32_t)gCapTableSize);
+            }
+            for (unsigned a = 1; a < c->count; ++a) {      // copy min/max/size fields into the alternative entries
+                memcpy(&c->entry[a][0x20], &c->entry[0][0x20], 12);
+                memcpy(&c->entry[a][0x00], &c->entry[0][0x00], 4);
+            }
+            if (OSIncrementAtomic(&gCapServed) < 24)
+                SLOG("AGDC: 0x711 type %#x served to %s[%d] (count %u, mask %#x)", type, who, pid, c->count, (unsigned)gCapMask);
+            OSIncrementAtomic(&gStats.fbCap);
+            return kIOReturnSuccess;
+        }
         if (type != kFbCapPlaneScaler) {
             noteRefused(cmd, in, inSize, outBytes);      // learn which capability types IOPresentment polls
             return kIOReturnUnsupported;

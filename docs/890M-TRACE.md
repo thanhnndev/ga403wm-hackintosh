@@ -852,3 +852,40 @@ GOP 0.1.7 (sleep) + IOGFlags=4 (size). Reboot in progress by owner.
 Choppiness note: copy max 6.6 ms is inside the 8.3 ms budget and full-frame 8 ms hits once per
 ~15 s — the remaining judder suspect is WindowServer pacing to the main HDMI 144 Hz display while
 the OLED runs 120 Hz. Test: make OLED main (or match rates) and compare; needs owner eyes.
+
+### Step10 why the OLED pipe melts WindowServer: CoreDisplay does the whole colour pipe itself (2026-10-14)
+
+Reverse-engineered from CoreDisplay / IOPresentment in the dyld shared cache (lldb on a helper process,
+raw byte searches; WindowServer itself is not attachable, which is left alone).
+
+- `DisplayPipe::RunGPUDisplayPipe` decides per stage (linearization, CSC, EOTF, gamma, ...) whether the
+  display hardware can do it (`IOPCapabilities::SupportsLinearization / SupportsCSC / IsLinearizationTableBased`,
+  `DisplayPipe::IsEOTFSupportedInHW`).  Stages the pipe does not claim go through `RunFullDisplayPipe`
+  (GPU pipe, `CombineLUTs`), which rebuilds the LUT whenever `pipe+0x291` is dirty.  Dirty writers found:
+  Commit +2843/+2942/+2948/+3030/+5838/+6118, RunGPUDisplayPipe +648/+1206/+1272/+1364,
+  UpdateTargetStateColorProcessing +638, MPSelectMode +2442, RefreshCapabilities +39.
+- Commit +6118 compares `Display` vfunc 0x1d8 (headroom) with the cached `pipe+0x724` (copied from `+0x84c`
+  in `CommitState`); it is a plain per-commit compare and is NOT the cause here: `NSScreen`
+  current/potential EDR is 1.0/1.0 on both displays (`scratchpad/edr.swift`).
+- IOPCapabilities for plane N come from AGDC cmd 0x711 (`__GatherAGDCDisplayPipelineCapabilities`,
+  request `{fbIndex, type, count=8}`, reply 0x196c = 12 + 8 * 0x32c).  Types polled: 0x10 plane scaler
+  (answered), 0x8 pipeline scaler, **0x4 linearization, 0x2 gamma, 0x1 CSC**, 0x40 inline buffer, 0x20
+  rotation, 0x200 mirror, 0x80/0x100 queue, 0x400 format convert, 0x800 HDR scaler, **0x1000 plane CSC**,
+  0x2000 3D LUT, 0x4000 pixel processing, 0x8000 cursor.  All except 0x10 are refused today, so
+  `SupportsLinearization/SupportsCSC` are false and CoreDisplay runs every colour stage on the CPU/GPU pipe
+  for every frame on the OLED.  The NVIDIA HDMI pipe claims them in hardware, hence 143 fps at 65-86 % CPU.
+- Entry layout (from `IOPresentmentCapabilitiesDisplayPipe::IOPresentmentCreate{Linearization,Gamma,CSC}Dictionary`),
+  stride 0x32c: +0 flags (`& 0x803fffff`, bit 2 = supported; the scaler is accepted with 0x80004),
+  +4 plane mask (u64), +0xc update period (float), +0x10 type, +0x14 fixed format, +0x18 configuration id,
+  linearization/gamma: +0x20 min (float), +0x24 max (float), +0x28 max table size; CSC: +0x20 pixel format,
+  +0x24 min, +0x28 max.  `IsLinearizationTableBased` = type & 0x3fcc.
+- Per-type "gather succeeded" flags in the IOPresentment object: 0x434 plane scaler, 0x433 pipeline scaler,
+  0x432 linearization, 0x431 gamma, 0x430 CSC.
+
+StrixAccel 0.1.13 (built, NOT installed): `StrixAccel,Caps` bitmask (1 CSC, 2 gamma, 4 linearization) makes the AGDC
+0x711 handler claim those stages with the layout above (plane 0, flags 0x80004, table size
+`CapTableSize`, type bits `CapLinType/CapGammaType/CapCscType`, `CapFixedFmt`).  Default 0 = old behaviour.
+CoreDisplay asks once at pipe creation, so a change takes effect on the next WindowServer start (logout/login,
+no reboot).  Open question the experiment answers: with the stages claimed, does WindowServer stop running
+RunFullDisplayPipe (CPU) and which tables (identity or not) arrive on the transaction?  If they are non-identity
+the present path has to apply them (CPU LUT apply) or HDR/colour will be wrong.
