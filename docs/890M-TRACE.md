@@ -762,6 +762,25 @@ The review subagent's "caller skips the feature" assumption was wrong — lesson
 success/refusal shape without a reboot test, no matter how safe it reads.
 0.1.12 = 0.1.10 AGDC behaviour exactly (refusal restored, `FbCapEmpty` removed) + model/VRAM kept;
 installed (kmutil rc=28, AuxKC 0.1.12), **reboot pending**. If OLED returns, cause is confirmed.
+
+### Step07 verify bundle (pre-reboot prep, 2026-10-14)
+
+To make the pending reboot yield everything in one boot: `scripts/macos-strix-0112-verify.sh [secs]`
+(pristine boot-counter snapshot, pipe/userclient check, displays identity, override check, live EDID
+decode, short animation liveness + re-snapshot, kernel/WindowServer logs, PASS/FAIL verdict +
+`SUMMARY.md`, all under one `out/890m-trace/step07-0112-<ts>/`). All user tools prebuilt to
+`/tmp/strix-prebuild/` (script recompiles from source if `/tmp` was cleared by the reboot).
+Pre-reboot dry run on broken 0.1.11 discriminates correctly: pipe checks FAIL (Transactions=0,
+no userclient, FbCapEmpty=195), identity PASS (890M/512MB live), refusals limited PASS.
+Post-reboot runbook: (1) `bash scripts/macos-strix-0112-verify.sh 3` → all PASS + Settings size
+~14-inch by eye; (2) `bash scripts/macos-strix-present-bench.sh 6 small` → perf unchanged vs 0.1.10;
+(3) `bash scripts/macos-strix-brightness-collect.sh` → AUX brightness regression check;
+(4) OLED-as-main pacing comparison for the judder hypothesis.
+EDID nibble-order correction: VESA DTD byte14 carries H-image high in the HIGH nibble and V-image
+high in the LOW nibble (matches Linux `drm_edid` width_mm/height_mm). Live bytes
+`2e bd 10` decode to 302x189 mm = 14.0"; the first verify draft had the nibbles swapped (gave
+46x445) and is fixed. EDID bytes confirmed correct — 47-inch is purely the override-shadow
+fallback, which the embedded-EDID override addresses.
 Choppiness note: copy max 6.6 ms is inside the 8.3 ms budget and full-frame 8 ms hits once per
 ~15 s — the remaining judder suspect is WindowServer pacing to the main HDMI 144 Hz display while
 the OLED runs 120 Hz. Test: make OLED main (or match rates) and compare; needs owner eyes.
