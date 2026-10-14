@@ -17,7 +17,6 @@ struct MainWindow: View {
                 Section("Audio") {
                     row(.sound)
                     row(.microphone)
-                    row(.speakerTests)
                 }
                 Section {
                     row(.settings)

@@ -13,9 +13,8 @@ struct PageContent: View {
             case .performance: PerformancePage(laptop: app.laptop)
             case .battery: BatteryPage(laptop: app.laptop)
             case .lighting: LightingPage(laptop: app.laptop)
-            case .sound: SpeakersPage(audio: app.audio)
+            case .sound: NavigationStack { SpeakersPage(audio: app.audio, tests: app.speakerTests) }
             case .microphone: MicrophonePage(audio: app.audio, microphone: app.microphone)
-            case .speakerTests: SpeakerTestsPage(tests: app.speakerTests)
             case .settings: SettingsPage(laptop: app.laptop)
             }
         }

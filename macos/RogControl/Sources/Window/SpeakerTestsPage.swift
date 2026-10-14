@@ -29,6 +29,8 @@ struct SpeakerTestsPage: View {
                 }
             }
         }
+        .formStyle(.grouped)
+        .navigationTitle("Speaker Tests")
         .onDisappear { tests.stop() }
     }
 }

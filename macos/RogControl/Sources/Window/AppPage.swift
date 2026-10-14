@@ -3,7 +3,7 @@
 import Foundation
 
 enum AppPage: String, CaseIterable, Identifiable {
-    case overview, performance, battery, lighting, sound, microphone, speakerTests, settings
+    case overview, performance, battery, lighting, sound, microphone, settings
 
     var id: String { rawValue }
 
@@ -15,7 +15,6 @@ enum AppPage: String, CaseIterable, Identifiable {
         case .lighting: "Lighting"
         case .sound: "Speakers"
         case .microphone: "Microphone"
-        case .speakerTests: "Speaker Tests"
         case .settings: "Settings"
         }
     }
@@ -28,7 +27,6 @@ enum AppPage: String, CaseIterable, Identifiable {
         case .lighting: "keyboard"
         case .sound: "speaker.wave.2"
         case .microphone: "mic"
-        case .speakerTests: "waveform"
         case .settings: "gearshape"
         }
     }
