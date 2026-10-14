@@ -934,3 +934,39 @@ boot-arg `-strixmetalgateoff`.
 
 Owner result: OLED-only boot reaches the desktop with the gate installed (2026-10-14).  Log verification
 (GateState, `nvaccel_headless`, WindowServer stability, CPU) is the next step below.
+
+### Step11 result: 0.1.0 boot read from the unified log (boot 0F08D008, 15:05Z, 2026-10-14)
+
+Owner boot reached the login window and a session OLED-only.  From the decoded archive
+(`~/ga403-logs/metalgate-boot-20261014/dec`, whole archive 116 GB of jsonl, filter with `rg` on `"boot_uuid":"…"`):
+
+- Gate worked: NVAccel logged `headless check: not headless (the plugin name is already back) -- nothing to do`
+  at +61 s (all earlier OLED-only boots logged `no NVIDIA display head after 60 s -- MetalPluginName restored
+  WITHOUT arming`).  One WindowServer (pid 1544) then ran 15:06:05 → 15:07:13 until the owner's shutdown,
+  `Metal compositor activated.` at 15:06:06, NVMTLDriver/NullMoth Vulkan lines from WindowServer, no
+  `Display.cpp` assertion, no crash loop.
+- The gate itself logs nothing decodable: an ESP-injected kext has no uuidtext in `/var/db/uuidtext`, so every
+  `IOLog` of it is dropped from the offline decode (only kernelmanagerd's `Received kext load notification:
+  com.itlmt7925.strixmetalgate` shows).  Its state is in the registry: `ioreg -c StrixMetalGate` (GateState,
+  RestoredAtSeconds) and `StrixMetalGate=true` on NVAccel; `scripts/macos-hang-forensics.sh` now dumps both.
+- Timeline of the OLED-only boot with NullMoth 1.14.0: NVAccel +0 s; NVRM go(2) done +4 s and NVRMFB
+  `ENUMERATED: 0 connected display(s)` → `not starting`; NVRM then waits for `nvfbheads`=4 heads for 20 s and
+  retries `debug.nvaccelfb=1` 10 s ("NEVER took", no head) and releases the boot hold at +34 s (`display PARTIAL`);
+  with an HDMI monitor the head is published at +4 s and the hold is released at +4 s (`display armed`).
+- NullMoth's `com.nullmoth.wsreset` daemon (a one-shot "flicker stopgap", `/Library/NullMoth/nullmoth-wsreset.sh`)
+  SIGKILLs the first WindowServer once it is up at the login window.  Here the respawned WindowServer (pid 1188)
+  came up 15:05:54, before the 0.1.0 gate restored the name (+40 s hold, ~15:06:02), and SIGABRTed after 564 ms
+  (`Unable to get AGDC information`, mode 0x0 on the framebuffer, assertion 129; the crash report was not written,
+  the old Display.cpp:3226 one is in `ws.txt` of the 11:4x boots); launchd's 10 s respawn throttle then delayed the
+  good WindowServer to 15:06:05.  Net effect: ~10 s slower login, not a hang.
+- Noise already present on HDMI boots and not new: `Unsupported sw composite destination.` (tens of thousands per
+  minute, in every boot since 10-10), `set_device_transfer: can't set device gamma (0xe00002c7)`, `Invalid display`.
+- The shutdown wrote a `shutdown_stall` report (22:07 local) — still to look at.
+
+StrixMetalGate 0.1.1 (this commit): hold 12 s instead of 40 s, poll 1 s, so the name is back at ~+13 s, well
+before the +34 s release and any WindowServer start that needs the device.  HDMI boots are unaffected: heads > 0
+at the check keeps the gate passive (`nvidia-head-waiting`).
+Installed on the ESP from CI run 38590219003 (0.1.1; the 0.1.0 kext kept in `EFI/OC/Kexts-backup/StrixMetalGate-0.1.0.kext`).
+To check after the reboot (macOS): `ioreg -c StrixMetalGate | grep -E 'GateState|RestoredAtSeconds|GateVersion'` expects
+`plugin-name-restored` at ~12-14 s; offline: first WindowServer after the wsreset should not abort and the login
+window should come ~10 s earlier than the 70 s of boot 0F08D008.
