@@ -17,7 +17,8 @@ mkdir -p "$D"
 # --- pristine snapshots (no writes before this) ---
 ioreg -r -c StrixAccelerator -l > "$D/accel-boot.txt" 2>&1 || true
 ioreg -r -c StrixGOPFramebuffer -l > "$D/gop.txt" 2>&1 || true
-ioreg -r -c IOAccelDisplayPipe -l > "$D/pipe.txt" 2>&1 || true
+# Pipe object class is StrixDisplayPipe (subclass); -c IOAccelDisplayPipe matches nothing.
+ioreg -r -c StrixDisplayPipe -l > "$D/pipe.txt" 2>&1 || true
 ioreg -r -c IOFramebuffer -d1 > "$D/framebuffers.txt" 2>&1 || true
 kmutil showloaded --list-only 2>/dev/null | awk '/itlmt7925\.strix|IOAcceleratorFamily2|IOSurface/' > "$D/loaded.txt" || true
 system_profiler SPDisplaysDataType > "$D/displays.txt" 2>/dev/null || true
@@ -101,7 +102,10 @@ begin = num('accel-boot.txt', 'StrixAccel,Begin')
 pipes = num('accel-boot.txt', 'StrixAccel,Pipes')
 ref   = grab('accel-boot.txt', r'"StrixAccel,AGDC,RefusedSeen"\s*=\s*"([^"]*)"')
 empty = num('accel-boot.txt', 'StrixAccel,AGDC,FbCapEmpty')
-pipe_txt = (d / 'pipe.txt').read_text(errors='replace') if (d / 'pipe.txt').exists() else ''
+pipe_txt = ''
+for f in ('pipe.txt', 'accel-boot.txt'):   # userclient hangs under the accelerator, not the pipe
+    try: pipe_txt += (d / f).read_text(errors='replace')
+    except OSError: pass
 clients = pipe_txt.count('IOAccelDisplayPipeUserClient2')
 disp = (d / 'displays.txt').read_text(errors='replace') if (d / 'displays.txt').exists() else ''
 model_ok = 'AMD Radeon 890M' in disp
@@ -121,7 +125,9 @@ check('frames-copied(Copied>0@boot)', (cop or 0) > 0, '(got %s)' % cop)
 check('begin-called(Begin>0@boot)', (begin or 0) > 0, '(got %s)' % begin)
 check('pipe-userclient-present', clients > 0, '(count %d)' % clients)
 check('0x711-revert(no FbCapEmpty)', empty is None, '(got %s)' % empty)
-check('refusals-limited', ref == '0x3,0x941,0x925', '(got %s)' % ref)
+# 0.1.10/0.1.12 baseline refuses non-0x10 0x711 subtypes, so 0x711 IS in the refused set
+# (0.1.10 evidence: "0x3,0x941,0x925,0x711"); 0.1.11 answered them, hiding 0x711.
+check('refusals-baseline', ref == '0x3,0x941,0x925,0x711', '(got %s)' % ref)
 check('model-identity', model_ok, '')
 check('vram-identity', vram_ok, '')
 if trx2 is not None:

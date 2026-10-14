@@ -781,6 +781,21 @@ high in the LOW nibble (matches Linux `drm_edid` width_mm/height_mm). Live bytes
 `2e bd 10` decode to 302x189 mm = 14.0"; the first verify draft had the nibbles swapped (gave
 46x445) and is fixed. EDID bytes confirmed correct — 47-inch is purely the override-shadow
 fallback, which the embedded-EDID override addresses.
+
+### Step07 post-reboot result: 0.1.12 pipe healthy, cause confirmed (2026-10-14)
+
+Reboot → live 0.1.12. `scripts/macos-strix-0112-verify.sh` **9/9 automated PASS**:
+version 0.1.12, Transactions 172→264 (liveness, load grows), Copied=Begin=172,
+`IOAccelDisplayPipeUserClient2` present, no FbCapEmpty, refusals back to the 0.1.10 baseline
+`0x3,0x941,0x925,0x711`, model 890M + VRAM 512MB, 0 WindowServer pipe errors.
+Two script bugs found and fixed during the run: pipe class query must be `StrixDisplayPipe`
+(`-c IOAccelDisplayPipe` matches nothing) with the userclient counted from the accelerator's
+children, and 0x711 belongs in the refused set (0.1.10 evidence confirms). Brightness healthy
+(AppleBacklightDisplay, AUX 100%). Full 8-config bench (`step06-bench-0112-20261014T054943Z`)
+matches 0.1.10: async-diff default copy ~1220us submit 1us ~119fps, probe SrcRead ~660us —
+perf unchanged. **Root cause confirmed: 0.1.11's 0x711 empty-success broke pipe open; the
+Unsupported refusal is load-bearing.** Remaining manual checks for owner eyes: OLED shows desktop
+(not frozen logo), Settings size ~14-inch (was 47"), OLED-as-main pacing comparison.
 Choppiness note: copy max 6.6 ms is inside the 8.3 ms budget and full-frame 8 ms hits once per
 ~15 s — the remaining judder suspect is WindowServer pacing to the main HDMI 144 Hz display while
 the OLED runs 120 Hz. Test: make OLED main (or match rates) and compare; needs owner eyes.
