@@ -687,10 +687,11 @@ Conclusion: **SrcCache=4 (and 3) is never valid for source reads**; WC belongs o
 (aperture) side. Evidence: `out/890m-trace/step06-bench-20261014T110500Z/` (wedged tune/ioreg,
 kernel txn log showing 367940 us diff writing 0 KB).
 
-0.1.10 (source-built, **not installed — needs sudo**): `SrcCache` 3/4 are accepted but aliased to
+0.1.10 (built, offline symbol check pass, no forbidden imports): `SrcCache` 3/4 are accepted but aliased to
 the default cached mapping in `mapSurface` (only 1/2 set a cache flag now); version 0.1.10;
 bench script drops the wc config (8 configs) and warns when a config yields zero plane presents
 instead of printing stale counters. Defaults unchanged (Mode=1, Async=1, SrcCache=0, Block=128):
 async diff won the healthy bench and stays default.
-Next: `sudo bash scripts/macos-strix-accel-install.sh` (expect kmutil rc=28), reboot when convenient,
-then re-run the safe bench to re-test block64/512 and confirm the winner.
+Installed 2026-10-14 via admin dialog (`installed: 0.1.10`, kmutil rc=28, AuxKC confirms 0.1.10,
+live stays 0.1.9 until reboot), **reboot pending — not done this turn**.
+Next after reboot: re-run the safe bench to re-test block64/512 and confirm the winner.
