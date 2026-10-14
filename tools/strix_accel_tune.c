@@ -1,6 +1,8 @@
 // Live tunables for StrixAccel >= 0.1.9 (no reboot): writes properties on the StrixAccelerator registry entry.
 //   strix_accel_tune                      print current tunables and present counters
 //   strix_accel_tune Mode=0|1 Async=0|1 SrcCache=0..4 Block=32..4096 Probe=1 Reset=1
+// SrcCache since 0.1.10: 0 default, 1 copyback, 2 write-through; 3/4 are accepted but aliased to default
+// (uncached/WC source reads stall the pipe, measured 188 ms vs 0.6 ms on 0.1.9).
 // Build: cc -O2 tools/strix_accel_tune.c -framework IOKit -framework CoreFoundation -o strix_accel_tune
 #include <IOKit/IOKitLib.h>
 #include <CoreFoundation/CoreFoundation.h>

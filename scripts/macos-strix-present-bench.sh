@@ -18,6 +18,10 @@ run() { # name Mode Async SrcCache Block
     sleep 0.5
     echo "=== $1 (mode=$2 async=$3 srccache=$4 block=$5)"
     "$OUT/load" "$SECS" "$SIZE" | tail -1
+    FR="$(val StrixAccel,Copy,Frames)"
+    if [ "${FR:-0}" = "0" ]; then
+        echo "  WARNING: no plane presents since Reset (pipe stalled or window occluded); counters below are stale"
+    fi
     printf "  copy avg %s us max %s us  written avg %s KB  submit avg %s us max %s us  coalesced %s  frames %s\n" \
         "$(val StrixAccel,Copy,AvgUs)" "$(val StrixAccel,Copy,MaxUs)" "$(val StrixAccel,Copy,AvgKB)" \
         "$(val StrixAccel,Present,SubmitUsAvg)" "$(val StrixAccel,Present,SubmitUsMax)" \
@@ -32,7 +36,6 @@ run "async diff"            1 1 0 128
 run "async full"            0 1 0 128
 run "async diff copyback"   1 1 1 128
 run "async diff writethru"  1 1 2 128
-run "async diff wc"         1 1 4 128
 run "async diff block512"   1 1 0 512
 run "async diff block64"    1 1 0 64
 echo "=== bandwidth probe"; "$TUNE" Probe=1 >/dev/null; sleep 1

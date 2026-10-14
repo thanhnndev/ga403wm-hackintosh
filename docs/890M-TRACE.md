@@ -660,3 +660,37 @@ read/compare/mapping, and the copy ran synchronously on WindowServer's thread (i
 - Defaults after boot: Mode=1, Async=1, SrcCache=0, Block=128.
 - Recovery: boot-arg `-strixaccoff`, or `Async=0 Mode=0` live.
 - Installed 2026-10-14 (kmutil rc=28), reboot pending.  After reboot: `bash scripts/macos-strix-present-bench.sh`.
+
+### Step06 result of StrixAccel 0.1.9 bench and the write-combine footgun (2026-10-14)
+
+Reboot done, 0.1.9 live (Gate PASS, Pipes 1, Transactions=Copied, NoPlane 0, ValidateFail 0).
+`bash scripts/macos-strix-present-bench.sh 6 full`, healthy configs first (each 6 s animated load on Built-in):
+
+- sync full (0/0/0/128): copy avg 1954 us, submit avg 1959 us, 20250 KB, 119.0 fps.
+- sync diff (1/0/0/128): copy 1560 us, submit 1565 us, 2988 KB, 120.0 fps.
+- async diff (1/1/0/128, the default): copy 1384 us, submit **1 us**, 2008 KB, 118.8 fps.
+- async full (0/1/0/128): copy 1864 us, submit 1 us, 20250 KB, 119.0 fps.
+- async diff copyback (1/1/1/128): copy 1625 us, submit 1 us, 2734 KB, 119.2 fps.
+- async diff writethru (1/1/2/128): copy 1536 us, submit 1 us, 2175 KB, 118.2 fps.
+- Healthy bandwidth probe: SrcRead 642 us, ShadowRead 513 us, ApertureWrite 1540 us for the
+  20.7 MB frame (~32 GB/s src, ~13 GB/s aperture). Async submit (1-2 us) meets the design goal:
+  WindowServer no longer waits for the copy.
+
+Then `async diff wc` (SrcCache=4) wedged the pipe: source reads over a write-combining mapping run
+uncached (~50 MB/s), copy avg exploded to **390-465 ms** (probe SrcRead 188039 us vs 642 us healthy,
+ApertureWrite 140819 us), display-link collapsed to ~11-13 fps (p50 still 8.3 ms, p95 ~460 ms),
+and later configs (block512/64) measured stale counters because no new plane presents arrived to
+refresh them. Restoring SrcCache=0 live did not recover speed because the WC mapping stays cached
+until the next plane present remaps it, and presents had nearly stopped. No "Unable to find display
+pipe" / IOPresentment errors: the association is healthy, the cost is purely mapping cache mode.
+Conclusion: **SrcCache=4 (and 3) is never valid for source reads**; WC belongs only on the write
+(aperture) side. Evidence: `out/890m-trace/step06-bench-20261014T110500Z/` (wedged tune/ioreg,
+kernel txn log showing 367940 us diff writing 0 KB).
+
+0.1.10 (source-built, **not installed — needs sudo**): `SrcCache` 3/4 are accepted but aliased to
+the default cached mapping in `mapSurface` (only 1/2 set a cache flag now); version 0.1.10;
+bench script drops the wc config (8 configs) and warns when a config yields zero plane presents
+instead of printing stale counters. Defaults unchanged (Mode=1, Async=1, SrcCache=0, Block=128):
+async diff won the healthy bench and stays default.
+Next: `sudo bash scripts/macos-strix-accel-install.sh` (expect kmutil rc=28), reboot when convenient,
+then re-run the safe bench to re-test block64/512 and confirm the winner.

@@ -28,7 +28,7 @@
 #include "../../include/StrixNativeABI.h"
 #include "StrixABIProfile.h"
 
-#define STRIXACCEL_VERSION "0.1.9"
+#define STRIXACCEL_VERSION "0.1.10"
 
 #include "IOAccelFamily2_decl.h"
 
@@ -85,7 +85,9 @@ extern const uintptr_t fam_ztv_MemoryMap[] __asm__("__ZTV16IOAccelMemoryMap");
 // tools/strix_accel_tune.c): every present-path experiment is a property write, not a reboot.
 static volatile int32_t gTuneMode = 1;       // 0 = full-frame copy, 1 = block diff against a shadow
 static volatile int32_t gTuneAsync = 1;      // 1 = present on a worker thread (latest frame wins), 0 = in WindowServer's thread
-static volatile int32_t gTuneSrcCache = 0;   // source mapping cache: 0 default, 1 copyback, 2 write-through, 3 inhibit, 4 write-combine
+static volatile int32_t gTuneSrcCache = 0;   // source mapping cache: 0 default, 1 copyback, 2 write-through.
+// 3 (inhibit) and 4 (write-combine) are accepted but aliased to default: uncached/WC source reads stall the pipe
+// (measured 0.1.9: SrcRead 188 ms WC vs 0.6 ms cached, copy 390 ms avg, display-link collapses to ~12 fps).
 static volatile int32_t gTuneProbe = 0;      // 1 = run the bandwidth probe on the next presented frame
 static volatile int32_t gTuneBlock = 128;    // diff block size in bytes (multiple of 8)
 static volatile int32_t gCacheGen = 0;       // bumped when the source cache mode changes: pipes drop their mappings
@@ -1134,9 +1136,7 @@ uint8_t *StrixDisplayPipe::mapSurface(IOSurface *s, uint32_t id)
     switch (gTuneSrcCache) {
     case 1: co = kIOMapCopybackCache; break;
     case 2: co = kIOMapWriteThruCache; break;
-    case 3: co = kIOMapInhibitCache; break;
-    case 4: co = kIOMapWriteCombineCache; break;
-    default: break;
+    default: break;   // 0 default, 3/4 aliased to default (see above)
     }
     IOMemoryMap *map = md->map(kIOMapAnywhere | kIOMapReadOnly | co);
     if (!map && co) map = md->map(kIOMapAnywhere | kIOMapReadOnly);   // that cache mode is not allowed for this memory
