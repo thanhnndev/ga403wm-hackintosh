@@ -33,6 +33,9 @@ class StrixBacklightHandler : public IODisplayParameterHandler {
 public:
     static StrixBacklightHandler *with(StrixGOPFramebuffer *owner, uint32_t percent);
     void orphan();
+    // Deferred percent request usable from any lock context (display power path);
+    // same coalescing apply as doIntegerSet.
+    void requestPercent(UInt32 v) { pending = SInt32(v > 100 ? 100 : v); if (apply) thread_call_enter(apply); }
     bool setDisplay(IODisplay *display) override;
     bool doIntegerSet(OSDictionary *params, const OSSymbol *paramName, UInt32 value) override;
     bool doDataSet(const OSSymbol *, OSData *) override { return false; }
@@ -71,6 +74,12 @@ class StrixGOPFramebuffer : public IOFramebuffer {
     IOLock *blLock = nullptr;
     StrixBacklightHandler *backlight = nullptr;
     unsigned blWrites = 0, blFailures = 0;
+    // Display-sleep bookkeeping: kConnectionPower(0) parks the panel at level 0 and remembers the last
+    // lit percent; power-on / post-wake restores it. Counted as properties so traces prove the path ran.
+    bool panelAsleep = false;
+    uint32_t sleepSavedPercent = 100;
+    unsigned sleepCount = 0, wakeCount = 0;
+    void displayPower(bool on);
     bool readProfile(IOPCIDevice *pci);
     bool discoverPanel(IOPCIDevice *pci);
     void publishBacklight();
@@ -168,7 +177,7 @@ bool StrixGOPFramebuffer::start(IOService *provider) {
     auto pci = OSDynamicCast(IOPCIDevice, provider);
     if (!pci || !readProfile(pci)) return false;
     setProperty("TraceStep", "890M-03");
-    setProperty("StrixGOPVersion", "0.1.6");
+    setProperty("StrixGOPVersion", "0.1.7");
     setProperty("HardwareModesetting", false);
     setProperty("Acceleration", false);
     setProperty("Aperture,Base", layout.barBase + layout.offset, 64);
@@ -323,11 +332,41 @@ IOReturn StrixGOPFramebuffer::setAttribute(IOSelect attribute, uintptr_t value) 
     logAttribute("set", -1, attribute, value, rc);
     return rc;
 }
+void StrixGOPFramebuffer::displayPower(bool on) {
+    // Steered through the same deferred apply as slider sets: this path may run under locks.
+    if (on) {
+        if (panelAsleep) {
+            panelAsleep = false;
+            uint32_t restore = sleepSavedPercent ? sleepSavedPercent : 100;
+            if (backlight) backlight->requestPercent(restore);
+            ++wakeCount;
+            setProperty("Backlight,WakeCount", wakeCount, 32);
+            IOLog("StrixGOP: display power ON (wake #%u, restore %u%%)\n", wakeCount, restore);
+        }
+    } else {
+        if (!panelAsleep) {
+            panelAsleep = true;
+            sleepSavedPercent = blPercent ? blPercent : 100;
+            if (backlight) backlight->requestPercent(0);
+            ++sleepCount;
+            setProperty("Backlight,SleepCount", sleepCount, 32);
+            IOLog("StrixGOP: display power OFF (sleep #%u, saved %u%%)\n", sleepCount, sleepSavedPercent);
+        }
+    }
+}
 IOReturn StrixGOPFramebuffer::setAttributeForConnection(IOIndex connection, IOSelect attribute, uintptr_t value) {
     IOReturn rc;
     switch (attribute) {
+        // Display power now drives the panel (0.1.7): OFF parks the backlight at 0, ON/post-wake
+        // restores the saved percent. Previously pure-ACKed, which left the panel lit on display sleep.
         case kConnectionPower:
+            if (connection) { rc = kIOReturnBadArgument; break; }
+            displayPower(value != 0);
+            rc = kIOReturnSuccess; break;
         case kConnectionPostWake:
+            if (connection) { rc = kIOReturnBadArgument; break; }
+            displayPower(true);
+            rc = kIOReturnSuccess; break;
         case kConnectionEnable:
         case kConnectionProbe:
             rc = connection ? kIOReturnBadArgument : kIOReturnSuccess; break;
@@ -435,7 +474,6 @@ IOReturn StrixGOPFramebuffer::getAttributeForConnection(IOIndex connection, IOSe
 namespace {
 constexpr uint32_t kDpcdRev = 0x000, kDpcdEdpRev = 0x700, kDpcdDisplayCtl = 0x720, kDpcdBlMode = 0x721,
                    kDpcdBlLevel = 0x722, kDpcdPwmgenBits = 0x724, kDpcdPwmgenMax = 0x726;
-constexpr uint32_t kMinPercent = 5;   // never 0: some panels switch the backlight off completely
 }
 
 bool StrixGOPFramebuffer::discoverPanel(IOPCIDevice *pci) {
@@ -535,6 +573,8 @@ void StrixGOPFramebuffer::publishBacklight() {
     }
     backlight->registerService(kIOServiceSynchronous);
     setProperty("Backlight,Handler", true);
+    setProperty("Backlight,SleepCount", sleepCount, 32);
+    setProperty("Backlight,WakeCount", wakeCount, 32);
     IOLog("StrixGOP: backlight handler published at %u%%\n", blPercent);
 }
 
@@ -665,7 +705,9 @@ void StrixBacklightHandler::applyFire(thread_call_param_t p, thread_call_param_t
     IOLockLock(me->lock);
     StrixGOPFramebuffer *owner = me->fb;
     if (owner) {
-        uint32_t percent = uint32_t(v) < kMinPercent ? kMinPercent : uint32_t(v);
+        // Level 0 is a real off: display sleep parks here, and real Macs go fully dark at slider 0.
+        // (The old 5% floor kept the panel visibly on during display sleep.)
+        uint32_t percent = uint32_t(v);
         if (owner->setPanelPercent(percent)) me->level = v;
     }
     IOLockUnlock(me->lock);

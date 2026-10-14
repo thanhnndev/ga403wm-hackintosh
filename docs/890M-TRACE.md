@@ -796,6 +796,28 @@ matches 0.1.10: async-diff default copy ~1220us submit 1us ~119fps, probe SrcRea
 perf unchanged. **Root cause confirmed: 0.1.11's 0x711 empty-success broke pipe open; the
 Unsupported refusal is load-bearing.** Remaining manual checks for owner eyes: OLED shows desktop
 (not frozen logo), Settings size ~14-inch (was 47"), OLED-as-main pacing comparison.
+
+### Step08 display sleep broken — kConnectionPower ACKed but no-op'd (StrixGOP 0.1.7, pre-reboot)
+
+`pmset displaysleepnow`: HDMI (NVIDIA) sleeps, OLED stays lit — worked in the pre-brightness era.
+Evidence: WindowServer ran full sleep/wake cycles for BOTH displays (`displayWillSleepWithImages` x2,
+`displayDidWake` for both IDs), no blocking assertions, yet zero StrixGOP sleep calls and the panel
+stayed on. Root cause, two layers: (1) `setAttributeForConnection` ACKed `kConnectionPower`/
+`kConnectionPostWake` as pure bookkeeping so the power state machine completes while the panel is
+never touched (no sleepDisplay/gamma/link control exists on a GOP-inherited raster — and none ever
+did); (2) the 0.1.6 backlight path clamped every set below 5% (`kMinPercent`), so even a brightness-0
+sleep would have parked at a visible 5%. Backlight,Writes grew 25->44 across the window, confirming
+brightness traffic flows.
+0.1.7 fix: `displayPower(on)` — power-OFF saves `blPercent`, parks panel at level 0 via the same
+deferred apply as slider sets; power-ON/post-wake restores; `SleepCount`/`WakeCount` properties +
+always-on IOLog prove the path in traces. The 5% floor is removed (level 0 is a real off; real Macs
+go fully dark at slider 0). Risk noted: if this panel power-gates at level 0 and wake-restore fails
+to relight, reboot re-inits (firmware) — owner tests sleep first after reboot.
+Side findings: override sleep/wake does NOT re-read the override file (TEST-name canary never went
+live, size unchanged) — `IOGFlags=4` stays in the file, auto-tested by the pending reboot. SDK
+settled DDC blockNumber as 1-based — our getDDCBlock was already correct, no change.
+Pending reboot batch tests: (1) display sleep off + wake relight, (2) inch size with IOGFlags=4,
+(3) 60Hz mode judder comparison (both 2880x1800 modes offered; same raster, scheduler hint only).
 Choppiness note: copy max 6.6 ms is inside the 8.3 ms budget and full-frame 8 ms hits once per
 ~15 s — the remaining judder suspect is WindowServer pacing to the main HDMI 144 Hz display while
 the OLED runs 120 Hz. Test: make OLED main (or match rates) and compare; needs owner eyes.
