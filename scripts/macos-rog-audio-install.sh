@@ -20,7 +20,6 @@ bash scripts/macos-rogaudio-install.sh
 bash scripts/macos-strixamp-install.sh
 mkdir -p /usr/local/bin '/Library/Application Support/RogAudio'
 install -o root -g wheel -m 755 build/alc-verb /usr/local/bin/alc-verb
-install -o root -g wheel -m 644 build/ROG-Speaker-Test.wav '/Library/Application Support/RogAudio/ROG-Speaker-Test.wav'
 launchctl bootout "gui/$UID_/com.itlmt7925.RogControl" 2>/dev/null || true
 pkill -x RogControl 2>/dev/null || true
 rm -rf /Applications/RogControl.app

@@ -52,7 +52,7 @@ SRCDIR="$STAGE/AppleALC"
 LINK_MIN=$(otool -l "$(xcrun --show-sdk-path)/usr/lib/libkmodc++.a" 2>/dev/null | awk '/minos/ {print $2; exit}')
 LINK_MIN=${LINK_MIN:-12.0}
 objs=()
-for src in kern_start.cpp kern_alc.cpp kern_resources.cpp ALCUserClient/ALCUserClient.cpp; do
+for src in kern_start.cpp kern_alc.cpp kern_resources.cpp ALCUserClient/ALCUserClient.cpp ALCUserClientProvider/ALCUserClientProvider.cpp; do
   o="$OBJ/alc_$(echo "$src" | tr '/.' '__').o"
   clang++ $COMMON $CXXFLAGS -I"$SRCDIR" -I"$SRCDIR/ALCUserClientProvider" -c "$SRCDIR/$src" -o "$o"
   objs+=("$o")
@@ -60,7 +60,12 @@ done
 
 echo "== link $OUT =="
 rm -rf "$OUT"; mkdir -p "$OUT/Contents/MacOS"
-sed "s/\$(MODULE_VERSION)/$VERSION/g" "$SRCDIR/AppleALC-Info.plist" > "$OUT/Contents/Info.plist"
+# Xcode normally expands these build settings; without them the bundle id is the literal "$(PRODUCT_BUNDLE_IDENTIFIER)"
+# and OpenCore/the kernel can never inject the kext (no built-in audio device at all).
+sed -e "s/\$(MODULE_VERSION)/$VERSION/g" -e 's/\$(EXECUTABLE_NAME)/AppleALC/g' \
+    -e 's/\$(PRODUCT_BUNDLE_IDENTIFIER)/as.vit9696.AppleALC/g' -e 's/\$(PRODUCT_NAME:rfc1034identifier)/AppleALC/g' -e 's/\$(PRODUCT_NAME)/AppleALC/g' \
+    "$SRCDIR/AppleALC-Info.plist" > "$OUT/Contents/Info.plist"
+! grep -q '\$(' "$OUT/Contents/Info.plist" || { echo 'unexpanded build setting left in Info.plist'; exit 1; }
 # merge_pinconfigs.sh equivalent: publish staged PinConfigs HDAConfigDefault
 # as our own personality (stock kexts carry 663 entries here, not a PlugIns kext).
 python3 -I - "$OUT/Contents/Info.plist" \
@@ -76,6 +81,22 @@ out["IOKitPersonalities"]["as.vit9696.AppleALC"] = src
 open(out_p, 'wb').write(plistlib.dumps(out, fmt=plistlib.FMT_XML, sort_keys=False))
 print(f"merged HDAConfigDefault with {n} entries")
 EOF
+# Lilu plugin entry (defines AppleALC_kern_start/stop, selfInstance, debugEnabled) and the Xcode-generated kmod descriptor.
+clang++ $COMMON $CXXFLAGS -I"$LILU_INC" -c "$LILU_INC/Library/plugin_start.cpp" -o "$OBJ/alc_plugin_start.o"
+cat > "$OBJ/alc_kmod_info.c" <<KMOD
+#include <mach/mach_types.h>
+extern kern_return_t _start(kmod_info_t *ki, void *data);
+extern kern_return_t _stop(kmod_info_t *ki, void *data);
+extern kern_return_t AppleALC_kern_start(kmod_info_t *ki, void *data);
+extern kern_return_t AppleALC_kern_stop(kmod_info_t *ki, void *data);
+__attribute__((visibility("default")))
+KMOD_EXPLICIT_DECL(as.vit9696.AppleALC, "$VERSION", _start, _stop)
+__private_extern__ kmod_start_func_t *_realmain = AppleALC_kern_start;
+__private_extern__ kmod_stop_func_t *_antimain = AppleALC_kern_stop;
+__private_extern__ int _kext_apple_cc = __APPLE_CC__;
+KMOD
+clang $COMMON -c "$OBJ/alc_kmod_info.c" -o "$OBJ/alc_kmod_info.o"
+objs+=("$OBJ/alc_plugin_start.o" "$OBJ/alc_kmod_info.o")
 clang++ -arch x86_64 -mmacosx-version-min="$LINK_MIN" -nostdlib -Xlinker -kext -Xlinker -no_data_const \
   -L"$SDK_DIR/Library/x86_64" -lkmodc++ -lkmod -lcc_kext "${objs[@]}" -o "$OUT/Contents/MacOS/AppleALC"
 file "$OUT/Contents/MacOS/AppleALC"

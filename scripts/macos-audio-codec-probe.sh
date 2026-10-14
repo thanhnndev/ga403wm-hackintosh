@@ -6,7 +6,7 @@ OUT="${1:-out/audio-codec-$(date +%Y%m%d-%H%M%S)}"
 VERB=/usr/local/bin/alc-verb
 [ -x "$VERB" ] || VERB=build/alc-verb
 [ -x "$VERB" ] || { echo 'Missing alc-verb; run scripts/build-alc-verb.sh'; exit 1; }
-if ! ioreg -r -c ALCUserClientProvider -l | /usr/bin/grep -q 'class ALCUserClientProvider'; then
+if ! ioreg -r -c ALCUserClientProvider -l | /usr/bin/grep -q ALCUserClientProvider; then
   echo 'ALCUserClientProvider unavailable: reboot with alcverbs=1 before running this probe.'
   exit 1
 fi

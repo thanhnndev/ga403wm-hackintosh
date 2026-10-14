@@ -10,11 +10,11 @@ cd "$(dirname "$0")/.."
 APP=build/RogControl.app
 rm -rf "$APP"; mkdir -p "$APP/Contents/MacOS"
 cp macos/RogControl/Info.plist "$APP/Contents/Info.plist"
-swiftc -O -target x86_64-apple-macos13.0 macos/RogControl/RogControl.swift -o "$APP/Contents/MacOS/RogControl" -framework IOKit -framework SwiftUI
-if [ -f build/ROG-Speaker-Test.wav ]; then
-  mkdir -p "$APP/Contents/Resources"
-  cp build/ROG-Speaker-Test.wav "$APP/Contents/Resources/ROG-Speaker-Test.wav"
-fi
+swiftc -O -target x86_64-apple-macos15.0 -swift-version 6 -parse-as-library $(find macos/RogControl/Sources -name "*.swift") -o "$APP/Contents/MacOS/RogControl" -framework IOKit -framework SwiftUI -framework AVFoundation -framework CoreAudio -framework Charts
+# speaker test set (tools/gen-audio-test.py): generated once, then bundled
+[ -f build/audio-test/index.json ] || python3 -I tools/gen-audio-test.py build/audio-test
+mkdir -p "$APP/Contents/Resources/AudioTest"
+cp build/audio-test/*.wav build/audio-test/index.json "$APP/Contents/Resources/AudioTest/"
 codesign --force --sign - "$APP" >/dev/null
 echo "built $APP"
 if [ "${1:-}" = "--install" ]; then

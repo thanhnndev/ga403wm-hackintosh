@@ -385,6 +385,17 @@ Build again with `bash scripts/build-rog-audio-bundle.sh`; unified installer als
 After next boot, verify `TraceBuild=0.2.0` and `TraceEnabled=Yes`, then read that boot's trace directory.
 Root cause and all physical speaker paths remain unverified. Changes are uncommitted.
 
+## 11. Speaker tests and mic switch (2026-10-14, after the AppleALC fix)
+
+* AppleALC CLT build fixed (Info.plist build settings, `kmod_info`, Lilu `plugin_start`, `ALCUserClientProvider`): Built-in
+  Output/Input exist again and the internal speakers play (notification sounds heard with the jack unplugged; headphones work).
+* `tools/gen-audio-test.py` synthesizes the test set (no dependencies, voice labels through macOS `say`): a ~70 s full test,
+  music/speech/transient/imaging/polarity quality tests, and per-channel sweep/bass/treble/noise tests for individual drivers.
+  `scripts/build-rogcontrol.sh` bundles `build/audio-test/*` into `RogControl.app/Contents/Resources/AudioTest`.
+* RogControl plays them itself (AVAudioPlayer to the built-in output directly, or through ROG Speakers to include the sound
+  profile); `RogControl --audio-play FILE.wav [direct|dsp]` does the same headless. "Heard" boxes are the user's own notes.
+* ROG Clear Mic has a master switch (`micEnabled` in settings.plist, default OFF). Off: rogaudiod never opens the built-in mic.
+
 ## References
 
 * Linux quirk patch (GA403W / CS35L56, SSID `1043:1024`): <https://lkml.iu.edu/2601.1/06212.html>
@@ -394,3 +405,25 @@ Root cause and all physical speaker paths remain unverified. Changes are uncommi
 * AudioServerPlugIn: <https://developer.apple.com/tutorials/data/documentation/coreaudio/creating-an-audio-server-driver-plug-in.md>
 * RNNoise (BSD): <https://github.com/xiph/rnnoise>
 * DeepFilterNet: <https://github.com/Rikorose/DeepFilterNet>
+
+## 12. Cinema tests and mic monitor
+
+- `tools/gen-audio-test.py` now also writes a **Cinema** group (circle, helicopter, storm, explosion, flyby, film scene, trailer) with
+  ITD/ILD + rear-darkening cues (stereo simulation, not true surround). All files are normalised to -0.7 dBFS with per-file soft
+  saturation (crest-factor drive), about 5 dB louder than the old -6 dBFS peaks. Generation is pure Python: ~10 min.
+- `rogaudio-probe monitor IN_UID OUT_UID SECONDS [GAIN]` routes a mic live to an output (ring buffer, ~40 ms). RogControl exposes it as
+  "Hear yourself": built-in raw mic vs ROG Clear Mic, headphones only (data source 'hdpn' check), gain 0-4x.
+
+## 13. RogControl rewrite (2026-10-14)
+
+RogControl was rewritten from scratch, not patched. Build: `scripts/build-rogcontrol.sh [--install]` (Swift 6, macOS 15 target).
+
+* Structure: `macos/RogControl/Sources/{Entry,Platform,Laptop,Audio,Components,Quick,Window}`, one type per file.
+  `AppModel` owns `LaptopModel`, `AudioModel`, `MicrophoneModel`, `SpeakerTestModel` and one polling task (2 s while the panel or
+  window is on screen, 30 s otherwise).
+* Surfaces: `MenuBarExtra` quick panel (performance, live CPU temperature/power/fans, sound profile and amp volume, ROG Clear Mic
+  with noise cancellation and "Hear yourself", keyboard and Slash lighting) and a window with native grouped forms (Overview,
+  Performance with fan curve, Battery, Lighting, Speakers, Microphone, Speaker Tests, Settings).
+* `--background` (the login item) starts in the menu bar only; a manual start also opens the window.
+* CLI modes are unchanged: `--audio-status`, `--audio-set`, `--audio-play`, `--audio-mic-test`, `--bench`.
+* `rogaudiod` and `rogaudio-probe` must stay unsigned (see section 12); RogControl itself is ad-hoc signed.

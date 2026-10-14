@@ -6,7 +6,7 @@
 #include <stdio.h>
 #include <string.h>
 
-typedef struct { char profile[32]; double volume, strength; int muted, noise; } RogAudioSettings;
+typedef struct { char profile[32]; double volume, strength; int muted, noise, micEnabled; } RogAudioSettings;
 
 static int rog_settings_read(const char *path, RogAudioSettings *s)
 {
@@ -41,6 +41,8 @@ static int rog_settings_read(const char *path, RogAudioSettings *s)
     if (v && CFGetTypeID(v) == CFBooleanGetTypeID()) s->muted = CFBooleanGetValue(v);
     v = CFDictionaryGetValue(d, CFSTR("noiseCancellation"));
     if (v && CFGetTypeID(v) == CFBooleanGetTypeID()) s->noise = CFBooleanGetValue(v);
+    v = CFDictionaryGetValue(d, CFSTR("micEnabled"));
+    if (v && CFGetTypeID(v) == CFBooleanGetTypeID()) s->micEnabled = CFBooleanGetValue(v);
     CFRelease(plist);
     return 1;
 }

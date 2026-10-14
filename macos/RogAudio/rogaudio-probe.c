@@ -115,11 +115,111 @@ static OSStatus probe_cb(void *ref, AudioUnitRenderActionFlags *flags,
     return 0;
 }
 
+// ---- monitor: input device -> output device, live (hear your own voice) ---------------------------------------------------
+#define RING 16384
+typedef struct {
+    AudioUnit in, out;
+    UInt32 inCh, outCh;
+    float ring[RING];
+    _Atomic unsigned long wr, rd;
+    float scratch[MAXFRAMES * MAXCH];
+    float gain;
+    _Atomic float recentRMS;
+    _Atomic int error;
+    _Atomic unsigned long frames, underruns;
+} Monitor;
+
+static OSStatus monitor_in_cb(void *ref, AudioUnitRenderActionFlags *flags, const AudioTimeStamp *ts,
+                              UInt32 bus, UInt32 frames, AudioBufferList *io)
+{
+    Monitor *m = ref;
+    if (frames > MAXFRAMES) return kAudio_ParamError;
+    AudioBufferList abl = { .mNumberBuffers = 1, .mBuffers = {{m->inCh, frames * m->inCh * sizeof(float), m->scratch}} };
+    OSStatus rc = AudioUnitRender(m->in, flags, ts, bus, frames, &abl);
+    if (rc) { atomic_store(&m->error, rc); return rc; }
+    unsigned long w = atomic_load(&m->wr), r = atomic_load(&m->rd);
+    if (w - r > RING - frames) { atomic_store(&m->rd, w - 2048); }      // overrun: drop old audio
+    double sq = 0;
+    for (UInt32 i = 0; i < frames; i++) {
+        float s = 0;
+        for (UInt32 c = 0; c < m->inCh; c++) s += m->scratch[i * m->inCh + c];
+        s = s / m->inCh * m->gain;
+        sq += s * s;
+        m->ring[(w + i) % RING] = s;
+    }
+    atomic_store(&m->wr, w + frames);
+    atomic_store(&m->recentRMS, frames ? (float)sqrt(sq / frames) : 0);
+    atomic_fetch_add(&m->frames, frames);
+    return 0;
+}
+
+static OSStatus monitor_out_cb(void *ref, AudioUnitRenderActionFlags *flags, const AudioTimeStamp *ts,
+                               UInt32 bus, UInt32 frames, AudioBufferList *io)
+{
+    Monitor *m = ref;
+    unsigned long r = atomic_load(&m->rd), w = atomic_load(&m->wr);
+    // start only once ~40 ms is queued, then follow; keeps latency small and bounded
+    int ready = (w - r) >= frames + 1024 || atomic_load(&m->frames) > 0 && (w - r) >= frames;
+    for (UInt32 b = 0; b < io->mNumberBuffers; b++) {
+        float *v = io->mBuffers[b].mData;
+        UInt32 ch = io->mBuffers[b].mNumberChannels;
+        for (UInt32 i = 0; i < frames; i++) {
+            float s = ready ? m->ring[(r + i) % RING] : 0;
+            for (UInt32 c = 0; c < ch; c++) v[i * ch + c] = s;
+        }
+    }
+    if (ready) atomic_store(&m->rd, r + frames); else atomic_fetch_add(&m->underruns, 1);
+    return 0;
+}
+
+static int run_monitor(const char *inUid, const char *outUid, double seconds, float gain)
+{
+    static Monitor m;
+    m.gain = gain;
+    setvbuf(stdout, NULL, _IOLBF, 0);
+    AudioObjectID inDev = dev_by_uid(inUid), outDev = dev_by_uid(outUid);
+    if (inDev == kAudioObjectUnknown || outDev == kAudioObjectUnknown) return 1;
+    m.inCh = dev_channels(inDev, kAudioObjectPropertyScopeInput);
+    m.outCh = dev_channels(outDev, kAudioObjectPropertyScopeOutput);
+    if (!m.inCh || m.inCh > MAXCH || !m.outCh || m.outCh > MAXCH) return 1;
+    m.in = make_unit(inDev, 1); m.out = make_unit(outDev, 0);
+    if (!m.in || !m.out) return 1;
+    AudioStreamBasicDescription fi = fmt(m.inCh, 1), fo = fmt(m.outCh, 1);
+    AURenderCallbackStruct icb = { monitor_in_cb, &m }, ocb = { monitor_out_cb, &m };
+    OSStatus rc = AudioUnitSetProperty(m.in, kAudioUnitProperty_StreamFormat, kAudioUnitScope_Output, 1, &fi, sizeof(fi));
+    if (!rc) rc = AudioUnitSetProperty(m.in, kAudioOutputUnitProperty_SetInputCallback, kAudioUnitScope_Global, 0, &icb, sizeof(icb));
+    if (!rc) rc = AudioUnitSetProperty(m.out, kAudioUnitProperty_StreamFormat, kAudioUnitScope_Input, 0, &fo, sizeof(fo));
+    if (!rc) rc = AudioUnitSetProperty(m.out, kAudioUnitProperty_SetRenderCallback, kAudioUnitScope_Input, 0, &ocb, sizeof(ocb));
+    if (!rc) rc = AudioUnitInitialize(m.in);
+    if (!rc) rc = AudioUnitInitialize(m.out);
+    if (!rc) rc = AudioOutputUnitStart(m.in);
+    if (!rc) rc = AudioOutputUnitStart(m.out);
+    if (!rc) for (double e = 0; e < seconds; e += 0.1) {
+        usleep(100000);
+        float rms = atomic_load(&m.recentRMS);
+        printf("progress elapsed=%.1f rms=%.9f dBFS=%.2f frames=%lu underruns=%lu\n", e + 0.1, rms,
+               rms > 0 ? 20 * log10(rms) : -120, atomic_load(&m.frames), atomic_load(&m.underruns));
+        if (atomic_load(&m.error)) break;
+    }
+    AudioOutputUnitStop(m.in); AudioOutputUnitStop(m.out);
+    AudioUnitUninitialize(m.in); AudioUnitUninitialize(m.out);
+    AudioComponentInstanceDispose(m.in); AudioComponentInstanceDispose(m.out);
+    printf("monitor in=%s out=%s setup=%d render=%d frames=%lu underruns=%lu\n", inUid, outUid, (int)rc,
+           atomic_load(&m.error), atomic_load(&m.frames), atomic_load(&m.underruns));
+    return rc || atomic_load(&m.error) || !atomic_load(&m.frames) ? 1 : 0;
+}
+
 int main(int argc, char **argv)
 {
+    if ((argc == 5 || argc == 6) && !strcmp(argv[1], "monitor")) {
+        double seconds = atof(argv[4]);
+        float gain = argc == 6 ? (float)atof(argv[5]) : 1.0f;
+        if (!isfinite(seconds) || seconds <= 0 || seconds > 600 || !isfinite(gain) || gain < 0 || gain > 8) return 2;
+        return run_monitor(argv[2], argv[3], seconds, gain);
+    }
     if (argc == 3 && !strcmp(argv[1], "render-test")) return render_test(argv[2]);
     if (argc != 4 || (strcmp(argv[1], "input") && strcmp(argv[1], "tone") && strcmp(argv[1], "speakers"))) {
-        fprintf(stderr, "usage: rogaudio-probe input|tone|speakers DEVICE_UID SECONDS | render-test PATH\n"); return 2;
+        fprintf(stderr, "usage: rogaudio-probe input|tone|speakers DEVICE_UID SECONDS | monitor IN_UID OUT_UID SECONDS [GAIN] | render-test PATH\n"); return 2;
     }
     double seconds = atof(argv[3]);
     if (!isfinite(seconds) || seconds <= 0 || seconds > 30) return 2;

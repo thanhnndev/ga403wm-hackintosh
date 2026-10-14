@@ -609,7 +609,7 @@ int main(int argc, char **argv)
     unsigned long lastStat = 0;
     unsigned long statusTick = 0;
     while (!g_quit) {
-        RogAudioSettings settings = { .volume = -20, .strength = strength, .noise = 1 };
+        RogAudioSettings settings = { .volume = -20, .strength = strength, .noise = 1, .micEnabled = settingsPath ? 0 : 1 };
         if (rog_settings_read(settingsPath, &settings)) {
             int configured = profile_index(settings.profile);
             if (configured >= 0 && configured != profile) {
@@ -624,8 +624,10 @@ int main(int argc, char **argv)
         }
         if (doMic) {
             AudioObjectID mic = dev_by_uid(UID_MIC);
-            int want = mic != kAudioObjectUnknown && dev_running_somewhere(mic);
-            if (want && !g_mic_on) { if (mic_start(micUid) == 0) g_mic_on = 1; else mic_stop(); micIdle = 0; }
+            // master switch: when off the built-in mic is never opened, even if an app records from ROG Clear Mic
+            int want = settings.micEnabled && mic != kAudioObjectUnknown && dev_running_somewhere(mic);
+            if (!settings.micEnabled && g_mic_on) { mic_stop(); g_mic_on = 0; micIdle = 0; }
+            else if (want && !g_mic_on) { if (mic_start(micUid) == 0) g_mic_on = 1; else mic_stop(); micIdle = 0; }
             else if (!want && g_mic_on) { if (++micIdle >= 6) { mic_stop(); g_mic_on = 0; micIdle = 0; } }
             else if (want) micIdle = 0;
         }
@@ -640,10 +642,10 @@ int main(int argc, char **argv)
                 FILE *f = fopen(temp, "w");
                 if (f) {
                     fprintf(f, "<?xml version=\"1.0\"?><plist version=\"1.0\"><dict>"
-                        "<key>updated</key><real>%.0f</real><key>micActive</key><%s/>"
+                        "<key>updated</key><real>%.0f</real><key>micActive</key><%s/><key>micEnabled</key><%s/>"
                         "<key>speakerActive</key><%s/><key>profile</key><string>%s</string>"
                         "<key>strength</key><real>%.3f</real></dict></plist>",
-                        (double)time(NULL), g_mic_on ? "true" : "false", spkOn ? "true" : "false",
+                        (double)time(NULL), g_mic_on ? "true" : "false", settings.micEnabled ? "true" : "false", spkOn ? "true" : "false",
                         kProfiles[profile].name, atomic_load(&g_mic.strength));
                     fclose(f); rename(temp, path);
                 }
