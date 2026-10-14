@@ -10,7 +10,7 @@ cd "$(dirname "$0")/.."
 APP=build/RogControl.app
 rm -rf "$APP"; mkdir -p "$APP/Contents/MacOS"
 cp macos/RogControl/Info.plist "$APP/Contents/Info.plist"
-swiftc -O -target x86_64-apple-macos13.0 macos/RogControl/RogControl.swift -o "$APP/Contents/MacOS/RogControl" -framework IOKit -framework SwiftUI
+swiftc -O -target x86_64-apple-macos13.0 macos/RogControl/RogControl.swift -o "$APP/Contents/MacOS/RogControl" -framework IOKit -framework SwiftUI -framework CoreAudio
 codesign --force --sign - "$APP" >/dev/null
 echo "built $APP"
 if [ "${1:-}" = "--install" ]; then

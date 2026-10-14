@@ -49,7 +49,7 @@ Mục đã đánh dấu được kiểm chứng trên máy tham chiếu. Mục c
 - [x] **Bluetooth MT7925:** Tai nghe classic và chuột BLE qua `MtkBtFw` + `BtLeDlFix`. [Bluetooth](docs/BLUETOOTH.md)
 - [x] **Điều khiển ROG / đèn:** Profile, quạt, giới hạn sạc, đèn bàn phím và Slash qua `AsusWmi` + RogControl. [Điều khiển ROG](docs/ASUSCTL-MACOS.md)
 - [ ] **Sleep / wake:** Chưa có deep sleep ổn định; wake chậm và thiếu ổn định. Chu kỳ hoàn tất khôi phục được chính sách CPU. Đừng trông cậy vào sleep hay đóng nắp.
-- [ ] **Các phím Fn khác:** Độ sáng và đèn bàn phím hoạt động; phần lớn phím còn lại chưa map.
+- [ ] **Các phím Fn khác:** Đã có bản map GA403WM trong worktree [`claude/fn-rog-hotkeys`](docs/FN-HOTKEYS.md); vẫn cần kiểm tra mã phím với kext mới đang chạy trước khi xác nhận hoạt động.
 - [ ] **Âm thanh / đầu đọc SD / % pin:** EFI có AppleALC layout 33, Sinetek-rtsx và SMCBatteryManager; chưa kiểm chứng hoạt động.
 - [ ] **Wi-Fi native / AirDrop / Continuity:** Bản port `IO80211Controller` đang thử nghiệm, **chưa dùng được**. Đừng bật. [Nghiên cứu](docs/WIFI-AS-WIFI.md)
 

@@ -141,7 +141,9 @@ for checking what `WMNB` does with each device id on this BIOS, and for the EC f
 * **Hotkeys through ATKD**: `IANE (code)` queues a code and sends Notify (ATKD, 0xFF); `_WED (0xFF)` -> `GANQ` returns the
   queued codes (Ones when empty). Seen in the DSDT: 0xC4 / 0xC5 keyboard light up / down (only when `KBLC & 0x80`), 0xB3
   (Fn+F4), 0xAE (Fn+F5), 0x6B, 0x40 / 0x43 / 0x45 / 0x0A, 0x1A. AsusWmi handles 0xC4 / 0xC5 / 0xAE / 0xB3 and logs every
-  code in `asus-log` ("key xx").
+  code in `asus-log` ("key xx"). The `claude/fn-rog-hotkeys` worktree adds a sequence/code sysctl feed and RogControl actions for
+  the full function row and M1–M4. The proposed codes and the actions that currently open Settings panes are documented in
+  [FN-HOTKEYS.md](FN-HOTKEYS.md); they await confirmation with that worktree's kext loaded.
 * **Keyboard light and Slash**: no WMI device for either (0x00050021 is not in the DSDT). Both are HID feature reports on
   the N-KEY keyboard, USB 0b05:19b6 ("ITE Device(8910)", one interface, AppleUserHIDDevice): report 0x5A (62 bytes) =
   keyboard light `5A BA C5 C4 <0..3>` after `5A "ASUS Tech.Inc."` (G-Helper Aura.DirectBrightness, Linux hid-asus);

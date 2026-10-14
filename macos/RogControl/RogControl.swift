@@ -18,6 +18,8 @@ import SwiftUI
 import Charts
 import IOKit
 import IOKit.ps
+import IOKit.pwr_mgt
+import CoreAudio
 
 // ---- driver access (asuswmi_abi.h) -----------------------------------------------------------------------------------------
 struct AsusState {
@@ -115,6 +117,12 @@ enum Sensors {
         guard sysctlbyname(name, &buf, &len, nil, 0) == 0 else { return nil }
         return String(cString: buf)
     }
+    static func hotkey() -> (sequence: UInt32, code: UInt32)? {
+        guard let value = string("debug.asuswmi.hotkey") else { return nil }
+        let parts = value.split(separator: " ")
+        guard parts.count == 2, let sequence = UInt32(parts[0]), let code = UInt32(parts[1]) else { return nil }
+        return (sequence, code)
+    }
     static func read() -> (tctl: Double?, watts: Double?) {
         guard let s = string("debug.amdcppc.sensors") else { return (nil, nil) }
         var t: Double?, w: Double?
@@ -138,6 +146,107 @@ enum Sensors {
         }
         func avg(_ a: [Int]) -> Int { a.isEmpty ? 0 : a.reduce(0, +) / a.count }
         return (avg(big), avg(little))
+    }
+}
+
+// ---- GA403WM keyboard actions ----------------------------------------------------------------------------------------------
+enum MacHotkeys {
+    private static func defaultDevice(_ selector: AudioObjectPropertySelector) -> AudioDeviceID? {
+        var address = AudioObjectPropertyAddress(mSelector: selector, mScope: kAudioObjectPropertyScopeGlobal,
+                                                 mElement: kAudioObjectPropertyElementMain)
+        var device: AudioDeviceID = 0
+        var size = UInt32(MemoryLayout<AudioDeviceID>.size)
+        guard AudioObjectGetPropertyData(AudioObjectID(kAudioObjectSystemObject), &address, 0, nil, &size, &device) == noErr,
+              device != kAudioObjectUnknown else { return nil }
+        return device
+    }
+
+    private static func readFloat(_ device: AudioDeviceID, scope: AudioObjectPropertyScope) -> Float32? {
+        var address = AudioObjectPropertyAddress(mSelector: kAudioDevicePropertyVolumeScalar, mScope: scope,
+                                                 mElement: kAudioObjectPropertyElementMain)
+        var value: Float32 = 0
+        var size = UInt32(MemoryLayout<Float32>.size)
+        guard AudioObjectGetPropertyData(device, &address, 0, nil, &size, &value) == noErr else { return nil }
+        return value
+    }
+
+    private static func writeFloat(_ value: Float32, device: AudioDeviceID, scope: AudioObjectPropertyScope) -> Bool {
+        var address = AudioObjectPropertyAddress(mSelector: kAudioDevicePropertyVolumeScalar, mScope: scope,
+                                                 mElement: kAudioObjectPropertyElementMain)
+        var settable = DarwinBoolean(false)
+        guard AudioObjectIsPropertySettable(device, &address, &settable) == noErr, settable.boolValue else { return false }
+        var value = value
+        return AudioObjectSetPropertyData(device, &address, 0, nil, UInt32(MemoryLayout<Float32>.size), &value) == noErr
+    }
+
+    private static func runAppleScript(_ source: String) {
+        let process = Process()
+        process.executableURL = URL(fileURLWithPath: "/usr/bin/osascript")
+        process.arguments = ["-e", source]
+        try? process.run()
+    }
+
+    static func adjustOutputVolume(_ delta: Float32) {
+        if let device = defaultDevice(kAudioHardwarePropertyDefaultOutputDevice),
+           let volume = readFloat(device, scope: kAudioObjectPropertyScopeOutput),
+           writeFloat(min(max(volume + delta, 0), 1), device: device, scope: kAudioObjectPropertyScopeOutput) { return }
+        let steps = Int(delta * 100)
+        runAppleScript("set volume output volume (output volume of (get volume settings) + \(steps))")
+    }
+
+    static func toggleOutputMute() {
+        runAppleScript("set volume output muted (not (output muted of (get volume settings)))")
+    }
+
+    static func toggleMicrophoneMute() {
+        guard let device = defaultDevice(kAudioHardwarePropertyDefaultInputDevice) else { return }
+        var muteAddress = AudioObjectPropertyAddress(mSelector: kAudioDevicePropertyMute, mScope: kAudioObjectPropertyScopeInput,
+                                                     mElement: kAudioObjectPropertyElementMain)
+        var mute: UInt32 = 0
+        var size = UInt32(MemoryLayout<UInt32>.size)
+        if AudioObjectGetPropertyData(device, &muteAddress, 0, nil, &size, &mute) == noErr {
+            var settable = DarwinBoolean(false)
+            if AudioObjectIsPropertySettable(device, &muteAddress, &settable) == noErr, settable.boolValue {
+                mute = mute == 0 ? 1 : 0
+                _ = AudioObjectSetPropertyData(device, &muteAddress, 0, nil, UInt32(MemoryLayout<UInt32>.size), &mute)
+                return
+            }
+        }
+        let key = "keyboardHotkey.previousInputVolume"
+        guard let current = readFloat(device, scope: kAudioObjectPropertyScopeInput) else { return }
+        if current > 0.001 {
+            UserDefaults.standard.set(current, forKey: key)
+            _ = writeFloat(0, device: device, scope: kAudioObjectPropertyScopeInput)
+        } else {
+            let restore = UserDefaults.standard.object(forKey: key) as? Float32 ?? 0.5
+            _ = writeFloat(restore, device: device, scope: kAudioObjectPropertyScopeInput)
+        }
+    }
+
+    static func screenshot() {
+        let process = Process()
+        process.executableURL = URL(fileURLWithPath: "/usr/sbin/screencapture")
+        process.arguments = ["-i"]
+        try? process.run()
+    }
+
+    static func openSettings(_ pane: String) {
+        guard let url = URL(string: "x-apple.systempreferences:\(pane)") else { return }
+        NSWorkspace.shared.open(url)
+    }
+
+    static func sleep() {
+        let connection = IOPMFindPowerManagement(kIOMainPortDefault)
+        guard connection != IO_OBJECT_NULL else { return }
+        _ = IOPMSleepSystem(connection)
+        IOServiceClose(connection)
+    }
+
+    static func toggleFunctionRowMode() {
+        let key = "com.apple.keyboard.fnState" as CFString
+        let current = CFPreferencesCopyAppValue(key, kCFPreferencesAnyApplication) as? Bool ?? false
+        CFPreferencesSetAppValue(key, !current as CFPropertyList, kCFPreferencesAnyApplication)
+        CFPreferencesAppSynchronize(kCFPreferencesAnyApplication)
     }
 }
 
@@ -240,7 +349,10 @@ final class RogModel: ObservableObject {
         return settings.spl != saved.spl || settings.sppt != saved.sppt || settings.fppt != saved.fppt || settings.fanBase != saved.fanBase
     }
     var onChange: (() -> Void)?
+    var onHotkey: ((UInt32) -> Void)?
     private var timer: Timer?
+    private var hotkeyTimer: Timer?
+    private var lastHotkeySequence: UInt32?
     private var lastAC: Bool?
     var visible = false { didSet { schedule() } }
 
@@ -276,6 +388,18 @@ final class RogModel: ObservableObject {
         timer?.invalidate()
         timer = Timer.scheduledTimer(withTimeInterval: visible ? 2 : 30, repeats: true) { [weak self] _ in
             MainActor.assumeIsolated { self?.refresh() }
+        }
+    }
+
+    func startHotkeyMonitor() {
+        lastHotkeySequence = Sensors.hotkey()?.sequence
+        hotkeyTimer?.invalidate()
+        hotkeyTimer = Timer.scheduledTimer(withTimeInterval: 0.12, repeats: true) { [weak self] _ in
+            MainActor.assumeIsolated {
+                guard let model = self, let event = Sensors.hotkey(), event.sequence != model.lastHotkeySequence else { return }
+                model.lastHotkeySequence = event.sequence
+                model.onHotkey?(event.code)
+            }
         }
     }
 
@@ -937,9 +1061,28 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate, NSW
         item.button?.target = self
         item.button?.action = #selector(toggle)
         model.onChange = { [weak self] in self?.updateIcon() }
+        model.onHotkey = { [weak self] code in self?.handleKeyboardHotkey(code) }
+        model.startHotkeyMonitor()
         updateIcon()
         setupMenus()
         if !CommandLine.arguments.contains("--background") { showWindow() }
+    }
+
+    private func handleKeyboardHotkey(_ code: UInt32) {
+        switch code {
+        case 0x38: showWindow()                                               // M4: ROG Control
+        case 0x30: MacHotkeys.adjustOutputVolume(0.05)                       // M2: volume up
+        case 0x31: MacHotkeys.adjustOutputVolume(-0.05)                      // M1: volume down
+        case 0x32: MacHotkeys.toggleOutputMute()                             // F1: speaker mute
+        case 0x7c: MacHotkeys.toggleMicrophoneMute()                         // M3: microphone mute
+        case 0x2a: MacHotkeys.screenshot()                                   // F6: Snipping Tool equivalent
+        case 0x2d: MacHotkeys.openSettings("com.apple.Displays-Settings.extension") // F9: display/project settings
+        case 0x6b: MacHotkeys.openSettings("com.apple.Trackpad-Settings.extension") // F10: touchpad settings
+        case 0x0a: MacHotkeys.sleep()                                        // F11: sleep
+        case 0x1a, 0x5d, 0x5e, 0x5f, 0x88: MacHotkeys.openSettings("com.apple.wifi-settings-extension") // F12 / radio
+        case 0x4e: MacHotkeys.toggleFunctionRowMode()                        // Fn+Esc: function-row mode
+        default: NSLog("RogControl: unbound ASUS keyboard event 0x%02x", code)
+        }
     }
 
     @objc func toggle() {

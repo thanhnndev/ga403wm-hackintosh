@@ -142,7 +142,7 @@ public:
     // hotkeys: Notify (ATKD, 0xFF), codes from _WED (0xFF), handled on a thread call
     IONotifier *atkNotifier = nullptr;
     thread_call_t evCall = nullptr;
-    uint32_t lastKey = 0;
+    uint32_t lastKey = 0, keySequence = 0;
     void events();
     void hotkey(uint32_t code);
     bool battery(uint32_t out[4], char *txt, size_t txtLen);
@@ -382,6 +382,7 @@ IOReturn AsusWmi::slashApply(uint32_t v)
 void AsusWmi::hotkey(uint32_t code)
 {
     lastKey = code;
+    keySequence++;
     say("key %02x", code);
     switch (code) {
     case 0xC4: kbdSet(kbdLevel < 0 ? 1 : (kbdLevel < 3 ? kbdLevel + 1 : 3)); break;     // Fn+F3
@@ -750,6 +751,16 @@ static int status_sysctl SYSCTL_HANDLER_ARGS
     return e;
 }
 
+static int hotkey_sysctl SYSCTL_HANDLER_ARGS
+{
+    if (!gSelf) return ENODEV;
+    char value[48];
+    IOLockLock(gSelf->lock);
+    snprintf(value, sizeof(value), "%u %u", gSelf->keySequence, gSelf->lastKey);
+    IOLockUnlock(gSelf->lock);
+    return SYSCTL_OUT(req, value, strlen(value) + 1);
+}
+
 enum { W_DUMP = 100, W_FAN_CUSTOM = 101, W_EC_REG = 102, W_KEY = 103 };
 
 static int write_sysctl SYSCTL_HANDLER_ARGS
@@ -818,6 +829,7 @@ static int battery_sysctl SYSCTL_HANDLER_ARGS
 
 SYSCTL_NODE(_debug, OID_AUTO, asuswmi, CTLFLAG_RW | CTLFLAG_LOCKED, 0, "AsusWmi");
 SYSCTL_PROC(_debug_asuswmi, OID_AUTO, status, CTLTYPE_STRING | CTLFLAG_RD | CTLFLAG_LOCKED, nullptr, 0, status_sysctl, "A", "");
+SYSCTL_PROC(_debug_asuswmi, OID_AUTO, hotkey, CTLTYPE_STRING | CTLFLAG_RD | CTLFLAG_LOCKED, nullptr, 0, hotkey_sysctl, "A", "sequence and last ATKD event");
 SYSCTL_PROC(_debug_asuswmi, OID_AUTO, profile, CTLTYPE_INT | CTLFLAG_RW | CTLFLAG_LOCKED, nullptr, ASUS_SET_PROFILE, write_sysctl, "I", "");
 SYSCTL_PROC(_debug_asuswmi, OID_AUTO, fan_custom, CTLTYPE_INT | CTLFLAG_RW | CTLFLAG_LOCKED, nullptr, W_FAN_CUSTOM, write_sysctl, "I", "");
 SYSCTL_PROC(_debug_asuswmi, OID_AUTO, ppt_spl, CTLTYPE_INT | CTLFLAG_RW | CTLFLAG_LOCKED, nullptr, ASUS_SET_SPL, write_sysctl, "I", "");
@@ -834,7 +846,7 @@ SYSCTL_PROC(_debug_asuswmi, OID_AUTO, slash, CTLTYPE_INT | CTLFLAG_RW | CTLFLAG_
 SYSCTL_PROC(_debug_asuswmi, OID_AUTO, key, CTLTYPE_INT | CTLFLAG_RW | CTLFLAG_LOCKED, nullptr, W_KEY, write_sysctl, "I", "");
 
 static struct sysctl_oid *const kOids[] = {
-    &sysctl__debug_asuswmi, &sysctl__debug_asuswmi_status, &sysctl__debug_asuswmi_profile, &sysctl__debug_asuswmi_fan_custom,
+    &sysctl__debug_asuswmi, &sysctl__debug_asuswmi_status, &sysctl__debug_asuswmi_hotkey, &sysctl__debug_asuswmi_profile, &sysctl__debug_asuswmi_fan_custom,
     &sysctl__debug_asuswmi_ppt_spl, &sysctl__debug_asuswmi_ppt_sppt, &sysctl__debug_asuswmi_ppt_fppt,
     &sysctl__debug_asuswmi_charge_limit, &sysctl__debug_asuswmi_dumpacpi, &sysctl__debug_asuswmi_probe,
     &sysctl__debug_asuswmi_backlight, &sysctl__debug_asuswmi_battery, &sysctl__debug_asuswmi_ec_reg,

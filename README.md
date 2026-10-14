@@ -49,7 +49,7 @@ Checked items are verified on the reference machine. Unchecked items are unrelia
 - [x] **MT7925 Bluetooth:** Classic headphones and BLE mice via `MtkBtFw` + `BtLeDlFix`. [Bluetooth](docs/BLUETOOTH.md)
 - [x] **ROG controls / lighting:** Profiles, fans, charge limit, keyboard backlight and Slash lighting via `AsusWmi` + RogControl. [ROG controls](docs/ASUSCTL-MACOS.md)
 - [ ] **Sleep / wake:** No reliable deep sleep; wake is slow and unreliable. Completed cycles restore CPU policy. Do not rely on lid close or sleep.
-- [ ] **Other Fn keys:** Brightness and keyboard lighting work; most other keys are not mapped.
+- [ ] **Other Fn keys:** A draft GA403WM mapping is implemented on the [`claude/fn-rog-hotkeys` worktree](docs/FN-HOTKEYS.md); it still needs a live-kext key-code check before treating the bindings as verified.
 - [ ] **Audio / SD reader / battery %:** EFI includes AppleALC layout 33, Sinetek-rtsx and SMCBatteryManager; functionality is unverified.
 - [ ] **Native Wi-Fi / AirDrop / Continuity:** `IO80211Controller` port is experimental and **not usable**. Do not enable it. [Research](docs/WIFI-AS-WIFI.md)
 
