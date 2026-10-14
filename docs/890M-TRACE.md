@@ -717,3 +717,34 @@ Block=128 is the sweet spot; default SrcCache beats copyback/writethru. No code 
 Evidence: `out/890m-trace/step06-bench-0110-20261014T113000Z/`.
 Remaining choppiness (if any) is now a pacing question (no vblank source / flip completion),
 not copy cost: present async already decouples WindowServer (submit 1 us).
+
+### Step07 identity and size root causes (StrixAccel 0.1.11, 2026-10-14)
+
+Three "unfinished driver" symptoms, all identity data — no hardware access:
+
+1. **Chipset Model "#display" / graphics "unknown".** `system_profiler` falls back to the EFI hide
+   name (`IOName=#display`) because no `model` property exists anywhere. Fix: `model="AMD Radeon
+   890M"` on the accelerator and the PCI node (informational only; matching uses vendor/device/class).
+2. **VRAM 19 MB.** That is `IOFBMemorySize` = the 20.7 MB raster, not memory. Fix: `VRAM,totalMB=512`
+   (WhateverGreen convention, 512 MiB UMA from Linux) on both nodes; the raster mapping is untouched.
+3. **Built-in shows "47 inch".** Proven NOT the EDID bytes: the synthesized DTD decodes (VESA
+   low/low/high-nibble layout, cross-checked against the live Mi Monitor EDID which yields exactly
+   527x296 mm = 23.8") to 302x189 mm = 14.0", and base bytes 21,22 give 30x19 cm = 13.98". 47.17" is
+   exactly sqrt((2880/72)^2+(1800/72)^2): the 72-DPI fallback when size is unknown. Cause: the HiDPI
+   override (`/Library/Displays/.../DisplayVendorID-4c83/DisplayProductID-419c`) carries only
+   scale-resolutions, shadowing the EDID size on the override path — Apple's own overrides all embed
+   `IODisplayEDID`. Fix: `scripts/macos-install-hidpi.sh` now embeds the live 128-byte
+   `IODisplayEDID` (read from ioreg at install time, stays in sync with PanelEDID).
+   Context7 was tried for the DTD layout question but has no EDID/hardware-spec coverage; the
+   cross-check against the live monitor EDID settled it instead.
+4. **AGDC 0x711 non-0x10 refusals.** Safe improvement, zero entries invented: answer success with
+   `count=0` (echo fbIndex/type), counted as `StrixAccel,AGDC,FbCapEmpty`. 0x3/0x941/0x925 stay
+   refused (boot-time/discovery only; fabricating link state risks poisoning negotiation).
+
+0.1.11 built (offline symbol check clean), installed via admin dialog (kmutil rc=28, AuxKC 0.1.11,
+live 0.1.10), override reinstalled with embedded EDID. **Reboot pending.**
+After reboot verify: Chipset Model "AMD Radeon 890M", VRAM 512 MB, built-in 14-inch, `FbCapEmpty`
+rising with `Refused` limited to 0x3/0x941/0x925, unchanged present performance.
+Choppiness note: copy max 6.6 ms is inside the 8.3 ms budget and full-frame 8 ms hits once per
+~15 s — the remaining judder suspect is WindowServer pacing to the main HDMI 144 Hz display while
+the OLED runs 120 Hz. Test: make OLED main (or match rates) and compare; needs owner eyes.

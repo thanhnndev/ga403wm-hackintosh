@@ -6,8 +6,9 @@
 // client of the GPU's AppleGraphicsDeviceControl service.  Without one the map is NULL ("Unable to get AGDC
 // information", "Unable to acquire map"), CoreDisplay never finds a pipe and WindowServer composites on the CPU with
 // gamma-only transactions.  This object answers the four queries IOPresentment issues (vendor info, GPU capability,
-// link configuration, framebuffer plane-scaler capability) from the native framebuffer's own mode and refuses
-// everything else with kIOReturnUnsupported while counting what was asked.
+// link configuration, framebuffer plane-scaler capability) from the native framebuffer's own mode. Feature
+// capabilities other than the plane scaler are answered with zero entries (nothing to drive); everything else
+// is refused with kIOReturnUnsupported while counting what was asked.
 //
 // Included by StrixAccel.cpp (needs SLOG); nothing here programs hardware.
 #pragma once
@@ -71,7 +72,7 @@ static_assert(sizeof(LinkConfig) == 0xb0, "AGDC link config");
 static_assert(sizeof(FbExtCap) == 0x196c, "AGDC framebuffer extended capability");
 
 struct Stats {
-    volatile SInt32 commands, vendorInfo, gpuCap, linkConfig, fbCap, refused;
+    volatile SInt32 commands, vendorInfo, gpuCap, linkConfig, fbCap, fbCapEmpty, refused;
     volatile SInt32 lastRefused, lastLinkIndex, lastCapIndex, lastCapType;
     volatile SInt32 noFramebuffer, badSize, clientSet, lastClientSetValue;
 };
@@ -250,8 +251,16 @@ IOReturn StrixDeviceControl::vendor_doDeviceAttribute(unsigned int cmd, unsigned
         gStats.lastCapIndex = (SInt32)idx;
         gStats.lastCapType = (SInt32)type;
         if (type != kFbCapPlaneScaler) {
-            noteRefused(cmd, in, inSize, outBytes);      // learn which capability types IOPresentment polls
-            return kIOReturnUnsupported;
+            // Any other feature (HDR, colour, DSC, power, ...): a display-only pipe has none of them.
+            // Answer success with zero entries ("nothing to use, skip it") instead of Unsupported; never
+            // synthesize entries CoreDisplay would try to drive. Counted separately from the scaler answers.
+            auto c = reinterpret_cast<FbExtCap *>(out);
+            bzero(c, sizeof *c);
+            c->fbIndex = idx;
+            c->type = type;
+            c->count = 0;
+            OSIncrementAtomic(&gStats.fbCapEmpty);
+            return kIOReturnSuccess;
         }
         if (idx != 0 || !framebuffer()) return kIOReturnBadArgument;
         LinkTiming t;

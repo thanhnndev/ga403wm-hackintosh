@@ -28,7 +28,7 @@
 #include "../../include/StrixNativeABI.h"
 #include "StrixABIProfile.h"
 
-#define STRIXACCEL_VERSION "0.1.10"
+#define STRIXACCEL_VERSION "0.1.11"
 
 #include "IOAccelFamily2_decl.h"
 
@@ -423,6 +423,8 @@ void StrixAccelerator::restoreClassCode(IOService *provider)
     }
     setProperty("StrixAccel,ClassCodeHW", hw, 32);
     setProperty("StrixAccel,ClassCodeSpoof", cur, 32);
+    dev->setProperty("model", "AMD Radeon 890M");
+    dev->setProperty("VRAM,totalMB", 512ull, 32);
     if ((hw >> 16) != 0x03 || cur == hw) return;
     if (OSData *v = OSData::withBytes(&hw, 4)) {
         dev->setProperty("class-code", v);
@@ -447,6 +449,13 @@ bool StrixAccelerator::start(IOService *provider)
     setProperty("StrixAccel,ABIProfile", STRIXABI_PROFILE_ID);
     setProperty("StrixNative,ABIMajor", S89N_ABI_MAJOR, 32);
     setProperty("StrixNative,MetalReady", false);
+    // Display identity: without a "model" property system_profiler falls back to the EFI hide name
+    // "#display" and shows "unknown" graphics; without VRAM it reports the 20 MB raster as 19 MB.
+    // "model" is informational (matching uses vendor/device/class), VRAM,totalMB is the WhateverGreen
+    // convention (512 MiB UMA, not the 256 MiB BAR0 window, not the raster). Both also go on the PCI
+    // node in restoreClassCode() so enumerators that walk parents see them.
+    setProperty("model", "AMD Radeon 890M");
+    setProperty("VRAM,totalMB", 512ull, 32);
     // CoreDisplay only looks for a display pipe (and sends plane transactions) on accelerators that advertise this; the
     // personality carries it too, but the property must not depend on how the match dictionary was merged.
     if (OSDictionary *caps = OSDictionary::withCapacity(2)) {
@@ -662,6 +671,7 @@ void StrixAccelerator::publishCounters()
     setProperty("StrixAccel,AGDC,GpuCap", (unsigned long long)strix_agdc::gStats.gpuCap, 32);
     setProperty("StrixAccel,AGDC,LinkConfig", (unsigned long long)strix_agdc::gStats.linkConfig, 32);
     setProperty("StrixAccel,AGDC,FbCap", (unsigned long long)strix_agdc::gStats.fbCap, 32);
+    setProperty("StrixAccel,AGDC,FbCapEmpty", (unsigned long long)strix_agdc::gStats.fbCapEmpty, 32);
     setProperty("StrixAccel,AGDC,Refused", (unsigned long long)strix_agdc::gStats.refused, 32);
     setProperty("StrixAccel,AGDC,RefusedSeen", strix_agdc::gRefusedSeen);
     setProperty("StrixAccel,AGDC,ClientSet", (unsigned long long)strix_agdc::gStats.clientSet, 32);
