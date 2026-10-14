@@ -998,3 +998,43 @@ Boot-arg `strixcaps=N` overrides, `strixcaps=7` is the 0.1.14 behaviour, `-strix
 HDMI (the OLED-only boot never opens the pipe): `bash scripts/macos-strix-0114-verify.sh`; the verdict line
 "oled-melt" must drop well below 1100 %.  If it does not, the spindump recipe above (`spindump WindowServer 5 10`) shows
 the next stage to claim.
+
+### Step11 — who switches headroom caching on, and why the OLED is not offered HDR (CoreDisplay disassembly, 2026-10-14)
+
+Source: lldb `disassemble` of the dyld-cache CoreDisplay (macOS 15.8.1 24H32), symbol table dumped with `image dump symtab`.
+
+**Headroom cache (the melt).** `Display::CurrentHeadroom(0)` only caches its result (Display+0x224=1) when the
+`EDRDisplay` hanging off Display+0x60 has byte +0x11 ("headroom requested") set. That byte is written in exactly two
+places:
+- `Display::InitializeBrightnessControl()` copies the process global `gHeadroomRequested` into it when the EDRDisplay is
+  created (and `gEnableEDR` into +0x10);
+- `CoreDisplay_XRPresent(bool)` (name is historical) sets `gHeadroomRequested`, then for every WS device with
+  device->+0x128==1 and +0x129==1 writes EDRDisplay+0x11, derives +0x12 = (+0x10 ? requested : 0) and runs
+  `EDRDisplay::UpdateEDR()`, `Display::SetLinearBacklightBrightness()` and a CGXDisplayDevice update.
+Nothing inside CoreDisplay calls `CoreDisplay_XRPresent`; it is an exported entry point for WindowServer/SkyLight. With
+nobody calling it, `gHeadroomRequested` stays 0 and every `CombineLUTs` element takes the mutex and recomputes. A client
+process cannot fix it (the global lives in WindowServer's CoreDisplay copy); `CoreDisplay_Display_RequestHeadroom` only
+calls `EDRDisplay::SetMinEDRScaleFactor` and does not touch +0x11.
+
+**HDR/EDR gate.** `gEnableEDR` is set only by `CoreDisplay::EnableEDR(bool)`, called from `_CGXEnableHDR`,
+`WSUpdateHDRState` and `CGXDisplayDriverInitialize` with `gCGXDisplayHDREnabled && CGXIsHDRSupported()`.
+`CGXIsHDRSupported()` (AMD machine path) asks every WS device `vtable+0x148`. `Display::SupportsHDRMode()` and
+`IsHDR10()` end in `FindIOModeIDForIODynamicRange(fb, modeID, 2)`: the framebuffer must publish a *second* IOFB display
+mode with a detailed timing equal to the current one (`DetailedTimingsEqual`, mask 0x80000080) whose
+`IODetailedTimingInformationV2.dynamicRange` (offset 0x8e from the struct start in the cache build) is
+`kIODynamicRangeHDR10` (2). StrixGOP 0.1.7 published two modes (60/120 Hz SDR) with dynamicRange 0 and
+the panel EDID is a synthesized 128-byte base block without a CTA-861 extension, so `NSScreen.maximumPotentialEDR` is
+1.0 on the OLED (`tools/strix_edr_probe.swift`).
+
+**Experiment (StrixGOP 0.1.8, default off):** HDR twins as mode IDs 3/4, same timing as 1/2 with `dynamicRange=2`
+(SDR twins get 1). Enabled by personality key `HdrModes` (`macos-strix-gop-install.sh --hdr`), boot-arg `strixhdr=1`,
+disabled by `-strixhdroff`. Published `Hdr,Modes`. Purely informational for the hardware: the scanout stays the boot
+GOP raster, so selecting the HDR twin in System Settings only changes what WindowServer renders (PQ into an 8-bit
+XRGB buffer), not the DCN output. Expected observable: `edr_potential` > 1.0 and a "High Dynamic Range" toggle for the
+OLED; whether this flips `gEnableEDR`/EDRDisplay creation timing and removes the CurrentHeadroom contention is the
+open question for the next boot. Real HDR (10-bit surface + PQ + SDP metadata) needs DCN programming that StrixGOP does
+not do.
+
+One-shot collection: `scripts/macos-strix-autocollect.sh arm` before the reboot; ~90 s after the next login it runs
+`scripts/macos-strix-0114-verify.sh` (now also dumps EDR potential, GOP version/Hdr,Modes, IOFBModes count, boot-args)
+and removes itself.

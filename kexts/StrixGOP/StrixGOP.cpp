@@ -53,6 +53,16 @@ class StrixGOPFramebuffer : public IOFramebuffer {
     // native backing either way. Boot GOP scans at 120 Hz (Step01/HANDOFF).
     static constexpr IODisplayModeID mode60 = 1;
     static constexpr IODisplayModeID mode120 = 2;
+    // Step11: CoreDisplay's Display::SupportsHDRMode / CGXIsHDRSupported only say
+    // yes when FindIOModeIDForIODynamicRange(fb, mode, kIODynamicRangeHDR10) finds a
+    // second mode with identical detailed timing whose dynamicRange == 2. These are
+    // those twins; published only with boot-arg strixhdr=1 (default off).
+    static constexpr IODisplayModeID mode60hdr = 3;
+    static constexpr IODisplayModeID mode120hdr = 4;
+    bool hdrModes = false;
+    bool knownMode(IODisplayModeID m) const {
+        return m == mode60 || m == mode120 || (hdrModes && (m == mode60hdr || m == mode120hdr));
+    }
     IODisplayModeID currentMode = mode120;
     // Optional EDID from the personality (runner-embedded). Reported over the
     // framebuffer DDC path so IODisplayConnect/ColorSync identify the panel.
@@ -177,13 +187,21 @@ bool StrixGOPFramebuffer::start(IOService *provider) {
     auto pci = OSDynamicCast(IOPCIDevice, provider);
     if (!pci || !readProfile(pci)) return false;
     setProperty("TraceStep", "890M-03");
-    setProperty("StrixGOPVersion", "0.1.7");
+    setProperty("StrixGOPVersion", "0.1.8");
     setProperty("HardwareModesetting", false);
     setProperty("Acceleration", false);
     setProperty("Aperture,Base", layout.barBase + layout.offset, 64);
     setProperty("Aperture,RasterBytes", raster, 64);
     setProperty("PixelFormat,Status", "XRGB8888-selected-needs-color-validation");
     loadEdid();
+    {
+        uint32_t hdr = 0;
+        if (PE_parse_boot_argn("strixhdr", &hdr, sizeof(hdr)) && hdr) hdrModes = true;
+        // Persistent switch from the personality (install script --hdr / --nohdr).
+        if (OSBoolean *b = OSDynamicCast(OSBoolean, getProperty("HdrModes"))) hdrModes = hdrModes || b->isTrue();
+        if (PE_parse_boot_argn("-strixhdroff", nullptr, 0)) hdrModes = false;
+        setProperty("Hdr,Modes", hdrModes ? 1 : 0, 32);
+    }
     // The backlight handler must exist before IOFramebuffer::start(): IOFramebuffer::open looks for
     // a service named "backlight" when the first framebuffer opens (gIOFBHaveBacklight).
     if (PE_parse_boot_argn("-strixauxoff", nullptr, 0)) setProperty("Aux,Status", "disabled-by-boot-arg");
@@ -228,14 +246,16 @@ IODeviceMemory *StrixGOPFramebuffer::getApertureRange(IOPixelAperture aperture) 
 }
 IODeviceMemory *StrixGOPFramebuffer::getVRAMRange() { return getApertureRange(kIOFBSystemAperture); }
 const char *StrixGOPFramebuffer::getPixelFormats() { return IO32BitDirectPixels "\0"; }
-IOItemCount StrixGOPFramebuffer::getDisplayModeCount() { return 2; }
+IOItemCount StrixGOPFramebuffer::getDisplayModeCount() { return hdrModes ? 4 : 2; }
 UInt64 StrixGOPFramebuffer::getPixelFormatsForDisplayMode(IODisplayModeID, IOIndex) { return 0; }
 IOReturn StrixGOPFramebuffer::getDisplayModes(IODisplayModeID *modes) {
     if (!modes) return kIOReturnBadArgument;
-    modes[0] = mode60; modes[1] = mode120; return kIOReturnSuccess;
+    modes[0] = mode60; modes[1] = mode120;
+    if (hdrModes) { modes[2] = mode60hdr; modes[3] = mode120hdr; }
+    return kIOReturnSuccess;
 }
 IOReturn StrixGOPFramebuffer::getInformationForDisplayMode(IODisplayModeID mode, IODisplayModeInformation *info) {
-    if ((mode != mode60 && mode != mode120) || !info) return kIOReturnBadArgument;
+    if (!knownMode(mode) || !info) return kIOReturnBadArgument;
     bzero(info, sizeof(*info));
     info->nominalWidth = layout.width; info->nominalHeight = layout.height;
     // Step01 EDID (ATNA40CU05-0): 60 Hz base DTD 652.270 MHz (htotal 2980,
@@ -243,7 +263,8 @@ IOReturn StrixGOPFramebuffer::getInformationForDisplayMode(IODisplayModeID mode,
     // Previously zero, which published IOFB0Hz and left CoreDisplay with no
     // display pipe (frozen boot logo while the WindowServer shadow composited
     // fine). Default is the boot scanout (120 Hz). No hardware modeset.
-    info->refreshRate = mode == mode120 ? IOFixed1616(120 << 16) : IOFixed1616(60 << 16);
+    const bool is120 = mode == mode120 || mode == mode120hdr;
+    info->refreshRate = is120 ? IOFixed1616(120 << 16) : IOFixed1616(60 << 16);
     info->maxDepthIndex = 0;
     info->flags = kDisplayModeValidFlag | kDisplayModeSafeFlag |
                   kDisplayModeBuiltInFlag | kDisplayModeNativeFlag |
@@ -252,7 +273,10 @@ IOReturn StrixGOPFramebuffer::getInformationForDisplayMode(IODisplayModeID mode,
     return kIOReturnSuccess;
 }
 IOReturn StrixGOPFramebuffer::getTimingInfoForDisplayMode(IODisplayModeID mode, IOTimingInformation *info) {
-    if ((mode != mode60 && mode != mode120) || !info) return kIOReturnBadArgument;
+    if (!knownMode(mode) || !info) return kIOReturnBadArgument;
+    const bool hdrTwin = mode == mode60hdr || mode == mode120hdr;
+    if (mode == mode120hdr) mode = mode120;
+    else if (mode == mode60hdr) mode = mode60;
     // Informational only: never programmed into DCN. Sync split is a
     // plausible placeholder inside the known blanking intervals.
     bzero(info, sizeof(*info));
@@ -277,11 +301,14 @@ IOReturn StrixGOPFramebuffer::getTimingInfoForDisplayMode(IODisplayModeID mode, 
     t.numLinks = 1;
     t.pixelEncoding = kIOPixelEncodingRGB444;
     t.bitsPerColorComponent = 8;
+    // The SDR twins stay kIODynamicRangeNotSupported unless the HDR twins exist, so
+    // the default boot is byte-identical to 0.1.7.
+    if (hdrModes) t.dynamicRange = hdrTwin ? kIODynamicRangeHDR10 : kIODynamicRangeSDR;
     return kIOReturnSuccess;
 }
 IOReturn StrixGOPFramebuffer::getPixelInformation(IODisplayModeID mode, IOIndex depth,
     IOPixelAperture aperture, IOPixelInformation *info) {
-    if ((mode != mode60 && mode != mode120) || depth != 0 || aperture != kIOFBSystemAperture || !info)
+    if (!knownMode(mode) || depth != 0 || aperture != kIOFBSystemAperture || !info)
         return kIOReturnBadArgument;
     bzero(info, sizeof(*info));
     info->bytesPerRow = layout.stride; info->bitsPerPixel = 32;
@@ -303,7 +330,7 @@ IOReturn StrixGOPFramebuffer::getStartupDisplayMode(IODisplayModeID *mode, IOInd
 IOReturn StrixGOPFramebuffer::setDisplayMode(IODisplayModeID mode, IOIndex depth) {
     // No hardware modeset: both modes share the boot raster. Record the
     // selection so the scheduler's refresh matches what was asked.
-    if ((mode != mode60 && mode != mode120) || depth != 0) return kIOReturnUnsupported;
+    if (!knownMode(mode) || depth != 0) return kIOReturnUnsupported;
     currentMode = mode; return kIOReturnSuccess;
 }
 IOReturn StrixGOPFramebuffer::setStartupDisplayMode(IODisplayModeID mode, IOIndex depth) {
