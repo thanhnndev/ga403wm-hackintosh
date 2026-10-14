@@ -889,3 +889,48 @@ CoreDisplay asks once at pipe creation, so a change takes effect on the next Win
 no reboot).  Open question the experiment answers: with the stages claimed, does WindowServer stop running
 RunFullDisplayPipe (CPU) and which tables (identity or not) arrive on the transaction?  If they are non-identity
 the present path has to apply them (CPU LUT apply) or HDR/colour will be wrong.
+
+### Step11 OLED-only boot: WindowServer has no MetalDevice → StrixMetalGate 0.1.0 (2026-10-14)
+
+Symptom: with StrixAccel ≥ 0.1.9 and no HDMI the boot stops on the Apple logo (input still works, no panic).
+WindowServer crash-loops on `Assertion failed: (Failed to create MetalDevice (non-null)), Display.cpp line 3226`.
+The same build boots fine with HDMI.  `-strixaccoff` boots OLED-only but takes the old software path, which the
+owner rejected ("tắt nó thì đi về đường cũ" — fix the root cause, keep the Metal compositor).
+
+Root cause chain (kernel log of the 14:27Z OLED-only boot + NullMoth 1.14.0 sources):
+
+1. StrixAccel makes the display pipe discoverable, so CoreDisplay selects the Metal compositor and needs a
+   `MTLDevice` in WindowServer.  The only Metal device is NullMoth's `NVMTLDriver`.
+2. NVAccel (AuxKC, `/Library/Extensions`) withholds its `MetalPluginName` property until an NVIDIA display head
+   registers.  NVRMFB refuses to start with no connected NVIDIA display ("only 0 display(s) connected --
+   nothing to drive, not starting", kapiInit failed), so no head ever registers.
+3. The NVRM auto-go releases the boot hold at ~+34 s; NVAccel's headless check at +60 s sees `fFB` null and no
+   plugin name, restores the name and sets `debug.nvaccel_headless=1`.
+4. `NVMTLDevice.m` `nvmtl_process_is_allowed` hard-refuses a device to WindowServer when `nvaccel_headless=1`
+   (compute-only mode).  The allow-list `/Library/GPUBundles/nvmtl-allow.txt` (`*`, `!WindowServer`) cannot
+   override it, `*` matches first.  Result: no MetalDevice in WindowServer → assert → loop.
+5. Dead ends read from source and dropped: NMIntelFB (head 4) alone does not arm `fFB` (only a head-0
+   NVRMNVDAFramebuffer / NMIntelFB with IOFBDependentIndex 0 does); VRAM allocation goes through `fFB`.
+6. OpenCore cannot patch AuxKC kexts and Linux cannot link kexts (macOS SDK needed), hence an ESP-injected kext
+   built by CI.
+
+Fix: `kexts/StrixMetalGate` (ESP `EFI/OC/Kexts`, Kernel/Add, MinKernel 24.0.0, IOResources/IOKit matched).
+A 2 s `thread_call` poll finds NVAccel; once it has been seen for 40 s with no `MetalPluginName` and no
+`NVRMNVDAFramebuffer` head, it sets `MetalPluginName = ../../../Library/GPUBundles/NVMTLDriver` (before the +60 s
+headless check) plus `StrixMetalGate=true` on NVAccel.  The headless branch then never runs,
+`nvaccel_headless` stays 0 and WindowServer gets the NVIDIA Metal device exactly as on HDMI boots.  Frames reach
+the OLED through StrixAccel's StrixDisplayPipe ("Fallback GPU Display Pipe", CPU-heavy WindowServer per
+`docs/WINDOWSERVER-CPU.md`).  Boot-arg `-strixmetalgateoff` disables it.  Own IORegistry properties: `GateState`
+(`plugin-name-present` / `nvidia-head-waiting` / `plugin-name-restored`), `RestoredAtSeconds`.  Kernel log
+prefix `StrixMetalGate:`.
+
+Build / install (no macOS needed for the build): `gh workflow run build.yml --ref research/890m-cobalt64`
+(workflow_dispatch, job `build-kexts` on macos-14, step "Build StrixMetalGate") then `gh run download <id>` and copy
+`StrixMetalGate.kext` to `/boot/EFI/OC/Kexts/`; macOS-side equivalent `scripts/install-strixmetalgate.sh`.
+Run 38585619555 produced the installed 0.1.0.  config.plist: Kernel/Add entry #34, `-strixaccoff` removed.
+
+Rollback: restore `EFI/OC/config.plist.pre-metalgate-20261014` (has `-strixaccoff`, the software path), or add
+boot-arg `-strixmetalgateoff`.
+
+Owner result: OLED-only boot reaches the desktop with the gate installed (2026-10-14).  Log verification
+(GateState, `nvaccel_headless`, WindowServer stability, CPU) is the next step below.
