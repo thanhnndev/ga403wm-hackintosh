@@ -11,6 +11,10 @@ APP=build/RogControl.app
 rm -rf "$APP"; mkdir -p "$APP/Contents/MacOS"
 cp macos/RogControl/Info.plist "$APP/Contents/Info.plist"
 swiftc -O -target x86_64-apple-macos13.0 macos/RogControl/RogControl.swift -o "$APP/Contents/MacOS/RogControl" -framework IOKit -framework SwiftUI
+if [ -f build/ROG-Speaker-Test.wav ]; then
+  mkdir -p "$APP/Contents/Resources"
+  cp build/ROG-Speaker-Test.wav "$APP/Contents/Resources/ROG-Speaker-Test.wav"
+fi
 codesign --force --sign - "$APP" >/dev/null
 echo "built $APP"
 if [ "${1:-}" = "--install" ]; then

@@ -217,6 +217,7 @@ enum Apply {
 // ---- model -------------------------------------------------------------------------------------------------------------------
 @MainActor
 final class RogModel: ObservableObject {
+    let audio = RogAudioModel()
     @Published var st = AsusState()
     @Published var tctl: Double?
     @Published var watts: Double?
@@ -513,12 +514,13 @@ struct LimitSlider: View {
 }
 
 enum RogPage: String, CaseIterable, Identifiable {
-    case overview = "Overview", performance = "Performance", lighting = "Lighting", battery = "Battery & Display", settings = "Settings"
+    case overview = "Overview", performance = "Performance", audio = "Audio", lighting = "Lighting", battery = "Battery & Display", settings = "Settings"
     var id: String { rawValue }
     var symbol: String {
         switch self {
         case .overview: return "square.grid.2x2"
         case .performance: return "gauge.with.dots.needle.50percent"
+        case .audio: return "speaker.wave.2"
         case .lighting: return "keyboard"
         case .battery: return "battery.75"
         case .settings: return "gearshape"
@@ -546,6 +548,7 @@ struct RogControls: View {
     var compact = false
     var body: some View {
         VStack(alignment: .leading, spacing: 20) {
+            if page == .audio { RogAudioControls(audio: m.audio) }
             if !m.st.present {
                 Label("Hardware controls unavailable. Load AsusWmi through OpenCore to connect your G14.", systemImage: "exclamationmark.triangle")
                     .font(.callout).foregroundStyle(.secondary)
@@ -704,6 +707,259 @@ struct RogControls: View {
         if m.st.dgpu != ~0 && m.st.dgpu & 1 != 0 { s += ", dGPU disabled" }
         if m.st.baseTgp > 0 { s += ", base TGP \(m.st.baseTgp) W" }
         return s
+    }
+}
+
+@MainActor
+final class RogAudioModel: ObservableObject {
+    @Published var profile = "balanced"
+    @Published var volume = -20.0
+    @Published var muted = false
+    @Published var noiseCancellation = true
+    @Published var strength = 100.0
+    @Published var ampState = "Unavailable"
+    @Published var micState = "Unavailable"
+    @Published var firmware = "Unavailable"
+    @Published var connected = false
+    @Published var testing = false
+    @Published var message = ""
+    @Published var applied = "Pending"
+    @Published var micTesting = false
+    @Published var testMic = "clear"
+    @Published var micLevel = -120.0
+    @Published var micResult = "Not tested"
+    @Published var speakerPhase = -1
+    @Published var heard = [false, false, false, false]
+    private var testProcess: Process?
+    private var micProcess: Process?
+    private var micPipe: Pipe?
+    private var speakerPipe: Pipe?
+    private var micBuffer = ""
+    private var speakerBuffer = ""
+    private var micPeakLevel = -120.0
+    private let directory = FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent("Library/Application Support/RogAudio")
+
+    init() {
+        if let d = read(directory.appendingPathComponent("settings.plist")) {
+            profile = d["profile"] as? String ?? profile
+            volume = min(0, max(-60, d["volume"] as? Double ?? volume))
+            muted = d["muted"] as? Bool ?? muted
+            noiseCancellation = d["noiseCancellation"] as? Bool ?? noiseCancellation
+            strength = min(100, max(0, (d["strength"] as? Double ?? 1) * 100))
+        }
+        save(); refresh()
+    }
+    private func read(_ url: URL) -> [String: Any]? {
+        guard let data = try? Data(contentsOf: url) else { return nil }
+        return (try? PropertyListSerialization.propertyList(from: data, format: nil)) as? [String: Any]
+    }
+    private func fresh(_ d: [String: Any]) -> Bool {
+        guard let timestamp = d["updated"] as? Double else { return false }
+        return abs(Date().timeIntervalSince1970 - timestamp) < 12
+    }
+    func save() {
+        let d: [String: Any] = ["profile": profile, "volume": min(0, max(-60, volume)), "muted": muted,
+                                "noiseCancellation": noiseCancellation, "strength": min(1, max(0, strength / 100))]
+        do {
+            try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+            let data = try PropertyListSerialization.data(fromPropertyList: d, format: .xml, options: 0)
+            try data.write(to: directory.appendingPathComponent("settings.plist"), options: .atomic)
+            message = ""; applied = "Pending"
+        } catch { message = error.localizedDescription }
+    }
+    func refresh() {
+        let amp = read(URL(fileURLWithPath: "/var/run/strixamp-status.plist"))
+        let dsp = read(directory.appendingPathComponent("status.plist"))
+        let ampLive = amp.map(fresh) ?? false, dspLive = dsp.map(fresh) ?? false
+        connected = ampLive && dspLive
+        ampState = ampLive ? ((amp?["state"] as? Int == 2) ? "Ready" : "Starting") : "Unavailable"
+        micState = dspLive ? ((dsp?["micActive"] as? Bool == true) ? "Active" : "On demand") : "Unavailable"
+        let svc = IOServiceGetMatchingService(kIOMainPortDefault, IOServiceMatching("StrixAmp"))
+        if svc != 0 {
+            defer { IOObjectRelease(svc) }
+            let sid = IORegistryEntryCreateCFProperty(svc, "SpeakerId" as CFString, kCFAllocatorDefault, 0)?.takeRetainedValue() as? NSNumber
+            firmware = sid.map { "CS35L56 B0 · Speaker ID \($0.intValue)" } ?? "CS35L56 B0"
+        } else { firmware = "Unavailable" }
+        let effectiveStrength = noiseCancellation ? strength / 100 : 0
+        let ampMatches = ampLive && amp?["state"] as? Int == 2 && amp?["muted"] as? Bool == muted &&
+            abs((amp?["volume"] as? Double ?? 1) - volume) < 0.1
+        let dspMatches = dspLive && dsp?["profile"] as? String == profile &&
+            abs((dsp?["strength"] as? Double ?? -1) - effectiveStrength) < 0.002
+        applied = ampMatches && dspMatches ? "Applied" : "Pending"
+    }
+    func testSpeakers() {
+        if testing { testProcess?.terminate(); return }
+        startProbe(microphone: false)
+    }
+    func testMicrophone() {
+        if micTesting { micProcess?.terminate(); return }
+        micLevel = -120; micPeakLevel = -120; micResult = "Listening"
+        startProbe(microphone: true)
+    }
+    private func startProbe(microphone: Bool) {
+        let executable = URL(fileURLWithPath: "/Library/Application Support/RogAudio/rogaudio-probe")
+        guard FileManager.default.isExecutableFile(atPath: executable.path) else {
+            message = "Audio test helper unavailable"; return
+        }
+        let process = Process()
+        process.executableURL = executable
+        let uid = testMic == "clear" ? "com.itlmt7925.rogaudio.mic" : "AppleHDAEngineInput:0,6,0,1,0:1"
+        process.arguments = microphone ? ["input", uid, "8"] : ["speakers", "com.itlmt7925.rogaudio.speakers", "20"]
+        let pipe = Pipe()
+        process.standardOutput = pipe
+        process.standardError = FileHandle.nullDevice
+        pipe.fileHandleForReading.readabilityHandler = { [weak self] handle in
+            let data = handle.availableData
+            if data.isEmpty { handle.readabilityHandler = nil; return }
+            let chunk = String(decoding: data, as: UTF8.self)
+            DispatchQueue.main.async { self?.consumeProbe(chunk, microphone: microphone) }
+        }
+        process.terminationHandler = { [weak self] process in
+            DispatchQueue.main.async {
+                guard let self = self else { return }
+                if microphone {
+                    self.micTesting = false; self.micProcess = nil
+                    self.micPipe?.fileHandleForReading.readabilityHandler = nil; self.micPipe = nil
+                    self.micResult = process.terminationReason == .uncaughtSignal ? "Stopped" :
+                        process.terminationStatus != 0 ? "Capture failed" : self.micPeakLevel > -100 ? "Signal detected" : "No signal"
+                } else {
+                    self.testing = false; self.testProcess = nil; self.speakerPhase = -1
+                    self.speakerPipe?.fileHandleForReading.readabilityHandler = nil; self.speakerPipe = nil
+                }
+                if process.terminationStatus != 0 && process.terminationReason != .uncaughtSignal {
+                    self.message = microphone ? "Microphone test failed" : "Speaker test failed"
+                }
+            }
+        }
+        do {
+            if microphone { micPipe = pipe; micBuffer = "" }
+            else { speakerPipe = pipe; speakerBuffer = ""; heard = [false, false, false, false] }
+            try process.run()
+            if microphone { micProcess = process; micTesting = true }
+            else { testProcess = process; testing = true; speakerPhase = 0 }
+        }
+        catch { message = error.localizedDescription }
+    }
+    private func consumeProbe(_ chunk: String, microphone: Bool) {
+        var buffer = (microphone ? micBuffer : speakerBuffer) + chunk
+        while let newline = buffer.firstIndex(of: "\n") {
+            let line = String(buffer[..<newline]); buffer.removeSubrange(...newline)
+            guard line.hasPrefix("progress ") else { continue }
+            let fields = Dictionary(line.split(separator: " ").dropFirst().compactMap { field -> (String, String)? in
+                let pair = field.split(separator: "=", maxSplits: 1)
+                return pair.count == 2 ? (String(pair[0]), String(pair[1])) : nil
+            }, uniquingKeysWith: { _, new in new })
+            if microphone, let level = fields["dBFS"].flatMap(Double.init), level.isFinite {
+                micLevel = max(-120, min(0, level)); micPeakLevel = max(micPeakLevel, micLevel)
+            } else if !microphone, let phase = fields["phase"].flatMap(Int.init) { speakerPhase = phase }
+        }
+        if microphone { micBuffer = buffer } else { speakerBuffer = buffer }
+    }
+}
+
+struct RogAudioControls: View {
+    @ObservedObject var audio: RogAudioModel
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 20) {
+            HStack {
+                Label("Audio controls", systemImage: "waveform")
+                    .font(.system(size: 13, weight: .medium))
+                Spacer()
+                Label(audio.connected ? audio.applied : "Not connected", systemImage: audio.connected ? "checkmark.circle" : "circle.dashed")
+                    .font(.caption).foregroundStyle(.secondary)
+            }
+            RogSection(title: "Speakers") {
+                HStack {
+                    Label("ROG Speakers", systemImage: "speaker.wave.2")
+                    Spacer()
+                    Text("Output unverified").font(.caption).foregroundStyle(.secondary)
+                }
+                Picker("Sound profile", selection: $audio.profile) {
+                    Text("Off").tag("off")
+                    Text("Balanced").tag("balanced")
+                    Text("Music").tag("music")
+                    Text("Movie").tag("movie")
+                    Text("Voice").tag("voice")
+                }.pickerStyle(.segmented)
+                HStack(spacing: 12) {
+                    Text("Amp volume").frame(width: 100, alignment: .leading)
+                    Slider(value: $audio.volume, in: -60...0, step: 1)
+                        .accessibilityLabel("Amplifier volume")
+                    Text(String(format: "%.0f dB", audio.volume))
+                        .monospacedDigit().frame(width: 58, alignment: .trailing)
+                }
+                HStack {
+                    Toggle("Mute", isOn: $audio.muted).toggleStyle(.switch)
+                    Spacer()
+                    Button { audio.testSpeakers() } label: { Image(systemName: audio.testing ? "stop.fill" : "play.fill").frame(width: 24, height: 20) }
+                        .help(audio.testing ? "Stop speaker test" : "Test speakers").accessibilityLabel("Test speakers")
+                        .disabled(!audio.testing && (!audio.connected || audio.muted))
+                }
+                Divider()
+                ForEach(0..<4, id: \.self) { index in
+                    HStack {
+                        Label(["Left · treble", "Left · bass", "Right · treble", "Right · bass"][index],
+                              systemImage: audio.testing && audio.speakerPhase == index ? "speaker.wave.2.fill" : "speaker")
+                            .foregroundStyle(audio.testing && audio.speakerPhase == index ? Color.accentColor : Color.primary)
+                        Spacer()
+                        Toggle("Heard", isOn: $audio.heard[index]).toggleStyle(.checkbox).fixedSize()
+                    }
+                }
+                if audio.testing && audio.speakerPhase == 4 {
+                    Label("Stereo mix", systemImage: "music.note").foregroundStyle(.secondary)
+                }
+            }
+            RogSection(title: "Microphone") {
+                Label("ROG Clear Mic", systemImage: "mic")
+                Toggle("Noise cancellation", isOn: $audio.noiseCancellation).toggleStyle(.switch)
+                HStack(spacing: 12) {
+                    Text("Strength").frame(width: 100, alignment: .leading)
+                    Slider(value: $audio.strength, in: 0...100, step: 1)
+                        .accessibilityLabel("Noise cancellation strength").disabled(!audio.noiseCancellation)
+                    Text(String(format: "%.0f%%", audio.strength))
+                        .monospacedDigit().frame(width: 58, alignment: .trailing)
+                }
+                Divider()
+                HStack {
+                    Picker("Test input", selection: $audio.testMic) {
+                        Text("Built-in Mic").tag("builtin")
+                        Text("ROG Clear Mic").tag("clear")
+                    }.pickerStyle(.segmented).disabled(audio.micTesting)
+                    Button { audio.testMicrophone() } label: {
+                        Image(systemName: audio.micTesting ? "stop.fill" : "mic.fill").frame(width: 24, height: 20)
+                    }.help(audio.micTesting ? "Stop microphone test" : "Test microphone").accessibilityLabel("Test microphone")
+                }
+                HStack(spacing: 12) {
+                    ProgressView(value: min(1, max(0, (audio.micLevel + 60) / 60))).frame(maxWidth: .infinity)
+                    Text(audio.micLevel > -120 ? String(format: "%.0f dBFS", audio.micLevel) : "-- dBFS")
+                        .monospacedDigit().frame(width: 76, alignment: .trailing)
+                }
+                Text(audio.micResult).font(.caption).foregroundStyle(.secondary)
+            }
+            RogSection(title: "Audio status") {
+                statusRow("Speaker amps", symbol: "hifispeaker.2", value: audio.ampState)
+                Divider()
+                statusRow("Hardware", symbol: "cpu", value: audio.firmware)
+                Divider()
+                statusRow("Microphone", symbol: "mic", value: audio.micState)
+            }
+            if !audio.message.isEmpty { Text(audio.message).font(.callout).foregroundStyle(.secondary) }
+        }
+        .onChange(of: audio.profile) { _ in audio.save() }
+        .onChange(of: audio.volume) { _ in audio.save() }
+        .onChange(of: audio.muted) { _ in audio.save() }
+        .onChange(of: audio.noiseCancellation) { _ in audio.save() }
+        .onChange(of: audio.strength) { _ in audio.save() }
+        .onReceive(Timer.publish(every: 2, on: .main, in: .common).autoconnect()) { _ in audio.refresh() }
+    }
+
+    private func statusRow(_ title: String, symbol: String, value: String) -> some View {
+        HStack {
+            Label(title, systemImage: symbol)
+            Spacer()
+            Text(value).font(.callout).foregroundStyle(.secondary)
+        }
     }
 }
 
@@ -911,7 +1167,7 @@ struct RogWindowView: View {
                 VStack(alignment: .leading, spacing: 24) {
                     VStack(alignment: .leading, spacing: 8) {
                         Text(page.rawValue).font(.system(size: 24, weight: .semibold))
-                        Text("\(m.st.ac ? "AC" : "Battery") settings · Active mode: \(m.modeLabel)").font(.callout).foregroundStyle(.secondary)
+                        Text(page == .audio ? "ROG Speakers · ROG Clear Mic" : "\(m.st.ac ? "AC" : "Battery") settings · Active mode: \(m.modeLabel)").font(.callout).foregroundStyle(.secondary)
                     }
                     RogControls(m: m, page: page)
                 }.padding(32).frame(maxWidth: 900, alignment: .leading).frame(maxWidth: .infinity)
@@ -1073,6 +1329,37 @@ func bench(seconds: Int) -> Int32 {
 }
 
 let args = CommandLine.arguments
+if args.count >= 2 && args[1] == "--audio-mic-test" {
+    MainActor.assumeIsolated {
+        let audio = RogAudioModel()
+        audio.testMic = args.count > 2 && args[2] == "builtin" ? "builtin" : "clear"
+        audio.testMicrophone()
+        let deadline = Date().addingTimeInterval(10)
+        while audio.micTesting && Date() < deadline { RunLoop.current.run(until: Date().addingTimeInterval(0.1)) }
+        print("Mic test: \(audio.micResult), level \(audio.micLevel) dBFS, error \(audio.message)")
+        exit(audio.micResult == "Signal detected" && audio.message.isEmpty ? 0 : 1)
+    }
+}
+if args.count >= 2 && (args[1] == "--audio-status" || args[1] == "--audio-set") {
+    MainActor.assumeIsolated {
+        let audio = RogAudioModel()
+        if args[1] == "--audio-set" {
+            guard args.count == 7, ["off", "balanced", "music", "movie", "voice"].contains(args[2]),
+                  let volume = Double(args[3]), volume.isFinite, (-60...0).contains(volume),
+                  ["0", "1"].contains(args[4]), ["0", "1"].contains(args[5]),
+                  let strength = Double(args[6]), strength.isFinite, (0...100).contains(strength) else {
+                print("usage: RogControl --audio-set PROFILE VOLUME_DB MUTE_0_1 NOISE_0_1 STRENGTH_PERCENT"); exit(2)
+            }
+            audio.profile = args[2]; audio.volume = volume; audio.muted = args[4] == "1"
+            audio.noiseCancellation = args[5] == "1"; audio.strength = strength
+            audio.save()
+            Thread.sleep(forTimeInterval: 4)
+            audio.refresh()
+        }
+        print("Audio: \(audio.applied), amps \(audio.ampState), mic \(audio.micState), profile \(audio.profile), volume \(audio.volume), mute \(audio.muted), noise \(audio.noiseCancellation), strength \(audio.strength)")
+        exit(audio.message.isEmpty ? 0 : 1)
+    }
+}
 if args.count >= 2 && args[1] == "--bench" {
     exit(bench(seconds: args.count >= 3 ? max(5, Int(args[2]) ?? 20) : 20))
 }
