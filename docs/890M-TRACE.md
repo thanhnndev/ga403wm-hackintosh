@@ -835,6 +835,20 @@ frame on CPU; the external SDR monitor stays 8-bit. Our EDID/AGDC/DPCD declare n
 if EDR is keyed purely on internal class, the lever is the Settings HDR toggle (test queued) or an
 SDR declaration to find. Tearing/vblank is secondary until this melt is fixed: 15fps dominates.
 `tools/strix_present_load.swift` screen-arg change committed with this step.
+
+### Step09 correction: no HDR toggle — EDR theory weakened, HDR must be fixed properly (2026-10-14)
+
+Owner: Settings shows **no "High Dynamic Range" checkbox** for the built-in OLED. That cuts against
+"EDR working space" as the full-pipe trigger (an EDR-treated panel would offer the toggle), so the
+per-frame `RunFullDisplayPipe` cause is back to TBD among: FP16 working space anyway (toggle hidden
+for another reason), pixel-format conversion, per-pixel color-match to the panel profile, scaler
+engagement. What stands proven regardless: full CPU pipe per frame on OUR pipe only (1100% vs 75%),
+~15 presents/s effective, judder at any refresh. Owner directive: fix the HDR/color path properly —
+no SDR-downgrade workaround. Next discriminators (post-reboot): per-display factory profiles exist
+(`/Library/ColorSync/Profiles/Displays/Built-in OLED*.icc` 3.3KB, `Mi Monitor*.icc` 520B — small
+curve profiles, nothing EDR-shaped, both framebuffers ARGB8888); surface pixel format in flight
+(log it in the present path); whether `CurrentHeadroom` returns >1.0. Staged for this reboot:
+GOP 0.1.7 (sleep) + IOGFlags=4 (size). Reboot in progress by owner.
 Choppiness note: copy max 6.6 ms is inside the 8.3 ms budget and full-frame 8 ms hits once per
 ~15 s — the remaining judder suspect is WindowServer pacing to the main HDMI 144 Hz display while
 the OLED runs 120 Hz. Test: make OLED main (or match rates) and compare; needs owner eyes.
