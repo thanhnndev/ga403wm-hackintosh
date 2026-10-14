@@ -818,6 +818,23 @@ live, size unchanged) — `IOGFlags=4` stays in the file, auto-tested by the pen
 settled DDC blockNumber as 1-based — our getDDCBlock was already correct, no change.
 Pending reboot batch tests: (1) display sleep off + wake relight, (2) inch size with IOGFlags=4,
 (3) 60Hz mode judder comparison (both 2880x1800 modes offered; same raster, scheduler hint only).
+
+### Step09 judder root cause: EDR full-pipe on CPU melts WindowServer (measured, no reboot)
+
+60Hz still judders (user-tested) → not a 120Hz cadence issue. Measured per-display with the load tool
+(now takes a screen-name arg): OLED animation → WindowServer **~1100% CPU (11 cores)**, link p99
+22ms/max 44ms; same animation on HDMI/NVIDIA → WS **65-86%**, link 144fps clean. Same compositor,
+same work size — cost is per-pipe. Effective OLED rate collapses to ~15 presents/s (Transactions
++120/8s at 60 ticks/s): each frame's composite takes ~66ms wall → slideshow judder at any refresh.
+`sample` of WindowServer during OLED animation (`efi-audit/ws-system-20261014-133059`, root-owned):
+main thread 36% in `CGXUpdateDisplay → Present → Commit → RunFullDisplayPipe → dispatch_apply →
+CombineLUTs → CurrentHeadroom → mutexwait` — the FULL display pipe runs per frame on CPU, its tile
+workers serializing on one headroom mutex. HDMI/NVIDIA takes the cheap path. Working theory: with an
+internal backlight-class panel, CoreDisplay uses an EDR (FP16) working space and tone-maps every
+frame on CPU; the external SDR monitor stays 8-bit. Our EDID/AGDC/DPCD declare no HDR anywhere, so
+if EDR is keyed purely on internal class, the lever is the Settings HDR toggle (test queued) or an
+SDR declaration to find. Tearing/vblank is secondary until this melt is fixed: 15fps dominates.
+`tools/strix_present_load.swift` screen-arg change committed with this step.
 Choppiness note: copy max 6.6 ms is inside the 8.3 ms budget and full-frame 8 ms hits once per
 ~15 s — the remaining judder suspect is WindowServer pacing to the main HDMI 144 Hz display while
 the OLED runs 120 Hz. Test: make OLED main (or match rates) and compare; needs owner eyes.

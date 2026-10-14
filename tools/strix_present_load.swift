@@ -7,6 +7,7 @@ import QuartzCore
 
 let secs = CommandLine.arguments.count > 1 ? Double(CommandLine.arguments[1]) ?? 6 : 6
 let big = (CommandLine.arguments.count > 2 ? CommandLine.arguments[2] : "full") == "full"
+let want = CommandLine.arguments.count > 3 ? CommandLine.arguments[3] : "Built-in"
 
 final class App: NSObject, NSApplicationDelegate {
     var win: NSWindow!
@@ -16,7 +17,7 @@ final class App: NSObject, NSApplicationDelegate {
     var bar = CALayer()
     var t0: CFTimeInterval = 0
     func applicationDidFinishLaunching(_ n: Notification) {
-        let scr = NSScreen.screens.first { $0.localizedName.contains("Built-in") } ?? NSScreen.main!
+        let scr = NSScreen.screens.first { $0.localizedName.contains(want) } ?? NSScreen.main!
         let r = big ? scr.frame : NSRect(x: scr.frame.minX + 100, y: scr.frame.minY + 100, width: 600, height: 400)
         win = NSWindow(contentRect: r, styleMask: [.borderless], backing: .buffered, defer: false)
         win.level = .floating
