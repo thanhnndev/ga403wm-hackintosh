@@ -20,6 +20,7 @@ struct MainWindow: View {
                 }
                 Section {
                     row(.settings)
+                    row(.about)
                 }
             }
             .navigationSplitViewColumnWidth(min: 190, ideal: 210, max: 260)

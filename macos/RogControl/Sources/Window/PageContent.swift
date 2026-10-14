@@ -16,6 +16,7 @@ struct PageContent: View {
             case .sound: NavigationStack { SpeakersPage(audio: app.audio, tests: app.speakerTests) }
             case .microphone: MicrophonePage(audio: app.audio, microphone: app.microphone)
             case .settings: SettingsPage(laptop: app.laptop)
+            case .about: AboutPage()
             }
         }
         .formStyle(.grouped)
