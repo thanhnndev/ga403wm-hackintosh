@@ -22,6 +22,9 @@ ls -l /Library/Extensions 2>/dev/null | grep -i strix > "$D/installed-strix.txt"
 ioreg -c AppleGPUWrangler -l -w0 > "$D/gpuwrangler.txt" 2>&1
 ioreg -r -c IOFramebuffer -l -w0 > "$D/framebuffers.txt" 2>&1
 ioreg -r -c StrixAccelerator -l -w0 > "$D/strixaccel.txt" 2>&1
+# the ESP-injected gate logs nothing the unified log can decode (no uuidtext); its state lives in the registry
+ioreg -r -c StrixMetalGate -l -w0 > "$D/strixmetalgate.txt" 2>&1
+ioreg -r -c NVAccel -l -w0 | grep -aE 'MetalPluginName|StrixMetalGate' >> "$D/strixmetalgate.txt" 2>&1
 
 KP='process == "kernel" AND (eventMessage CONTAINS[c] "strix" OR eventMessage CONTAINS[c] "AGDC" OR eventMessage CONTAINS[c] "NVRM" OR eventMessage CONTAINS[c] "NVAccel" OR eventMessage CONTAINS[c] "IOGraphics" OR eventMessage CONTAINS[c] "IOFramebuffer" OR eventMessage CONTAINS[c] "backlight" OR eventMessage CONTAINS[c] "Darwin Kernel Version" OR eventMessage CONTAINS[c] "shutdown cause" OR eventMessage CONTAINS[c] "panic")'
 $LOG show --last "${H}h" --style compact --predicate "$KP" > "$D/kernel-gpu.txt" 2>"$D/kernel-gpu.err"

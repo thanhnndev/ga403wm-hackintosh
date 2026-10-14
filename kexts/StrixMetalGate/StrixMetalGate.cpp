@@ -24,8 +24,12 @@
 #define GLOG(fmt, ...) IOLog("StrixMetalGate: " fmt "\n", ##__VA_ARGS__)
 
 namespace {
-constexpr unsigned kPeriodSec = 2;      // poll period
-constexpr unsigned kHoldSec = 40;       // after NVAccel appears: leave the vendor's arming this long (it gives up ~34 s)
+constexpr unsigned kPeriodSec = 1;      // poll period
+// After NVAccel appears: leave the vendor's arming this long. NVRMFB decides about the NVIDIA monitor ~3 s after NVAccel
+// ("only N display(s) connected"), a head with an HDMI monitor publishes at ~+4 s, and the OLED-only first WindowServer
+// is released from NVRM's boot hold at ~+34 s (0.1.0 waited 40 s and WindowServer crashed once on the missing device,
+// pid 1188 in the 22:05 boot, costing launchd's 10 s respawn throttle). Restoring well before that release avoids it.
+constexpr unsigned kHoldSec = 12;
 constexpr unsigned kGiveUpSec = 300;    // stop polling
 // NVAccel's own Info.plist value: it removes the property at start() and keeps the object to restore later
 const char kPluginName[] = "../../../Library/GPUBundles/NVMTLDriver";
@@ -136,7 +140,7 @@ bool StrixMetalGate::start(IOService *provider)
     if (!IOService::start(provider)) return false;
     call = thread_call_allocate(&StrixMetalGate::fire, this);
     if (!call) { GLOG("thread_call_allocate failed"); return false; }
-    setProperty("GateVersion", "0.1.0");
+    setProperty("GateVersion", "0.1.1");
     state("started");
     registerService();
     arm();
