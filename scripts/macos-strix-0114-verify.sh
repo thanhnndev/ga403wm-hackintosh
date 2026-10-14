@@ -23,6 +23,7 @@ system_profiler SPDisplaysDataType > "$D/displays.txt" 2>/dev/null
 # CPU/fps per display: WindowServer CPU sampled while the present load runs
 : > "$D/perf.txt"
 for scr in "Built-in Retina Display" "Mi Monitor"; do
+  system_profiler SPDisplaysDataType 2>/dev/null | /usr/bin/grep -q "$scr" || { echo "== $scr not connected" | tee -a "$D/perf.txt"; continue; }
   "$T/load" "$SECS" full "$scr" > "$D/load-$(echo "$scr" | tr ' ' _).txt" 2>&1 &
   sleep 3
   cpu=$(top -l 3 -s 1 -pid "$(pgrep -x WindowServer)" -stats cpu | /usr/bin/grep -E '^[0-9]' | tail -1)
@@ -38,6 +39,7 @@ import pathlib, re, sys
 d = pathlib.Path(sys.argv[1])
 a = (d/'accel-after-load.txt').read_text(errors='replace')
 def g(k, s=a):
+    k = 'StrixAccel,' + k if not k.startswith('StrixAccel') else k
     m = re.search(r'"%s"\s*=\s*("[^"]*"|-?\d+)' % re.escape(k), s); return m.group(1).strip('"') if m else None
 out = []
 for k in ('Version','Gate','Tune,Caps','AGDC,CapServed','AGDC,CapFromWS','AGDC,CapFromOther','AGDC,CapLastClient',

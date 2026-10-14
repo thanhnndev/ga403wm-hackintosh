@@ -970,3 +970,24 @@ Installed on the ESP from CI run 38590219003 (0.1.1; the 0.1.0 kext kept in `EFI
 To check after the reboot (macOS): `ioreg -c StrixMetalGate | grep -E 'GateState|RestoredAtSeconds|GateVersion'` expects
 `plugin-name-restored` at ~12-14 s; offline: first WindowServer after the wsreset should not abort and the login
 window should come ~10 s earlier than the 70 s of boot 0F08D008.
+
+### Step11 StrixAccel 0.1.14 (Caps=7 default) measurements, two boots (2026-10-14)
+
+HDMI + OLED boot (WindowServer 883, 0.1.14 live): WindowServer only, `StrixAccel,AGDC,CapSeq=ws:0x4,ws:0x2,ws:0x1` x4,
+`CapServed=39`, `CapFromOther=0`, Gate PASS, 640 transactions copied, 0 validate fail.  Claims were served (type 0x4 with
+3 entries, 0x2, 0x1) but the OLED still melted: 118.6 fps, WindowServer 1295 % (baseline 1150 %), Mi Monitor 143.5 fps /
+56 %.  No `GammaSeen`/`PipeOnlySeen`: CoreDisplay never delivered a table, so the claims were not honoured.
+Refused in the same query set: 0x8 pipeline scaler, 0x40, 0x20, 0x200, 0x80, 0x100, 0x400, 0x800, 0x1000, 0x2000,
+0x4000, 0x8000 (the previous pass served only 0x10 plane scaler).
+
+spindump of WindowServer under OLED load (`out/890m-trace/step11-0114-*/ws-spindump-load.txt`): 7794 of 7916 samples in
+`RunFullDisplayPipe` block -> `CombineLUTs` -> `Display::CurrentHeadroom` -> `std::mutex::lock` (`__psynch_mutexwait`,
+about 24 dispatch_apply workers contending on one mutex, "blocked by turnstile ... pthread mutex owned by WindowServer").
+So the melt is lock contention in CurrentHeadroom called per LUT element, not LUT arithmetic, and RunGPUDisplayPipe still
+chooses the full pipe (NVMTL commandBuffer commitAndWait) with 0x4/0x2/0x1 claimed: another stage or condition keeps
+RunFullDisplayPipe selected (pipeline scaler 0x8 and 3D LUT 0x2000 are the untested refusals).
+
+OLED-only boot (gate 0.1.1, `GateState=plugin-name-restored` at 21 s, WindowServer 1150): `Transactions=0`, `Pipes=1`,
+no `IOPresentment` traffic; WindowServer composites with `CompositorSW::CompositeLayersToDestination` straight to the
+framebuffer, NVMTL used for rendering and fence waits only.  Load tool: 119.7 fps, p99 8.37 ms, WindowServer about 155 %
+of one CPU (versus 1150 % through the pipe).  `scripts/macos-strix-0114-verify.sh` now skips displays that are absent.
