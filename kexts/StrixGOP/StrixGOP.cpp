@@ -133,6 +133,16 @@ public:
 };
 OSDefineMetaClassAndStructors(StrixGOPFramebuffer, IOFramebuffer)
 
+// CoreDisplay 24H32 GetGPUVendorForFramebufferService classifies IOObjectCopyClass
+// by Intel/AMD/AppleParavirt/NVDA. A PCI ID or model property does not participate.
+// Cobalt64 uses AMDRDNA4FB; NullMoth uses NVRMNVDAFramebuffer for this contract.
+// Keep the original superclass so existing matching/casts retain compatibility.
+class AMDStrixGOPFramebuffer : public StrixGOPFramebuffer {
+    OSDeclareDefaultStructors(AMDStrixGOPFramebuffer)
+};
+OSDefineMetaClassAndStructors(AMDStrixGOPFramebuffer, StrixGOPFramebuffer)
+
+
 IOService *StrixGOPFramebuffer::probe(IOService *provider, SInt32 *score) {
     if (PE_parse_boot_argn("-strixgopoff", nullptr, 0)) return nullptr;
     if (getProperty("AdoptBootGOP") != kOSBooleanTrue) return nullptr;
@@ -188,7 +198,7 @@ bool StrixGOPFramebuffer::start(IOService *provider) {
     auto pci = OSDynamicCast(IOPCIDevice, provider);
     if (!pci || !readProfile(pci)) return false;
     setProperty("TraceStep", "890M-03");
-    setProperty("StrixGOPVersion", "0.1.10");
+    setProperty("StrixGOPVersion", "0.1.11");
     setProperty("HardwareModesetting", false);
     setProperty("Acceleration", false);
     setProperty("Aperture,Base", layout.barBase + layout.offset, 64);

@@ -6,6 +6,47 @@ Step-by-step history: [890M trace](890M-TRACE.md).
 
 ## Current state
 
+
+**Latest Step12 follow-up: source-backed StrixGOP0.1.11 patch installed in AuxKC, reboot pending.**
+Owner requested source comparison and a real patch before further reboot/testing.
+Compared Cobalt64's AMDRDNA4FB and NVIDIA's NVRMNVDAFramebuffer, then confirmed
+24H32 CoreDisplay vendor detection uses the framebuffer class name. Existing
+StrixGOPFramebuffer is classified unknown. New AMDStrixGOPFramebuffer subclasses
+it and supplies the AMD identity; all original framebuffer behaviour is inherited.
+Bundle/kmod/runtime versions are0.1.11. Build and422 imports pass. Deployment
+retains the installed panel personality and the256-byte EDID override repair.
+Backup and exact installation evidence: `out/890m-trace/step12-source-patch/`.
+No auto-tracing or benchmark job is armed. No reboot was forced. Verify the new
+class/EDID and colour pipeline only after the actual patch activates; reduction
+of CurrentHeadroom contention is still unverified. Read the final Step12 entry
+in the trace for the source and binary evidence.
+
+
+**Latest 2026-10-15 Step12: repaired deployment verified live; OLED performance
+and HDR remain open.** Read the final Step12 trace before older entries below.
+Owner is using HDMI + OLED. Live versions: GOP0.1.10, Accel0.1.15, Gate0.1.1;
+one healthy display pipe, increasing copies and zero validation failures.
+
+The old workload selector silently benchmarked HDMI when AppKit called the OLED
+`Built-in Retina Display`. Fixed selection uses display ID/built-in identity
+and refuses fallback. Correct OLED load:119.1 ticks/s but WindowServer1406% CPU;
+fresh spindump confirms CurrentHeadroom mutex contention in CombineLUTs.
+
+Installed override now uses the live256-byte CTA/PQ EDID instead of its stale
+128-byte EDID; only the EDID key changed, HiDPI/name preserved, original backed
+up with suffix `.pre-live-edid-20261015T062040Z`. Current WindowServer caches the
+old EDID. After the next login/reboot run `scripts/macos-strix-0114-verify.sh`:
+require effective EDID256 bytes, check HDR/EDR and the real OLED CPU result.
+No forced logout/reboot was performed and physical HDR output is unimplemented.
+
+Native ABI1.1 contract and admin bootstrap reads pass (512MiB, discovery2,
+PSP0x80000000). Only NVIDIA currently enumerates as Metal; its explicit compute/
+render control passes, not an890M pass. Continue verified IP discovery/GPUVM/GFX
+bring-up; preserve the working display path and macOS build gate.
+
+The deployment-repair entry immediately below is historical; its "runtime
+verification pending" status is superseded by Step12, not a new install request.
+
 **Latest 2026-10-15: boot failure diagnosed; deployment repair applied from Linux,
 macOS runtime verification pending.** Read the final Step11 entry in
 [890M-TRACE.md](890M-TRACE.md#step11-1238-boot-forensics-and-deployment-repair-applied-2026-10-15)

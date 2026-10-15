@@ -15,9 +15,9 @@
 	<key>CFBundlePackageType</key>
 	<string>KEXT</string>
 	<key>CFBundleShortVersionString</key>
-	<string>0.1.10</string>
+	<string>0.1.11</string>
 	<key>CFBundleVersion</key>
-	<string>0.1.10</string>
+	<string>0.1.11</string>
 	<key>IOKitPersonalities</key>
 	<dict>
 		<key>StrixGOP</key>
@@ -27,7 +27,7 @@
 			<key>CFBundleIdentifier</key>
 			<string>com.itlmt7925.strixgop</string>
 			<key>IOClass</key>
-			<string>StrixGOPFramebuffer</string>
+			<string>AMDStrixGOPFramebuffer</string>
 			<key>IOMatchCategory</key>
 			<string>StrixGOP</string>
 			<key>IOPCIPrimaryMatch</key>

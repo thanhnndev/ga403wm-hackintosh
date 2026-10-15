@@ -1278,3 +1278,135 @@ OLED/HDR success. Require StrixGOP0.1.10,StrixAccel0.1.15,framebuffer/pipe state
 stable WindowServer and owner-visible OLED/HDR. If still frozen, collect this
 new boot's report/bootstrap evidence from Linux and continue from its actual
 signature. The full boot-fix task is not yet runtime verified or complete.
+
+
+### Step12 live verification, correct OLED workload selection, EDID override repair (2026-10-15)
+
+Pulled `1b0d802` on macOS 15.8.1/24H32. Owner confirms HDMI + OLED desktop,
+no HDR toggle on either display. Bootstrap status is `DRIVERS_LOADED`.
+Live StrixGOP **0.1.10**, StrixAccel **0.1.15**, MetalGate **0.1.1**; accelerator
+Gate PASS, one pipe, copied transactions increasing, zero validate failures.
+The repaired AuxKC deployment is running; ESP-only graphics linking remains
+unimplemented. No graphics bundle, EFI entry, boot argument or refresh mode was
+changed in this session.
+
+**Measurement correction:** System Profiler names the panel `Built-in OLED`,
+but AppKit names it `Built-in Retina Display`. The old load tool silently fell
+back to `NSScreen.main` on a failed name match. With HDMI as main, the collector
+therefore measured HDMI twice and falsely reported that OLED CPU melt was gone.
+Do not use the low-CPU result in `step11-0114-20261015T062040Z` as an OLED result.
+Older name-based samples require checking the actual `screen:` line too.
+
+Fixed `strix_present_load.swift` to resolve the built-in screen using the
+NSScreenNumber / CGDisplayIsBuiltin identity, support exact `id:<decimal>`
+selection and JSON screen inventory, and reject absent/ambiguous selections
+instead of falling back. The verify collector enumerates actual IDs, records
+per-screen before/after counters, and bases the pipe verdict on transactions
+within the OLED load interval. Invalid screen selection exits3 in verification.
+The macOS15-compatible identity API is retained; NSScreen.cgDirectDisplayID is
+only available starting in macOS26.
+
+Correct workload evidence: `out/890m-trace/step11-0114-20261015T062309Z/`.
+External display1783179392: 60.0 ticks/s, WindowServer34.9%.
+Built-in550528774:119.1 ticks/s, p99 interval11.52ms, max49.68ms,
+WindowServer1405.6%. Display-link callbacks are scheduling evidence, not a
+count of scanouts. Copied transactions rose to748, validate failures stayed0.
+The new5s spindump reproduces `RunGPUDisplayPipe -> RunFullDisplayPipe ->
+CombineLUTs -> CurrentHeadroom -> mutex lock/unlock`; the bottleneck has not
+been removed by0.1.15's capability claims. No new unsupported capability or
+private WindowServer patch was introduced.
+
+**A concrete HDR blocker repaired on disk:** CoreDisplay's effective OLED EDID
+was128 bytes while IODisplayEDIDOriginal and AppleBacklightDisplay contained the
+new256-byte CTA/PQ EDID. The installed panel override at
+`/Library/Displays/Contents/Resources/Overrides/DisplayVendorID-4c83/DisplayProductID-419c`
+still supplied the old128-byte EDID (SHA256
+`6b7748c929b59e8d85ea150f47c600b21a8c7c9bc9cf31a0f0c89149c09e6d2c`).
+Prepared a candidate from exactly one live StrixGOP AppleBacklightDisplay,
+validated panel identity, both block checksums, extension count, CTA boundaries
+and PQ static metadata, then installed it after backing up the original.
+Only `IODisplayEDID` changed; name, IOGFlags and scale-resolutions are identical.
+Backup suffix: `.pre-live-edid-20261015T062040Z`.
+Installed override SHA256:
+`8e5b2df7ce0756837eb9f66d73ba9d35c230c3ebbb31adf50d80d7472f3cd975`.
+The new `tools/strix_edid_override.py` only prepares a candidate; it never installs
+or restarts the session. Six focused tests cover preservation, identity,
+checksums, malformed CTA, missing PQ and ambiguous/unrelated registry nodes.
+
+Current WindowServer still caches the old EDID: HDR/EDR remains **pending a new
+login or normal reboot**, not passed. Do not remove the CTA/HDR modes or revert
+the framebuffer to hide the issue. No WindowServer restart was forced.
+Advertising PQ still does not implement10-bit scanout, DCN colour programming
+or HDR metadata transport. HDMI's own EDID was not modified; no claim that its
+monitor supports HDR is made.
+
+**Native/Metal foundation:** evidence in
+`out/890m-trace/step05-metal-20261015T062039.031555Z/`.
+Live S89N ABI1.1 passed six non-admin contract checks, including refusal of MMIO
+reads. Admin FoundationRead passed: RCC512MiB, IP discovery version2,
+PSP discovery status0x80000000. These prove fixed bootstrap register access,
+not discovered GC IP, GPU VM, initialized engines, command submission or fences.
+The strict890M Metal oracle still returns `ABSENT-target-Metal-device`.
+Explicit NVIDIA control passes compute3x1024 words and offscreen triangle/clear
+readback; `hardware_890m_pass=false`. Never relabel this control as890M acceleration.
+
+Next gates: new-session effective OLED EDID must retain256 bytes, then recheck
+HDR/EDR and run the ID-selected OLED benchmark with new stack evidence if it
+still melts. GPU backend development separately needs verified IP-discovery
+acquisition and GC11.5 dispatch before GPUVM/SDMA/GFX. RCC512MiB is larger than
+the256MiB BAR0 aperture: the default discovery offset near the end of512MiB
+cannot be read by blindly adding it to the BAR0 CPU address. The Linux memory
+layout is not macOS ownership. macOS26 also still needs its own reviewed private
+ABI profile; the24H32 runtime gate must not be bypassed.
+
+
+### Step12 source-backed vendor classification patch (StrixGOP0.1.11)
+
+Owner rejected another tracing-only reboot and repeated unchanged benchmarks.
+Stopped workloads; removed both the newly prepared passive next-boot daemon and
+the user autocollect agent. No scheduled benchmark/tracing job remains from this
+session. Continue source inspection and implementation before another boot.
+
+Read pinned Cobalt64 d6c9aedf8e6526a39e349b5886cbc8c7ddf77f65:
+Navi48Accel.cpp, Navi48DisplayOps.h, Navi48Device.m, native_agdc_{pure,flow}.h,
+and the relevant DisplayPipeGuard.cpp paths. Cobalt explicitly provides an
+AMDRDNA4FB class because CoreDisplay classifies the framebuffer vendor by its
+class name. Read local NVIDIA source at f5b5eaa (1.15.0 + GA403 AUX brightness):
+NVRMFB publishes NVRMNVDAFramebuffer; NVRMAGDC supplies the plane-scaler descriptor
+and refuses unimplemented colour stages. Neither source provides justification
+for assuming our advertised colour stages implement a hardware renderer.
+No third-party implementation was copied into this patch.
+
+Confirmed the name contract against the actual24H32 CoreDisplay binary in a
+separate debug helper process (no WindowServer attachment or modification):
+`GetGPUVendorForFramebufferService` calls IOObjectCopyClass and CFStringFind for
+Intel, AMD, AppleParavirt and NVDA; AMD returns4, NVDA8, unmatched names1.
+`__WSMachineIsAMD_block_invoke` checks vendor4; CGXIsHDRSupported consults this
+machine gate before the display HDR queries. Source/disassembly evidence:
+`out/890m-trace/step12-source-patch/{vendor-hdr-headroom,machine-gate,hdr-gate}.asm.txt`.
+This proves StrixGOPFramebuffer is misclassified; it does not prove correcting
+that classification alone removes the CurrentHeadroom contention.
+
+Patch0.1.11 publishes AMDStrixGOPFramebuffer, a no-state subclass of the original
+StrixGOPFramebuffer. Existing superclass matching and casts retain their base;
+the display implementation, memory ownership, pixel format, AUX backlight and
+mode list are inherited. Info.plist selects the subclass. Also brought the
+stale source kmod version0.1.7 into agreement with bundle/runtime0.1.11.
+The EDID candidate tool accepts the two explicit Strix framebuffer classes.
+
+Build passes and all422 imports resolve through declared providers. Candidate
+SHA256:8552afc98a406f2b5b62ba2736c4cf94b30669ad75cf24dec473b60b1f73ac7b.
+Deployment preserves the installed personality; only IOClass changes. This
+combines the vendor identity correction with the already-installed256-byte
+EDID override correction for one subsequent boot. GOP0.1.10 backup:
+`/Library/StrixGOP-backup-0110-step12.kext`; AuxKC backup and install records in
+the source-patch evidence directory. Live driver changes only after restart.
+
+Acceptance after activation: actual class AMDStrixGOPFramebuffer, AMD vendor
+classification, effective EDID256 bytes, existing OLED pipe/HiDPI/backlight,
+then HDR gate and CurrentHeadroom behaviour. Physical HDR transport and native
+890M Metal/GPU submission remain separate unfinished work. Do not label this
+source correction as a verified performance or hardware HDR fix before runtime.
+
+Installation verified: kmutil returned28; AuxKC lists StrixGOP0.1.11, installed
+binary hash equals the reviewed candidate, selected class is AMDStrixGOPFramebuffer.
