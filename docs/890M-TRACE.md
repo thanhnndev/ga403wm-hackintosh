@@ -1100,3 +1100,17 @@ returns 0 but is ignored).
   Tctl 77 C, package 16.6 W while the machine was on battery, `pmset lowpowermode 1`, AsusWmi `set_profile=2` (silent).
   Next: re-measure on AC with Low Power Mode off and the Performance/Turbo profile to see how much of the jitter is the
   platform power limit rather than the renderer.
+
+### Step11 WindowServer SIGFPE crash loop after StrixGOP 0.1.9 (HdrModes=true), 2026-10-15
+
+* Symptom (user-visible "panic"): WindowServer restarts every ~10 s (launchd throttle), uptime 42-47 s at each crash, boots
+  5728534F and C18067AF; the boot before the 0.1.9 install (E74F30A9) was clean. No kernel panic.
+* Crash report (`WindowServer-2026-10-15-085713.ips`, `-091013.ips`): EXC_ARITHMETIC / SIGFPE in CoreDisplay
+  `IOCheckTimingWithDisplay` (+0x1EBDD) under `IOFBRebuild` -> `InstallFromEDIDDesc`, at WindowServer init.
+* Cause: 0.1.9 `publishTimingRange()` published an IODisplayTimingRangeV2 with only clocks, encoding and range bits set;
+  the rest (charSize* , min/max active/blanking/sync clocks, frame/line rates, totals) were 0, and CoreDisplay divides by them
+  once kIOFBTimingRangeKey exists. Before 0.1.9 the key was absent so that path was skipped.
+* Fix (0.1.10): fully populated range (char sizes 1, frame 24-144 Hz, line 30-400 kHz, totals 4096x2400, active/blanking/
+  sync min/max covering 2880x1800, links 1, link0 clock kHz). Not yet booted; unverified which exact field was the divisor.
+* Immediate recovery if it still loops: boot-arg `-strixhdroff`, or `sudo bash scripts/macos-strix-gop-install.sh --nohdr`
+  (drops the timing range and the HDR twins, back to the 0.1.8-less behaviour that booted fine).

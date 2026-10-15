@@ -188,7 +188,7 @@ bool StrixGOPFramebuffer::start(IOService *provider) {
     auto pci = OSDynamicCast(IOPCIDevice, provider);
     if (!pci || !readProfile(pci)) return false;
     setProperty("TraceStep", "890M-03");
-    setProperty("StrixGOPVersion", "0.1.9");
+    setProperty("StrixGOPVersion", "0.1.10");
     setProperty("HardwareModesetting", false);
     setProperty("Acceleration", false);
     setProperty("Aperture,Base", layout.barBase + layout.offset, 64);
@@ -471,6 +471,31 @@ void StrixGOPFramebuffer::publishTimingRange() {
     bzero(&r, sizeof(r));
     r.version = kIOTimingRangeV2;
     r.minPixelClock = 652264000; r.maxPixelClock = 652270000;
+    // Every divisor CoreDisplay's IOCheckTimingWithDisplay uses must be non-zero (0.1.9 left them 0 -> SIGFPE).
+    r.maxPixelError = 1000;
+    r.supportedSyncFlags = 0xFFFFFFFFu;
+    r.supportedSignalLevels = 0xFFFFFFFFu;
+    r.supportedSignalConfigs = 0xFFFFFFFFu;
+    r.minFrameRate = 24; r.maxFrameRate = 144;
+    r.minLineRate = 30000; r.maxLineRate = 400000;
+    r.maxHorizontalTotal = 4096; r.maxVerticalTotal = 2400;
+    r.charSizeHorizontalActive = r.charSizeHorizontalBlanking = 1;
+    r.charSizeHorizontalSyncOffset = r.charSizeHorizontalSyncPulse = 1;
+    r.charSizeVerticalActive = r.charSizeVerticalBlanking = 1;
+    r.charSizeVerticalSyncOffset = r.charSizeVerticalSyncPulse = 1;
+    r.charSizeHorizontalBorderLeft = r.charSizeHorizontalBorderRight = 1;
+    r.charSizeVerticalBorderTop = r.charSizeVerticalBorderBottom = 1;
+    r.charSizeHorizontalTotal = r.charSizeVerticalTotal = 1;
+    r.minHorizontalActiveClocks = 640;  r.maxHorizontalActiveClocks = 2880;
+    r.minHorizontalBlankingClocks = 1;  r.maxHorizontalBlankingClocks = 1216;
+    r.minHorizontalSyncOffsetClocks = 0; r.maxHorizontalSyncOffsetClocks = 512;
+    r.minHorizontalPulseWidthClocks = 1; r.maxHorizontalPulseWidthClocks = 512;
+    r.minVerticalActiveClocks = 480;    r.maxVerticalActiveClocks = 1800;
+    r.minVerticalBlankingClocks = 1;    r.maxVerticalBlankingClocks = 600;
+    r.minVerticalSyncOffsetClocks = 0;  r.maxVerticalSyncOffsetClocks = 128;
+    r.minVerticalPulseWidthClocks = 1;  r.maxVerticalPulseWidthClocks = 128;
+    r.maxNumLinks = 1;
+    r.minLink0PixelClock = 652264; r.maxLink0PixelClock = 652270;
     r.supportedPixelEncoding = kIOPixelEncodingRGB444;
     r.supportedBitsPerColorComponent = kIOBitsPerColorComponent8 | kIOBitsPerColorComponent10;
     r.supportedColorimetryModes = kIOColorimetryNativeRGB | kIOColorimetrysRGB | kIOColorimetryBT709 |
