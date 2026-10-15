@@ -1512,3 +1512,15 @@ CPU must drop far below 1100-1400 %, ticks stay ~119/s; Lilu log line for `CoreD
 (`log show --predicate 'senderImagePath CONTAINS "kernel"' | grep -i -E 'StrixHeadroom|patch'`). If WindowServer is still
 hot, spindump again: the next stage is whatever replaces `CurrentHeadroom` at the top of the stack.
 Unverified: the patch has not been run on hardware.
+
+## Step14 NullMoth nvidia-macos-driver 2.0.0 evaluation (no code change, not downloaded)
+
+Source: github.com/nullmoth/nvidia-macos-driver compare v1.15.0...v2.0.0 (read via API only; the 378 MB release tarball was not fetched).
+
+- NMXGPU/NMXAccel (new in 2.0): amdgpu (FreeBSD drm-kmod via LinuxKPI on xnu, incl. AMD display core) + IOAcceleratorFamily2 for AMD, opt-in `nmxamd=1`. README itself says "not loaded on hardware yet"; mode switching not done, one XRGB8888 IOFramebuffer, and taking the GPU that drives the boot display resets its display engine. Not a fit for 890M (GC 11.5 / DCN 3.5, our panel is the boot display) -> do not adopt; no performance gain for the OLED+HDMI WindowServer path (that is the CurrentHeadroom lock, fixed by StrixHeadroom).
+- NVRMFB: Info.plist match changed to NVIDIA-only (IOPCIPrimaryMatch 0x10de + class 0x03). Old match was IONameMatch display = also claimed the Intel/AMD slot (#119). Relevant to us: confirms NVRMFB must not claim 1002:150e; our NVRMFB build should use the same vendor match so it never takes the AMD slot.
+- NVRMFB: EDID panel size -> imageWidth/Height (Mac shows real inches), ELD + hda-gfx for HDMI audio, boot raster = largest validated mode (second high-refresh monitor), BAR1 budget counts scanout. Cosmetic/robustness, optional.
+- NVAccel: `nvaccel_vm_sticky` (surface keeps VRAM across deallocPhysical/allocPhysical) fixes black frames/windows black until drag. Candidate for our StrixMetalGate/NVAccel path if black windows appear on the HDMI (NVIDIA) head.
+- NVRM security: go(pass>done) root-only, client quota per pid (4096) with reserve for uid<500, event-sleeper cap 256, bound fd range checks. No perf impact.
+
+Verdict: performance-first priority is unaffected by 2.0; keep v1.x base + StrixHeadroom. Optionally cherry-pick the NVRMFB vendor-match and nvaccel_vm_sticky later if symptoms match. Reboot still pending to validate StrixHeadroom.
