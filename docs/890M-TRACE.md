@@ -1478,3 +1478,37 @@ NVIDIA KMS colour/output-metadata handling. Preserve the AMD classification and
 EDID fixes. Do not request another reboot for unchanged code or equate the
 Settings toggle/EDR potential4.0 with validated HDR output. No benchmark, driver
 install, HDR toggle or display-mode change was performed for this feedback.
+
+### Step13 performance first: CurrentHeadroom lock contention patched by a Lilu plugin (StrixHeadroom 0.1.0), 2026-10-15
+
+Direction (owner): performance before HDR/colour/display names. HDR twins, CTA block, EDR potential and the HiDPI mode are
+left exactly as they are; this step touches none of them.
+
+Facts used (all from existing traces): OLED-only boot ~155 % WindowServer at 120 fps with no display pipe; with HDMI +
+OLED the OLED goes through `RunGPUDisplayPipe -> RunFullDisplayPipe -> CombineLUTs -> Display::CurrentHeadroom` and 7794/7916
+spindump samples are `std::mutex::lock` wait (about 24 dispatch_apply workers), 1150-1405 % CPU.
+
+Disassembly (macOS 15.8 24H32 CoreDisplay extracted from the cryptex `os.dmg` dyld cache on Linux with `ipsw dyld extract`,
+capstone; symbols from the image export list). `Display::CurrentHeadroom(qual=0)` at `0x7ff80408b2fc` (cache VA):
+1. `if [this+0x460]==1` return `[this+0x45c]`; 2. `if [this+0x224]==1` return `[this+0x220]` (cache, no lock);
+3. otherwise **lock `this+0x20`**; `EDRDisplay=[this+0x60]`; if present and `[EDRDisplay+0x11]` (headroom requested) go on to
+   the full computation which stores `[this+0x220]` and sets `[this+0x224]`; else compute the default (1/`[this+0x170]` or
+   a constant) and unlock WITHOUT caching. `+0x11` is only set by `CoreDisplay_XRPresent`, which nothing calls, so every
+   call locks and recomputes.
+
+Patch (`kexts/StrixHeadroom`, Lilu UserPatcher on the WindowServer process, CoreDisplay framework in the shared cache):
+two exact byte patterns (unique in `__TEXT,__text`, 1 match each) replace the lock call (`0x445`) and both unlock calls
+(`0x45c`, `0x4eb`) with a 5-byte NOP. The guarded region only reads fields or stores the same value and flag, so it is
+safe without the mutex, and the headroom value itself is unchanged. No pattern match (other macOS build) = no patch.
+Boot-args: `-strixhroff` disables, `-strixhrdbg` Lilu debug. Plugin has no state of its own.
+
+Build/install: CI run 38695828531 (`scripts/build.sh StrixHeadroom` clones acidanthera/Lilu for headers + plugin_start.cpp;
+undefined Lilu symbols resolved via OSBundleLibraries as.vit9696.Lilu). Copied to `/boot/EFI/OC/Kexts/StrixHeadroom.kext`
+with a Kernel/Add entry after Lilu. Backup `config.plist.pre-strixheadroom`. Depends only on Lilu (BootKC) and kpi, so it
+does not hit the SystemKC linking problem of the NVIDIA/Strix graphics kexts.
+
+Acceptance (next boot with HDMI + OLED): `scripts/macos-strix-0114-verify.sh` (ID-selected OLED workload) — WindowServer
+CPU must drop far below 1100-1400 %, ticks stay ~119/s; Lilu log line for `CoreDisplay` patch applied
+(`log show --predicate 'senderImagePath CONTAINS "kernel"' | grep -i -E 'StrixHeadroom|patch'`). If WindowServer is still
+hot, spindump again: the next stage is whatever replaces `CurrentHeadroom` at the top of the stack.
+Unverified: the patch has not been run on hardware.
