@@ -7,6 +7,18 @@ Step-by-step history: [890M trace](890M-TRACE.md).
 ## Current state
 
 
+**Latest reboot result,2026-10-15:** GOP0.1.11 is active as AMDStrixGOPFramebuffer.
+CoreDisplay now receives256-byte effective/original OLED EDID and NSScreen OLED
+EDR potential is4.0, previously1.0. Current EDR remains1.0; physical HDR and the
+Settings toggle are not verified. HDMI EDR potential remains1.0.
+Accel0.1.15 has one healthy pipe,111 copies and zero validate failures. No
+benchmark was run; idle WindowServer1.1% does not prove the loaded CPU issue fixed.
+Current OLED mode is2880x1800 logical at120Hz (previously1440x900 HiDPI).
+Override still has its HiDPI entry; selected-mode reason/owner preference pending.
+Read the final Step12 reboot entry for evidence and limits. The earlier
+"reboot pending" installation state below is superseded.
+
+
 **Latest Step12 follow-up: source-backed StrixGOP0.1.11 patch installed in AuxKC, reboot pending.**
 Owner requested source comparison and a real patch before further reboot/testing.
 Compared Cobalt64's AMDRDNA4FB and NVIDIA's NVRMNVDAFramebuffer, then confirmed

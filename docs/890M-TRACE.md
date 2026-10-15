@@ -1410,3 +1410,36 @@ source correction as a verified performance or hardware HDR fix before runtime.
 
 Installation verified: kmutil returned28; AuxKC lists StrixGOP0.1.11, installed
 binary hash equals the reviewed candidate, selected class is AMDStrixGOPFramebuffer.
+
+
+### Step12 reboot result: AMD class active, effective CTA EDID and EDR potential exposed (2026-10-15)
+
+Boot EA06C1BF-ABDB-43B4-B571-D71C70FF9639. StrixGOP0.1.11 is live as
+AMDStrixGOPFramebuffer; StrixAccel0.1.15 and MetalGate0.1.1 also loaded.
+CoreDisplay's effective EDID and original EDID are both256 bytes. The installed
+override still retains its scale-resolutions entry. NSScreen OLED EDR potential
+is now **4.0** (before1.0), current1.0/reference0.0. HDMI remains potential1.0.
+This establishes successful driver activation and exposure of the new EDID/EDR
+capability in the combined vendor-name/EDID patch. It does not isolate the
+contribution of each change or validate physical HDR output.
+
+OLED pipe: Gate PASS, one pipe,111 copied transactions, zero validation
+failures. Backlight failure counter0. WindowServer889 was running since13:37:17
+and sampled at1.1% CPU during idle inspection. No workload or repeat benchmark
+was run; idle CPU must not be compared with the prior1406% loaded result.
+The filtered current-boot log contains HID assertions, not the previous
+CGXMappedDisplayStart display crash signature. No new WindowServer report was
+present at inspection. Initial WindowServer164 was followed by889 during boot;
+this is not evidence that there were no startup restarts.
+
+Current OLED mode is2880x1800 logical/backing at120Hz, whereas the preceding
+session used1440x900 logical HiDPI at2880x1800 backing. The reason for the selected
+mode is not yet established; do not silently change the owner's display mode.
+Settings HDR toggle and owner-visible scaling remain owner checks. Current EDR1.0
+means HDR content/headroom has not been demonstrated by this read-only snapshot.
+890M still publishes MetalReady=false; native GPU submission remains unfinished.
+
+Evidence: `out/890m-trace/step12-reboot-EA06C1BF/` contains edr.txt, displays.txt,
+GOP/accelerator registry plists and the filtered current-boot WindowServer log.
+No automatic tracing job, driver installation, mode change or benchmark was
+performed in this reboot check.
