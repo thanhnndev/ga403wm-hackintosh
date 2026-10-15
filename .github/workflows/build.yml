@@ -52,6 +52,9 @@ jobs:
       - name: Build StrixGOP (ESP-injected, explicit target)
         run: bash scripts/build.sh StrixGOP
 
+      - name: Build StrixAccel (ESP-injected, explicit target)
+        run: bash scripts/build.sh StrixAccel
+
       - name: Package
         run: |
           mkdir -p dist
