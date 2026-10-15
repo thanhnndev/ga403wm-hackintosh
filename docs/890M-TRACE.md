@@ -1114,3 +1114,8 @@ returns 0 but is ignored).
   sync min/max covering 2880x1800, links 1, link0 clock kHz). Not yet booted; unverified which exact field was the divisor.
 * Immediate recovery if it still loops: boot-arg `-strixhdroff`, or `sudo bash scripts/macos-strix-gop-install.sh --nohdr`
   (drops the timing range and the HDR twins, back to the 0.1.8-less behaviour that booted fine).
+* Installed from Linux (no rollback): CI run 38670567919 builds StrixGOP 0.1.10 (workflow now has an explicit StrixGOP
+  step); kext copied to `/boot/EFI/OC/Kexts/StrixGOP.kext`, Kernel/Add entry added after StrixMetalGate, boot-arg
+  `strixhdr=1` appended (HDR twins + CTA block + timing range stay ON). Config backup: `config.plist.pre-strixgop010`.
+  Caveat to check in the next boot: `/Library/Extensions/StrixGOP.kext` (0.1.9, AuxKC) has the same bundle ID; see
+  `ioreg -l | grep StrixGOPVersion` (must say 0.1.10) and the unified log for duplicate-kext messages.
