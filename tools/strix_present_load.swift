@@ -4,10 +4,26 @@
 // Build: swiftc -O tools/strix_present_load.swift -o strix_present_load      Run: strix_present_load [seconds] [full|small]
 import AppKit
 import QuartzCore
+import CoreGraphics
 
 let secs = CommandLine.arguments.count > 1 ? Double(CommandLine.arguments[1]) ?? 6 : 6
 let big = (CommandLine.arguments.count > 2 ? CommandLine.arguments[2] : "full") == "full"
-let want = CommandLine.arguments.count > 3 ? CommandLine.arguments[3] : "Built-in"
+let want = CommandLine.arguments.count > 3 ? CommandLine.arguments[3] : "builtin"
+func displayID(_ screen: NSScreen) -> CGDirectDisplayID? {
+    (screen.deviceDescription[NSDeviceDescriptionKey("NSScreenNumber")] as? NSNumber)?.uint32Value
+}
+if CommandLine.arguments.contains("--list-json") {
+    let rows: [[String: Any]] = NSScreen.screens.compactMap { screen in
+        guard let id = displayID(screen) else { return nil }
+        return ["id": id, "name": screen.localizedName, "builtin": CGDisplayIsBuiltin(id) != 0,
+                "refresh_hz": CGDisplayCopyDisplayMode(id)?.refreshRate ?? 0]
+    }
+    let data = try JSONSerialization.data(withJSONObject: rows, options: [.sortedKeys])
+    FileHandle.standardOutput.write(data); print(""); exit(0)
+}
+guard secs.isFinite && secs > 0 && secs <= 300 else {
+    fputs("Duration must be 0 < seconds <= 300\n", stderr); exit(2)
+}
 
 final class App: NSObject, NSApplicationDelegate {
     var win: NSWindow!
@@ -17,7 +33,18 @@ final class App: NSObject, NSApplicationDelegate {
     var bar = CALayer()
     var t0: CFTimeInterval = 0
     func applicationDidFinishLaunching(_ n: Notification) {
-        let scr = NSScreen.screens.first { $0.localizedName.contains(want) } ?? NSScreen.main!
+        let matches = NSScreen.screens.filter { screen in
+            guard let id = displayID(screen) else { return false }
+            if want == "builtin" || want == "Built-in" || want == "Built-in OLED" {
+                return CGDisplayIsBuiltin(id) != 0
+            }
+            if want.hasPrefix("id:") { return UInt32(want.dropFirst(3)) == id }
+            return screen.localizedName.contains(want)
+        }
+        guard matches.count == 1, let scr = matches.first, let id = displayID(scr) else {
+            fputs("Display selector must match exactly one screen: \(want) (\(matches.count) matches)\n", stderr)
+            exit(3)
+        }
         let r = big ? scr.frame : NSRect(x: scr.frame.minX + 100, y: scr.frame.minY + 100, width: 600, height: 400)
         win = NSWindow(contentRect: r, styleMask: [.borderless], backing: .buffered, defer: false)
         win.level = .floating
@@ -29,7 +56,7 @@ final class App: NSObject, NSApplicationDelegate {
         win.contentView = v
         win.setFrame(r, display: true)
         win.orderFrontRegardless()
-        print("screen: \(scr.localizedName) \(Int(r.width))x\(Int(r.height)) mode=\(big ? "full" : "small")")
+        print("display_id=\(id) builtin=\(CGDisplayIsBuiltin(id)) screen: \(scr.localizedName) \(Int(r.width))x\(Int(r.height)) mode=\(big ? "full" : "small")")
         t0 = CACurrentMediaTime()
         link = scr.displayLink(target: self, selector: #selector(tick(_:)))
         link!.add(to: .main, forMode: .common)

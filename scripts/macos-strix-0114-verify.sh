@@ -26,20 +26,31 @@ nvram boot-args > "$D/boot-args.txt" 2>&1
 
 # CPU/fps per display: WindowServer CPU sampled while the present load runs
 : > "$D/perf.txt"
-for scr in "Built-in OLED" "Mi Monitor"; do
-  system_profiler SPDisplaysDataType 2>/dev/null | /usr/bin/grep -q -E "$scr|Built-in Retina Display" || { echo "== $scr not connected" | tee -a "$D/perf.txt"; continue; }
-  "$T/load" "$SECS" full "$scr" > "$D/load-$(echo "$scr" | tr ' ' _).txt" 2>&1 &
+"$T/load" --list-json > "$D/screens.json"
+while IFS=$'\t' read -r scr display_id; do
+  ioreg -r -c StrixAccelerator -l > "$D/accel-before-$display_id.txt"
+  "$T/load" "$SECS" full "id:$display_id" > "$D/load-$display_id.txt" 2>&1 &
+  load_pid=$!
   sleep 3
   cpu=$(top -l 3 -s 1 -pid "$(pgrep -x WindowServer)" -stats cpu | /usr/bin/grep -E '^[0-9]' | tail -1)
-  wait
-  echo "== $scr WindowServer_cpu=${cpu}%  $(tail -1 "$D/load-$(echo "$scr" | tr ' ' _).txt")" | tee -a "$D/perf.txt"
-done
+  if wait "$load_pid"; then
+    echo "== $scr display_id=$display_id WindowServer_cpu=${cpu}%  $(tail -1 "$D/load-$display_id.txt")" | tee -a "$D/perf.txt"
+  else
+    echo "== $scr display_id=$display_id LOAD_FAILED; no performance verdict" | tee -a "$D/perf.txt"
+  fi
+  ioreg -r -c StrixAccelerator -l > "$D/accel-after-$display_id.txt"
+done < <(python3 - "$D/screens.json" <<'PYSCREENS'
+import json, sys
+for screen in json.load(open(sys.argv[1])):
+    print(('Built-in OLED' if screen['builtin'] else 'External display') + '\t' + str(screen['id']))
+PYSCREENS
+)
 ioreg -r -c StrixAccelerator -l > "$D/accel-after-load.txt" 2>&1
 /usr/bin/log show --last 10m --style compact --predicate 'process == "kernel" AND eventMessage CONTAINS[c] "StrixAccel"' > "$D/kernel-log-after.txt" 2>/dev/null
 /usr/bin/grep -E "gamma|pipe-only|noplane" "$D/kernel-log-after.txt" | head -60 > "$D/tables-after.txt"
 
 /usr/bin/python3 -I - "$D" <<'PY'
-import pathlib, re, sys
+import json, pathlib, re, sys
 d = pathlib.Path(sys.argv[1])
 a = (d/'accel-after-load.txt').read_text(errors='replace')
 def g(k, s=a):
@@ -63,9 +74,17 @@ out += ['', 'EDR potential per screen: %s' % (pots or 'n/a')]
 out.append('VERDICT edr: %s' % ('exposed (potential > 1)' if any(float(x) > 1.0 for x in pots) else 'not exposed (potential 1.0)'))
 if cpus:
     c = float(cpus[0])
-    txn = int(g('Transactions') or 0)
+    screens = json.loads((d/'screens.json').read_text())
+    builtin = [s for s in screens if s['builtin']]
+    txn = 0
+    if len(builtin) == 1:
+        display_id = builtin[0]['id']
+        before = (d / ('accel-before-%s.txt' % display_id)).read_text()
+        after = (d / ('accel-after-%s.txt' % display_id)).read_text()
+        txn = int(g('Transactions', after) or 0) - int(g('Transactions', before) or 0)
+        out.append('OLED pipe transactions during load: %d' % txn)
     out.append('VERDICT oled-melt: n/a, no pipe transactions (OLED-only CompositorSW path, WindowServer %.0f%%, target <= ~150%%)' % c if txn == 0 else
-               'VERDICT oled-melt: %s (WindowServer %.0f%%, baseline 1150%%)' % ('GONE' if c < 300 else 'PARTIAL' if c < 900 else 'STILL MELTING', c))
+               'VERDICT oled-melt: %s (WindowServer %.0f%%, baseline 1150%%)' % ('BELOW-300-in-this-run' if c < 300 else 'PARTIAL' if c < 900 else 'STILL MELTING', c))
 served = int(g('AGDC,CapServed') or 0)
 out.append('VERDICT claims served: %s' % ('yes' if served else 'NO - descriptor rejected or nobody asked, see caps-and-tables.txt'))
 gs = int(g('Txn,GammaSeen') or 0)
