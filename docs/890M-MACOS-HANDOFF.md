@@ -6,6 +6,48 @@ Step-by-step history: [890M trace](890M-TRACE.md).
 
 ## Current state
 
+**Latest 2026-10-15: boot failure diagnosed; deployment repair applied from Linux,
+macOS runtime verification pending.** Read the final Step11 entry in
+[890M-TRACE.md](890M-TRACE.md#step11-1238-boot-forensics-and-deployment-repair-applied-2026-10-15)
+before following any older installation instructions below.
+
+The 12:38 boot (`F4C323A7-3891-4EFF-B8A9-B780C9A6E71F`) crash-loops in
+WindowServer `CGXMappedDisplayStart`: no usable graphics framebuffer/accelerator
+was loaded. The graphics kexts injected from ESP need Apple families found only
+in SystemKC; the OpenCore BootKC link was reproduced failing at vtable patching.
+The raw CI StrixGOP bundle also lost its panel personality (`AdoptBootGOP=false`,
+no BootGOPProfile or EDID).
+
+Applied state, confirmed by reading the mounted Data volume and ESP:
+
+- Current seven graphics bundles are in `/Library/Extensions`: NVRM, NVRMEdpBL,
+  NVRMFB, NVRMAGDC, NVAccel, StrixAccel **0.1.15**, StrixGOP **0.1.10**.
+  All executable hashes equal the ESP binaries from this session; none was
+  replaced with an older executable. The corresponding seven Kernel/Add entries
+  are disabled. Their ESP bundles remain as update sources.
+- StrixGOP's validated panel profile/128-byte synthesized EDID were copied from
+  the installed personality retained in the Linux backup. `AdoptBootGOP=true`,
+  `HdrModes=true`, and `strixhdr=1` are set. The 0.1.10 executable is unchanged.
+- StrixMetalGate **0.1.1** remains enabled on ESP. The stale empty AuxKC was
+  preserved and removed so kernelmanagerd can build the current collection.
+- A RunAtLoad bootstrap records loaded kexts, GOP/accelerator/gate registry state
+  and WindowServer logs under `/Library/Logs/StrixGraphicsFix/`. If drivers are
+  missing, it explicitly requests their load/rebuild and writes status to
+  `/Library/StrixGraphicsFix/status`. It never reboots the machine.
+
+**Next:** boot macOS and allow 60–90 seconds. If status is `REBOOT_REQUIRED`,
+restart macOS once more. Require live versions, a usable OLED framebuffer,
+stable WindowServer, and owner verification of OLED/HDR before marking success.
+If the logo remains frozen, return to Linux and collect this boot's crash reports
+and bootstrap directory from Data; do not diagnose it using the older boot logs.
+
+**Scope concern:** this repairs deployment through AuxKC; it does not implement
+the owner's desired ESP-only graphics loading. The owner challenged that choice
+after applying the script. Preserve that concern in subsequent work; do not
+claim ESP-only support or silently promote this layout as the final architecture.
+
+The following entries describe historical states from 2026-10-13.
+
 **Latest2026-10-13: OLED desktop works in Hybrid without HDMI, owner confirmed.**
 Loaded StrixGOP0.1.3 and StrixAccel0.1.0; accelerator runtime gate PASS, one pipe.
 CoreGraphics reports one active built-in display:1440x900 logical HiDPI,

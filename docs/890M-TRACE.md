@@ -1154,3 +1154,127 @@ What the macOS side should do:
    NVRM's 20 s head wait / 34 s boot hold may shift. If WindowServer starts without the Metal device, check StrixMetalGate
    `GateState` first.
 4. If HDR still misbehaves, `-strixhdroff` in boot-args disables only the HDR parts without touching the injection layout.
+
+### Step11 12:38 boot forensics and deployment repair applied (2026-10-15)
+
+**Status: APPLIED ON DISK — next macOS boot and visible OLED/HDR result pending.**
+This entry supersedes the immediately preceding "Data is empty / all graphics
+load from ESP" handoff. Those entries remain as history, not current instructions.
+The earlier statement that 0.1.10 "fixed" SIGFPE was a source-level expectation;
+the new boot did not load that framebuffer, so runtime validation is still pending.
+
+#### Work history and fresh evidence
+
+The first response in this session inspected existing Linux captures and the
+handoff but did not mount macOS Data. Its statement that no new boot log was
+available was incomplete. After the owner requested actual investigation and a
+fix without rollback, Data was mounted read-only through the existing fstab
+entry, revealing the new report `WindowServer-2026-10-15-123903.ips`.
+
+Actual failed boot: `F4C323A7-3891-4EFF-B8A9-B780C9A6E71F`, kernel timestamp
+`2026-10-15T05:38:43Z` (12:38:43 local). WindowServer PID164 launched at
+12:38:48 and aborted at12:38:55, uptime13s. This is **SIGABRT**, not the previous
+0.1.9 timing-range SIGFPE. Triggered stack:
+`CoreDisplay::Assert -> CGXMappedDisplayStart -> CGXDisplayDriverInitialize`.
+
+Decoded log evidence:
+
+- `IOFramebufferOpen failed ... PEGP@0/IONDRVFramebuffer ... 0xe00002c7`.
+- `GPUWrangler is disabled due to no MappedDisplay`, `System has no accelerator`,
+  then `Failed to create FB 1 of 1`.
+- ReportCrash captures the `MappedDisplay.cpp:5509` assertion:
+  `FB: 0 of 1 opened, succeeded 0 times, failed 1 times`.
+- Subsequent WindowServer PIDs482,636,761,826,1061 and others fail the same open
+  roughly every10s. This establishes a user-space crash loop, not a static logo
+  inferred solely from a screenshot.
+- kernelmanagerd reports loaded NVRM, NVRMEdpBL, StrixProbe and StrixMetalGate,
+  but no NVRMFB, NVRMAGDC, NVAccel, StrixGOP or StrixAccel. SystemKC loads later.
+
+Raw evidence is private and remains outside Git:
+`~/ga403-logs/boot-0110-20261015/` contains the new `.ips`, filtered
+`new-boot.jsonl`, `display-log.txt`, decoder diagnostics, policy snapshot,
+linker reproduction and symbol census. The archive view uses read-only symlinks
+into the mounted Data diagnostics/uuidtext; permanent decoded output and the
+copied crash report remain available independently of the mount.
+
+The owner mounted additional APFS volumes read-only after sudo authentication;
+volume3 is System, volume4 Update. Inspection of the **installed** collections
+confirmed all three required providers absent from BootKC and present in SystemKC:
+`com.apple.iokit.IOGraphicsFamily`, `com.apple.iokit.IOAcceleratorFamily2`,
+`com.apple.AppleGraphicsDeviceControl`. The installed SLE directories retain
+plists but their executable files are elided into SystemKC. Kernel/Force cannot
+read nonexistent standalone executables from those directories.
+
+Built the cached OpenCore1.0.9 `Utilities/TestKextInject` with the existing UDK.
+Injecting the current ESP StrixGOP into the installer BootKC reproduced:
+`IOGraphicsFamily not in Boot KC`, parent vtable resolution to0, and
+`Vtable patching failed ... Invalid Parameter`. The utility also exercises
+unrelated kernel quirks; only the explicit StrixGOP injection result is used here.
+This reproduction plus the actual installed collection census explains why
+merely sorting custom Kernel/Add entries did not suffice.
+
+#### Independent panel-personality defect
+
+The ESP StrixGOP0.1.10 bundle copied from CI had `AdoptBootGOP=false`, no
+`BootGOPProfile`, and no `PanelEDID`. Even a successful link would fail its opt-in
+profile gate. The driver source's default opt-out is intentional; copying a raw
+CI artifact over a configured deployment must not erase the local personality.
+
+Retained the **0.1.10 executable** and supplied the existing validated hardware
+personality from `~/ga403-logs/lib-ext-removed-20261015/StrixGOP.kext`:
+BAR0 `0x880000000`/256MiB,2880x1800,stride11520,depth32,XRGB8888,offset0,
+rotation0;128-byte synthesized EDID with valid checksum. Set `AdoptBootGOP=true`
+and `HdrModes=true`; boot-arg `strixhdr=1` remains. This is configuration reuse,
+not a downgrade to the backup's0.1.9 executable or a claim of measured HDR output.
+
+#### Repair selected, applied changes, and owner concern
+
+The selected repair uses AuxKC, which macOS links against both BootKC and
+SystemKC. It keeps all seven **current** executables. This changes deployment;
+it does not fix OpenCore to support ESP-only graphics loading. The owner later
+challenged the architecture change. That concern remains open, and this state
+must not be described as completion of an ESP-only implementation.
+
+Prepared private package `out/890m-trace/step11-bootfix-20261015/` with current
+bundles, panel-personality correction, candidate EFI config and SHA256 manifest.
+Added `scripts/linux-fix-strix-graphics.sh` and
+`scripts/macos-strix-graphics-bootstrap.sh`. The owner ran the prepared sudo
+installer at13:07 local and returned its successful output. Re-reading Data and
+ESP confirmed:
+
+- `/Library/Extensions` contains current NVRM,NVRMEdpBL,NVRMFB,NVRMAGDC,NVAccel,
+  StrixAccel0.1.15,StrixGOP0.1.10. All seven executable hashes match the session's
+  ESP binaries. StrixGOP SHA256:
+  `b64e1bdebaa4f459551fb83e2eae6502111750a5c1237eea5f4f0997d49ed315`;
+  StrixAccel SHA256:
+  `0ae72c09ef48855370f65a4ef7bda165113af997db4c7143c474b319c7d4631b`.
+- Their seven Kernel/Add entries are disabled to avoid duplicate deployments.
+  Their ESP bundles remain; ESP StrixGOP's personality is corrected too.
+  StrixMetalGate0.1.1 remains enabled on ESP.
+- The small stale AuxKC regenerated during the failed boot was preserved under
+  the package's `data-before/` and removed from Data. New AuxKC construction is
+  macOS work; none was built or validated by Linux.
+- `/Library/LaunchDaemons/com.itlmt7925.graphics-bootstrap.plist` runs
+  `/Library/StrixGraphicsFix/bootstrap.sh`. After15s it captures loaded versions
+  and registry state. Missing drivers trigger one explicit `kmutil load
+  --no-authorization` request for the current seven paths. It records status and
+  logs, does not unload drivers, and does not reboot automatically.
+- Data was unmounted after writes and remounted read-only. Other APFS mounts
+  were removed before the write mount. Installed file hashes were checked before
+  publishing the candidate ESP config.
+
+Validation performed: shell syntax checks PASS; matching OpenCore1.0.9 ocvalidate
+reports no issues; panel bounds/EDID checksum checks PASS; executable identity
+7/7 and installed-bundle byte equality PASS. A flat symbol census is retained
+as investigation data, not substituted for kmutil linking or a runtime pass.
+No driver downgrade, HDR-off boot argument, WindowServer kill or reboot was
+performed by this repair. No Apple graphics family was injected from the KDK.
+
+**Next hardware gate:** boot macOS, allow60–90s, inspect
+`/Library/StrixGraphicsFix/status` and `/Library/Logs/StrixGraphicsFix/<UTC>/`.
+`REBOOT_REQUIRED` means the current collection was requested and another macOS
+restart is needed; `DRIVERS_LOADED` only establishes kext presence, not visible
+OLED/HDR success. Require StrixGOP0.1.10,StrixAccel0.1.15,framebuffer/pipe state,
+stable WindowServer and owner-visible OLED/HDR. If still frozen, collect this
+new boot's report/bootstrap evidence from Linux and continue from its actual
+signature. The full boot-fix task is not yet runtime verified or complete.
