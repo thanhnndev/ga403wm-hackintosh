@@ -49,6 +49,9 @@ jobs:
       - name: Build StrixMetalGate (ESP-injected, explicit target)
         run: bash scripts/build.sh StrixMetalGate
 
+      - name: Build StrixGOP (ESP-injected, explicit target)
+        run: bash scripts/build.sh StrixGOP
+
       - name: Package
         run: |
           mkdir -p dist
