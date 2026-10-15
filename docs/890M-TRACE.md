@@ -1524,3 +1524,22 @@ Source: github.com/nullmoth/nvidia-macos-driver compare v1.15.0...v2.0.0 (read v
 - NVRM security: go(pass>done) root-only, client quota per pid (4096) with reserve for uid<500, event-sleeper cap 256, bound fd range checks. No perf impact.
 
 Verdict: performance-first priority is unaffected by 2.0; keep v1.x base + StrixHeadroom. Optionally cherry-pick the NVRMFB vendor-match and nvaccel_vm_sticky later if symptoms match. Reboot still pending to validate StrixHeadroom.
+
+### Step14 NullMoth 2.0.0: fork synced, package verified, INSTALL = macOS side (2026-10-15)
+
+* Fork `thanhnndev/nvidia-macos-driver` main was 116 commits behind, 0 ahead; synced with `gh repo sync` -> identical to upstream v2.0.0.
+* Package `nullmoth-nvidia-2.0.0.tar.gz` (378 MB) downloaded to the Linux scratchpad, SHA-256 matches the release SHA256SUMS
+  (`6122fef66b1413d90530d50a9b4a0194bc8f4bbe9bcfa1d873198cc34d772aed`). It is a `pkgroot/` with `install.sh`, 4 kexts
+  (NVRM, NVRMFB, NVAccel, NVRMAGDC, all bundle version 0.1), GPUBundles, `Library/NullMoth`. NVRMEdpBL (ours) is not in it;
+  its dependency `com.nullmoth.NVRM 0.1` is still satisfied.
+* `install.sh` (root, on macOS) replaces only NVRM/NVAccel/NVRMFB/NVRMAGDC in `/Library/Extensions` and rebuilds the AuxKC with
+  `kmutil create -n aux --repository /Library/Extensions`, so StrixAccel/StrixGOP/NVRMEdpBL already there are kept in the same
+  AuxKC (the arrangement the macOS side repaired). `CHECK=1` = dry run that changes nothing. It also rewrites GPUBundles and
+  `/Library/NullMoth`, and takes backups ("restore from $BK" in its messages). It does NOT touch the ESP config.
+* Cannot run from Linux (needs kmutil). Not run yet. Steps for the macOS side:
+  1. `gh release download v2.0.0 -R nullmoth/nvidia-macos-driver -p nullmoth-nvidia-2.0.0.tar.gz` (or curl), check the SHA-256 above, extract to an empty dir.
+  2. `cd <dir>/pkgroot && sudo CHECK=1 bash install.sh` must end with `CHECK PASS (nothing changed)`.
+  3. `sudo bash install.sh`, approve in Privacy & Security if asked, reboot.
+  4. ESP NV* entries stay disabled (same bundle IDs as AuxKC). Do not re-enable them; the ESP 1.15 copies are now stale.
+  5. After boot: `kmutil showloaded | grep -i -E 'nullmoth|strix'`, `scripts/macos-strix-0114-verify.sh` (StrixHeadroom), WindowServer CPU with HDMI+OLED.
+* Risks: 2.0 NVRMFB changes the match to NVIDIA-only (good: it no longer claims the AMD slot) and 2.0 has a documented known issue "blank frames on the other display after a refresh change". Our Strix* kexts were built against 1.15 behaviour; if StrixMetalGate/NVAccel handshake changes, collect the log before touching anything.
