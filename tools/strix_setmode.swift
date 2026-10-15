@@ -1,3 +1,6 @@
+// Switch the main display to 1440x900 HiDPI at <hz> (60 or 120) through a CG display configuration transaction.
+// CGDisplaySetDisplayMode() returns success but is ignored here; only the configuration transaction applies it.
+// Build: swiftc -O tools/strix_setmode.swift -o /tmp/setmode   Run: /tmp/setmode 60
 import CoreGraphics
 let d = CGMainDisplayID()
 let hz = Double(CommandLine.arguments[1])!
