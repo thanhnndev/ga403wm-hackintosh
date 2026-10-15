@@ -1132,3 +1132,25 @@ Why: AuxKC copies cannot be updated from Linux, cannot be overridden by OC, and 
   `/Library/Extensions/{HighPointIOP,HighPointRR,NVAccel,NVRM,NVRMAGDC,NVRMEdpBL,NVRMFB,StrixAccel,StrixGOP}.kext`
   and the stale `/Library/KernelCollections/AuxiliaryKernelExtensions.kc`.
 * Note: re-running `nullmoth-setup.sh` would reinstall NV* into /Library/Extensions; do not, or remove again.
+
+### Step11 /Library/Extensions cleaned (done from Linux, rw mount), 2026-10-15 — HANDOFF TO THE macOS SIDE
+
+State now:
+* `/Library/Extensions` is EMPTY and `/Library/KernelCollections/AuxiliaryKernelExtensions.kc` is deleted (copies in
+  `~/ga403-logs/lib-ext-removed-20261015/` on the Linux side). All custom kexts load from the ESP (OC Kernel/Add, BootKC):
+  NVRM, NVRMEdpBL, NVRMFB, NVRMAGDC, NVAccel, StrixAccel 0.1.15, StrixGOP 0.1.10, StrixMetalGate 0.1.1. Boot-arg `strixhdr=1`
+  added (HDR twins/CTA block/timing range on). ESP config backup: `EFI/OC/config.plist.pre-strixgop010`.
+* The 0.1.9 SIGFPE loop (see the section above) is fixed in 0.1.10 by a fully populated IODisplayTimingRangeV2 - the first
+  boot with 0.1.10 has not happened yet when this was written.
+
+What the macOS side should do:
+1. Do NOT run `macos-strix-gop-install.sh`, `macos-strix-accel-install.sh` or `nullmoth-setup.sh`: they reinstall into
+   `/Library/Extensions` and recreate the duplicate-bundle-ID conflict. Update kexts by CI build + copying into
+   `EFI/OC/Kexts` from Linux (workflow `build.yml` builds StrixGOP, StrixAccel, StrixMetalGate explicitly).
+2. After the first boot collect: `ioreg -l | grep -E 'StrixGOPVersion|GateVersion|GateState'`, `kmutil showloaded | grep -i
+   -E 'nullmoth|strix'` (expect all of them, none from AuxKC), `log show --last boot --predicate 'process=="kernel"' |
+   grep -i -E 'duplicate|already loaded|strix|NVRM'`, and whether WindowServer stays up (`ls /Library/Logs/DiagnosticReports | grep WindowServer`).
+3. Watch for the changed timing: NVIDIA kexts now start in BootKC, earlier than before (they used to load with AuxKC);
+   NVRM's 20 s head wait / 34 s boot hold may shift. If WindowServer starts without the Metal device, check StrixMetalGate
+   `GateState` first.
+4. If HDR still misbehaves, `-strixhdroff` in boot-args disables only the HDR parts without touching the injection layout.
