@@ -7,6 +7,27 @@ Step-by-step history: [890M trace](890M-TRACE.md).
 ## Current state
 
 
+**NEWEST (Step13, 2026-10-15, written on Linux): performance first.** Owner direction: HDR/colour/display names are
+off the table until performance is fixed. Do not touch StrixGOP HDR or EDID for now.
+* Added `kexts/StrixHeadroom` (Lilu plugin, CI-built, injected from the ESP after Lilu): NOPs the mutex lock/unlock in
+  `CoreDisplay::Display::CurrentHeadroom`, the 98 % hot spot of the 1150-1405 % WindowServer CPU with HDMI + OLED.
+  Disassembly, byte patterns and offsets: `docs/890M-TRACE.md` "Step13". NOT yet run on hardware.
+* ESP now also has: `StrixHeadroom.kext` (new), backup `EFI/OC/config.plist.pre-strixheadroom`. The 7 graphics kexts stay
+  in `/Library/Extensions` + AuxKC (the ESP entries for them are disabled); do not re-enable them (BootKC cannot link
+  IOGraphicsFamily/IOAcceleratorFamily2/AGDC, see Step11 boot-fix entry).
+* Next on macOS, in this order:
+  1. Boot with HDMI + OLED, then `bash scripts/macos-strix-0114-verify.sh` (ID-selected OLED workload). Pass = OLED
+     WindowServer CPU far below the old 1100-1400 % with ~119 ticks/s. Also record `kmutil showloaded | grep -i
+     strixheadroom` and Lilu's log (`log show --last boot | grep -i -E 'strixheadroom|StrixHeadroom|CoreDisplay'`) to
+     confirm both patches applied (no "patch not applied"/"no match" line).
+  2. If the patch did not apply (other CoreDisplay build, Lilu missing, wrong process path): the patterns are in
+     `kexts/StrixHeadroom/StrixHeadroom.cpp`; re-derive them with the recipe in the Step13 entry and fix there.
+  3. If CPU is still high, take `spindump WindowServer 5 10` under load: the next hot function after CurrentHeadroom is
+     the next target. Remaining known cost with no HDMI is software compositing (~155 %, CompositorSW).
+  4. Disable switch if it misbehaves (display artefacts, WS crash): boot-arg `-strixhroff`.
+* Linux side keeps `/mnt/apv1..7` and `/mnt/cryptex` mounted read-only; the extracted CoreDisplay is in the session
+  scratchpad only (re-extract with `ipsw dyld extract` from `cryptex1/current/os.dmg` -> `System/Library/dyld`).
+
 **Owner feedback after0.1.11:** OLED HDR toggle is present, but HDR is too bright
 and has incorrect colours. Capability exposure succeeded; physical HDR output
 failed and remains unimplemented. StrixGOP records HDR mode selection while
