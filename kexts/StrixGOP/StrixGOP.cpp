@@ -94,6 +94,7 @@ class StrixGOPFramebuffer : public IOFramebuffer {
     bool discoverPanel(IOPCIDevice *pci);
     void publishBacklight();
     bool loadEdid();
+    void publishTimingRange();
     void logAttribute(const char *where, IOIndex connection, IOSelect attribute, uintptr_t value, IOReturn rc);
     bool takeSample(uint32_t *out);
     void refreshSample();
@@ -187,13 +188,12 @@ bool StrixGOPFramebuffer::start(IOService *provider) {
     auto pci = OSDynamicCast(IOPCIDevice, provider);
     if (!pci || !readProfile(pci)) return false;
     setProperty("TraceStep", "890M-03");
-    setProperty("StrixGOPVersion", "0.1.8");
+    setProperty("StrixGOPVersion", "0.1.9");
     setProperty("HardwareModesetting", false);
     setProperty("Acceleration", false);
     setProperty("Aperture,Base", layout.barBase + layout.offset, 64);
     setProperty("Aperture,RasterBytes", raster, 64);
     setProperty("PixelFormat,Status", "XRGB8888-selected-needs-color-validation");
-    loadEdid();
     {
         uint32_t hdr = 0;
         if (PE_parse_boot_argn("strixhdr", &hdr, sizeof(hdr)) && hdr) hdrModes = true;
@@ -202,6 +202,8 @@ bool StrixGOPFramebuffer::start(IOService *provider) {
         if (PE_parse_boot_argn("-strixhdroff", nullptr, 0)) hdrModes = false;
         setProperty("Hdr,Modes", hdrModes ? 1 : 0, 32);
     }
+    loadEdid();
+    if (hdrModes) publishTimingRange();
     // The backlight handler must exist before IOFramebuffer::start(): IOFramebuffer::open looks for
     // a service named "backlight" when the first framebuffer opens (gIOFBHaveBacklight).
     if (PE_parse_boot_argn("-strixauxoff", nullptr, 0)) setProperty("Aux,Status", "disabled-by-boot-arg");
@@ -428,9 +430,57 @@ bool StrixGOPFramebuffer::loadEdid() {
         for (unsigned i = 0; i < 128; ++i) sum += bytes[b * 128 + i];
         if (sum) { IOLog("StrixGOP: reject EDID block %u checksum\n", b); return false; }
     }
+    if (hdrModes && n == 128 && bytes[126] == 0) {
+        // Step11: Display::SupportsHDRMode needs the CEA-861 HDR static metadata block with the
+        // ST 2084 EOTF bit (IOFBConnect+0x200 / +0x1e4 bit2, set by InstallCEA861EXTColor).
+        uint8_t blk[256];
+        bcopy(bytes, blk, 128); bzero(blk + 128, 128);
+        blk[126] = 1;
+        uint8_t sum = 0;
+        for (unsigned i = 0; i < 127; ++i) sum += blk[i];
+        blk[127] = uint8_t(0 - sum);
+        uint8_t *e = blk + 128;
+        e[0] = 0x02; e[1] = 0x03; e[3] = 0x00;
+        unsigned o = 4;
+        // Colorimetry data block: BT.2020 RGB + YCC.
+        e[o++] = 0xE3; e[o++] = 0x05; e[o++] = 0xC0; e[o++] = 0x00;
+        // HDR static metadata block: EOTF SDR + ST 2084, descriptor type 1, ~500/400/0.0007 cd/m2.
+        e[o++] = 0xE6; e[o++] = 0x06; e[o++] = 0x05; e[o++] = 0x01;
+        e[o++] = 0x6A; e[o++] = 0x60; e[o++] = 0x03;
+        e[2] = uint8_t(o);
+        sum = 0;
+        for (unsigned i = 0; i < 127; ++i) sum += e[i];
+        e[127] = uint8_t(0 - sum);
+        auto ext = OSData::withBytes(blk, 256);
+        if (ext) {
+            edid = ext;
+            setProperty("EDID,Blocks", 2, 32);
+            setProperty("PanelEDIDSource", "synthesized+cta-hdr");
+            return true;
+        }
+    }
     data->retain(); edid = data;
     setProperty("EDID,Blocks", n / 128, 32);
     return true;
+}
+void StrixGOPFramebuffer::publishTimingRange() {
+    // IODisplayInstallTimings reads this registry property into IOFBConnect+0x128; byte +0xea there
+    // (supportedDynamicRangeModes) bit 1 is the HDR10 gate of SupportsHDRMode. Timing limits stay at
+    // the two panel clocks so CoreDisplay installs no extra timings.
+    IODisplayTimingRangeV2 r;
+    bzero(&r, sizeof(r));
+    r.version = kIOTimingRangeV2;
+    r.minPixelClock = 652264000; r.maxPixelClock = 652270000;
+    r.supportedPixelEncoding = kIOPixelEncodingRGB444;
+    r.supportedBitsPerColorComponent = kIOBitsPerColorComponent8 | kIOBitsPerColorComponent10;
+    r.supportedColorimetryModes = kIOColorimetryNativeRGB | kIOColorimetrysRGB | kIOColorimetryBT709 |
+                                  kIOColorimetryBT2020 | kIOColorimetryBT2100;
+    r.supportedDynamicRangeModes = kIODynamicRangeSDR | kIODynamicRangeHDR10;
+    if (auto d = OSData::withBytes(&r, sizeof(r))) {
+        setProperty(kIOFBTimingRangeKey, d);
+        d->release();
+        setProperty("Hdr,TimingRangeBytes", unsigned(sizeof(r)), 32);
+    }
 }
 bool StrixGOPFramebuffer::hasDDCConnect(IOIndex connectIndex) { return !connectIndex && edid; }
 IOReturn StrixGOPFramebuffer::getDDCBlock(IOIndex connectIndex, UInt32 blockNumber, IOSelect blockType,

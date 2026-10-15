@@ -1038,3 +1038,26 @@ not do.
 One-shot collection: `scripts/macos-strix-autocollect.sh arm` before the reboot; ~90 s after the next login it runs
 `scripts/macos-strix-0114-verify.sh` (now also dumps EDR potential, GOP version/Hdr,Modes, IOFBModes count, boot-args)
 and removes itself.
+
+### Step11 result of the 0.1.15 + StrixGOP 0.1.8 boot (OLED-only, 2026-10-15) and the second HDR gate
+
+Autocollect ran by itself (`out/890m-trace/step11-0114-20261015T013806Z`). The boot had no HDMI, so `Transactions=0`,
+`Pipes=1`: the OLED-only CompositorSW path again (WindowServer 197 %, 118.6 fps, p99 8.46 ms). The "oled-melt GONE"
+verdict is therefore **not** a measurement of 0.1.15; it needs a boot with HDMI. Served claims: `CapSeq` now shows
+0x4,0x2,0x1,0x400,0x1000,0x2000 (CapServed=14), WindowServer is still the only client.
+
+HDR twins alone did nothing: `IOFBModes` has 4 entries (IDs 3/4 carry dynamicRange 2, SDR twins 1; CG hides them from
+`CGDisplayCopyAllDisplayModes`) but `edr_potential` stays 1.0. Disassembly of `Display::SupportsHDRMode()` shows three
+more conditions, all on `IOFBConnect` (the `gConnectRefDict` entry):
+1. `connect+0x128` is a `0x138`-byte copy of the framebuffer's **`IOFBTimingRange`** registry property
+   (`IODisplayInstallTimings`, needs >= 0xf0 bytes). Byte `+0xea` is `IODisplayTimingRangeV2.supportedDynamicRangeModes`
+   (struct offset 0xea): bit1 = HDR10 must be set (`+0xe8` supportedColorimetryModes bit8 = BT.2020 for
+   `drive_display_2020`). StrixGOP published no `IOFBTimingRange`, so the pointer was NULL.
+2. `connect+0x200 == 1` and `connect+0x1e4 & 4`: written by `InstallCEA861EXTColor` from the CEA-861 **HDR static
+   metadata data block** (extended tag 6, EOTF byte bit2 = ST 2084). Our synthesized EDID is one 128-byte block.
+3. The HDR twin mode ID must differ from the current mode ID (done in 0.1.8).
+StrixGOP 0.1.9 (only with `HdrModes`): appends a CEA-861 extension block (colorimetry BT.2020, HDR static metadata
+SDR+PQ, ~500/400/0.0007 cd/m2, base block byte 126 = 1, both checksums fixed; `PanelEDIDSource=synthesized+cta-hdr`,
+`EDID,Blocks=2`) and publishes `IOFBTimingRange` (V2, pixel clocks pinned to the two panel clocks so no extra timings
+are installed, 8/10 bpc, SDR|HDR10, BT.709/2020/2100). Checks next boot: `edr_potential`, `IODisplayEDID` length 256,
+`Hdr,TimingRangeBytes`.
