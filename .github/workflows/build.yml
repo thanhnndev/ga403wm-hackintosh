@@ -55,6 +55,9 @@ jobs:
       - name: Build StrixAccel (ESP-injected, explicit target)
         run: bash scripts/build.sh StrixAccel
 
+      - name: Build StrixHeadroom (ESP-injected Lilu plugin, explicit target)
+        run: bash scripts/build.sh StrixHeadroom
+
       - name: Package
         run: |
           mkdir -p dist
