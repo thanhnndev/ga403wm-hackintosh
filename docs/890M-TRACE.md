@@ -1083,3 +1083,20 @@ because no accelerator (our StrixAccel is display-only, no 3D/Metal context) is 
 it cheap is a real accelerated renderer (iGPU 3D, i.e. the PM4/GFX bring-up) or a lighter workload (fewer / smaller
 damaged layers); no tunable in StrixGOP/StrixAccel changes it. Reducing damage (e.g. 60 Hz instead of 120 Hz mode,
 `reduce motion/transparency` in Accessibility) is the cheap mitigation and is user-side only.
+
+### Step11 smoothness measurements (OLED-only, 0.1.15 live, 2026-10-15, on battery with Low Power Mode on)
+
+Tool: `tools/framepace.swift move|anim <s> shadow|noshadow titled|borderless <w> <h>` (CADisplayLink app ticks; "move" =
+`setFrameOrigin` every tick = window drag), `tools/strix_setmode.swift` (CG config transaction; `CGDisplaySetDisplayMode`
+returns 0 but is ignored).
+* 120 Hz, anim (layer rotation): 117-120 ticks/s, p99 8.4 ms. Presentation of a simple animation is fine.
+* 120 Hz, move 600x400 titled+shadow: 55-110 ticks/s, p90 12-39 ms, p99 26-130 ms, max up to 244 ms; one run 23 ticks/s.
+  Borderless 200x150: 114/s, p99 21 ms. 1400x800: 98/s, max 157 ms. Large run-to-run variance.
+* 60 Hz (mode 1): anim 60/s perfect, but move 600x400 only 30-44/s and 1400x800 14/s (p90 168 ms). The cost of a
+  window move is not a function of refresh rate: each move is a software re-composite of old+new damage plus shadow,
+  so 60 Hz does not help and 120 Hz is better. Keep 120 Hz.
+* So the choppiness is CPU-bound software compositing latency (fork-join over ~25 default-qos threads, so it is
+  sensitive to any busy core). CPU clocks: big Zen 5 cores sit at 2.0 GHz, Zen 5c 1.4-3.0 GHz (`debug.amdcppc.freq`),
+  Tctl 77 C, package 16.6 W while the machine was on battery, `pmset lowpowermode 1`, AsusWmi `set_profile=2` (silent).
+  Next: re-measure on AC with Low Power Mode off and the Performance/Turbo profile to see how much of the jitter is the
+  platform power limit rather than the renderer.
