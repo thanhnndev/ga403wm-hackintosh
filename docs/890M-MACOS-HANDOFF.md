@@ -7,6 +7,17 @@ Step-by-step history: [890M trace](890M-TRACE.md).
 ## Current state
 
 
+**Owner feedback after0.1.11:** OLED HDR toggle is present, but HDR is too bright
+and has incorrect colours. Capability exposure succeeded; physical HDR output
+failed and remains unimplemented. StrixGOP records HDR mode selection while
+retaining the boot XRGB8 scanout, with no DCN colour/HDR signalling transition.
+HiDPI is now1440x900 logical /2880x1800 backing at120Hz again (read-only verified).
+Mi Monitor really advertises PQ in its valid CTA EDID; its missing HDR toggle
+also needs NVIDIA framebuffer/KMS mode and colour handling. Read the final
+owner-feedback trace entry before any further patch/reboot. No unchanged-code
+benchmark or tracing-only reboot is authorized by the current work direction.
+
+
 **Latest reboot result,2026-10-15:** GOP0.1.11 is active as AMDStrixGOPFramebuffer.
 CoreDisplay now receives256-byte effective/original OLED EDID and NSScreen OLED
 EDR potential is4.0, previously1.0. Current EDR remains1.0; physical HDR and the

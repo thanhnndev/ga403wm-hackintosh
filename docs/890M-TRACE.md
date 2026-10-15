@@ -1443,3 +1443,38 @@ Evidence: `out/890m-trace/step12-reboot-EA06C1BF/` contains edr.txt, displays.tx
 GOP/accelerator registry plists and the filtered current-boot WindowServer log.
 No automatic tracing job, driver installation, mode change or benchmark was
 performed in this reboot check.
+
+
+### Step12 owner feedback: HDR toggle exposed, colour output incorrect; HDMI HDR gate absent
+
+Owner confirms OLED Settings now offers HDR, but selecting it produces excessive
+brightness and wrong colours. This is a failed colour-output result, not working
+HDR. The prior patch opened capability discovery; native HDR output was never
+implemented. Source confirms the missing contract: StrixGOP HDR twins only change
+detailed timing.dynamicRange; getPixelInformation still describes XRGB8888,
+getTimingInfo advertises8 bits/component, setDisplayMode only records currentMode
+and performs no DCN programming. StrixAccel copies BGRA bytes or truncates l10r
+10-bit channels to8 bits, without a transfer-function/gamut/output-metadata path.
+Surface packing alone does not identify its transfer function. Do not assume a
+PQ-to-SDR conversion is a native HDR fix or blindly apply it to every l10r frame.
+
+A fresh read-only query now shows1440x900 logical /2880x1800 backing at120Hz:
+HiDPI has been selected again since the first inspection. No mode change was
+made by the agent. The initial post-reboot fallback remains recorded above.
+
+Mi Monitor's real256-byte EDID checksums are valid and its CTA extended tag6
+payload060501606004 advertises PQ; it is not an SDR-only EDID. Parsed capability
+evidence: step12-reboot-EA06C1BF/edid-capabilities.json. Current NVIDIA source
+f5b5eaa NVRMNVDAFramebuffer::getTimingInfoForDisplayMode zeroes the timing and
+returns kIOTimingIDInvalid; setDisplayMode accepts only kModeId/depth0 and the
+pixel path is8-bit XRGB. No HDR twin or supported dynamic-range timing is
+provided there. Therefore HDMI HDR requires NVIDIA framebuffer/KMS output work
+as well; do not edit its EDID to fake the missing driver contract.
+
+Next implementation must supply actual output colour handling: for OLED,
+validated DCN35 surface/bit-depth, transfer function/gamut and eDP HDR signalling
+with coherent mode transitions; for HDMI, expose real HDR modes only alongside
+NVIDIA KMS colour/output-metadata handling. Preserve the AMD classification and
+EDID fixes. Do not request another reboot for unchanged code or equate the
+Settings toggle/EDR potential4.0 with validated HDR output. No benchmark, driver
+install, HDR toggle or display-mode change was performed for this feedback.
