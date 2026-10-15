@@ -1119,3 +1119,16 @@ returns 0 but is ignored).
   `strixhdr=1` appended (HDR twins + CTA block + timing range stay ON). Config backup: `config.plist.pre-strixgop010`.
   Caveat to check in the next boot: `/Library/Extensions/StrixGOP.kext` (0.1.9, AuxKC) has the same bundle ID; see
   `ioreg -l | grep StrixGOPVersion` (must say 0.1.10) and the unified log for duplicate-kext messages.
+
+### Step11 all custom kexts moved out of /Library/Extensions into ESP Kernel/Add (2026-10-15)
+
+Why: AuxKC copies cannot be updated from Linux, cannot be overridden by OC, and duplicate bundle IDs once the ESP copy exists.
+* Injected (order matters, validated by a dependency/order check on Info.plist OSBundleLibraries, 0 problems):
+  `NVRM, NVRMEdpBL, NVRMFB, NVRMAGDC, NVAccel` (NullMoth 1.15.0 files copied byte-for-byte from the installed, already
+  patched `/Library/Extensions`), then `StrixAccel` 0.1.15, `StrixGOP` 0.1.10 (CI run 38670864517), `StrixMetalGate` last
+  (it polls for NVAccel). HighPointIOP/HighPointRR (RAID kexts, unrelated hardware) are dropped, not injected.
+* Left in macOS on purpose (not kexts): `/Library/GPUBundles` (Metal user-space driver), `/Library/NullMoth`, wsreset daemon.
+* Must be removed from macOS before the boot, else same bundle IDs exist in AuxKC and BootKC:
+  `/Library/Extensions/{HighPointIOP,HighPointRR,NVAccel,NVRM,NVRMAGDC,NVRMEdpBL,NVRMFB,StrixAccel,StrixGOP}.kext`
+  and the stale `/Library/KernelCollections/AuxiliaryKernelExtensions.kc`.
+* Note: re-running `nullmoth-setup.sh` would reinstall NV* into /Library/Extensions; do not, or remove again.
