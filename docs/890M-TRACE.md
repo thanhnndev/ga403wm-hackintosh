@@ -1061,3 +1061,25 @@ SDR+PQ, ~500/400/0.0007 cd/m2, base block byte 126 = 1, both checksums fixed; `P
 `EDID,Blocks=2`) and publishes `IOFBTimingRange` (V2, pixel clocks pinned to the two panel clocks so no extra timings
 are installed, 8/10 bpc, SDR|HDR10, BT.709/2020/2100). Checks next boot: `edr_potential`, `IODisplayEDID` length 256,
 `Hdr,TimingRangeBytes`.
+
+### Step11 OLED-only WindowServer profile (spindump, 10 s under the present load tool, 2026-10-15)
+
+`out/890m-trace/step11-oledonly-profile/` (`load.txt`, `top-under-load.txt`, `spindump-ws.txt`). Load: 119.3 fps,
+avg 8.38 ms, p99 8.57 ms, max 177 ms. WindowServer 201 % CPU, 31 threads (136 % again a minute later with the load
+tool stopped, so the compositor is not idle-cheap either).
+
+Where the CPU goes (25 `com.apple.root.default-qos` workers, 9.6 s CPU in 10 s; ws_main_thread only 1.26 s):
+* 1102 of 1459 worker samples: `layer_blit_entry_block` (SkyLight) -> `CGLayerKitFetch` -> `CARenderOGLRender` ->
+  `CA::OGL::Renderer::render` -> nested `render_layers`/`LayerNode::apply` -> `render_contents_background` ->
+  `fill_rect_tex` -> `CA::OGL::SWContext::draw_elements` -> `CA::OGL::SW::draw_polygon` -> `dispatch_apply` ->
+  `scan_convert`/`scanline` -> `sample_texture` -> `image_sampler<ARGB8_Host,...>`.
+* Remaining user leaf work: `clip_vertices`, `layer_blit_byte_ARGB8_ARGB8_RGB8`, `bzero`, `memmove`, `circle_sampler`.
+* The `kernel+2425475 (running)` leaf under every user frame is the stackshot IPI, not a fault: the thread was on-CPU
+  in user code.
+
+So the "CompositorSW" path is Core Animation's **software OpenGL rasteriser** (`CA::OGL::SWContext`) shading every
+layer of the 2880x1800 ARGB8 surface across all cores. Nothing in the display kexts is on that path: it is chosen
+because no accelerator (our StrixAccel is display-only, no 3D/Metal context) is offered to CA. The only way to make
+it cheap is a real accelerated renderer (iGPU 3D, i.e. the PM4/GFX bring-up) or a lighter workload (fewer / smaller
+damaged layers); no tunable in StrixGOP/StrixAccel changes it. Reducing damage (e.g. 60 Hz instead of 120 Hz mode,
+`reduce motion/transparency` in Accessibility) is the cheap mitigation and is user-side only.
