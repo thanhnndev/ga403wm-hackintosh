@@ -63,7 +63,9 @@ out += ['', 'EDR potential per screen: %s' % (pots or 'n/a')]
 out.append('VERDICT edr: %s' % ('exposed (potential > 1)' if any(float(x) > 1.0 for x in pots) else 'not exposed (potential 1.0)'))
 if cpus:
     c = float(cpus[0])
-    out.append('VERDICT oled-melt: %s (WindowServer %.0f%%, baseline 1150%%)' % ('GONE' if c < 300 else 'PARTIAL' if c < 900 else 'STILL MELTING', c))
+    txn = int(g('Transactions') or 0)
+    out.append('VERDICT oled-melt: n/a, no pipe transactions (OLED-only CompositorSW path, WindowServer %.0f%%, target <= ~150%%)' % c if txn == 0 else
+               'VERDICT oled-melt: %s (WindowServer %.0f%%, baseline 1150%%)' % ('GONE' if c < 300 else 'PARTIAL' if c < 900 else 'STILL MELTING', c))
 served = int(g('AGDC,CapServed') or 0)
 out.append('VERDICT claims served: %s' % ('yes' if served else 'NO - descriptor rejected or nobody asked, see caps-and-tables.txt'))
 gs = int(g('Txn,GammaSeen') or 0)
