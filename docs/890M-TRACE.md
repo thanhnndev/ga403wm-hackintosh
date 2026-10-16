@@ -1649,3 +1649,51 @@ byte-identical to 0.1.17). 0.1.17 backed up to `~/efi-audit/strixaccel-backup/St
 6aff2950...). `/Library/Extensions/StrixAccel.kext` replaced (hash 552358d4...), `kmutil load --no-authorization -p` = rc 28;
 `kmutil inspect` shows the on-disk `/Library/KernelCollections/AuxiliaryKernelExtensions.kc` now maps
 com.itlmt7925.strixaccel 0.1.18. Running boot still has 0.1.17 (verified); WindowServer never killed, reboot is the user's.
+
+## Step19 (2026-10-16, Linux): the 16/10 panics are the HoRNDIS/fq_codel assert, not the iGPU; the ESP fq_codel patch verified byte-for-byte
+
+The owner reported "the iGPU panics". It does not. Both `Kernel-2026-10-16-*.panic` reports are the same
+**network** assert, reached entirely outside the graphics stack:
+
+```
+panic(cpu 20/4 ...): assertion failed: now >= *pkt_enq_time
+  file: xnu/bsd/net/classq/classq_fq_codel.c, line 1127 @uipc_socket.c:8286
+  _fq_codel_dq+0x946 / +0x1e5 -> _fq_if_flow_feedback -> _fq_if_dequeue -> _ifclassq_dequeue
+  -> _ifnet_dequeue -> IONetworkInterface::dequeueOutputPackets
+  -> com.joshuawise.kexts.HoRNDIS(9.3) HoRNDIS::outputStart        (USB tether)
+Kernel Extensions in backtrace: IONetworkingFamily(3.4), HoRNDIS(9.3)
+```
+
+None of the four panics on this install involves StrixGOP / StrixAccel / IOAcceleratorFamily2 /
+AppleGraphicsDeviceControl / amdgpu (the two 12/10 ones are IO80211Family + AppleSkywalk). The trigger is
+HoRNDIS (ESP-injected, `/boot/EFI/OC/Kexts/HoRNDIS.kext`, Kernel/Add enabled) on AMD TSC skew: a packet
+timestamped on one CPU, dequeued with an earlier `now` on another. This is the site Step16 patched.
+
+Verification this session (System volume mounted ro at `/mnt/macos-sys`, `vol=3`):
+
+* `/mnt/macos-sys/System/Library/Kernels/kernel` LC_UUID `1291D44A-C0CD-3AC7-A9E4-CA2749B33959`
+  **equals the panic's Kernel UUID**; `osrelease` string is `25.6.0`. Right build.
+* Applying the config's `Find` under its `Mask` (`3-byte "48 8d 3d" anchor, then wildcard the two rip
+  displacements`) yields **exactly one** match: fileoff `0x429d1e` = VA `0xffffff8000629d1e`:
+  `lea rdi,[file]; lea rsi,["now >= *pkt_enq_time"]; mov edx,1127; call panic`. `mov edx,1127` is the
+  source line, so it is unambiguously the assert.
+* `objdump` of the site: `mov %r8,%r9; sub %rcx,%r9; jb 0x629d1e` (taken when `now < pkt_enq_time`), and
+  `0x629caa` is the next normal instruction. The patch `Replace` = `xor r9,r9; jmp -0x79` lands on that
+  boundary, so the taken branch clamps the sojourn to 0 and continues instead of panicking. Leftover bytes
+  after the 20-byte Replace (the old `call` rel32 tail) are unreachable. Safe.
+* ESP OpenCore is 1.0.8 (built from the same cached `oc-src`); its Kernel/Patch schema declares
+  `Mask`/`ReplaceMask` (`OcConfigurationLib.c` lines 340/344) and `DataPatcher` matches with
+  `(Data[i] & Mask[i]) == Find[i]`. MinKernel `25.0.0` / MaxKernel `25.99.99` covers Darwin `25.6.0`.
+
+Conclusion: the patch as it stands in `config.plist` is correct and will stop this panic. It did not stop
+the 16:45 one because the live `config.plist` was rewritten **after** that panic (ESP mtime postdates
+16:45), i.e. that boot ran an earlier, not-yet-byte-correct version. Runtime proof (phone tethered, no
+panic) is still pending. HoRNDIS itself is not the thing to patch: the assert is in xnu's classq; if USB
+tethering is not needed, disabling the ESP Kernel/Add `HoRNDIS.kext` entry removes the trigger outright.
+
+Boot 17:25 local, same day (0.1.18 live), for the graphics side: Gate PASS, Pipes 1,
+Transactions=Copied=46, `NoPlane=0`, `ValidateFail=0`, ABIProfile `macos26-25G241-x86_64-ioaccel487.4.4`;
+`failed to alloc GART space` and `failed to allocate GPU virtual address` are **0** (bit 21 fix held). Still
+present: 192 `Fallback GPU Display Pipe transaction submission failed` in the first minute
+(`status(+58)` 4x `0`, 4x `0xe00002be`), so the UMA resource change fixed the GART/virtual-address failure
+but not every submit. This is again not a panic. `bluetoothd` `ExcUserFault` (5 reports) is userland.

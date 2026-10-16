@@ -7,7 +7,19 @@ Step-by-step history: [890M trace](890M-TRACE.md).
 ## Current state
 
 
-NEWEST (Step18, 2026-10-16, macOS): StrixAccel 0.1.18 staged in `/Library/Extensions` + on-disk AuxKC, reboot pending.
+NEWEST (Step19, 2026-10-16, Linux): the "iGPU panic" is not the iGPU. Both `Kernel-2026-10-16-*.panic`
+reports are `assertion failed: now >= *pkt_enq_time` (`classq_fq_codel.c:1127`) reached from
+`HoRNDIS::outputStart` -> `ifnet_dequeue` -> `fq_codel_dq` (USB tether + AMD TSC skew); no
+StrixGOP/StrixAccel/IOAccel/AGDC/amdgpu in any panic. The ESP Kernel/Patch "Strix | fq_codel_dq" was
+verified against the exact kernel (`LC_UUID 1291D44A-…B33959` = the panic's Kernel UUID, osrelease
+`25.6.0`): `Find`+`Mask` matches uniquely at `0xffffff8000629d1e` (the line-1127 assert), `Replace`
+`xor r9,r9; jmp 0x629caa` is safe, and the ESP OpenCore 1.0.8 supports `Mask`. So the patch is correct
+and will stop the panic on the next boot; the 16:45 one predated this byte-correct version (config
+rewritten after the panic). HoRNDIS needs no patch — the assert is in xnu; disabling the ESP
+Kernel/Add `HoRNDIS.kext` entry removes the trigger if tethering is not needed. Full detail and the
+0.1.18 boot readback: 890M-TRACE.md "Step19".
+
+Previous (Step18, 2026-10-16, macOS): StrixAccel 0.1.18 staged in `/Library/Extensions` + on-disk AuxKC, reboot pending.
 Root cause of the per-frame `Fallback GPU Display Pipe transaction submission failed` (status `0xe00002be`) was the config
 value `cfg+0x08 = 0x480000` missing bit 21: `IOAccelResource2::allocMemory` then allocates resources as vidmem and
 `StrixVidMemory` has no backing (length 0 -> "failed to alloc GART space ... Needed 0 bytes"). 0.1.18 sets `0x680000`
