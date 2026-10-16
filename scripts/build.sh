@@ -90,4 +90,13 @@ if [ ${#TARGETS[@]} -gt 0 ] && want StrixHeadroom "${TARGETS[@]}"; then
   COMMON="$COMMON -I$LILU_DIR/Lilu -DPRODUCT_NAME=StrixHeadroom -DMODULE_VERSION=0.1.0 -DLILU_KEXTPATCH=1 -Wno-unknown-warning-option -Wno-vla"
   build_kext StrixHeadroom kexts/StrixHeadroom kmod_info.c StrixHeadroom.cpp plugin_start.cpp
 fi
+if [ ${#TARGETS[@]} -gt 0 ] && want BtLeDlFix "${TARGETS[@]}"; then
+  LILU_DIR="${LILU_DIR:-build/Lilu}"
+  [ -d "$LILU_DIR" ] || git clone --depth 1 https://github.com/acidanthera/Lilu "$LILU_DIR"
+  mkdir -p build/obj
+  cp "$LILU_DIR/Lilu/Library/plugin_start.cpp" kexts/BtLeDlFix/plugin_start.cpp
+  trap 'rm -f kexts/BtLeDlFix/plugin_start.cpp' EXIT
+  COMMON="$COMMON -I$LILU_DIR/Lilu -DPRODUCT_NAME=BtLeDlFix -DMODULE_VERSION=1.1.0 -DLILU_KEXTPATCH=1 -Wno-unknown-warning-option -Wno-vla"
+  build_kext BtLeDlFix kexts/BtLeDlFix kmod_info.c BtLeDlFix.cpp plugin_start.cpp
+fi
 exit 0

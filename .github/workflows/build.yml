@@ -58,6 +58,9 @@ jobs:
       - name: Build StrixHeadroom (ESP-injected Lilu plugin, explicit target)
         run: bash scripts/build.sh StrixHeadroom
 
+      - name: Build BtLeDlFix (ESP-injected Lilu plugin, explicit target)
+        run: bash scripts/build.sh BtLeDlFix
+
       - name: Package
         run: |
           mkdir -p dist
