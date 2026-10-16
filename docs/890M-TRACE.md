@@ -1597,3 +1597,12 @@ Step15 install (done from Linux, 2026-10-16 14:46, CI run 38868848326): `/Librar
 - Kernel (apv3 `/System/Library/Kernels/kernel`, 25.6): the assert is at 0xffffff8000629d1e, reached by `subq %rcx,%r9; jb` at 0x...629ca8. Pattern `48 8d 3d .. 48 8d 35 .. ba 67 04 00 00 e8` is unique (file off 0x429d1e).
 - ESP config.plist: new Kernel/Patch "Strix | fq_codel_dq ..." (25.0.0-25.99.99, Count 1): replaces the panic block with `xor r9,r9; jmp 0x...629caa` (sojourn clamped to 0). Backup: `~/ga403-logs/config.plist.pre-fqcodel-*`.
 - Not explained: first force-restart left no panic/stall log (likely a hard hang). Next: collect after reboot (`log show --last boot`, check whether the hang correlates with HoRNDIS/USB tether, Wi-Fi itlmt7925, or GPU), then iGPU perf (CurrentHeadroom re-derive for 25G241), Wi-Fi/BT branches.
+
+## Step17 (2026-10-16, Linux): Tahoe iGPU lag triage, StrixAccel 0.1.17 diagnostics
+
+Evidence (`/Library/Logs/StrixGraphicsFix/20261016T090740Z/display-log.txt`, boot 3 on 25G241):
+* Gate PASS, `StrixAccel,Pipes=1`, 40 submits / 40 copies; but every frame (44x) CoreDisplay logs `Fallback GPU Display Pipe transaction submission failed` and ~300x `Attempting to get 3-channel gamma table capabilities from plane with no 3-channel gamma table support`. First full-frame copy 8.7 ms / 20 MB.
+* Static read of 25G241 `IOAccelDisplayPipe::transaction_end` (SystemKernelExtensions.kc, 0x14bb0560): it returns/stores `0xe00002f0` (no txn), `set_transaction_args()` error, or `IOAccelDisplayPipeTransaction2::prepare()` error. `prepare()` (0x14baff8a) turns a false return of each plane resource's virtual `IOAccelResource2::prepare` (vtable +0x180) into `0xe00002be`; status is stored in the transaction at +0x58.
+* `StrixResource` inherits Apple's `IOAccelResource2::prepare` (map -> freeToPrepareMapping). If that returns false for the OLED surface resource, CoreDisplay reports failure on every frame although StrixDisplayPipe still copies (async worker), which fits "works but lags".
+* 0.1.17 logs `status(+58)` of the first 4 transactions at submit time (`txn N submit: ... status(+58) X`). Next boot answers: 0 => failure is elsewhere (user-client wait/end return), 0xe00002be => resource prepare path (override `StrixResource::prepare` to return true and skip mapping), other => set_transaction_args.
+* LaunchAgent `com.thanhnndev.strix.headroomhold` exists in the user's LaunchAgents; whether it runs on 26.x is not yet checked.

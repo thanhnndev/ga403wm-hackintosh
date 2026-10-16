@@ -28,7 +28,7 @@
 #include "../../include/StrixNativeABI.h"
 #include "StrixABIProfile.h"
 
-#define STRIXACCEL_VERSION "0.1.16"
+#define STRIXACCEL_VERSION "0.1.17"
 
 #include "IOAccelFamily2_decl.h"
 
@@ -1384,8 +1384,11 @@ static IOSurface *strix_pick_surface(const IOAccelDisplayPipeTransaction2 *t)
 static void strix_diag_txn(const IOAccelDisplayPipe *pipe, const IOAccelDisplayPipeTransaction2 *t, unsigned n, const char *what)
 {
     const uint8_t *tb = reinterpret_cast<const uint8_t *>(t);
-    SLOG("txn %u %s: flags %llx +50 %x +54 %x", n, what, *reinterpret_cast<const uint64_t *>(tb + 0x48),
-         *reinterpret_cast<const uint32_t *>(tb + 0x50), *reinterpret_cast<const uint32_t *>(tb + 0x54));
+    // +58 is the status IOAccelDisplayPipe::transaction_end stores from set_transaction_args()/prepare() (25G241: any
+    // non-zero value there is what CoreDisplay reports as "transaction submission failed")
+    SLOG("txn %u %s: flags %llx +50 %x +54 %x status(+58) %x", n, what, *reinterpret_cast<const uint64_t *>(tb + 0x48),
+         *reinterpret_cast<const uint32_t *>(tb + 0x50), *reinterpret_cast<const uint32_t *>(tb + 0x54),
+         *reinterpret_cast<const uint32_t *>(tb + 0x58));
     const uint8_t *tp = strix_txn_planes(t);
     for (unsigned p = 0; p < 2; ++p) strix_dump_plane("txn", n, p, tp);
     const uint8_t *pp = *reinterpret_cast<const uint8_t *const *>(reinterpret_cast<const uint8_t *>(pipe) + 0x240);
@@ -1506,6 +1509,7 @@ IOReturn StrixDisplayPipe::submitTransaction(IOAccelDisplayPipeTransaction2 *t)
     }
     const uint64_t t0 = mach_absolute_time();
     IOSurface *s = strix_pick_surface(t);
+    if (n <= 4) strix_diag_txn(this, t, n, "submit");
     if (s && gTuneAsync && worker && qlock && !closing) {
         // The caller is WindowServer: park the newest surface and return. A frame the worker has not started yet is
         // replaced (coalesced), so a slow copy can only drop frames, never queue them or stall the other display.
