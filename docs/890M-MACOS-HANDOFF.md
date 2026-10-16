@@ -7,6 +7,11 @@ Step-by-step history: [890M trace](890M-TRACE.md).
 ## Current state
 
 
+NEWEST (Step16/17, 2026-10-16, Linux): installed on the Mac volume/ESP, not yet booted:
+  * StrixAccel 0.1.17 in /Library/Extensions (AuxKC deleted, bootstrap rebuilds it). After boot: `log show --last boot | grep "(StrixAccel).*submit"` and read `status(+58)` (see Step17 in 890M-TRACE.md).
+  * ESP config.plist: new Kernel/Patch "Strix | fq_codel_dq" (stops the HoRNDIS tether panic `now >= *pkt_enq_time`); BtLeDlFix 1.1.0 (Tahoe bluetoothd pattern) in ESP Kexts.
+  * Branches: `tahoe/bluetooth` (BtLeDlFix source+CI), `tahoe/wifi` (25G241 IO80211 ABI dump: controller vtable identical, SkywalkInterface changed).
+
 **NEWEST (Step15, 2026-10-16, written on Linux): macOS 26.7.1 (25G241) is installed and the OLED is dead.** Cause found in the
 logs of that boot: `StrixAccel: gate FAIL: OS build does not match reviewed profile macos15-24H32...` (no OLED display pipe, so
 CoreDisplay logs `Unable to find display pipe`, WindowServer restarts on virtual framebuffers). Fix: StrixAccel 0.1.16 accepts
