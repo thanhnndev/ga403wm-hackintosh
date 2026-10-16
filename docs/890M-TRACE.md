@@ -1606,3 +1606,46 @@ Evidence (`/Library/Logs/StrixGraphicsFix/20261016T090740Z/display-log.txt`, boo
 * `StrixResource` inherits Apple's `IOAccelResource2::prepare` (map -> freeToPrepareMapping). If that returns false for the OLED surface resource, CoreDisplay reports failure on every frame although StrixDisplayPipe still copies (async worker), which fits "works but lags".
 * 0.1.17 logs `status(+58)` of the first 4 transactions at submit time (`txn N submit: ... status(+58) X`). Next boot answers: 0 => failure is elsewhere (user-client wait/end return), 0xe00002be => resource prepare path (override `StrixResource::prepare` to return true and skip mapping), other => set_transaction_args.
 * LaunchAgent `com.thanhnndev.strix.headroomhold` exists in the user's LaunchAgents; whether it runs on 26.x is not yet checked.
+
+## Step18 (2026-10-16, macOS 26.7.1 25G241): root cause of the failed pipe transactions confirmed in the 487.4.4 disassembly; StrixAccel 0.1.18 sets config bit 21 so resources allocate as UMA sysmem
+
+Live baseline this boot (0.1.17, boot since 16:44): every submit logs `status(+58)=0xe00002be` (`StrixAccel: txn N submit`), WindowServer ~124 % CPU idle.
+Kernel-log counts for the boot: `IOAccelTask::freeToAllocGPUAddress: failed to alloc GART space ... Needed 0 bytes, used 20738048, size 17179865088. vram=1` x50040,
+`IOAccelResource2::prepare(): failed to allocate GPU virtual address for mapping. resType=0xc0` x50040,
+WindowServer `Fallback GPU Display Pipe transaction submission failed` x25108, `3-channel gamma table capabilities` x402178.
+
+Disassembly (`tools/kc_disasm.py` on `/System/Library/KernelCollections/SystemKernelExtensions.kc`, IOAcceleratorFamily2 487.4.4):
+
+* `IOGraphicsAccelerator2::start` (0x14b9f752) calls `initializeConfigStructure()` (0x14b9fccf), then `leaq 0xc88(%r14), %r12`
+  (0x14b9fcd4) and `callq *0x9b0(%rax)` (0x14b9fce4) = `populateAccelConfig` (pure slot 310). The config struct therefore
+  starts at `accel+0xc88`, and `accel+0xc90` is `cfg+0x08`.
+* `IOAccelResource2::allocMemory` (0x14b88918) reads `0xc90(accel)` and `btl $0x15` (0x14b8893f-0x45). **Bit 21 set** -> jump
+  to 0x14b889f2: it aligns `resource+0xc8` up to page size and allocates through `IOAccelSysMemory::withOptions`
+  (call at 0x14b88a9e or the 0x363 fallback at 0x14b88b22; the option struct in the first branch is
+  `{0xAAAAAAAA00000363, 0}` via the object at `accel+0xb60`). Mode is 0x363 unless `cfg+0x08` bit 30 picks 0x33; bit 26 of
+  `cfg+0x08` and bit 30 of `resource+0xc` only choose between the two sysmem sub-paths. **Bit 21 clear** -> `callq *0x8c0(%rax)`
+  (0x14b889b1) = allocate-vidmem path -> `StrixVidMemory` with no backing: `getLength()` (vtable +0x168) returns 0, which is
+  exactly the logged "Needed 0 bytes".
+* The rest of the family agrees that bit 21 = "GPU-addressable system memory (UMA)": `start` does `cfg+0x64 |= 0xa`
+  (0x14b9fd16), clears `cfg+0x14` bit 2 (0x14b9febb-0x14b9fed0), creates `IOAccelBufferMemoryDescriptorPool2` at
+  `accel+0xc30` (0x14ba00d0-0x14ba00fc) and sizes the wired sysmem budget `accel+0x340 = min(3/32 * total, 768 MiB)` instead
+  of the 32 MiB default (0x14ba09ce-0x14ba09f0; total from `sysctlbyname("hw.memsize")`, 0x14ba075e-0x14ba0776, 512 MiB
+  fallback). `IOAccelResource2` init also skips `orl $0x10000, resource+0xc` when bit 21 is set (0x14b861bc).
+* Caps that keep `withOptions` usable: `getMaxSingleSysMemorySize()` (slot 305, 0x14ba5158) = 3/4 of
+  `calcMaxGPUPhysicalMemoryBytes(total)` (slot 311, 0x14ba5e5c) = max(total/3, 64 MiB), so >= 48 MiB — a 2880x1800x4 =
+  20.7 MB surface fits; `createBufferMemoryDescriptorInTaskWithOptions` (slot 293, 0x14ba4382) forwards to the kernel task.
+* `IOAccelResource2::map()` (0x14b8bc70): for resource byte `+0x14 == 0xc0` (the logged resType) it uses `resource+0x88` = the
+  `allocMemory` result and builds the `IOAccelMemoryMap` through the memory's vtable +0x138. `IOAccelTask::freeToAllocGPUAddress`
+  (0x14b9e47c) only failed because that map's `getLength()` (vtable +0x168) was 0; the task's GART space is the 16 GiB
+  `IORangeAllocator` passed in `StrixTask::setup`.
+
+Fix in 0.1.18 (`kexts/StrixAccel/StrixAccel.cpp`): `cfg+0x08` 0x480000 -> 0x680000 (adds bit 21). Expected after reboot:
+no "failed to alloc GART", no "failed to allocate GPU virtual address", `status(+58)=0`, no "Fallback GPU Display Pipe
+transaction submission failed", lower WindowServer CPU. Not addressed here: the ~400k "3-channel gamma table capabilities"
+lines.
+
+Install (macOS side, from this boot): built with `bash scripts/build.sh StrixAccel` (x86_64 kext bundle, undefined-symbol set
+byte-identical to 0.1.17). 0.1.17 backed up to `~/efi-audit/strixaccel-backup/StrixAccel.kext.20261016T171014` (hash
+6aff2950...). `/Library/Extensions/StrixAccel.kext` replaced (hash 552358d4...), `kmutil load --no-authorization -p` = rc 28;
+`kmutil inspect` shows the on-disk `/Library/KernelCollections/AuxiliaryKernelExtensions.kc` now maps
+com.itlmt7925.strixaccel 0.1.18. Running boot still has 0.1.17 (verified); WindowServer never killed, reboot is the user's.

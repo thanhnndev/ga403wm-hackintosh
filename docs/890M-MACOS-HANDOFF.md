@@ -7,7 +7,17 @@ Step-by-step history: [890M trace](890M-TRACE.md).
 ## Current state
 
 
-NEWEST (Step16/17, 2026-10-16, Linux): installed on the Mac volume/ESP, not yet booted:
+NEWEST (Step18, 2026-10-16, macOS): StrixAccel 0.1.18 staged in `/Library/Extensions` + on-disk AuxKC, reboot pending.
+Root cause of the per-frame `Fallback GPU Display Pipe transaction submission failed` (status `0xe00002be`) was the config
+value `cfg+0x08 = 0x480000` missing bit 21: `IOAccelResource2::allocMemory` then allocates resources as vidmem and
+`StrixVidMemory` has no backing (length 0 -> "failed to alloc GART space ... Needed 0 bytes"). 0.1.18 sets `0x680000`
+(bit 21) so resources allocate through `IOAccelSysMemory::withOptions` (UMA). Full disassembly evidence and install
+hashes: 890M-TRACE.md "Step18". After the reboot verify: no `failed to alloc GART`, no `failed to allocate GPU virtual
+address`, `status(+58)=0` in the `(StrixAccel)` submit lines, no `Fallback ... submission failed` in WindowServer, and
+measure WindowServer CPU (`top`/`ps`; was ~124 % idle at ~50k failures per boot). If the OLED stays black, revert: restore
+`~/efi-audit/strixaccel-backup/StrixAccel.kext.20261016T171014` and rebuild the AuxKC (Same flow as Step15).
+
+Previous (Step16/17, 2026-10-16, Linux): installed on the Mac volume/ESP, not yet booted:
   * StrixAccel 0.1.17 in /Library/Extensions (AuxKC deleted, bootstrap rebuilds it). After boot: `log show --last boot | grep "(StrixAccel).*submit"` and read `status(+58)` (see Step17 in 890M-TRACE.md).
   * ESP config.plist: new Kernel/Patch "Strix | fq_codel_dq" (stops the HoRNDIS tether panic `now >= *pkt_enq_time`); BtLeDlFix 1.1.0 (Tahoe bluetoothd pattern) in ESP Kexts.
   * Branches: `tahoe/bluetooth` (BtLeDlFix source+CI), `tahoe/wifi` (25G241 IO80211 ABI dump: controller vtable identical, SkywalkInterface changed).
