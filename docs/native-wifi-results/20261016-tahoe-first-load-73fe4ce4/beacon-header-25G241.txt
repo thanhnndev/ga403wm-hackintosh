@@ -1,0 +1,85 @@
+# apple80211 beacon message on macOS 26.7.1 (25G241) - header is 0x44, not 0x40
+
+Re-derived 2026-10-16 from the mounted System volume, `/System/Library/KernelCollections/BootKernelExtensions.kc`
+(IO80211_kexts-1566.5, the build the Tahoe boot ran). Three independent places agree.
+
+### 1. AppleBCMWLANScanAdapter::processScanResults(0xffffff800174c52e) - the 0xc9 scan-result event
+A 0x844-byte meta buffer is allocated (0x44 + 0x800 maximum IEs). `ieBuf = meta + 0x44`; the event is posted with
+`len = ie_len + 0x44` and payload `meta`.
+```
+ffffff800174c54b: mov      qword ptr [rbp - 0x38], rdi
+ffffff800174c54f: mov      edi, 0x844
+ffffff800174c554: call     0xffffff8000a866d0  ; _IOMallocZeroData_external
+ffffff800174c5d8: mov      rax, r12
+ffffff800174c5db: add      rax, 0x44
+ffffff800174c5df: mov      qword ptr [rbp - 0x58], rax
+ffffff800174c720: mov      r8, r14
+ffffff800174c723: call     0xffffff80016c1856  ; __ZN21AppleBCMWLANBSSBeacon25getBeaconMsgFromWLBSSInfoER14BeaconMetaDataPhP11wl_bss_info18AppleChannelSpec_ty
+ffffff800174c728: mov      rbx, qword ptr [rbp - 0x38]
+ffffff800174c738: mov      rdi, qword ptr [rcx + 0x38]
+ffffff800174c73c: mov      r8d, dword ptr [r12]
+ffffff800174c740: add      r8, 0x44
+ffffff800174c744: mov      rax, qword ptr [rdi + 0x128]
+ffffff800174c74b: mov      rsi, qword ptr [rax + 0x2c40]
+ffffff800174c752: mov      edx, 0xc9
+ffffff800174c757: mov      rcx, r12
+ffffff800174c75a: mov      r9d, 1
+ffffff800174c760: call     0xffffff8002299fae  ; __ZN17IO80211Controller11postMessageEP23IO80211SkywalkInterfacejPvmb
+ffffff800174c765: mov      eax, dword ptr [r15 + 4]
+ffffff800174cc3c: mov      r9d, 1
+ffffff800174cc42: call     0xffffff8002299fae  ; __ZN17IO80211Controller11postMessageEP23IO80211SkywalkInterfacejPvmb
+ffffff800174cc47: mov      rax, qword ptr [rip + 0x915da]  ; 0xffffff80017de228
+```
+
+### 2. AppleBCMWLANBSSBeacon::getBeaconMsgFromWLBSSInfo(0xffffff80016c1856) - the builder
+Writes: ssid at +6 (memmove of ssid_len bytes, `add rdi, 6`), ssid_len at +0x26, primary channel at +0x27,
+bssid at +0x29 (+0x29 dword then +0x2d word), rssi at +0x30, noise at +0x34, a word at +0x36, beacon
+interval at +0x38, capability at +0x3a, the flags dword at +0x40, and the IE length at +0. The IE area
+destination is the caller's ieBuf. Nothing writes +0x3c.
+```
+ffffff80016c19cc: mov      word ptr [rdi + 0x2d], cx
+ffffff80016c19d0: mov      dword ptr [rdi + 0x29], eax
+ffffff80016c19d8: mov      byte ptr [rdi + 0x26], dl
+ffffff80016c19e5: lea      rsi, [r14 + 0x13]
+ffffff80016c19e9: add      rdi, 6
+ffffff80016c19ed: call     0xffffff8000101080  ; _memmove
+ffffff80016c1a04: mov      word ptr [rsi + 0x3a], ax
+ffffff80016c1a0d: mov      word ptr [rsi + 0x38], ax
+ffffff80016c1a32: mov      byte ptr [rsi + 0x27], al
+ffffff80016c1a3a: mov      dword ptr [rsi + 0x30], eax
+ffffff80016c1af1: mov      word ptr [rsi + 0x34], cx
+ffffff80016c1afa: mov      word ptr [rsi + 0x36], cx
+ffffff80016c1b3a: mov      dword ptr [rsi], edx
+ffffff80016c1b42: call     0xffffff8000101080  ; _memmove
+```
+
+### 3. AppleBCMWLANCore::getWCL_BSS_INFO block (0xffffff800169cb61) - same struct for the current BSS
+The IE destination is `beacon_msg + 0x44` for the same builder.
+```
+ffffff800169cb6c: mov      rcx, qword ptr [rcx + 8]
+ffffff800169cb70: mov      rdi, qword ptr [rcx + 0x18]
+ffffff800169cb74: lea      rsi, [rdi + 0x44]
+ffffff800169cb78: mov      r8d, dword ptr [rax + 4]
+ffffff800169cb7c: movzx    ecx, word ptr [rdx]
+ffffff800169cb7f: mov      rdx, rax
+ffffff800169cb82: call     0xffffff80016c1856  ; __ZN21AppleBCMWLANBSSBeacon25getBeaconMsgFromWLBSSInfoER14BeaconMetaDataPhP11wl_bss_info18AppleChannelSpec_ty
+ffffff800169cb87: xor      ecx, ecx
+ffffff800169cb89: test     al, al
+```
+
+### Reproduce
+
+```sh
+# on the Mac (or from the mounted System volume on Linux, with capstone installed):
+KC=/System/Library/KernelCollections/BootKernelExtensions.kc python3 tools/kc.py     # or:
+KC=/mnt/macos-sys/System/Library/KernelCollections/BootKernelExtensions.kc python3 tools/kc_vtable.py find getBeaconMsgFromWLBSSInfo
+```
+
+`tools/kc.py` exposes `disasm(start, end)` (needs `pip install capstone`); the addresses above are offsets into that KC.
+
+### Why the old 0x40 guess broke the scan list
+
+With `kBeaconHeader = 0x40` the IE area sat four bytes early: at `+0x40` the consumer read the flags dword as an element
+header, so every element (the SSID element included) was parsed from the middle of its predecessor, and the last element
+ran four bytes past the end of the buffer we posted (we sent `ie_len + 0x40` bytes where the consumer expects
+`ie_len + 0x44`). The core's own AP table was fine (see `nvram-checkpoints.txt`, the `itlm3` `rx=.. ap=..` line).

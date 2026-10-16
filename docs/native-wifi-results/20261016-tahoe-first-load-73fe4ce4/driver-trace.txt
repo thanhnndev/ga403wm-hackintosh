@@ -1,0 +1,111 @@
+# driver IOLog lines (itlmt-native: / core m2log), boot 73FE4CE4 (2026-10-16, last Tahoe boot)
+# from the macOS unified log (kernel messages, absolute string args); pointers redacted
+
+      1.5s  ev eid=43 seq=12 len=428 <match
+      1.5s  ctl:start
+      1.5s  ctl:createWorkQueue begin
+      1.5s  ctl:workQueue ok
+      1.5s  ctl:logger ok
+      1.5s  ev eid=01 seq=13 len=52 <match
+      1.5s  ctl:faultReporter ok; base start begin
+      1.5s  ctl:base start ok
+      1.5s  ctl:media auto=1
+      1.5s  mk:mac from core
+      1.5s  mk:start role=1 unit=9 explicit=0
+      1.5s  mk:withController=ok
+      1.5s  mk:attachInterface=1
+      1.5s  sw:deferBSDAttach=0
+      1.5s  ioctl:cmd=216 allowed
+      1.5s  sw:IO80211InfraInterface::start=1
+      1.5s  sw:getWorkQueue=ok
+      1.5s  pool=ok
+      1.5s  queues rxSub=1 txComp=1 rxComp=1
+      1.5s  sw:pool+queues=1
+      1.5s  sw:addEventSource x6 ok
+      1.5s  dp:bind=0
+      1.5s  sw:registerInfraEthernetInterface=0
+      1.5s  sw:registerService(8) done
+      1.5s  sw:setRunningState(false) done
+      1.5s  mk:startWithInfo ok
+      1.5s  lp:wq=0x<ptr> prov=0x<ptr>
+      1.5s  lp:ctl=0x<ptr> if=0x<ptr>
+      1.5s  lp:inGate=0 onThread=0 wl=1
+      1.5s  mk:deferBSDAttach(false)=0
+      1.5s  unit:watch wait=45s fb=9
+      1.5s  if:hardware assists=0
+      1.5s  ev eid=29 seq=0 len=56
+      1.5s  ev eid=01 seq=14 len=52 <match
+      1.5s  ev eid=01 seq=15 len=52 <match
+      1.9s  ev eid=01 seq=1 len=52 <match
+      1.9s  ev eid=01 seq=2 len=52 <match
+      1.9s  ev eid=01 seq=3 len=52 <match
+      1.9s  ev eid=01 seq=4 len=52 <match
+      1.9s  scan_req rc=0 status=0 cid=00
+      1.9s  rxframe#1 len=361 d0=38010169 d1=80870fff d2=60008c0f d3=00430101 pkt_type=7
+      2.0s  rxframe#2 len=510 d0=380101fe d1=80870fff d2=60008c0f d3=00430103 pkt_type=7
+      2.0s  rxframe#3 len=361 d0=38010169 d1=80870fff d2=60008c0f d3=00430104 pkt_type=7
+      4.6s  ev eid=0e seq=0 len=236
+      4.9s  scan finished done=1@2410ms rx=85 bcn=83 aps=48
+      7.3s  ioctl:cmd=2c allowed
+      7.3s  ioctl:cmd=2b allowed
+      7.3s  ioctl:cmd=33 allowed
+      7.3s  ioctl:cmd=1c allowed
+      7.6s  if:bsd cmd=c02c6938 begin
+      7.6s  if:bsd cmd=c02c6938 result=0
+      7.7s  ioctl:cmd=c allowed
+      7.7s  ioctl:CARD_CAPABILITIES answered
+      7.7s  if:enable begin options=0
+      7.7s  if:setInterfaceEnable=1 begin
+      7.7s  if:setInterfaceEnable=1 done
+      7.7s  dp:enable queues begin
+      7.7s  dp:TX completion enable
+      7.7s  dp:RX completion enable
+      7.7s  dp:TX submission 0 enable
+      7.7s  dp:TX submission 1 enable
+      7.7s  dp:TX submission 2 enable
+      7.7s  dp:TX submission 3 enable
+      7.7s  dp:enabled
+      7.7s  if:enable result=0
+      7.7s  if:bsd cmd=80206910 begin
+      7.7s  if:bsd cmd=80206910 result=0
+      8.5s  ioctl:cmd=5 allowed
+      8.6s  ioctl:cmd=200 allowed
+      8.7s  ioctl:cmd=13 allowed
+      8.7s  ioctl:cmd=1d5 allowed
+      9.1s  ioctl:cmd=cf allowed
+      9.1s  ioctl:setPOWER=1 (recorded only)
+      9.1s  ioctl:cmd=f allowed
+      9.1s  ioctl:cmd=16b allowed
+      9.1s  ioctl:cmd=1b allowed
+      9.1s  ioctl:cmd=4 allowed
+      9.1s  ioctl:cmd=55 prohibited
+      9.2s  ioctl:cmd=1b9 allowed
+      9.2s  scan:request started=1 ssidLen=0
+      9.3s  ev eid=01 seq=5 len=52 <match
+     11.5s  unit:assigned t=10s fb=0
+     12.4s  scan finished done=1@2518ms rx=186 bcn=182 aps=48
+     12.5s  scan:delivered 48 of 48
+     12.5s  ioctl:cmd=1be allowed
+     12.5s  wcl:home/away words 6e 2d
+     12.5s  scan:request started=0 ssidLen=0
+     12.9s  ioctl:cmd=10 allowed
+     12.9s  ioctl:cmd=ff allowed
+     13.0s  ioctl:cmd=103 allowed
+     23.1s  ev eid=01 seq=6 len=52 <match
+     26.2s  scan finished done=1@2449ms rx=265 bcn=260 aps=48
+     35.5s  ev eid=01 seq=7 len=52 <match
+     38.6s  scan finished done=1@2502ms rx=348 bcn=338 aps=48
+     54.5s  ev eid=01 seq=8 len=52 <match
+     57.5s  scan finished done=1@2417ms rx=435 bcn=420 aps=48
+     67.0s  ev eid=01 seq=9 len=52 <match
+     70.0s  scan finished done=1@2505ms rx=491 bcn=475 aps=48
+     87.7s  ev eid=01 seq=10 len=52 <match
+     90.7s  scan finished done=1@2458ms rx=576 bcn=559 aps=48
+     99.2s  ev eid=01 seq=11 len=52 <match
+    102.3s  scan finished done=1@2447ms rx=662 bcn=645 aps=48
+    117.3s  ev eid=01 seq=12 len=52 <match
+    120.3s  scan finished done=1@2433ms rx=754 bcn=731 aps=48
+    142.7s  scan finished done=1@2435ms rx=841 bcn=818 aps=48
+    166.7s  scan finished done=1@2438ms rx=927 bcn=903 aps=48
+    191.2s  scan finished done=1@2505ms rx=1014 bcn=985 aps=48
+    205.1s  scan finished done=1@2451ms rx=1092 bcn=1062 aps=48

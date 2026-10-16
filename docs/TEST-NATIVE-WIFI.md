@@ -966,6 +966,9 @@ en5), the core scanned at boot (`scan finished done=1@2410ms rx=85 bcn=83 aps=48
 48` each time). The core's own AP table is clean (`m2-res` in the NVRAM checkpoints lists real names). The **list the Wi-Fi
 menu built was garbled**.
 
+Collection, driver trace, NVRAM checkpoints and the layout evidence:
+[`docs/native-wifi-results/20261016-tahoe-first-load-73fe4ce4/`](../native-wifi-results/20261016-tahoe-first-load-73fe4ce4/README.md).
+
 Cause: the `0xc9` beacon message header is **0x44**, not 0x40. From the 25G241 `BootKernelExtensions.kc` (verified
 2026-10-16 on the mounted System volume):
 
