@@ -1,10 +1,12 @@
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 // Copyright (c) 2026 thanhnndev and contributors
 // The IOSkywalk packet pool / queue factories the native interface calls (stage 2). The SDK's IOSkywalk headers are not used:
-// they are older than 24H32 (docs/IO80211-ABI-2.md section 3). Every declaration below is a static factory whose mangled name is
-// in the 24H32 method dumps (abi/native-wifi/24H32/round3/IOSkywalk*.methods.txt); `tools/check_native_symbols.py` compares the
-// object's undefined symbols with those dumps. The classes are opaque: they are only held by pointer, retained and released,
-// disabled (IOEventSource::disable is virtual slot 45 of IOSkywalkPacketQueue's vtable) and put on the work queue as event sources.
+// they are older than the kernel's classes (docs/IO80211-ABI-2.md section 3). Every declaration below is a static factory whose
+// mangled name is in the 24H32 method dumps (abi/native-wifi/24H32/round3/IOSkywalk*.methods.txt) and re-checked against the
+// 25G241 dumps (abi/native-wifi/25G241/; the classes' vtables and the PoolOptions layout are unchanged there);
+// `tools/check_native_symbols.py` compares the object's undefined symbols with those dumps. The classes are opaque: they are
+// only held by pointer, retained and released, disabled (IOEventSource::disable is virtual slot 45 of IOSkywalkPacketQueue's
+// vtable) and put on the work queue as event sources.
 #pragma once
 #include <IOKit/IOEventSource.h>
 #include <IOKit/IOService.h>

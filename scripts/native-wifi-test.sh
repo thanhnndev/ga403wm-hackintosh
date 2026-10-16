@@ -69,6 +69,12 @@ if 'itlmt7925Native.kext' not in names:
     e = {'Arch': 'Any', 'BundlePath': 'itlmt7925Native.kext', 'Comment': 'native Wi-Fi test', 'Enabled': True,
          'ExecutablePath': 'Contents/MacOS/itlmt7925Native', 'MaxKernel': '', 'MinKernel': '', 'PlistPath': 'Contents/Info.plist'}
     add.insert(core + 1, e)       # must come after the core kext it depends on
+else:
+    # A pre-Tahoe install (or the Tahoe migration) may have capped the entry at MaxKernel 24.99.99; this test loads it on
+    # the running build, so the range is cleared.
+    e = next(a for a in add if a['BundlePath'] == 'itlmt7925Native.kext')
+    e['MaxKernel'] = e['MinKernel'] = ''
+    e['Enabled'] = True
 a = c['NVRAM']['Add']['7C436110-AB2A-4BBB-A880-FE41995C9F82']
 toks = a.get('boot-args', '').split()
 want = ['itlmt_native=1'] + (['itlmt_native_if=1'] if stage == 'b' else [])

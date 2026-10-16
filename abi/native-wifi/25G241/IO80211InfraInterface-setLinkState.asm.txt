@@ -1,0 +1,8 @@
+# 0xffffff8002360aa4 __ZN21IO80211InfraInterface12setLinkStateE16IO80211LinkStatejbjj
+ffffff8002360aa4: push     rbp
+ffffff8002360aa5: mov      rbp, rsp
+ffffff8002360aa8: mov      rax, qword ptr [rdi]
+ffffff8002360aab: mov      rax, qword ptr [rax + 0xe70]
+ffffff8002360ab2: pop      rbp
+ffffff8002360ab3: jmp      rax
+ffffff8002360ab5: nop      

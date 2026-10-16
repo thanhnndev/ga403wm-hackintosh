@@ -134,3 +134,12 @@ large; commit the distilled tables.
 * 2026-10-13 (Mac, f6b7162 boot): the IOSkywalkLegacyEthernet shim assigned the unit; the interface is a Wi-Fi hardware port and the
   Wi-Fi power switch works. Milestones 4 and 5 (scan, WPA2-PSK join with a userland-supplied PMK, status getters) are written and
   host-checked, not yet booted: [TEST-NATIVE-WIFI.md](TEST-NATIVE-WIFI.md) "Scan + WPA2-PSK join through the native path".
+
+* 2026-10-16 (Mac, Tahoe 25G241): the interface-side ABI of macOS 26.7.1 was collected, the generated headers were
+  regenerated from `abi/native-wifi/25G241` (instance sizes grew 0x10 down the Skywalk chain; `setLinkState` moved to
+  `IO80211InfraInterface` slot 463 with a 5th argument; `setMacAddress` now takes an `mloAddrArray`; `createLinkQualityMonitor`
+  re-typed; 13 new pure handlers) and the whole 24H32-to-25G241 code delta was applied to `kexts/itlmt7925Native` after
+  merging `main` (rounds 11-26). Verification on the Mac: header layout check --all 0 mismatches, slot checks 225/0 and
+  23/0, link check against the Tahoe KC exit 0. Not loaded yet. Details and the first-load checklist:
+  [IO80211-ABI.md](IO80211-ABI.md#tahoe-port-of-itlmt7925native-mac-2026-10-16) and
+  [TEST-NATIVE-WIFI.md](TEST-NATIVE-WIFI.md#tahoe-25g241-first-load).

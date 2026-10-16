@@ -1,0 +1,262 @@
+# 0xffffff8002360ab6 __ZN21IO80211InfraInterface20setLinkStateInternalE16IO80211LinkStatejbjj
+ffffff8002360ab6: push     rbp
+ffffff8002360ab7: mov      rbp, rsp
+ffffff8002360aba: push     r15
+ffffff8002360abc: push     r14
+ffffff8002360abe: push     r13
+ffffff8002360ac0: push     r12
+ffffff8002360ac2: push     rbx
+ffffff8002360ac3: sub      rsp, 0x28
+ffffff8002360ac7: mov      r13d, ecx
+ffffff8002360aca: mov      r14d, esi
+ffffff8002360acd: mov      rbx, rdi
+ffffff8002360ad0: mov      rax, qword ptr [rip + 0xef661]  ; 0xffffff8002450138
+ffffff8002360ad7: mov      rax, qword ptr [rax]
+ffffff8002360ada: mov      qword ptr [rbp - 0x30], rax
+ffffff8002360ade: mov      rcx, qword ptr [rdi + 0x120]
+ffffff8002360ae5: mov      rax, qword ptr [rdi + 0x128]
+ffffff8002360aec: cmp      dword ptr [rcx + 0x58], 1
+ffffff8002360af0: jne      0xffffff8002360b2d
+ffffff8002360af2: mov      r15d, r9d
+ffffff8002360af5: mov      r12d, r8d
+ffffff8002360af8: mov      al, byte ptr [rax + 0x140]
+ffffff8002360afe: mov      byte ptr [rbp - 0x3d], al
+ffffff8002360b01: mov      rdi, qword ptr [rcx + 0x28]
+ffffff8002360b05: test     rdi, rdi
+ffffff8002360b08: je       0xffffff8002360bb5
+ffffff8002360b0e: cmp      r14d, 1
+ffffff8002360b12: je       0xffffff8002360b8a
+ffffff8002360b14: cmp      r14d, 2
+ffffff8002360b18: jne      0xffffff8002360bb5
+ffffff8002360b1e: mov      esi, 1
+ffffff8002360b23: call     0xffffff800224c3ec  ; __ZN18IO80211PeerManager14setEnableStateEb
+ffffff8002360b28: jmp      0xffffff8002360bb5  ; __ZN21IO80211InfraInterface20setLinkStateInternalE16IO80211LinkStatejbjj+0xff
+ffffff8002360b2d: mov      r15b, 1
+ffffff8002360b30: cmp      r14d, dword ptr [rax + 0x18]
+ffffff8002360b34: je       0xffffff8002360ed7
+ffffff8002360b3a: cmp      r14d, 2
+ffffff8002360b3e: je       0xffffff8002360dd0
+ffffff8002360b44: cmp      r14d, 1
+ffffff8002360b48: jne      0xffffff8002360c3c
+ffffff8002360b4e: mov      dword ptr [rax + 0x18], 1
+ffffff8002360b55: mov      rdi, rbx
+ffffff8002360b58: mov      esi, 1
+ffffff8002360b5d: mov      edx, 0x80
+ffffff8002360b62: call     0xffffff8002b0b49e  ; __ZN25IOSkywalkNetworkInterface16reportLinkStatusEjj
+ffffff8002360b67: mov      rax, qword ptr [rbx + 0x120]
+ffffff8002360b6e: cmp      dword ptr [rax + 0x58], 2
+ffffff8002360b72: je       0xffffff8002360e2e
+ffffff8002360b78: mov      rdi, rbx
+ffffff8002360b7b: call     0xffffff80022f5fca  ; __ZN23IO80211SkywalkInterface10getBSDNameEv
+ffffff8002360b80: mov      rdi, rax
+ffffff8002360b83: xor      esi, esi
+ffffff8002360b85: jmp      0xffffff8002360e29  ; __ZN21IO80211InfraInterface20setLinkStateInternalE16IO80211LinkStatejbjj+0x373
+ffffff8002360b8a: xor      esi, esi
+ffffff8002360b8c: call     0xffffff800224c3ec  ; __ZN18IO80211PeerManager14setEnableStateEb
+ffffff8002360b91: lea      rdx, [rbp - 0x3c]
+ffffff8002360b95: mov      qword ptr [rdx], 1
+ffffff8002360b9c: mov      dword ptr [rdx + 8], 0
+ffffff8002360ba3: mov      rax, qword ptr [rbx + 0x120]
+ffffff8002360baa: mov      rdi, qword ptr [rax + 0x28]
+ffffff8002360bae: xor      esi, esi
+ffffff8002360bb0: call     0xffffff8002257f78  ; __ZN18IO80211PeerManager10setPhyModeEyR18apple80211_channel
+ffffff8002360bb5: mov      rax, qword ptr [rbx]
+ffffff8002360bb8: mov      rdi, rbx
+ffffff8002360bbb: call     qword ptr [rax + 0xd08]
+ffffff8002360bc1: test     rax, rax
+ffffff8002360bc4: je       0xffffff8002360be4
+ffffff8002360bc6: mov      rax, qword ptr [rbx]
+ffffff8002360bc9: mov      rdi, rbx
+ffffff8002360bcc: call     qword ptr [rax + 0xd08]
+ffffff8002360bd2: mov      rdi, rax
+ffffff8002360bd5: xor      esi, esi
+ffffff8002360bd7: call     0xffffff80032ff9e6  ; __ZN11CCLogStream9shouldLogE16CCStreamLogLevel
+ffffff8002360bdc: test     al, al
+ffffff8002360bde: jne      0xffffff8002360ef9
+ffffff8002360be4: cmp      r14d, 2
+ffffff8002360be8: je       0xffffff8002360c44
+ffffff8002360bea: cmp      r14d, 1
+ffffff8002360bee: jne      0xffffff8002360c3c
+ffffff8002360bf0: mov      rax, qword ptr [rbx + 0x128]
+ffffff8002360bf7: test     r13b, r13b
+ffffff8002360bfa: je       0xffffff8002360d3f
+ffffff8002360c00: cmp      dword ptr [rax + 0x144], 0
+ffffff8002360c07: je       0xffffff8002360d3f
+ffffff8002360c0d: mov      rdi, qword ptr [rax + 0x130]
+ffffff8002360c14: test     rdi, rdi
+ffffff8002360c17: je       0xffffff8002360ea5
+ffffff8002360c1d: mov      rax, qword ptr [rdi]
+ffffff8002360c20: mov      esi, r12d
+ffffff8002360c23: call     qword ptr [rax + 0x1d0]
+ffffff8002360c29: mov      rax, qword ptr [rbx + 0x128]
+ffffff8002360c30: mov      byte ptr [rax + 0x140], 1
+ffffff8002360c37: jmp      0xffffff8002360e2e  ; __ZN21IO80211InfraInterface20setLinkStateInternalE16IO80211LinkStatejbjj+0x378
+ffffff8002360c3c: xor      r15d, r15d
+ffffff8002360c3f: jmp      0xffffff8002360ed7  ; __ZN21IO80211InfraInterface20setLinkStateInternalE16IO80211LinkStatejbjj+0x421
+ffffff8002360c44: mov      rax, qword ptr [rbx + 0x128]
+ffffff8002360c4b: test     byte ptr [rax + 0x140], 1
+ffffff8002360c52: je       0xffffff8002360c9e
+ffffff8002360c54: mov      rdi, qword ptr [rax + 0x130]
+ffffff8002360c5b: test     rdi, rdi
+ffffff8002360c5e: je       0xffffff8002360e78
+ffffff8002360c64: mov      rax, qword ptr [rdi]
+ffffff8002360c67: call     qword ptr [rax + 0x218]
+ffffff8002360c6d: mov      rax, qword ptr [rbx + 0x128]
+ffffff8002360c74: mov      byte ptr [rax + 0x140], 0
+ffffff8002360c7b: mov      rdi, qword ptr [rax + 0x168]
+ffffff8002360c82: mov      rax, qword ptr [rdi]
+ffffff8002360c85: mov      esi, 1
+ffffff8002360c8a: xor      edx, edx
+ffffff8002360c8c: xor      ecx, ecx
+ffffff8002360c8e: xor      r8d, r8d
+ffffff8002360c91: call     qword ptr [rax + 0x980]
+ffffff8002360c97: mov      rax, qword ptr [rbx + 0x128]
+ffffff8002360c9e: mov      r12, qword ptr [rax + 0x168]
+ffffff8002360ca5: mov      rdi, r12
+ffffff8002360ca8: call     0xffffff80026f52f6  ; __ZNK19IONetworkController16getCurrentMediumEv
+ffffff8002360cad: mov      rcx, qword ptr [rbx + 0x128]
+ffffff8002360cb4: mov      rcx, qword ptr [rcx + 0x20]
+ffffff8002360cb8: mov      r9, qword ptr [r12]
+ffffff8002360cbc: mov      rdi, r12
+ffffff8002360cbf: mov      esi, 3
+ffffff8002360cc4: mov      rdx, rax
+ffffff8002360cc7: xor      r8d, r8d
+ffffff8002360cca: call     qword ptr [r9 + 0x980]
+ffffff8002360cd1: mov      rax, qword ptr [rbx + 0x128]
+ffffff8002360cd8: mov      dword ptr [rax + 0x3c54], r15d
+ffffff8002360cdf: mov      dword ptr [rax + 0x18], 2
+ffffff8002360ce6: mov      rdi, rbx
+ffffff8002360ce9: mov      esi, 0x80000003
+ffffff8002360cee: mov      edx, 0x80
+ffffff8002360cf3: call     0xffffff8002b0b49e  ; __ZN25IOSkywalkNetworkInterface16reportLinkStatusEjj
+ffffff8002360cf8: test     byte ptr [rbp - 0x3d], 1
+ffffff8002360cfc: je       0xffffff8002360d17
+ffffff8002360cfe: mov      rax, qword ptr [rbx + 0x128]
+ffffff8002360d05: mov      rdi, qword ptr [rax + 0x3c58]
+ffffff8002360d0c: mov      rax, qword ptr [rdi]
+ffffff8002360d0f: xor      esi, esi
+ffffff8002360d11: call     qword ptr [rax + 0x1d0]
+ffffff8002360d17: mov      rdi, rbx
+ffffff8002360d1a: call     0xffffff8002360f36  ; __ZN21IO80211InfraInterface15updateLinkSpeedEv
+ffffff8002360d1f: mov      rax, qword ptr [rbx + 0x128]
+ffffff8002360d26: mov      rdx, qword ptr [rax + 0x20]
+ffffff8002360d2a: mov      rdi, rbx
+ffffff8002360d2d: mov      rsi, rdx
+ffffff8002360d30: xor      ecx, ecx
+ffffff8002360d32: xor      r8d, r8d
+ffffff8002360d35: call     0xffffff8002b0acde  ; __ZN25IOSkywalkNetworkInterface20reportDataBandwidthsEyyyy
+ffffff8002360d3a: jmp      0xffffff8002360e2e  ; __ZN21IO80211InfraInterface20setLinkStateInternalE16IO80211LinkStatejbjj+0x378
+ffffff8002360d3f: mov      dword ptr [rax + 0x18], 1
+ffffff8002360d46: mov      rdi, qword ptr [rax + 0x168]
+ffffff8002360d4d: mov      rax, qword ptr [rdi]
+ffffff8002360d50: mov      esi, 1
+ffffff8002360d55: xor      edx, edx
+ffffff8002360d57: xor      ecx, ecx
+ffffff8002360d59: xor      r8d, r8d
+ffffff8002360d5c: call     qword ptr [rax + 0x980]
+ffffff8002360d62: mov      rdi, rbx
+ffffff8002360d65: mov      esi, 1
+ffffff8002360d6a: mov      edx, 0x80
+ffffff8002360d6f: call     0xffffff8002b0b49e  ; __ZN25IOSkywalkNetworkInterface16reportLinkStatusEjj
+ffffff8002360d74: mov      rax, qword ptr [rbx + 0x128]
+ffffff8002360d7b: mov      rax, qword ptr [rax + 0x168]
+ffffff8002360d82: test     rax, rax
+ffffff8002360d85: je       0xffffff8002360e2e
+ffffff8002360d8b: mov      rax, qword ptr [rax + 0x120]
+ffffff8002360d92: mov      rax, qword ptr [rax + 0x3b0]
+ffffff8002360d99: test     rax, rax
+ffffff8002360d9c: je       0xffffff8002360e2e
+ffffff8002360da2: mov      rax, qword ptr [rax + 0x120]
+ffffff8002360da9: mov      rdi, qword ptr [rax + 0x28]
+ffffff8002360dad: lea      rsi, [rip + 0x12ccdc]  ; 0xffffff800248da90
+ffffff8002360db4: call     0xffffff8000a1ab30  ; __ZN15OSMetaClassBase12safeMetaCastEPKS_PK11OSMetaClass
+ffffff8002360db9: test     rax, rax
+ffffff8002360dbc: je       0xffffff8002360e2e
+ffffff8002360dbe: mov      rax, qword ptr [rax + 0x20]
+ffffff8002360dc2: mov      rdi, qword ptr [rax + 0x260]
+ffffff8002360dc9: call     0xffffff800232befc  ; __ZN22IO80211NANInfraManager19handleInfraLinkDownEv
+ffffff8002360dce: jmp      0xffffff8002360e2e  ; __ZN21IO80211InfraInterface20setLinkStateInternalE16IO80211LinkStatejbjj+0x378
+ffffff8002360dd0: mov      dword ptr [rax + 0x18], 2
+ffffff8002360dd7: mov      rdi, rbx
+ffffff8002360dda: mov      esi, 3
+ffffff8002360ddf: mov      edx, 0x80
+ffffff8002360de4: call     0xffffff8002b0b49e  ; __ZN25IOSkywalkNetworkInterface16reportLinkStatusEjj
+ffffff8002360de9: mov      rdi, rbx
+ffffff8002360dec: call     0xffffff8002360f36  ; __ZN21IO80211InfraInterface15updateLinkSpeedEv
+ffffff8002360df1: mov      rax, qword ptr [rbx + 0x128]
+ffffff8002360df8: mov      rdx, qword ptr [rax + 0x20]
+ffffff8002360dfc: mov      rdi, rbx
+ffffff8002360dff: mov      rsi, rdx
+ffffff8002360e02: xor      ecx, ecx
+ffffff8002360e04: xor      r8d, r8d
+ffffff8002360e07: call     0xffffff8002b0acde  ; __ZN25IOSkywalkNetworkInterface20reportDataBandwidthsEyyyy
+ffffff8002360e0c: mov      rax, qword ptr [rbx + 0x120]
+ffffff8002360e13: cmp      dword ptr [rax + 0x58], 2
+ffffff8002360e17: je       0xffffff8002360e2e
+ffffff8002360e19: mov      rdi, rbx
+ffffff8002360e1c: call     0xffffff80022f5fca  ; __ZN23IO80211SkywalkInterface10getBSDNameEv
+ffffff8002360e21: mov      rdi, rax
+ffffff8002360e24: mov      esi, 1
+ffffff8002360e29: call     0xffffff8002369d8c  ; __ZN16IO80211QueueCall16ifnet_enableIPv6EPKcb
+ffffff8002360e2e: mov      rcx, qword ptr [rbx + 0x120]
+ffffff8002360e35: mov      eax, dword ptr [rcx + 0x58]
+ffffff8002360e38: mov      r15b, 1
+ffffff8002360e3b: cmp      eax, 2
+ffffff8002360e3e: je       0xffffff8002360ed7
+ffffff8002360e44: mov      rdi, qword ptr [rcx + 0x28]
+ffffff8002360e48: test     rdi, rdi
+ffffff8002360e4b: je       0xffffff8002360ed7
+ffffff8002360e51: cmp      r14d, 1
+ffffff8002360e55: jne      0xffffff8002360e6a
+ffffff8002360e57: cmp      eax, 6
+ffffff8002360e5a: je       0xffffff8002360ed7
+ffffff8002360e5c: lea      rsi, [rip + 0xcdc98]  ; "setLinkState"
+ffffff8002360e63: call     0xffffff800224ca4c  ; __ZN18IO80211PeerManager7disableEPKc
+ffffff8002360e68: jmp      0xffffff8002360ed7  ; __ZN21IO80211InfraInterface20setLinkStateInternalE16IO80211LinkStatejbjj+0x421
+ffffff8002360e6a: lea      rsi, [rip + 0xcdc8a]  ; "setLinkState"
+ffffff8002360e71: call     0xffffff800224c884  ; __ZN18IO80211PeerManager6enableEPKc
+ffffff8002360e76: jmp      0xffffff8002360ed7  ; __ZN21IO80211InfraInterface20setLinkStateInternalE16IO80211LinkStatejbjj+0x421
+ffffff8002360e78: lea      rdx, [rip + 0xd6022]  ; 0xffffff8002436ea1
+ffffff8002360e7f: lea      rcx, [rip + 0xd603d]  ; "/AppleInternal/Library/BuildRoots/4~CWlmugBiwhVg0lORBAWzEx9kGaxlW0hbta_hAtk/Libr"
+ffffff8002360e86: lea      r8, [rip + 0xd5fff]  ; "setLinkStateInternal"
+ffffff8002360e8d: xor      r15d, r15d
+ffffff8002360e90: movabs   rsi, 0x800000000000000
+ffffff8002360e9a: mov      rdi, rbx
+ffffff8002360e9d: mov      r9d, 0x2a7
+ffffff8002360ea3: jmp      0xffffff8002360ed0  ; __ZN21IO80211InfraInterface20setLinkStateInternalE16IO80211LinkStatejbjj+0x41a
+ffffff8002360ea5: lea      rdx, [rip + 0xd5ff5]  ; 0xffffff8002436ea1
+ffffff8002360eac: lea      rcx, [rip + 0xd6010]  ; "/AppleInternal/Library/BuildRoots/4~CWlmugBiwhVg0lORBAWzEx9kGaxlW0hbta_hAtk/Libr"
+ffffff8002360eb3: lea      r8, [rip + 0xd5fd2]  ; "setLinkStateInternal"
+ffffff8002360eba: xor      r15d, r15d
+ffffff8002360ebd: movabs   rsi, 0x800000000000000
+ffffff8002360ec7: mov      rdi, rbx
+ffffff8002360eca: mov      r9d, 0x277
+ffffff8002360ed0: xor      eax, eax
+ffffff8002360ed2: call     0xffffff80022f5f0e  ; __ZN23IO80211SkywalkInterface8logDebugEyPKcz
+ffffff8002360ed7: mov      rax, qword ptr [rip + 0xef25a]  ; 0xffffff8002450138
+ffffff8002360ede: mov      rax, qword ptr [rax]
+ffffff8002360ee1: cmp      rax, qword ptr [rbp - 0x30]
+ffffff8002360ee5: jne      0xffffff8002360f31
+ffffff8002360ee7: mov      eax, r15d
+ffffff8002360eea: add      rsp, 0x28
+ffffff8002360eee: pop      rbx
+ffffff8002360eef: pop      r12
+ffffff8002360ef1: pop      r13
+ffffff8002360ef3: pop      r14
+ffffff8002360ef5: pop      r15
+ffffff8002360ef7: pop      rbp
+ffffff8002360ef8: ret      
+ffffff8002360ef9: mov      rax, qword ptr [rbx]
+ffffff8002360efc: mov      rdi, rbx
+ffffff8002360eff: call     qword ptr [rax + 0xd08]
+ffffff8002360f05: mov      dword ptr [rsp], r15d
+ffffff8002360f09: lea      rsi, [rip + 0xd5f40]  ; 0xffffff8002436e50
+ffffff8002360f10: lea      rdx, [rip + 0xd5f75]  ; "setLinkStateInternal"
+ffffff8002360f17: mov      rdi, rax
+ffffff8002360f1a: mov      ecx, 0x26f
+ffffff8002360f1f: mov      r8d, r14d
+ffffff8002360f22: mov      r9d, r12d
+ffffff8002360f25: xor      eax, eax
+ffffff8002360f27: call     0xffffff80032fd72a  ; __ZN11CCLogStream12logEmergencyEPKcz
+ffffff8002360f2c: jmp      0xffffff8002360be4  ; __ZN21IO80211InfraInterface20setLinkStateInternalE16IO80211LinkStatejbjj+0x12e
+ffffff8002360f31: call     0xffffff8000ba0c20  ; ___stack_chk_fail

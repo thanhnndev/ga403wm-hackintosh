@@ -593,8 +593,10 @@ uint32_t itlmt7925WifiInterface::getHardwareAssists()
     return 0;
 }
 
-IOReturn itlmt7925WifiInterface::setMacAddress(ether_addr &address)
+IOReturn itlmt7925WifiInterface::setMacAddress(mloAddrArray &address)
 {
+    // Tahoe (25G241) hands the station/MLO address array; only the primary address (first ether_addr) is compared. The MLO
+    // link addresses are not consumed: the core's firmware setup uses the single station address.
     IOEthernetAddress current = {};
     if (!ctl || ctl->getHardwareAddress(&current) != kIOReturnSuccess) return kIOReturnNotReady;
     bool same = memcmp(&address, &current, 6) == 0;
@@ -702,7 +704,9 @@ IOReturn itlmt7925WifiInterface::applyRadioLink(OSObject *owner, void *, void *,
     i->ctl->setLinkStatus(kIONetworkLinkValid | (up ? kIONetworkLinkActive : 0),
                          up ? i->ctl->getSelectedMedium() : nullptr, up ? speed : 0);
     itlmtTrace(i->ctl, "dp:Family link=%u begin gate=1 thread=0", up);
-    bool ok = i->IO80211InfraInterface::setLinkState((IO80211LinkState)(up ? 2 : 1), 0, false, 0);
+    // 25G241: setLinkState (InfraInterface slot 463) takes a5 = reason/percent; Apple's own WCL path passes the update's
+    // dword at +0xc. The digital core's link events carry no reason, so 0 (setLinkStateInternal only records it).
+    bool ok = i->IO80211InfraInterface::setLinkState((IO80211LinkState)(up ? 2 : 1), 0, false, 0, 0);
     itlmtTrace(i->ctl, "dp:Family link=%u result=%u state=%u", up, ok, i->IO80211InfraInterface::linkState());
     i->ctl->setLinkStatus(kIONetworkLinkValid | (up ? kIONetworkLinkActive : 0),
                          up ? i->ctl->getSelectedMedium() : nullptr, up ? speed : 0);
@@ -848,7 +852,7 @@ bool itlmt7925WifiInterface::linkUp()
 // Flags are the 20 MHz base channel: band bit (0x8 2.4 GHz, 0x10 5 GHz) | 0x2 (20 MHz).
 IOReturn itlmt7925WifiInterface::getCHANNEL(apple80211_channel_data *d)
 {
-    itlmtCall(ctl, 'S', 467);
+    itlmtCall(ctl, 'S', 471);
     if (!d) return kIOReturnBadArgument;
     ItlNativeStatus st;
     if (!queryStatus(&st) || st.state != ITL_NATIVE_UP || !st.channel) return kNoChannel;
@@ -862,7 +866,7 @@ IOReturn itlmt7925WifiInterface::getCHANNEL(apple80211_channel_data *d)
 // 0xffffff80015f2550: [data+4] = stored power-save mode. Power save is never configured here, so 0.
 IOReturn itlmt7925WifiInterface::getPOWERSAVE(apple80211_powersave_data *d)
 {
-    itlmtCall(ctl, 'S', 468);
+    itlmtCall(ctl, 'S', 472);
     if (!d) return kIOReturnBadArgument;
     store<uint32_t>(d, 4, 0);
     return kIOReturnSuccess;
@@ -871,7 +875,7 @@ IOReturn itlmt7925WifiInterface::getPOWERSAVE(apple80211_powersave_data *d)
 // 0xffffff80015f23aa: [data+8] = current rate in Mb/s (the core's value is kb/s, divided by 1000); not associated -> 0xe0822403.
 IOReturn itlmt7925WifiInterface::getRATE(apple80211_rate_data *d)
 {
-    itlmtCall(ctl, 'S', 470);
+    itlmtCall(ctl, 'S', 474);
     if (!d) return kIOReturnBadArgument;
     ItlNativeStatus st;
     if (!queryStatus(&st) || st.state != ITL_NATIVE_UP) return kNotAssociated;
@@ -884,7 +888,7 @@ IOReturn itlmt7925WifiInterface::getRATE(apple80211_rate_data *d)
 // current network as "Computer to Computer Network").
 IOReturn itlmt7925WifiInterface::getOP_MODE(apple80211_opmode_data *d)
 {
-    itlmtCall(ctl, 'S', 471);
+    itlmtCall(ctl, 'S', 475);
     if (!d) return (IOReturn)0x16;
     ItlNativeStatus st;
     bool assoc = queryStatus(&st) && st.state == ITL_NATIVE_UP;
@@ -897,7 +901,7 @@ IOReturn itlmt7925WifiInterface::getOP_MODE(apple80211_opmode_data *d)
 // a value at +4, their average at +0x1c; not associated -> 0xe0822403. The core reports one combined value: chain 0, one chain.
 IOReturn itlmt7925WifiInterface::getRSSI(apple80211_rssi_data *d)
 {
-    itlmtCall(ctl, 'S', 472);
+    itlmtCall(ctl, 'S', 476);
     if (!d) return kIOReturnBadArgument;
     ItlNativeStatus st;
     if (!queryStatus(&st) || st.state != ITL_NATIVE_UP) return kNotAssociated;
@@ -915,14 +919,14 @@ IOReturn itlmt7925WifiInterface::getRSSI(apple80211_rssi_data *d)
 // chips that do not use them. The MT7925 here is on PCIe; there is nothing to forward, so the notification is accepted.
 IOReturn itlmt7925WifiInterface::setUSB_HOST_NOTIFICATION(apple80211_usb_host_notification_data *d)
 {
-    itlmtCall(ctl, 'S', 572);
+    itlmtCall(ctl, 'S', 582);
     return d ? kIOReturnSuccess : kIOReturnBadArgument;
 }
 
 // 0xffffff80016431c8: the qword at data+0 is stored in the core context (feature bits that gate firmware setup); returns 0.
 IOReturn itlmt7925WifiInterface::setOS_FEATURE_FLAGS(apple80211_feature_flags *d)
 {
-    itlmtCall(ctl, 'S', 606);
+    itlmtCall(ctl, 'S', 614);
     if (!d) return kIOReturnBadArgument;
     memcpy(&osFeatureFlags, d, sizeof(osFeatureFlags));
     return kIOReturnSuccess;
@@ -931,7 +935,7 @@ IOReturn itlmt7925WifiInterface::setOS_FEATURE_FLAGS(apple80211_feature_flags *d
 // 0xffffff800164404c: non-null argument -> 0, null -> 0xe00002bc (kIOReturnError); nothing else is done.
 IOReturn itlmt7925WifiInterface::setINFRA_ENUMERATED(apple80211_infra_enumerated *d)
 {
-    itlmtCall(ctl, 'S', 632);
+    itlmtCall(ctl, 'S', 640);
     return d ? kIOReturnSuccess : kIOReturnError;
 }
 
@@ -1008,13 +1012,13 @@ static IOReturn fillSupportedChannels(void *d)
 
 IOReturn itlmt7925WifiInterface::getSUPPORTED_CHANNELS(apple80211_sup_channel_data *d)
 {
-    itlmtCall(ctl, 'S', 473);
+    itlmtCall(ctl, 'S', 477);
     return fillSupportedChannels(d);
 }
 
 IOReturn itlmt7925WifiInterface::getHW_SUPPORTED_CHANNELS(apple80211_sup_channel_data *d)
 {
-    itlmtCall(ctl, 'S', 492);
+    itlmtCall(ctl, 'S', 496);
     return fillSupportedChannels(d);
 }
 
@@ -1022,7 +1026,7 @@ IOReturn itlmt7925WifiInterface::getHW_SUPPORTED_CHANNELS(apple80211_sup_channel
 // core always scans its fixed channel list with a wildcard probe; a requested SSID only filters what is reported.
 IOReturn itlmt7925WifiInterface::setWCL_SCAN_REQ(apple80211ScanRequest *d)
 {
-    itlmtCall(ctl, 'S', 594);
+    itlmtCall(ctl, 'S', 603);
     ItlNativeStatus st;
     if (!d) return kIOReturnBadArgument;
     if (!bound || !core || !queryStatus(&st)) return kIOReturnNotReady;
@@ -1046,7 +1050,7 @@ IOReturn itlmt7925WifiInterface::setWCL_SCAN_REQ(apple80211ScanRequest *d)
 
 IOReturn itlmt7925WifiInterface::setWCL_SCAN_ABORT(void *)
 {
-    itlmtCall(ctl, 'S', 589);
+    itlmtCall(ctl, 'S', 598);
     IOLockLock(rxLock);
     bool was = scanActive;
     scanActive = false;
@@ -1063,7 +1067,7 @@ IOReturn itlmt7925WifiInterface::setWCL_SCAN_ABORT(void *)
 // from the passphrase), 0 is "no key". The 4-way handshake and the data keys are the core's; it supports WPA2-PSK / CCMP only.
 IOReturn itlmt7925WifiInterface::setWCL_ASSOCIATE(apple80211AssocCandidates *d)
 {
-    itlmtCall(ctl, 'S', 595);
+    itlmtCall(ctl, 'S', 604);
     if (!d) return kIOReturnBadArgument;
     if (!bound || !core) return kIOReturnNotReady;
     const uint8_t *b = (const uint8_t *)d;
@@ -1096,7 +1100,7 @@ IOReturn itlmt7925WifiInterface::setWCL_ASSOCIATE(apple80211AssocCandidates *d)
 
 IOReturn itlmt7925WifiInterface::setWCL_LEAVE_NETWORK(apple80211_leave_network *)
 {
-    itlmtCall(ctl, 'S', 583);
+    itlmtCall(ctl, 'S', 592);
     IOLockLock(rxLock);
     joinActive = false;
     IOLockUnlock(rxLock);
@@ -1106,9 +1110,9 @@ IOReturn itlmt7925WifiInterface::setWCL_LEAVE_NETWORK(apple80211_leave_network *
     return kIOReturnSuccess;
 }
 
-IOReturn itlmt7925WifiInterface::setWCL_JOIN_ABORT(void *)
+IOReturn itlmt7925WifiInterface::setWCL_JOIN_ABORT(apple80211_wcl_abort_join *)
 {
-    itlmtCall(ctl, 'S', 592);
+    itlmtCall(ctl, 'S', 601);
     IOLockLock(rxLock);
     bool was = joinActive;
     joinActive = false;
@@ -1124,7 +1128,7 @@ IOReturn itlmt7925WifiInterface::setWCL_JOIN_ABORT(void *)
 // low-latency session is active, which is the only state this driver has. A null buffer is kIOReturnError (0xe00002bc).
 IOReturn itlmt7925WifiInterface::getWCL_LOW_LATENCY_INFO(apple80211_low_latency_info *d)
 {
-    itlmtCall(ctl, 'S', 521);
+    itlmtCall(ctl, 'S', 525);
     if (!d) return kIOReturnError;
     store<uint32_t>(d, 0, 0);
     return kIOReturnSuccess;
@@ -1134,7 +1138,7 @@ IOReturn itlmt7925WifiInterface::getWCL_LOW_LATENCY_INFO(apple80211_low_latency_
 // fixed dwell; the request is accepted and its first dword traced (the layout is not otherwise determined).
 IOReturn itlmt7925WifiInterface::setWCL_SET_SCAN_HOME_AWAY_TIME(scanHomeAndAwayTime *d)
 {
-    itlmtCall(ctl, 'S', 598);
+    itlmtCall(ctl, 'S', 607);
     if (!d) return kIOReturnBadArgument;
     uint32_t w0 = 0, w1 = 0;
     memcpy(&w0, d, 4);
@@ -1146,7 +1150,7 @@ IOReturn itlmt7925WifiInterface::setWCL_SET_SCAN_HOME_AWAY_TIME(scanHomeAndAwayT
 // 0x1eb WNM_OPS: BSS-transition / DMS configuration. No WNM feature is offered by the core, so nothing is configured.
 IOReturn itlmt7925WifiInterface::setWCL_WNM_OPS(apple80211_wcl_wnm_config_t *d)
 {
-    itlmtCall(ctl, 'S', 620);
+    itlmtCall(ctl, 'S', 628);
     if (!d) return kIOReturnError;
     return kIOReturnSuccess;
 }
@@ -1155,7 +1159,7 @@ IOReturn itlmt7925WifiInterface::setWCL_WNM_OPS(apple80211_wcl_wnm_config_t *d)
 // handleSendCandidateToDriver). The core's regulatory domain is fixed, so there is nothing to re-run.
 IOReturn itlmt7925WifiInterface::setWCL_TRIGGER_CC(triggerCC *)
 {
-    itlmtCall(ctl, 'S', 593);
+    itlmtCall(ctl, 'S', 602);
     return kIOReturnSuccess;
 }
 
@@ -1163,7 +1167,7 @@ IOReturn itlmt7925WifiInterface::setWCL_TRIGGER_CC(triggerCC *)
 // cache, link-change event). Apple's driver uses it to start its own post-link services; the core has none to start.
 IOReturn itlmt7925WifiInterface::setWCL_LINK_UP_DONE(void *)
 {
-    itlmtCall(ctl, 'S', 597);
+    itlmtCall(ctl, 'S', 606);
     if (linkUpDoneTraced++ < 4) itlmtTrace(ctl, "wcl:link up done");
     return kIOReturnSuccess;
 }
@@ -1173,7 +1177,7 @@ IOReturn itlmt7925WifiInterface::setWCL_LINK_UP_DONE(void *)
 // own association (linkFromCore -> applyRadioLink), so this is accepted and recorded; the values are traced for the next round.
 IOReturn itlmt7925WifiInterface::setWCL_LINK_STATE_UPDATE(apple80211_wcl_update_link_state *d)
 {
-    itlmtCall(ctl, 'S', 600);
+    itlmtCall(ctl, 'S', 468);
     if (!d) return kIOReturnBadArgument;
     const uint8_t *b = (const uint8_t *)d;
     uint32_t reason = 0;
@@ -1187,7 +1191,7 @@ IOReturn itlmt7925WifiInterface::setWCL_LINK_STATE_UPDATE(apple80211_wcl_update_
 // 0xe00002bc while not associated). Here the core's target AP (captured from its beacon / probe response).
 IOReturn itlmt7925WifiInterface::getWCL_BSS_INFO(apple80211_beacon_msg *d)
 {
-    itlmtCall(ctl, 'S', 522);
+    itlmtCall(ctl, 'S', 526);
     if (!d) return kIOReturnBadArgument;
     ItlNativeStatus st;
     if (!queryStatus(&st) || st.state != ITL_NATIVE_UP) return kIOReturnError;
@@ -1215,7 +1219,7 @@ IOReturn itlmt7925WifiInterface::getWCL_BSS_INFO(apple80211_beacon_msg *d)
 // on the legacy 6 Mb/s path, where HT/VHT/HE are not in use).
 IOReturn itlmt7925WifiInterface::getWCL_EXTENDED_BSS_INFO(apple80211_extended_bss_info *d)
 {
-    itlmtCall(ctl, 'S', 530);
+    itlmtCall(ctl, 'S', 533);
     if (!d) return kIOReturnError;
     uint8_t *b = (uint8_t *)d;
     uint32_t ver[4];
@@ -1276,7 +1280,7 @@ IOReturn itlmt7925WifiInterface::getWCL_EXTENDED_BSS_INFO(apple80211_extended_bs
 // is a QoS marking for a peer feature this driver does not offer; accepted and recorded.
 IOReturn itlmt7925WifiInterface::setWCL_UPDATE_FAST_LANE(apple80211_fastlane *d)
 {
-    itlmtCall(ctl, 'S', 627);
+    itlmtCall(ctl, 'S', 635);
     if (!d) return kIOReturnBadArgument;
     if (fastLaneTraced++ < 4) itlmtTrace(ctl, "wcl:fast lane %02x%02x", ((const uint8_t *)d)[0], ((const uint8_t *)d)[1]);
     return kIOReturnSuccess;
@@ -1285,7 +1289,7 @@ IOReturn itlmt7925WifiInterface::setWCL_UPDATE_FAST_LANE(apple80211_fastlane *d)
 // 0x1b2 WCL_TRAFFIC_COUNTERS (0x38 bytes, WCLNetManager::linkUp; the result is not checked). The core keeps no per-AC counters.
 IOReturn itlmt7925WifiInterface::getWCL_TRAFFIC_COUNTERS(apple80211_wcl_traffic_counters *d)
 {
-    itlmtCall(ctl, 'S', 523);
+    itlmtCall(ctl, 'S', 527);
     if (!d) return kIOReturnError;
     bzero(d, 0x38);
     return kIOReturnSuccess;
@@ -1293,10 +1297,10 @@ IOReturn itlmt7925WifiInterface::getWCL_TRAFFIC_COUNTERS(apple80211_wcl_traffic_
 
 // Link-path SETs that configure features the core does not have (power-save mode, ARP-mode, QoS parameters for the protect-IP
 // window, roam lock); each is accepted and only recorded, as for 0x1be.
-IOReturn itlmt7925WifiInterface::setPM_MODE(apple80211_pm_mode *) { itlmtCall(ctl, 'S', 577); return kIOReturnSuccess; }
-IOReturn itlmt7925WifiInterface::setWCL_ARP_MODE(apple80211_wcl_arp_mode *) { itlmtCall(ctl, 'S', 591); return kIOReturnSuccess; }
-IOReturn itlmt7925WifiInterface::setWCL_QOS_PARAMS(apple80211_wcl_qos_params *) { itlmtCall(ctl, 'S', 596); return kIOReturnSuccess; }
-IOReturn itlmt7925WifiInterface::setWCL_SET_ROAM_LOCK(apple80211_set_roam_lock *) { itlmtCall(ctl, 'S', 585); return kIOReturnSuccess; }
+IOReturn itlmt7925WifiInterface::setPM_MODE(apple80211_pm_mode *) { itlmtCall(ctl, 'S', 587); return kIOReturnSuccess; }
+IOReturn itlmt7925WifiInterface::setWCL_ARP_MODE(apple80211_wcl_arp_mode *) { itlmtCall(ctl, 'S', 600); return kIOReturnSuccess; }
+IOReturn itlmt7925WifiInterface::setWCL_QOS_PARAMS(apple80211_wcl_qos_params *) { itlmtCall(ctl, 'S', 605); return kIOReturnSuccess; }
+IOReturn itlmt7925WifiInterface::setWCL_SET_ROAM_LOCK(apple80211_set_roam_lock *) { itlmtCall(ctl, 'S', 594); return kIOReturnSuccess; }
 
 void itlmt7925WifiInterface::deliverScanResults()
 {

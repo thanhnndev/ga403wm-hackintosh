@@ -30,7 +30,11 @@
     "CCFaultReporter": 269,
     "AppleBCMWLANPCIeSkywalk": 49,
     "AppleBCMWLANPCIeSkywalkPacketPool": 56,
-    "IO80211Glue": 43
+    "IO80211Glue": 43,
+    "IO80211InfraProtocol": 671,
+    "AppleBCMWLANInfraProtocol": 671,
+    "IOSkywalkLegacyEthernet": 397,
+    "IOSkywalkNetworkPacket": 64
   },
   "collection_entries": [
     "com.apple.driver.AppleBCMWLANBusInterfacePCIeMac",
@@ -43,5 +47,6 @@
     "com.apple.driver.AppleSkywalkAVB",
     "com.apple.iokit.IOSkywalkFamily",
     "com.apple.driver.corecapture"
-  ]
+  ],
+  "extra_classes_20261016": "IO80211InfraProtocol, AppleBCMWLANInfraProtocol, IOSkywalkLegacyEthernet added on the Mac (same KC sha256)"
 }

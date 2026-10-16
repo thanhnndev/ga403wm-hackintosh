@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 // Copyright (c) 2026 thanhnndev and contributors
 // The few CoreCapture / IO80211 factory functions the native Wi-Fi stub calls. Symbols and signatures come from Apple's own
-// exports in the 24H32 kernel collection (docs/IO80211-ABI-2.md "Extraction round 4" and "Native stub"); the classes are
+// exports in the kernel collection (docs/IO80211-ABI-2.md "Extraction round 4" and "Native stub" for 24H32; re-checked against
+// 25G241 with tools/check_native_symbols.py and tools/check_kext_links.py); the classes are
 // opaque here and are used only through these static factories and OSObject's retain/release.
 #pragma once
 #include <IOKit/IOService.h>

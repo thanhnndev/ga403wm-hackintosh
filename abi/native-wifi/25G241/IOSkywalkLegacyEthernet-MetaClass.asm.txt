@@ -1,0 +1,32 @@
+# 0xffffff8002afc0aa __ZN23IOSkywalkLegacyEthernet9MetaClassC1Ev
+ffffff8002afc0aa: push     rbp
+ffffff8002afc0ab: mov      rbp, rsp
+ffffff8002afc0ae: push     rbx
+ffffff8002afc0af: push     rax
+ffffff8002afc0b0: mov      rbx, rdi
+ffffff8002afc0b3: lea      rsi, [rip + 0x32e9a]  ; "IOSkywalkLegacyEthernet"
+ffffff8002afc0ba: mov      rdx, qword ptr [rip + 0x38f97]  ; 0xffffff8002b35058
+ffffff8002afc0c1: mov      ecx, 0x130
+ffffff8002afc0c6: call     0xffffff8000a1a9d0  ; __ZN11OSMetaClassC2EPKcPKS_j
+ffffff8002afc0cb: lea      rax, [rip + 0x3b30e]  ; 0xffffff8002b373e0
+ffffff8002afc0d2: mov      qword ptr [rbx], rax
+ffffff8002afc0d5: add      rsp, 8
+ffffff8002afc0d9: pop      rbx
+ffffff8002afc0da: pop      rbp
+ffffff8002afc0db: ret      
+# 0xffffff8002afc188 __ZN23IOSkywalkLegacyEthernet9MetaClassC2Ev
+ffffff8002afc188: push     rbp
+ffffff8002afc189: mov      rbp, rsp
+ffffff8002afc18c: push     rbx
+ffffff8002afc18d: push     rax
+ffffff8002afc18e: mov      rbx, rdi
+ffffff8002afc191: lea      rsi, [rip + 0x32dbc]  ; "IOSkywalkLegacyEthernet"
+ffffff8002afc198: mov      rdx, qword ptr [rip + 0x38eb9]  ; 0xffffff8002b35058
+ffffff8002afc19f: mov      ecx, 0x130
+ffffff8002afc1a4: call     0xffffff8000a1a9d0  ; __ZN11OSMetaClassC2EPKcPKS_j
+ffffff8002afc1a9: lea      rax, [rip + 0x3b230]  ; 0xffffff8002b373e0
+ffffff8002afc1b0: mov      qword ptr [rbx], rax
+ffffff8002afc1b3: add      rsp, 8
+ffffff8002afc1b7: pop      rbx
+ffffff8002afc1b8: pop      rbp
+ffffff8002afc1b9: ret      

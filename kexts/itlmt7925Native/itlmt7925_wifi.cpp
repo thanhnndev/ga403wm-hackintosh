@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 // Copyright (c) 2026 thanhnndev and contributors
-// itlmt7925Wifi - native IO80211Controller front end for the MT7925 (macOS 15.8.1 / 24H32 ABI), stage 1: controller only.
+// itlmt7925Wifi - native IO80211Controller front end for the MT7925 (controller ABI identical on 24H32 and 25G241; the interface
+// ABI halves differ, see docs/IO80211-ABI.md "Tahoe port").
 //
 // Matches the core driver (`itlmt7925`) as its provider and does nothing unless boot-arg itlmt_native=1 is set. What it does
 // today is exactly what IO80211Controller::start() demands of a subclass (docs/IO80211-ABI-2.md, "Controller startup" and

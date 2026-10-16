@@ -36,9 +36,15 @@ update (`docs/NULLMOTH.md`). Why Tahoe: last macOS for Intel/x86, so its ABI is 
    (`tools/strix_abi_profile.py`; 24H32 profile is `macos15-24H32-x86_64-ioaccel485.2`, the gate must refuse other
    builds), StrixMetalGate, StrixProbe; CoreDisplay `CurrentHeadroom` / `CombineLUTs` / `RunGPUDisplayPipe` re-read (offsets
    in docs/890M-TRACE.md Step13/14 are 24H32-only); measure WindowServer CPU with and without the headroom hold.
-3. **Wi-Fi native:** new IO80211/Skywalk dumps (`abi/native-wifi/<build>/`), regenerate headers
-   (`tools/gen_io80211_header.py`), re-check every 24H32 address/layout comment in `kexts/itlmt7925Native/*`, then lift
-   `MaxKernel`. Skywalk legacy-Ethernet shim: re-verify.
+3. **Wi-Fi native:** new IO80211/Skywalk dumps (`abi/native-wifi/25G241/`, completed on the Mac: `IO80211InfraProtocol`,
+   `AppleBCMWLANInfraProtocol`, `IOSkywalkLegacyEthernet`, `IOSkywalkNetworkPacket`, plus `createSkywalkInterface`,
+   `initRegistrationInfo`/`copyRegistrationInfo`, `setMacAddress`, `setLinkState` disassembly), headers regenerated
+   (`tools/gen_io80211_header.py`, sizes from MetaClass dumps, `check_io80211_header.py --all` 0 mismatches), the 24H32
+   address/layout comments in `kexts/itlmt7925Native/*` re-checked against the new disassembly, and the code delta applied
+   (5-arg `setLinkState`, `mloAddrArray` MAC patch, `setWCL_LINK_STATE_UPDATE` declaration, trace slot ids, 200 stubs).
+   Slot checks 225/0 + 23/0, link check against the Tahoe KC exit 0. `scripts/native-wifi-test.sh install` clears the
+   `MaxKernel` cap; first load is the next step (`docs/TEST-NATIVE-WIFI.md` "Tahoe (25G241) first load").
+   Skywalk legacy-Ethernet shim: re-verify at that load.
 4. **Rest:** BtLeDlFix (bluetoothd byte pattern is 24H32), BlueToolFixup/MtkBtFw, AppleALC + RogAudio/StrixAmp, AsusWmi,
    AmdCppc, VoodooI2C/TapGuard, USBToolBox map, sleep/wake, battery.
 5. **890M port (the real work), on Tahoe:** milestones 4..10 of `docs/890M-COBALT64-PORT-RESEARCH.md`

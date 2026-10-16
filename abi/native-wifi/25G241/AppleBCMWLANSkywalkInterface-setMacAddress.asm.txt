@@ -1,0 +1,61 @@
+# 0xffffff80015db198 __ZN28AppleBCMWLANSkywalkInterface13setMacAddressER12mloAddrArray
+ffffff80015db198: push     rbp
+ffffff80015db199: mov      rbp, rsp
+ffffff80015db19c: push     r15
+ffffff80015db19e: push     r14
+ffffff80015db1a0: push     r12
+ffffff80015db1a2: push     rbx
+ffffff80015db1a3: mov      r15, rsi
+ffffff80015db1a6: mov      rbx, rdi
+ffffff80015db1a9: mov      rax, qword ptr [rdi + 0x138]
+ffffff80015db1b0: mov      rdi, qword ptr [rax + 0x18]
+ffffff80015db1b4: call     0xffffff800165c0fc  ; __ZN16AppleBCMWLANCore15setCurEtheraddrERK10ether_addr
+ffffff80015db1b9: mov      r14d, eax
+ffffff80015db1bc: test     eax, eax
+ffffff80015db1be: jne      0xffffff80015db269
+ffffff80015db1c4: mov      rax, qword ptr [rbx + 0x138]
+ffffff80015db1cb: mov      rdi, qword ptr [rax + 0x18]
+ffffff80015db1cf: mov      esi, 0x73
+ffffff80015db1d4: call     0xffffff800160c97a  ; __ZNK16AppleBCMWLANCore19featureFlagIsBitSetEi
+ffffff80015db1d9: mov      rcx, qword ptr [rbx + 0x138]
+ffffff80015db1e0: test     al, al
+ffffff80015db1e2: je       0xffffff80015db23b
+ffffff80015db1e4: mov      rax, qword ptr [rcx + 0x18]
+ffffff80015db1e8: mov      rax, qword ptr [rax + 0x128]
+ffffff80015db1ef: mov      r12, qword ptr [rax + 0x15f8]
+ffffff80015db1f6: test     r12, r12
+ffffff80015db1f9: je       0xffffff80015db23b
+ffffff80015db1fb: mov      rax, qword ptr [r12 + 0x10]
+ffffff80015db200: movzx    esi, byte ptr [rax + 0x32]
+ffffff80015db204: mov      rdi, r12
+ffffff80015db207: mov      rdx, r15
+ffffff80015db20a: call     0xffffff80016bf8e8  ; __ZN23AppleBCMWLAN11beAdapter15setupJoinConfigEhR12mloAddrArray
+ffffff80015db20f: mov      rax, qword ptr [r12 + 0x10]
+ffffff80015db214: movzx    ecx, word ptr [r15 + 0x18]
+ffffff80015db219: mov      word ptr [rax + 0x30], cx
+ffffff80015db21d: mov      rcx, qword ptr [r15 + 0x10]
+ffffff80015db221: mov      qword ptr [rax + 0x28], rcx
+ffffff80015db225: mov      rcx, qword ptr [r15]
+ffffff80015db228: mov      rdx, qword ptr [r15 + 8]
+ffffff80015db22c: mov      qword ptr [rax + 0x20], rdx
+ffffff80015db230: mov      qword ptr [rax + 0x18], rcx
+ffffff80015db234: mov      rcx, qword ptr [rbx + 0x138]
+ffffff80015db23b: test     byte ptr [rcx + 0xa1], 1
+ffffff80015db242: je       0xffffff80015db269
+ffffff80015db244: mov      rdi, qword ptr [rcx]
+ffffff80015db247: mov      rax, qword ptr [rdi]
+ffffff80015db24a: mov      rsi, rbx
+ffffff80015db24d: call     qword ptr [rax + 0x128]
+ffffff80015db253: mov      rax, qword ptr [rbx + 0x138]
+ffffff80015db25a: mov      rdi, qword ptr [rax]
+ffffff80015db25d: mov      rax, qword ptr [rdi]
+ffffff80015db260: mov      rsi, rbx
+ffffff80015db263: call     qword ptr [rax + 0x120]
+ffffff80015db269: mov      eax, r14d
+ffffff80015db26c: pop      rbx
+ffffff80015db26d: pop      r12
+ffffff80015db26f: pop      r14
+ffffff80015db271: pop      r15
+ffffff80015db273: pop      rbp
+ffffff80015db274: ret      
+ffffff80015db275: nop      

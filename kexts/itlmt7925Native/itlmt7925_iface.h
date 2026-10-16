@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 // Copyright (c) 2026 thanhnndev and contributors
-// itlmt7925WifiInterface - native Wi-Fi interface (macOS 15.8.1 / 24H32 ABI), stage 2: interface + queues + pool, no radio.
+// itlmt7925WifiInterface - native Wi-Fi interface (interface ABI macOS 26.7.1 / 25G241; originally ported from 15.8.1 / 24H32).
 //
-// Shape taken from Apple's AppleBCMWLANSkywalkInterface (docs/IO80211-ABI-2.md, "Native stub, stage 2"): a subclass of the
-// Family's IO80211InfraProtocol (0x120 bytes, 190 pure get/set handlers + setMacAddress), created by the controller, attached
-// to it, started with an initialised RegistrationInfo, which registers [TxSubmission x4, TxCompletion, RxCompletion] and the
-// packet pool with registerInfraEthernetInterface.
+// Shape taken from Apple's AppleBCMWLANSkywalkInterface (docs/IO80211-ABI-2.md, "Native stub, stage 2"; 25G241 deltas in
+// docs/IO80211-ABI.md, "Tahoe port"): a subclass of the Family's IO80211InfraProtocol (0x130 bytes on 25G241, 199 pure
+// get/set handlers + setMacAddress), created by the controller, attached to it, started with an initialised RegistrationInfo,
+// which registers [TxSubmission x4, TxCompletion, RxCompletion] and the packet pool with registerInfraEthernetInterface.
 #pragma once
 #include "../itlmt7925/io80211/IO80211Controller.h"
 #include "../itlmt7925/io80211/IO80211WorkQueue.h"
@@ -49,6 +49,10 @@ public:
     IOReturn enable(uint32_t options) override;
     IOReturn disable(uint32_t options) override;
     void setInterfaceEnable(bool enabled) override;
+    // 25G241 moved this from the protocol handler table (0x1c6, pure) to a base-implemented virtual of IO80211InfraInterface
+    // (slot 468); Apple's base calls setLinkState itself, this override records the update and leaves the core's radio link
+    // as the only driver of setLinkState (applyRadioLink).
+    IOReturn setWCL_LINK_STATE_UPDATE(apple80211_wcl_update_link_state *d) override;
     uint32_t getHardwareAssists() override;
     IOReturn processBSDCommand(__ifnet *netif, uint32_t command, void *data) override;
     IOReturn newUserClient(task_t task, void *securityID, UInt32 type, OSDictionary *properties, IOUserClient **handler) override;

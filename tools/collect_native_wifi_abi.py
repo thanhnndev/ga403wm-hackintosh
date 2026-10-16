@@ -31,14 +31,15 @@ def main():
             action()
 
     classes = ['IO80211Controller', 'IO80211SkywalkInterface', 'IO80211InfraInterface',
+               'IO80211InfraProtocol', 'AppleBCMWLANInfraProtocol',
                'IO80211WorkQueue', 'IO80211CommandGate', 'IO80211Peer',
                'IO80211VirtualInterface', 'IO80211ControllerMonitor',
                'AppleBCMWLANCore', 'AppleBCMWLANSkywalkInterface',
-               'IOSkywalkEthernetInterface', 'IOSkywalkNetworkInterface',
+               'IOSkywalkEthernetInterface', 'IOSkywalkNetworkInterface', 'IOSkywalkLegacyEthernet',
                'IOSkywalkPacketQueue', 'IOSkywalkPacketBufferPool',
                'IOSkywalkTxSubmissionQueue', 'IOSkywalkRxCompletionQueue',
                'IOSkywalkTxCompletionQueue', 'IOSkywalkRxSubmissionQueue',
-               'IOSkywalkPacket', 'CCPipe', 'CCStream', 'CCLogStream', 'CCLogPipe',
+               'IOSkywalkPacket', 'IOSkywalkNetworkPacket', 'CCPipe', 'CCStream', 'CCLogStream', 'CCLogPipe',
                'CCFaultReporter', 'AppleBCMWLANPCIeSkywalk',
                'AppleBCMWLANPCIeSkywalkPacketPool', 'IO80211Glue']
     for cls in classes:
@@ -60,11 +61,11 @@ def main():
     if isinstance(summary['AppleBCMWLANSkywalkInterface'], int):
         save('skywalk-if.diff', lambda: vt.cmd_compare('IO80211SkywalkInterface', 'AppleBCMWLANSkywalkInterface'))
     targets = {
-        'AppleBCMWLANCore': ['start', 'createWorkQueue', 'SCAN', 'ASSOCIATE', 'getCARD_CAPABILITIES', 'handleCardSpecific', 'getLogger', 'getWorkQueue'],
+        'AppleBCMWLANCore': ['start', 'createWorkQueue', 'SCAN', 'ASSOCIATE', 'getCARD_CAPABILITIES', 'handleCardSpecific', 'getLogger', 'getWorkQueue', 'createSkywalkInterface'],
         'IO80211Controller': ['start', 'createWorkQueue', 'attachInterface'],
         'IO80211SkywalkInterface': ['init', 'start', 'register', 'processBSDCommand', 'performGatedCommandIOCTL', 'routeIoctlToWcl'],
-        'IO80211InfraInterface': ['init', 'start', 'registerInfraEthernetInterface'],
-        'AppleBCMWLANSkywalkInterface': ['initWithProviderAndParameters', 'start', 'withProvider'],
+        'IO80211InfraInterface': ['init', 'start', 'registerInfraEthernetInterface', 'setLinkState', 'setLinkStateInternal'],
+        'AppleBCMWLANSkywalkInterface': ['initWithProviderAndParameters', 'start', 'withProvider', 'setMacAddress'],
     }
     targets.update({
         'IO80211Glue': ['sendIOUCToWcl'],
@@ -74,7 +75,7 @@ def main():
         'CCLogPipe': ['withOwnerNameCapacity'],
         'AppleBCMWLANPCIeSkywalk': ['withProviderAndCapacity', 'initWithProviderAndCapacity'],
         'AppleBCMWLANPCIeSkywalkPacketPool': ['withName'],
-        'IOSkywalkEthernetInterface': ['registerEthernetInterface'],
+        'IOSkywalkEthernetInterface': ['registerEthernetInterface', 'initRegistrationInfo', 'copyRegistrationInfo'],
         'IOSkywalkPacketBufferPool': ['withName', 'initWithName'],
     })
     for cls, terms in targets.items():

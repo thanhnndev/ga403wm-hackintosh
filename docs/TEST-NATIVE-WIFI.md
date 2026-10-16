@@ -912,3 +912,44 @@ Interface = the native Wi-Fi port, default route on it, same AP as above, traffi
 * The download is stable at ~29-36 MB/s (one TCP stream, ~230-290 Mb/s), above the phone's 180 Mb/s on the same network.
 * Uplink is about 6 times lower than downlink and has high loaded latency: the TX path (rate selection is the firmware's, TX
   aggregation, `retry-ratio` in `stat-log`) has not been investigated yet. Next measurement: an upload run with `stat-log` on.
+
+## Tahoe (25G241) first load
+
+Everything above describes the 24H32 (Sequoia) rounds. The branch now carries the 25G241 (macOS 26.7.1) port: headers
+regenerated from `abi/native-wifi/25G241`, the code deltas applied (`setMacAddress` takes an `mloAddrArray`, 5-argument
+`setLinkState`, 13 new protocol handlers), all checks green (see
+[IO80211-ABI.md](IO80211-ABI.md#tahoe-port-of-itlmt7925native-mac-2026-10-16)). **Nothing has been loaded on Tahoe yet**;
+this is the first-load checklist.
+
+Build and checks (Mac, in the worktree):
+
+```sh
+bash scripts/build.sh itlmt7925 itlmt7925Native
+KC=/System/Library/KernelCollections/BootKernelExtensions.kc python3 tools/check_kext_links.py \
+    build/itlmt7925Native.kext build/itlmt7925.kext      # exit 0, only the 6 baseline-missing symbols
+python3 tools/gen_native_iface.py --check                 # generated stubs match the headers
+```
+
+Install (same helper as always; it backs up the EFI including NVRAM boot-args first):
+
+```sh
+scripts/esp-automount.sh
+scripts/native-wifi-test.sh install build/itlmt7925Native.kext --stage b --exclusive
+```
+
+`install` now also **clears `MaxKernel`** on the ESP's `itlmt7925Native.kext` entry: the Tahoe migration had capped it at
+24.99.99, and with the cap the kext silently does not load. `--exclusive` switches the Ethernet-mode core path off for the
+test (scan/join then belong to the native path; `itlmt_native_dp=1` is part of the native front end) - no Wi-Fi until the
+native path works, so keep the phone tether ready. Going back: `scripts/native-wifi-test.sh restore`.
+
+After the reboot (stage b), same signs as the 24H32 rounds plus the new ones:
+
+* `kextstat | grep itlmt` shows both kexts; `ioreg -l | grep itlmt_native_trace` shows the `mk:`/`sw:`/`lp:` steps, ending in
+  `mk:startWithInfo ok` and (publish >= 2) `mk:deferBSDAttach(false)=0`.
+* `ioreg -l | grep itlmt7925WifiInterface` shows the interface node (role Infrastructure, `IOInterfaceNamePrefix`).
+* A Wi-Fi service/interface appears (`networksetup -listallhardwareports`, System Settings > Network); the shim's unit
+  assignment and scan/join are the parts to watch. The 13 new Tahoe handlers answer `kIOReturnUnsupported` until a feature
+  needs them.
+* Failures to send back: `scripts/native-wifi-test.sh logs` (kextstat, ioreg, `log show --last boot`, dmesg; SSIDs/MACs
+  removed), the stage reached, and for a panic the first 30 lines of the panic text. Sleep/wake once only after the load
+  is confirmed safe.
