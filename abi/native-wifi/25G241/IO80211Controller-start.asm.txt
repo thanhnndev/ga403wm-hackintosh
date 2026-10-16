@@ -1,0 +1,326 @@
+# 0xffffff8002291f30 __ZN17IO80211Controller5startEP9IOService
+ffffff8002291f30: push     rbp
+ffffff8002291f31: mov      rbp, rsp
+ffffff8002291f34: push     r15
+ffffff8002291f36: push     r14
+ffffff8002291f38: push     rbx
+ffffff8002291f39: push     rax
+ffffff8002291f3a: mov      r14, rsi
+ffffff8002291f3d: mov      rbx, rdi
+ffffff8002291f40: lea      rdi, [rip - 0x10ef47]
+ffffff8002291f47: mov      rsi, qword ptr [rip + 0x1be1f2]  ; 0xffffff8002450140
+ffffff8002291f4e: lea      rcx, [rip + 0x10f2cb]  ; 0xffffff80023a1220
+ffffff8002291f55: xor      edx, edx
+ffffff8002291f57: xor      eax, eax
+ffffff8002291f59: call     0xffffff8000a55a50  ; __os_log_internal
+ffffff8002291f5e: mov      rax, qword ptr [rip + 0x1be1b3]  ; 0xffffff8002450118
+ffffff8002291f65: mov      rdi, rbx
+ffffff8002291f68: mov      rsi, r14
+ffffff8002291f6b: call     qword ptr [rax + 0x5d0]
+ffffff8002291f71: test     al, al
+ffffff8002291f73: je       0xffffff80022920d3
+ffffff8002291f79: mov      rax, qword ptr [rbx + 0x120]
+ffffff8002291f80: mov      qword ptr [rax + 0x368], r14
+ffffff8002291f87: mov      rax, qword ptr [r14]
+ffffff8002291f8a: mov      rdi, r14
+ffffff8002291f8d: call     qword ptr [rax + 0x20]
+ffffff8002291f90: cmp      qword ptr [rip + 0x1fb960], 0  ; 0xffffff800248d8f8
+ffffff8002291f98: jne      0xffffff8002291fb2
+ffffff8002291f9a: mov      rdi, qword ptr [rip + 0x1f703f]  ; 0xffffff8002488fe0
+ffffff8002291fa1: call     0xffffff8000a91a00  ; __ZN15IORegistryEntry9makePlaneEPKc
+ffffff8002291fa6: mov      qword ptr [rip + 0x1fb94b], rax  ; 0xffffff800248d8f8
+ffffff8002291fad: test     rax, rax
+ffffff8002291fb0: je       0xffffff8002291fcd
+ffffff8002291fb2: call     0xffffff8000a919d0  ; __ZN15IORegistryEntry15getRegistryRootEv
+ffffff8002291fb7: mov      rdx, qword ptr [rip + 0x1fb93a]  ; 0xffffff800248d8f8
+ffffff8002291fbe: mov      rcx, qword ptr [rbx]
+ffffff8002291fc1: mov      rdi, rbx
+ffffff8002291fc4: mov      rsi, rax
+ffffff8002291fc7: call     qword ptr [rcx + 0x358]
+ffffff8002291fcd: mov      rdx, qword ptr [rip + 0x1f6ff4]  ; 0xffffff8002488fc8
+ffffff8002291fd4: lea      rsi, [rip + 0x1711a2]  ; "IO80211Family.BuildTag"
+ffffff8002291fdb: mov      rdi, rbx
+ffffff8002291fde: call     0xffffff8002311f57  ; __Z17setPropertyHelperP9IOServicePKcS2_
+ffffff8002291fe3: mov      rdx, qword ptr [rip + 0x1f6fe6]  ; 0xffffff8002488fd0
+ffffff8002291fea: lea      rsi, [rip + 0x1711a3]  ; "IO80211Family.BuildTagGit"
+ffffff8002291ff1: mov      rdi, rbx
+ffffff8002291ff4: call     0xffffff8002311f57  ; __Z17setPropertyHelperP9IOServicePKcS2_
+ffffff8002291ff9: mov      rdx, qword ptr [rip + 0x1f6fd8]  ; 0xffffff8002488fd8
+ffffff8002292000: lea      rsi, [rip + 0x1711a7]  ; "IO80211Family.BuildDate"
+ffffff8002292007: mov      rdi, rbx
+ffffff800229200a: call     0xffffff8002311f57  ; __Z17setPropertyHelperP9IOServicePKcS2_
+ffffff800229200f: call     0xffffff8002196b3b  ; __Z27IO80211_io80211isDebuggablev
+ffffff8002292014: mov      rcx, qword ptr [rip + 0x1be135]  ; 0xffffff8002450150
+ffffff800229201b: mov      r14, qword ptr [rcx]
+ffffff800229201e: mov      rcx, qword ptr [rip + 0x1be123]  ; 0xffffff8002450148
+ffffff8002292025: mov      r15, qword ptr [rcx]
+ffffff8002292028: test     al, al
+ffffff800229202a: mov      rax, r15
+ffffff800229202d: cmovne   rax, r14
+ffffff8002292031: mov      rdx, qword ptr [rax]
+ffffff8002292034: lea      rsi, [rip + 0x17118b]  ; "Debuggable - IO80211_io80211isDebuggable"
+ffffff800229203b: mov      rdi, rbx
+ffffff800229203e: call     0xffffff8002311ea3  ; __Z17setPropertyHelperP9IOServicePKcPK8OSObject
+ffffff8002292043: cmp      byte ptr [rip + 0x1fad66], 0  ; 0xffffff800248cdb0
+ffffff800229204a: jne      0xffffff800229206b
+ffffff800229204c: lea      rdi, [rip + 0x12fdcc]  ; "wlan.debug.enable"
+ffffff8002292053: lea      rsi, [rip + 0x1fad5a]  ; 0xffffff800248cdb4
+ffffff800229205a: mov      edx, 4
+ffffff800229205f: call     0xffffff8000b659e0  ; _PE_parse_boot_argn
+ffffff8002292064: mov      byte ptr [rip + 0x1fad45], 1  ; 0xffffff800248cdb0
+ffffff800229206b: cmp      dword ptr [rip + 0x1fad42], 0  ; 0xffffff800248cdb4
+ffffff8002292072: mov      rax, r15
+ffffff8002292075: cmovne   rax, r14
+ffffff8002292079: mov      rdx, qword ptr [rax]
+ffffff800229207c: lea      rsi, [rip + 0x17116c]  ; "Debuggable - IO80211_isDebugCommandActionAllowed"
+ffffff8002292083: mov      rdi, rbx
+ffffff8002292086: call     0xffffff8002311ea3  ; __Z17setPropertyHelperP9IOServicePKcPK8OSObject
+ffffff800229208b: call     0xffffff8002274cde  ; __Z23isDevFusedOrCSRInternalv
+ffffff8002292090: test     al, al
+ffffff8002292092: cmovne   r15, r14
+ffffff8002292096: mov      rdx, qword ptr [r15]
+ffffff8002292099: lea      rsi, [rip + 0x171180]  ; "Debuggable - isDevFusedOrCSRInternal"
+ffffff80022920a0: mov      rdi, rbx
+ffffff80022920a3: call     0xffffff8002311ea3  ; __Z17setPropertyHelperP9IOServicePKcPK8OSObject
+ffffff80022920a8: mov      rax, qword ptr [rbx]
+ffffff80022920ab: mov      rdi, rbx
+ffffff80022920ae: call     qword ptr [rax + 0xd40]
+ffffff80022920b4: mov      qword ptr [rip + 0x1fb845], rax  ; 0xffffff800248d900
+ffffff80022920bb: mov      rdi, rbx
+ffffff80022920be: mov      rsi, rbx
+ffffff80022920c1: call     0xffffff800229252c  ; __ZN17IO80211Controller17createIOReportersEP9IOService
+ffffff80022920c6: test     eax, eax
+ffffff80022920c8: je       0xffffff80022920f0
+ffffff80022920ca: lea      rdi, [rip + 0x16ef81]  ; 0xffffff8002401052
+ffffff80022920d1: jmp      0xffffff80022920da  ; __ZN17IO80211Controller5startEP9IOService+0x1aa
+ffffff80022920d3: lea      rdi, [rip + 0x16ef58]  ; 0xffffff8002401032
+ffffff80022920da: xor      ebx, ebx
+ffffff80022920dc: xor      eax, eax
+ffffff80022920de: call     0xffffff8000a86b60  ; _IOLog
+ffffff80022920e3: mov      eax, ebx
+ffffff80022920e5: add      rsp, 8
+ffffff80022920e9: pop      rbx
+ffffff80022920ea: pop      r14
+ffffff80022920ec: pop      r15
+ffffff80022920ee: pop      rbp
+ffffff80022920ef: ret      
+ffffff80022920f0: mov      rsi, qword ptr [rbx + 0x120]
+ffffff80022920f7: mov      dword ptr [rsi + 0x4cc], 3
+ffffff8002292101: add      rsi, 0x4cc
+ffffff8002292108: lea      rdi, [rip + 0x16ef79]  ; "wlan.lqm.logging"
+ffffff800229210f: mov      edx, 4
+ffffff8002292114: call     0xffffff8000b659e0  ; _PE_parse_boot_argn
+ffffff8002292119: mov      rcx, qword ptr [rbx + 0x120]
+ffffff8002292120: mov      esi, dword ptr [rcx + 0x4cc]
+ffffff8002292126: test     eax, eax
+ffffff8002292128: je       0xffffff800229216b
+ffffff800229212a: lea      rdi, [rip + 0x16ef68]  ; 0xffffff8002401099
+ffffff8002292131: xor      eax, eax
+ffffff8002292133: call     0xffffff8000a86b60  ; _IOLog
+ffffff8002292138: mov      rax, qword ptr [rbx + 0x120]
+ffffff800229213f: mov      esi, dword ptr [rax + 0x4cc]
+ffffff8002292145: cmp      esi, 4
+ffffff8002292148: jl       0xffffff800229216b
+ffffff800229214a: lea      rdi, [rip + 0x16ef76]  ; 0xffffff80024010c7
+ffffff8002292151: xor      eax, eax
+ffffff8002292153: call     0xffffff8000a86b60  ; _IOLog
+ffffff8002292158: mov      rax, qword ptr [rbx + 0x120]
+ffffff800229215f: mov      dword ptr [rax + 0x4cc], 0
+ffffff8002292169: xor      esi, esi
+ffffff800229216b: lea      rdi, [rip + 0x16ef85]  ; 0xffffff80024010f7
+ffffff8002292172: xor      eax, eax
+ffffff8002292174: call     0xffffff8000a86b60  ; _IOLog
+ffffff8002292179: mov      rax, qword ptr [rbx + 0x120]
+ffffff8002292180: mov      byte ptr [rax + 0x4d0], 1
+ffffff8002292187: mov      rdi, rbx
+ffffff800229218a: call     0xffffff80022925dc  ; __ZN17IO80211Controller23setupControlPathLoggingEv
+ffffff800229218f: test     eax, eax
+ffffff8002292191: je       0xffffff800229219f
+ffffff8002292193: lea      rdi, [rip + 0x16ef80]  ; 0xffffff800240111a
+ffffff800229219a: jmp      0xffffff80022920da  ; __ZN17IO80211Controller5startEP9IOService+0x1aa
+ffffff800229219f: mov      rdi, rbx
+ffffff80022921a2: call     0xffffff8002292628  ; __ZN17IO80211Controller28findAndAttachToFaultReporterEv
+ffffff80022921a7: test     eax, eax
+ffffff80022921a9: je       0xffffff80022921b7
+ffffff80022921ab: lea      rdi, [rip + 0x16efa4]  ; 0xffffff8002401156
+ffffff80022921b2: jmp      0xffffff80022920da  ; __ZN17IO80211Controller5startEP9IOService+0x1aa
+ffffff80022921b7: mov      edi, 0x18
+ffffff80022921bc: call     0xffffff800233508a  ; __ZN21IO80211RangingManagernwEm
+ffffff80022921c1: mov      r14, rax
+ffffff80022921c4: lea      r15, [rip + 0x1fc2d5]  ; 0xffffff800248e4a0
+ffffff80022921cb: mov      rdi, rax
+ffffff80022921ce: mov      rsi, r15
+ffffff80022921d1: call     0xffffff8000a1cdb0  ; __ZN8OSObjectC2EPK11OSMetaClass
+ffffff80022921d6: lea      rax, [rip + 0x1e1a7b]  ; 0xffffff8002473c58
+ffffff80022921dd: add      rax, 0x10
+ffffff80022921e1: mov      qword ptr [r14], rax
+ffffff80022921e4: mov      rdi, r15
+ffffff80022921e7: call     0xffffff8000a1b790  ; __ZNK11OSMetaClass19instanceConstructedEv
+ffffff80022921ec: mov      rax, qword ptr [rbx + 0x120]
+ffffff80022921f3: mov      qword ptr [rax + 0x370], r14
+ffffff80022921fa: mov      rdi, r14
+ffffff80022921fd: mov      rsi, rbx
+ffffff8002292200: call     0xffffff80023351b2  ; __ZN21IO80211RangingManager18initWithControllerEP17IO80211Controller
+ffffff8002292205: test     al, al
+ffffff8002292207: je       0xffffff800229248c
+ffffff800229220d: mov      rax, qword ptr [rbx]
+ffffff8002292210: mov      rdi, rbx
+ffffff8002292213: call     qword ptr [rax + 0xc68]
+ffffff8002292219: mov      rdi, rbx
+ffffff800229221c: mov      rsi, rax
+ffffff800229221f: call     0xffffff80021a8a5c  ; __ZN18IO80211CommandGate15allocWithParamsEP8OSObjectP16IO80211WorkQueue
+ffffff8002292224: mov      rcx, qword ptr [rbx + 0x120]
+ffffff800229222b: mov      qword ptr [rcx + 0x3c0], rax
+ffffff8002292232: test     rax, rax
+ffffff8002292235: je       0xffffff80022924b2
+ffffff800229223b: mov      dword ptr [rcx + 0x37c], 0
+ffffff8002292245: lea      rdi, [rip + 0x16ef4b]  ; 0xffffff8002401197
+ffffff800229224c: xor      eax, eax
+ffffff800229224e: call     0xffffff8000a86b60  ; _IOLog
+ffffff8002292253: mov      esi, 0x37c
+ffffff8002292258: add      rsi, qword ptr [rbx + 0x120]
+ffffff800229225f: lea      rdi, [rip + 0x16ef62]  ; "wlan.disableIOCTL"
+ffffff8002292266: mov      edx, 4
+ffffff800229226b: call     0xffffff8000b659e0  ; _PE_parse_boot_argn
+ffffff8002292270: test     eax, eax
+ffffff8002292272: je       0xffffff8002292292
+ffffff8002292274: mov      rax, qword ptr [rbx + 0x120]
+ffffff800229227b: mov      edx, dword ptr [rax + 0x37c]
+ffffff8002292281: lea      rsi, [rip + 0x16ef52]  ; 0xffffff80024011da
+ffffff8002292288: mov      rdi, rbx
+ffffff800229228b: xor      eax, eax
+ffffff800229228d: call     0xffffff800229273c  ; __ZN17IO80211Controller8logDebugEPKcz
+ffffff8002292292: mov      rsi, qword ptr [rbx + 0x120]
+ffffff8002292299: mov      dword ptr [rsi + 0x380], 1
+ffffff80022922a3: add      rsi, 0x380
+ffffff80022922aa: lea      rdi, [rip + 0x16ef6b]  ; "wlan.useIOUCWhenPossible"
+ffffff80022922b1: mov      edx, 4
+ffffff80022922b6: call     0xffffff8000b659e0  ; _PE_parse_boot_argn
+ffffff80022922bb: test     eax, eax
+ffffff80022922bd: je       0xffffff80022922dd
+ffffff80022922bf: mov      rax, qword ptr [rbx + 0x120]
+ffffff80022922c6: mov      edx, dword ptr [rax + 0x380]
+ffffff80022922cc: lea      rsi, [rip + 0x16ef62]  ; "Best effort to use IOUC logic, but will fallback to IOCTL logic via boot-arg wla"
+ffffff80022922d3: mov      rdi, rbx
+ffffff80022922d6: xor      eax, eax
+ffffff80022922d8: call     0xffffff800229273c  ; __ZN17IO80211Controller8logDebugEPKcz
+ffffff80022922dd: mov      esi, 0x384
+ffffff80022922e2: add      rsi, qword ptr [rbx + 0x120]
+ffffff80022922e9: lea      rdi, [rip + 0x16efb0]  ; "wlan.ivars->fPanicOnIOCTL"
+ffffff80022922f0: mov      edx, 4
+ffffff80022922f5: call     0xffffff8000b659e0  ; _PE_parse_boot_argn
+ffffff80022922fa: test     eax, eax
+ffffff80022922fc: je       0xffffff800229231c
+ffffff80022922fe: mov      rax, qword ptr [rbx + 0x120]
+ffffff8002292305: mov      edx, dword ptr [rax + 0x384]
+ffffff800229230b: lea      rsi, [rip + 0x16efa8]  ; 0xffffff80024012ba
+ffffff8002292312: mov      rdi, rbx
+ffffff8002292315: xor      eax, eax
+ffffff8002292317: call     0xffffff800229273c  ; __ZN17IO80211Controller8logDebugEPKcz
+ffffff800229231c: mov      esi, 0x388
+ffffff8002292321: add      rsi, qword ptr [rbx + 0x120]
+ffffff8002292328: lea      rdi, [rip + 0x16efcc]  ; "wlan.disableEventSocket"
+ffffff800229232f: mov      edx, 4
+ffffff8002292334: call     0xffffff8000b659e0  ; _PE_parse_boot_argn
+ffffff8002292339: test     eax, eax
+ffffff800229233b: je       0xffffff8002292358
+ffffff800229233d: mov      rax, qword ptr [rbx + 0x120]
+ffffff8002292344: mov      esi, dword ptr [rax + 0x388]
+ffffff800229234a: lea      rdi, [rip + 0x16efc2]  ; 0xffffff8002401313
+ffffff8002292351: xor      eax, eax
+ffffff8002292353: call     0xffffff8000a86b60  ; _IOLog
+ffffff8002292358: mov      rdi, rbx
+ffffff800229235b: call     0xffffff800041c450  ; _vm_kernel_addrhash_external
+ffffff8002292360: mov      r14, rax
+ffffff8002292363: mov      rax, qword ptr [rbx + 0x120]
+ffffff800229236a: mov      rdi, qword ptr [rax + 0x368]
+ffffff8002292371: call     0xffffff800041c450  ; _vm_kernel_addrhash_external
+ffffff8002292376: lea      rdi, [rip + 0x16efdf]  ; 0xffffff800240135c
+ffffff800229237d: mov      rsi, r14
+ffffff8002292380: mov      rdx, rax
+ffffff8002292383: xor      eax, eax
+ffffff8002292385: call     0xffffff8000a86b60  ; _IOLog
+ffffff800229238a: mov      rax, qword ptr [rbx + 0x120]
+ffffff8002292391: mov      dword ptr [rax + 0x4c8], 0
+ffffff800229239b: mov      rax, qword ptr [rbx]
+ffffff800229239e: mov      rdi, rbx
+ffffff80022923a1: call     qword ptr [rax + 0xdc0]
+ffffff80022923a7: mov      rcx, qword ptr [rbx + 0x120]
+ffffff80022923ae: mov      qword ptr [rcx + 0xb18], rax
+ffffff80022923b5: test     rax, rax
+ffffff80022923b8: je       0xffffff80022924b9
+ffffff80022923be: mov      rax, qword ptr [rbx]
+ffffff80022923c1: mov      rdi, rbx
+ffffff80022923c4: call     qword ptr [rax + 0xc68]
+ffffff80022923ca: lea      rcx, [rip + 0x421]  ; 0xffffff80022927f2
+ffffff80022923d1: mov      edi, 2
+ffffff80022923d6: mov      rsi, rbx
+ffffff80022923d9: mov      rdx, rax
+ffffff80022923dc: call     0xffffff80021a7214  ; __ZN18IO80211TimerSource15allocWithParamsE26IO80211TimerSourcePriorityP8OSObjectP16IO80211WorkQueuePFvS2_PS_E
+ffffff80022923e1: mov      rcx, qword ptr [rbx + 0x120]
+ffffff80022923e8: mov      qword ptr [rcx + 0x500], rax
+ffffff80022923ef: test     rax, rax
+ffffff80022923f2: je       0xffffff80022924c5
+ffffff80022923f8: mov      rcx, qword ptr [rax]
+ffffff80022923fb: mov      rdi, rax
+ffffff80022923fe: call     qword ptr [rcx + 0x150]
+ffffff8002292404: mov      rax, qword ptr [rbx]
+ffffff8002292407: mov      rdi, rbx
+ffffff800229240a: call     qword ptr [rax + 0xc68]
+ffffff8002292410: mov      rdi, rax
+ffffff8002292413: call     0xffffff800236f388  ; __ZN19IO80211TimerFactory15allocWithParamsEP16IO80211WorkQueue
+ffffff8002292418: mov      rcx, qword ptr [rbx + 0x120]
+ffffff800229241f: mov      qword ptr [rcx + 0xb20], rax
+ffffff8002292426: test     rax, rax
+ffffff8002292429: je       0xffffff80022924df
+ffffff800229242f: mov      rdi, rbx
+ffffff8002292432: call     0xffffff80022dd55c  ; __ZN15IO80211RNGAgent11withOptionsEP17IO80211Controller
+ffffff8002292437: mov      rcx, qword ptr [rbx + 0x120]
+ffffff800229243e: mov      qword ptr [rcx + 0xb28], rax
+ffffff8002292445: test     rax, rax
+ffffff8002292448: je       0xffffff80022924eb
+ffffff800229244e: mov      rdi, rbx
+ffffff8002292451: call     0xffffff800229280a  ; __ZN17IO80211Controller14allocFramePoolEv
+ffffff8002292456: mov      rax, qword ptr [rbx + 0x120]
+ffffff800229245d: mov      byte ptr [rax + 0xb4c], 1
+ffffff8002292464: lea      rdi, [rip - 0x10f46b]
+ffffff800229246b: mov      rsi, qword ptr [rip + 0x1bdcce]  ; 0xffffff8002450140
+ffffff8002292472: lea      rcx, [rip + 0x10edc7]  ; 0xffffff80023a1240
+ffffff8002292479: xor      edx, edx
+ffffff800229247b: mov      r8, rbx
+ffffff800229247e: xor      eax, eax
+ffffff8002292480: call     0xffffff8000a55a50  ; __os_log_internal
+ffffff8002292485: mov      bl, 1
+ffffff8002292487: jmp      0xffffff80022920e3  ; __ZN17IO80211Controller5startEP9IOService+0x1b3
+ffffff800229248c: mov      rax, qword ptr [rbx + 0x120]
+ffffff8002292493: mov      rdi, qword ptr [rax + 0x370]
+ffffff800229249a: mov      rax, qword ptr [rdi]
+ffffff800229249d: call     qword ptr [rax + 0x28]
+ffffff80022924a0: mov      rax, qword ptr [rbx + 0x120]
+ffffff80022924a7: mov      qword ptr [rax + 0x370], 0
+ffffff80022924b2: xor      ebx, ebx
+ffffff80022924b4: jmp      0xffffff80022920e3  ; __ZN17IO80211Controller5startEP9IOService+0x1b3
+ffffff80022924b9: lea      rdi, [rip + 0x16eed8]  ; 0xffffff8002401398
+ffffff80022924c0: jmp      0xffffff80022920da  ; __ZN17IO80211Controller5startEP9IOService+0x1aa
+ffffff80022924c5: mov      rax, qword ptr [rbx]
+ffffff80022924c8: mov      rdi, rbx
+ffffff80022924cb: call     qword ptr [rax + 0x38]
+ffffff80022924ce: mov      rdi, rax
+ffffff80022924d1: call     0xffffff8000a1b1d0  ; __ZNK11OSMetaClass12getClassNameEv
+ffffff80022924d6: lea      rdi, [rip + 0x16eee5]  ; 0xffffff80024013c2
+ffffff80022924dd: jmp      0xffffff8002292503  ; __ZN17IO80211Controller5startEP9IOService+0x5d3
+ffffff80022924df: lea      rdi, [rip + 0x16ef22]  ; 0xffffff8002401408
+ffffff80022924e6: jmp      0xffffff80022920da  ; __ZN17IO80211Controller5startEP9IOService+0x1aa
+ffffff80022924eb: mov      rax, qword ptr [rbx]
+ffffff80022924ee: mov      rdi, rbx
+ffffff80022924f1: call     qword ptr [rax + 0x38]
+ffffff80022924f4: mov      rdi, rax
+ffffff80022924f7: call     0xffffff8000a1b1d0  ; __ZNK11OSMetaClass12getClassNameEv
+ffffff80022924fc: lea      rdi, [rip + 0x16ef35]  ; 0xffffff8002401438
+ffffff8002292503: lea      rdx, [rip + 0x16eef8]  ; "start"
+ffffff800229250a: xor      ebx, ebx
+ffffff800229250c: mov      rsi, rax
+ffffff800229250f: xor      eax, eax
+ffffff8002292511: call     0xffffff8000a86b60  ; _IOLog
+ffffff8002292516: jmp      0xffffff80022920e3  ; __ZN17IO80211Controller5startEP9IOService+0x1b3
+ffffff800229251b: nop      

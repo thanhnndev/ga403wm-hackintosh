@@ -1,0 +1,32 @@
+# 0xffffff80022eddf0 __ZN16IO80211WorkQueue9MetaClassC1Ev
+ffffff80022eddf0: push     rbp
+ffffff80022eddf1: mov      rbp, rsp
+ffffff80022eddf4: push     rbx
+ffffff80022eddf5: push     rax
+ffffff80022eddf6: mov      rbx, rdi
+ffffff80022eddf9: lea      rsi, [rip + 0x12d51b]  ; "IO80211WorkQueue"
+ffffff80022ede00: mov      rdx, qword ptr [rip + 0x162229]  ; 0xffffff8002450030
+ffffff80022ede07: mov      ecx, 0x50
+ffffff80022ede0c: call     0xffffff8000a1a9d0  ; __ZN11OSMetaClassC2EPKcPKS_j
+ffffff80022ede11: lea      rax, [rip + 0x17c060]  ; 0xffffff8002469e78
+ffffff80022ede18: mov      qword ptr [rbx], rax
+ffffff80022ede1b: add      rsp, 8
+ffffff80022ede1f: pop      rbx
+ffffff80022ede20: pop      rbp
+ffffff80022ede21: ret      
+# 0xffffff80022edece __ZN16IO80211WorkQueue9MetaClassC2Ev
+ffffff80022edece: push     rbp
+ffffff80022edecf: mov      rbp, rsp
+ffffff80022eded2: push     rbx
+ffffff80022eded3: push     rax
+ffffff80022eded4: mov      rbx, rdi
+ffffff80022eded7: lea      rsi, [rip + 0x12d43d]  ; "IO80211WorkQueue"
+ffffff80022edede: mov      rdx, qword ptr [rip + 0x16214b]  ; 0xffffff8002450030
+ffffff80022edee5: mov      ecx, 0x50
+ffffff80022edeea: call     0xffffff8000a1a9d0  ; __ZN11OSMetaClassC2EPKcPKS_j
+ffffff80022edeef: lea      rax, [rip + 0x17bf82]  ; 0xffffff8002469e78
+ffffff80022edef6: mov      qword ptr [rbx], rax
+ffffff80022edef9: add      rsp, 8
+ffffff80022edefd: pop      rbx
+ffffff80022edefe: pop      rbp
+ffffff80022edeff: ret      

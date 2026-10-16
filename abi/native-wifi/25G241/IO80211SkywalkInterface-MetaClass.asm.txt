@@ -1,0 +1,32 @@
+# 0xffffff80022f50e0 __ZN23IO80211SkywalkInterface9MetaClassC1Ev
+ffffff80022f50e0: push     rbp
+ffffff80022f50e1: mov      rbp, rsp
+ffffff80022f50e4: push     rbx
+ffffff80022f50e5: push     rax
+ffffff80022f50e6: mov      rbx, rdi
+ffffff80022f50e9: lea      rsi, [rip + 0x12870f]  ; "IO80211SkywalkInterface"
+ffffff80022f50f0: mov      rdx, qword ptr [rip + 0x15afa1]  ; 0xffffff8002450098
+ffffff80022f50f7: mov      ecx, 0x128
+ffffff80022f50fc: call     0xffffff8000a1a9d0  ; __ZN11OSMetaClassC2EPKcPKS_j
+ffffff80022f5101: lea      rax, [rip + 0x175d20]  ; 0xffffff800246ae28
+ffffff80022f5108: mov      qword ptr [rbx], rax
+ffffff80022f510b: add      rsp, 8
+ffffff80022f510f: pop      rbx
+ffffff80022f5110: pop      rbp
+ffffff80022f5111: ret      
+# 0xffffff80022f51be __ZN23IO80211SkywalkInterface9MetaClassC2Ev
+ffffff80022f51be: push     rbp
+ffffff80022f51bf: mov      rbp, rsp
+ffffff80022f51c2: push     rbx
+ffffff80022f51c3: push     rax
+ffffff80022f51c4: mov      rbx, rdi
+ffffff80022f51c7: lea      rsi, [rip + 0x128631]  ; "IO80211SkywalkInterface"
+ffffff80022f51ce: mov      rdx, qword ptr [rip + 0x15aec3]  ; 0xffffff8002450098
+ffffff80022f51d5: mov      ecx, 0x128
+ffffff80022f51da: call     0xffffff8000a1a9d0  ; __ZN11OSMetaClassC2EPKcPKS_j
+ffffff80022f51df: lea      rax, [rip + 0x175c42]  ; 0xffffff800246ae28
+ffffff80022f51e6: mov      qword ptr [rbx], rax
+ffffff80022f51e9: add      rsp, 8
+ffffff80022f51ed: pop      rbx
+ffffff80022f51ee: pop      rbp
+ffffff80022f51ef: ret      

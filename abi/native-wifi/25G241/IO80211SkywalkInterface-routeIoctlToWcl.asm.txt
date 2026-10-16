@@ -1,0 +1,29 @@
+# 0xffffff80022f9bf6 __ZN23IO80211SkywalkInterface15routeIoctlToWclEjjPvm
+ffffff80022f9bf6: push     rbp
+ffffff80022f9bf7: mov      rbp, rsp
+ffffff80022f9bfa: push     rbx
+ffffff80022f9bfb: sub      rsp, 0x18
+ffffff80022f9bff: mov      rax, qword ptr [rip + 0x156532]  ; 0xffffff8002450138
+ffffff80022f9c06: mov      rax, qword ptr [rax]
+ffffff80022f9c09: mov      qword ptr [rbp - 0x10], rax
+ffffff80022f9c0d: mov      rax, qword ptr [rdi + 0x120]
+ffffff80022f9c14: mov      rdi, qword ptr [rax + 0xd8]
+ffffff80022f9c1b: test     rdi, rdi
+ffffff80022f9c1e: je       0xffffff80022f9c34
+ffffff80022f9c20: lea      rbx, [rbp - 0x11]
+ffffff80022f9c24: mov      byte ptr [rbx], 0
+ffffff80022f9c27: mov      r9, rbx
+ffffff80022f9c2a: call     0xffffff8002194278  ; __ZN11IO80211Glue13sendIOUCToWclEjjPvmRb
+ffffff80022f9c2f: test     byte ptr [rbx], 1
+ffffff80022f9c32: jne      0xffffff80022f9c39
+ffffff80022f9c34: mov      eax, 0xe082280f
+ffffff80022f9c39: mov      rcx, qword ptr [rip + 0x1564f8]  ; 0xffffff8002450138
+ffffff80022f9c40: mov      rcx, qword ptr [rcx]
+ffffff80022f9c43: cmp      rcx, qword ptr [rbp - 0x10]
+ffffff80022f9c47: jne      0xffffff80022f9c50
+ffffff80022f9c49: add      rsp, 0x18
+ffffff80022f9c4d: pop      rbx
+ffffff80022f9c4e: pop      rbp
+ffffff80022f9c4f: ret      
+ffffff80022f9c50: call     0xffffff8000ba0c20  ; ___stack_chk_fail
+ffffff80022f9c55: nop      

@@ -1,0 +1,55 @@
+# 0xffffff80032e7470 __ZN6CCPipe21withOwnerNameCapacityEP9IOServicePKcS3_PK13CCPipeOptions
+ffffff80032e7470: push     rbp
+ffffff80032e7471: mov      rbp, rsp
+ffffff80032e7474: push     r15
+ffffff80032e7476: push     r14
+ffffff80032e7478: push     r12
+ffffff80032e747a: push     rbx
+ffffff80032e747b: mov      rbx, rcx
+ffffff80032e747e: mov      r14, rdx
+ffffff80032e7481: mov      r15, rsi
+ffffff80032e7484: mov      r12, rdi
+ffffff80032e7487: lea      rdi, [rip - 0x348e]
+ffffff80032e748e: mov      rsi, qword ptr [rip + 0x20c13]  ; 0xffffff80033080a8
+ffffff80032e7495: lea      rcx, [rip + 0x196b4]  ; 0xffffff8003300b50
+ffffff80032e749c: xor      edx, edx
+ffffff80032e749e: mov      r8, r15
+ffffff80032e74a1: mov      r9, r14
+ffffff80032e74a4: xor      eax, eax
+ffffff80032e74a6: call     0xffffff8000a55a50  ; __os_log_internal
+ffffff80032e74ab: mov      r8d, dword ptr [rbx]
+ffffff80032e74ae: test     r8d, r8d
+ffffff80032e74b1: je       0xffffff80032e74cc
+ffffff80032e74b3: cmp      r8d, 1
+ffffff80032e74b7: jne      0xffffff80032e74e2
+ffffff80032e74b9: mov      rdi, r12
+ffffff80032e74bc: mov      rsi, r15
+ffffff80032e74bf: mov      rdx, r14
+ffffff80032e74c2: mov      rcx, rbx
+ffffff80032e74c5: call     0xffffff80032ed560  ; __ZN10CCDataPipe21withOwnerNameCapacityEP9IOServicePKcS3_PK13CCPipeOptions
+ffffff80032e74ca: jmp      0xffffff80032e74dd  ; __ZN6CCPipe21withOwnerNameCapacityEP9IOServicePKcS3_PK13CCPipeOptions+0x6d
+ffffff80032e74cc: mov      rdi, r12
+ffffff80032e74cf: mov      rsi, r15
+ffffff80032e74d2: mov      rdx, r14
+ffffff80032e74d5: mov      rcx, rbx
+ffffff80032e74d8: call     0xffffff80032f9e52  ; __ZN9CCLogPipe21withOwnerNameCapacityEP9IOServicePKcS3_PK13CCPipeOptions
+ffffff80032e74dd: mov      rbx, rax
+ffffff80032e74e0: jmp      0xffffff80032e7502  ; __ZN6CCPipe21withOwnerNameCapacityEP9IOServicePKcS3_PK13CCPipeOptions+0x92
+ffffff80032e74e2: lea      rdi, [rip - 0x34e9]
+ffffff80032e74e9: mov      rsi, qword ptr [rip + 0x20bb8]  ; 0xffffff80033080a8
+ffffff80032e74f0: lea      rcx, [rip + 0x19699]  ; 0xffffff8003300b90
+ffffff80032e74f7: xor      ebx, ebx
+ffffff80032e74f9: xor      edx, edx
+ffffff80032e74fb: xor      eax, eax
+ffffff80032e74fd: call     0xffffff8000a55a50  ; __os_log_internal
+ffffff80032e7502: lea      rsi, [rip + 0x1e6d7]  ; "withOwnerNameCapacity"
+ffffff80032e7509: mov      rdi, rbx
+ffffff80032e750c: mov      edx, 0x9e
+ffffff80032e7511: call     0xffffff80032e6df5  ; __Z11logInfoPipeP6CCPipePKci
+ffffff80032e7516: mov      rax, rbx
+ffffff80032e7519: pop      rbx
+ffffff80032e751a: pop      r12
+ffffff80032e751c: pop      r14
+ffffff80032e751e: pop      r15
+ffffff80032e7520: pop      rbp
+ffffff80032e7521: ret      

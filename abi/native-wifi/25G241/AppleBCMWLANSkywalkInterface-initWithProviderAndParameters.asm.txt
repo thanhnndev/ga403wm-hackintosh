@@ -1,0 +1,101 @@
+# 0xffffff80015d8b6e __ZN28AppleBCMWLANSkywalkInterface29initWithProviderAndParametersEP16AppleBCMWLANCorej20SkywalkInterfaceRolebhP17apple80211_wme_acjP11CCLogStreamP15CCFaultReporter
+ffffff80015d8b6e: push     rbp
+ffffff80015d8b6f: mov      rbp, rsp
+ffffff80015d8b72: push     r15
+ffffff80015d8b74: push     r14
+ffffff80015d8b76: push     r13
+ffffff80015d8b78: push     r12
+ffffff80015d8b7a: push     rbx
+ffffff80015d8b7b: push     rax
+ffffff80015d8b7c: mov      r14d, r9d
+ffffff80015d8b7f: mov      r15d, r8d
+ffffff80015d8b82: mov      r13d, ecx
+ffffff80015d8b85: mov      r12d, edx
+ffffff80015d8b88: mov      qword ptr [rbp - 0x30], rsi
+ffffff80015d8b8c: mov      rbx, rdi
+ffffff80015d8b8f: mov      rax, qword ptr [rdi]
+ffffff80015d8b92: call     qword ptr [rax + 0x88]
+ffffff80015d8b98: test     al, al
+ffffff80015d8b9a: je       0xffffff80015d8cb4
+ffffff80015d8ba0: mov      rdi, qword ptr [rbx + 0x138]
+ffffff80015d8ba7: test     rdi, rdi
+ffffff80015d8baa: je       0xffffff80015d8cbd
+ffffff80015d8bb0: cmp      r14b, 4
+ffffff80015d8bb4: ja       0xffffff80015d8ce0
+ffffff80015d8bba: mov      rsi, qword ptr [rbp + 0x10]
+ffffff80015d8bbe: mov      byte ptr [rdi + 0x2a], r14b
+ffffff80015d8bc2: add      rdi, 0x2c
+ffffff80015d8bc6: shl      r14b, 2
+ffffff80015d8bca: movzx    edx, r14b
+ffffff80015d8bce: call     0xffffff8000101080  ; _memmove
+ffffff80015d8bd3: mov      rdi, rbx
+ffffff80015d8bd6: mov      esi, r13d
+ffffff80015d8bd9: call     0xffffff80022f60f0  ; __ZN23IO80211SkywalkInterface16setInterfaceRoleEj
+ffffff80015d8bde: mov      rdi, rbx
+ffffff80015d8be1: mov      esi, r12d
+ffffff80015d8be4: call     0xffffff80022f950a  ; __ZN23IO80211SkywalkInterface14setInterfaceIdEj
+ffffff80015d8be9: mov      rdi, qword ptr [rbp + 0x20]
+ffffff80015d8bed: mov      rax, qword ptr [rbx + 0x138]
+ffffff80015d8bf4: mov      ecx, dword ptr [rbp + 0x18]
+ffffff80015d8bf7: mov      dword ptr [rax + 0x10], ecx
+ffffff80015d8bfa: mov      qword ptr [rax + 0xa8], rdi
+ffffff80015d8c01: test     rdi, rdi
+ffffff80015d8c04: je       0xffffff80015d8c13
+ffffff80015d8c06: mov      rax, qword ptr [rdi]
+ffffff80015d8c09: call     qword ptr [rax + 0x20]
+ffffff80015d8c0c: mov      rax, qword ptr [rbx + 0x138]
+ffffff80015d8c13: mov      rcx, qword ptr [rbp + 0x28]
+ffffff80015d8c17: mov      qword ptr [rax + 8], rcx
+ffffff80015d8c1b: mov      byte ptr [rax + 0xa2], r15b
+ffffff80015d8c22: mov      byte ptr [rax + 0xa1], 0
+ffffff80015d8c29: mov      rdi, rbx
+ffffff80015d8c2c: mov      rsi, qword ptr [rbp - 0x30]
+ffffff80015d8c30: call     0xffffff8000a94420  ; __ZN9IOService6attachEPS_
+ffffff80015d8c35: lea      rdi, [rip + 0x1a070c]  ; "wlan.skywalk.ktrace"
+ffffff80015d8c3c: lea      rsi, [rip + 0x2238fd]  ; 0xffffff80017fc540
+ffffff80015d8c43: mov      edx, 1
+ffffff80015d8c48: call     0xffffff8000b659e0  ; _PE_parse_boot_argn
+ffffff80015d8c4d: mov      rax, qword ptr [rbx]
+ffffff80015d8c50: mov      rdi, rbx
+ffffff80015d8c53: call     qword ptr [rax + 0xd08]
+ffffff80015d8c59: mov      r14b, 1
+ffffff80015d8c5c: test     rax, rax
+ffffff80015d8c5f: je       0xffffff80015d8cce
+ffffff80015d8c61: mov      rax, qword ptr [rbx]
+ffffff80015d8c64: mov      rdi, rbx
+ffffff80015d8c67: call     qword ptr [rax + 0xd08]
+ffffff80015d8c6d: mov      edx, 0x80
+ffffff80015d8c72: mov      rdi, rax
+ffffff80015d8c75: mov      esi, 5
+ffffff80015d8c7a: call     0xffffff80032ffa20  ; __ZN11CCLogStream9shouldLogE16CCStreamLogLevely
+ffffff80015d8c7f: test     al, al
+ffffff80015d8c81: je       0xffffff80015d8cce
+ffffff80015d8c83: mov      rax, qword ptr [rbx]
+ffffff80015d8c86: mov      rdi, rbx
+ffffff80015d8c89: call     qword ptr [rax + 0xd08]
+ffffff80015d8c8f: lea      rdx, [rip + 0x1a06c6]  ; "[ik] %s@%d:Skywalk interface allocation success"
+ffffff80015d8c96: lea      rcx, [rip + 0x1a06ef]  ; "initWithProviderAndParameters"
+ffffff80015d8c9d: mov      esi, 0x80
+ffffff80015d8ca2: mov      rdi, rax
+ffffff80015d8ca5: mov      r8d, 0xa2
+ffffff80015d8cab: xor      eax, eax
+ffffff80015d8cad: call     0xffffff80032fe2e4  ; __ZN11CCLogStream9logInfoIfEyPKcz
+ffffff80015d8cb2: jmp      0xffffff80015d8cce  ; __ZN28AppleBCMWLANSkywalkInterface29initWithProviderAndParametersEP16AppleBCMWLANCorej20SkywalkInterfaceRolebhP17apple80211_wme_acjP11CCLogStreamP15CCFaultReporter+0x160
+ffffff80015d8cb4: lea      rdi, [rip + 0x1a064d]  ; "Skywalk interface init fail"
+ffffff80015d8cbb: jmp      0xffffff80015d8cc4  ; __ZN28AppleBCMWLANSkywalkInterface29initWithProviderAndParametersEP16AppleBCMWLANCorej20SkywalkInterfaceRolebhP17apple80211_wme_acjP11CCLogStreamP15CCFaultReporter+0x156
+ffffff80015d8cbd: lea      rdi, [rip + 0x1a0660]  ; 0xffffff8001779324
+ffffff80015d8cc4: xor      r14d, r14d
+ffffff80015d8cc7: xor      eax, eax
+ffffff80015d8cc9: call     0xffffff8000a86b60  ; _IOLog
+ffffff80015d8cce: mov      eax, r14d
+ffffff80015d8cd1: add      rsp, 8
+ffffff80015d8cd5: pop      rbx
+ffffff80015d8cd6: pop      r12
+ffffff80015d8cd8: pop      r13
+ffffff80015d8cda: pop      r14
+ffffff80015d8cdc: pop      r15
+ffffff80015d8cde: pop      rbp
+ffffff80015d8cdf: ret      
+ffffff80015d8ce0: xor      r14d, r14d
+ffffff80015d8ce3: jmp      0xffffff80015d8cce  ; __ZN28AppleBCMWLANSkywalkInterface29initWithProviderAndParametersEP16AppleBCMWLANCorej20SkywalkInterfaceRolebhP17apple80211_wme_acjP11CCLogStreamP15CCFaultReporter+0x160
+ffffff80015d8ce5: nop      

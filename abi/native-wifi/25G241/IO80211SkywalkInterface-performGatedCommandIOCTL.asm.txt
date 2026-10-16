@@ -1,0 +1,100 @@
+# 0xffffff80022f779a __ZN23IO80211SkywalkInterface24performGatedCommandIOCTLEjPv
+ffffff80022f779a: push     rbp
+ffffff80022f779b: mov      rbp, rsp
+ffffff80022f779e: push     r15
+ffffff80022f77a0: push     r14
+ffffff80022f77a2: push     r13
+ffffff80022f77a4: push     r12
+ffffff80022f77a6: push     rbx
+ffffff80022f77a7: sub      rsp, 0x38
+ffffff80022f77ab: mov      rax, qword ptr [rip + 0x158986]  ; 0xffffff8002450138
+ffffff80022f77b2: mov      rax, qword ptr [rax]
+ffffff80022f77b5: mov      qword ptr [rbp - 0x30], rax
+ffffff80022f77b9: mov      rax, qword ptr [rdi + 0x120]
+ffffff80022f77c0: cmp      qword ptr [rax + 0x30], 0
+ffffff80022f77c5: je       0xffffff80022f7839
+ffffff80022f77c7: mov      rbx, rdx
+ffffff80022f77ca: mov      r14d, esi
+ffffff80022f77cd: mov      r15, rdi
+ffffff80022f77d0: test     byte ptr [rax], 1
+ffffff80022f77d3: je       0xffffff80022f77df
+ffffff80022f77d5: mov      edi, 4
+ffffff80022f77da: call     0xffffff8000877820  ; _csr_check
+ffffff80022f77df: lea      rdi, [rip + 0x1267dd]  ; "com.apple.wlan.authentication"
+ffffff80022f77e6: call     0xffffff800229bea1  ; __Z24isCallingProcessEntitledPKc
+ffffff80022f77eb: xor      eax, eax
+ffffff80022f77ed: mov      qword ptr [rbp - 0x40], rax
+ffffff80022f77f1: mov      qword ptr [rbp - 0x48], rax
+ffffff80022f77f5: mov      qword ptr [rbp - 0x50], rax
+ffffff80022f77f9: mov      qword ptr [rbp - 0x58], rax
+ffffff80022f77fd: cmp      r14d, 0xc02869c9
+ffffff80022f7804: je       0xffffff80022f780f
+ffffff80022f7806: cmp      r14d, 0x802869c8
+ffffff80022f780d: jne      0xffffff80022f7843
+ffffff80022f780f: mov      rax, qword ptr [rbx]
+ffffff80022f7812: mov      rcx, qword ptr [rbx + 8]
+ffffff80022f7816: mov      qword ptr [rbp - 0x50], rcx
+ffffff80022f781a: mov      qword ptr [rbp - 0x58], rax
+ffffff80022f781e: mov      esi, dword ptr [rbx + 0x10]
+ffffff80022f7821: mov      dword ptr [rbp - 0x48], esi
+ffffff80022f7824: mov      eax, dword ptr [rbx + 0x14]
+ffffff80022f7827: mov      dword ptr [rbp - 0x44], eax
+ffffff80022f782a: mov      eax, dword ptr [rbx + 0x18]
+ffffff80022f782d: mov      dword ptr [rbp - 0x40], eax
+ffffff80022f7830: mov      rax, qword ptr [rbx + 0x20]
+ffffff80022f7834: mov      r12b, 1
+ffffff80022f7837: jmp      0xffffff80022f786a  ; __ZN23IO80211SkywalkInterface24performGatedCommandIOCTLEjPv+0xd0
+ffffff80022f7839: mov      eax, 0x16
+ffffff80022f783e: jmp      0xffffff80022f78d2  ; __ZN23IO80211SkywalkInterface24performGatedCommandIOCTLEjPv+0x138
+ffffff80022f7843: mov      rax, qword ptr [rbx]
+ffffff80022f7846: mov      rcx, qword ptr [rbx + 8]
+ffffff80022f784a: mov      qword ptr [rbp - 0x50], rcx
+ffffff80022f784e: mov      qword ptr [rbp - 0x58], rax
+ffffff80022f7852: mov      esi, dword ptr [rbx + 0x10]
+ffffff80022f7855: mov      dword ptr [rbp - 0x48], esi
+ffffff80022f7858: mov      eax, dword ptr [rbx + 0x14]
+ffffff80022f785b: mov      dword ptr [rbp - 0x44], eax
+ffffff80022f785e: mov      eax, dword ptr [rbx + 0x18]
+ffffff80022f7861: mov      dword ptr [rbp - 0x40], eax
+ffffff80022f7864: mov      eax, dword ptr [rbx + 0x1c]
+ffffff80022f7867: xor      r12d, r12d
+ffffff80022f786a: lea      rcx, [rbp - 0x58]
+ffffff80022f786e: mov      qword ptr [rcx + 0x20], rax
+ffffff80022f7872: mov      eax, r14d
+ffffff80022f7875: and      eax, 0xfff7ffff
+ffffff80022f787a: mov      ecx, 0x802869c8
+ffffff80022f787f: lea      r13, [rcx + 0x40000001]
+ffffff80022f7886: cmp      eax, 0x802069c8
+ffffff80022f788b: cmove    r13, rcx
+ffffff80022f788f: mov      rdi, r15
+ffffff80022f7892: mov      rdx, r13
+ffffff80022f7895: call     0xffffff80022f52b2  ; __ZN23IO80211SkywalkInterface30postCAEventForIOCTLLegacyUsageEiy
+ffffff80022f789a: movzx    r9d, r12b
+ffffff80022f789e: mov      rdi, r15
+ffffff80022f78a1: xor      esi, esi
+ffffff80022f78a3: mov      rdx, r13
+ffffff80022f78a6: lea      rcx, [rbp - 0x58]
+ffffff80022f78aa: xor      r8d, r8d
+ffffff80022f78ad: call     0xffffff800236cd2e  ; __Z23apple80211RouteExternalP23IO80211SkywalkInterfaceP20IO80211APIUserClientmP13apple80211reqbb
+ffffff80022f78b2: test     eax, eax
+ffffff80022f78b4: jne      0xffffff80022f78d2
+ffffff80022f78b6: cmp      r14d, 0xc02869c9
+ffffff80022f78bd: je       0xffffff80022f78c6
+ffffff80022f78bf: cmp      r14d, 0x802869c8
+ffffff80022f78c6: mov      ecx, dword ptr [rbp - 0x40]
+ffffff80022f78c9: mov      dword ptr [rbx + 0x18], ecx
+ffffff80022f78cc: mov      ecx, dword ptr [rbp - 0x44]
+ffffff80022f78cf: mov      dword ptr [rbx + 0x14], ecx
+ffffff80022f78d2: mov      rcx, qword ptr [rip + 0x15885f]  ; 0xffffff8002450138
+ffffff80022f78d9: mov      rcx, qword ptr [rcx]
+ffffff80022f78dc: cmp      rcx, qword ptr [rbp - 0x30]
+ffffff80022f78e0: jne      0xffffff80022f78f1
+ffffff80022f78e2: add      rsp, 0x38
+ffffff80022f78e6: pop      rbx
+ffffff80022f78e7: pop      r12
+ffffff80022f78e9: pop      r13
+ffffff80022f78eb: pop      r14
+ffffff80022f78ed: pop      r15
+ffffff80022f78ef: pop      rbp
+ffffff80022f78f0: ret      
+ffffff80022f78f1: call     0xffffff8000ba0c20  ; ___stack_chk_fail

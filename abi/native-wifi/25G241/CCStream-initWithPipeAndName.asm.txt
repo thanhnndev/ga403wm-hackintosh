@@ -1,0 +1,247 @@
+# 0xffffff80032eaca6 __ZN8CCStream19initWithPipeAndNameEP6CCPipePKcPK15CCStreamOptions
+ffffff80032eaca6: push     rbp
+ffffff80032eaca7: mov      rbp, rsp
+ffffff80032eacaa: push     r15
+ffffff80032eacac: push     r14
+ffffff80032eacae: push     r13
+ffffff80032eacb0: push     r12
+ffffff80032eacb2: push     rbx
+ffffff80032eacb3: sub      rsp, 0x18
+ffffff80032eacb7: mov      r12, rcx
+ffffff80032eacba: mov      rbx, rdx
+ffffff80032eacbd: mov      r13, rsi
+ffffff80032eacc0: mov      r14, rdi
+ffffff80032eacc3: mov      rax, qword ptr [rip + 0x1d3ce]  ; 0xffffff8003308098
+ffffff80032eacca: xor      esi, esi
+ffffff80032eaccc: call     qword ptr [rax + 0x258]
+ffffff80032eacd2: test     al, al
+ffffff80032eacd4: je       0xffffff80032eadfe
+ffffff80032eacda: lea      rdi, [rip + 0x2969f]  ; 0xffffff8003314380
+ffffff80032eace1: call     0xffffff8000a85dc0  ; _IOMallocTypeImpl
+ffffff80032eace6: mov      qword ptr [r14 + 0x88], rax
+ffffff80032eaced: test     rax, rax
+ffffff80032eacf0: je       0xffffff80032eae38
+ffffff80032eacf6: mov      qword ptr [rax + 0x40], r13
+ffffff80032eacfa: mov      rdi, rbx
+ffffff80032eacfd: call     0xffffff8000a492f0  ; __ZN8OSString11withCStringEPKc
+ffffff80032ead02: mov      r15, rax
+ffffff80032ead05: mov      edi, 0x80
+ffffff80032ead0a: call     0xffffff8000a22750  ; __ZN12OSDictionary12withCapacityEj
+ffffff80032ead0f: mov      rdi, rax
+ffffff80032ead12: mov      rax, qword ptr [rax]
+ffffff80032ead15: lea      rsi, [rip + 0x1cec0]  ; "Name"
+ffffff80032ead1c: mov      qword ptr [rbp - 0x30], rdi
+ffffff80032ead20: mov      rdx, r15
+ffffff80032ead23: call     qword ptr [rax + 0x1d0]
+ffffff80032ead29: test     al, al
+ffffff80032ead2b: je       0xffffff80032eae5e
+ffffff80032ead31: mov      qword ptr [rbp - 0x38], rbx
+ffffff80032ead35: test     r15, r15
+ffffff80032ead38: je       0xffffff80032ead43
+ffffff80032ead3a: mov      rax, qword ptr [r15]
+ffffff80032ead3d: mov      rdi, r15
+ffffff80032ead40: call     qword ptr [rax + 0x28]
+ffffff80032ead43: mov      rax, qword ptr [r13]
+ffffff80032ead47: mov      rdi, r13
+ffffff80032ead4a: call     qword ptr [rax + 0x878]
+ffffff80032ead50: mov      rcx, qword ptr [r14 + 0x88]
+ffffff80032ead57: mov      dword ptr [rcx], eax
+ffffff80032ead59: mov      edi, eax
+ffffff80032ead5b: mov      esi, 0x20
+ffffff80032ead60: call     0xffffff8000a446b0  ; __ZN8OSNumber10withNumberEyj
+ffffff80032ead65: mov      r15, rax
+ffffff80032ead68: mov      rbx, qword ptr [rbp - 0x30]
+ffffff80032ead6c: mov      rax, qword ptr [rbx]
+ffffff80032ead6f: lea      rsi, [rip + 0x1ce32]  ; 0xffffff8003307ba8
+ffffff80032ead76: mov      rdi, rbx
+ffffff80032ead79: mov      rdx, r15
+ffffff80032ead7c: call     qword ptr [rax + 0x1d0]
+ffffff80032ead82: test     al, al
+ffffff80032ead84: je       0xffffff80032eaeb5
+ffffff80032ead8a: test     r15, r15
+ffffff80032ead8d: je       0xffffff80032ead98
+ffffff80032ead8f: mov      rax, qword ptr [r15]
+ffffff80032ead92: mov      rdi, r15
+ffffff80032ead95: call     qword ptr [rax + 0x28]
+ffffff80032ead98: lea      r13, [r12 + 0x58]
+ffffff80032ead9d: mov      rdi, r13
+ffffff80032eada0: call     0xffffff8000a492f0  ; __ZN8OSString11withCStringEPKc
+ffffff80032eada5: mov      r15, rax
+ffffff80032eada8: mov      rax, qword ptr [rbx]
+ffffff80032eadab: lea      rsi, [rip + 0x1cd20]  ; "LogIdentifier"
+ffffff80032eadb2: mov      rdi, rbx
+ffffff80032eadb5: mov      rdx, r15
+ffffff80032eadb8: call     qword ptr [rax + 0x1d0]
+ffffff80032eadbe: test     al, al
+ffffff80032eadc0: je       0xffffff80032eaefc
+ffffff80032eadc6: test     r15, r15
+ffffff80032eadc9: je       0xffffff80032eadd4
+ffffff80032eadcb: mov      rax, qword ptr [r15]
+ffffff80032eadce: mov      rdi, r15
+ffffff80032eadd1: call     qword ptr [rax + 0x28]
+ffffff80032eadd4: mov      eax, dword ptr [r12]
+ffffff80032eadd8: cmp      rax, 4
+ffffff80032eaddc: ja       0xffffff80032eb038
+ffffff80032eade2: lea      rcx, [rip + 0x277]  ; 0xffffff80032eb060
+ffffff80032eade9: movsxd   rax, dword ptr [rcx + rax*4]
+ffffff80032eaded: add      rax, rcx
+ffffff80032eadf0: jmp      rax
+ffffff80032eadf2: lea      rdi, [rip + 0x1c843]  ; "CCLogStream"
+ffffff80032eadf9: jmp      0xffffff80032eaf87  ; __ZN8CCStream19initWithPipeAndNameEP6CCPipePKcPK15CCStreamOptions+0x2e1
+ffffff80032eadfe: mov      rax, qword ptr [r14]
+ffffff80032eae01: mov      rdi, r14
+ffffff80032eae04: call     qword ptr [rax + 0x38]
+ffffff80032eae07: mov      rdi, rax
+ffffff80032eae0a: call     0xffffff8000a1b1d0  ; __ZNK11OSMetaClass12getClassNameEv
+ffffff80032eae0f: lea      rdi, [rip - 0x6e16]
+ffffff80032eae16: mov      rsi, qword ptr [rip + 0x1d28b]  ; 0xffffff80033080a8
+ffffff80032eae1d: lea      rcx, [rip + 0x1705c]  ; 0xffffff8003301e80
+ffffff80032eae24: xor      r14d, r14d
+ffffff80032eae27: xor      edx, edx
+ffffff80032eae29: mov      r8, rax
+ffffff80032eae2c: xor      eax, eax
+ffffff80032eae2e: call     0xffffff8000a55a50  ; __os_log_internal
+ffffff80032eae33: jmp      0xffffff80032eaf53  ; __ZN8CCStream19initWithPipeAndNameEP6CCPipePKcPK15CCStreamOptions+0x2ad
+ffffff80032eae38: lea      rdi, [rip - 0x6e3f]
+ffffff80032eae3f: mov      rsi, qword ptr [rip + 0x1d262]  ; 0xffffff80033080a8
+ffffff80032eae46: lea      rcx, [rip + 0x17053]  ; 0xffffff8003301ea0
+ffffff80032eae4d: xor      r14d, r14d
+ffffff80032eae50: xor      edx, edx
+ffffff80032eae52: xor      eax, eax
+ffffff80032eae54: call     0xffffff8000a55a50  ; __os_log_internal
+ffffff80032eae59: jmp      0xffffff80032eaf53  ; __ZN8CCStream19initWithPipeAndNameEP6CCPipePKcPK15CCStreamOptions+0x2ad
+ffffff80032eae5e: mov      rax, qword ptr [r14]
+ffffff80032eae61: mov      rdi, r14
+ffffff80032eae64: call     qword ptr [rax + 0x38]
+ffffff80032eae67: mov      rdi, rax
+ffffff80032eae6a: call     0xffffff8000a1b1d0  ; __ZNK11OSMetaClass12getClassNameEv
+ffffff80032eae6f: mov      qword ptr [rsp], rbx
+ffffff80032eae73: lea      rdi, [rip - 0x6e7a]
+ffffff80032eae7a: mov      rsi, qword ptr [rip + 0x1d227]  ; 0xffffff80033080a8
+ffffff80032eae81: lea      rcx, [rip + 0x17038]  ; 0xffffff8003301ec0
+ffffff80032eae88: lea      r9, [rip + 0x1c9b0]  ; "initWithPipeAndName"
+ffffff80032eae8f: xor      edx, edx
+ffffff80032eae91: mov      r8, rax
+ffffff80032eae94: xor      eax, eax
+ffffff80032eae96: call     0xffffff8000a55a50  ; __os_log_internal
+ffffff80032eae9b: test     r15, r15
+ffffff80032eae9e: je       0xffffff80032eaea9
+ffffff80032eaea0: mov      rax, qword ptr [r15]
+ffffff80032eaea3: mov      rdi, r15
+ffffff80032eaea6: call     qword ptr [rax + 0x28]
+ffffff80032eaea9: mov      rdi, qword ptr [rbp - 0x30]
+ffffff80032eaead: mov      rax, qword ptr [rdi]
+ffffff80032eaeb0: jmp      0xffffff80032eaf4d  ; __ZN8CCStream19initWithPipeAndNameEP6CCPipePKcPK15CCStreamOptions+0x2a7
+ffffff80032eaeb5: mov      rax, qword ptr [r14]
+ffffff80032eaeb8: mov      rdi, r14
+ffffff80032eaebb: call     qword ptr [rax + 0x38]
+ffffff80032eaebe: mov      rdi, rax
+ffffff80032eaec1: call     0xffffff8000a1b1d0  ; __ZNK11OSMetaClass12getClassNameEv
+ffffff80032eaec6: mov      rcx, qword ptr [r14 + 0x88]
+ffffff80032eaecd: mov      ecx, dword ptr [rcx]
+ffffff80032eaecf: mov      dword ptr [rsp], ecx
+ffffff80032eaed2: lea      rdi, [rip - 0x6ed9]
+ffffff80032eaed9: mov      rsi, qword ptr [rip + 0x1d1c8]  ; 0xffffff80033080a8
+ffffff80032eaee0: lea      rcx, [rip + 0x17019]  ; 0xffffff8003301f00
+ffffff80032eaee7: lea      r9, [rip + 0x1c951]  ; "initWithPipeAndName"
+ffffff80032eaeee: xor      edx, edx
+ffffff80032eaef0: mov      r8, rax
+ffffff80032eaef3: xor      eax, eax
+ffffff80032eaef5: call     0xffffff8000a55a50  ; __os_log_internal
+ffffff80032eaefa: jmp      0xffffff80032eaf39  ; __ZN8CCStream19initWithPipeAndNameEP6CCPipePKcPK15CCStreamOptions+0x293
+ffffff80032eaefc: mov      rax, qword ptr [r14]
+ffffff80032eaeff: mov      rdi, r14
+ffffff80032eaf02: call     qword ptr [rax + 0x38]
+ffffff80032eaf05: mov      rdi, rax
+ffffff80032eaf08: call     0xffffff8000a1b1d0  ; __ZNK11OSMetaClass12getClassNameEv
+ffffff80032eaf0d: mov      qword ptr [rsp], r13
+ffffff80032eaf11: lea      rdi, [rip - 0x6f18]
+ffffff80032eaf18: mov      rsi, qword ptr [rip + 0x1d189]  ; 0xffffff80033080a8
+ffffff80032eaf1f: lea      rcx, [rip + 0x1701a]  ; 0xffffff8003301f40
+ffffff80032eaf26: lea      r9, [rip + 0x1c912]  ; "initWithPipeAndName"
+ffffff80032eaf2d: xor      edx, edx
+ffffff80032eaf2f: mov      r8, rax
+ffffff80032eaf32: xor      eax, eax
+ffffff80032eaf34: call     0xffffff8000a55a50  ; __os_log_internal
+ffffff80032eaf39: test     r15, r15
+ffffff80032eaf3c: je       0xffffff80032eaf47
+ffffff80032eaf3e: mov      rax, qword ptr [r15]
+ffffff80032eaf41: mov      rdi, r15
+ffffff80032eaf44: call     qword ptr [rax + 0x28]
+ffffff80032eaf47: mov      rax, qword ptr [rbx]
+ffffff80032eaf4a: mov      rdi, rbx
+ffffff80032eaf4d: call     qword ptr [rax + 0x28]
+ffffff80032eaf50: xor      r14d, r14d
+ffffff80032eaf53: mov      eax, r14d
+ffffff80032eaf56: add      rsp, 0x18
+ffffff80032eaf5a: pop      rbx
+ffffff80032eaf5b: pop      r12
+ffffff80032eaf5d: pop      r13
+ffffff80032eaf5f: pop      r14
+ffffff80032eaf61: pop      r15
+ffffff80032eaf63: pop      rbp
+ffffff80032eaf64: ret      
+ffffff80032eaf65: lea      rdi, [rip + 0x1b4e6]  ; "CCOSSerializeWithIOReportDataStream"
+ffffff80032eaf6c: jmp      0xffffff80032eaf87  ; __ZN8CCStream19initWithPipeAndNameEP6CCPipePKcPK15CCStreamOptions+0x2e1
+ffffff80032eaf6e: lea      rdi, [rip + 0x1b4b1]  ; "CCIOReportLogStream"
+ffffff80032eaf75: jmp      0xffffff80032eaf87  ; __ZN8CCStream19initWithPipeAndNameEP6CCPipePKcPK15CCStreamOptions+0x2e1
+ffffff80032eaf77: lea      rdi, [rip + 0x1b4bc]  ; "CCOSSerializeDataStream"
+ffffff80032eaf7e: jmp      0xffffff80032eaf87  ; __ZN8CCStream19initWithPipeAndNameEP6CCPipePKcPK15CCStreamOptions+0x2e1
+ffffff80032eaf80: lea      rdi, [rip + 0x1bc48]  ; "CCDataStream"
+ffffff80032eaf87: call     0xffffff8000a492f0  ; __ZN8OSString11withCStringEPKc
+ffffff80032eaf8c: mov      r15, rax
+ffffff80032eaf8f: mov      rax, qword ptr [rbx]
+ffffff80032eaf92: lea      rsi, [rip + 0x1cc75]  ; "IOClass"
+ffffff80032eaf99: mov      rdi, rbx
+ffffff80032eaf9c: mov      rdx, r15
+ffffff80032eaf9f: call     qword ptr [rax + 0x1d0]
+ffffff80032eafa5: test     r15, r15
+ffffff80032eafa8: je       0xffffff80032eafb3
+ffffff80032eafaa: mov      rax, qword ptr [r15]
+ffffff80032eafad: mov      rdi, r15
+ffffff80032eafb0: call     qword ptr [rax + 0x28]
+ffffff80032eafb3: mov      rdi, r14
+ffffff80032eafb6: mov      rsi, rbx
+ffffff80032eafb9: xor      edx, edx
+ffffff80032eafbb: call     0xffffff8000a6c8f0  ; __ZN9IOService13SetPropertiesEP12OSDictionaryPFiP15OSMetaClassBase5IORPCE
+ffffff80032eafc0: test     eax, eax
+ffffff80032eafc2: je       0xffffff80032eb00e
+ffffff80032eafc4: mov      rax, qword ptr [r14]
+ffffff80032eafc7: mov      rdi, r14
+ffffff80032eafca: call     qword ptr [rax + 0x38]
+ffffff80032eafcd: mov      rdi, rax
+ffffff80032eafd0: call     0xffffff8000a1b1d0  ; __ZNK11OSMetaClass12getClassNameEv
+ffffff80032eafd5: lea      rdi, [rip - 0x6fdc]
+ffffff80032eafdc: mov      rsi, qword ptr [rip + 0x1d0c5]  ; 0xffffff80033080a8
+ffffff80032eafe3: lea      rcx, [rip + 0x16fb6]  ; 0xffffff8003301fa0
+ffffff80032eafea: lea      r9, [rip + 0x1c84e]  ; "initWithPipeAndName"
+ffffff80032eaff1: xor      r14d, r14d
+ffffff80032eaff4: xor      edx, edx
+ffffff80032eaff6: mov      r8, rax
+ffffff80032eaff9: xor      eax, eax
+ffffff80032eaffb: call     0xffffff8000a55a50  ; __os_log_internal
+ffffff80032eb000: mov      rax, qword ptr [rbx]
+ffffff80032eb003: mov      rdi, rbx
+ffffff80032eb006: call     qword ptr [rax + 0x28]
+ffffff80032eb009: jmp      0xffffff80032eaf53  ; __ZN8CCStream19initWithPipeAndNameEP6CCPipePKcPK15CCStreamOptions+0x2ad
+ffffff80032eb00e: mov      rax, qword ptr [rbx]
+ffffff80032eb011: mov      rdi, rbx
+ffffff80032eb014: call     qword ptr [rax + 0x28]
+ffffff80032eb017: mov      rdi, qword ptr [r14 + 0x88]
+ffffff80032eb01e: add      rdi, 4
+ffffff80032eb022: mov      edx, 0x3c
+ffffff80032eb027: mov      rsi, qword ptr [rbp - 0x38]
+ffffff80032eb02b: call     0xffffff800048a270  ; _strlcpy
+ffffff80032eb030: mov      r14b, 1
+ffffff80032eb033: jmp      0xffffff80032eaf53  ; __ZN8CCStream19initWithPipeAndNameEP6CCPipePKcPK15CCStreamOptions+0x2ad
+ffffff80032eb038: lea      rdi, [rip - 0x703f]
+ffffff80032eb03f: mov      rsi, qword ptr [rip + 0x1d062]  ; 0xffffff80033080a8
+ffffff80032eb046: lea      rcx, [rip + 0x16f33]  ; 0xffffff8003301f80
+ffffff80032eb04d: xor      r15d, r15d
+ffffff80032eb050: xor      edx, edx
+ffffff80032eb052: xor      eax, eax
+ffffff80032eb054: call     0xffffff8000a55a50  ; __os_log_internal
+ffffff80032eb059: jmp      0xffffff80032eaf8f  ; __ZN8CCStream19initWithPipeAndNameEP6CCPipePKcPK15CCStreamOptions+0x2e9
+ffffff80032eb05e: nop      
+ffffff80032eb060: xchg     edx, eax
+ffffff80032eb061: std      

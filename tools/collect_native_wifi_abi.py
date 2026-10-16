@@ -103,7 +103,7 @@ def main():
                     kc.disasm(*kc.func_range(address), comment_strings=False)
         save(function + '.asm.txt', dump_function)
     metadata = {'kc': kc.KC, 'sha256': hashlib.sha256(kc.d).hexdigest(),
-                'system': subprocess.check_output(['sw_vers'], text=True),
+                'system': (subprocess.check_output(['sw_vers'], text=True) if __import__('shutil').which('sw_vers') else os.environ.get('SYSTEM_NOTE', 'unknown (collected on Linux from a mounted volume)')),
                 'darwin': subprocess.check_output(['uname', '-r'], text=True).strip(),
                 'vtables_symbol_spans': summary,
                 'collection_entries': [name for name, _, _ in kc.entries

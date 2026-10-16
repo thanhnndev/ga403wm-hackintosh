@@ -1,0 +1,32 @@
+# 0xffffff80032e73b6 __ZN6CCPipe9MetaClassC1Ev
+ffffff80032e73b6: push     rbp
+ffffff80032e73b7: mov      rbp, rsp
+ffffff80032e73ba: push     rbx
+ffffff80032e73bb: push     rax
+ffffff80032e73bc: mov      rbx, rdi
+ffffff80032e73bf: lea      rsi, [rip + 0x2011c]  ; "CCPipe"
+ffffff80032e73c6: mov      rdx, qword ptr [rip + 0x20c8b]  ; 0xffffff8003308058
+ffffff80032e73cd: mov      ecx, 0x90
+ffffff80032e73d2: call     0xffffff8000a1a9d0  ; __ZN11OSMetaClassC2EPKcPKS_j
+ffffff80032e73d7: lea      rax, [rip + 0x21772]  ; 0xffffff8003308b50
+ffffff80032e73de: mov      qword ptr [rbx], rax
+ffffff80032e73e1: add      rsp, 8
+ffffff80032e73e5: pop      rbx
+ffffff80032e73e6: pop      rbp
+ffffff80032e73e7: ret      
+# 0xffffff80032e7412 __ZN6CCPipe9MetaClassC2Ev
+ffffff80032e7412: push     rbp
+ffffff80032e7413: mov      rbp, rsp
+ffffff80032e7416: push     rbx
+ffffff80032e7417: push     rax
+ffffff80032e7418: mov      rbx, rdi
+ffffff80032e741b: lea      rsi, [rip + 0x200c0]  ; "CCPipe"
+ffffff80032e7422: mov      rdx, qword ptr [rip + 0x20c2f]  ; 0xffffff8003308058
+ffffff80032e7429: mov      ecx, 0x90
+ffffff80032e742e: call     0xffffff8000a1a9d0  ; __ZN11OSMetaClassC2EPKcPKS_j
+ffffff80032e7433: lea      rax, [rip + 0x21716]  ; 0xffffff8003308b50
+ffffff80032e743a: mov      qword ptr [rbx], rax
+ffffff80032e743d: add      rsp, 8
+ffffff80032e7441: pop      rbx
+ffffff80032e7442: pop      rbp
+ffffff80032e7443: ret      

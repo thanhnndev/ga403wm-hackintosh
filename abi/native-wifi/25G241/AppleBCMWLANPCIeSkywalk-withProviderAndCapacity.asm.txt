@@ -1,0 +1,54 @@
+# 0xffffff8001548b2e __ZN23AppleBCMWLANPCIeSkywalk23withProviderAndCapacityEP28AppleBCMWLANBusInterfacePCIejjjjjP11CCLogStreamP15CCFaultReporter
+ffffff8001548b2e: push     rbp
+ffffff8001548b2f: mov      rbp, rsp
+ffffff8001548b32: push     r15
+ffffff8001548b34: push     r14
+ffffff8001548b36: push     r13
+ffffff8001548b38: push     r12
+ffffff8001548b3a: push     rbx
+ffffff8001548b3b: sub      rsp, 0x18
+ffffff8001548b3f: mov      qword ptr [rbp - 0x38], r9
+ffffff8001548b43: mov      dword ptr [rbp - 0x30], r8d
+ffffff8001548b47: mov      dword ptr [rbp - 0x2c], ecx
+ffffff8001548b4a: mov      r13d, edx
+ffffff8001548b4d: mov      r14d, esi
+ffffff8001548b50: mov      r15, rdi
+ffffff8001548b53: lea      rdi, [rip + 0x6dc26]  ; 0xffffff80015b6780
+ffffff8001548b5a: mov      esi, 0x18
+ffffff8001548b5f: call     0xffffff8000a1cc40  ; _OSObject_typed_operator_new
+ffffff8001548b64: mov      rbx, rax
+ffffff8001548b67: lea      r12, [rip + 0x6c2f2]  ; 0xffffff80015b4e60
+ffffff8001548b6e: mov      rdi, rax
+ffffff8001548b71: mov      rsi, r12
+ffffff8001548b74: call     0xffffff80015dc2be  ; __ZN22AppleBCMWLANBusSkywalkC2EPK11OSMetaClass
+ffffff8001548b79: lea      rax, [rip + 0x65d28]  ; 0xffffff80015ae8a8
+ffffff8001548b80: mov      qword ptr [rbx], rax
+ffffff8001548b83: mov      rdi, r12
+ffffff8001548b86: call     0xffffff8000a1b790  ; __ZNK11OSMetaClass19instanceConstructedEv
+ffffff8001548b8b: sub      rsp, 8
+ffffff8001548b8f: mov      rdi, rbx
+ffffff8001548b92: mov      rsi, r15
+ffffff8001548b95: mov      edx, r14d
+ffffff8001548b98: mov      ecx, r13d
+ffffff8001548b9b: mov      r8d, dword ptr [rbp - 0x2c]
+ffffff8001548b9f: mov      r9d, dword ptr [rbp - 0x30]
+ffffff8001548ba3: push     qword ptr [rbp + 0x18]
+ffffff8001548ba6: push     qword ptr [rbp + 0x10]
+ffffff8001548ba9: push     qword ptr [rbp - 0x38]
+ffffff8001548bac: call     0xffffff8001548bd6  ; __ZN23AppleBCMWLANPCIeSkywalk27initWithProviderAndCapacityEP28AppleBCMWLANBusInterfacePCIejjjjjP11CCLogStreamP15CCFaultReporter
+ffffff8001548bb1: add      rsp, 0x20
+ffffff8001548bb5: test     al, al
+ffffff8001548bb7: jne      0xffffff8001548bc4
+ffffff8001548bb9: mov      rax, qword ptr [rbx]
+ffffff8001548bbc: mov      rdi, rbx
+ffffff8001548bbf: call     qword ptr [rax + 0x28]
+ffffff8001548bc2: xor      ebx, ebx
+ffffff8001548bc4: mov      rax, rbx
+ffffff8001548bc7: add      rsp, 0x18
+ffffff8001548bcb: pop      rbx
+ffffff8001548bcc: pop      r12
+ffffff8001548bce: pop      r13
+ffffff8001548bd0: pop      r14
+ffffff8001548bd2: pop      r15
+ffffff8001548bd4: pop      rbp
+ffffff8001548bd5: ret      

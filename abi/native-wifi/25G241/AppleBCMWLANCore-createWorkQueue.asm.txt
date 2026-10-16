@@ -1,0 +1,50 @@
+# 0xffffff8001600d56 __ZN16AppleBCMWLANCore15createWorkQueueEv
+ffffff8001600d56: push     rbp
+ffffff8001600d57: mov      rbp, rsp
+ffffff8001600d5a: push     r14
+ffffff8001600d5c: push     rbx
+ffffff8001600d5d: sub      rsp, 0x10
+ffffff8001600d61: mov      rbx, rdi
+ffffff8001600d64: mov      rax, qword ptr [rip + 0x1dd4bd]  ; 0xffffff80017de228
+ffffff8001600d6b: mov      rax, qword ptr [rax]
+ffffff8001600d6e: mov      qword ptr [rbp - 0x18], rax
+ffffff8001600d72: mov      rax, qword ptr [rdi + 0x128]
+ffffff8001600d79: mov      rdi, qword ptr [rax + 0x1530]
+ffffff8001600d80: mov      rax, qword ptr [rdi]
+ffffff8001600d83: call     qword ptr [rax + 0x860]
+ffffff8001600d89: movzx    eax, al
+ffffff8001600d8c: lea      r14, [rbp - 0x1c]
+ffffff8001600d90: mov      dword ptr [r14], eax
+ffffff8001600d93: lea      rdi, [rip + 0x183f1f]  ; "wlan.workQueue.create"
+ffffff8001600d9a: mov      rsi, r14
+ffffff8001600d9d: mov      edx, 4
+ffffff8001600da2: call     0xffffff8000b659e0  ; _PE_parse_boot_argn
+ffffff8001600da7: cmp      dword ptr [r14], 0
+ffffff8001600dab: je       0xffffff8001600dc2
+ffffff8001600dad: call     0xffffff80022edfbc  ; __ZN16IO80211WorkQueue9workQueueEv
+ffffff8001600db2: mov      rcx, qword ptr [rbx + 0x128]
+ffffff8001600db9: mov      qword ptr [rcx + 0x7a10], rax
+ffffff8001600dc0: jmp      0xffffff8001600dfe  ; __ZN16AppleBCMWLANCore15createWorkQueueEv+0xa8
+ffffff8001600dc2: mov      rax, qword ptr [rbx + 0x128]
+ffffff8001600dc9: mov      rdi, qword ptr [rax + 0x1530]
+ffffff8001600dd0: mov      rax, qword ptr [rdi]
+ffffff8001600dd3: call     qword ptr [rax + 0x868]
+ffffff8001600dd9: mov      rcx, qword ptr [rbx + 0x128]
+ffffff8001600de0: mov      qword ptr [rcx + 0x7a10], rax
+ffffff8001600de7: mov      rcx, qword ptr [rax]
+ffffff8001600dea: mov      rdi, rax
+ffffff8001600ded: call     qword ptr [rcx + 0x20]
+ffffff8001600df0: mov      rax, qword ptr [rbx + 0x128]
+ffffff8001600df7: mov      rax, qword ptr [rax + 0x7a10]
+ffffff8001600dfe: test     rax, rax
+ffffff8001600e01: setne    al
+ffffff8001600e04: mov      rcx, qword ptr [rip + 0x1dd41d]  ; 0xffffff80017de228
+ffffff8001600e0b: mov      rcx, qword ptr [rcx]
+ffffff8001600e0e: cmp      rcx, qword ptr [rbp - 0x18]
+ffffff8001600e12: jne      0xffffff8001600e1d
+ffffff8001600e14: add      rsp, 0x10
+ffffff8001600e18: pop      rbx
+ffffff8001600e19: pop      r14
+ffffff8001600e1b: pop      rbp
+ffffff8001600e1c: ret      
+ffffff8001600e1d: call     0xffffff8000ba0c20  ; ___stack_chk_fail

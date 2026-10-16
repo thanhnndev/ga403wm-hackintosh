@@ -1,0 +1,1188 @@
+# 0xffffff80032e52c8 __ZN6CCPipe25initWithOwnerNameCapacityEP9IOServicePKcS3_PK13CCPipeOptions
+ffffff80032e52c8: push     rbp
+ffffff80032e52c9: mov      rbp, rsp
+ffffff80032e52cc: push     r15
+ffffff80032e52ce: push     r14
+ffffff80032e52d0: push     r13
+ffffff80032e52d2: push     r12
+ffffff80032e52d4: push     rbx
+ffffff80032e52d5: sub      rsp, 0x188
+ffffff80032e52dc: mov      r12, r8
+ffffff80032e52df: mov      r13, rcx
+ffffff80032e52e2: mov      qword ptr [rbp - 0x1a0], rdx
+ffffff80032e52e9: mov      r15, rsi
+ffffff80032e52ec: mov      r14, rdi
+ffffff80032e52ef: mov      rax, qword ptr [rip + 0x22daa]  ; 0xffffff80033080a0
+ffffff80032e52f6: mov      rax, qword ptr [rax]
+ffffff80032e52f9: mov      qword ptr [rbp - 0x30], rax
+ffffff80032e52fd: mov      rax, qword ptr [rip + 0x22d94]  ; 0xffffff8003308098
+ffffff80032e5304: xor      esi, esi
+ffffff80032e5306: call     qword ptr [rax + 0x258]
+ffffff80032e530c: test     al, al
+ffffff80032e530e: je       0xffffff80032e53b5
+ffffff80032e5314: lea      rdi, [rip + 0x2ede5]  ; 0xffffff8003314100
+ffffff80032e531b: call     0xffffff8000a85dc0  ; _IOMallocTypeImpl
+ffffff80032e5320: mov      qword ptr [r14 + 0x88], rax
+ffffff80032e5327: test     rax, rax
+ffffff80032e532a: je       0xffffff80032e53ea
+ffffff80032e5330: mov      rax, qword ptr [r15]
+ffffff80032e5333: mov      rdi, r15
+ffffff80032e5336: call     qword ptr [rax + 0x20]
+ffffff80032e5339: mov      rax, qword ptr [r14 + 0x88]
+ffffff80032e5340: mov      qword ptr [rax + 0x10], r15
+ffffff80032e5344: mov      rax, qword ptr [r14]
+ffffff80032e5347: mov      rdi, r14
+ffffff80032e534a: mov      rsi, r15
+ffffff80032e534d: call     qword ptr [rax + 0x670]
+ffffff80032e5353: test     al, al
+ffffff80032e5355: je       0xffffff80032e5410
+ffffff80032e535b: lea      rdx, [rip + 0x2dc86]  ; 0xffffff8003312fe8
+ffffff80032e5362: xor      edi, edi
+ffffff80032e5364: mov      esi, 1
+ffffff80032e5369: call     0xffffff8000a19e80  ; _OSCompareAndSwap
+ffffff80032e536e: test     al, al
+ffffff80032e5370: je       0xffffff80032e5465
+ffffff80032e5376: lea      rdi, [rip + 0x21145]  ; "CoreCapture"
+ffffff80032e537d: call     0xffffff8000a91a00  ; __ZN15IORegistryEntry9makePlaneEPKc
+ffffff80032e5382: mov      qword ptr [rip + 0x2dc57], rax  ; 0xffffff8003312fe0
+ffffff80032e5389: test     rax, rax
+ffffff80032e538c: jne      0xffffff80032e54bc
+ffffff80032e5392: lea      rdi, [rip - 0x1399]
+ffffff80032e5399: mov      rsi, qword ptr [rip + 0x22d08]  ; 0xffffff80033080a8
+ffffff80032e53a0: lea      rcx, [rip + 0x1b899]  ; 0xffffff8003300c40
+ffffff80032e53a7: xor      edx, edx
+ffffff80032e53a9: xor      eax, eax
+ffffff80032e53ab: call     0xffffff8000a55a50  ; __os_log_internal
+ffffff80032e53b0: jmp      0xffffff80032e54b2  ; __ZN6CCPipe25initWithOwnerNameCapacityEP9IOServicePKcS3_PK13CCPipeOptions+0x1ea
+ffffff80032e53b5: mov      rax, qword ptr [r14]
+ffffff80032e53b8: mov      rdi, r14
+ffffff80032e53bb: call     qword ptr [rax + 0x8d0]
+ffffff80032e53c1: lea      rdi, [rip - 0x13c8]
+ffffff80032e53c8: mov      rsi, qword ptr [rip + 0x22cd9]  ; 0xffffff80033080a8
+ffffff80032e53cf: lea      rcx, [rip + 0x1b7fa]  ; 0xffffff8003300bd0
+ffffff80032e53d6: xor      r14d, r14d
+ffffff80032e53d9: xor      edx, edx
+ffffff80032e53db: mov      r8, rax
+ffffff80032e53de: xor      eax, eax
+ffffff80032e53e0: call     0xffffff8000a55a50  ; __os_log_internal
+ffffff80032e53e5: jmp      0xffffff80032e61d2  ; __ZN6CCPipe25initWithOwnerNameCapacityEP9IOServicePKcS3_PK13CCPipeOptions+0xf0a
+ffffff80032e53ea: lea      rdi, [rip - 0x13f1]
+ffffff80032e53f1: mov      rsi, qword ptr [rip + 0x22cb0]  ; 0xffffff80033080a8
+ffffff80032e53f8: lea      rcx, [rip + 0x1b7f1]  ; 0xffffff8003300bf0
+ffffff80032e53ff: xor      r14d, r14d
+ffffff80032e5402: xor      edx, edx
+ffffff80032e5404: xor      eax, eax
+ffffff80032e5406: call     0xffffff8000a55a50  ; __os_log_internal
+ffffff80032e540b: jmp      0xffffff80032e61d2  ; __ZN6CCPipe25initWithOwnerNameCapacityEP9IOServicePKcS3_PK13CCPipeOptions+0xf0a
+ffffff80032e5410: mov      rax, qword ptr [r14]
+ffffff80032e5413: mov      rdi, r14
+ffffff80032e5416: call     qword ptr [rax + 0x8d0]
+ffffff80032e541c: mov      rcx, qword ptr [rbp - 0x1a0]
+ffffff80032e5423: mov      qword ptr [rsp + 8], rcx
+ffffff80032e5428: mov      qword ptr [rsp], r13
+ffffff80032e542c: lea      rdi, [rip - 0x1433]
+ffffff80032e5433: mov      rsi, qword ptr [rip + 0x22c6e]  ; 0xffffff80033080a8
+ffffff80032e543a: lea      rcx, [rip + 0x1b7cf]  ; 0xffffff8003300c10
+ffffff80032e5441: lea      r9, [rip + 0x21e7c]  ; "initWithOwnerNameCapacity"
+ffffff80032e5448: xor      r14d, r14d
+ffffff80032e544b: xor      edx, edx
+ffffff80032e544d: mov      r8, rax
+ffffff80032e5450: xor      eax, eax
+ffffff80032e5452: call     0xffffff8000a55a50  ; __os_log_internal
+ffffff80032e5457: mov      rax, qword ptr [r15]
+ffffff80032e545a: mov      rdi, r15
+ffffff80032e545d: call     qword ptr [rax + 0x28]
+ffffff80032e5460: jmp      0xffffff80032e61d2  ; __ZN6CCPipe25initWithOwnerNameCapacityEP9IOServicePKcS3_PK13CCPipeOptions+0xf0a
+ffffff80032e5465: cmp      qword ptr [rip + 0x2db73], 0  ; 0xffffff8003312fe0
+ffffff80032e546d: jne      0xffffff80032e54bc
+ffffff80032e546f: mov      ebx, 0xffffffff
+ffffff80032e5474: cmp      ebx, 9
+ffffff80032e5477: je       0xffffff80032e5494
+ffffff80032e5479: mov      edi, 5
+ffffff80032e547e: call     0xffffff8000a86af0  ; _IOSleep
+ffffff80032e5483: inc      ebx
+ffffff80032e5485: cmp      qword ptr [rip + 0x2db53], 0  ; 0xffffff8003312fe0
+ffffff80032e548d: je       0xffffff80032e5474
+ffffff80032e548f: cmp      ebx, 9
+ffffff80032e5492: jb       0xffffff80032e54bc
+ffffff80032e5494: lea      rdi, [rip - 0x149b]
+ffffff80032e549b: mov      rsi, qword ptr [rip + 0x22c06]  ; 0xffffff80033080a8
+ffffff80032e54a2: lea      rcx, [rip + 0x1b7f7]  ; 0xffffff8003300ca0
+ffffff80032e54a9: xor      edx, edx
+ffffff80032e54ab: xor      eax, eax
+ffffff80032e54ad: call     0xffffff8000a55a50  ; __os_log_internal
+ffffff80032e54b2: cmp      qword ptr [rip + 0x2db26], 0  ; 0xffffff8003312fe0
+ffffff80032e54ba: je       0xffffff80032e54d7
+ffffff80032e54bc: call     0xffffff8000a919d0  ; __ZN15IORegistryEntry15getRegistryRootEv
+ffffff80032e54c1: mov      rdx, qword ptr [rip + 0x2db18]  ; 0xffffff8003312fe0
+ffffff80032e54c8: mov      rcx, qword ptr [r14]
+ffffff80032e54cb: mov      rdi, r14
+ffffff80032e54ce: mov      rsi, rax
+ffffff80032e54d1: call     qword ptr [rcx + 0x358]
+ffffff80032e54d7: mov      qword ptr [rbp - 0x150], r15
+ffffff80032e54de: mov      eax, dword ptr [r12 + 4]
+ffffff80032e54e3: mov      dword ptr [rbp - 0x16c], eax
+ffffff80032e54e9: mov      eax, dword ptr [r12 + 0xc]
+ffffff80032e54ee: mov      dword ptr [rbp - 0x168], eax
+ffffff80032e54f4: mov      rax, qword ptr [r12 + 0x10]
+ffffff80032e54f9: mov      qword ptr [rbp - 0x198], rax
+ffffff80032e5500: mov      rax, qword ptr [r12 + 0x18]
+ffffff80032e5505: mov      qword ptr [rbp - 0x190], rax
+ffffff80032e550c: mov      eax, dword ptr [r12 + 0x20]
+ffffff80032e5511: mov      dword ptr [rbp - 0x164], eax
+ffffff80032e5517: mov      eax, dword ptr [r12 + 0x224]
+ffffff80032e551f: mov      dword ptr [rbp - 0x148], eax
+ffffff80032e5525: mov      ebx, dword ptr [r12 + 0x228]
+ffffff80032e552d: mov      qword ptr [rbp - 0x160], r12
+ffffff80032e5534: mov      eax, dword ptr [r12 + 0x22c]
+ffffff80032e553c: mov      qword ptr [rbp - 0x178], rax
+ffffff80032e5543: movabs   rax, 0xaaaaaaaaaaaaaaaa
+ffffff80032e554d: mov      qword ptr [rbp - 0x38], rax
+ffffff80032e5551: mov      qword ptr [rbp - 0x40], rax
+ffffff80032e5555: mov      qword ptr [rbp - 0x48], rax
+ffffff80032e5559: mov      qword ptr [rbp - 0x50], rax
+ffffff80032e555d: mov      qword ptr [rbp - 0x58], rax
+ffffff80032e5561: mov      qword ptr [rbp - 0x60], rax
+ffffff80032e5565: mov      qword ptr [rbp - 0x68], rax
+ffffff80032e5569: mov      qword ptr [rbp - 0x70], rax
+ffffff80032e556d: mov      qword ptr [rbp - 0x78], rax
+ffffff80032e5571: mov      qword ptr [rbp - 0x80], rax
+ffffff80032e5575: mov      qword ptr [rbp - 0x88], rax
+ffffff80032e557c: mov      qword ptr [rbp - 0x90], rax
+ffffff80032e5583: mov      qword ptr [rbp - 0x98], rax
+ffffff80032e558a: mov      qword ptr [rbp - 0xa0], rax
+ffffff80032e5591: mov      qword ptr [rbp - 0xa8], rax
+ffffff80032e5598: mov      qword ptr [rbp - 0xb0], rax
+ffffff80032e559f: mov      qword ptr [rbp - 0xb8], rax
+ffffff80032e55a6: mov      qword ptr [rbp - 0xc0], rax
+ffffff80032e55ad: mov      qword ptr [rbp - 0xc8], rax
+ffffff80032e55b4: mov      qword ptr [rbp - 0xd0], rax
+ffffff80032e55bb: mov      qword ptr [rbp - 0xd8], rax
+ffffff80032e55c2: mov      qword ptr [rbp - 0xe0], rax
+ffffff80032e55c9: mov      qword ptr [rbp - 0xe8], rax
+ffffff80032e55d0: mov      qword ptr [rbp - 0xf0], rax
+ffffff80032e55d7: mov      qword ptr [rbp - 0xf8], rax
+ffffff80032e55de: mov      qword ptr [rbp - 0x100], rax
+ffffff80032e55e5: mov      qword ptr [rbp - 0x108], rax
+ffffff80032e55ec: mov      qword ptr [rbp - 0x110], rax
+ffffff80032e55f3: mov      qword ptr [rbp - 0x118], rax
+ffffff80032e55fa: mov      qword ptr [rbp - 0x120], rax
+ffffff80032e5601: mov      qword ptr [rbp - 0x128], rax
+ffffff80032e5608: mov      qword ptr [rbp - 0x130], rax
+ffffff80032e560f: lea      rdi, [rip + 0x20610]  ; "ccpipe:"
+ffffff80032e5616: call     0xffffff8000489a00  ; _strlen
+ffffff80032e561b: mov      r15, rax
+ffffff80032e561e: mov      rdi, r13
+ffffff80032e5621: call     0xffffff8000489a00  ; _strlen
+ffffff80032e5626: add      rax, r15
+ffffff80032e5629: cmp      rax, 0x7f
+ffffff80032e562d: mov      qword ptr [rbp - 0x158], r14
+ffffff80032e5634: mov      qword ptr [rbp - 0x180], r13
+ffffff80032e563b: ja       0xffffff80032e59de
+ffffff80032e5641: mov      dword ptr [rbp - 0x184], ebx
+ffffff80032e5647: cmp      r15, 0x81
+ffffff80032e564e: jae      0xffffff80032e67ea
+ffffff80032e5654: lea      r13, [rip + 0x205cb]  ; "ccpipe:"
+ffffff80032e565b: lea      rdi, [rbp - 0xb0]
+ffffff80032e5662: mov      rsi, r13
+ffffff80032e5665: mov      rdx, r15
+ffffff80032e5668: call     0xffffff8000101050  ; _real_mode_bootstrap_end
+ffffff80032e566d: mov      rdi, r13
+ffffff80032e5670: call     0xffffff8000489a00  ; _strlen
+ffffff80032e5675: mov      r15, rax
+ffffff80032e5678: xor      ebx, ebx
+ffffff80032e567a: mov      eax, 0x80
+ffffff80032e567f: sub      rax, r15
+ffffff80032e5682: cmovae   rbx, rax
+ffffff80032e5686: mov      r13, qword ptr [rbp - 0x180]
+ffffff80032e568d: mov      rdi, r13
+ffffff80032e5690: call     0xffffff8000489a00  ; _strlen
+ffffff80032e5695: cmp      rbx, rax
+ffffff80032e5698: jb       0xffffff80032e67f4
+ffffff80032e569e: lea      rdi, [r15 + rbp]
+ffffff80032e56a2: add      rdi, -0xb0
+ffffff80032e56a9: mov      rsi, r13
+ffffff80032e56ac: mov      rdx, rax
+ffffff80032e56af: call     0xffffff8000101050  ; _real_mode_bootstrap_end
+ffffff80032e56b4: lea      rdi, [rip + 0x2056b]  ; "ccpipe:"
+ffffff80032e56bb: call     0xffffff8000489a00  ; _strlen
+ffffff80032e56c0: mov      r15, rax
+ffffff80032e56c3: mov      rdi, r13
+ffffff80032e56c6: call     0xffffff8000489a00  ; _strlen
+ffffff80032e56cb: add      rax, r15
+ffffff80032e56ce: mov      byte ptr [rbp + rax - 0xb0], 0
+ffffff80032e56d6: lea      r13, [rbp - 0xb0]
+ffffff80032e56dd: lea      r15, [rbp - 0x130]
+ffffff80032e56e4: mov      rdi, r13
+ffffff80032e56e7: mov      rsi, r15
+ffffff80032e56ea: mov      edx, 0x80
+ffffff80032e56ef: call     0xffffff8000b659e0  ; _PE_parse_boot_argn
+ffffff80032e56f4: test     eax, eax
+ffffff80032e56f6: je       0xffffff80032e59d8
+ffffff80032e56fc: mov      rax, qword ptr [r14]
+ffffff80032e56ff: mov      rdi, r14
+ffffff80032e5702: call     qword ptr [rax + 0x8d0]
+ffffff80032e5708: mov      qword ptr [rsp + 8], r15
+ffffff80032e570d: mov      qword ptr [rsp], r13
+ffffff80032e5711: lea      rdi, [rip - 0x1718]
+ffffff80032e5718: mov      rsi, qword ptr [rip + 0x22989]  ; 0xffffff80033080a8
+ffffff80032e571f: lea      rcx, [rip + 0x1b5da]  ; 0xffffff8003300d00
+ffffff80032e5726: lea      r9, [rip + 0x21b97]  ; "initWithOwnerNameCapacity"
+ffffff80032e572d: xor      edx, edx
+ffffff80032e572f: mov      r8, rax
+ffffff80032e5732: xor      eax, eax
+ffffff80032e5734: call     0xffffff8000a55a50  ; __os_log_internal
+ffffff80032e5739: xor      r14d, r14d
+ffffff80032e573c: mov      ebx, dword ptr [rbp - 0x184]
+ffffff80032e5742: mov      ecx, dword ptr [rbp - 0x148]
+ffffff80032e5748: mov      r13, r15
+ffffff80032e574b: mov      dword ptr [rbp - 0x148], ecx
+ffffff80032e5751: movzx    eax, byte ptr [r15]
+ffffff80032e5755: test     eax, eax
+ffffff80032e5757: je       0xffffff80032e577d
+ffffff80032e5759: cmp      eax, 0x2c
+ffffff80032e575c: je       0xffffff80032e5763
+ffffff80032e575e: inc      r15
+ffffff80032e5761: jmp      0xffffff80032e5751  ; __ZN6CCPipe25initWithOwnerNameCapacityEP9IOServicePKcS3_PK13CCPipeOptions+0x489
+ffffff80032e5763: mov      byte ptr [r15], 0
+ffffff80032e5767: inc      r15
+ffffff80032e576a: cmp      byte ptr [r13], 0
+ffffff80032e576f: jne      0xffffff80032e59d0
+ffffff80032e5775: inc      r14d
+ffffff80032e5778: mov      r13, r15
+ffffff80032e577b: jmp      0xffffff80032e5751  ; __ZN6CCPipe25initWithOwnerNameCapacityEP9IOServicePKcS3_PK13CCPipeOptions+0x489
+ffffff80032e577d: cmp      byte ptr [r13], 0
+ffffff80032e5782: je       0xffffff80032e59e4
+ffffff80032e5788: mov      r12d, ebx
+ffffff80032e578b: xor      r15d, r15d
+ffffff80032e578e: movabs   rax, 0xaaaaaaaaaaaaaaaa
+ffffff80032e5798: mov      qword ptr [rbp - 0x138], rax
+ffffff80032e579f: mov      rdi, r13
+ffffff80032e57a2: lea      rsi, [rbp - 0x138]
+ffffff80032e57a9: call     0xffffff80032e4b37  ; __Z24corecaptureIsValidNumberPKcPy
+ffffff80032e57ae: mov      ebx, eax
+ffffff80032e57b0: mov      rdi, qword ptr [rbp - 0x158]
+ffffff80032e57b7: mov      rax, qword ptr [rdi]
+ffffff80032e57ba: call     qword ptr [rax + 0x8d0]
+ffffff80032e57c0: test     bl, bl
+ffffff80032e57c2: je       0xffffff80032e603e
+ffffff80032e57c8: cmp      r14d, 6
+ffffff80032e57cc: ja       0xffffff80032e58e0
+ffffff80032e57d2: mov      ecx, r14d
+ffffff80032e57d5: lea      rdx, [rip + 0x1024]  ; 0xffffff80032e6800
+ffffff80032e57dc: movsxd   rcx, dword ptr [rdx + rcx*4]
+ffffff80032e57e0: add      rcx, rdx
+ffffff80032e57e3: mov      ebx, r12d
+ffffff80032e57e6: jmp      rcx
+ffffff80032e57e8: mov      qword ptr [rsp], r13
+ffffff80032e57ec: lea      rdi, [rip - 0x17f3]
+ffffff80032e57f3: mov      rsi, qword ptr [rip + 0x228ae]  ; 0xffffff80033080a8
+ffffff80032e57fa: xor      edx, edx
+ffffff80032e57fc: lea      rcx, [rip + 0x1b55d]  ; 0xffffff8003300d60
+ffffff80032e5803: mov      r8, rax
+ffffff80032e5806: lea      r9, [rip + 0x21ab7]  ; "initWithOwnerNameCapacity"
+ffffff80032e580d: xor      eax, eax
+ffffff80032e580f: call     0xffffff8000a55a50  ; __os_log_internal
+ffffff80032e5814: mov      eax, dword ptr [rbp - 0x138]
+ffffff80032e581a: mov      dword ptr [rbp - 0x16c], eax
+ffffff80032e5820: jmp      0xffffff80032e59bc  ; __ZN6CCPipe25initWithOwnerNameCapacityEP9IOServicePKcS3_PK13CCPipeOptions+0x6f4
+ffffff80032e5825: mov      qword ptr [rsp], r13
+ffffff80032e5829: lea      rdi, [rip - 0x1830]
+ffffff80032e5830: mov      rsi, qword ptr [rip + 0x22871]  ; 0xffffff80033080a8
+ffffff80032e5837: xor      edx, edx
+ffffff80032e5839: lea      rcx, [rip + 0x1b5e0]  ; 0xffffff8003300e20
+ffffff80032e5840: mov      r8, rax
+ffffff80032e5843: lea      r9, [rip + 0x21a7a]  ; "initWithOwnerNameCapacity"
+ffffff80032e584a: xor      eax, eax
+ffffff80032e584c: call     0xffffff8000a55a50  ; __os_log_internal
+ffffff80032e5851: mov      eax, dword ptr [rbp - 0x138]
+ffffff80032e5857: mov      dword ptr [rbp - 0x164], eax
+ffffff80032e585d: jmp      0xffffff80032e59bc  ; __ZN6CCPipe25initWithOwnerNameCapacityEP9IOServicePKcS3_PK13CCPipeOptions+0x6f4
+ffffff80032e5862: mov      qword ptr [rsp], r13
+ffffff80032e5866: lea      rdi, [rip - 0x186d]
+ffffff80032e586d: mov      rsi, qword ptr [rip + 0x22834]  ; 0xffffff80033080a8
+ffffff80032e5874: xor      edx, edx
+ffffff80032e5876: lea      rcx, [rip + 0x1b543]  ; 0xffffff8003300dc0
+ffffff80032e587d: mov      r8, rax
+ffffff80032e5880: lea      r9, [rip + 0x21a3d]  ; "initWithOwnerNameCapacity"
+ffffff80032e5887: xor      eax, eax
+ffffff80032e5889: call     0xffffff8000a55a50  ; __os_log_internal
+ffffff80032e588e: mov      rax, qword ptr [rbp - 0x138]
+ffffff80032e5895: mov      qword ptr [rbp - 0x198], rax
+ffffff80032e589c: jmp      0xffffff80032e59bc  ; __ZN6CCPipe25initWithOwnerNameCapacityEP9IOServicePKcS3_PK13CCPipeOptions+0x6f4
+ffffff80032e58a1: mov      qword ptr [rsp], r13
+ffffff80032e58a5: lea      rdi, [rip - 0x18ac]
+ffffff80032e58ac: mov      rsi, qword ptr [rip + 0x227f5]  ; 0xffffff80033080a8
+ffffff80032e58b3: xor      edx, edx
+ffffff80032e58b5: lea      rcx, [rip + 0x1b534]  ; 0xffffff8003300df0
+ffffff80032e58bc: mov      r8, rax
+ffffff80032e58bf: lea      r9, [rip + 0x219fe]  ; "initWithOwnerNameCapacity"
+ffffff80032e58c6: xor      eax, eax
+ffffff80032e58c8: call     0xffffff8000a55a50  ; __os_log_internal
+ffffff80032e58cd: mov      rax, qword ptr [rbp - 0x138]
+ffffff80032e58d4: mov      qword ptr [rbp - 0x190], rax
+ffffff80032e58db: jmp      0xffffff80032e59bc  ; __ZN6CCPipe25initWithOwnerNameCapacityEP9IOServicePKcS3_PK13CCPipeOptions+0x6f4
+ffffff80032e58e0: mov      qword ptr [rsp + 8], r13
+ffffff80032e58e5: mov      dword ptr [rsp], r14d
+ffffff80032e58e9: lea      rdi, [rip - 0x18f0]
+ffffff80032e58f0: mov      rsi, qword ptr [rip + 0x227b1]  ; 0xffffff80033080a8
+ffffff80032e58f7: xor      edx, edx
+ffffff80032e58f9: lea      rcx, [rip + 0x1b5b0]  ; 0xffffff8003300eb0
+ffffff80032e5900: mov      r8, rax
+ffffff80032e5903: lea      r9, [rip + 0x219ba]  ; "initWithOwnerNameCapacity"
+ffffff80032e590a: xor      eax, eax
+ffffff80032e590c: call     0xffffff8000a55a50  ; __os_log_internal
+ffffff80032e5911: mov      ebx, r12d
+ffffff80032e5914: jmp      0xffffff80032e59bc  ; __ZN6CCPipe25initWithOwnerNameCapacityEP9IOServicePKcS3_PK13CCPipeOptions+0x6f4
+ffffff80032e5919: mov      qword ptr [rsp], r13
+ffffff80032e591d: lea      rdi, [rip - 0x1924]
+ffffff80032e5924: mov      rsi, qword ptr [rip + 0x2277d]  ; 0xffffff80033080a8
+ffffff80032e592b: xor      edx, edx
+ffffff80032e592d: lea      rcx, [rip + 0x1b45c]  ; 0xffffff8003300d90
+ffffff80032e5934: mov      r8, rax
+ffffff80032e5937: lea      r9, [rip + 0x21986]  ; "initWithOwnerNameCapacity"
+ffffff80032e593e: xor      eax, eax
+ffffff80032e5940: call     0xffffff8000a55a50  ; __os_log_internal
+ffffff80032e5945: mov      eax, dword ptr [rbp - 0x138]
+ffffff80032e594b: mov      dword ptr [rbp - 0x168], eax
+ffffff80032e5951: jmp      0xffffff80032e59bc  ; __ZN6CCPipe25initWithOwnerNameCapacityEP9IOServicePKcS3_PK13CCPipeOptions+0x6f4
+ffffff80032e5953: mov      qword ptr [rsp], r13
+ffffff80032e5957: lea      rdi, [rip - 0x195e]
+ffffff80032e595e: mov      rsi, qword ptr [rip + 0x22743]  ; 0xffffff80033080a8
+ffffff80032e5965: xor      edx, edx
+ffffff80032e5967: lea      rcx, [rip + 0x1b4e2]  ; 0xffffff8003300e50
+ffffff80032e596e: mov      r8, rax
+ffffff80032e5971: lea      r9, [rip + 0x2194c]  ; "initWithOwnerNameCapacity"
+ffffff80032e5978: xor      eax, eax
+ffffff80032e597a: call     0xffffff8000a55a50  ; __os_log_internal
+ffffff80032e597f: mov      ecx, dword ptr [rbp - 0x138]
+ffffff80032e5985: shl      ecx, 0xa
+ffffff80032e5988: jmp      0xffffff80032e59c2  ; __ZN6CCPipe25initWithOwnerNameCapacityEP9IOServicePKcS3_PK13CCPipeOptions+0x6fa
+ffffff80032e598a: mov      qword ptr [rsp], r13
+ffffff80032e598e: lea      rdi, [rip - 0x1995]
+ffffff80032e5995: mov      rsi, qword ptr [rip + 0x2270c]  ; 0xffffff80033080a8
+ffffff80032e599c: xor      edx, edx
+ffffff80032e599e: lea      rcx, [rip + 0x1b4db]  ; 0xffffff8003300e80
+ffffff80032e59a5: mov      r8, rax
+ffffff80032e59a8: lea      r9, [rip + 0x21915]  ; "initWithOwnerNameCapacity"
+ffffff80032e59af: xor      eax, eax
+ffffff80032e59b1: call     0xffffff8000a55a50  ; __os_log_internal
+ffffff80032e59b6: mov      ebx, dword ptr [rbp - 0x138]
+ffffff80032e59bc: mov      ecx, dword ptr [rbp - 0x148]
+ffffff80032e59c2: inc      r14d
+ffffff80032e59c5: test     r15, r15
+ffffff80032e59c8: jne      0xffffff80032e5748
+ffffff80032e59ce: jmp      0xffffff80032e59e4  ; __ZN6CCPipe25initWithOwnerNameCapacityEP9IOServicePKcS3_PK13CCPipeOptions+0x71c
+ffffff80032e59d0: mov      r12d, ebx
+ffffff80032e59d3: jmp      0xffffff80032e578e  ; __ZN6CCPipe25initWithOwnerNameCapacityEP9IOServicePKcS3_PK13CCPipeOptions+0x4c6
+ffffff80032e59d8: mov      ebx, dword ptr [rbp - 0x184]
+ffffff80032e59de: mov      ecx, dword ptr [rbp - 0x148]
+ffffff80032e59e4: mov      r14d, ecx
+ffffff80032e59e7: mov      r12d, ebx
+ffffff80032e59ea: mov      edi, 0x20
+ffffff80032e59ef: call     0xffffff8000a22750  ; __ZN12OSDictionary12withCapacityEj
+ffffff80032e59f4: mov      r13, rax
+ffffff80032e59f7: mov      rbx, qword ptr [rbp - 0x1a0]
+ffffff80032e59fe: mov      rdi, rbx
+ffffff80032e5a01: call     0xffffff8000a492f0  ; __ZN8OSString11withCStringEPKc
+ffffff80032e5a06: mov      r15, rax
+ffffff80032e5a09: mov      rax, qword ptr [r13]
+ffffff80032e5a0d: lea      rsi, [rip + 0x220af]  ; "Owner"
+ffffff80032e5a14: mov      rdi, r13
+ffffff80032e5a17: mov      rdx, r15
+ffffff80032e5a1a: call     qword ptr [rax + 0x1d0]
+ffffff80032e5a20: test     al, al
+ffffff80032e5a22: je       0xffffff80032e5f5c
+ffffff80032e5a28: mov      qword ptr [rbp - 0x148], r13
+ffffff80032e5a2f: test     r15, r15
+ffffff80032e5a32: mov      rbx, qword ptr [rbp - 0x158]
+ffffff80032e5a39: je       0xffffff80032e5a44
+ffffff80032e5a3b: mov      rax, qword ptr [r15]
+ffffff80032e5a3e: mov      rdi, r15
+ffffff80032e5a41: call     qword ptr [rax + 0x28]
+ffffff80032e5a44: mov      r13, qword ptr [rbp - 0x180]
+ffffff80032e5a4b: mov      rdi, r13
+ffffff80032e5a4e: call     0xffffff8000a492f0  ; __ZN8OSString11withCStringEPKc
+ffffff80032e5a53: mov      r15, rax
+ffffff80032e5a56: mov      rdi, qword ptr [rbp - 0x148]
+ffffff80032e5a5d: mov      rax, qword ptr [rdi]
+ffffff80032e5a60: lea      rsi, [rip + 0x22175]  ; "Name"
+ffffff80032e5a67: mov      rdx, r15
+ffffff80032e5a6a: call     qword ptr [rax + 0x1d0]
+ffffff80032e5a70: test     al, al
+ffffff80032e5a72: mov      rax, qword ptr [rbp - 0x160]
+ffffff80032e5a79: je       0xffffff80032e5fc4
+ffffff80032e5a7f: test     r15, r15
+ffffff80032e5a82: je       0xffffff80032e5a93
+ffffff80032e5a84: mov      r13, rax
+ffffff80032e5a87: mov      rax, qword ptr [r15]
+ffffff80032e5a8a: mov      rdi, r15
+ffffff80032e5a8d: call     qword ptr [rax + 0x28]
+ffffff80032e5a90: mov      rax, r13
+ffffff80032e5a93: lea      r13, [rax + 0x24]
+ffffff80032e5a97: mov      rdi, r13
+ffffff80032e5a9a: call     0xffffff8000a492f0  ; __ZN8OSString11withCStringEPKc
+ffffff80032e5a9f: mov      r15, rax
+ffffff80032e5aa2: mov      rdi, qword ptr [rbp - 0x148]
+ffffff80032e5aa9: mov      rax, qword ptr [rdi]
+ffffff80032e5aac: lea      rsi, [rip + 0x22016]  ; "Filename"
+ffffff80032e5ab3: mov      rdx, r15
+ffffff80032e5ab6: call     qword ptr [rax + 0x1d0]
+ffffff80032e5abc: test     al, al
+ffffff80032e5abe: je       0xffffff80032e6001
+ffffff80032e5ac4: test     r15, r15
+ffffff80032e5ac7: je       0xffffff80032e5ad2
+ffffff80032e5ac9: mov      rax, qword ptr [r15]
+ffffff80032e5acc: mov      rdi, r15
+ffffff80032e5acf: call     qword ptr [rax + 0x28]
+ffffff80032e5ad2: mov      rax, qword ptr [rbp - 0x160]
+ffffff80032e5ad9: lea      r13, [rax + 0x124]
+ffffff80032e5ae0: mov      rdi, r13
+ffffff80032e5ae3: call     0xffffff8000a492f0  ; __ZN8OSString11withCStringEPKc
+ffffff80032e5ae8: mov      r15, rax
+ffffff80032e5aeb: mov      rdi, qword ptr [rbp - 0x148]
+ffffff80032e5af2: mov      rax, qword ptr [rdi]
+ffffff80032e5af5: lea      rsi, [rip + 0x21fd6]  ; "LogIdentifier"
+ffffff80032e5afc: mov      rdx, r15
+ffffff80032e5aff: call     qword ptr [rax + 0x1d0]
+ffffff80032e5b05: test     al, al
+ffffff80032e5b07: je       0xffffff80032e6077
+ffffff80032e5b0d: test     r15, r15
+ffffff80032e5b10: je       0xffffff80032e5b1b
+ffffff80032e5b12: mov      rax, qword ptr [r15]
+ffffff80032e5b15: mov      rdi, r15
+ffffff80032e5b18: call     qword ptr [rax + 0x28]
+ffffff80032e5b1b: mov      edi, r14d
+ffffff80032e5b1e: mov      esi, 0x20
+ffffff80032e5b23: call     0xffffff8000a446b0  ; __ZN8OSNumber10withNumberEyj
+ffffff80032e5b28: mov      r15, rax
+ffffff80032e5b2b: mov      rdi, qword ptr [rbp - 0x148]
+ffffff80032e5b32: mov      rax, qword ptr [rdi]
+ffffff80032e5b35: lea      rsi, [rip + 0x21fa4]  ; "FileSize"
+ffffff80032e5b3c: mov      rdx, r15
+ffffff80032e5b3f: call     qword ptr [rax + 0x1d0]
+ffffff80032e5b45: test     al, al
+ffffff80032e5b47: mov      r13d, dword ptr [rbp - 0x16c]
+ffffff80032e5b4e: je       0xffffff80032e60b4
+ffffff80032e5b54: test     r15, r15
+ffffff80032e5b57: je       0xffffff80032e5b62
+ffffff80032e5b59: mov      rax, qword ptr [r15]
+ffffff80032e5b5c: mov      rdi, r15
+ffffff80032e5b5f: call     qword ptr [rax + 0x28]
+ffffff80032e5b62: mov      edi, r12d
+ffffff80032e5b65: mov      esi, 0x20
+ffffff80032e5b6a: call     0xffffff8000a446b0  ; __ZN8OSNumber10withNumberEyj
+ffffff80032e5b6f: mov      r15, rax
+ffffff80032e5b72: mov      rdi, qword ptr [rbp - 0x148]
+ffffff80032e5b79: mov      rax, qword ptr [rdi]
+ffffff80032e5b7c: lea      rsi, [rip + 0x21f66]  ; "NumberOfFiles"
+ffffff80032e5b83: mov      rdx, r15
+ffffff80032e5b86: call     qword ptr [rax + 0x1d0]
+ffffff80032e5b8c: test     al, al
+ffffff80032e5b8e: je       0xffffff80032e60f1
+ffffff80032e5b94: test     r15, r15
+ffffff80032e5b97: je       0xffffff80032e5ba2
+ffffff80032e5b99: mov      rax, qword ptr [r15]
+ffffff80032e5b9c: mov      rdi, r15
+ffffff80032e5b9f: call     qword ptr [rax + 0x28]
+ffffff80032e5ba2: mov      r14, qword ptr [rbp - 0x160]
+ffffff80032e5ba9: mov      edi, dword ptr [r14]
+ffffff80032e5bac: mov      esi, 0x20
+ffffff80032e5bb1: call     0xffffff8000a446b0  ; __ZN8OSNumber10withNumberEyj
+ffffff80032e5bb6: mov      r15, rax
+ffffff80032e5bb9: mov      rdi, qword ptr [rbp - 0x148]
+ffffff80032e5bc0: mov      rax, qword ptr [rdi]
+ffffff80032e5bc3: lea      rsi, [rip + 0x21f2d]  ; "PipeType"
+ffffff80032e5bca: mov      rdx, r15
+ffffff80032e5bcd: call     qword ptr [rax + 0x1d0]
+ffffff80032e5bd3: test     al, al
+ffffff80032e5bd5: je       0xffffff80032e612b
+ffffff80032e5bdb: test     r15, r15
+ffffff80032e5bde: je       0xffffff80032e5be9
+ffffff80032e5be0: mov      rax, qword ptr [r15]
+ffffff80032e5be3: mov      rdi, r15
+ffffff80032e5be6: call     qword ptr [rax + 0x28]
+ffffff80032e5be9: mov      edi, r13d
+ffffff80032e5bec: mov      esi, 0x20
+ffffff80032e5bf1: call     0xffffff8000a446b0  ; __ZN8OSNumber10withNumberEyj
+ffffff80032e5bf6: mov      r15, rax
+ffffff80032e5bf9: mov      rdi, qword ptr [rbp - 0x148]
+ffffff80032e5c00: mov      rax, qword ptr [rdi]
+ffffff80032e5c03: lea      rsi, [rip + 0x21ef6]  ; "LogType"
+ffffff80032e5c0a: mov      rdx, r15
+ffffff80032e5c0d: call     qword ptr [rax + 0x1d0]
+ffffff80032e5c13: test     al, al
+ffffff80032e5c15: je       0xffffff80032e6167
+ffffff80032e5c1b: test     r15, r15
+ffffff80032e5c1e: je       0xffffff80032e5c29
+ffffff80032e5c20: mov      rax, qword ptr [r15]
+ffffff80032e5c23: mov      rdi, r15
+ffffff80032e5c26: call     qword ptr [rax + 0x28]
+ffffff80032e5c29: mov      r12, qword ptr [rbp - 0x160]
+ffffff80032e5c30: mov      edi, dword ptr [r12 + 8]
+ffffff80032e5c35: mov      esi, 0x20
+ffffff80032e5c3a: call     0xffffff8000a446b0  ; __ZN8OSNumber10withNumberEyj
+ffffff80032e5c3f: mov      r15, rax
+ffffff80032e5c42: mov      r14, qword ptr [rbp - 0x148]
+ffffff80032e5c49: mov      rax, qword ptr [r14]
+ffffff80032e5c4c: lea      rsi, [rip + 0x21eb5]  ; "LogDataType"
+ffffff80032e5c53: mov      rdi, r14
+ffffff80032e5c56: mov      rdx, r15
+ffffff80032e5c59: call     qword ptr [rax + 0x1d0]
+ffffff80032e5c5f: test     al, al
+ffffff80032e5c61: je       0xffffff80032e61fb
+ffffff80032e5c67: test     r15, r15
+ffffff80032e5c6a: je       0xffffff80032e5c75
+ffffff80032e5c6c: mov      rax, qword ptr [r15]
+ffffff80032e5c6f: mov      rdi, r15
+ffffff80032e5c72: call     qword ptr [rax + 0x28]
+ffffff80032e5c75: mov      r12d, dword ptr [rbp - 0x168]
+ffffff80032e5c7c: mov      edi, r12d
+ffffff80032e5c7f: mov      esi, 0x20
+ffffff80032e5c84: call     0xffffff8000a446b0  ; __ZN8OSNumber10withNumberEyj
+ffffff80032e5c89: mov      r15, rax
+ffffff80032e5c8c: mov      rax, qword ptr [r14]
+ffffff80032e5c8f: lea      rsi, [rip + 0x21f6e]  ; "LogPolicy"
+ffffff80032e5c96: mov      rdi, r14
+ffffff80032e5c99: mov      rdx, r15
+ffffff80032e5c9c: call     qword ptr [rax + 0x1d0]
+ffffff80032e5ca2: test     al, al
+ffffff80032e5ca4: je       0xffffff80032e6239
+ffffff80032e5caa: mov      r13, qword ptr [rbp - 0x178]
+ffffff80032e5cb1: and      r13d, 1
+ffffff80032e5cb5: test     r15, r15
+ffffff80032e5cb8: je       0xffffff80032e5cc3
+ffffff80032e5cba: mov      rax, qword ptr [r15]
+ffffff80032e5cbd: mov      rdi, r15
+ffffff80032e5cc0: call     qword ptr [rax + 0x28]
+ffffff80032e5cc3: mov      rdi, r13
+ffffff80032e5cc6: mov      esi, 0x20
+ffffff80032e5ccb: call     0xffffff8000a446b0  ; __ZN8OSNumber10withNumberEyj
+ffffff80032e5cd0: mov      r15, rax
+ffffff80032e5cd3: mov      rdi, qword ptr [rbp - 0x148]
+ffffff80032e5cda: mov      rax, qword ptr [rdi]
+ffffff80032e5cdd: lea      rsi, [rip + 0x21e53]  ; "CompressionDisabled"
+ffffff80032e5ce4: mov      rdx, r15
+ffffff80032e5ce7: call     qword ptr [rax + 0x1d0]
+ffffff80032e5ced: test     al, al
+ffffff80032e5cef: je       0xffffff80032e629c
+ffffff80032e5cf5: test     r15, r15
+ffffff80032e5cf8: je       0xffffff80032e5d03
+ffffff80032e5cfa: mov      rax, qword ptr [r15]
+ffffff80032e5cfd: mov      rdi, r15
+ffffff80032e5d00: call     qword ptr [rax + 0x28]
+ffffff80032e5d03: mov      rdi, qword ptr [rbp - 0x198]
+ffffff80032e5d0a: mov      esi, 0x20
+ffffff80032e5d0f: call     0xffffff8000a446b0  ; __ZN8OSNumber10withNumberEyj
+ffffff80032e5d14: mov      r15, rax
+ffffff80032e5d17: mov      rdi, qword ptr [rbp - 0x148]
+ffffff80032e5d1e: mov      rax, qword ptr [rdi]
+ffffff80032e5d21: lea      rsi, [rip + 0x21dec]  ; "PipeSize"
+ffffff80032e5d28: mov      rdx, r15
+ffffff80032e5d2b: call     qword ptr [rax + 0x1d0]
+ffffff80032e5d31: test     al, al
+ffffff80032e5d33: je       0xffffff80032e62d9
+ffffff80032e5d39: test     r15, r15
+ffffff80032e5d3c: je       0xffffff80032e5d47
+ffffff80032e5d3e: mov      rax, qword ptr [r15]
+ffffff80032e5d41: mov      rdi, r15
+ffffff80032e5d44: call     qword ptr [rax + 0x28]
+ffffff80032e5d47: mov      edi, dword ptr [rbp - 0x164]
+ffffff80032e5d4d: mov      esi, 0x20
+ffffff80032e5d52: call     0xffffff8000a446b0  ; __ZN8OSNumber10withNumberEyj
+ffffff80032e5d57: mov      r15, rax
+ffffff80032e5d5a: mov      rdi, qword ptr [rbp - 0x148]
+ffffff80032e5d61: mov      rax, qword ptr [rdi]
+ffffff80032e5d64: lea      rsi, [rip + 0x21e76]  ; "NotifyThreshold"
+ffffff80032e5d6b: mov      rdx, r15
+ffffff80032e5d6e: call     qword ptr [rax + 0x1d0]
+ffffff80032e5d74: test     al, al
+ffffff80032e5d76: je       0xffffff80032e6321
+ffffff80032e5d7c: test     r15, r15
+ffffff80032e5d7f: je       0xffffff80032e5d8a
+ffffff80032e5d81: mov      rax, qword ptr [r15]
+ffffff80032e5d84: mov      rdi, r15
+ffffff80032e5d87: call     qword ptr [rax + 0x28]
+ffffff80032e5d8a: mov      rdi, qword ptr [rbp - 0x190]
+ffffff80032e5d91: mov      esi, 0x20
+ffffff80032e5d96: call     0xffffff8000a446b0  ; __ZN8OSNumber10withNumberEyj
+ffffff80032e5d9b: mov      r15, rax
+ffffff80032e5d9e: mov      rdi, qword ptr [rbp - 0x148]
+ffffff80032e5da5: mov      rax, qword ptr [rdi]
+ffffff80032e5da8: lea      rsi, [rip + 0x21e42]  ; "MinLogSizeToNotify"
+ffffff80032e5daf: mov      rdx, r15
+ffffff80032e5db2: call     qword ptr [rax + 0x1d0]
+ffffff80032e5db8: test     al, al
+ffffff80032e5dba: je       0xffffff80032e6367
+ffffff80032e5dc0: test     r15, r15
+ffffff80032e5dc3: je       0xffffff80032e5dce
+ffffff80032e5dc5: mov      rax, qword ptr [r15]
+ffffff80032e5dc8: mov      rdi, r15
+ffffff80032e5dcb: call     qword ptr [rax + 0x28]
+ffffff80032e5dce: mov      rax, qword ptr [rbp - 0x160]
+ffffff80032e5dd5: mov      edi, dword ptr [rax + 0x240]
+ffffff80032e5ddb: mov      esi, 0x20
+ffffff80032e5de0: call     0xffffff8000a446b0  ; __ZN8OSNumber10withNumberEyj
+ffffff80032e5de5: mov      r15, rax
+ffffff80032e5de8: mov      rdi, qword ptr [rbp - 0x148]
+ffffff80032e5def: mov      rax, qword ptr [rdi]
+ffffff80032e5df2: lea      rsi, [rip + 0x21d24]  ; "FileOptions"
+ffffff80032e5df9: mov      rdx, r15
+ffffff80032e5dfc: call     qword ptr [rax + 0x1d0]
+ffffff80032e5e02: test     al, al
+ffffff80032e5e04: je       0xffffff80032e63af
+ffffff80032e5e0a: test     r15, r15
+ffffff80032e5e0d: je       0xffffff80032e5e18
+ffffff80032e5e0f: mov      rax, qword ptr [r15]
+ffffff80032e5e12: mov      rdi, r15
+ffffff80032e5e15: call     qword ptr [rax + 0x28]
+ffffff80032e5e18: mov      rax, qword ptr [rbp - 0x160]
+ffffff80032e5e1f: lea      r13, [rax + 0x244]
+ffffff80032e5e26: mov      rdi, r13
+ffffff80032e5e29: call     0xffffff8000a492f0  ; __ZN8OSString11withCStringEPKc
+ffffff80032e5e2e: mov      r15, rax
+ffffff80032e5e31: mov      rdi, qword ptr [rbp - 0x148]
+ffffff80032e5e38: mov      rax, qword ptr [rdi]
+ffffff80032e5e3b: lea      rsi, [rip + 0x21ce7]  ; "DirectoryName"
+ffffff80032e5e42: mov      rdx, r15
+ffffff80032e5e45: call     qword ptr [rax + 0x1d0]
+ffffff80032e5e4b: test     al, al
+ffffff80032e5e4d: je       0xffffff80032e63fc
+ffffff80032e5e53: mov      rax, qword ptr [rbp - 0x178]
+ffffff80032e5e5a: and      eax, 4
+ffffff80032e5e5d: mov      qword ptr [rbp - 0x178], rax
+ffffff80032e5e64: test     r15, r15
+ffffff80032e5e67: je       0xffffff80032e5e72
+ffffff80032e5e69: mov      rax, qword ptr [r15]
+ffffff80032e5e6c: mov      rdi, r15
+ffffff80032e5e6f: call     qword ptr [rax + 0x28]
+ffffff80032e5e72: mov      rdi, qword ptr [rbp - 0x178]
+ffffff80032e5e79: mov      esi, 0x20
+ffffff80032e5e7e: call     0xffffff8000a446b0  ; __ZN8OSNumber10withNumberEyj
+ffffff80032e5e83: mov      r15, rax
+ffffff80032e5e86: mov      rdi, qword ptr [rbp - 0x148]
+ffffff80032e5e8d: mov      rax, qword ptr [rdi]
+ffffff80032e5e90: lea      rsi, [rip + 0x21cb4]  ; "UnifiedPolicy"
+ffffff80032e5e97: mov      rdx, r15
+ffffff80032e5e9a: call     qword ptr [rax + 0x1d0]
+ffffff80032e5ea0: test     al, al
+ffffff80032e5ea2: je       0xffffff80032e643a
+ffffff80032e5ea8: test     r15, r15
+ffffff80032e5eab: je       0xffffff80032e5eb6
+ffffff80032e5ead: mov      rax, qword ptr [r15]
+ffffff80032e5eb0: mov      rdi, r15
+ffffff80032e5eb3: call     qword ptr [rax + 0x28]
+ffffff80032e5eb6: mov      rax, qword ptr [rbp - 0x160]
+ffffff80032e5ebd: cmp      dword ptr [rax], 0
+ffffff80032e5ec0: lea      rax, [rip + 0x213e4]  ; "CCLogPipe"
+ffffff80032e5ec7: lea      rdi, [rip + 0x20767]  ; "CCDataPipe"
+ffffff80032e5ece: cmove    rdi, rax
+ffffff80032e5ed2: call     0xffffff8000a492f0  ; __ZN8OSString11withCStringEPKc
+ffffff80032e5ed7: mov      r15, rax
+ffffff80032e5eda: mov      rdi, qword ptr [rbp - 0x148]
+ffffff80032e5ee1: mov      rax, qword ptr [rdi]
+ffffff80032e5ee4: lea      rsi, [rip + 0x21d23]  ; "IOClass"
+ffffff80032e5eeb: mov      rdx, r15
+ffffff80032e5eee: call     qword ptr [rax + 0x1d0]
+ffffff80032e5ef4: test     r15, r15
+ffffff80032e5ef7: je       0xffffff80032e5f02
+ffffff80032e5ef9: mov      rax, qword ptr [r15]
+ffffff80032e5efc: mov      rdi, r15
+ffffff80032e5eff: call     qword ptr [rax + 0x28]
+ffffff80032e5f02: mov      rdi, qword ptr [rbp - 0x158]
+ffffff80032e5f09: mov      rsi, qword ptr [rbp - 0x148]
+ffffff80032e5f10: xor      edx, edx
+ffffff80032e5f12: call     0xffffff8000a6c8f0  ; __ZN9IOService13SetPropertiesEP12OSDictionaryPFiP15OSMetaClassBase5IORPCE
+ffffff80032e5f17: test     eax, eax
+ffffff80032e5f19: je       0xffffff80032e64b5
+ffffff80032e5f1f: mov      rdi, qword ptr [rbp - 0x158]
+ffffff80032e5f26: mov      rax, qword ptr [rdi]
+ffffff80032e5f29: call     qword ptr [rax + 0x8d0]
+ffffff80032e5f2f: lea      rdi, [rip - 0x1f36]
+ffffff80032e5f36: mov      rsi, qword ptr [rip + 0x2216b]  ; 0xffffff80033080a8
+ffffff80032e5f3d: lea      rcx, [rip + 0x1b3dc]  ; 0xffffff8003301320
+ffffff80032e5f44: lea      r9, [rip + 0x21379]  ; "initWithOwnerNameCapacity"
+ffffff80032e5f4b: xor      edx, edx
+ffffff80032e5f4d: mov      r8, rax
+ffffff80032e5f50: xor      eax, eax
+ffffff80032e5f52: call     0xffffff8000a55a50  ; __os_log_internal
+ffffff80032e5f57: jmp      0xffffff80032e648a  ; __ZN6CCPipe25initWithOwnerNameCapacityEP9IOServicePKcS3_PK13CCPipeOptions+0x11c2
+ffffff80032e5f5c: mov      rdi, qword ptr [rbp - 0x158]
+ffffff80032e5f63: mov      rax, qword ptr [rdi]
+ffffff80032e5f66: call     qword ptr [rax + 0x8d0]
+ffffff80032e5f6c: mov      qword ptr [rsp], rbx
+ffffff80032e5f70: lea      rdi, [rip - 0x1f77]
+ffffff80032e5f77: mov      rsi, qword ptr [rip + 0x2212a]  ; 0xffffff80033080a8
+ffffff80032e5f7e: lea      rcx, [rip + 0x1af5b]  ; 0xffffff8003300ee0
+ffffff80032e5f85: lea      r9, [rip + 0x21338]  ; "initWithOwnerNameCapacity"
+ffffff80032e5f8c: xor      edx, edx
+ffffff80032e5f8e: mov      r8, rax
+ffffff80032e5f91: xor      eax, eax
+ffffff80032e5f93: call     0xffffff8000a55a50  ; __os_log_internal
+ffffff80032e5f98: test     r15, r15
+ffffff80032e5f9b: je       0xffffff80032e5fa6
+ffffff80032e5f9d: mov      rax, qword ptr [r15]
+ffffff80032e5fa0: mov      rdi, r15
+ffffff80032e5fa3: call     qword ptr [rax + 0x28]
+ffffff80032e5fa6: mov      rdi, qword ptr [rbp - 0x150]
+ffffff80032e5fad: test     rdi, rdi
+ffffff80032e5fb0: je       0xffffff80032e5fb8
+ffffff80032e5fb2: mov      rax, qword ptr [rdi]
+ffffff80032e5fb5: call     qword ptr [rax + 0x28]
+ffffff80032e5fb8: mov      rax, qword ptr [r13]
+ffffff80032e5fbc: mov      rdi, r13
+ffffff80032e5fbf: jmp      0xffffff80032e61cc  ; __ZN6CCPipe25initWithOwnerNameCapacityEP9IOServicePKcS3_PK13CCPipeOptions+0xf04
+ffffff80032e5fc4: mov      rax, qword ptr [rbx]
+ffffff80032e5fc7: mov      rdi, rbx
+ffffff80032e5fca: call     qword ptr [rax + 0x8d0]
+ffffff80032e5fd0: mov      qword ptr [rsp], r13
+ffffff80032e5fd4: lea      rdi, [rip - 0x1fdb]
+ffffff80032e5fdb: mov      rsi, qword ptr [rip + 0x220c6]  ; 0xffffff80033080a8
+ffffff80032e5fe2: lea      rcx, [rip + 0x1af37]  ; 0xffffff8003300f20
+ffffff80032e5fe9: lea      r9, [rip + 0x212d4]  ; "initWithOwnerNameCapacity"
+ffffff80032e5ff0: xor      edx, edx
+ffffff80032e5ff2: mov      r8, rax
+ffffff80032e5ff5: xor      eax, eax
+ffffff80032e5ff7: call     0xffffff8000a55a50  ; __os_log_internal
+ffffff80032e5ffc: jmp      0xffffff80032e619f  ; __ZN6CCPipe25initWithOwnerNameCapacityEP9IOServicePKcS3_PK13CCPipeOptions+0xed7
+ffffff80032e6001: mov      rax, qword ptr [rbx]
+ffffff80032e6004: mov      rdi, rbx
+ffffff80032e6007: call     qword ptr [rax + 0x8d0]
+ffffff80032e600d: mov      qword ptr [rsp], r13
+ffffff80032e6011: lea      rdi, [rip - 0x2018]
+ffffff80032e6018: mov      rsi, qword ptr [rip + 0x22089]  ; 0xffffff80033080a8
+ffffff80032e601f: lea      rcx, [rip + 0x1af3a]  ; 0xffffff8003300f60
+ffffff80032e6026: lea      r9, [rip + 0x21297]  ; "initWithOwnerNameCapacity"
+ffffff80032e602d: xor      edx, edx
+ffffff80032e602f: mov      r8, rax
+ffffff80032e6032: xor      eax, eax
+ffffff80032e6034: call     0xffffff8000a55a50  ; __os_log_internal
+ffffff80032e6039: jmp      0xffffff80032e619f  ; __ZN6CCPipe25initWithOwnerNameCapacityEP9IOServicePKcS3_PK13CCPipeOptions+0xed7
+ffffff80032e603e: mov      qword ptr [rsp + 8], r13
+ffffff80032e6043: mov      dword ptr [rsp], r14d
+ffffff80032e6047: lea      rdi, [rip - 0x204e]
+ffffff80032e604e: mov      rsi, qword ptr [rip + 0x22053]  ; 0xffffff80033080a8
+ffffff80032e6055: lea      rcx, [rip + 0x1acd4]  ; "%s::%s(): Invalid Boot_Arg[%d] %s"
+ffffff80032e605c: lea      r9, [rip + 0x21261]  ; "initWithOwnerNameCapacity"
+ffffff80032e6063: xor      r14d, r14d
+ffffff80032e6066: xor      edx, edx
+ffffff80032e6068: mov      r8, rax
+ffffff80032e606b: xor      eax, eax
+ffffff80032e606d: call     0xffffff8000a55a50  ; __os_log_internal
+ffffff80032e6072: jmp      0xffffff80032e61d2  ; __ZN6CCPipe25initWithOwnerNameCapacityEP9IOServicePKcS3_PK13CCPipeOptions+0xf0a
+ffffff80032e6077: mov      rax, qword ptr [rbx]
+ffffff80032e607a: mov      rdi, rbx
+ffffff80032e607d: call     qword ptr [rax + 0x8d0]
+ffffff80032e6083: mov      qword ptr [rsp], r13
+ffffff80032e6087: lea      rdi, [rip - 0x208e]
+ffffff80032e608e: mov      rsi, qword ptr [rip + 0x22013]  ; 0xffffff80033080a8
+ffffff80032e6095: lea      rcx, [rip + 0x1af04]  ; 0xffffff8003300fa0
+ffffff80032e609c: lea      r9, [rip + 0x21221]  ; "initWithOwnerNameCapacity"
+ffffff80032e60a3: xor      edx, edx
+ffffff80032e60a5: mov      r8, rax
+ffffff80032e60a8: xor      eax, eax
+ffffff80032e60aa: call     0xffffff8000a55a50  ; __os_log_internal
+ffffff80032e60af: jmp      0xffffff80032e619f  ; __ZN6CCPipe25initWithOwnerNameCapacityEP9IOServicePKcS3_PK13CCPipeOptions+0xed7
+ffffff80032e60b4: mov      rax, qword ptr [rbx]
+ffffff80032e60b7: mov      rdi, rbx
+ffffff80032e60ba: call     qword ptr [rax + 0x8d0]
+ffffff80032e60c0: mov      dword ptr [rsp], r14d
+ffffff80032e60c4: lea      rdi, [rip - 0x20cb]
+ffffff80032e60cb: mov      rsi, qword ptr [rip + 0x21fd6]  ; 0xffffff80033080a8
+ffffff80032e60d2: lea      rcx, [rip + 0x1af07]  ; 0xffffff8003300fe0
+ffffff80032e60d9: lea      r9, [rip + 0x211e4]  ; "initWithOwnerNameCapacity"
+ffffff80032e60e0: xor      edx, edx
+ffffff80032e60e2: mov      r8, rax
+ffffff80032e60e5: xor      eax, eax
+ffffff80032e60e7: call     0xffffff8000a55a50  ; __os_log_internal
+ffffff80032e60ec: jmp      0xffffff80032e619f  ; __ZN6CCPipe25initWithOwnerNameCapacityEP9IOServicePKcS3_PK13CCPipeOptions+0xed7
+ffffff80032e60f1: mov      rax, qword ptr [rbx]
+ffffff80032e60f4: mov      rdi, rbx
+ffffff80032e60f7: call     qword ptr [rax + 0x8d0]
+ffffff80032e60fd: mov      dword ptr [rsp], r12d
+ffffff80032e6101: lea      rdi, [rip - 0x2108]
+ffffff80032e6108: mov      rsi, qword ptr [rip + 0x21f99]  ; 0xffffff80033080a8
+ffffff80032e610f: lea      rcx, [rip + 0x1af0a]  ; 0xffffff8003301020
+ffffff80032e6116: lea      r9, [rip + 0x211a7]  ; "initWithOwnerNameCapacity"
+ffffff80032e611d: xor      edx, edx
+ffffff80032e611f: mov      r8, rax
+ffffff80032e6122: xor      eax, eax
+ffffff80032e6124: call     0xffffff8000a55a50  ; __os_log_internal
+ffffff80032e6129: jmp      0xffffff80032e619f  ; __ZN6CCPipe25initWithOwnerNameCapacityEP9IOServicePKcS3_PK13CCPipeOptions+0xed7
+ffffff80032e612b: mov      rax, qword ptr [rbx]
+ffffff80032e612e: mov      rdi, rbx
+ffffff80032e6131: call     qword ptr [rax + 0x8d0]
+ffffff80032e6137: mov      ecx, dword ptr [r14]
+ffffff80032e613a: mov      dword ptr [rsp], ecx
+ffffff80032e613d: lea      rdi, [rip - 0x2144]
+ffffff80032e6144: mov      rsi, qword ptr [rip + 0x21f5d]  ; 0xffffff80033080a8
+ffffff80032e614b: lea      rcx, [rip + 0x1af0e]  ; 0xffffff8003301060
+ffffff80032e6152: lea      r9, [rip + 0x2116b]  ; "initWithOwnerNameCapacity"
+ffffff80032e6159: xor      edx, edx
+ffffff80032e615b: mov      r8, rax
+ffffff80032e615e: xor      eax, eax
+ffffff80032e6160: call     0xffffff8000a55a50  ; __os_log_internal
+ffffff80032e6165: jmp      0xffffff80032e619f  ; __ZN6CCPipe25initWithOwnerNameCapacityEP9IOServicePKcS3_PK13CCPipeOptions+0xed7
+ffffff80032e6167: mov      rax, qword ptr [rbx]
+ffffff80032e616a: mov      rdi, rbx
+ffffff80032e616d: call     qword ptr [rax + 0x8d0]
+ffffff80032e6173: mov      dword ptr [rsp], r13d
+ffffff80032e6177: lea      rdi, [rip - 0x217e]
+ffffff80032e617e: mov      rsi, qword ptr [rip + 0x21f23]  ; 0xffffff80033080a8
+ffffff80032e6185: lea      rcx, [rip + 0x1af14]  ; 0xffffff80033010a0
+ffffff80032e618c: lea      r9, [rip + 0x21131]  ; "initWithOwnerNameCapacity"
+ffffff80032e6193: xor      edx, edx
+ffffff80032e6195: mov      r8, rax
+ffffff80032e6198: xor      eax, eax
+ffffff80032e619a: call     0xffffff8000a55a50  ; __os_log_internal
+ffffff80032e619f: test     r15, r15
+ffffff80032e61a2: je       0xffffff80032e61ad
+ffffff80032e61a4: mov      rax, qword ptr [r15]
+ffffff80032e61a7: mov      rdi, r15
+ffffff80032e61aa: call     qword ptr [rax + 0x28]
+ffffff80032e61ad: mov      rdi, qword ptr [rbp - 0x150]
+ffffff80032e61b4: test     rdi, rdi
+ffffff80032e61b7: mov      rbx, qword ptr [rbp - 0x148]
+ffffff80032e61be: je       0xffffff80032e61c6
+ffffff80032e61c0: mov      rax, qword ptr [rdi]
+ffffff80032e61c3: call     qword ptr [rax + 0x28]
+ffffff80032e61c6: mov      rax, qword ptr [rbx]
+ffffff80032e61c9: mov      rdi, rbx
+ffffff80032e61cc: call     qword ptr [rax + 0x28]
+ffffff80032e61cf: xor      r14d, r14d
+ffffff80032e61d2: mov      rax, qword ptr [rip + 0x21ec7]  ; 0xffffff80033080a0
+ffffff80032e61d9: mov      rax, qword ptr [rax]
+ffffff80032e61dc: cmp      rax, qword ptr [rbp - 0x30]
+ffffff80032e61e0: jne      0xffffff80032e64b0
+ffffff80032e61e6: mov      eax, r14d
+ffffff80032e61e9: add      rsp, 0x188
+ffffff80032e61f0: pop      rbx
+ffffff80032e61f1: pop      r12
+ffffff80032e61f3: pop      r13
+ffffff80032e61f5: pop      r14
+ffffff80032e61f7: pop      r15
+ffffff80032e61f9: pop      rbp
+ffffff80032e61fa: ret      
+ffffff80032e61fb: mov      rax, qword ptr [rbx]
+ffffff80032e61fe: mov      rdi, rbx
+ffffff80032e6201: call     qword ptr [rax + 0x8d0]
+ffffff80032e6207: mov      ecx, dword ptr [r12 + 8]
+ffffff80032e620c: mov      dword ptr [rsp], ecx
+ffffff80032e620f: lea      rdi, [rip - 0x2216]
+ffffff80032e6216: mov      rsi, qword ptr [rip + 0x21e8b]  ; 0xffffff80033080a8
+ffffff80032e621d: lea      rcx, [rip + 0x1aebc]  ; 0xffffff80033010e0
+ffffff80032e6224: lea      r9, [rip + 0x21099]  ; "initWithOwnerNameCapacity"
+ffffff80032e622b: xor      edx, edx
+ffffff80032e622d: mov      r8, rax
+ffffff80032e6230: xor      eax, eax
+ffffff80032e6232: call     0xffffff8000a55a50  ; __os_log_internal
+ffffff80032e6237: jmp      0xffffff80032e6271  ; __ZN6CCPipe25initWithOwnerNameCapacityEP9IOServicePKcS3_PK13CCPipeOptions+0xfa9
+ffffff80032e6239: mov      rax, qword ptr [rbx]
+ffffff80032e623c: mov      rdi, rbx
+ffffff80032e623f: call     qword ptr [rax + 0x8d0]
+ffffff80032e6245: mov      dword ptr [rsp], r12d
+ffffff80032e6249: lea      rdi, [rip - 0x2250]
+ffffff80032e6250: mov      rsi, qword ptr [rip + 0x21e51]  ; 0xffffff80033080a8
+ffffff80032e6257: lea      rcx, [rip + 0x1aec2]  ; 0xffffff8003301120
+ffffff80032e625e: lea      r9, [rip + 0x2105f]  ; "initWithOwnerNameCapacity"
+ffffff80032e6265: xor      edx, edx
+ffffff80032e6267: mov      r8, rax
+ffffff80032e626a: xor      eax, eax
+ffffff80032e626c: call     0xffffff8000a55a50  ; __os_log_internal
+ffffff80032e6271: test     r15, r15
+ffffff80032e6274: je       0xffffff80032e627f
+ffffff80032e6276: mov      rax, qword ptr [r15]
+ffffff80032e6279: mov      rdi, r15
+ffffff80032e627c: call     qword ptr [rax + 0x28]
+ffffff80032e627f: mov      rdi, qword ptr [rbp - 0x150]
+ffffff80032e6286: test     rdi, rdi
+ffffff80032e6289: je       0xffffff80032e6291
+ffffff80032e628b: mov      rax, qword ptr [rdi]
+ffffff80032e628e: call     qword ptr [rax + 0x28]
+ffffff80032e6291: mov      rax, qword ptr [r14]
+ffffff80032e6294: mov      rdi, r14
+ffffff80032e6297: jmp      0xffffff80032e61cc  ; __ZN6CCPipe25initWithOwnerNameCapacityEP9IOServicePKcS3_PK13CCPipeOptions+0xf04
+ffffff80032e629c: mov      rax, qword ptr [rbx]
+ffffff80032e629f: mov      rdi, rbx
+ffffff80032e62a2: call     qword ptr [rax + 0x8d0]
+ffffff80032e62a8: mov      dword ptr [rsp], r13d
+ffffff80032e62ac: lea      rdi, [rip - 0x22b3]
+ffffff80032e62b3: mov      rsi, qword ptr [rip + 0x21dee]  ; 0xffffff80033080a8
+ffffff80032e62ba: lea      rcx, [rip + 0x1ae9f]  ; 0xffffff8003301160
+ffffff80032e62c1: lea      r9, [rip + 0x20ffc]  ; "initWithOwnerNameCapacity"
+ffffff80032e62c8: xor      edx, edx
+ffffff80032e62ca: mov      r8, rax
+ffffff80032e62cd: xor      eax, eax
+ffffff80032e62cf: call     0xffffff8000a55a50  ; __os_log_internal
+ffffff80032e62d4: jmp      0xffffff80032e647c  ; __ZN6CCPipe25initWithOwnerNameCapacityEP9IOServicePKcS3_PK13CCPipeOptions+0x11b4
+ffffff80032e62d9: mov      rdi, qword ptr [rbp - 0x158]
+ffffff80032e62e0: mov      rax, qword ptr [rdi]
+ffffff80032e62e3: call     qword ptr [rax + 0x8d0]
+ffffff80032e62e9: mov      rcx, qword ptr [rbp - 0x198]
+ffffff80032e62f0: mov      qword ptr [rsp], rcx
+ffffff80032e62f4: lea      rdi, [rip - 0x22fb]
+ffffff80032e62fb: mov      rsi, qword ptr [rip + 0x21da6]  ; 0xffffff80033080a8
+ffffff80032e6302: lea      rcx, [rip + 0x1ae97]  ; 0xffffff80033011a0
+ffffff80032e6309: lea      r9, [rip + 0x20fb4]  ; "initWithOwnerNameCapacity"
+ffffff80032e6310: xor      edx, edx
+ffffff80032e6312: mov      r8, rax
+ffffff80032e6315: xor      eax, eax
+ffffff80032e6317: call     0xffffff8000a55a50  ; __os_log_internal
+ffffff80032e631c: jmp      0xffffff80032e647c  ; __ZN6CCPipe25initWithOwnerNameCapacityEP9IOServicePKcS3_PK13CCPipeOptions+0x11b4
+ffffff80032e6321: mov      rdi, qword ptr [rbp - 0x158]
+ffffff80032e6328: mov      rax, qword ptr [rdi]
+ffffff80032e632b: call     qword ptr [rax + 0x8d0]
+ffffff80032e6331: mov      ecx, dword ptr [rbp - 0x164]
+ffffff80032e6337: mov      dword ptr [rsp], ecx
+ffffff80032e633a: lea      rdi, [rip - 0x2341]
+ffffff80032e6341: mov      rsi, qword ptr [rip + 0x21d60]  ; 0xffffff80033080a8
+ffffff80032e6348: lea      rcx, [rip + 0x1ae91]  ; 0xffffff80033011e0
+ffffff80032e634f: lea      r9, [rip + 0x20f6e]  ; "initWithOwnerNameCapacity"
+ffffff80032e6356: xor      edx, edx
+ffffff80032e6358: mov      r8, rax
+ffffff80032e635b: xor      eax, eax
+ffffff80032e635d: call     0xffffff8000a55a50  ; __os_log_internal
+ffffff80032e6362: jmp      0xffffff80032e647c  ; __ZN6CCPipe25initWithOwnerNameCapacityEP9IOServicePKcS3_PK13CCPipeOptions+0x11b4
+ffffff80032e6367: mov      rdi, qword ptr [rbp - 0x158]
+ffffff80032e636e: mov      rax, qword ptr [rdi]
+ffffff80032e6371: call     qword ptr [rax + 0x8d0]
+ffffff80032e6377: mov      rcx, qword ptr [rbp - 0x190]
+ffffff80032e637e: mov      qword ptr [rsp], rcx
+ffffff80032e6382: lea      rdi, [rip - 0x2389]
+ffffff80032e6389: mov      rsi, qword ptr [rip + 0x21d18]  ; 0xffffff80033080a8
+ffffff80032e6390: lea      rcx, [rip + 0x1ae89]  ; 0xffffff8003301220
+ffffff80032e6397: lea      r9, [rip + 0x20f26]  ; "initWithOwnerNameCapacity"
+ffffff80032e639e: xor      edx, edx
+ffffff80032e63a0: mov      r8, rax
+ffffff80032e63a3: xor      eax, eax
+ffffff80032e63a5: call     0xffffff8000a55a50  ; __os_log_internal
+ffffff80032e63aa: jmp      0xffffff80032e647c  ; __ZN6CCPipe25initWithOwnerNameCapacityEP9IOServicePKcS3_PK13CCPipeOptions+0x11b4
+ffffff80032e63af: mov      rdi, qword ptr [rbp - 0x158]
+ffffff80032e63b6: mov      rax, qword ptr [rdi]
+ffffff80032e63b9: call     qword ptr [rax + 0x8d0]
+ffffff80032e63bf: mov      rcx, qword ptr [rbp - 0x160]
+ffffff80032e63c6: mov      ecx, dword ptr [rcx + 0x240]
+ffffff80032e63cc: mov      dword ptr [rsp], ecx
+ffffff80032e63cf: lea      rdi, [rip - 0x23d6]
+ffffff80032e63d6: mov      rsi, qword ptr [rip + 0x21ccb]  ; 0xffffff80033080a8
+ffffff80032e63dd: lea      rcx, [rip + 0x1ae7c]  ; 0xffffff8003301260
+ffffff80032e63e4: lea      r9, [rip + 0x20ed9]  ; "initWithOwnerNameCapacity"
+ffffff80032e63eb: xor      edx, edx
+ffffff80032e63ed: mov      r8, rax
+ffffff80032e63f0: xor      eax, eax
+ffffff80032e63f2: call     0xffffff8000a55a50  ; __os_log_internal
+ffffff80032e63f7: jmp      0xffffff80032e647c  ; __ZN6CCPipe25initWithOwnerNameCapacityEP9IOServicePKcS3_PK13CCPipeOptions+0x11b4
+ffffff80032e63fc: mov      rdi, qword ptr [rbp - 0x158]
+ffffff80032e6403: mov      rax, qword ptr [rdi]
+ffffff80032e6406: call     qword ptr [rax + 0x8d0]
+ffffff80032e640c: mov      qword ptr [rsp], r13
+ffffff80032e6410: lea      rdi, [rip - 0x2417]
+ffffff80032e6417: mov      rsi, qword ptr [rip + 0x21c8a]  ; 0xffffff80033080a8
+ffffff80032e641e: lea      rcx, [rip + 0x1ae7b]  ; 0xffffff80033012a0
+ffffff80032e6425: lea      r9, [rip + 0x20e98]  ; "initWithOwnerNameCapacity"
+ffffff80032e642c: xor      edx, edx
+ffffff80032e642e: mov      r8, rax
+ffffff80032e6431: xor      eax, eax
+ffffff80032e6433: call     0xffffff8000a55a50  ; __os_log_internal
+ffffff80032e6438: jmp      0xffffff80032e647c  ; __ZN6CCPipe25initWithOwnerNameCapacityEP9IOServicePKcS3_PK13CCPipeOptions+0x11b4
+ffffff80032e643a: mov      rdi, qword ptr [rbp - 0x158]
+ffffff80032e6441: mov      rax, qword ptr [rdi]
+ffffff80032e6444: call     qword ptr [rax + 0x8d0]
+ffffff80032e644a: mov      rcx, qword ptr [rbp - 0x178]
+ffffff80032e6451: mov      dword ptr [rsp], ecx
+ffffff80032e6454: lea      rdi, [rip - 0x245b]
+ffffff80032e645b: mov      rsi, qword ptr [rip + 0x21c46]  ; 0xffffff80033080a8
+ffffff80032e6462: lea      rcx, [rip + 0x1ae77]  ; 0xffffff80033012e0
+ffffff80032e6469: lea      r9, [rip + 0x20e54]  ; "initWithOwnerNameCapacity"
+ffffff80032e6470: xor      edx, edx
+ffffff80032e6472: mov      r8, rax
+ffffff80032e6475: xor      eax, eax
+ffffff80032e6477: call     0xffffff8000a55a50  ; __os_log_internal
+ffffff80032e647c: test     r15, r15
+ffffff80032e647f: je       0xffffff80032e648a
+ffffff80032e6481: mov      rax, qword ptr [r15]
+ffffff80032e6484: mov      rdi, r15
+ffffff80032e6487: call     qword ptr [rax + 0x28]
+ffffff80032e648a: cmp      qword ptr [rbp - 0x150], 0
+ffffff80032e6492: je       0xffffff80032e64a1
+ffffff80032e6494: mov      rdi, qword ptr [rbp - 0x150]
+ffffff80032e649b: mov      rax, qword ptr [rdi]
+ffffff80032e649e: call     qword ptr [rax + 0x28]
+ffffff80032e64a1: mov      rdi, qword ptr [rbp - 0x148]
+ffffff80032e64a8: mov      rax, qword ptr [rdi]
+ffffff80032e64ab: jmp      0xffffff80032e61cc  ; __ZN6CCPipe25initWithOwnerNameCapacityEP9IOServicePKcS3_PK13CCPipeOptions+0xf04
+ffffff80032e64b0: call     0xffffff8000ba0c20  ; ___stack_chk_fail
+ffffff80032e64b5: mov      rdi, qword ptr [rbp - 0x148]
+ffffff80032e64bc: mov      rax, qword ptr [rdi]
+ffffff80032e64bf: call     qword ptr [rax + 0x28]
+ffffff80032e64c2: mov      rax, qword ptr [rbp - 0x158]
+ffffff80032e64c9: mov      rax, qword ptr [rax + 0x88]
+ffffff80032e64d0: lea      rcx, [rax + 0x38]
+ffffff80032e64d4: mov      qword ptr [rax + 0x50], rcx
+ffffff80032e64d8: mov      ecx, dword ptr [rbp - 0x168]
+ffffff80032e64de: mov      dword ptr [rax + 0x38], ecx
+ffffff80032e64e1: mov      rcx, qword ptr [rbp - 0x178]
+ffffff80032e64e8: shr      ecx, 2
+ffffff80032e64eb: mov      byte ptr [rax + 0xd8], cl
+ffffff80032e64f1: mov      rcx, qword ptr [rbp - 0x190]
+ffffff80032e64f8: mov      qword ptr [rax + 0x40], rcx
+ffffff80032e64fc: mov      ecx, dword ptr [rbp - 0x164]
+ffffff80032e6502: mov      dword ptr [rax + 0x48], ecx
+ffffff80032e6505: mov      rcx, qword ptr [rbp - 0x198]
+ffffff80032e650c: mov      qword ptr [rax + 0x70], rcx
+ffffff80032e6510: mov      ecx, dword ptr [rbp - 0x16c]
+ffffff80032e6516: mov      dword ptr [rax + 0x68], ecx
+ffffff80032e6519: mov      rsi, qword ptr [rbp - 0x160]
+ffffff80032e6520: mov      ecx, dword ptr [rsi + 0x344]
+ffffff80032e6526: test     ecx, ecx
+ffffff80032e6528: mov      edx, 0xfa
+ffffff80032e652d: cmovne   edx, ecx
+ffffff80032e6530: mov      dword ptr [rax + 0x80], edx
+ffffff80032e6536: mov      ecx, dword ptr [rsi + 0x348]
+ffffff80032e653c: cmp      ecx, 1
+ffffff80032e653f: adc      ecx, 0
+ffffff80032e6542: mov      dword ptr [rax + 0x84], ecx
+ffffff80032e6548: mov      ecx, dword ptr [rsi + 0x34c]
+ffffff80032e654e: mov      dword ptr [rax + 0x88], ecx
+ffffff80032e6554: mov      rcx, qword ptr [rsi + 0x230]
+ffffff80032e655b: test     rcx, rcx
+ffffff80032e655e: je       0xffffff80032e6576
+ffffff80032e6560: mov      qword ptr [rax + 0x58], rcx
+ffffff80032e6564: mov      rcx, qword ptr [rbp - 0x160]
+ffffff80032e656b: mov      rcx, qword ptr [rcx + 0x238]
+ffffff80032e6572: mov      qword ptr [rax + 0x60], rcx
+ffffff80032e6576: mov      rdi, qword ptr [rbp - 0x1a0]
+ffffff80032e657d: call     0xffffff8000a492f0  ; __ZN8OSString11withCStringEPKc
+ffffff80032e6582: mov      rcx, qword ptr [rbp - 0x158]
+ffffff80032e6589: mov      rcx, qword ptr [rcx + 0x88]
+ffffff80032e6590: mov      qword ptr [rcx], rax
+ffffff80032e6593: test     rax, rax
+ffffff80032e6596: je       0xffffff80032e6637
+ffffff80032e659c: mov      rdi, qword ptr [rbp - 0x180]
+ffffff80032e65a3: call     0xffffff8000a492f0  ; __ZN8OSString11withCStringEPKc
+ffffff80032e65a8: mov      rcx, qword ptr [rbp - 0x158]
+ffffff80032e65af: mov      rcx, qword ptr [rcx + 0x88]
+ffffff80032e65b6: mov      qword ptr [rcx + 8], rax
+ffffff80032e65ba: test     rax, rax
+ffffff80032e65bd: je       0xffffff80032e665d
+ffffff80032e65c3: mov      rdi, qword ptr [rbp - 0x158]
+ffffff80032e65ca: mov      rax, qword ptr [rdi]
+ffffff80032e65cd: call     qword ptr [rax + 0x960]
+ffffff80032e65d3: test     al, al
+ffffff80032e65d5: je       0xffffff80032e6683
+ffffff80032e65db: mov      r14, qword ptr [rbp - 0x158]
+ffffff80032e65e2: mov      rdi, r14
+ffffff80032e65e5: mov      rsi, qword ptr [rbp - 0x180]
+ffffff80032e65ec: call     0xffffff80032e712a  ; __ZN6CCPipe24createReportersAndLegendEPKc
+ffffff80032e65f1: mov      ebx, eax
+ffffff80032e65f3: mov      rax, qword ptr [r14]
+ffffff80032e65f6: mov      rdi, r14
+ffffff80032e65f9: call     qword ptr [rax + 0x8d0]
+ffffff80032e65ff: test     ebx, ebx
+ffffff80032e6601: je       0xffffff80032e66c3
+ffffff80032e6607: lea      rdi, [rip - 0x260e]
+ffffff80032e660e: mov      rsi, qword ptr [rip + 0x21a93]  ; 0xffffff80033080a8
+ffffff80032e6615: lea      rcx, [rip + 0x1ada4]  ; 0xffffff80033013c0
+ffffff80032e661c: lea      r9, [rip + 0x20ca1]  ; "initWithOwnerNameCapacity"
+ffffff80032e6623: xor      r14d, r14d
+ffffff80032e6626: xor      edx, edx
+ffffff80032e6628: mov      r8, rax
+ffffff80032e662b: xor      eax, eax
+ffffff80032e662d: call     0xffffff8000a55a50  ; __os_log_internal
+ffffff80032e6632: jmp      0xffffff80032e61d2  ; __ZN6CCPipe25initWithOwnerNameCapacityEP9IOServicePKcS3_PK13CCPipeOptions+0xf0a
+ffffff80032e6637: lea      rdi, [rip - 0x263e]
+ffffff80032e663e: mov      rsi, qword ptr [rip + 0x21a63]  ; 0xffffff80033080a8
+ffffff80032e6645: lea      rcx, [rip + 0x1ad04]  ; 0xffffff8003301350
+ffffff80032e664c: xor      r14d, r14d
+ffffff80032e664f: xor      edx, edx
+ffffff80032e6651: xor      eax, eax
+ffffff80032e6653: call     0xffffff8000a55a50  ; __os_log_internal
+ffffff80032e6658: jmp      0xffffff80032e61d2  ; __ZN6CCPipe25initWithOwnerNameCapacityEP9IOServicePKcS3_PK13CCPipeOptions+0xf0a
+ffffff80032e665d: lea      rdi, [rip - 0x2664]
+ffffff80032e6664: mov      rsi, qword ptr [rip + 0x21a3d]  ; 0xffffff80033080a8
+ffffff80032e666b: lea      rcx, [rip + 0x1acfe]  ; 0xffffff8003301370
+ffffff80032e6672: xor      r14d, r14d
+ffffff80032e6675: xor      edx, edx
+ffffff80032e6677: xor      eax, eax
+ffffff80032e6679: call     0xffffff8000a55a50  ; __os_log_internal
+ffffff80032e667e: jmp      0xffffff80032e61d2  ; __ZN6CCPipe25initWithOwnerNameCapacityEP9IOServicePKcS3_PK13CCPipeOptions+0xf0a
+ffffff80032e6683: mov      rdi, qword ptr [rbp - 0x158]
+ffffff80032e668a: mov      rax, qword ptr [rdi]
+ffffff80032e668d: call     qword ptr [rax + 0x8d0]
+ffffff80032e6693: lea      rdi, [rip - 0x269a]
+ffffff80032e669a: mov      rsi, qword ptr [rip + 0x21a07]  ; 0xffffff80033080a8
+ffffff80032e66a1: lea      rcx, [rip + 0x1ace8]  ; 0xffffff8003301390
+ffffff80032e66a8: lea      r9, [rip + 0x20c15]  ; "initWithOwnerNameCapacity"
+ffffff80032e66af: xor      r14d, r14d
+ffffff80032e66b2: xor      edx, edx
+ffffff80032e66b4: mov      r8, rax
+ffffff80032e66b7: xor      eax, eax
+ffffff80032e66b9: call     0xffffff8000a55a50  ; __os_log_internal
+ffffff80032e66be: jmp      0xffffff80032e61d2  ; __ZN6CCPipe25initWithOwnerNameCapacityEP9IOServicePKcS3_PK13CCPipeOptions+0xf0a
+ffffff80032e66c3: mov      rcx, qword ptr [rbp - 0x180]
+ffffff80032e66ca: mov      qword ptr [rsp], rcx
+ffffff80032e66ce: lea      rdi, [rip - 0x26d5]
+ffffff80032e66d5: mov      rsi, qword ptr [rip + 0x219cc]  ; 0xffffff80033080a8
+ffffff80032e66dc: lea      rcx, [rip + 0x1ad0d]  ; 0xffffff80033013f0
+ffffff80032e66e3: lea      r9, [rip + 0x20bda]  ; "initWithOwnerNameCapacity"
+ffffff80032e66ea: xor      edx, edx
+ffffff80032e66ec: mov      r8, rax
+ffffff80032e66ef: xor      eax, eax
+ffffff80032e66f1: call     0xffffff8000a55a50  ; __os_log_internal
+ffffff80032e66f6: mov      rbx, qword ptr [rbp - 0x158]
+ffffff80032e66fd: mov      rax, qword ptr [rbx]
+ffffff80032e6700: mov      rdi, rbx
+ffffff80032e6703: call     qword ptr [rax + 0x940]
+ffffff80032e6709: mov      rax, qword ptr [rbx + 0x88]
+ffffff80032e6710: mov      dword ptr [rax + 0xc0], 0
+ffffff80032e671a: mov      byte ptr [rbp - 0x138], 1
+ffffff80032e6721: mov      byte ptr [rbp - 0x139], 0
+ffffff80032e6728: mov      rax, qword ptr [rbp - 0x160]
+ffffff80032e672f: test     byte ptr [rax + 0x22c], 2
+ffffff80032e6736: je       0xffffff80032e6746
+ffffff80032e6738: mov      byte ptr [rbp - 0x139], 1
+ffffff80032e673f: mov      byte ptr [rbp - 0x138], 0
+ffffff80032e6746: lea      rdi, [rip + 0x1f4e1]  ; "cc.logging.oslog"
+ffffff80032e674d: lea      rbx, [rbp - 0x138]
+ffffff80032e6754: mov      rsi, rbx
+ffffff80032e6757: mov      edx, 1
+ffffff80032e675c: call     0xffffff8000b659e0  ; _PE_parse_boot_argn
+ffffff80032e6761: lea      rdi, [rip + 0x1f4d7]  ; "cc.logging.iolog"
+ffffff80032e6768: lea      r15, [rbp - 0x139]
+ffffff80032e676f: mov      rsi, r15
+ffffff80032e6772: mov      edx, 1
+ffffff80032e6777: call     0xffffff8000b659e0  ; _PE_parse_boot_argn
+ffffff80032e677c: movzx    eax, byte ptr [rbx]
+ffffff80032e677f: and      eax, 1
+ffffff80032e6782: add      eax, eax
+ffffff80032e6784: mov      rbx, qword ptr [rbp - 0x158]
+ffffff80032e678b: mov      rcx, qword ptr [rbx + 0x88]
+ffffff80032e6792: or       eax, dword ptr [rcx + 0xc0]
+ffffff80032e6798: movzx    edx, byte ptr [r15]
+ffffff80032e679c: and      edx, 1
+ffffff80032e679f: or       edx, eax
+ffffff80032e67a1: mov      dword ptr [rcx + 0xc0], edx
+ffffff80032e67a7: call     0xffffff8000a87500  ; _IOLockAlloc
+ffffff80032e67ac: mov      rcx, qword ptr [rbx + 0x88]
+ffffff80032e67b3: mov      qword ptr [rcx + 0xd0], rax
+ffffff80032e67ba: test     rax, rax
+ffffff80032e67bd: setne    r14b
+ffffff80032e67c1: jne      0xffffff80032e61d2
+ffffff80032e67c7: lea      rdi, [rip - 0x27ce]
+ffffff80032e67ce: mov      rsi, qword ptr [rip + 0x218d3]  ; 0xffffff80033080a8
+ffffff80032e67d5: lea      rcx, [rip + 0x1ac44]  ; 0xffffff8003301420
+ffffff80032e67dc: xor      edx, edx
+ffffff80032e67de: xor      eax, eax
+ffffff80032e67e0: call     0xffffff8000a55a50  ; __os_log_internal
+ffffff80032e67e5: jmp      0xffffff80032e61d2  ; __ZN6CCPipe25initWithOwnerNameCapacityEP9IOServicePKcS3_PK13CCPipeOptions+0xf0a
+ffffff80032e67ea: ud1      
+ffffff80032e67ed: cmp      dh, 0xbf
+ffffff80032e67f0: add      byte ptr [rax], al
+ffffff80032e67f2: ud2      
+ffffff80032e67f4: ud1      
+ffffff80032e67f7: cmp      dh, 0xbf
+ffffff80032e67fa: add      byte ptr [rax], al
+ffffff80032e67fc: ud2      
+ffffff80032e67fe: nop      
+ffffff80032e6800: call     0xffffff801d2e67f4  ; __ZL14IOWatchdog_ktv+0x19ee9774
+ffffff80032e6805: int1     

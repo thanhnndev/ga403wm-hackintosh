@@ -1,0 +1,32 @@
+# 0xffffff80015d8858 __ZN28AppleBCMWLANSkywalkInterface9MetaClassC1Ev
+ffffff80015d8858: push     rbp
+ffffff80015d8859: mov      rbp, rsp
+ffffff80015d885c: push     rbx
+ffffff80015d885d: push     rax
+ffffff80015d885e: mov      rbx, rdi
+ffffff80015d8861: lea      rsi, [rip + 0x1a09b0]  ; "AppleBCMWLANSkywalkInterface"
+ffffff80015d8868: lea      rdx, [rip + 0x223b89]  ; 0xffffff80017fc3f8
+ffffff80015d886f: mov      ecx, 0x140
+ffffff80015d8874: call     0xffffff8000a1a9d0  ; __ZN11OSMetaClassC2EPKcPKS_j
+ffffff80015d8879: lea      rax, [rip + 0x20b2b8]  ; 0xffffff80017e3b38
+ffffff80015d8880: mov      qword ptr [rbx], rax
+ffffff80015d8883: add      rsp, 8
+ffffff80015d8887: pop      rbx
+ffffff80015d8888: pop      rbp
+ffffff80015d8889: ret      
+# 0xffffff80015d8936 __ZN28AppleBCMWLANSkywalkInterface9MetaClassC2Ev
+ffffff80015d8936: push     rbp
+ffffff80015d8937: mov      rbp, rsp
+ffffff80015d893a: push     rbx
+ffffff80015d893b: push     rax
+ffffff80015d893c: mov      rbx, rdi
+ffffff80015d893f: lea      rsi, [rip + 0x1a08d2]  ; "AppleBCMWLANSkywalkInterface"
+ffffff80015d8946: lea      rdx, [rip + 0x223aab]  ; 0xffffff80017fc3f8
+ffffff80015d894d: mov      ecx, 0x140
+ffffff80015d8952: call     0xffffff8000a1a9d0  ; __ZN11OSMetaClassC2EPKcPKS_j
+ffffff80015d8957: lea      rax, [rip + 0x20b1da]  ; 0xffffff80017e3b38
+ffffff80015d895e: mov      qword ptr [rbx], rax
+ffffff80015d8961: add      rsp, 8
+ffffff80015d8965: pop      rbx
+ffffff80015d8966: pop      rbp
+ffffff80015d8967: ret      

@@ -1,0 +1,32 @@
+# 0xffffff8002392804 __ZN24IO80211ControllerMonitor9MetaClassC1Ev
+ffffff8002392804: push     rbp
+ffffff8002392805: mov      rbp, rsp
+ffffff8002392808: push     rbx
+ffffff8002392809: push     rax
+ffffff800239280a: mov      rbx, rdi
+ffffff800239280d: lea      rsi, [rip + 0xba006]  ; "IO80211ControllerMonitor"
+ffffff8002392814: mov      rdx, qword ptr [rip + 0xbd89d]  ; 0xffffff80024500b8
+ffffff800239281b: mov      ecx, 0x18
+ffffff8002392820: call     0xffffff8000a1a9d0  ; __ZN11OSMetaClassC2EPKcPKS_j
+ffffff8002392825: lea      rax, [rip + 0xf2fbc]  ; 0xffffff80024857e8
+ffffff800239282c: mov      qword ptr [rbx], rax
+ffffff800239282f: add      rsp, 8
+ffffff8002392833: pop      rbx
+ffffff8002392834: pop      rbp
+ffffff8002392835: ret      
+# 0xffffff80023928e2 __ZN24IO80211ControllerMonitor9MetaClassC2Ev
+ffffff80023928e2: push     rbp
+ffffff80023928e3: mov      rbp, rsp
+ffffff80023928e6: push     rbx
+ffffff80023928e7: push     rax
+ffffff80023928e8: mov      rbx, rdi
+ffffff80023928eb: lea      rsi, [rip + 0xb9f28]  ; "IO80211ControllerMonitor"
+ffffff80023928f2: mov      rdx, qword ptr [rip + 0xbd7bf]  ; 0xffffff80024500b8
+ffffff80023928f9: mov      ecx, 0x18
+ffffff80023928fe: call     0xffffff8000a1a9d0  ; __ZN11OSMetaClassC2EPKcPKS_j
+ffffff8002392903: lea      rax, [rip + 0xf2ede]  ; 0xffffff80024857e8
+ffffff800239290a: mov      qword ptr [rbx], rax
+ffffff800239290d: add      rsp, 8
+ffffff8002392911: pop      rbx
+ffffff8002392912: pop      rbp
+ffffff8002392913: ret      

@@ -1,0 +1,32 @@
+# 0xffffff80032fd536 __ZN11CCLogStream9MetaClassC1Ev
+ffffff80032fd536: push     rbp
+ffffff80032fd537: mov      rbp, rsp
+ffffff80032fd53a: push     rbx
+ffffff80032fd53b: push     rax
+ffffff80032fd53c: mov      rbx, rdi
+ffffff80032fd53f: lea      rsi, [rip + 0xa0f6]  ; "CCLogStream"
+ffffff80032fd546: lea      rdx, [rip + 0x15a5b]  ; 0xffffff8003312fa8
+ffffff80032fd54d: mov      ecx, 0x98
+ffffff80032fd552: call     0xffffff8000a1a9d0  ; __ZN11OSMetaClassC2EPKcPKS_j
+ffffff80032fd557: lea      rax, [rip + 0x14c92]  ; 0xffffff80033121f0
+ffffff80032fd55e: mov      qword ptr [rbx], rax
+ffffff80032fd561: add      rsp, 8
+ffffff80032fd565: pop      rbx
+ffffff80032fd566: pop      rbp
+ffffff80032fd567: ret      
+# 0xffffff80032fd5ca __ZN11CCLogStream9MetaClassC2Ev
+ffffff80032fd5ca: push     rbp
+ffffff80032fd5cb: mov      rbp, rsp
+ffffff80032fd5ce: push     rbx
+ffffff80032fd5cf: push     rax
+ffffff80032fd5d0: mov      rbx, rdi
+ffffff80032fd5d3: lea      rsi, [rip + 0xa062]  ; "CCLogStream"
+ffffff80032fd5da: lea      rdx, [rip + 0x159c7]  ; 0xffffff8003312fa8
+ffffff80032fd5e1: mov      ecx, 0x98
+ffffff80032fd5e6: call     0xffffff8000a1a9d0  ; __ZN11OSMetaClassC2EPKcPKS_j
+ffffff80032fd5eb: lea      rax, [rip + 0x14bfe]  ; 0xffffff80033121f0
+ffffff80032fd5f2: mov      qword ptr [rbx], rax
+ffffff80032fd5f5: add      rsp, 8
+ffffff80032fd5f9: pop      rbx
+ffffff80032fd5fa: pop      rbp
+ffffff80032fd5fb: ret      

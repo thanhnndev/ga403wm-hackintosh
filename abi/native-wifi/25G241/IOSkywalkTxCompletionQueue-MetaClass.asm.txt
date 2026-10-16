@@ -1,0 +1,32 @@
+# 0xffffff8002b12694 __ZN26IOSkywalkTxCompletionQueue9MetaClassC1Ev
+ffffff8002b12694: push     rbp
+ffffff8002b12695: mov      rbp, rsp
+ffffff8002b12698: push     rbx
+ffffff8002b12699: push     rax
+ffffff8002b1269a: mov      rbx, rdi
+ffffff8002b1269d: lea      rsi, [rip + 0x1d93c]  ; "IOSkywalkTxCompletionQueue"
+ffffff8002b126a4: lea      rdx, [rip + 0x3238d]  ; 0xffffff8002b44a38
+ffffff8002b126ab: mov      ecx, 0x138
+ffffff8002b126b0: call     0xffffff8000a1a9d0  ; __ZN11OSMetaClassC2EPKcPKS_j
+ffffff8002b126b5: lea      rax, [rip + 0x2e36c]  ; 0xffffff8002b40a28
+ffffff8002b126bc: mov      qword ptr [rbx], rax
+ffffff8002b126bf: add      rsp, 8
+ffffff8002b126c3: pop      rbx
+ffffff8002b126c4: pop      rbp
+ffffff8002b126c5: ret      
+# 0xffffff8002b12772 __ZN26IOSkywalkTxCompletionQueue9MetaClassC2Ev
+ffffff8002b12772: push     rbp
+ffffff8002b12773: mov      rbp, rsp
+ffffff8002b12776: push     rbx
+ffffff8002b12777: push     rax
+ffffff8002b12778: mov      rbx, rdi
+ffffff8002b1277b: lea      rsi, [rip + 0x1d85e]  ; "IOSkywalkTxCompletionQueue"
+ffffff8002b12782: lea      rdx, [rip + 0x322af]  ; 0xffffff8002b44a38
+ffffff8002b12789: mov      ecx, 0x138
+ffffff8002b1278e: call     0xffffff8000a1a9d0  ; __ZN11OSMetaClassC2EPKcPKS_j
+ffffff8002b12793: lea      rax, [rip + 0x2e28e]  ; 0xffffff8002b40a28
+ffffff8002b1279a: mov      qword ptr [rbx], rax
+ffffff8002b1279d: add      rsp, 8
+ffffff8002b127a1: pop      rbx
+ffffff8002b127a2: pop      rbp
+ffffff8002b127a3: ret      

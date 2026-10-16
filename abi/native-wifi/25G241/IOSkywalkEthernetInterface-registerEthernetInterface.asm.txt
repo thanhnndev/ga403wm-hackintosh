@@ -1,0 +1,86 @@
+# 0xffffff8002b10a84 __ZN26IOSkywalkEthernetInterface25registerEthernetInterfaceEPKNS_16RegistrationInfoEPP20IOSkywalkPacketQueuejP25IOSkywalkPacketBufferPoolS7_j
+ffffff8002b10a84: push     rbp
+ffffff8002b10a85: mov      rbp, rsp
+ffffff8002b10a88: push     r15
+ffffff8002b10a8a: push     r14
+ffffff8002b10a8c: push     r13
+ffffff8002b10a8e: push     r12
+ffffff8002b10a90: push     rbx
+ffffff8002b10a91: sub      rsp, 0x18
+ffffff8002b10a95: mov      qword ptr [rbp - 0x30], r9
+ffffff8002b10a99: mov      r14, r8
+ffffff8002b10a9c: mov      r15d, ecx
+ffffff8002b10a9f: mov      r12, rdx
+ffffff8002b10aa2: mov      r13, rdi
+ffffff8002b10aa5: call     0xffffff8002b109f0  ; __ZN26IOSkywalkEthernetInterface20copyRegistrationInfoEPKNS_16RegistrationInfoE
+ffffff8002b10aaa: test     eax, eax
+ffffff8002b10aac: je       0xffffff8002b10abe
+ffffff8002b10aae: mov      ebx, eax
+ffffff8002b10ab0: mov      rdi, r13
+ffffff8002b10ab3: xor      esi, esi
+ffffff8002b10ab5: call     0xffffff8002b10af4  ; __ZN26IOSkywalkEthernetInterface27deregisterEthernetInterfaceEj
+ffffff8002b10aba: mov      eax, ebx
+ffffff8002b10abc: jmp      0xffffff8002b10ae4  ; __ZN26IOSkywalkEthernetInterface25registerEthernetInterfaceEPKNS_16RegistrationInfoEPP20IOSkywalkPacketQueuejP25IOSkywalkPacketBufferPoolS7_j+0x60
+ffffff8002b10abe: mov      rax, qword ptr [r13 + 0x118]
+ffffff8002b10ac5: mov      rsi, qword ptr [rax]
+ffffff8002b10ac8: mov      dword ptr [rsp], 0
+ffffff8002b10acf: mov      rdi, r13
+ffffff8002b10ad2: mov      rdx, r12
+ffffff8002b10ad5: mov      ecx, r15d
+ffffff8002b10ad8: mov      r8, r14
+ffffff8002b10adb: mov      r9, qword ptr [rbp - 0x30]
+ffffff8002b10adf: call     0xffffff8002b0a0d6  ; __ZN25IOSkywalkNetworkInterface24registerNetworkInterfaceEPKNS_16RegistrationInfoEPP20IOSkywalkPacketQueuejP25IOSkywalkPacketBufferPoolS7_j
+ffffff8002b10ae4: add      rsp, 0x18
+ffffff8002b10ae8: pop      rbx
+ffffff8002b10ae9: pop      r12
+ffffff8002b10aeb: pop      r13
+ffffff8002b10aed: pop      r14
+ffffff8002b10aef: pop      r15
+ffffff8002b10af1: pop      rbp
+ffffff8002b10af2: ret      
+ffffff8002b10af3: nop      
+# 0xffffff8002b10b46 __ZN26IOSkywalkEthernetInterface25registerEthernetInterfaceEPKNS_16RegistrationInfoEP20IOSkywalkLogicalLinkP25IOSkywalkPacketBufferPoolS6_j
+ffffff8002b10b46: push     rbp
+ffffff8002b10b47: mov      rbp, rsp
+ffffff8002b10b4a: push     r15
+ffffff8002b10b4c: push     r14
+ffffff8002b10b4e: push     r13
+ffffff8002b10b50: push     r12
+ffffff8002b10b52: push     rbx
+ffffff8002b10b53: push     rax
+ffffff8002b10b54: mov      rbx, r8
+ffffff8002b10b57: mov      r14, rcx
+ffffff8002b10b5a: mov      r15, rdx
+ffffff8002b10b5d: mov      r12, rdi
+ffffff8002b10b60: call     0xffffff8002b109f0  ; __ZN26IOSkywalkEthernetInterface20copyRegistrationInfoEPKNS_16RegistrationInfoE
+ffffff8002b10b65: test     eax, eax
+ffffff8002b10b67: je       0xffffff8002b10b88
+ffffff8002b10b69: mov      r13d, eax
+ffffff8002b10b6c: mov      rdi, r12
+ffffff8002b10b6f: xor      esi, esi
+ffffff8002b10b71: call     0xffffff8002b10af4  ; __ZN26IOSkywalkEthernetInterface27deregisterEthernetInterfaceEj
+ffffff8002b10b76: mov      eax, r13d
+ffffff8002b10b79: add      rsp, 8
+ffffff8002b10b7d: pop      rbx
+ffffff8002b10b7e: pop      r12
+ffffff8002b10b80: pop      r13
+ffffff8002b10b82: pop      r14
+ffffff8002b10b84: pop      r15
+ffffff8002b10b86: pop      rbp
+ffffff8002b10b87: ret      
+ffffff8002b10b88: mov      rax, qword ptr [r12 + 0x118]
+ffffff8002b10b90: mov      rsi, qword ptr [rax]
+ffffff8002b10b93: mov      rdi, r12
+ffffff8002b10b96: mov      rdx, r15
+ffffff8002b10b99: mov      rcx, r14
+ffffff8002b10b9c: mov      r8, rbx
+ffffff8002b10b9f: xor      r9d, r9d
+ffffff8002b10ba2: add      rsp, 8
+ffffff8002b10ba6: pop      rbx
+ffffff8002b10ba7: pop      r12
+ffffff8002b10ba9: pop      r13
+ffffff8002b10bab: pop      r14
+ffffff8002b10bad: pop      r15
+ffffff8002b10baf: pop      rbp
+ffffff8002b10bb0: jmp      0xffffff8002b0a204  ; __ZN25IOSkywalkNetworkInterface24registerNetworkInterfaceEPKNS_16RegistrationInfoEP20IOSkywalkLogicalLinkP25IOSkywalkPacketBufferPoolS6_j
+ffffff8002b10bb5: nop      

@@ -1,0 +1,588 @@
+# 0xffffff80016758ae __ZN16AppleBCMWLANCore15setWCL_SCAN_REQEP21apple80211ScanRequest
+ffffff80016758ae: push     rbp
+ffffff80016758af: mov      rbp, rsp
+ffffff80016758b2: push     r14
+ffffff80016758b4: push     rbx
+ffffff80016758b5: mov      rbx, rsi
+ffffff80016758b8: mov      r14, rdi
+ffffff80016758bb: mov      esi, dword ptr [rsi + 0x54]
+ffffff80016758be: test     rsi, rsi
+ffffff80016758c1: je       0xffffff80016758eb
+ffffff80016758c3: lea      rax, [rsi*4]
+ffffff80016758cb: lea      rax, [rax + rax*2]
+ffffff80016758cf: xor      ecx, ecx
+ffffff80016758d1: cmp      dword ptr [rbx + rcx + 0x5c], 0xd
+ffffff80016758d6: jbe      0xffffff80016758e3
+ffffff80016758d8: add      rcx, 0xc
+ffffff80016758dc: cmp      rax, rcx
+ffffff80016758df: je       0xffffff80016758eb
+ffffff80016758e1: jmp      0xffffff80016758d1  ; __ZN16AppleBCMWLANCore15setWCL_SCAN_REQEP21apple80211ScanRequest+0x23
+ffffff80016758e3: mov      rdi, r14
+ffffff80016758e6: call     0xffffff8001675906  ; __ZN16AppleBCMWLANCore24checkBackToBackHostScansEj
+ffffff80016758eb: mov      rax, qword ptr [r14 + 0x128]
+ffffff80016758f2: mov      rdi, qword ptr [rax + 0x1550]
+ffffff80016758f9: mov      rsi, rbx
+ffffff80016758fc: pop      rbx
+ffffff80016758fd: pop      r14
+ffffff80016758ff: pop      rbp
+ffffff8001675900: jmp      0xffffff800174929e  ; __ZN23AppleBCMWLANScanAdapter9startScanEP21apple80211ScanRequest
+ffffff8001675905: nop      
+# 0xffffff8001675e0a __ZN16AppleBCMWLANCore15setSCAN_CONTROLEP30apple80211_scan_control_params
+ffffff8001675e0a: push     rbp
+ffffff8001675e0b: mov      rbp, rsp
+ffffff8001675e0e: push     r15
+ffffff8001675e10: push     r14
+ffffff8001675e12: push     rbx
+ffffff8001675e13: sub      rsp, 0x38
+ffffff8001675e17: mov      r14, rsi
+ffffff8001675e1a: mov      rbx, rdi
+ffffff8001675e1d: mov      rax, qword ptr [rip + 0x168404]  ; 0xffffff80017de228
+ffffff8001675e24: mov      rax, qword ptr [rax]
+ffffff8001675e27: mov      qword ptr [rbp - 0x20], rax
+ffffff8001675e2b: movabs   rax, 0xaaaaaaaaaaaaaaaa
+ffffff8001675e35: lea      r15, [rbp - 0x28]
+ffffff8001675e39: mov      qword ptr [r15], rax
+ffffff8001675e3c: mov      qword ptr [rbp - 0x30], rax
+ffffff8001675e40: mov      qword ptr [rbp - 0x38], rax
+ffffff8001675e44: mov      qword ptr [rbp - 0x40], rax
+ffffff8001675e48: mov      qword ptr [rbp - 0x48], rax
+ffffff8001675e4c: call     0xffffff80003527a0  ; _mach_continuous_time
+ffffff8001675e51: mov      rdi, rax
+ffffff8001675e54: mov      rsi, r15
+ffffff8001675e57: call     0xffffff80004d3a30  ; _absolutetime_to_nanoseconds
+ffffff8001675e5c: mov      rax, qword ptr [rbx]
+ffffff8001675e5f: mov      rdi, rbx
+ffffff8001675e62: call     qword ptr [rax + 0xd40]
+ffffff8001675e68: test     rax, rax
+ffffff8001675e6b: je       0xffffff8001675e8e
+ffffff8001675e6d: mov      rax, qword ptr [rbx]
+ffffff8001675e70: mov      rdi, rbx
+ffffff8001675e73: call     qword ptr [rax + 0xd40]
+ffffff8001675e79: mov      rdi, rax
+ffffff8001675e7c: mov      esi, 1
+ffffff8001675e81: call     0xffffff80032ff9e6  ; __ZN11CCLogStream9shouldLogE16CCStreamLogLevel
+ffffff8001675e86: test     al, al
+ffffff8001675e88: jne      0xffffff8001675f7d
+ffffff8001675e8e: call     0xffffff80003527a0  ; _mach_continuous_time
+ffffff8001675e93: lea      rsi, [rbp - 0x30]
+ffffff8001675e97: mov      rdi, rax
+ffffff8001675e9a: call     0xffffff80004d3a30  ; _absolutetime_to_nanoseconds
+ffffff8001675e9f: call     0xffffff80003527a0  ; _mach_continuous_time
+ffffff8001675ea4: lea      rsi, [rbp - 0x38]
+ffffff8001675ea8: mov      rdi, rax
+ffffff8001675eab: call     0xffffff80004d3a30  ; _absolutetime_to_nanoseconds
+ffffff8001675eb0: call     0xffffff80003527a0  ; _mach_continuous_time
+ffffff8001675eb5: lea      rsi, [rbp - 0x40]
+ffffff8001675eb9: mov      rdi, rax
+ffffff8001675ebc: call     0xffffff80004d3a30  ; _absolutetime_to_nanoseconds
+ffffff8001675ec1: call     0xffffff80003527a0  ; _mach_continuous_time
+ffffff8001675ec6: lea      r14, [rbp - 0x48]
+ffffff8001675eca: mov      rdi, rax
+ffffff8001675ecd: mov      rsi, r14
+ffffff8001675ed0: call     0xffffff80004d3a30  ; _absolutetime_to_nanoseconds
+ffffff8001675ed5: mov      rcx, qword ptr [r14]
+ffffff8001675ed8: sub      rcx, qword ptr [rbp - 0x28]
+ffffff8001675edc: movabs   r15, 0x431bde82d7b634db
+ffffff8001675ee6: mov      rax, rcx
+ffffff8001675ee9: mul      r15
+ffffff8001675eec: cmp      rcx, 0x6052340
+ffffff8001675ef3: jb       0xffffff8001675f2a
+ffffff8001675ef5: mov      r14, rdx
+ffffff8001675ef8: mov      rax, qword ptr [rbx]
+ffffff8001675efb: mov      rdi, rbx
+ffffff8001675efe: call     qword ptr [rax + 0xd40]
+ffffff8001675f04: test     rax, rax
+ffffff8001675f07: je       0xffffff8001675f2a
+ffffff8001675f09: mov      rax, qword ptr [rbx]
+ffffff8001675f0c: mov      rdi, rbx
+ffffff8001675f0f: call     qword ptr [rax + 0xd40]
+ffffff8001675f15: mov      rdi, rax
+ffffff8001675f18: mov      esi, 2
+ffffff8001675f1d: call     0xffffff80032ff9e6  ; __ZN11CCLogStream9shouldLogE16CCStreamLogLevel
+ffffff8001675f22: test     al, al
+ffffff8001675f24: jne      0xffffff800167606a
+ffffff8001675f2a: mov      rax, qword ptr [rbx]
+ffffff8001675f2d: mov      rdi, rbx
+ffffff8001675f30: call     qword ptr [rax + 0xd40]
+ffffff8001675f36: test     rax, rax
+ffffff8001675f39: je       0xffffff8001675f5c
+ffffff8001675f3b: mov      rax, qword ptr [rbx]
+ffffff8001675f3e: mov      rdi, rbx
+ffffff8001675f41: call     qword ptr [rax + 0xd40]
+ffffff8001675f47: mov      rdi, rax
+ffffff8001675f4a: mov      esi, 1
+ffffff8001675f4f: call     0xffffff80032ff9e6  ; __ZN11CCLogStream9shouldLogE16CCStreamLogLevel
+ffffff8001675f54: test     al, al
+ffffff8001675f56: jne      0xffffff8001675fe6
+ffffff8001675f5c: mov      rax, qword ptr [rip + 0x1682c5]  ; 0xffffff80017de228
+ffffff8001675f63: mov      rax, qword ptr [rax]
+ffffff8001675f66: cmp      rax, qword ptr [rbp - 0x20]
+ffffff8001675f6a: jne      0xffffff800167609f
+ffffff8001675f70: xor      eax, eax
+ffffff8001675f72: add      rsp, 0x38
+ffffff8001675f76: pop      rbx
+ffffff8001675f77: pop      r14
+ffffff8001675f79: pop      r15
+ffffff8001675f7b: pop      rbp
+ffffff8001675f7c: ret      
+ffffff8001675f7d: mov      rax, qword ptr [rbx]
+ffffff8001675f80: mov      rdi, rbx
+ffffff8001675f83: call     qword ptr [rax + 0xd40]
+ffffff8001675f89: cmp      byte ptr [r14 + 1], 0
+ffffff8001675f8e: lea      r10, [rip + 0x1198e1]  ; 0xffffff800178f876
+ffffff8001675f95: lea      rcx, [rip + 0x1198d6]  ; 0xffffff800178f872
+ffffff8001675f9c: mov      r9, rcx
+ffffff8001675f9f: cmove    r9, r10
+ffffff8001675fa3: cmp      byte ptr [r14 + 2], 0
+ffffff8001675fa8: movzx    r8d, byte ptr [r14]
+ffffff8001675fac: mov      r11, rcx
+ffffff8001675faf: cmove    r11, r10
+ffffff8001675fb3: cmp      byte ptr [r14 + 3], 0
+ffffff8001675fb8: cmove    r10, rcx
+ffffff8001675fbc: lea      rsi, [rip + 0x1252e7]  ; 0xffffff800179b2aa
+ffffff8001675fc3: lea      rdx, [rip + 0x125326]  ; "setSCAN_CONTROL"
+ffffff8001675fca: mov      rdi, rax
+ffffff8001675fcd: mov      ecx, 0x821c
+ffffff8001675fd2: xor      eax, eax
+ffffff8001675fd4: push     r10
+ffffff8001675fd6: push     r11
+ffffff8001675fd8: call     0xffffff80032fdcf8  ; __ZN11CCLogStream8logAlertEPKcz
+ffffff8001675fdd: add      rsp, 0x10
+ffffff8001675fe1: jmp      0xffffff8001675e8e  ; __ZN16AppleBCMWLANCore15setSCAN_CONTROLEP30apple80211_scan_control_params+0x84
+ffffff8001675fe6: mov      rax, qword ptr [rbx]
+ffffff8001675fe9: mov      rdi, rbx
+ffffff8001675fec: call     qword ptr [rax + 0xd40]
+ffffff8001675ff2: mov      rdi, rax
+ffffff8001675ff5: mov      rax, qword ptr [rbp - 0x48]
+ffffff8001675ff9: mov      rcx, qword ptr [rbp - 0x40]
+ffffff8001675ffd: sub      rax, rcx
+ffffff8001676000: mul      r15
+ffffff8001676003: mov      r8, rdx
+ffffff8001676006: shr      r8, 0x12
+ffffff800167600a: mov      rsi, qword ptr [rbp - 0x38]
+ffffff800167600e: sub      rcx, rsi
+ffffff8001676011: mov      rax, rcx
+ffffff8001676014: mul      r15
+ffffff8001676017: mov      r9, rdx
+ffffff800167601a: shr      r9, 0x12
+ffffff800167601e: mov      rcx, qword ptr [rbp - 0x30]
+ffffff8001676022: sub      rsi, rcx
+ffffff8001676025: mov      rax, rsi
+ffffff8001676028: mul      r15
+ffffff800167602b: mov      r10, rdx
+ffffff800167602e: shr      r10, 0x12
+ffffff8001676032: sub      rcx, qword ptr [rbp - 0x28]
+ffffff8001676036: mov      rax, rcx
+ffffff8001676039: mul      r15
+ffffff800167603c: mov      r11, rdx
+ffffff800167603f: shr      r11, 0x12
+ffffff8001676043: lea      rsi, [rip + 0x1252f5]  ; 0xffffff800179b33f
+ffffff800167604a: lea      rdx, [rip + 0x12529f]  ; "setSCAN_CONTROL"
+ffffff8001676051: mov      ecx, 0x8243
+ffffff8001676056: xor      eax, eax
+ffffff8001676058: push     r11
+ffffff800167605a: push     r10
+ffffff800167605c: call     0xffffff80032fdcf8  ; __ZN11CCLogStream8logAlertEPKcz
+ffffff8001676061: add      rsp, 0x10
+ffffff8001676065: jmp      0xffffff8001675f5c  ; __ZN16AppleBCMWLANCore15setSCAN_CONTROLEP30apple80211_scan_control_params+0x152
+ffffff800167606a: shr      r14, 0x12
+ffffff800167606e: mov      rax, qword ptr [rbx]
+ffffff8001676071: mov      rdi, rbx
+ffffff8001676074: call     qword ptr [rax + 0xd40]
+ffffff800167607a: lea      rsi, [rip + 0x12527f]  ; 0xffffff800179b300
+ffffff8001676081: lea      rdx, [rip + 0x125268]  ; "setSCAN_CONTROL"
+ffffff8001676088: mov      rdi, rax
+ffffff800167608b: mov      ecx, 0x8240
+ffffff8001676090: mov      r8, r14
+ffffff8001676093: xor      eax, eax
+ffffff8001676095: call     0xffffff80032fde48  ; __ZN11CCLogStream7logCritEPKcz
+ffffff800167609a: jmp      0xffffff8001675f2a  ; __ZN16AppleBCMWLANCore15setSCAN_CONTROLEP30apple80211_scan_control_params+0x120
+ffffff800167609f: call     0xffffff8000ba0c20  ; ___stack_chk_fail
+# 0xffffff80016843dc __ZN16AppleBCMWLANCore21setSCAN_FREQ_CHANNELSEPh
+ffffff80016843dc: push     rbp
+ffffff80016843dd: mov      rbp, rsp
+ffffff80016843e0: push     r15
+ffffff80016843e2: push     r14
+ffffff80016843e4: push     rbx
+ffffff80016843e5: sub      rsp, 0x18
+ffffff80016843e9: mov      r14, rdi
+ffffff80016843ec: mov      rax, qword ptr [rip + 0x159e35]  ; 0xffffff80017de228
+ffffff80016843f3: mov      rax, qword ptr [rax]
+ffffff80016843f6: mov      qword ptr [rbp - 0x20], rax
+ffffff80016843fa: mov      rax, qword ptr [rdi + 0x128]
+ffffff8001684401: mov      rdi, qword ptr [rax + 0x1540]
+ffffff8001684408: add      rax, 0x28d4
+ffffff800168440e: lea      rdx, [rbp - 0x30]
+ffffff8001684412: mov      qword ptr [rdx], rax
+ffffff8001684415: mov      word ptr [rdx + 8], 0xa
+ffffff800168441b: lea      rsi, [rip + 0x11a1e7]  ; "mws_scanreq_bm"
+ffffff8001684422: xor      ecx, ecx
+ffffff8001684424: xor      r8d, r8d
+ffffff8001684427: call     0xffffff8001760862  ; __ZN21AppleBCMWLANCommander11runIOVarSetEPKcRK16CommandTxPayloadP16CommandRxPayload20CommandBusPreference
+ffffff800168442c: mov      ebx, eax
+ffffff800168442e: test     eax, eax
+ffffff8001684430: je       0xffffff8001684460
+ffffff8001684432: mov      rax, qword ptr [r14]
+ffffff8001684435: mov      rdi, r14
+ffffff8001684438: call     qword ptr [rax + 0xd40]
+ffffff800168443e: test     rax, rax
+ffffff8001684441: je       0xffffff8001684460
+ffffff8001684443: mov      rax, qword ptr [r14]
+ffffff8001684446: mov      rdi, r14
+ffffff8001684449: call     qword ptr [rax + 0xd40]
+ffffff800168444f: mov      rdi, rax
+ffffff8001684452: mov      esi, 2
+ffffff8001684457: call     0xffffff80032ff9e6  ; __ZN11CCLogStream9shouldLogE16CCStreamLogLevel
+ffffff800168445c: test     al, al
+ffffff800168445e: jne      0xffffff800168447d
+ffffff8001684460: mov      rax, qword ptr [rip + 0x159dc1]  ; 0xffffff80017de228
+ffffff8001684467: mov      rax, qword ptr [rax]
+ffffff800168446a: cmp      rax, qword ptr [rbp - 0x20]
+ffffff800168446e: jne      0xffffff80016844bc
+ffffff8001684470: mov      eax, ebx
+ffffff8001684472: add      rsp, 0x18
+ffffff8001684476: pop      rbx
+ffffff8001684477: pop      r14
+ffffff8001684479: pop      r15
+ffffff800168447b: pop      rbp
+ffffff800168447c: ret      
+ffffff800168447d: mov      rax, qword ptr [r14]
+ffffff8001684480: mov      rdi, r14
+ffffff8001684483: call     qword ptr [rax + 0xd40]
+ffffff8001684489: mov      r15, rax
+ffffff800168448c: mov      rax, qword ptr [r14]
+ffffff800168448f: mov      rdi, r14
+ffffff8001684492: mov      esi, ebx
+ffffff8001684494: call     qword ptr [rax + 0x780]
+ffffff800168449a: lea      rsi, [rip + 0x11a177]  ; 0xffffff800179e618
+ffffff80016844a1: lea      rdx, [rip + 0x11a19d]  ; "setSCAN_FREQ_CHANNELS"
+ffffff80016844a8: mov      rdi, r15
+ffffff80016844ab: mov      ecx, 0x90c1
+ffffff80016844b0: mov      r8, rax
+ffffff80016844b3: xor      eax, eax
+ffffff80016844b5: call     0xffffff80032fde48  ; __ZN11CCLogStream7logCritEPKcz
+ffffff80016844ba: jmp      0xffffff8001684460  ; __ZN16AppleBCMWLANCore21setSCAN_FREQ_CHANNELSEPh+0x84
+ffffff80016844bc: call     0xffffff8000ba0c20  ; ___stack_chk_fail
+ffffff80016844c1: nop      
+# 0xffffff80016ab004 __ZN16AppleBCMWLANCore30setWCL_SET_SCAN_HOME_AWAY_TIMEEP19scanHomeAndAwayTime
+ffffff80016ab004: push     rbp
+ffffff80016ab005: mov      rbp, rsp
+ffffff80016ab008: mov      rax, qword ptr [rdi + 0x128]
+ffffff80016ab00f: mov      rdi, qword ptr [rax + 0x1550]
+ffffff80016ab016: mov      esi, dword ptr [rsi]
+ffffff80016ab018: pop      rbp
+ffffff80016ab019: jmp      0xffffff80017490ea  ; __ZN23AppleBCMWLANScanAdapter19setScanHomeAwayTimeEj
+# 0xffffff80016b1f88 __ZN16AppleBCMWLANCore16setLE_SCAN_PARAMEP25apple80211_le_scan_params
+ffffff80016b1f88: push     rbp
+ffffff80016b1f89: mov      rbp, rsp
+ffffff80016b1f8c: push     r15
+ffffff80016b1f8e: push     r14
+ffffff80016b1f90: push     r13
+ffffff80016b1f92: push     r12
+ffffff80016b1f94: push     rbx
+ffffff80016b1f95: push     rax
+ffffff80016b1f96: mov      r15, rdi
+ffffff80016b1f99: movzx    r14d, byte ptr [rsi]
+ffffff80016b1f9d: mov      ebx, dword ptr [rsi + 4]
+ffffff80016b1fa0: mov      r13d, dword ptr [rsi + 8]
+ffffff80016b1fa4: mov      r12d, dword ptr [rsi + 0xc]
+ffffff80016b1fa8: mov      rax, qword ptr [rdi]
+ffffff80016b1fab: call     qword ptr [rax + 0xd40]
+ffffff80016b1fb1: test     rax, rax
+ffffff80016b1fb4: je       0xffffff80016b1fd3
+ffffff80016b1fb6: mov      rax, qword ptr [r15]
+ffffff80016b1fb9: mov      rdi, r15
+ffffff80016b1fbc: call     qword ptr [rax + 0xd40]
+ffffff80016b1fc2: mov      rdi, rax
+ffffff80016b1fc5: mov      esi, 1
+ffffff80016b1fca: call     0xffffff80032ff9e6  ; __ZN11CCLogStream9shouldLogE16CCStreamLogLevel
+ffffff80016b1fcf: test     al, al
+ffffff80016b1fd1: jne      0xffffff80016b2038
+ffffff80016b1fd3: mov      rsi, qword ptr [r15 + 0x128]
+ffffff80016b1fda: test     r14d, r14d
+ffffff80016b1fdd: je       0xffffff80016b1ff2
+ffffff80016b1fdf: inc      dword ptr [rsi + 0x7984]
+ffffff80016b1fe5: add      dword ptr [rsi + 0x798c], ebx
+ffffff80016b1feb: mov      eax, 0x7990
+ffffff80016b1ff0: jmp      0xffffff80016b1ffd  ; __ZN16AppleBCMWLANCore16setLE_SCAN_PARAMEP25apple80211_le_scan_params+0x75
+ffffff80016b1ff2: mov      r13d, 1
+ffffff80016b1ff8: mov      eax, 0x7988
+ffffff80016b1ffd: add      dword ptr [rsi + rax], r13d
+ffffff80016b2001: cmp      r12d, 6
+ffffff80016b2005: ja       0xffffff80016b200f
+ffffff80016b2007: inc      dword ptr [rsi + r12*4 + 0x7994]
+ffffff80016b200f: mov      rdi, qword ptr [rsi + 0x15a8]
+ffffff80016b2016: test     rdi, rdi
+ffffff80016b2019: je       0xffffff80016b2027
+ffffff80016b201b: add      rsi, 0x7984
+ffffff80016b2022: call     0xffffff80016cd334  ; __ZN31AppleBCMWLANIOReportingPerSlice18reportBTLECnxStatsEP21btle_connection_stats
+ffffff80016b2027: xor      eax, eax
+ffffff80016b2029: add      rsp, 8
+ffffff80016b202d: pop      rbx
+ffffff80016b202e: pop      r12
+ffffff80016b2030: pop      r13
+ffffff80016b2032: pop      r14
+ffffff80016b2034: pop      r15
+ffffff80016b2036: pop      rbp
+ffffff80016b2037: ret      
+ffffff80016b2038: mov      rax, qword ptr [r15]
+ffffff80016b203b: mov      rdi, r15
+ffffff80016b203e: call     qword ptr [rax + 0xd40]
+ffffff80016b2044: lea      rsi, [rip + 0xfa9c1]  ; "[ik] %s@%d:Receiving BT LE SCAN notification: enable %d, peak = %u, total = %u, "
+ffffff80016b204b: lea      rdx, [rip + 0xfaa13]  ; "setLE_SCAN_PARAM"
+ffffff80016b2052: mov      rdi, rax
+ffffff80016b2055: mov      ecx, 0xeea7
+ffffff80016b205a: mov      r8d, r14d
+ffffff80016b205d: mov      r9d, ebx
+ffffff80016b2060: xor      eax, eax
+ffffff80016b2062: push     r12
+ffffff80016b2064: push     r13
+ffffff80016b2066: call     0xffffff80032fdcf8  ; __ZN11CCLogStream8logAlertEPKcz
+ffffff80016b206b: add      rsp, 0x10
+ffffff80016b206f: jmp      0xffffff80016b1fd3  ; __ZN16AppleBCMWLANCore16setLE_SCAN_PARAMEP25apple80211_le_scan_params+0x4b
+# 0xffffff80016b294c __ZN16AppleBCMWLANCore25setMWS_SCAN_FREQ_WIFI_ENHEP24apple80211_mws_scan_freq
+ffffff80016b294c: test     rsi, rsi
+ffffff80016b294f: je       0xffffff80016b2a87
+ffffff80016b2955: push     rbp
+ffffff80016b2956: mov      rbp, rsp
+ffffff80016b2959: push     r15
+ffffff80016b295b: push     r14
+ffffff80016b295d: push     rbx
+ffffff80016b295e: push     rax
+ffffff80016b295f: mov      r14, rsi
+ffffff80016b2962: mov      rbx, rdi
+ffffff80016b2965: mov      rax, qword ptr [rdi]
+ffffff80016b2968: call     qword ptr [rax + 0xd40]
+ffffff80016b296e: test     rax, rax
+ffffff80016b2971: je       0xffffff80016b2994
+ffffff80016b2973: mov      rax, qword ptr [rbx]
+ffffff80016b2976: mov      rdi, rbx
+ffffff80016b2979: call     qword ptr [rax + 0xd40]
+ffffff80016b297f: mov      rdi, rax
+ffffff80016b2982: mov      esi, 1
+ffffff80016b2987: call     0xffffff80032ff9e6  ; __ZN11CCLogStream9shouldLogE16CCStreamLogLevel
+ffffff80016b298c: test     al, al
+ffffff80016b298e: jne      0xffffff80016b2a8d
+ffffff80016b2994: mov      eax, dword ptr [r14 + 0x24]
+ffffff80016b2998: mov      rcx, qword ptr [rbx + 0x128]
+ffffff80016b299f: mov      dword ptr [rcx + 0x29c4], eax
+ffffff80016b29a5: mov      eax, dword ptr [r14]
+ffffff80016b29a8: mov      dword ptr [rcx + 0x29c8], eax
+ffffff80016b29ae: mov      eax, dword ptr [r14 + 4]
+ffffff80016b29b2: mov      dword ptr [rcx + 0x29cc], eax
+ffffff80016b29b8: mov      eax, dword ptr [r14 + 8]
+ffffff80016b29bc: mov      dword ptr [rcx + 0x29d0], eax
+ffffff80016b29c2: mov      eax, dword ptr [r14 + 0xc]
+ffffff80016b29c6: mov      dword ptr [rcx + 0x29d4], eax
+ffffff80016b29cc: mov      eax, dword ptr [r14 + 0x10]
+ffffff80016b29d0: mov      dword ptr [rcx + 0x29d8], eax
+ffffff80016b29d6: mov      eax, dword ptr [r14 + 0x14]
+ffffff80016b29da: mov      dword ptr [rcx + 0x29dc], eax
+ffffff80016b29e0: mov      eax, dword ptr [r14 + 0x18]
+ffffff80016b29e4: mov      dword ptr [rcx + 0x29e0], eax
+ffffff80016b29ea: mov      eax, dword ptr [r14 + 0x1c]
+ffffff80016b29ee: mov      dword ptr [rcx + 0x29e4], eax
+ffffff80016b29f4: mov      eax, dword ptr [r14 + 0x20]
+ffffff80016b29f8: mov      dword ptr [rcx + 0x29e8], eax
+ffffff80016b29fe: mov      rax, qword ptr [rbx]
+ffffff80016b2a01: mov      rdi, rbx
+ffffff80016b2a04: call     qword ptr [rax + 0xd40]
+ffffff80016b2a0a: test     rax, rax
+ffffff80016b2a0d: je       0xffffff80016b2a30
+ffffff80016b2a0f: mov      rax, qword ptr [rbx]
+ffffff80016b2a12: mov      rdi, rbx
+ffffff80016b2a15: call     qword ptr [rax + 0xd40]
+ffffff80016b2a1b: mov      rdi, rax
+ffffff80016b2a1e: mov      esi, 1
+ffffff80016b2a23: call     0xffffff80032ff9e6  ; __ZN11CCLogStream9shouldLogE16CCStreamLogLevel
+ffffff80016b2a28: test     al, al
+ffffff80016b2a2a: jne      0xffffff80016b2abb
+ffffff80016b2a30: mov      rax, qword ptr [rbx]
+ffffff80016b2a33: mov      rdi, rbx
+ffffff80016b2a36: call     qword ptr [rax + 0xd40]
+ffffff80016b2a3c: test     rax, rax
+ffffff80016b2a3f: je       0xffffff80016b2a62
+ffffff80016b2a41: mov      rax, qword ptr [rbx]
+ffffff80016b2a44: mov      rdi, rbx
+ffffff80016b2a47: call     qword ptr [rax + 0xd40]
+ffffff80016b2a4d: mov      rdi, rax
+ffffff80016b2a50: mov      esi, 1
+ffffff80016b2a55: call     0xffffff80032ff9e6  ; __ZN11CCLogStream9shouldLogE16CCStreamLogLevel
+ffffff80016b2a5a: test     al, al
+ffffff80016b2a5c: jne      0xffffff80016b2b0a
+ffffff80016b2a62: mov      esi, 0x29c4
+ffffff80016b2a67: add      rsi, qword ptr [rbx + 0x128]
+ffffff80016b2a6e: mov      rax, qword ptr [rbx]
+ffffff80016b2a71: mov      rax, qword ptr [rax + 0x1250]
+ffffff80016b2a78: mov      rdi, rbx
+ffffff80016b2a7b: add      rsp, 8
+ffffff80016b2a7f: pop      rbx
+ffffff80016b2a80: pop      r14
+ffffff80016b2a82: pop      r15
+ffffff80016b2a84: pop      rbp
+ffffff80016b2a85: jmp      rax
+ffffff80016b2a87: mov      eax, 0xe00002bc
+ffffff80016b2a8c: ret      
+ffffff80016b2a8d: mov      rax, qword ptr [rbx]
+ffffff80016b2a90: mov      rdi, rbx
+ffffff80016b2a93: call     qword ptr [rax + 0xd40]
+ffffff80016b2a99: lea      rsi, [rip + 0xfa68a]  ; 0xffffff80017ad12a
+ffffff80016b2aa0: lea      rdx, [rip + 0xfa6c4]  ; "setMWS_SCAN_FREQ_WIFI_ENH"
+ffffff80016b2aa7: mov      rdi, rax
+ffffff80016b2aaa: mov      ecx, 0xef45
+ffffff80016b2aaf: xor      eax, eax
+ffffff80016b2ab1: call     0xffffff80032fdcf8  ; __ZN11CCLogStream8logAlertEPKcz
+ffffff80016b2ab6: jmp      0xffffff80016b2994  ; __ZN16AppleBCMWLANCore25setMWS_SCAN_FREQ_WIFI_ENHEP24apple80211_mws_scan_freq+0x48
+ffffff80016b2abb: mov      rax, qword ptr [rbx]
+ffffff80016b2abe: mov      rdi, rbx
+ffffff80016b2ac1: call     qword ptr [rax + 0xd40]
+ffffff80016b2ac7: mov      r8d, dword ptr [r14 + 0x24]
+ffffff80016b2acb: mov      r9d, dword ptr [r14]
+ffffff80016b2ace: mov      r10d, dword ptr [r14 + 4]
+ffffff80016b2ad2: mov      r11d, dword ptr [r14 + 8]
+ffffff80016b2ad6: mov      r15d, dword ptr [r14 + 0xc]
+ffffff80016b2ada: sub      rsp, 8
+ffffff80016b2ade: lea      rsi, [rip + 0xfa6a0]  ; "[ik] %s@%d:APPLE80211_IOC_MWS_SCAN_FREQ_WIFI_ENH freqIndex = %d, 2g_bitmap=0x%X,"
+ffffff80016b2ae5: lea      rdx, [rip + 0xfa67f]  ; "setMWS_SCAN_FREQ_WIFI_ENH"
+ffffff80016b2aec: mov      rdi, rax
+ffffff80016b2aef: mov      ecx, 0xef52
+ffffff80016b2af4: xor      eax, eax
+ffffff80016b2af6: push     r15
+ffffff80016b2af8: push     r11
+ffffff80016b2afa: push     r10
+ffffff80016b2afc: call     0xffffff80032fdcf8  ; __ZN11CCLogStream8logAlertEPKcz
+ffffff80016b2b01: add      rsp, 0x20
+ffffff80016b2b05: jmp      0xffffff80016b2a30  ; __ZN16AppleBCMWLANCore25setMWS_SCAN_FREQ_WIFI_ENHEP24apple80211_mws_scan_freq+0xe4
+ffffff80016b2b0a: mov      rax, qword ptr [rbx]
+ffffff80016b2b0d: mov      rdi, rbx
+ffffff80016b2b10: call     qword ptr [rax + 0xd40]
+ffffff80016b2b16: mov      r8d, dword ptr [r14 + 0x10]
+ffffff80016b2b1a: mov      r9d, dword ptr [r14 + 0x14]
+ffffff80016b2b1e: mov      r10d, dword ptr [r14 + 0x18]
+ffffff80016b2b22: mov      r11d, dword ptr [r14 + 0x1c]
+ffffff80016b2b26: mov      r14d, dword ptr [r14 + 0x20]
+ffffff80016b2b2a: sub      rsp, 8
+ffffff80016b2b2e: lea      rsi, [rip + 0xfa6de]  ; "[ik] %s@%d:APPLE80211_IOC_MWS_SCAN_FREQ_WIFI_ENH unii5_bitmap_low=0x%X, unii5_bi"
+ffffff80016b2b35: lea      rdx, [rip + 0xfa62f]  ; "setMWS_SCAN_FREQ_WIFI_ENH"
+ffffff80016b2b3c: mov      rdi, rax
+ffffff80016b2b3f: mov      ecx, 0xef54
+ffffff80016b2b44: xor      eax, eax
+ffffff80016b2b46: push     r14
+ffffff80016b2b48: push     r11
+ffffff80016b2b4a: push     r10
+ffffff80016b2b4c: call     0xffffff80032fdcf8  ; __ZN11CCLogStream8logAlertEPKcz
+ffffff80016b2b51: add      rsp, 0x20
+ffffff80016b2b55: jmp      0xffffff80016b2a62  ; __ZN16AppleBCMWLANCore25setMWS_SCAN_FREQ_WIFI_ENHEP24apple80211_mws_scan_freq+0x116
+# 0xffffff80016b2b5a __ZN16AppleBCMWLANCore30setMWS_SCAN_FREQ_MODE_WIFI_ENHEP29apple80211_mws_scan_freq_mode
+ffffff80016b2b5a: test     rsi, rsi
+ffffff80016b2b5d: je       0xffffff80016b2c1b
+ffffff80016b2b63: push     rbp
+ffffff80016b2b64: mov      rbp, rsp
+ffffff80016b2b67: push     r14
+ffffff80016b2b69: push     rbx
+ffffff80016b2b6a: mov      r14, rsi
+ffffff80016b2b6d: mov      rbx, rdi
+ffffff80016b2b70: mov      rax, qword ptr [rdi]
+ffffff80016b2b73: call     qword ptr [rax + 0xd40]
+ffffff80016b2b79: test     rax, rax
+ffffff80016b2b7c: je       0xffffff80016b2b9f
+ffffff80016b2b7e: mov      rax, qword ptr [rbx]
+ffffff80016b2b81: mov      rdi, rbx
+ffffff80016b2b84: call     qword ptr [rax + 0xd40]
+ffffff80016b2b8a: mov      rdi, rax
+ffffff80016b2b8d: mov      esi, 1
+ffffff80016b2b92: call     0xffffff80032ff9e6  ; __ZN11CCLogStream9shouldLogE16CCStreamLogLevel
+ffffff80016b2b97: test     al, al
+ffffff80016b2b99: jne      0xffffff80016b2c21
+ffffff80016b2b9f: mov      eax, dword ptr [r14 + 0x24]
+ffffff80016b2ba3: mov      rcx, qword ptr [rbx + 0x128]
+ffffff80016b2baa: mov      dword ptr [rcx + 0x29c4], eax
+ffffff80016b2bb0: mov      eax, dword ptr [r14 + 4]
+ffffff80016b2bb4: mov      dword ptr [rcx + 0x29c8], eax
+ffffff80016b2bba: mov      eax, dword ptr [r14 + 8]
+ffffff80016b2bbe: mov      dword ptr [rcx + 0x29cc], eax
+ffffff80016b2bc4: mov      eax, dword ptr [r14 + 0xc]
+ffffff80016b2bc8: mov      dword ptr [rcx + 0x29d0], eax
+ffffff80016b2bce: mov      rax, qword ptr [rbx]
+ffffff80016b2bd1: mov      rdi, rbx
+ffffff80016b2bd4: call     qword ptr [rax + 0xd40]
+ffffff80016b2bda: test     rax, rax
+ffffff80016b2bdd: je       0xffffff80016b2bfc
+ffffff80016b2bdf: mov      rax, qword ptr [rbx]
+ffffff80016b2be2: mov      rdi, rbx
+ffffff80016b2be5: call     qword ptr [rax + 0xd40]
+ffffff80016b2beb: mov      rdi, rax
+ffffff80016b2bee: mov      esi, 1
+ffffff80016b2bf3: call     0xffffff80032ff9e6  ; __ZN11CCLogStream9shouldLogE16CCStreamLogLevel
+ffffff80016b2bf8: test     al, al
+ffffff80016b2bfa: jne      0xffffff80016b2c4f
+ffffff80016b2bfc: mov      esi, 0x29c4
+ffffff80016b2c01: add      rsi, qword ptr [rbx + 0x128]
+ffffff80016b2c08: mov      rax, qword ptr [rbx]
+ffffff80016b2c0b: mov      rax, qword ptr [rax + 0x1258]
+ffffff80016b2c12: mov      rdi, rbx
+ffffff80016b2c15: pop      rbx
+ffffff80016b2c16: pop      r14
+ffffff80016b2c18: pop      rbp
+ffffff80016b2c19: jmp      rax
+ffffff80016b2c1b: mov      eax, 0xe00002bc
+ffffff80016b2c20: ret      
+ffffff80016b2c21: mov      rax, qword ptr [rbx]
+ffffff80016b2c24: mov      rdi, rbx
+ffffff80016b2c27: call     qword ptr [rax + 0xd40]
+ffffff80016b2c2d: lea      rsi, [rip + 0xfa678]  ; 0xffffff80017ad2ac
+ffffff80016b2c34: lea      rdx, [rip + 0xfa6b7]  ; "setMWS_SCAN_FREQ_MODE_WIFI_ENH"
+ffffff80016b2c3b: mov      rdi, rax
+ffffff80016b2c3e: mov      ecx, 0xef64
+ffffff80016b2c43: xor      eax, eax
+ffffff80016b2c45: call     0xffffff80032fdcf8  ; __ZN11CCLogStream8logAlertEPKcz
+ffffff80016b2c4a: jmp      0xffffff80016b2b9f  ; __ZN16AppleBCMWLANCore30setMWS_SCAN_FREQ_MODE_WIFI_ENHEP29apple80211_mws_scan_freq_mode+0x45
+ffffff80016b2c4f: mov      rax, qword ptr [rbx]
+ffffff80016b2c52: mov      rdi, rbx
+ffffff80016b2c55: call     qword ptr [rax + 0xd40]
+ffffff80016b2c5b: mov      r8d, dword ptr [r14 + 0x24]
+ffffff80016b2c5f: mov      r9d, dword ptr [r14 + 4]
+ffffff80016b2c63: mov      r10d, dword ptr [r14 + 8]
+ffffff80016b2c67: mov      r11d, dword ptr [r14 + 0xc]
+ffffff80016b2c6b: lea      rsi, [rip + 0xfa69f]  ; "[ik] %s@%d:APPLE80211_IOC_MWS_SCAN_FREQ_MODE_WIFI_ENH freqIndex = %d, 5g_bitmap_"
+ffffff80016b2c72: lea      rdx, [rip + 0xfa679]  ; "setMWS_SCAN_FREQ_MODE_WIFI_ENH"
+ffffff80016b2c79: mov      rdi, rax
+ffffff80016b2c7c: mov      ecx, 0xef6c
+ffffff80016b2c81: xor      eax, eax
+ffffff80016b2c83: push     r11
+ffffff80016b2c85: push     r10
+ffffff80016b2c87: call     0xffffff80032fdcf8  ; __ZN11CCLogStream8logAlertEPKcz
+ffffff80016b2c8c: add      rsp, 0x10
+ffffff80016b2c90: jmp      0xffffff80016b2bfc  ; __ZN16AppleBCMWLANCore30setMWS_SCAN_FREQ_MODE_WIFI_ENHEP29apple80211_mws_scan_freq_mode+0xa2
+ffffff80016b2c95: nop      
+# 0xffffff80016b31cc __ZN16AppleBCMWLANCore17setWCL_SCAN_ABORTEPv
+ffffff80016b31cc: push     rbp
+ffffff80016b31cd: mov      rbp, rsp
+ffffff80016b31d0: mov      rax, qword ptr [rdi + 0x128]
+ffffff80016b31d7: mov      rdi, qword ptr [rax + 0x1550]
+ffffff80016b31de: pop      rbp
+ffffff80016b31df: jmp      0xffffff800174d3d8  ; __ZN23AppleBCMWLANScanAdapter14abortEventScanEv
+# 0xffffff80016b43de __ZN16AppleBCMWLANCore20setWCL_CONFIG_BGSCANEP18apple80211_bg_scan
+ffffff80016b43de: push     rbp
+ffffff80016b43df: mov      rbp, rsp
+ffffff80016b43e2: test     rsi, rsi
+ffffff80016b43e5: je       0xffffff80016b43fb
+ffffff80016b43e7: mov      rax, qword ptr [rdi + 0x128]
+ffffff80016b43ee: mov      rdi, qword ptr [rax + 0x1598]
+ffffff80016b43f5: pop      rbp
+ffffff80016b43f6: jmp      0xffffff80016dd220  ; __ZN25AppleBCMWLANBGScanAdapter20setWCL_CONFIG_BGSCANEP18apple80211_bg_scan
+ffffff80016b43fb: mov      eax, 0xe00002bc
+ffffff80016b4400: pop      rbp
+ffffff80016b4401: ret      
+# 0xffffff80016b4426 __ZN16AppleBCMWLANCore26getWCL_BGSCAN_CACHE_RESULTEP42apple80211_bgscan_cached_network_data_list
+ffffff80016b4426: push     rbp
+ffffff80016b4427: mov      rbp, rsp
+ffffff80016b442a: test     rsi, rsi
+ffffff80016b442d: je       0xffffff80016b4443
+ffffff80016b442f: mov      rax, qword ptr [rdi + 0x128]
+ffffff80016b4436: mov      rdi, qword ptr [rax + 0x1598]
+ffffff80016b443d: pop      rbp
+ffffff80016b443e: jmp      0xffffff80016de19e  ; __ZN25AppleBCMWLANBGScanAdapter26getWCL_BGSCAN_CACHE_RESULTEP42apple80211_bgscan_cached_network_data_list
+ffffff80016b4443: mov      eax, 0xe00002bc
+ffffff80016b4448: pop      rbp
+ffffff80016b4449: ret      

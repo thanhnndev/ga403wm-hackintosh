@@ -1,0 +1,518 @@
+# 0xffffff80022f6e98 __ZN23IO80211SkywalkInterface17processBSDCommandEP7__ifnetjPv
+ffffff80022f6e98: push     rbp
+ffffff80022f6e99: mov      rbp, rsp
+ffffff80022f6e9c: push     r15
+ffffff80022f6e9e: push     r14
+ffffff80022f6ea0: push     r13
+ffffff80022f6ea2: push     r12
+ffffff80022f6ea4: push     rbx
+ffffff80022f6ea5: sub      rsp, 0xe8
+ffffff80022f6eac: mov      r12, rcx
+ffffff80022f6eaf: mov      r15d, edx
+ffffff80022f6eb2: mov      r13, rsi
+ffffff80022f6eb5: mov      qword ptr [rbp - 0xd8], rdi
+ffffff80022f6ebc: mov      rax, qword ptr [rip + 0x159275]  ; 0xffffff8002450138
+ffffff80022f6ec3: mov      rax, qword ptr [rax]
+ffffff80022f6ec6: mov      qword ptr [rbp - 0x30], rax
+ffffff80022f6eca: xor      eax, eax
+ffffff80022f6ecc: mov      qword ptr [rbp - 0xb8], rax
+ffffff80022f6ed3: mov      qword ptr [rbp - 0xc0], rax
+ffffff80022f6eda: mov      qword ptr [rbp - 0xc8], rax
+ffffff80022f6ee1: mov      byte ptr [rbp - 0xc9], 0
+ffffff80022f6ee8: lea      rsi, [rip + 0xbbaa1]  ; "<unknown>"
+ffffff80022f6eef: lea      rdi, [rbp - 0xb0]
+ffffff80022f6ef6: mov      ecx, 0x10
+ffffff80022f6efb: rep movsq qword ptr [rdi], qword ptr [rsi]
+ffffff80022f6efe: lea      rbx, [rip + 0x127a48]  ; "<Not WiFi IOCTL>"
+ffffff80022f6f05: cmp      edx, 0xc02069c8
+ffffff80022f6f0b: jg       0xffffff80022f6f28
+ffffff80022f6f0d: cmp      r15d, 0x802069c8
+ffffff80022f6f14: je       0xffffff80022f6f43
+ffffff80022f6f16: cmp      r15d, 0x802869c8
+ffffff80022f6f1d: jne      0xffffff80022f6f53
+ffffff80022f6f1f: lea      rbx, [rip + 0x127a56]  ; "SIOCSA80211_64"
+ffffff80022f6f26: jmp      0xffffff80022f6f53  ; __ZN23IO80211SkywalkInterface17processBSDCommandEP7__ifnetjPv+0xbb
+ffffff80022f6f28: cmp      r15d, 0xc02069c9
+ffffff80022f6f2f: je       0xffffff80022f6f4c
+ffffff80022f6f31: cmp      r15d, 0xc02869c9
+ffffff80022f6f38: jne      0xffffff80022f6f53
+ffffff80022f6f3a: lea      rbx, [rip + 0x127a4a]  ; "SIOCGA80211_64"
+ffffff80022f6f41: jmp      0xffffff80022f6f53  ; __ZN23IO80211SkywalkInterface17processBSDCommandEP7__ifnetjPv+0xbb
+ffffff80022f6f43: lea      rbx, [rip + 0x127a14]  ; "SIOCSA80211_32"
+ffffff80022f6f4a: jmp      0xffffff80022f6f53  ; __ZN23IO80211SkywalkInterface17processBSDCommandEP7__ifnetjPv+0xbb
+ffffff80022f6f4c: lea      rbx, [rip + 0x127a1a]  ; "SIOCGA80211_32"
+ffffff80022f6f53: call     0xffffff80008b06b0  ; _proc_selfpid
+ffffff80022f6f58: mov      qword ptr [rbp - 0x100], rax
+ffffff80022f6f5f: lea      r14, [rbp - 0xb0]
+ffffff80022f6f66: mov      rdi, r14
+ffffff80022f6f69: mov      esi, 0x80
+ffffff80022f6f6e: call     0xffffff80008b13f0  ; _proc_selfname
+ffffff80022f6f73: mov      byte ptr [r14 + 0x7f], 0
+ffffff80022f6f78: call     0xffffff80003527a0  ; _mach_continuous_time
+ffffff80022f6f7d: lea      rsi, [rbp - 0xc0]
+ffffff80022f6f84: mov      rdi, rax
+ffffff80022f6f87: call     0xffffff80004d3a30  ; _absolutetime_to_nanoseconds
+ffffff80022f6f8c: lea      rdi, [rip + 0x126e44]  ; "io80211.processBSDCommand.trace"
+ffffff80022f6f93: lea      rsi, [rbp - 0xc9]
+ffffff80022f6f9a: mov      edx, 1
+ffffff80022f6f9f: call     0xffffff8000b659e0  ; _PE_parse_boot_argn
+ffffff80022f6fa4: test     r12, r12
+ffffff80022f6fa7: je       0xffffff80022f6fc0
+ffffff80022f6fa9: cmp      r15d, 0xc02869c9
+ffffff80022f6fb0: je       0xffffff80022f6fb9
+ffffff80022f6fb2: cmp      r15d, 0x802869c8
+ffffff80022f6fb9: mov      r14d, dword ptr [r12 + 0x10]
+ffffff80022f6fbe: jmp      0xffffff80022f7011  ; __ZN23IO80211SkywalkInterface17processBSDCommandEP7__ifnetjPv+0x179
+ffffff80022f6fc0: xor      r14d, r14d
+ffffff80022f6fc3: cmp      r15d, 0xc02069c8
+ffffff80022f6fca: jg       0xffffff80022f6fe0
+ffffff80022f6fcc: cmp      r15d, 0x802069c8
+ffffff80022f6fd3: je       0xffffff80022f6ff2
+ffffff80022f6fd5: cmp      r15d, 0x802869c8
+ffffff80022f6fdc: je       0xffffff80022f6ff2
+ffffff80022f6fde: jmp      0xffffff80022f7011  ; __ZN23IO80211SkywalkInterface17processBSDCommandEP7__ifnetjPv+0x179
+ffffff80022f6fe0: cmp      r15d, 0xc02869c9
+ffffff80022f6fe7: je       0xffffff80022f6ff2
+ffffff80022f6fe9: cmp      r15d, 0xc02069c9
+ffffff80022f6ff0: jne      0xffffff80022f7011
+ffffff80022f6ff2: lea      rsi, [rip + 0x126dfe]  ; 0xffffff800241ddf7
+ffffff80022f6ff9: lea      rdx, [rip + 0x126e22]  ; "processBSDCommand"
+ffffff80022f7000: xor      r14d, r14d
+ffffff80022f7003: mov      rdi, qword ptr [rbp - 0xd8]
+ffffff80022f700a: xor      eax, eax
+ffffff80022f700c: call     0xffffff80022f6046  ; __ZN23IO80211SkywalkInterface8logDebugEPKcz
+ffffff80022f7011: cmp      r15d, 0xc02069c8
+ffffff80022f7018: mov      qword ptr [rbp - 0xe8], r14
+ffffff80022f701f: jg       0xffffff80022f7038
+ffffff80022f7021: cmp      r15d, 0x802069c8
+ffffff80022f7028: je       0xffffff80022f704e
+ffffff80022f702a: cmp      r15d, 0x802869c8
+ffffff80022f7031: je       0xffffff80022f704e
+ffffff80022f7033: jmp      0xffffff80022f719e  ; __ZN23IO80211SkywalkInterface17processBSDCommandEP7__ifnetjPv+0x306
+ffffff80022f7038: cmp      r15d, 0xc02869c9
+ffffff80022f703f: je       0xffffff80022f704e
+ffffff80022f7041: cmp      r15d, 0xc02069c9
+ffffff80022f7048: jne      0xffffff80022f719e
+ffffff80022f704e: mov      r13, qword ptr [rbp - 0xd8]
+ffffff80022f7055: mov      rax, qword ptr [r13 + 0x120]
+ffffff80022f705c: mov      rax, qword ptr [rax + 0x30]
+ffffff80022f7060: mov      rax, qword ptr [rax + 0x120]
+ffffff80022f7067: mov      r14d, dword ptr [rax + 0x37c]
+ffffff80022f706e: call     0xffffff80003527a0  ; _mach_continuous_time
+ffffff80022f7073: lea      rsi, [rbp - 0xb8]
+ffffff80022f707a: mov      rdi, rax
+ffffff80022f707d: call     0xffffff80004d3a30  ; _absolutetime_to_nanoseconds
+ffffff80022f7082: test     r14d, r14d
+ffffff80022f7085: je       0xffffff80022f70df
+ffffff80022f7087: mov      rcx, qword ptr [rbp - 0xb8]
+ffffff80022f708e: mov      rax, rcx
+ffffff80022f7091: shr      rax, 9
+ffffff80022f7095: movabs   rdx, 0x44b82fa09b5a53
+ffffff80022f709f: mul      rdx
+ffffff80022f70a2: mov      r14, rdx
+ffffff80022f70a5: shr      r14, 0xb
+ffffff80022f70a9: imul     rax, r14, 0x3b9aca00
+ffffff80022f70b0: sub      rcx, rax
+ffffff80022f70b3: imul     r15, rcx, 0x10624dd3
+ffffff80022f70ba: shr      r15, 0x26
+ffffff80022f70be: mov      rdi, r13
+ffffff80022f70c1: call     0xffffff80022f5fca  ; __ZN23IO80211SkywalkInterface10getBSDNameEv
+ffffff80022f70c6: test     rax, rax
+ffffff80022f70c9: je       0xffffff80022f7280
+ffffff80022f70cf: mov      rdi, r13
+ffffff80022f70d2: call     0xffffff80022f5fca  ; __ZN23IO80211SkywalkInterface10getBSDNameEv
+ffffff80022f70d7: mov      r9, rax
+ffffff80022f70da: jmp      0xffffff80022f7287  ; __ZN23IO80211SkywalkInterface17processBSDCommandEP7__ifnetjPv+0x3ef
+ffffff80022f70df: mov      rdi, r13
+ffffff80022f70e2: mov      esi, r15d
+ffffff80022f70e5: mov      rdx, r12
+ffffff80022f70e8: call     0xffffff80022f779a  ; __ZN23IO80211SkywalkInterface24performGatedCommandIOCTLEjPv
+ffffff80022f70ed: mov      qword ptr [rbp - 0xf8], rax
+ffffff80022f70f4: call     0xffffff80003527a0  ; _mach_continuous_time
+ffffff80022f70f9: lea      r14, [rbp - 0xc8]
+ffffff80022f7100: mov      rdi, rax
+ffffff80022f7103: mov      rsi, r14
+ffffff80022f7106: call     0xffffff80004d3a30  ; _absolutetime_to_nanoseconds
+ffffff80022f710b: mov      rbx, qword ptr [r14]
+ffffff80022f710e: mov      r12, rbx
+ffffff80022f7111: sub      r12, qword ptr [rbp - 0xb8]
+ffffff80022f7118: sub      rbx, qword ptr [rbp - 0xc0]
+ffffff80022f711f: cmp      rbx, 0x77359400
+ffffff80022f7126: jb       0xffffff80022f739e
+ffffff80022f712c: call     0xffffff80003527a0  ; _mach_continuous_time
+ffffff80022f7131: lea      r14, [rbp - 0xb8]
+ffffff80022f7138: mov      rdi, rax
+ffffff80022f713b: mov      rsi, r14
+ffffff80022f713e: call     0xffffff80004d3a30  ; _absolutetime_to_nanoseconds
+ffffff80022f7143: mov      rcx, qword ptr [r14]
+ffffff80022f7146: mov      rax, rcx
+ffffff80022f7149: shr      rax, 9
+ffffff80022f714d: movabs   rdx, 0x44b82fa09b5a53
+ffffff80022f7157: mul      rdx
+ffffff80022f715a: mov      r14, rdx
+ffffff80022f715d: shr      r14, 0xb
+ffffff80022f7161: imul     rax, r14, 0x3b9aca00
+ffffff80022f7168: sub      rcx, rax
+ffffff80022f716b: imul     rax, rcx, 0x10624dd3
+ffffff80022f7172: shr      rax, 0x26
+ffffff80022f7176: mov      qword ptr [rbp - 0xe0], rax
+ffffff80022f717d: mov      rdi, r13
+ffffff80022f7180: call     0xffffff80022f5fca  ; __ZN23IO80211SkywalkInterface10getBSDNameEv
+ffffff80022f7185: test     rax, rax
+ffffff80022f7188: je       0xffffff80022f72d2
+ffffff80022f718e: mov      rdi, r13
+ffffff80022f7191: call     0xffffff80022f5fca  ; __ZN23IO80211SkywalkInterface10getBSDNameEv
+ffffff80022f7196: mov      r9, rax
+ffffff80022f7199: jmp      0xffffff80022f72d9  ; __ZN23IO80211SkywalkInterface17processBSDCommandEP7__ifnetjPv+0x441
+ffffff80022f719e: call     0xffffff80003527a0  ; _mach_continuous_time
+ffffff80022f71a3: lea      r14, [rbp - 0xb8]
+ffffff80022f71aa: mov      rdi, rax
+ffffff80022f71ad: mov      rsi, r14
+ffffff80022f71b0: call     0xffffff80004d3a30  ; _absolutetime_to_nanoseconds
+ffffff80022f71b5: mov      rax, qword ptr [rip + 0x158f6c]  ; 0xffffff8002450128
+ffffff80022f71bc: mov      rdi, qword ptr [rbp - 0xd8]
+ffffff80022f71c3: mov      rsi, r13
+ffffff80022f71c6: mov      edx, r15d
+ffffff80022f71c9: mov      rcx, r12
+ffffff80022f71cc: call     qword ptr [rax + 0x920]
+ffffff80022f71d2: mov      qword ptr [rbp - 0xf8], rax
+ffffff80022f71d9: call     0xffffff80003527a0  ; _mach_continuous_time
+ffffff80022f71de: lea      r13, [rbp - 0xc8]
+ffffff80022f71e5: mov      rdi, rax
+ffffff80022f71e8: mov      rsi, r13
+ffffff80022f71eb: call     0xffffff80004d3a30  ; _absolutetime_to_nanoseconds
+ffffff80022f71f0: mov      rbx, qword ptr [r13]
+ffffff80022f71f4: mov      r13, rbx
+ffffff80022f71f7: sub      r13, qword ptr [r14]
+ffffff80022f71fa: sub      rbx, qword ptr [rbp - 0xc0]
+ffffff80022f7201: cmp      rbx, 0x77359400
+ffffff80022f7208: jb       0xffffff80022f75ac
+ffffff80022f720e: call     0xffffff80003527a0  ; _mach_continuous_time
+ffffff80022f7213: mov      rdi, rax
+ffffff80022f7216: mov      rsi, r14
+ffffff80022f7219: call     0xffffff80004d3a30  ; _absolutetime_to_nanoseconds
+ffffff80022f721e: mov      rcx, qword ptr [r14]
+ffffff80022f7221: mov      rax, rcx
+ffffff80022f7224: shr      rax, 9
+ffffff80022f7228: movabs   rdx, 0x44b82fa09b5a53
+ffffff80022f7232: mul      rdx
+ffffff80022f7235: mov      r12, rdx
+ffffff80022f7238: shr      r12, 0xb
+ffffff80022f723c: imul     rax, r12, 0x3b9aca00
+ffffff80022f7243: sub      rcx, rax
+ffffff80022f7246: imul     rax, rcx, 0x10624dd3
+ffffff80022f724d: shr      rax, 0x26
+ffffff80022f7251: mov      qword ptr [rbp - 0xe0], rax
+ffffff80022f7258: mov      r14, qword ptr [rbp - 0xd8]
+ffffff80022f725f: mov      rdi, r14
+ffffff80022f7262: call     0xffffff80022f5fca  ; __ZN23IO80211SkywalkInterface10getBSDNameEv
+ffffff80022f7267: test     rax, rax
+ffffff80022f726a: je       0xffffff80022f74e7
+ffffff80022f7270: mov      rdi, r14
+ffffff80022f7273: call     0xffffff80022f5fca  ; __ZN23IO80211SkywalkInterface10getBSDNameEv
+ffffff80022f7278: mov      r9, rax
+ffffff80022f727b: jmp      0xffffff80022f74ee  ; __ZN23IO80211SkywalkInterface17processBSDCommandEP7__ifnetjPv+0x656
+ffffff80022f7280: lea      r9, [rip + 0xd2d9d]  ; "UNKNOWN"
+ffffff80022f7287: sub      rsp, 8
+ffffff80022f728b: lea      rdi, [rip + 0x126ba2]  ; "Rejected w/ENOTSUP: %s/%6u: @[%llu.%06llu] ['%s']: ioctl[0x%08x/%u] cmd:'%s', pi"
+ffffff80022f7292: lea      rsi, [rip + 0x126b89]  ; "processBSDCommand"
+ffffff80022f7299: xor      r12d, r12d
+ffffff80022f729c: mov      edx, 0x430
+ffffff80022f72a1: mov      rcx, r14
+ffffff80022f72a4: mov      r8, r15
+ffffff80022f72a7: xor      eax, eax
+ffffff80022f72a9: lea      r10, [rbp - 0xb0]
+ffffff80022f72b0: push     r10
+ffffff80022f72b2: push     qword ptr [rbp - 0x100]
+ffffff80022f72b8: push     rbx
+ffffff80022f72b9: mov      r14, qword ptr [rbp - 0xe8]
+ffffff80022f72c0: push     r14
+ffffff80022f72c2: push     r14
+ffffff80022f72c4: call     0xffffff8000a86b60  ; _IOLog
+ffffff80022f72c9: add      rsp, 0x30
+ffffff80022f72cd: jmp      0xffffff80022f7728  ; __ZN23IO80211SkywalkInterface17processBSDCommandEP7__ifnetjPv+0x890
+ffffff80022f72d2: lea      r9, [rip + 0xd2d4b]  ; "UNKNOWN"
+ffffff80022f72d9: mov      rax, rbx
+ffffff80022f72dc: shr      rax, 9
+ffffff80022f72e0: movabs   rsi, 0x44b82fa09b5a53
+ffffff80022f72ea: mul      rsi
+ffffff80022f72ed: mov      r10, rdx
+ffffff80022f72f0: shr      r10, 0xb
+ffffff80022f72f4: imul     rax, r10, 0x3b9aca00
+ffffff80022f72fb: mov      rcx, rbx
+ffffff80022f72fe: sub      rcx, rax
+ffffff80022f7301: imul     rcx, rcx, 0x10624dd3
+ffffff80022f7308: mov      rax, r12
+ffffff80022f730b: shr      rax, 9
+ffffff80022f730f: mul      rsi
+ffffff80022f7312: mov      r11, rdx
+ffffff80022f7315: shr      rcx, 0x26
+ffffff80022f7319: mov      qword ptr [rbp - 0xf0], rcx
+ffffff80022f7320: shr      r11, 0xb
+ffffff80022f7324: imul     rax, r11, 0x3b9aca00
+ffffff80022f732b: mov      rcx, r12
+ffffff80022f732e: sub      rcx, rax
+ffffff80022f7331: imul     r13, rcx, 0x10624dd3
+ffffff80022f7338: shr      r13, 0x26
+ffffff80022f733c: lea      rdi, [rip + 0x126b4c]  ; "%s/%6u: @[%llu.%06llu] ['%s']: ioctl[0x%08x/%u] [%llu.%06llu] Exceeded threshold"
+ffffff80022f7343: lea      rsi, [rip + 0x126ad8]  ; "processBSDCommand"
+ffffff80022f734a: mov      edx, 0x43e
+ffffff80022f734f: mov      rcx, r14
+ffffff80022f7352: mov      r8, qword ptr [rbp - 0xe0]
+ffffff80022f7359: xor      eax, eax
+ffffff80022f735b: mov      r14, r12
+ffffff80022f735e: lea      r12, [rbp - 0xb0]
+ffffff80022f7365: push     r12
+ffffff80022f7367: mov      r12, r14
+ffffff80022f736a: push     qword ptr [rbp - 0x100]
+ffffff80022f7370: xor      r14d, r14d
+ffffff80022f7373: push     r14
+ffffff80022f7375: push     r14
+ffffff80022f7377: xor      r14d, r14d
+ffffff80022f737a: push     r13
+ffffff80022f737c: push     r11
+ffffff80022f737e: push     r14
+ffffff80022f7380: push     2
+ffffff80022f7382: push     qword ptr [rbp - 0xf0]
+ffffff80022f7388: push     r10
+ffffff80022f738a: push     r15
+ffffff80022f738c: push     r15
+ffffff80022f738e: call     0xffffff8000a86b60  ; _IOLog
+ffffff80022f7393: add      rsp, 0x60
+ffffff80022f7397: mov      r13, qword ptr [rbp - 0xd8]
+ffffff80022f739e: call     0xffffff80003527a0  ; _mach_continuous_time
+ffffff80022f73a3: lea      rsi, [rbp - 0xb8]
+ffffff80022f73aa: mov      rdi, rax
+ffffff80022f73ad: call     0xffffff80004d3a30  ; _absolutetime_to_nanoseconds
+ffffff80022f73b2: test     byte ptr [rbp - 0xc9], 1
+ffffff80022f73b9: je       0xffffff80022f7416
+ffffff80022f73bb: mov      rcx, qword ptr [rbp - 0xb8]
+ffffff80022f73c2: mov      rax, rcx
+ffffff80022f73c5: shr      rax, 9
+ffffff80022f73c9: movabs   rdx, 0x44b82fa09b5a53
+ffffff80022f73d3: mul      rdx
+ffffff80022f73d6: mov      r14, r13
+ffffff80022f73d9: mov      r13, rdx
+ffffff80022f73dc: shr      r13, 0xb
+ffffff80022f73e0: imul     rax, r13, 0x3b9aca00
+ffffff80022f73e7: sub      rcx, rax
+ffffff80022f73ea: imul     rax, rcx, 0x10624dd3
+ffffff80022f73f1: shr      rax, 0x26
+ffffff80022f73f5: mov      qword ptr [rbp - 0xe0], rax
+ffffff80022f73fc: mov      rdi, r14
+ffffff80022f73ff: call     0xffffff80022f5fca  ; __ZN23IO80211SkywalkInterface10getBSDNameEv
+ffffff80022f7404: test     rax, rax
+ffffff80022f7407: je       0xffffff80022f741e
+ffffff80022f7409: mov      rdi, r14
+ffffff80022f740c: call     0xffffff80022f5fca  ; __ZN23IO80211SkywalkInterface10getBSDNameEv
+ffffff80022f7411: mov      r9, rax
+ffffff80022f7414: jmp      0xffffff80022f7425  ; __ZN23IO80211SkywalkInterface17processBSDCommandEP7__ifnetjPv+0x58d
+ffffff80022f7416: xor      r12d, r12d
+ffffff80022f7419: jmp      0xffffff80022f7636  ; __ZN23IO80211SkywalkInterface17processBSDCommandEP7__ifnetjPv+0x79e
+ffffff80022f741e: lea      r9, [rip + 0xd2bff]  ; "UNKNOWN"
+ffffff80022f7425: mov      rax, rbx
+ffffff80022f7428: shr      rax, 9
+ffffff80022f742c: movabs   rcx, 0x44b82fa09b5a53
+ffffff80022f7436: mul      rcx
+ffffff80022f7439: mov      r10, rdx
+ffffff80022f743c: shr      r10, 0xb
+ffffff80022f7440: imul     rax, r10, 0x3b9aca00
+ffffff80022f7447: sub      rbx, rax
+ffffff80022f744a: imul     rbx, rbx, 0x10624dd3
+ffffff80022f7451: shr      rbx, 0x26
+ffffff80022f7455: mov      rax, r12
+ffffff80022f7458: shr      rax, 9
+ffffff80022f745c: mul      rcx
+ffffff80022f745f: mov      r11, rdx
+ffffff80022f7462: shr      r11, 0xb
+ffffff80022f7466: imul     rax, r11, 0x3b9aca00
+ffffff80022f746d: sub      r12, rax
+ffffff80022f7470: imul     r14, r12, 0x10624dd3
+ffffff80022f7477: shr      r14, 0x26
+ffffff80022f747b: sub      rsp, 8
+ffffff80022f747f: xor      r12d, r12d
+ffffff80022f7482: lea      rdi, [rip + 0x126aa4]  ; "%s/%6u: @[%llu.%06llu] ['%s']: ioctl[0x%08x/%u] [%llu.%06llu] processTS[%llu.%06"
+ffffff80022f7489: lea      rsi, [rip + 0x126992]  ; "processBSDCommand"
+ffffff80022f7490: mov      edx, 0x448
+ffffff80022f7495: mov      rcx, r13
+ffffff80022f7498: mov      r8, qword ptr [rbp - 0xe0]
+ffffff80022f749f: xor      eax, eax
+ffffff80022f74a1: lea      r13, [rbp - 0xb0]
+ffffff80022f74a8: push     r13
+ffffff80022f74aa: push     qword ptr [rbp - 0x100]
+ffffff80022f74b0: mov      r13, qword ptr [rbp - 0xf8]
+ffffff80022f74b7: push     r13
+ffffff80022f74b9: push     r12
+ffffff80022f74bb: push     r12
+ffffff80022f74bd: push     r14
+ffffff80022f74bf: push     r11
+ffffff80022f74c1: push     rbx
+ffffff80022f74c2: mov      rbx, r13
+ffffff80022f74c5: push     r10
+ffffff80022f74c7: push     r15
+ffffff80022f74c9: push     r15
+ffffff80022f74cb: call     0xffffff8000a86b60  ; _IOLog
+ffffff80022f74d0: add      rsp, 0x60
+ffffff80022f74d4: mov      r13, qword ptr [rbp - 0xd8]
+ffffff80022f74db: mov      r14, qword ptr [rbp - 0xe8]
+ffffff80022f74e2: jmp      0xffffff80022f7723  ; __ZN23IO80211SkywalkInterface17processBSDCommandEP7__ifnetjPv+0x88b
+ffffff80022f74e7: lea      r9, [rip + 0xd2b36]  ; "UNKNOWN"
+ffffff80022f74ee: mov      rax, rbx
+ffffff80022f74f1: shr      rax, 9
+ffffff80022f74f5: movabs   rsi, 0x44b82fa09b5a53
+ffffff80022f74ff: mul      rsi
+ffffff80022f7502: mov      r10, rdx
+ffffff80022f7505: shr      r10, 0xb
+ffffff80022f7509: imul     rax, r10, 0x3b9aca00
+ffffff80022f7510: mov      rcx, rbx
+ffffff80022f7513: sub      rcx, rax
+ffffff80022f7516: imul     rcx, rcx, 0x10624dd3
+ffffff80022f751d: mov      rax, r13
+ffffff80022f7520: shr      rax, 9
+ffffff80022f7524: mul      rsi
+ffffff80022f7527: mov      r11, rdx
+ffffff80022f752a: shr      rcx, 0x26
+ffffff80022f752e: mov      qword ptr [rbp - 0xf0], rcx
+ffffff80022f7535: shr      r11, 0xb
+ffffff80022f7539: imul     rax, r11, 0x3b9aca00
+ffffff80022f7540: mov      rcx, r13
+ffffff80022f7543: sub      rcx, rax
+ffffff80022f7546: imul     r14, rcx, 0x10624dd3
+ffffff80022f754d: shr      r14, 0x26
+ffffff80022f7551: lea      rdi, [rip + 0x126937]  ; "%s/%6u: @[%llu.%06llu] ['%s']: ioctl[0x%08x/%u] [%llu.%06llu] Exceeded threshold"
+ffffff80022f7558: lea      rsi, [rip + 0x1268c3]  ; "processBSDCommand"
+ffffff80022f755f: mov      edx, 0x45f
+ffffff80022f7564: mov      rcx, r12
+ffffff80022f7567: mov      r8, qword ptr [rbp - 0xe0]
+ffffff80022f756e: xor      eax, eax
+ffffff80022f7570: mov      r12, r13
+ffffff80022f7573: lea      r13, [rbp - 0xb0]
+ffffff80022f757a: push     r13
+ffffff80022f757c: mov      r13, r12
+ffffff80022f757f: push     qword ptr [rbp - 0x100]
+ffffff80022f7585: xor      r12d, r12d
+ffffff80022f7588: push     r12
+ffffff80022f758a: push     r12
+ffffff80022f758c: xor      r12d, r12d
+ffffff80022f758f: push     r14
+ffffff80022f7591: push     r11
+ffffff80022f7593: push     r12
+ffffff80022f7595: push     2
+ffffff80022f7597: push     qword ptr [rbp - 0xf0]
+ffffff80022f759d: push     r10
+ffffff80022f759f: push     r15
+ffffff80022f75a1: push     r15
+ffffff80022f75a3: call     0xffffff8000a86b60  ; _IOLog
+ffffff80022f75a8: add      rsp, 0x60
+ffffff80022f75ac: call     0xffffff80003527a0  ; _mach_continuous_time
+ffffff80022f75b1: lea      rsi, [rbp - 0xb8]
+ffffff80022f75b8: mov      rdi, rax
+ffffff80022f75bb: call     0xffffff80004d3a30  ; _absolutetime_to_nanoseconds
+ffffff80022f75c0: mov      r12b, 1
+ffffff80022f75c3: test     byte ptr [rbp - 0xc9], 1
+ffffff80022f75ca: je       0xffffff80022f762f
+ffffff80022f75cc: mov      rcx, qword ptr [rbp - 0xb8]
+ffffff80022f75d3: mov      rax, rcx
+ffffff80022f75d6: shr      rax, 9
+ffffff80022f75da: movabs   rdx, 0x44b82fa09b5a53
+ffffff80022f75e4: mul      rdx
+ffffff80022f75e7: shr      rdx, 0xb
+ffffff80022f75eb: mov      qword ptr [rbp - 0xe0], rdx
+ffffff80022f75f2: imul     rax, rdx, 0x3b9aca00
+ffffff80022f75f9: sub      rcx, rax
+ffffff80022f75fc: imul     rax, rcx, 0x10624dd3
+ffffff80022f7603: shr      rax, 0x26
+ffffff80022f7607: mov      qword ptr [rbp - 0xf0], rax
+ffffff80022f760e: mov      r14, qword ptr [rbp - 0xd8]
+ffffff80022f7615: mov      rdi, r14
+ffffff80022f7618: call     0xffffff80022f5fca  ; __ZN23IO80211SkywalkInterface10getBSDNameEv
+ffffff80022f761d: test     rax, rax
+ffffff80022f7620: je       0xffffff80022f7649
+ffffff80022f7622: mov      rdi, r14
+ffffff80022f7625: call     0xffffff80022f5fca  ; __ZN23IO80211SkywalkInterface10getBSDNameEv
+ffffff80022f762a: mov      r9, rax
+ffffff80022f762d: jmp      0xffffff80022f7650  ; __ZN23IO80211SkywalkInterface17processBSDCommandEP7__ifnetjPv+0x7b8
+ffffff80022f762f: mov      r13, qword ptr [rbp - 0xd8]
+ffffff80022f7636: mov      r14, qword ptr [rbp - 0xe8]
+ffffff80022f763d: mov      rbx, qword ptr [rbp - 0xf8]
+ffffff80022f7644: jmp      0xffffff80022f7723  ; __ZN23IO80211SkywalkInterface17processBSDCommandEP7__ifnetjPv+0x88b
+ffffff80022f7649: lea      r9, [rip + 0xd29d4]  ; "UNKNOWN"
+ffffff80022f7650: mov      r14, qword ptr [rbp - 0xe8]
+ffffff80022f7657: mov      rax, rbx
+ffffff80022f765a: shr      rax, 9
+ffffff80022f765e: movabs   rcx, 0x44b82fa09b5a53
+ffffff80022f7668: mul      rcx
+ffffff80022f766b: shr      rdx, 0xb
+ffffff80022f766f: mov      qword ptr [rbp - 0x108], rdx
+ffffff80022f7676: imul     rax, rdx, 0x3b9aca00
+ffffff80022f767d: sub      rbx, rax
+ffffff80022f7680: imul     rax, rbx, 0x10624dd3
+ffffff80022f7687: shr      rax, 0x26
+ffffff80022f768b: mov      qword ptr [rbp - 0x110], rax
+ffffff80022f7692: mov      rax, r13
+ffffff80022f7695: shr      rax, 9
+ffffff80022f7699: mul      rcx
+ffffff80022f769c: mov      r11, rdx
+ffffff80022f769f: shr      r11, 0xb
+ffffff80022f76a3: imul     rax, r11, 0x3b9aca00
+ffffff80022f76aa: sub      r13, rax
+ffffff80022f76ad: imul     r13, r13, 0x10624dd3
+ffffff80022f76b4: shr      r13, 0x26
+ffffff80022f76b8: sub      rsp, 8
+ffffff80022f76bc: lea      rdi, [rip + 0x12686a]  ; "%s/%6u: @[%llu.%06llu] ['%s']: ioctl[0x%08x/%u] [%llu.%06llu] processTS[%llu.%06"
+ffffff80022f76c3: lea      rsi, [rip + 0x126758]  ; "processBSDCommand"
+ffffff80022f76ca: mov      edx, 0x469
+ffffff80022f76cf: mov      rcx, qword ptr [rbp - 0xe0]
+ffffff80022f76d6: mov      r8, qword ptr [rbp - 0xf0]
+ffffff80022f76dd: xor      eax, eax
+ffffff80022f76df: lea      rbx, [rbp - 0xb0]
+ffffff80022f76e6: push     rbx
+ffffff80022f76e7: push     qword ptr [rbp - 0x100]
+ffffff80022f76ed: mov      rbx, qword ptr [rbp - 0xf8]
+ffffff80022f76f4: push     rbx
+ffffff80022f76f5: xor      r10d, r10d
+ffffff80022f76f8: push     r10
+ffffff80022f76fa: xor      r10d, r10d
+ffffff80022f76fd: push     r10
+ffffff80022f76ff: push     r13
+ffffff80022f7701: push     r11
+ffffff80022f7703: push     qword ptr [rbp - 0x110]
+ffffff80022f7709: push     qword ptr [rbp - 0x108]
+ffffff80022f770f: push     r15
+ffffff80022f7711: push     r15
+ffffff80022f7713: call     0xffffff8000a86b60  ; _IOLog
+ffffff80022f7718: add      rsp, 0x60
+ffffff80022f771c: mov      r13, qword ptr [rbp - 0xd8]
+ffffff80022f7723: cmp      ebx, 0x2d
+ffffff80022f7726: jne      0xffffff80022f7753
+ffffff80022f7728: test     r14d, r14d
+ffffff80022f772b: sete     al
+ffffff80022f772e: or       al, r12b
+ffffff80022f7731: mov      ebx, 0x2d
+ffffff80022f7736: jne      0xffffff80022f7753
+ffffff80022f7738: mov      rax, qword ptr [r13 + 0x120]
+ffffff80022f773f: mov      rax, qword ptr [rax + 0x30]
+ffffff80022f7743: mov      rax, qword ptr [rax + 0x120]
+ffffff80022f774a: cmp      dword ptr [rax + 0x384], 0
+ffffff80022f7751: jne      0xffffff80022f777c
+ffffff80022f7753: mov      rax, qword ptr [rip + 0x1589de]  ; 0xffffff8002450138
+ffffff80022f775a: mov      rax, qword ptr [rax]
+ffffff80022f775d: cmp      rax, qword ptr [rbp - 0x30]
+ffffff80022f7761: jne      0xffffff80022f7777
+ffffff80022f7763: mov      eax, ebx
+ffffff80022f7765: add      rsp, 0xe8
+ffffff80022f776c: pop      rbx
+ffffff80022f776d: pop      r12
+ffffff80022f776f: pop      r13
+ffffff80022f7771: pop      r14
+ffffff80022f7773: pop      r15
+ffffff80022f7775: pop      rbp
+ffffff80022f7776: ret      
+ffffff80022f7777: call     0xffffff8000ba0c20  ; ___stack_chk_fail
+ffffff80022f777c: lea      rdi, [rip + 0x12682e]  ; ""IOCTL %d" @%s:%d"
+ffffff80022f7783: lea      rdx, [rip + 0x1261a5]  ; "IO80211SkywalkInterface.cpp"
+ffffff80022f778a: mov      esi, r14d
+ffffff80022f778d: mov      ecx, 0x47d
+ffffff80022f7792: xor      eax, eax
+ffffff80022f7794: call     0xffffff8000ba1c6c  ; _panic
+ffffff80022f7799: nop      

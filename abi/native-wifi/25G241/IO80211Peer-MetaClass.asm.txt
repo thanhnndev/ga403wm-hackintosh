@@ -1,0 +1,32 @@
+# 0xffffff800223f11e __ZN11IO80211Peer9MetaClassC1Ev
+ffffff800223f11e: push     rbp
+ffffff800223f11f: mov      rbp, rsp
+ffffff800223f122: push     rbx
+ffffff800223f123: push     rax
+ffffff800223f124: mov      rbx, rdi
+ffffff800223f127: lea      rsi, [rip + 0x1b5d06]  ; "IO80211Peer"
+ffffff800223f12e: lea      rdx, [rip + 0x24e483]  ; 0xffffff800248d5b8
+ffffff800223f135: mov      ecx, 0x20
+ffffff800223f13a: call     0xffffff8000a1a9d0  ; __ZN11OSMetaClassC2EPKcPKS_j
+ffffff800223f13f: lea      rax, [rip + 0x21d872]  ; 0xffffff800245c9b8
+ffffff800223f146: mov      qword ptr [rbx], rax
+ffffff800223f149: add      rsp, 8
+ffffff800223f14d: pop      rbx
+ffffff800223f14e: pop      rbp
+ffffff800223f14f: ret      
+# 0xffffff800223f1fc __ZN11IO80211Peer9MetaClassC2Ev
+ffffff800223f1fc: push     rbp
+ffffff800223f1fd: mov      rbp, rsp
+ffffff800223f200: push     rbx
+ffffff800223f201: push     rax
+ffffff800223f202: mov      rbx, rdi
+ffffff800223f205: lea      rsi, [rip + 0x1b5c28]  ; "IO80211Peer"
+ffffff800223f20c: lea      rdx, [rip + 0x24e3a5]  ; 0xffffff800248d5b8
+ffffff800223f213: mov      ecx, 0x20
+ffffff800223f218: call     0xffffff8000a1a9d0  ; __ZN11OSMetaClassC2EPKcPKS_j
+ffffff800223f21d: lea      rax, [rip + 0x21d794]  ; 0xffffff800245c9b8
+ffffff800223f224: mov      qword ptr [rbx], rax
+ffffff800223f227: add      rsp, 8
+ffffff800223f22b: pop      rbx
+ffffff800223f22c: pop      rbp
+ffffff800223f22d: ret      

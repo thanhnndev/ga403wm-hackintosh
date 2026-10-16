@@ -1,0 +1,91 @@
+# 0xffffff8001548bd6 __ZN23AppleBCMWLANPCIeSkywalk27initWithProviderAndCapacityEP28AppleBCMWLANBusInterfacePCIejjjjjP11CCLogStreamP15CCFaultReporter
+ffffff8001548bd6: push     rbp
+ffffff8001548bd7: mov      rbp, rsp
+ffffff8001548bda: push     r15
+ffffff8001548bdc: push     r14
+ffffff8001548bde: push     r13
+ffffff8001548be0: push     r12
+ffffff8001548be2: push     rbx
+ffffff8001548be3: sub      rsp, 0x18
+ffffff8001548be7: mov      dword ptr [rbp - 0x38], r9d
+ffffff8001548beb: mov      r12d, r8d
+ffffff8001548bee: mov      r13d, ecx
+ffffff8001548bf1: mov      ebx, edx
+ffffff8001548bf3: mov      r15, rsi
+ffffff8001548bf6: mov      r14, rdi
+ffffff8001548bf9: mov      rax, qword ptr [rip + 0x635b0]  ; 0xffffff80015ac1b0
+ffffff8001548c00: mov      rax, qword ptr [rax]
+ffffff8001548c03: mov      qword ptr [rbp - 0x30], rax
+ffffff8001548c07: mov      dword ptr [rbp - 0x34], 0
+ffffff8001548c0e: mov      rax, qword ptr [rip + 0x6353b]  ; 0xffffff80015ac150
+ffffff8001548c15: call     qword ptr [rax + 0x98]
+ffffff8001548c1b: test     al, al
+ffffff8001548c1d: je       0xffffff8001548d21
+ffffff8001548c23: lea      rdi, [rip + 0x6db96]  ; 0xffffff80015b67c0
+ffffff8001548c2a: call     0xffffff8000a85dc0  ; _IOMallocTypeImpl
+ffffff8001548c2f: mov      qword ptr [r14 + 0x10], rax
+ffffff8001548c33: test     rax, rax
+ffffff8001548c36: je       0xffffff8001548d21
+ffffff8001548c3c: call     0xffffff8000a87500  ; _IOLockAlloc
+ffffff8001548c41: mov      rcx, qword ptr [r14 + 0x10]
+ffffff8001548c45: mov      qword ptr [rcx + 0xa0], rax
+ffffff8001548c4c: test     rax, rax
+ffffff8001548c4f: je       0xffffff8001548d21
+ffffff8001548c55: mov      rsi, qword ptr [rbp + 0x20]
+ffffff8001548c59: mov      rdi, qword ptr [rbp + 0x18]
+ffffff8001548c5d: mov      eax, dword ptr [rbp + 0x10]
+ffffff8001548c60: mov      dword ptr [rcx + 0x18], ebx
+ffffff8001548c63: mov      dword ptr [rcx + 0x1c], r13d
+ffffff8001548c67: mov      dword ptr [rcx + 0x20], r12d
+ffffff8001548c6b: mov      edx, dword ptr [rbp - 0x38]
+ffffff8001548c6e: mov      dword ptr [rcx + 0x24], edx
+ffffff8001548c71: mov      dword ptr [rcx + 0x28], eax
+ffffff8001548c74: mov      rbx, r15
+ffffff8001548c77: mov      qword ptr [rcx + 0x30], r15
+ffffff8001548c7b: mov      qword ptr [rcx], rdi
+ffffff8001548c7e: test     rdi, rdi
+ffffff8001548c81: je       0xffffff8001548c93
+ffffff8001548c83: mov      rax, qword ptr [rdi]
+ffffff8001548c86: mov      r15, rsi
+ffffff8001548c89: call     qword ptr [rax + 0x20]
+ffffff8001548c8c: mov      rsi, r15
+ffffff8001548c8f: mov      rcx, qword ptr [r14 + 0x10]
+ffffff8001548c93: mov      qword ptr [rcx + 0x10], rsi
+ffffff8001548c97: lea      rdi, [rip + 0x4de40]  ; "wlan.skywalk.ktrace"
+ffffff8001548c9e: lea      rsi, [rip + 0x6c463]  ; 0xffffff80015b5108
+ffffff8001548ca5: mov      edx, 1
+ffffff8001548caa: call     0xffffff8000b659e0  ; _PE_parse_boot_argn
+ffffff8001548caf: mov      rax, qword ptr [r14 + 0x10]
+ffffff8001548cb3: mov      byte ptr [rax + 0x81], 0
+ffffff8001548cba: lea      rdi, [rip + 0x4fa5c]  ; "wlan.txcomp.debug"
+ffffff8001548cc1: lea      rsi, [rbp - 0x34]
+ffffff8001548cc5: mov      edx, 4
+ffffff8001548cca: call     0xffffff8000b659e0  ; _PE_parse_boot_argn
+ffffff8001548ccf: mov      rcx, qword ptr [r14 + 0x10]
+ffffff8001548cd3: test     eax, eax
+ffffff8001548cd5: je       0xffffff8001548cde
+ffffff8001548cd7: mov      byte ptr [rcx + 0x81], 1
+ffffff8001548cde: xor      eax, eax
+ffffff8001548ce0: mov      qword ptr [rcx + 0x78], rax
+ffffff8001548ce4: mov      qword ptr [rcx + 0x1cc], rax
+ffffff8001548ceb: mov      byte ptr [rcx + 0x1d4], 0
+ffffff8001548cf2: mov      rdi, r14
+ffffff8001548cf5: mov      rsi, rbx
+ffffff8001548cf8: call     0xffffff8001548d2a  ; __ZN23AppleBCMWLANPCIeSkywalk27allocSkywalkCommonResourcesEP8OSObject
+ffffff8001548cfd: test     eax, eax
+ffffff8001548cff: sete     al
+ffffff8001548d02: mov      rcx, qword ptr [rip + 0x634a7]  ; 0xffffff80015ac1b0
+ffffff8001548d09: mov      rcx, qword ptr [rcx]
+ffffff8001548d0c: cmp      rcx, qword ptr [rbp - 0x30]
+ffffff8001548d10: jne      0xffffff8001548d25
+ffffff8001548d12: add      rsp, 0x18
+ffffff8001548d16: pop      rbx
+ffffff8001548d17: pop      r12
+ffffff8001548d19: pop      r13
+ffffff8001548d1b: pop      r14
+ffffff8001548d1d: pop      r15
+ffffff8001548d1f: pop      rbp
+ffffff8001548d20: ret      
+ffffff8001548d21: xor      eax, eax
+ffffff8001548d23: jmp      0xffffff8001548d02  ; __ZN23AppleBCMWLANPCIeSkywalk27initWithProviderAndCapacityEP28AppleBCMWLANBusInterfacePCIejjjjjP11CCLogStreamP15CCFaultReporter+0x12c
+ffffff8001548d25: call     0xffffff8000ba0c20  ; ___stack_chk_fail

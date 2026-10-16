@@ -1,0 +1,611 @@
+# 0xffffff8001661076 __ZN16AppleBCMWLANCore20getCARD_CAPABILITIESEP23IO80211SkywalkInterfaceP26apple80211_capability_data
+ffffff8001661076: push     rbp
+ffffff8001661077: mov      rbp, rsp
+ffffff800166107a: push     r15
+ffffff800166107c: push     r14
+ffffff800166107e: push     r12
+ffffff8001661080: push     rbx
+ffffff8001661081: mov      rbx, rdx
+ffffff8001661084: mov      r14, rdi
+ffffff8001661087: mov      rax, qword ptr [rdi + 0x128]
+ffffff800166108e: mov      r15d, dword ptr [rax + 0x30c]
+ffffff8001661095: xor      eax, eax
+ffffff8001661097: mov      qword ptr [rdx + 7], rax
+ffffff800166109b: mov      qword ptr [rdx + 0x14], rax
+ffffff800166109f: mov      qword ptr [rdx + 0xf], rax
+ffffff80016610a3: mov      dword ptr [rdx], 1
+ffffff80016610a9: mov      word ptr [rdx + 4], 0xe66f
+ffffff80016610af: mov      byte ptr [rdx + 9], 0x40
+ffffff80016610b3: mov      word ptr [rdx + 0xc], 0x201
+ffffff80016610b9: mov      byte ptr [rdx + 6], 0x61
+ffffff80016610bd: mov      esi, 1
+ffffff80016610c2: call     0xffffff800160c97a  ; __ZNK16AppleBCMWLANCore19featureFlagIsBitSetEi
+ffffff80016610c7: test     al, al
+ffffff80016610c9: jne      0xffffff80016610d3
+ffffff80016610cb: or       byte ptr [rbx + 6], 0x10
+ffffff80016610cf: or       byte ptr [rbx + 9], 1
+ffffff80016610d3: mov      rdi, r14
+ffffff80016610d6: mov      esi, 7
+ffffff80016610db: call     0xffffff800160c97a  ; __ZNK16AppleBCMWLANCore19featureFlagIsBitSetEi
+ffffff80016610e0: test     al, al
+ffffff80016610e2: jne      0xffffff80016610e8
+ffffff80016610e4: or       byte ptr [rbx + 6], 2
+ffffff80016610e8: lea      r12, [rbx + 7]
+ffffff80016610ec: mov      rdi, r14
+ffffff80016610ef: mov      esi, 0x1c
+ffffff80016610f4: call     0xffffff800160c97a  ; __ZNK16AppleBCMWLANCore19featureFlagIsBitSetEi
+ffffff80016610f9: test     al, al
+ffffff80016610fb: je       0xffffff8001661102
+ffffff80016610fd: or       byte ptr [r12], 0x20
+ffffff8001661102: mov      rdi, r14
+ffffff8001661105: call     0xffffff8001617866  ; __ZN16AppleBCMWLANCore22shouldSupportTetheringEv
+ffffff800166110a: test     al, al
+ffffff800166110c: je       0xffffff8001661112
+ffffff800166110e: or       byte ptr [rbx + 4], 0x80
+ffffff8001661112: mov      rdi, r14
+ffffff8001661115: mov      esi, 0x1b
+ffffff800166111a: call     0xffffff800160c97a  ; __ZNK16AppleBCMWLANCore19featureFlagIsBitSetEi
+ffffff800166111f: test     al, al
+ffffff8001661121: je       0xffffff800166112b
+ffffff8001661123: or       byte ptr [rbx + 7], 0x80
+ffffff8001661127: or       byte ptr [rbx + 8], 4
+ffffff800166112b: mov      rdi, r14
+ffffff800166112e: mov      esi, 2
+ffffff8001661133: call     0xffffff800160c97a  ; __ZNK16AppleBCMWLANCore19featureFlagIsBitSetEi
+ffffff8001661138: test     al, al
+ffffff800166113a: jne      0xffffff800166118c
+ffffff800166113c: mov      rax, qword ptr [r14 + 0x128]
+ffffff8001661143: mov      rcx, qword ptr [rax + 0x1578]
+ffffff800166114a: test     rcx, rcx
+ffffff800166114d: je       0xffffff800166118c
+ffffff800166114f: mov      rcx, qword ptr [rcx + 0x10]
+ffffff8001661153: test     byte ptr [rcx + 0xa6], 1
+ffffff800166115a: je       0xffffff800166118c
+ffffff800166115c: test     byte ptr [rax + 0x28ad], 2
+ffffff8001661163: jne      0xffffff800166118c
+ffffff8001661165: or       byte ptr [rbx + 8], 1
+ffffff8001661169: or       byte ptr [rbx + 7], 1
+ffffff800166116d: mov      rax, qword ptr [r14 + 0x128]
+ffffff8001661174: mov      rax, qword ptr [rax + 0x1578]
+ffffff800166117b: mov      rax, qword ptr [rax + 0x10]
+ffffff800166117f: test     byte ptr [rax + 0x8c], 4
+ffffff8001661186: jne      0xffffff800166118c
+ffffff8001661188: or       byte ptr [rbx + 0xa], 8
+ffffff800166118c: mov      rdi, r14
+ffffff800166118f: mov      esi, 0x37
+ffffff8001661194: call     0xffffff800160c97a  ; __ZNK16AppleBCMWLANCore19featureFlagIsBitSetEi
+ffffff8001661199: test     al, al
+ffffff800166119b: je       0xffffff80016611a2
+ffffff800166119d: or       byte ptr [r12], 3
+ffffff80016611a2: mov      rdi, r14
+ffffff80016611a5: mov      esi, 0x15
+ffffff80016611aa: call     0xffffff800160c97a  ; __ZNK16AppleBCMWLANCore19featureFlagIsBitSetEi
+ffffff80016611af: mov      rcx, qword ptr [r14 + 0x128]
+ffffff80016611b6: mov      rcx, qword ptr [rcx + 0x1578]
+ffffff80016611bd: test     rcx, rcx
+ffffff80016611c0: je       0xffffff80016611d4
+ffffff80016611c2: mov      rcx, qword ptr [rcx + 0x10]
+ffffff80016611c6: and      al, byte ptr [rcx + 0xe2]
+ffffff80016611cc: cmp      al, 1
+ffffff80016611ce: jne      0xffffff80016611d4
+ffffff80016611d0: or       byte ptr [rbx + 8], 2
+ffffff80016611d4: mov      rdi, r14
+ffffff80016611d7: mov      esi, 0x26
+ffffff80016611dc: call     0xffffff800160c97a  ; __ZNK16AppleBCMWLANCore19featureFlagIsBitSetEi
+ffffff80016611e1: test     al, al
+ffffff80016611e3: je       0xffffff80016611e9
+ffffff80016611e5: or       byte ptr [rbx + 0xa], 0x10
+ffffff80016611e9: mov      rdi, r14
+ffffff80016611ec: mov      esi, 0x11
+ffffff80016611f1: call     0xffffff800160c97a  ; __ZNK16AppleBCMWLANCore19featureFlagIsBitSetEi
+ffffff80016611f6: test     al, al
+ffffff80016611f8: je       0xffffff80016611fe
+ffffff80016611fa: or       byte ptr [rbx + 9], 0x20
+ffffff80016611fe: mov      rdi, r14
+ffffff8001661201: mov      esi, 0x1d
+ffffff8001661206: call     0xffffff800160c97a  ; __ZNK16AppleBCMWLANCore19featureFlagIsBitSetEi
+ffffff800166120b: test     al, al
+ffffff800166120d: je       0xffffff8001661213
+ffffff800166120f: or       byte ptr [rbx + 9], 0x80
+ffffff8001661213: mov      rax, qword ptr [r14 + 0x128]
+ffffff800166121a: movzx    ecx, word ptr [rax + 0x40e]
+ffffff8001661221: test     cl, 0x20
+ffffff8001661224: je       0xffffff8001661238
+ffffff8001661226: or       byte ptr [rbx + 6], 8
+ffffff800166122a: mov      rax, qword ptr [r14 + 0x128]
+ffffff8001661231: movzx    ecx, word ptr [rax + 0x40e]
+ffffff8001661238: test     cl, 0x40
+ffffff800166123b: je       0xffffff8001661248
+ffffff800166123d: or       byte ptr [rbx + 6], 4
+ffffff8001661241: mov      rax, qword ptr [r14 + 0x128]
+ffffff8001661248: cmp      dword ptr [rax + 0x400], 0x80
+ffffff8001661252: jl       0xffffff8001661276
+ffffff8001661254: test     byte ptr [rax + 0x42a], 0x20
+ffffff800166125b: je       0xffffff8001661261
+ffffff800166125d: or       byte ptr [rbx + 9], 8
+ffffff8001661261: mov      rdi, r14
+ffffff8001661264: mov      esi, 0x79
+ffffff8001661269: call     0xffffff800160c97a  ; __ZNK16AppleBCMWLANCore19featureFlagIsBitSetEi
+ffffff800166126e: test     al, al
+ffffff8001661270: je       0xffffff8001661276
+ffffff8001661272: or       byte ptr [rbx + 0x16], 2
+ffffff8001661276: mov      rdi, r14
+ffffff8001661279: mov      esi, 0x27
+ffffff800166127e: call     0xffffff800160c97a  ; __ZNK16AppleBCMWLANCore19featureFlagIsBitSetEi
+ffffff8001661283: test     al, al
+ffffff8001661285: je       0xffffff80016612ac
+ffffff8001661287: mov      rax, qword ptr [r14 + 0x128]
+ffffff800166128e: mov      rax, qword ptr [rax + 0x1578]
+ffffff8001661295: mov      rax, qword ptr [rax + 0x10]
+ffffff8001661299: cmp      dword ptr [rax + 0xc8], 1
+ffffff80016612a0: jne      0xffffff80016612a8
+ffffff80016612a2: or       byte ptr [rbx + 0xa], 0x20
+ffffff80016612a6: jmp      0xffffff80016612ac  ; __ZN16AppleBCMWLANCore20getCARD_CAPABILITIESEP23IO80211SkywalkInterfaceP26apple80211_capability_data+0x236
+ffffff80016612a8: or       byte ptr [rbx + 0xc], 2
+ffffff80016612ac: mov      rax, qword ptr [r14 + 0x128]
+ffffff80016612b3: mov      rax, qword ptr [rax + 0x1578]
+ffffff80016612ba: test     rax, rax
+ffffff80016612bd: je       0xffffff80016612d0
+ffffff80016612bf: mov      rax, qword ptr [rax + 0x10]
+ffffff80016612c3: test     byte ptr [rax + 0xe6], 1
+ffffff80016612ca: je       0xffffff80016612d0
+ffffff80016612cc: or       byte ptr [rbx + 0xc], 4
+ffffff80016612d0: mov      rdi, r14
+ffffff80016612d3: mov      esi, 0x28
+ffffff80016612d8: call     0xffffff800160c97a  ; __ZNK16AppleBCMWLANCore19featureFlagIsBitSetEi
+ffffff80016612dd: test     al, al
+ffffff80016612df: je       0xffffff80016612e5
+ffffff80016612e1: or       byte ptr [rbx + 0xa], 0x40
+ffffff80016612e5: mov      rdi, r14
+ffffff80016612e8: mov      esi, 0x2e
+ffffff80016612ed: call     0xffffff800160c97a  ; __ZNK16AppleBCMWLANCore19featureFlagIsBitSetEi
+ffffff80016612f2: test     al, al
+ffffff80016612f4: je       0xffffff800166130f
+ffffff80016612f6: or       byte ptr [rbx + 0xb], 2
+ffffff80016612fa: mov      rdi, r14
+ffffff80016612fd: mov      esi, 0x46
+ffffff8001661302: call     0xffffff800160c97a  ; __ZNK16AppleBCMWLANCore19featureFlagIsBitSetEi
+ffffff8001661307: test     al, al
+ffffff8001661309: je       0xffffff800166130f
+ffffff800166130b: or       byte ptr [rbx + 0xd], 0x40
+ffffff800166130f: mov      rdi, r14
+ffffff8001661312: mov      esi, 0x2f
+ffffff8001661317: call     0xffffff800160c97a  ; __ZNK16AppleBCMWLANCore19featureFlagIsBitSetEi
+ffffff800166131c: test     al, al
+ffffff800166131e: je       0xffffff8001661324
+ffffff8001661320: or       byte ptr [rbx + 0xb], 1
+ffffff8001661324: mov      rdi, r14
+ffffff8001661327: mov      esi, 0x1e
+ffffff800166132c: call     0xffffff800160c97a  ; __ZNK16AppleBCMWLANCore19featureFlagIsBitSetEi
+ffffff8001661331: test     al, al
+ffffff8001661333: je       0xffffff8001661339
+ffffff8001661335: or       byte ptr [rbx + 0x14], 0x20
+ffffff8001661339: mov      rdi, r14
+ffffff800166133c: mov      esi, 0x62
+ffffff8001661341: call     0xffffff800160c97a  ; __ZNK16AppleBCMWLANCore19featureFlagIsBitSetEi
+ffffff8001661346: test     al, al
+ffffff8001661348: je       0xffffff800166134e
+ffffff800166134a: or       byte ptr [rbx + 0x10], 4
+ffffff800166134e: mov      rdi, r14
+ffffff8001661351: mov      esi, 0x30
+ffffff8001661356: call     0xffffff800160c97a  ; __ZNK16AppleBCMWLANCore19featureFlagIsBitSetEi
+ffffff800166135b: test     al, al
+ffffff800166135d: je       0xffffff8001661373
+ffffff800166135f: mov      rax, qword ptr [r14 + 0x128]
+ffffff8001661366: test     byte ptr [rax + 0x464c], 2
+ffffff800166136d: jne      0xffffff8001661373
+ffffff800166136f: or       byte ptr [rbx + 0xb], 4
+ffffff8001661373: mov      rdi, r14
+ffffff8001661376: mov      esi, 0x32
+ffffff800166137b: call     0xffffff800160c97a  ; __ZNK16AppleBCMWLANCore19featureFlagIsBitSetEi
+ffffff8001661380: test     al, al
+ffffff8001661382: je       0xffffff8001661388
+ffffff8001661384: or       byte ptr [rbx + 0xb], 8
+ffffff8001661388: or       byte ptr [rbx + 0xa], 4
+ffffff800166138c: or       byte ptr [rbx + 7], 4
+ffffff8001661390: mov      rdi, r14
+ffffff8001661393: mov      esi, 0xc
+ffffff8001661398: call     0xffffff800160c97a  ; __ZNK16AppleBCMWLANCore19featureFlagIsBitSetEi
+ffffff800166139d: test     al, al
+ffffff800166139f: je       0xffffff80016613a5
+ffffff80016613a1: or       byte ptr [rbx + 0xb], 0x20
+ffffff80016613a5: mov      rdi, r14
+ffffff80016613a8: mov      esi, 6
+ffffff80016613ad: call     0xffffff800160c97a  ; __ZNK16AppleBCMWLANCore19featureFlagIsBitSetEi
+ffffff80016613b2: test     al, al
+ffffff80016613b4: je       0xffffff80016613ba
+ffffff80016613b6: or       byte ptr [rbx + 0xd], 1
+ffffff80016613ba: mov      rdi, r14
+ffffff80016613bd: mov      esi, 0x36
+ffffff80016613c2: call     0xffffff800160c97a  ; __ZNK16AppleBCMWLANCore19featureFlagIsBitSetEi
+ffffff80016613c7: test     al, al
+ffffff80016613c9: je       0xffffff80016613cf
+ffffff80016613cb: or       byte ptr [rbx + 0xc], 8
+ffffff80016613cf: mov      rdi, r14
+ffffff80016613d2: mov      esi, 0x34
+ffffff80016613d7: call     0xffffff800160c97a  ; __ZNK16AppleBCMWLANCore19featureFlagIsBitSetEi
+ffffff80016613dc: test     al, al
+ffffff80016613de: je       0xffffff80016613e4
+ffffff80016613e0: or       byte ptr [rbx + 0xc], 0x20
+ffffff80016613e4: mov      rdi, r14
+ffffff80016613e7: mov      esi, 0x31
+ffffff80016613ec: call     0xffffff800160c97a  ; __ZNK16AppleBCMWLANCore19featureFlagIsBitSetEi
+ffffff80016613f1: test     al, al
+ffffff80016613f3: je       0xffffff80016613f9
+ffffff80016613f5: or       byte ptr [rbx + 0xc], 0x40
+ffffff80016613f9: mov      rdi, r14
+ffffff80016613fc: mov      esi, 0x3e
+ffffff8001661401: call     0xffffff800160c97a  ; __ZNK16AppleBCMWLANCore19featureFlagIsBitSetEi
+ffffff8001661406: test     al, al
+ffffff8001661408: je       0xffffff800166140e
+ffffff800166140a: or       byte ptr [rbx + 0xb], 0x80
+ffffff800166140e: mov      rdi, r14
+ffffff8001661411: mov      esi, 0x41
+ffffff8001661416: call     0xffffff800160c97a  ; __ZNK16AppleBCMWLANCore19featureFlagIsBitSetEi
+ffffff800166141b: test     al, al
+ffffff800166141d: je       0xffffff8001661423
+ffffff800166141f: or       byte ptr [rbx + 0xd], 8
+ffffff8001661423: mov      rdi, r14
+ffffff8001661426: mov      esi, 0x60
+ffffff800166142b: call     0xffffff800160c97a  ; __ZNK16AppleBCMWLANCore19featureFlagIsBitSetEi
+ffffff8001661430: test     al, al
+ffffff8001661432: je       0xffffff8001661438
+ffffff8001661434: or       byte ptr [rbx + 0x10], 1
+ffffff8001661438: mov      rdi, r14
+ffffff800166143b: mov      esi, 0x64
+ffffff8001661440: call     0xffffff800160c97a  ; __ZNK16AppleBCMWLANCore19featureFlagIsBitSetEi
+ffffff8001661445: test     al, al
+ffffff8001661447: je       0xffffff800166144d
+ffffff8001661449: or       byte ptr [rbx + 0x10], 8
+ffffff800166144d: mov      rdi, r14
+ffffff8001661450: mov      esi, 0x4b
+ffffff8001661455: call     0xffffff800160c97a  ; __ZNK16AppleBCMWLANCore19featureFlagIsBitSetEi
+ffffff800166145a: test     al, al
+ffffff800166145c: je       0xffffff8001661462
+ffffff800166145e: or       byte ptr [rbx + 0xe], 1
+ffffff8001661462: mov      rdi, r14
+ffffff8001661465: mov      esi, 0x42
+ffffff800166146a: call     0xffffff800160c97a  ; __ZNK16AppleBCMWLANCore19featureFlagIsBitSetEi
+ffffff800166146f: test     al, al
+ffffff8001661471: je       0xffffff8001661477
+ffffff8001661473: or       byte ptr [rbx + 0xd], 0x10
+ffffff8001661477: mov      rax, qword ptr [r14 + 0x128]
+ffffff800166147e: cmp      dword ptr [rax + 0x30c], 5
+ffffff8001661485: jb       0xffffff800166148b
+ffffff8001661487: or       byte ptr [rbx + 0xd], 0x80
+ffffff800166148b: mov      rdi, r14
+ffffff800166148e: call     0xffffff80016619ca  ; __ZN16AppleBCMWLANCore19checkForLPASSupportEv
+ffffff8001661493: test     al, al
+ffffff8001661495: je       0xffffff800166149b
+ffffff8001661497: or       byte ptr [rbx + 0xe], 2
+ffffff800166149b: mov      rax, qword ptr [r14 + 0x128]
+ffffff80016614a2: mov      rax, qword ptr [rax + 0x1578]
+ffffff80016614a9: test     rax, rax
+ffffff80016614ac: je       0xffffff80016614c4
+ffffff80016614ae: mov      rax, qword ptr [rax + 0x10]
+ffffff80016614b2: test     rax, rax
+ffffff80016614b5: je       0xffffff80016614c4
+ffffff80016614b7: test     byte ptr [rax + 0x150], 1
+ffffff80016614be: je       0xffffff80016614c4
+ffffff80016614c0: or       byte ptr [rbx + 0xe], 4
+ffffff80016614c4: mov      rdi, r14
+ffffff80016614c7: mov      esi, 0x53
+ffffff80016614cc: call     0xffffff800160c97a  ; __ZNK16AppleBCMWLANCore19featureFlagIsBitSetEi
+ffffff80016614d1: test     al, al
+ffffff80016614d3: je       0xffffff80016614d9
+ffffff80016614d5: or       byte ptr [rbx + 0xe], 0x10
+ffffff80016614d9: cmp      r15d, 5
+ffffff80016614dd: jbe      0xffffff80016614e5
+ffffff80016614df: or       byte ptr [rbx + 0xe], 8
+ffffff80016614e3: jmp      0xffffff8001661505  ; __ZN16AppleBCMWLANCore20getCARD_CAPABILITIESEP23IO80211SkywalkInterfaceP26apple80211_capability_data+0x48f
+ffffff80016614e5: jne      0xffffff8001661505
+ffffff80016614e7: mov      rax, qword ptr [r14 + 0x128]
+ffffff80016614ee: mov      rdi, qword ptr [rax + 0x1530]
+ffffff80016614f5: mov      rax, qword ptr [rdi]
+ffffff80016614f8: call     qword ptr [rax + 0xa30]
+ffffff80016614fe: cmp      eax, 0x110c
+ffffff8001661503: je       0xffffff80016614df
+ffffff8001661505: mov      rax, qword ptr [r14 + 0x128]
+ffffff800166150c: mov      rax, qword ptr [rax + 0x1578]
+ffffff8001661513: test     rax, rax
+ffffff8001661516: je       0xffffff8001661529
+ffffff8001661518: mov      rax, qword ptr [rax + 0x10]
+ffffff800166151c: test     byte ptr [rax + 0x145], 1
+ffffff8001661523: je       0xffffff8001661529
+ffffff8001661525: or       byte ptr [rbx + 0xe], 0x20
+ffffff8001661529: mov      rdi, r14
+ffffff800166152c: mov      esi, 0x56
+ffffff8001661531: call     0xffffff800160c97a  ; __ZNK16AppleBCMWLANCore19featureFlagIsBitSetEi
+ffffff8001661536: test     al, al
+ffffff8001661538: je       0xffffff800166153e
+ffffff800166153a: or       byte ptr [rbx + 0xe], 0x40
+ffffff800166153e: mov      rdi, r14
+ffffff8001661541: mov      esi, 0x58
+ffffff8001661546: call     0xffffff800160c97a  ; __ZNK16AppleBCMWLANCore19featureFlagIsBitSetEi
+ffffff800166154b: test     al, al
+ffffff800166154d: je       0xffffff8001661553
+ffffff800166154f: or       byte ptr [rbx + 0xe], 0x80
+ffffff8001661553: mov      rdi, r14
+ffffff8001661556: mov      esi, 0x4c
+ffffff800166155b: call     0xffffff800160c97a  ; __ZNK16AppleBCMWLANCore19featureFlagIsBitSetEi
+ffffff8001661560: mov      rcx, qword ptr [r14 + 0x128]
+ffffff8001661567: test     al, al
+ffffff8001661569: je       0xffffff800166157f
+ffffff800166156b: test     byte ptr [rcx + 0x48f4], 1
+ffffff8001661572: jne      0xffffff800166157f
+ffffff8001661574: or       byte ptr [rbx + 0xf], 1
+ffffff8001661578: mov      rcx, qword ptr [r14 + 0x128]
+ffffff800166157f: mov      rdi, qword ptr [rcx + 0x1530]
+ffffff8001661586: mov      rax, qword ptr [rdi]
+ffffff8001661589: call     qword ptr [rax + 0xa30]
+ffffff800166158f: add      eax, 0xffffeee6
+ffffff8001661594: cmp      eax, 0x15
+ffffff8001661597: ja       0xffffff80016615a7
+ffffff8001661599: mov      ecx, 0x200601
+ffffff800166159e: bt       ecx, eax
+ffffff80016615a1: jae      0xffffff80016615a7
+ffffff80016615a3: or       byte ptr [rbx + 0x14], 8
+ffffff80016615a7: mov      rax, qword ptr [r14 + 0x128]
+ffffff80016615ae: test     byte ptr [rax + 0x4530], 0x20
+ffffff80016615b5: je       0xffffff80016615c2
+ffffff80016615b7: or       byte ptr [rbx + 0xf], 2
+ffffff80016615bb: mov      rax, qword ptr [r14 + 0x128]
+ffffff80016615c2: test     byte ptr [rax + 0x7644], 1
+ffffff80016615c9: je       0xffffff80016615d6
+ffffff80016615cb: or       byte ptr [rbx + 0xf], 4
+ffffff80016615cf: mov      rax, qword ptr [r14 + 0x128]
+ffffff80016615d6: test     byte ptr [rax + 0x762e], 1
+ffffff80016615dd: je       0xffffff80016615ea
+ffffff80016615df: or       byte ptr [rbx + 0xf], 8
+ffffff80016615e3: mov      rax, qword ptr [r14 + 0x128]
+ffffff80016615ea: test     byte ptr [rax + 0x762f], 1
+ffffff80016615f1: je       0xffffff80016615fe
+ffffff80016615f3: or       byte ptr [rbx + 0xf], 0x10
+ffffff80016615f7: mov      rax, qword ptr [r14 + 0x128]
+ffffff80016615fe: mov      rax, qword ptr [rax + 0x1578]
+ffffff8001661605: test     rax, rax
+ffffff8001661608: je       0xffffff8001661649
+ffffff800166160a: mov      rcx, qword ptr [rax + 0x10]
+ffffff800166160e: test     rcx, rcx
+ffffff8001661611: je       0xffffff8001661633
+ffffff8001661613: test     byte ptr [rcx + 0x146], 1
+ffffff800166161a: je       0xffffff8001661633
+ffffff800166161c: or       byte ptr [rbx + 0xf], 0x20
+ffffff8001661620: mov      rax, qword ptr [r14 + 0x128]
+ffffff8001661627: mov      rax, qword ptr [rax + 0x1578]
+ffffff800166162e: test     rax, rax
+ffffff8001661631: je       0xffffff8001661649
+ffffff8001661633: mov      rax, qword ptr [rax + 0x10]
+ffffff8001661637: test     rax, rax
+ffffff800166163a: je       0xffffff8001661649
+ffffff800166163c: test     byte ptr [rax + 0x147], 1
+ffffff8001661643: je       0xffffff8001661649
+ffffff8001661645: or       byte ptr [rbx + 0x16], 4
+ffffff8001661649: mov      rdi, r14
+ffffff800166164c: mov      esi, 0x61
+ffffff8001661651: call     0xffffff800160c97a  ; __ZNK16AppleBCMWLANCore19featureFlagIsBitSetEi
+ffffff8001661656: test     al, al
+ffffff8001661658: je       0xffffff800166165e
+ffffff800166165a: or       byte ptr [rbx + 0x10], 2
+ffffff800166165e: mov      rdi, r14
+ffffff8001661661: mov      esi, 0x77
+ffffff8001661666: call     0xffffff800160c97a  ; __ZNK16AppleBCMWLANCore19featureFlagIsBitSetEi
+ffffff800166166b: test     al, al
+ffffff800166166d: je       0xffffff8001661673
+ffffff800166166f: or       byte ptr [rbx + 0x16], 1
+ffffff8001661673: mov      rdi, r14
+ffffff8001661676: mov      esi, 0x5d
+ffffff800166167b: call     0xffffff800160c97a  ; __ZNK16AppleBCMWLANCore19featureFlagIsBitSetEi
+ffffff8001661680: test     al, al
+ffffff8001661682: je       0xffffff8001661688
+ffffff8001661684: or       byte ptr [rbx + 0xf], 0x40
+ffffff8001661688: mov      rax, qword ptr [r14 + 0x128]
+ffffff800166168f: test     byte ptr [rax + 0x7630], 1
+ffffff8001661696: je       0xffffff80016616b1
+ffffff8001661698: mov      rdi, r14
+ffffff800166169b: mov      esi, 0x5d
+ffffff80016616a0: call     0xffffff800160c97a  ; __ZNK16AppleBCMWLANCore19featureFlagIsBitSetEi
+ffffff80016616a5: test     al, al
+ffffff80016616a7: je       0xffffff80016616b1
+ffffff80016616a9: or       byte ptr [rbx + 0xf], 0x80
+ffffff80016616ad: or       byte ptr [rbx + 0x18], 0x10
+ffffff80016616b1: mov      rdi, r14
+ffffff80016616b4: mov      esi, 0x48
+ffffff80016616b9: call     0xffffff800160c97a  ; __ZNK16AppleBCMWLANCore19featureFlagIsBitSetEi
+ffffff80016616be: test     al, al
+ffffff80016616c0: je       0xffffff80016616c6
+ffffff80016616c2: or       byte ptr [rbx + 0x10], 0x20
+ffffff80016616c6: mov      rdi, r14
+ffffff80016616c9: mov      esi, 0x25
+ffffff80016616ce: call     0xffffff800160c97a  ; __ZNK16AppleBCMWLANCore19featureFlagIsBitSetEi
+ffffff80016616d3: test     al, al
+ffffff80016616d5: je       0xffffff80016616db
+ffffff80016616d7: or       byte ptr [rbx + 0x10], 0x40
+ffffff80016616db: mov      rdi, r14
+ffffff80016616de: mov      esi, 0x3c
+ffffff80016616e3: call     0xffffff800160c97a  ; __ZNK16AppleBCMWLANCore19featureFlagIsBitSetEi
+ffffff80016616e8: test     al, al
+ffffff80016616ea: je       0xffffff80016616f0
+ffffff80016616ec: or       byte ptr [rbx + 0x10], 0x80
+ffffff80016616f0: cmp      r15d, 0x10
+ffffff80016616f4: ja       0xffffff80016616fa
+ffffff80016616f6: or       byte ptr [rbx + 0x11], 1
+ffffff80016616fa: mov      rdi, r14
+ffffff80016616fd: mov      esi, 0x69
+ffffff8001661702: call     0xffffff800160c97a  ; __ZNK16AppleBCMWLANCore19featureFlagIsBitSetEi
+ffffff8001661707: test     al, al
+ffffff8001661709: je       0xffffff800166170f
+ffffff800166170b: or       byte ptr [rbx + 0x11], 2
+ffffff800166170f: mov      rdi, r14
+ffffff8001661712: mov      esi, 0x6a
+ffffff8001661717: call     0xffffff800160c97a  ; __ZNK16AppleBCMWLANCore19featureFlagIsBitSetEi
+ffffff800166171c: test     al, al
+ffffff800166171e: je       0xffffff8001661724
+ffffff8001661720: or       byte ptr [rbx + 0x11], 4
+ffffff8001661724: mov      rdi, r14
+ffffff8001661727: mov      esi, 0x6d
+ffffff800166172c: call     0xffffff800160c97a  ; __ZNK16AppleBCMWLANCore19featureFlagIsBitSetEi
+ffffff8001661731: test     al, al
+ffffff8001661733: je       0xffffff8001661739
+ffffff8001661735: or       byte ptr [rbx + 0x11], 0x20
+ffffff8001661739: mov      rdi, r14
+ffffff800166173c: mov      esi, 0x7b
+ffffff8001661741: call     0xffffff800160c97a  ; __ZNK16AppleBCMWLANCore19featureFlagIsBitSetEi
+ffffff8001661746: test     al, al
+ffffff8001661748: je       0xffffff800166175e
+ffffff800166174a: mov      rax, qword ptr [r14 + 0x128]
+ffffff8001661751: test     byte ptr [rax + 0x7dbc], 1
+ffffff8001661758: je       0xffffff800166175e
+ffffff800166175a: or       byte ptr [rbx + 0x18], 1
+ffffff800166175e: mov      rdi, r14
+ffffff8001661761: mov      esi, 0x6b
+ffffff8001661766: call     0xffffff800160c97a  ; __ZNK16AppleBCMWLANCore19featureFlagIsBitSetEi
+ffffff800166176b: test     al, al
+ffffff800166176d: je       0xffffff8001661773
+ffffff800166176f: or       byte ptr [rbx + 0x11], 8
+ffffff8001661773: mov      rdi, r14
+ffffff8001661776: mov      esi, 0x6c
+ffffff800166177b: call     0xffffff800160c97a  ; __ZNK16AppleBCMWLANCore19featureFlagIsBitSetEi
+ffffff8001661780: test     al, al
+ffffff8001661782: je       0xffffff8001661788
+ffffff8001661784: or       byte ptr [rbx + 0x11], 0x10
+ffffff8001661788: mov      rdi, r14
+ffffff800166178b: mov      esi, 0x23
+ffffff8001661790: call     0xffffff800160c97a  ; __ZNK16AppleBCMWLANCore19featureFlagIsBitSetEi
+ffffff8001661795: test     al, al
+ffffff8001661797: je       0xffffff800166179d
+ffffff8001661799: or       byte ptr [rbx + 0x11], 0x40
+ffffff800166179d: mov      rdi, r14
+ffffff80016617a0: mov      esi, 0x68
+ffffff80016617a5: call     0xffffff800160c97a  ; __ZNK16AppleBCMWLANCore19featureFlagIsBitSetEi
+ffffff80016617aa: test     al, al
+ffffff80016617ac: je       0xffffff80016617b2
+ffffff80016617ae: or       byte ptr [rbx + 0x12], 1
+ffffff80016617b2: mov      rdi, r14
+ffffff80016617b5: mov      esi, 0x52
+ffffff80016617ba: call     0xffffff800160c97a  ; __ZNK16AppleBCMWLANCore19featureFlagIsBitSetEi
+ffffff80016617bf: test     al, al
+ffffff80016617c1: je       0xffffff80016617c7
+ffffff80016617c3: or       byte ptr [rbx + 0x12], 4
+ffffff80016617c7: mov      rdi, r14
+ffffff80016617ca: mov      esi, 0x59
+ffffff80016617cf: call     0xffffff800160c97a  ; __ZNK16AppleBCMWLANCore19featureFlagIsBitSetEi
+ffffff80016617d4: test     al, al
+ffffff80016617d6: je       0xffffff80016617e0
+ffffff80016617d8: or       byte ptr [rbx + 0x12], 2
+ffffff80016617dc: or       byte ptr [rbx + 0x16], 0x40
+ffffff80016617e0: mov      rdi, r14
+ffffff80016617e3: mov      esi, 0x71
+ffffff80016617e8: call     0xffffff800160c97a  ; __ZNK16AppleBCMWLANCore19featureFlagIsBitSetEi
+ffffff80016617ed: test     al, al
+ffffff80016617ef: je       0xffffff80016617f5
+ffffff80016617f1: or       byte ptr [rbx + 0x14], 0x80
+ffffff80016617f5: mov      rdi, r14
+ffffff80016617f8: mov      esi, 0x24
+ffffff80016617fd: call     0xffffff800160c97a  ; __ZNK16AppleBCMWLANCore19featureFlagIsBitSetEi
+ffffff8001661802: test     al, al
+ffffff8001661804: je       0xffffff800166180a
+ffffff8001661806: or       byte ptr [rbx + 0x12], 0x10
+ffffff800166180a: mov      rdi, r14
+ffffff800166180d: mov      esi, 0x12
+ffffff8001661812: call     0xffffff800160c97a  ; __ZNK16AppleBCMWLANCore19featureFlagIsBitSetEi
+ffffff8001661817: test     al, al
+ffffff8001661819: je       0xffffff800166181f
+ffffff800166181b: or       byte ptr [rbx + 0x12], 0x20
+ffffff800166181f: mov      rdi, r14
+ffffff8001661822: mov      esi, 0x3d
+ffffff8001661827: call     0xffffff800160c97a  ; __ZNK16AppleBCMWLANCore19featureFlagIsBitSetEi
+ffffff800166182c: test     al, al
+ffffff800166182e: je       0xffffff8001661834
+ffffff8001661830: or       byte ptr [rbx + 0x12], 0x40
+ffffff8001661834: mov      rdi, r14
+ffffff8001661837: mov      esi, 0x19
+ffffff800166183c: call     0xffffff800160c97a  ; __ZNK16AppleBCMWLANCore19featureFlagIsBitSetEi
+ffffff8001661841: test     al, al
+ffffff8001661843: je       0xffffff8001661849
+ffffff8001661845: or       byte ptr [rbx + 0x12], 0x80
+ffffff8001661849: mov      rdi, r14
+ffffff800166184c: mov      esi, 0x32
+ffffff8001661851: call     0xffffff800160c97a  ; __ZNK16AppleBCMWLANCore19featureFlagIsBitSetEi
+ffffff8001661856: test     al, al
+ffffff8001661858: je       0xffffff800166185e
+ffffff800166185a: or       byte ptr [rbx + 0x13], 4
+ffffff800166185e: mov      rdi, r14
+ffffff8001661861: mov      esi, 0x20
+ffffff8001661866: call     0xffffff800160c97a  ; __ZNK16AppleBCMWLANCore19featureFlagIsBitSetEi
+ffffff800166186b: test     al, al
+ffffff800166186d: je       0xffffff8001661873
+ffffff800166186f: or       byte ptr [rbx + 0x13], 8
+ffffff8001661873: mov      rax, qword ptr [r14 + 0x128]
+ffffff800166187a: mov      rax, qword ptr [rax + 0x1578]
+ffffff8001661881: mov      rax, qword ptr [rax + 0x10]
+ffffff8001661885: mov      eax, dword ptr [rax + 0xf0]
+ffffff800166188b: test     al, 1
+ffffff800166188d: je       0xffffff80016618ab
+ffffff800166188f: or       byte ptr [rbx + 0x13], 0x40
+ffffff8001661893: mov      rax, qword ptr [r14 + 0x128]
+ffffff800166189a: mov      rax, qword ptr [rax + 0x1578]
+ffffff80016618a1: mov      rax, qword ptr [rax + 0x10]
+ffffff80016618a5: mov      eax, dword ptr [rax + 0xf0]
+ffffff80016618ab: test     al, 2
+ffffff80016618ad: je       0xffffff80016618cb
+ffffff80016618af: or       byte ptr [rbx + 0x13], 0x10
+ffffff80016618b3: mov      rax, qword ptr [r14 + 0x128]
+ffffff80016618ba: mov      rax, qword ptr [rax + 0x1578]
+ffffff80016618c1: mov      rax, qword ptr [rax + 0x10]
+ffffff80016618c5: mov      eax, dword ptr [rax + 0xf0]
+ffffff80016618cb: test     al, 4
+ffffff80016618cd: je       0xffffff80016618d3
+ffffff80016618cf: or       byte ptr [rbx + 0x13], 0x20
+ffffff80016618d3: mov      rdi, r14
+ffffff80016618d6: mov      esi, 0x72
+ffffff80016618db: call     0xffffff800160c97a  ; __ZNK16AppleBCMWLANCore19featureFlagIsBitSetEi
+ffffff80016618e0: test     al, al
+ffffff80016618e2: je       0xffffff80016618e8
+ffffff80016618e4: or       byte ptr [rbx + 0x15], 2
+ffffff80016618e8: mov      rdi, r14
+ffffff80016618eb: mov      esi, 0x73
+ffffff80016618f0: call     0xffffff800160c97a  ; __ZNK16AppleBCMWLANCore19featureFlagIsBitSetEi
+ffffff80016618f5: test     al, al
+ffffff80016618f7: je       0xffffff80016618fd
+ffffff80016618f9: or       byte ptr [rbx + 0x15], 8
+ffffff80016618fd: mov      rdi, r14
+ffffff8001661900: mov      esi, 0x74
+ffffff8001661905: call     0xffffff800160c97a  ; __ZNK16AppleBCMWLANCore19featureFlagIsBitSetEi
+ffffff800166190a: test     al, al
+ffffff800166190c: je       0xffffff8001661912
+ffffff800166190e: or       byte ptr [rbx + 0x15], 0x30
+ffffff8001661912: mov      rdi, r14
+ffffff8001661915: mov      esi, 0x75
+ffffff800166191a: call     0xffffff800160c97a  ; __ZNK16AppleBCMWLANCore19featureFlagIsBitSetEi
+ffffff800166191f: test     al, al
+ffffff8001661921: je       0xffffff8001661927
+ffffff8001661923: or       byte ptr [rbx + 0x15], 4
+ffffff8001661927: mov      rdi, r14
+ffffff800166192a: mov      esi, 0x43
+ffffff800166192f: call     0xffffff800160c97a  ; __ZNK16AppleBCMWLANCore19featureFlagIsBitSetEi
+ffffff8001661934: test     al, al
+ffffff8001661936: je       0xffffff800166193c
+ffffff8001661938: or       byte ptr [rbx + 0x15], 0x80
+ffffff800166193c: mov      rdi, r14
+ffffff800166193f: mov      esi, 0x76
+ffffff8001661944: call     0xffffff800160c97a  ; __ZNK16AppleBCMWLANCore19featureFlagIsBitSetEi
+ffffff8001661949: test     al, al
+ffffff800166194b: je       0xffffff8001661951
+ffffff800166194d: or       byte ptr [rbx + 5], 8
+ffffff8001661951: mov      al, byte ptr [rbx + 0x17]
+ffffff8001661954: mov      ecx, eax
+ffffff8001661956: or       cl, 0x10
+ffffff8001661959: mov      byte ptr [rbx + 0x17], cl
+ffffff800166195c: mov      rcx, qword ptr [r14 + 0x128]
+ffffff8001661963: test     byte ptr [rcx + 0x7dbd], 1
+ffffff800166196a: je       0xffffff8001661971
+ffffff800166196c: or       al, 0x50
+ffffff800166196e: mov      byte ptr [rbx + 0x17], al
+ffffff8001661971: xor      eax, eax
+ffffff8001661973: pop      rbx
+ffffff8001661974: pop      r12
+ffffff8001661976: pop      r14
+ffffff8001661978: pop      r15
+ffffff800166197a: pop      rbp
+ffffff800166197b: ret      

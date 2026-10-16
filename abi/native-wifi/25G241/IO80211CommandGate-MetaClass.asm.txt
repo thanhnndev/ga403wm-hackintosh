@@ -1,0 +1,32 @@
+# 0xffffff80021a87a2 __ZN18IO80211CommandGate9MetaClassC1Ev
+ffffff80021a87a2: push     rbp
+ffffff80021a87a3: mov      rbp, rsp
+ffffff80021a87a6: push     rbx
+ffffff80021a87a7: push     rax
+ffffff80021a87a8: mov      rbx, rdi
+ffffff80021a87ab: lea      rsi, [rip + 0x21e33e]  ; "IO80211CommandGate"
+ffffff80021a87b2: mov      rdx, qword ptr [rip + 0x2a78ff]  ; 0xffffff80024500b8
+ffffff80021a87b9: mov      ecx, 0x18
+ffffff80021a87be: call     0xffffff8000a1a9d0  ; __ZN11OSMetaClassC2EPKcPKS_j
+ffffff80021a87c3: lea      rax, [rip + 0x2b125e]  ; 0xffffff8002459a28
+ffffff80021a87ca: mov      qword ptr [rbx], rax
+ffffff80021a87cd: add      rsp, 8
+ffffff80021a87d1: pop      rbx
+ffffff80021a87d2: pop      rbp
+ffffff80021a87d3: ret      
+# 0xffffff80021a8880 __ZN18IO80211CommandGate9MetaClassC2Ev
+ffffff80021a8880: push     rbp
+ffffff80021a8881: mov      rbp, rsp
+ffffff80021a8884: push     rbx
+ffffff80021a8885: push     rax
+ffffff80021a8886: mov      rbx, rdi
+ffffff80021a8889: lea      rsi, [rip + 0x21e260]  ; "IO80211CommandGate"
+ffffff80021a8890: mov      rdx, qword ptr [rip + 0x2a7821]  ; 0xffffff80024500b8
+ffffff80021a8897: mov      ecx, 0x18
+ffffff80021a889c: call     0xffffff8000a1a9d0  ; __ZN11OSMetaClassC2EPKcPKS_j
+ffffff80021a88a1: lea      rax, [rip + 0x2b1180]  ; 0xffffff8002459a28
+ffffff80021a88a8: mov      qword ptr [rbx], rax
+ffffff80021a88ab: add      rsp, 8
+ffffff80021a88af: pop      rbx
+ffffff80021a88b0: pop      rbp
+ffffff80021a88b1: ret      

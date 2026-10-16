@@ -1,0 +1,192 @@
+# 0xffffff800236cd2e __Z23apple80211RouteExternalP23IO80211SkywalkInterfaceP20IO80211APIUserClientmP13apple80211reqbb
+ffffff800236cd2e: push     rbp
+ffffff800236cd2f: mov      rbp, rsp
+ffffff800236cd32: push     r15
+ffffff800236cd34: push     r14
+ffffff800236cd36: push     r13
+ffffff800236cd38: push     r12
+ffffff800236cd3a: push     rbx
+ffffff800236cd3b: sub      rsp, 0x18
+ffffff800236cd3f: mov      dword ptr [rbp - 0x34], r9d
+ffffff800236cd43: mov      r9, rcx
+ffffff800236cd46: mov      r12, rdx
+ffffff800236cd49: test     rdi, rdi
+ffffff800236cd4c: je       0xffffff800236cfa4
+ffffff800236cd52: mov      r14d, r8d
+ffffff800236cd55: mov      r15, rsi
+ffffff800236cd58: mov      rax, qword ptr [rdi]
+ffffff800236cd5b: mov      qword ptr [rbp - 0x30], r9
+ffffff800236cd5f: mov      rbx, rdi
+ffffff800236cd62: call     qword ptr [rax + 0xba8]
+ffffff800236cd68: mov      rdi, rbx
+ffffff800236cd6b: mov      r9, qword ptr [rbp - 0x30]
+ffffff800236cd6f: test     rax, rax
+ffffff800236cd72: je       0xffffff800236cfa4
+ffffff800236cd78: mov      r13, rax
+ffffff800236cd7b: mov      eax, dword ptr [r9 + 0x10]
+ffffff800236cd7f: cmp      eax, -1
+ffffff800236cd82: je       0xffffff800236cdb4
+ffffff800236cd84: test     r14b, r14b
+ffffff800236cd87: je       0xffffff800236cde8
+ffffff800236cd89: lea      ecx, [rax - 0x24b]
+ffffff800236cd8f: mov      r14, r12
+ffffff800236cd92: mov      r12d, 0xc02869c9
+ffffff800236cd98: cmp      r14, r12
+ffffff800236cd9b: jne      0xffffff800236ce19
+ffffff800236cd9d: cmp      ecx, 0xfffffdb5
+ffffff800236cda3: jbe      0xffffff800236cfc1
+ffffff800236cda9: dec      eax
+ffffff800236cdab: lea      rcx, [rip + 0xf1dae]  ; 0xffffff800245eb60
+ffffff800236cdb2: jmp      0xffffff800236ce2e  ; __Z23apple80211RouteExternalP23IO80211SkywalkInterfaceP20IO80211APIUserClientmP13apple80211reqbb+0x100
+ffffff800236cdb4: mov      rax, qword ptr [r13]
+ffffff800236cdb8: movzx    r8d, r14b
+ffffff800236cdbc: mov      rdi, r13
+ffffff800236cdbf: mov      rsi, rbx
+ffffff800236cdc2: mov      r14, r12
+ffffff800236cdc5: mov      rdx, r12
+ffffff800236cdc8: mov      rcx, r9
+ffffff800236cdcb: call     qword ptr [rax + 0xc98]
+ffffff800236cdd1: mov      rdi, rbx
+ffffff800236cdd4: mov      r9, qword ptr [rbp - 0x30]
+ffffff800236cdd8: mov      r15d, eax
+ffffff800236cddb: xor      ebx, ebx
+ffffff800236cddd: mov      r12d, 0xc02869c9
+ffffff800236cde3: jmp      0xffffff800236ce92  ; __Z23apple80211RouteExternalP23IO80211SkywalkInterfaceP20IO80211APIUserClientmP13apple80211reqbb+0x164
+ffffff800236cde8: mov      r14, r12
+ffffff800236cdeb: mov      r12d, 0xc02869c9
+ffffff800236cdf1: cmp      r14, r12
+ffffff800236cdf4: jne      0xffffff800236ce47
+ffffff800236cdf6: lea      ecx, [rax - 0x246]
+ffffff800236cdfc: mov      r15d, 0x66
+ffffff800236ce02: cmp      ecx, 0xfffffdbb
+ffffff800236ce08: jb       0xffffff800236ce90
+ffffff800236ce0e: dec      eax
+ffffff800236ce10: lea      rcx, [rip + 0x103f39]  ; 0xffffff8002470d50
+ffffff800236ce17: jmp      0xffffff800236ce64  ; __Z23apple80211RouteExternalP23IO80211SkywalkInterfaceP20IO80211APIUserClientmP13apple80211reqbb+0x136
+ffffff800236ce19: cmp      ecx, 0xfffffdb5
+ffffff800236ce1f: jbe      0xffffff800236cfd1
+ffffff800236ce25: dec      eax
+ffffff800236ce27: lea      rcx, [rip + 0xf30c2]  ; 0xffffff800245fef0
+ffffff800236ce2e: mov      rax, qword ptr [rcx + rax*8]
+ffffff800236ce32: test     rax, rax
+ffffff800236ce35: je       0xffffff800236ce8a
+ffffff800236ce37: mov      rdi, r13
+ffffff800236ce3a: mov      rsi, rbx
+ffffff800236ce3d: mov      rdx, r15
+ffffff800236ce40: mov      rcx, r9
+ffffff800236ce43: call     rax
+ffffff800236ce45: jmp      0xffffff800236ce7c  ; __Z23apple80211RouteExternalP23IO80211SkywalkInterfaceP20IO80211APIUserClientmP13apple80211reqbb+0x14e
+ffffff800236ce47: lea      ecx, [rax - 0x1ca]
+ffffff800236ce4d: mov      r15d, 0x66
+ffffff800236ce53: cmp      ecx, 0xfffffe37
+ffffff800236ce59: jb       0xffffff800236ce90
+ffffff800236ce5b: dec      eax
+ffffff800236ce5d: lea      rcx, [rip + 0x10c1fc]  ; 0xffffff8002479060
+ffffff800236ce64: mov      rax, qword ptr [rcx + rax*8]
+ffffff800236ce68: test     rax, rax
+ffffff800236ce6b: je       0xffffff800236ce90
+ffffff800236ce6d: movzx    ecx, byte ptr [rbp - 0x34]
+ffffff800236ce71: mov      rdi, r13
+ffffff800236ce74: mov      rsi, rbx
+ffffff800236ce77: mov      rdx, r9
+ffffff800236ce7a: call     rax
+ffffff800236ce7c: mov      rdi, rbx
+ffffff800236ce7f: mov      r9, qword ptr [rbp - 0x30]
+ffffff800236ce83: mov      r15d, eax
+ffffff800236ce86: mov      bl, 1
+ffffff800236ce88: jmp      0xffffff800236ce92  ; __Z23apple80211RouteExternalP23IO80211SkywalkInterfaceP20IO80211APIUserClientmP13apple80211reqbb+0x164
+ffffff800236ce8a: mov      r15d, 0x66
+ffffff800236ce90: xor      ebx, ebx
+ffffff800236ce92: mov      eax, dword ptr [r9 + 0x10]
+ffffff800236ce96: mov      rcx, qword ptr [r13 + 0x120]
+ffffff800236ce9d: mov      rcx, qword ptr [rcx + 0x30]
+ffffff800236cea1: xor      r9d, r9d
+ffffff800236cea4: test     rcx, rcx
+ffffff800236cea7: je       0xffffff800236cedb
+ffffff800236cea9: mov      rcx, qword ptr [rcx + 0x10]
+ffffff800236cead: test     byte ptr [rcx + 0xae8], 1
+ffffff800236ceb4: je       0xffffff800236cedb
+ffffff800236ceb6: mov      r9d, 1
+ffffff800236cebc: lea      ecx, [r15 + 0x1f7dd7f3]
+ffffff800236cec3: cmp      ecx, 2
+ffffff800236cec6: jb       0xffffff800236cedb
+ffffff800236cec8: cmp      r15d, 0x66
+ffffff800236cecc: je       0xffffff800236cedb
+ffffff800236cece: cmp      r15d, 0xe00002c7
+ffffff800236ced5: jne      0xffffff800236cf92
+ffffff800236cedb: cmp      r14, r12
+ffffff800236cede: mov      ecx, 0x47
+ffffff800236cee3: mov      r14d, 0x53
+ffffff800236cee9: cmove    r14d, ecx
+ffffff800236ceed: cmp      eax, 0x24a
+ffffff800236cef2: jg       0xffffff800236cf18
+ffffff800236cef4: cmp      eax, -1
+ffffff800236cef7: je       0xffffff800236cf21
+ffffff800236cef9: test     eax, eax
+ffffff800236cefb: js       0xffffff800236cf0f
+ffffff800236cefd: mov      eax, eax
+ffffff800236ceff: lea      rcx, [rip + 0x115d1a]  ; 0xffffff8002482c20
+ffffff800236cf06: mov      r13, qword ptr [rcx + rax*8]
+ffffff800236cf0a: test     r13, r13
+ffffff800236cf0d: jne      0xffffff800236cf28
+ffffff800236cf0f: lea      r13, [rip + 0xd3961]  ; "unknown Apple80211_IOC_"
+ffffff800236cf16: jmp      0xffffff800236cf28  ; __Z23apple80211RouteExternalP23IO80211SkywalkInterfaceP20IO80211APIUserClientmP13apple80211reqbb+0x1fa
+ffffff800236cf18: lea      r13, [rip + 0xd3927]  ; "Error Invalid ioctl"
+ffffff800236cf1f: jmp      0xffffff800236cf28  ; __Z23apple80211RouteExternalP23IO80211SkywalkInterfaceP20IO80211APIUserClientmP13apple80211reqbb+0x1fa
+ffffff800236cf21: lea      r13, [rip + 0xd3932]  ; "APPLE80211_IOC_CARD_SPECIFIC"
+ffffff800236cf28: mov      rax, qword ptr [rdi + 0x120]
+ffffff800236cf2f: mov      rdi, qword ptr [rax + 0xb8]
+ffffff800236cf36: test     rdi, rdi
+ffffff800236cf39: je       0xffffff800236cf4f
+ffffff800236cf3b: mov      rax, qword ptr [rdi]
+ffffff800236cf3e: mov      r12d, r9d
+ffffff800236cf41: call     qword ptr [rax + 0x148]
+ffffff800236cf47: mov      r9d, r12d
+ffffff800236cf4a: mov      r8, rax
+ffffff800236cf4d: jmp      0xffffff800236cf52  ; __Z23apple80211RouteExternalP23IO80211SkywalkInterfaceP20IO80211APIUserClientmP13apple80211reqbb+0x224
+ffffff800236cf4f: xor      r8d, r8d
+ffffff800236cf52: test     r15d, r15d
+ffffff800236cf55: lea      rax, [rip + 0xccc0a]  ; "GOOD"
+ffffff800236cf5c: lea      r10, [rip + 0xccbfe]  ; "FAIL"
+ffffff800236cf63: cmove    r10, rax
+ffffff800236cf67: movzx    r11d, bl
+ffffff800236cf6b: lea      rdi, [rip + 0xccb80]  ; "[IOC DEBUG] %s: %cet type=<%s> Int=<%s> isDriverAvailable=<%d> res=<%s:%d:0x%x> "
+ffffff800236cf72: lea      rsi, [rip + 0xccbdf]  ; "EXTERNAL"
+ffffff800236cf79: mov      edx, r14d
+ffffff800236cf7c: mov      rcx, r13
+ffffff800236cf7f: xor      eax, eax
+ffffff800236cf81: push     r11
+ffffff800236cf83: push     r15
+ffffff800236cf85: push     r15
+ffffff800236cf87: push     r10
+ffffff800236cf89: call     0xffffff8000a86b60  ; _IOLog
+ffffff800236cf8e: add      rsp, 0x20
+ffffff800236cf92: mov      eax, r15d
+ffffff800236cf95: add      rsp, 0x18
+ffffff800236cf99: pop      rbx
+ffffff800236cf9a: pop      r12
+ffffff800236cf9c: pop      r13
+ffffff800236cf9e: pop      r14
+ffffff800236cfa0: pop      r15
+ffffff800236cfa2: pop      rbp
+ffffff800236cfa3: ret      
+ffffff800236cfa4: mov      eax, dword ptr [r9 + 0x10]
+ffffff800236cfa8: xor      ebx, ebx
+ffffff800236cfaa: mov      r15d, 0x66
+ffffff800236cfb0: xor      r9d, r9d
+ffffff800236cfb3: mov      r14, r12
+ffffff800236cfb6: mov      r12d, 0xc02869c9
+ffffff800236cfbc: jmp      0xffffff800236cedb  ; __Z23apple80211RouteExternalP23IO80211SkywalkInterfaceP20IO80211APIUserClientmP13apple80211reqbb+0x1ad
+ffffff800236cfc1: lea      rdi, [rip + 0x92811]  ; 0xffffff80023ff7d9
+ffffff800236cfc8: lea      rsi, [rip + 0x9282f]  ; "getGetHandler"
+ffffff800236cfcf: jmp      0xffffff800236cfdf  ; __Z23apple80211RouteExternalP23IO80211SkywalkInterfaceP20IO80211APIUserClientmP13apple80211reqbb+0x2b1
+ffffff800236cfd1: lea      rdi, [rip + 0x93cd0]  ; 0xffffff8002400ca8
+ffffff800236cfd8: lea      rsi, [rip + 0x93cee]  ; "getSetHandler"
+ffffff800236cfdf: mov      edx, 0x24a
+ffffff800236cfe4: xor      eax, eax
+ffffff800236cfe6: call     0xffffff8000a86b60  ; _IOLog
+ffffff800236cfeb: mov      rdi, rbx
+ffffff800236cfee: xor      ebx, ebx
+ffffff800236cff0: mov      r9, qword ptr [rbp - 0x30]
+ffffff800236cff4: mov      r15d, 0x66
+ffffff800236cffa: jmp      0xffffff800236ce92  ; __Z23apple80211RouteExternalP23IO80211SkywalkInterfaceP20IO80211APIUserClientmP13apple80211reqbb+0x164

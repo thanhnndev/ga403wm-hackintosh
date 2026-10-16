@@ -1,0 +1,38 @@
+# 0xffffff8002295fce __ZN17IO80211Controller15attachInterfaceEP8OSObjectP9IOService
+ffffff8002295fce: push     rbp
+ffffff8002295fcf: mov      rbp, rsp
+ffffff8002295fd2: push     r15
+ffffff8002295fd4: push     r14
+ffffff8002295fd6: push     rbx
+ffffff8002295fd7: push     rax
+ffffff8002295fd8: mov      r14, rsi
+ffffff8002295fdb: mov      r15, rdi
+ffffff8002295fde: lea      rsi, [rip + 0x1f7fbb]  ; 0xffffff800248dfa0
+ffffff8002295fe5: mov      rdi, r14
+ffffff8002295fe8: call     0xffffff8000a1ab30  ; __ZN15OSMetaClassBase12safeMetaCastEPKS_PK11OSMetaClass
+ffffff8002295fed: mov      rbx, rax
+ffffff8002295ff0: test     rax, rax
+ffffff8002295ff3: je       0xffffff8002296028
+ffffff8002295ff5: mov      rax, qword ptr [r15]
+ffffff8002295ff8: mov      rdi, r15
+ffffff8002295ffb: call     qword ptr [rax + 0x998]
+ffffff8002296001: mov      rax, qword ptr [r15 + 0x120]
+ffffff8002296008: cmp      qword ptr [rax + 0x188], 0
+ffffff8002296010: jne      0xffffff8002296039
+ffffff8002296012: mov      rcx, qword ptr [rbx + 0x120]
+ffffff8002296019: cmp      dword ptr [rcx + 0x58], 1
+ffffff800229601d: jne      0xffffff8002296039
+ffffff800229601f: mov      qword ptr [rax + 0x188], r14
+ffffff8002296026: jmp      0xffffff8002296039  ; __ZN17IO80211Controller15attachInterfaceEP8OSObjectP9IOService+0x6b
+ffffff8002296028: lea      rsi, [rip + 0x16bc4b]  ; 0xffffff8002401c7a
+ffffff800229602f: mov      rdi, r15
+ffffff8002296032: xor      eax, eax
+ffffff8002296034: call     0xffffff800229273c  ; __ZN17IO80211Controller8logDebugEPKcz
+ffffff8002296039: test     rbx, rbx
+ffffff800229603c: setne    al
+ffffff800229603f: add      rsp, 8
+ffffff8002296043: pop      rbx
+ffffff8002296044: pop      r14
+ffffff8002296046: pop      r15
+ffffff8002296048: pop      rbp
+ffffff8002296049: ret      

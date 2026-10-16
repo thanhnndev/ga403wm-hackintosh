@@ -1,0 +1,32 @@
+# 0xffffff80032f1dde __ZN15CCFaultReporter9MetaClassC1Ev
+ffffff80032f1dde: push     rbp
+ffffff80032f1ddf: mov      rbp, rsp
+ffffff80032f1de2: push     rbx
+ffffff80032f1de3: push     rax
+ffffff80032f1de4: mov      rbx, rdi
+ffffff80032f1de7: lea      rsi, [rip + 0x14e1b]  ; "CCFaultReporter"
+ffffff80032f1dee: mov      rdx, qword ptr [rip + 0x16263]  ; 0xffffff8003308058
+ffffff80032f1df5: mov      ecx, 0x90
+ffffff80032f1dfa: call     0xffffff8000a1a9d0  ; __ZN11OSMetaClassC2EPKcPKS_j
+ffffff80032f1dff: lea      rax, [rip + 0x1c34a]  ; 0xffffff800330e150
+ffffff80032f1e06: mov      qword ptr [rbx], rax
+ffffff80032f1e09: add      rsp, 8
+ffffff80032f1e0d: pop      rbx
+ffffff80032f1e0e: pop      rbp
+ffffff80032f1e0f: ret      
+# 0xffffff80032f1e72 __ZN15CCFaultReporter9MetaClassC2Ev
+ffffff80032f1e72: push     rbp
+ffffff80032f1e73: mov      rbp, rsp
+ffffff80032f1e76: push     rbx
+ffffff80032f1e77: push     rax
+ffffff80032f1e78: mov      rbx, rdi
+ffffff80032f1e7b: lea      rsi, [rip + 0x14d87]  ; "CCFaultReporter"
+ffffff80032f1e82: mov      rdx, qword ptr [rip + 0x161cf]  ; 0xffffff8003308058
+ffffff80032f1e89: mov      ecx, 0x90
+ffffff80032f1e8e: call     0xffffff8000a1a9d0  ; __ZN11OSMetaClassC2EPKcPKS_j
+ffffff80032f1e93: lea      rax, [rip + 0x1c2b6]  ; 0xffffff800330e150
+ffffff80032f1e9a: mov      qword ptr [rbx], rax
+ffffff80032f1e9d: add      rsp, 8
+ffffff80032f1ea1: pop      rbx
+ffffff80032f1ea2: pop      rbp
+ffffff80032f1ea3: ret      

@@ -1,0 +1,55 @@
+# 0xffffff80032fd684 __ZN11CCLogStream15withPipeAndNameEP6CCPipePKcPK15CCStreamOptions
+ffffff80032fd684: push     rbp
+ffffff80032fd685: mov      rbp, rsp
+ffffff80032fd688: push     r15
+ffffff80032fd68a: push     r14
+ffffff80032fd68c: push     r13
+ffffff80032fd68e: push     r12
+ffffff80032fd690: push     rbx
+ffffff80032fd691: push     rax
+ffffff80032fd692: mov      r14, rdx
+ffffff80032fd695: mov      r15, rsi
+ffffff80032fd698: mov      r12, rdi
+ffffff80032fd69b: mov      r13d, dword ptr [rdx + 8]
+ffffff80032fd69f: mov      edi, r13d
+ffffff80032fd6a2: call     0xffffff80032fd119  ; __Z21isValidStreamLogLevel16CCStreamLogLevel
+ffffff80032fd6a7: test     al, al
+ffffff80032fd6a9: je       0xffffff80032fd6ed
+ffffff80032fd6ab: mov      rax, qword ptr [rip + 0x158ce]  ; 0xffffff8003312f80
+ffffff80032fd6b2: lea      rdi, [rip + 0x158c7]  ; 0xffffff8003312f80
+ffffff80032fd6b9: call     qword ptr [rax + 0x88]
+ffffff80032fd6bf: test     rax, rax
+ffffff80032fd6c2: je       0xffffff80032fd6e9
+ffffff80032fd6c4: mov      rbx, rax
+ffffff80032fd6c7: mov      rax, qword ptr [rax]
+ffffff80032fd6ca: mov      rdi, rbx
+ffffff80032fd6cd: mov      rsi, r12
+ffffff80032fd6d0: mov      rdx, r15
+ffffff80032fd6d3: mov      rcx, r14
+ffffff80032fd6d6: call     qword ptr [rax + 0x860]
+ffffff80032fd6dc: test     al, al
+ffffff80032fd6de: jne      0xffffff80032fd717
+ffffff80032fd6e0: mov      rax, qword ptr [rbx]
+ffffff80032fd6e3: mov      rdi, rbx
+ffffff80032fd6e6: call     qword ptr [rax + 0x28]
+ffffff80032fd6e9: xor      ebx, ebx
+ffffff80032fd6eb: jmp      0xffffff80032fd717  ; __ZN11CCLogStream15withPipeAndNameEP6CCPipePKcPK15CCStreamOptions+0x93
+ffffff80032fd6ed: lea      rdi, [rip - 0x196f4]
+ffffff80032fd6f4: mov      rsi, qword ptr [rip + 0xa9ad]  ; 0xffffff80033080a8
+ffffff80032fd6fb: lea      rcx, [rip + 0x796e]  ; 0xffffff8003305070
+ffffff80032fd702: lea      r8, [rip + 0x9f69]  ; "withPipeAndName"
+ffffff80032fd709: xor      ebx, ebx
+ffffff80032fd70b: xor      edx, edx
+ffffff80032fd70d: mov      r9d, r13d
+ffffff80032fd710: xor      eax, eax
+ffffff80032fd712: call     0xffffff8000a55a50  ; __os_log_internal
+ffffff80032fd717: mov      rax, rbx
+ffffff80032fd71a: add      rsp, 8
+ffffff80032fd71e: pop      rbx
+ffffff80032fd71f: pop      r12
+ffffff80032fd721: pop      r13
+ffffff80032fd723: pop      r14
+ffffff80032fd725: pop      r15
+ffffff80032fd727: pop      rbp
+ffffff80032fd728: ret      
+ffffff80032fd729: nop      

@@ -1,0 +1,32 @@
+# 0xffffff80015fdc4a __ZN16AppleBCMWLANCore9MetaClassC1Ev
+ffffff80015fdc4a: push     rbp
+ffffff80015fdc4b: mov      rbp, rsp
+ffffff80015fdc4e: push     rbx
+ffffff80015fdc4f: push     rax
+ffffff80015fdc50: mov      rbx, rdi
+ffffff80015fdc53: lea      rsi, [rip + 0x186653]  ; "AppleBCMWLANCore"
+ffffff80015fdc5a: mov      rdx, qword ptr [rip + 0x1e040f]  ; 0xffffff80017de070
+ffffff80015fdc61: mov      ecx, 0x130
+ffffff80015fdc66: call     0xffffff8000a1a9d0  ; __ZN11OSMetaClassC2EPKcPKS_j
+ffffff80015fdc6b: lea      rax, [rip + 0x1ecf76]  ; 0xffffff80017eabe8
+ffffff80015fdc72: mov      qword ptr [rbx], rax
+ffffff80015fdc75: add      rsp, 8
+ffffff80015fdc79: pop      rbx
+ffffff80015fdc7a: pop      rbp
+ffffff80015fdc7b: ret      
+# 0xffffff80015fdd28 __ZN16AppleBCMWLANCore9MetaClassC2Ev
+ffffff80015fdd28: push     rbp
+ffffff80015fdd29: mov      rbp, rsp
+ffffff80015fdd2c: push     rbx
+ffffff80015fdd2d: push     rax
+ffffff80015fdd2e: mov      rbx, rdi
+ffffff80015fdd31: lea      rsi, [rip + 0x186575]  ; "AppleBCMWLANCore"
+ffffff80015fdd38: mov      rdx, qword ptr [rip + 0x1e0331]  ; 0xffffff80017de070
+ffffff80015fdd3f: mov      ecx, 0x130
+ffffff80015fdd44: call     0xffffff8000a1a9d0  ; __ZN11OSMetaClassC2EPKcPKS_j
+ffffff80015fdd49: lea      rax, [rip + 0x1ece98]  ; 0xffffff80017eabe8
+ffffff80015fdd50: mov      qword ptr [rbx], rax
+ffffff80015fdd53: add      rsp, 8
+ffffff80015fdd57: pop      rbx
+ffffff80015fdd58: pop      rbp
+ffffff80015fdd59: ret      

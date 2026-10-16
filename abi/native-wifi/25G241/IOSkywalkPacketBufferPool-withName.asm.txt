@@ -1,0 +1,48 @@
+# 0xffffff8002b04be8 __ZN25IOSkywalkPacketBufferPool8withNameEPKcP8OSObjectjPKNS_11PoolOptionsE
+ffffff8002b04be8: push     rbp
+ffffff8002b04be9: mov      rbp, rsp
+ffffff8002b04bec: push     r15
+ffffff8002b04bee: push     r14
+ffffff8002b04bf0: push     r13
+ffffff8002b04bf2: push     r12
+ffffff8002b04bf4: push     rbx
+ffffff8002b04bf5: push     rax
+ffffff8002b04bf6: mov      qword ptr [rbp - 0x30], rcx
+ffffff8002b04bfa: mov      r15d, edx
+ffffff8002b04bfd: mov      r12, rsi
+ffffff8002b04c00: mov      r13, rdi
+ffffff8002b04c03: lea      rdi, [rip + 0x40936]  ; 0xffffff8002b45540
+ffffff8002b04c0a: mov      esi, 0xc0
+ffffff8002b04c0f: call     0xffffff8000a1cc40  ; _OSObject_typed_operator_new
+ffffff8002b04c14: mov      rbx, rax
+ffffff8002b04c17: lea      r14, [rip + 0x3fd2a]  ; 0xffffff8002b44948
+ffffff8002b04c1e: mov      rdi, rax
+ffffff8002b04c21: mov      rsi, r14
+ffffff8002b04c24: call     0xffffff8000a1cdb0  ; __ZN8OSObjectC2EPK11OSMetaClass
+ffffff8002b04c29: lea      rax, [rip + 0x365a8]  ; 0xffffff8002b3b1d8
+ffffff8002b04c30: mov      qword ptr [rbx], rax
+ffffff8002b04c33: mov      rdi, r14
+ffffff8002b04c36: call     0xffffff8000a1b790  ; __ZNK11OSMetaClass19instanceConstructedEv
+ffffff8002b04c3b: mov      rax, qword ptr [rbx]
+ffffff8002b04c3e: mov      rdi, rbx
+ffffff8002b04c41: mov      rsi, r13
+ffffff8002b04c44: mov      rdx, r12
+ffffff8002b04c47: mov      ecx, r15d
+ffffff8002b04c4a: mov      r8, qword ptr [rbp - 0x30]
+ffffff8002b04c4e: call     qword ptr [rax + 0x120]
+ffffff8002b04c54: test     al, al
+ffffff8002b04c56: jne      0xffffff8002b04c63
+ffffff8002b04c58: mov      rax, qword ptr [rbx]
+ffffff8002b04c5b: mov      rdi, rbx
+ffffff8002b04c5e: call     qword ptr [rax + 0x28]
+ffffff8002b04c61: xor      ebx, ebx
+ffffff8002b04c63: mov      rax, rbx
+ffffff8002b04c66: add      rsp, 8
+ffffff8002b04c6a: pop      rbx
+ffffff8002b04c6b: pop      r12
+ffffff8002b04c6d: pop      r13
+ffffff8002b04c6f: pop      r14
+ffffff8002b04c71: pop      r15
+ffffff8002b04c73: pop      rbp
+ffffff8002b04c74: ret      
+ffffff8002b04c75: nop      

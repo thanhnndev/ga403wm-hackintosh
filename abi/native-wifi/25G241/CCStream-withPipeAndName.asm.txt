@@ -1,0 +1,74 @@
+# 0xffffff80032eb506 __ZN8CCStream15withPipeAndNameEP6CCPipePKcPK15CCStreamOptions
+ffffff80032eb506: push     rbp
+ffffff80032eb507: mov      rbp, rsp
+ffffff80032eb50a: push     r15
+ffffff80032eb50c: push     r14
+ffffff80032eb50e: push     r12
+ffffff80032eb510: push     rbx
+ffffff80032eb511: test     rdi, rdi
+ffffff80032eb514: setne    al
+ffffff80032eb517: test     rsi, rsi
+ffffff80032eb51a: setne    cl
+ffffff80032eb51d: and      cl, al
+ffffff80032eb51f: test     rdx, rdx
+ffffff80032eb522: setne    al
+ffffff80032eb525: test     cl, al
+ffffff80032eb527: je       0xffffff80032eb566
+ffffff80032eb529: mov      r14, rdx
+ffffff80032eb52c: mov      eax, dword ptr [rdx]
+ffffff80032eb52e: xor      ebx, ebx
+ffffff80032eb530: cmp      rax, 4
+ffffff80032eb534: ja       0xffffff80032eb5df
+ffffff80032eb53a: mov      r15, rsi
+ffffff80032eb53d: mov      r12, rdi
+ffffff80032eb540: lea      rcx, [rip + 0xa5]  ; 0xffffff80032eb5ec
+ffffff80032eb547: movsxd   rax, dword ptr [rcx + rax*4]
+ffffff80032eb54b: add      rax, rcx
+ffffff80032eb54e: jmp      rax
+ffffff80032eb550: mov      rdi, r12
+ffffff80032eb553: mov      rsi, r15
+ffffff80032eb556: mov      rdx, r14
+ffffff80032eb559: pop      rbx
+ffffff80032eb55a: pop      r12
+ffffff80032eb55c: pop      r14
+ffffff80032eb55e: pop      r15
+ffffff80032eb560: pop      rbp
+ffffff80032eb561: jmp      0xffffff80032fd684  ; __ZN11CCLogStream15withPipeAndNameEP6CCPipePKcPK15CCStreamOptions
+ffffff80032eb566: lea      rdi, [rip + 0x1ae81]  ; 0xffffff80033063ee
+ffffff80032eb56d: lea      rsi, [rip + 0x1c0fe]  ; "withPipeAndName"
+ffffff80032eb574: xor      ebx, ebx
+ffffff80032eb576: xor      eax, eax
+ffffff80032eb578: call     0xffffff8000a86b60  ; _IOLog
+ffffff80032eb57d: jmp      0xffffff80032eb5df  ; __ZN8CCStream15withPipeAndNameEP6CCPipePKcPK15CCStreamOptions+0xd9
+ffffff80032eb57f: mov      rax, qword ptr [rip + 0x27932]  ; 0xffffff8003312eb8
+ffffff80032eb586: lea      rdi, [rip + 0x2792b]  ; 0xffffff8003312eb8
+ffffff80032eb58d: jmp      0xffffff80032eb5ad  ; __ZN8CCStream15withPipeAndNameEP6CCPipePKcPK15CCStreamOptions+0xa7
+ffffff80032eb58f: mov      rax, qword ptr [rip + 0x278d2]  ; 0xffffff8003312e68
+ffffff80032eb596: lea      rdi, [rip + 0x278cb]  ; 0xffffff8003312e68
+ffffff80032eb59d: jmp      0xffffff80032eb5ad  ; __ZN8CCStream15withPipeAndNameEP6CCPipePKcPK15CCStreamOptions+0xa7
+ffffff80032eb59f: mov      rax, qword ptr [rip + 0x27872]  ; 0xffffff8003312e18
+ffffff80032eb5a6: lea      rdi, [rip + 0x2786b]  ; 0xffffff8003312e18
+ffffff80032eb5ad: call     qword ptr [rax + 0x88]
+ffffff80032eb5b3: test     rax, rax
+ffffff80032eb5b6: je       0xffffff80032eb5dd
+ffffff80032eb5b8: mov      rbx, rax
+ffffff80032eb5bb: mov      rax, qword ptr [rax]
+ffffff80032eb5be: mov      rdi, rbx
+ffffff80032eb5c1: mov      rsi, r12
+ffffff80032eb5c4: mov      rdx, r15
+ffffff80032eb5c7: mov      rcx, r14
+ffffff80032eb5ca: call     qword ptr [rax + 0x860]
+ffffff80032eb5d0: test     al, al
+ffffff80032eb5d2: jne      0xffffff80032eb5df
+ffffff80032eb5d4: mov      rax, qword ptr [rbx]
+ffffff80032eb5d7: mov      rdi, rbx
+ffffff80032eb5da: call     qword ptr [rax + 0x28]
+ffffff80032eb5dd: xor      ebx, ebx
+ffffff80032eb5df: mov      rax, rbx
+ffffff80032eb5e2: pop      rbx
+ffffff80032eb5e3: pop      r12
+ffffff80032eb5e5: pop      r14
+ffffff80032eb5e7: pop      r15
+ffffff80032eb5e9: pop      rbp
+ffffff80032eb5ea: ret      
+ffffff80032eb5eb: nop      
