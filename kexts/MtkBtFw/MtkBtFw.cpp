@@ -26,6 +26,7 @@
 
 extern "C" {
 extern const uint8_t mtk_bt_fw[], mtk_bt_fw_end[];
+extern const uint8_t mtk_bt_fw_7922[], mtk_bt_fw_7922_end[];
 }
 
 #define FW_HDR_SIZE       32
@@ -72,7 +73,7 @@ private:
     bool regRead(uint32_t reg, uint32_t *val);
     bool uhwWrite(uint32_t reg, uint32_t val);
     int wmt(uint8_t op, uint8_t flag, const uint8_t *data, uint16_t dlen, uint8_t *evFlag);
-    bool download();
+    bool download(uint32_t chipId);
     void intrArm();
     static void intrDone(void *owner, void *param, IOReturn status, uint32_t bytes);
 };
@@ -153,10 +154,11 @@ int MtkBtFw::wmt(uint8_t op, uint8_t flag, const uint8_t *data, uint16_t dlen, u
     return -1;
 }
 
-bool MtkBtFw::download()
+bool MtkBtFw::download(uint32_t chipId)
 {
-    const uint8_t *fw = mtk_bt_fw;
-    size_t fwlen = (size_t)(mtk_bt_fw_end - mtk_bt_fw);
+    const uint8_t *fw = chipId == 0x7922 ? mtk_bt_fw_7922 : mtk_bt_fw;
+    const uint8_t *end = chipId == 0x7922 ? mtk_bt_fw_7922_end : mtk_bt_fw_end;
+    size_t fwlen = (size_t)(end - fw);
     if (fwlen < FW_HDR_SIZE + FW_GD_SIZE) { say("firmware blob too small"); return false; }
     uint32_t nsec = le32(fw + FW_HDR_SIZE + 12);
     char date[17] = {0};
@@ -256,8 +258,14 @@ void MtkBtFw::run()
     uint32_t devId = 0, fwVer = 0;
     bool ok = regRead(REG_DEV_ID, &devId) && regRead(REG_FW_VER, &fwVer);
     if (ok) say("chip %04x fw_ver %08x", devId & 0xffff, fwVer);
-    if (ok && (devId & 0xffff) != 0x7925) { say("not an MT7925, leaving it alone"); ok = false; }
-    if (ok) ok = download();
+    const uint32_t chipId = devId & 0xffff;
+    if (ok && chipId != 0x7925 && chipId != 0x7922) { say("not an MT7925 or MT7922, leaving it alone"); ok = false; }
+    // Linux btmtk_fw_get_filename(): MT7922_1_<((fwVer & 0xff) + 1)>_hdr.bin.
+    if (ok && chipId == 0x7922 && (fwVer & 0xff) != 0) {
+        say("MT7922 needs firmware suffix %x; only _1_1 is embedded", (fwVer & 0xff) + 1);
+        ok = false;
+    }
+    if (ok) ok = download(chipId);
     if (ok) ok = uhwWrite(REG_EP_RST_OPT, EP_RST_IN_OUT_OPT);
     uint8_t on = 1, f = 0;
     if (ok && wmt(WMT_FUNC_CTRL, 0, &on, 1, &f) < 0) ok = false;

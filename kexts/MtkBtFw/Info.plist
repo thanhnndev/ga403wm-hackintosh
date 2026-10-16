@@ -22,6 +22,16 @@
 			<key>bConfigurationValue</key><integer>1</integer>
 			<key>bInterfaceNumber</key><integer>0</integer>
 		</dict>
+		<key>MtkBtFw-MT7922</key>
+		<dict>
+			<key>CFBundleIdentifier</key><string>com.itlmt7925.mtkbtfw</string>
+			<key>IOClass</key><string>MtkBtFw</string>
+			<key>IOProviderClass</key><string>IOUSBHostInterface</string>
+			<key>idVendor</key><integer>1161</integer>
+			<key>idProduct</key><integer>57590</integer>
+			<key>bConfigurationValue</key><integer>1</integer>
+			<key>bInterfaceNumber</key><integer>0</integer>
+		</dict>
 	</dict>
 	<key>OSBundleLibraries</key>
 	<dict>
