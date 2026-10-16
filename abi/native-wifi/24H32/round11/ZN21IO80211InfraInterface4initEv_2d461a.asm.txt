@@ -1,0 +1,20 @@
+# 0xffffff80022d461a __ZN21IO80211InfraInterface4initEv
+ffffff80022d461a: push     rbp
+ffffff80022d461b: mov      rbp, rsp
+ffffff80022d461e: push     rbx
+ffffff80022d461f: push     rax
+ffffff80022d4620: mov      rbx, rdi
+ffffff80022d4623: call     0xffffff800226171e  ; __ZN23IO80211SkywalkInterface4initEv
+ffffff80022d4628: test     al, al
+ffffff80022d462a: je       0xffffff80022d4647
+ffffff80022d462c: lea      rdi, [rip + 0x13094d]  ; 0xffffff8002404f80
+ffffff80022d4633: call     0xffffff8000ab5930  ; _IOMallocTypeImpl
+ffffff80022d4638: mov      qword ptr [rbx + 0x118], rax
+ffffff80022d463f: test     rax, rax
+ffffff80022d4642: setne    al
+ffffff80022d4645: jmp      0xffffff80022d4649  ; __ZN21IO80211InfraInterface4initEv+0x2f
+ffffff80022d4647: xor      eax, eax
+ffffff80022d4649: add      rsp, 8
+ffffff80022d464d: pop      rbx
+ffffff80022d464e: pop      rbp
+ffffff80022d464f: ret      

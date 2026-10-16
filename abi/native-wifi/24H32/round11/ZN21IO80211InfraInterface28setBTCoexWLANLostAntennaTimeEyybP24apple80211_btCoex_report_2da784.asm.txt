@@ -1,0 +1,33 @@
+# 0xffffff80022da784 __ZN21IO80211InfraInterface28setBTCoexWLANLostAntennaTimeEyybP24apple80211_btCoex_report
+ffffff80022da784: push     rbp
+ffffff80022da785: mov      rbp, rsp
+ffffff80022da788: push     rbx
+ffffff80022da789: push     rax
+ffffff80022da78a: cmp      rsi, 0x65
+ffffff80022da78e: jae      0xffffff80022da7ad
+ffffff80022da790: cmp      rdx, 0x65
+ffffff80022da794: jae      0xffffff80022da7cb
+ffffff80022da796: mov      rax, qword ptr [rdi + 0x118]
+ffffff80022da79d: mov      qword ptr [rax + 0x128], rsi
+ffffff80022da7a4: call     0xffffff80022da6e6  ; __ZN21IO80211InfraInterface23reportDataTransferRatesEv
+ffffff80022da7a9: mov      bl, 1
+ffffff80022da7ab: jmp      0xffffff80022da7ee  ; __ZN21IO80211InfraInterface28setBTCoexWLANLostAntennaTimeEyybP24apple80211_btCoex_report+0x6a
+ffffff80022da7ad: lea      rdi, [rip + 0xbf1fa]  ; 0xffffff80023999ae
+ffffff80022da7b4: lea      rsi, [rip + 0xbf215]  ; "/AppleInternal/Library/BuildRoots/4~CW9mugA6gpmKPwyaAeCNWSZRmRlk6mvK_U3N5n0/Libr"
+ffffff80022da7bb: lea      rdx, [rip + 0xc04f7]  ; "setBTCoexWLANLostAntennaTime"
+ffffff80022da7c2: xor      ebx, ebx
+ffffff80022da7c4: mov      ecx, 0xaa3
+ffffff80022da7c9: jmp      0xffffff80022da7e7  ; __ZN21IO80211InfraInterface28setBTCoexWLANLostAntennaTimeEyybP24apple80211_btCoex_report+0x63
+ffffff80022da7cb: lea      rdi, [rip + 0xbf1dc]  ; 0xffffff80023999ae
+ffffff80022da7d2: lea      rsi, [rip + 0xbf1f7]  ; "/AppleInternal/Library/BuildRoots/4~CW9mugA6gpmKPwyaAeCNWSZRmRlk6mvK_U3N5n0/Libr"
+ffffff80022da7d9: lea      rdx, [rip + 0xc04d9]  ; "setBTCoexWLANLostAntennaTime"
+ffffff80022da7e0: xor      ebx, ebx
+ffffff80022da7e2: mov      ecx, 0xaa8
+ffffff80022da7e7: xor      eax, eax
+ffffff80022da7e9: call     0xffffff8000ab6560  ; _IOLog
+ffffff80022da7ee: mov      eax, ebx
+ffffff80022da7f0: add      rsp, 8
+ffffff80022da7f4: pop      rbx
+ffffff80022da7f5: pop      rbp
+ffffff80022da7f6: ret      
+ffffff80022da7f7: nop      

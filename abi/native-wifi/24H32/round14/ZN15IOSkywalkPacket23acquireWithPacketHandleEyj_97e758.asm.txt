@@ -1,0 +1,9 @@
+# 0xffffff800297e758 __ZN15IOSkywalkPacket23acquireWithPacketHandleEyj
+ffffff800297e758: push     rbp
+ffffff800297e759: mov      rbp, rsp
+ffffff800297e75c: mov      dword ptr [rdi + 0x5c], edx
+ffffff800297e75f: mov      qword ptr [rdi + 0x28], rsi
+ffffff800297e763: mov      word ptr [rdi + 0x58], 1
+ffffff800297e769: pop      rbp
+ffffff800297e76a: ret      
+ffffff800297e76b: nop      

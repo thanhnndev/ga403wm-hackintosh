@@ -1,0 +1,8 @@
+# 0xffffff80022da0b8 __ZN21IO80211InfraInterface27setInfraPeersLoggingEnabledEb
+ffffff80022da0b8: push     rbp
+ffffff80022da0b9: mov      rbp, rsp
+ffffff80022da0bc: mov      rax, qword ptr [rdi + 0x110]
+ffffff80022da0c3: mov      rdi, qword ptr [rax + 0x28]
+ffffff80022da0c7: pop      rbp
+ffffff80022da0c8: jmp      0xffffff80021f3794  ; __ZN18IO80211PeerManager27setInfraPeersLoggingEnabledEb
+ffffff80022da0cd: nop      

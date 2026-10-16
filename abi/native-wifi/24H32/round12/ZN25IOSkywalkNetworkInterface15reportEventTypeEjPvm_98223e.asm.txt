@@ -1,0 +1,31 @@
+# 0xffffff800298223e __ZN25IOSkywalkNetworkInterface15reportEventTypeEjPvm
+ffffff800298223e: push     rbp
+ffffff800298223f: mov      rbp, rsp
+ffffff8002982242: push     r14
+ffffff8002982244: push     rbx
+ffffff8002982245: mov      r14d, esi
+ffffff8002982248: mov      rbx, rdi
+ffffff800298224b: mov      eax, esi
+ffffff800298224d: or       eax, 2
+ffffff8002982250: cmp      eax, 0xe0060102
+ffffff8002982255: jne      0xffffff800298227a
+ffffff8002982257: mov      rax, qword ptr [rbx]
+ffffff800298225a: mov      rdi, rbx
+ffffff800298225d: call     qword ptr [rax + 0x20]
+ffffff8002982260: mov      esi, r14d
+ffffff8002982263: mov      rax, qword ptr [rbx + 0xb8]
+ffffff800298226a: mov      rdi, qword ptr [rax + 0x28]
+ffffff800298226e: call     0xffffff8000434480  ; _thread_call_enter1
+ffffff8002982273: xor      eax, eax
+ffffff8002982275: pop      rbx
+ffffff8002982276: pop      r14
+ffffff8002982278: pop      rbp
+ffffff8002982279: ret      
+ffffff800298227a: mov      rax, qword ptr [rbx]
+ffffff800298227d: mov      rax, qword ptr [rax + 0x740]
+ffffff8002982284: mov      rdi, rbx
+ffffff8002982287: mov      esi, r14d
+ffffff800298228a: pop      rbx
+ffffff800298228b: pop      r14
+ffffff800298228d: pop      rbp
+ffffff800298228e: jmp      rax

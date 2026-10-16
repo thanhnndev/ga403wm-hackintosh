@@ -1,0 +1,18 @@
+# 0xffffff80022da9ce __ZN21IO80211InfraInterface22updateLinkStatusStaticEPv
+ffffff80022da9ce: push     rbp
+ffffff80022da9cf: mov      rbp, rsp
+ffffff80022da9d2: test     rdi, rdi
+ffffff80022da9d5: je       0xffffff80022da9e4
+ffffff80022da9d7: mov      rax, qword ptr [rdi]
+ffffff80022da9da: call     qword ptr [rax + 0xbd0]
+ffffff80022da9e0: xor      eax, eax
+ffffff80022da9e2: jmp      0xffffff80022daa0a  ; __ZN21IO80211InfraInterface22updateLinkStatusStaticEPv+0x3c
+ffffff80022da9e4: lea      rdi, [rip + 0xbefc3]  ; 0xffffff80023999ae
+ffffff80022da9eb: lea      rsi, [rip + 0xbefde]  ; "/AppleInternal/Library/BuildRoots/4~CW9mugA6gpmKPwyaAeCNWSZRmRlk6mvK_U3N5n0/Libr"
+ffffff80022da9f2: lea      rdx, [rip + 0xc036c]  ; "updateLinkStatusStatic"
+ffffff80022da9f9: mov      ecx, 0xbcb
+ffffff80022da9fe: xor      eax, eax
+ffffff80022daa00: call     0xffffff8000ab6560  ; _IOLog
+ffffff80022daa05: mov      eax, 0xe00002bc
+ffffff80022daa0a: pop      rbp
+ffffff80022daa0b: ret      

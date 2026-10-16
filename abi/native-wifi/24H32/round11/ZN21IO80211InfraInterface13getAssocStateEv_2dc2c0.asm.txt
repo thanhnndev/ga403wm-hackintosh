@@ -1,0 +1,8 @@
+# 0xffffff80022dc2c0 __ZN21IO80211InfraInterface13getAssocStateEv
+ffffff80022dc2c0: push     rbp
+ffffff80022dc2c1: mov      rbp, rsp
+ffffff80022dc2c4: mov      rax, qword ptr [rdi + 0x118]
+ffffff80022dc2cb: mov      al, byte ptr [rax + 0x190]
+ffffff80022dc2d1: pop      rbp
+ffffff80022dc2d2: ret      
+ffffff80022dc2d3: nop      

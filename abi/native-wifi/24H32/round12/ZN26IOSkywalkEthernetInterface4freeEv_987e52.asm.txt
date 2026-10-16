@@ -1,0 +1,33 @@
+# 0xffffff8002987e52 __ZN26IOSkywalkEthernetInterface4freeEv
+ffffff8002987e52: push     rbp
+ffffff8002987e53: mov      rbp, rsp
+ffffff8002987e56: push     r14
+ffffff8002987e58: push     rbx
+ffffff8002987e59: mov      rbx, rdi
+ffffff8002987e5c: mov      r14, qword ptr [rdi + 0x108]
+ffffff8002987e63: test     r14, r14
+ffffff8002987e66: je       0xffffff8002987ec2
+ffffff8002987e68: mov      rsi, qword ptr [r14]
+ffffff8002987e6b: test     rsi, rsi
+ffffff8002987e6e: je       0xffffff8002987e8a
+ffffff8002987e70: mov      qword ptr [r14], 0
+ffffff8002987e77: lea      rdi, [rip + 0x300c2]  ; 0xffffff80029b7f40
+ffffff8002987e7e: call     0xffffff8000ab5a60  ; _IOFreeTypeImpl
+ffffff8002987e83: mov      r14, qword ptr [rbx + 0x108]
+ffffff8002987e8a: mov      rdi, qword ptr [r14 + 0x10]
+ffffff8002987e8e: test     rdi, rdi
+ffffff8002987e91: je       0xffffff8002987ea8
+ffffff8002987e93: mov      rax, qword ptr [rdi]
+ffffff8002987e96: call     qword ptr [rax + 0x28]
+ffffff8002987e99: mov      qword ptr [r14 + 0x10], 0
+ffffff8002987ea1: mov      r14, qword ptr [rbx + 0x108]
+ffffff8002987ea8: mov      qword ptr [rbx + 0x108], 0
+ffffff8002987eb3: lea      rdi, [rip + 0x300c6]  ; 0xffffff80029b7f80
+ffffff8002987eba: mov      rsi, r14
+ffffff8002987ebd: call     0xffffff8000ab5a60  ; _IOFreeTypeImpl
+ffffff8002987ec2: lea      rax, [rip + 0x273e7]  ; 0xffffff80029af2b0
+ffffff8002987ec9: mov      rdi, rbx
+ffffff8002987ecc: pop      rbx
+ffffff8002987ecd: pop      r14
+ffffff8002987ecf: pop      rbp
+ffffff8002987ed0: jmp      qword ptr [rax + 0xa0]

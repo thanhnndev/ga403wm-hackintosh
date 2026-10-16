@@ -1,0 +1,11 @@
+# 0xffffff800297f070 __ZN22IOSkywalkNetworkPacket11setHeadroomEh
+ffffff800297f070: push     rbp
+ffffff800297f071: mov      rbp, rsp
+ffffff800297f074: mov      rdi, qword ptr [rdi + 0x28]
+ffffff800297f078: call     0xffffff8000a34ce0  ; _kern_packet_set_headroom
+ffffff800297f07d: test     eax, eax
+ffffff800297f07f: mov      ecx, 0xe00002c2
+ffffff800297f084: cmovne   eax, ecx
+ffffff800297f087: pop      rbp
+ffffff800297f088: ret      
+ffffff800297f089: nop      

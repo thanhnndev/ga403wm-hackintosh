@@ -1,0 +1,54 @@
+# 0xffffff800297e612 __ZN15IOSkywalkPacket17completeWithQueueEP20IOSkywalkPacketQueuejj
+ffffff800297e612: push     rbp
+ffffff800297e613: mov      rbp, rsp
+ffffff800297e616: push     r15
+ffffff800297e618: push     r14
+ffffff800297e61a: push     r13
+ffffff800297e61c: push     r12
+ffffff800297e61e: push     rbx
+ffffff800297e61f: push     rax
+ffffff800297e620: mov      ebx, ecx
+ffffff800297e622: mov      r12d, edx
+ffffff800297e625: mov      r14, rsi
+ffffff800297e628: mov      r15, rdi
+ffffff800297e62b: cmp      dword ptr [rdi + 0x64], 0
+ffffff800297e62f: je       0xffffff800297e659
+ffffff800297e631: xor      r13d, r13d
+ffffff800297e634: mov      rax, qword ptr [r15 + 0x30]
+ffffff800297e638: mov      rdi, qword ptr [rax + r13*8]
+ffffff800297e63c: mov      rax, qword ptr [rdi]
+ffffff800297e63f: mov      rsi, r14
+ffffff800297e642: mov      edx, r12d
+ffffff800297e645: mov      ecx, ebx
+ffffff800297e647: call     qword ptr [rax + 0x148]
+ffffff800297e64d: inc      r13
+ffffff800297e650: mov      eax, dword ptr [r15 + 0x64]
+ffffff800297e654: cmp      r13, rax
+ffffff800297e657: jb       0xffffff800297e634
+ffffff800297e659: cmp      r12d, 2
+ffffff800297e65d: jne      0xffffff800297e682
+ffffff800297e65f: mov      rdi, qword ptr [r15 + 0x28]
+ffffff800297e663: call     0xffffff8000a35500  ; _kern_packet_finalize
+ffffff800297e668: mov      rdi, qword ptr [r15 + 0x38]
+ffffff800297e66c: test     rdi, rdi
+ffffff800297e66f: je       0xffffff800297e682
+ffffff800297e671: mov      rax, qword ptr [rdi]
+ffffff800297e674: mov      rsi, r15
+ffffff800297e677: mov      rdx, r14
+ffffff800297e67a: xor      ecx, ecx
+ffffff800297e67c: call     qword ptr [rax + 0x220]
+ffffff800297e682: and      byte ptr [r15 + 0x58], 0xfd
+ffffff800297e687: mov      rax, qword ptr [r15]
+ffffff800297e68a: mov      rax, qword ptr [rax + 0x1a0]
+ffffff800297e691: mov      rdi, r15
+ffffff800297e694: mov      rsi, r14
+ffffff800297e697: mov      edx, ebx
+ffffff800297e699: add      rsp, 8
+ffffff800297e69d: pop      rbx
+ffffff800297e69e: pop      r12
+ffffff800297e6a0: pop      r13
+ffffff800297e6a2: pop      r14
+ffffff800297e6a4: pop      r15
+ffffff800297e6a6: pop      rbp
+ffffff800297e6a7: jmp      rax
+ffffff800297e6a9: nop      

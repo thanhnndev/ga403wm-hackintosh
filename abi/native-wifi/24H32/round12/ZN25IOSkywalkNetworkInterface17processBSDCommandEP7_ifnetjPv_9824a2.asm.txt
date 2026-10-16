@@ -1,0 +1,95 @@
+# 0xffffff80029824a2 __ZN25IOSkywalkNetworkInterface17processBSDCommandEP7__ifnetjPv
+ffffff80029824a2: push     rbp
+ffffff80029824a3: mov      rbp, rsp
+ffffff80029824a6: push     r14
+ffffff80029824a8: push     rbx
+ffffff80029824a9: sub      rsp, 0x10
+ffffff80029824ad: test     rsi, rsi
+ffffff80029824b0: je       0xffffff80029824fa
+ffffff80029824b2: mov      rbx, rcx
+ffffff80029824b5: mov      eax, 0x2d
+ffffff80029824ba: cmp      edx, 0xc0206943
+ffffff80029824c0: jg       0xffffff8002982508
+ffffff80029824c2: cmp      edx, 0x80206959
+ffffff80029824c8: jle      0xffffff8002982538
+ffffff80029824ca: cmp      edx, 0x8020695a
+ffffff80029824d0: je       0xffffff80029825c6
+ffffff80029824d6: cmp      edx, 0x8028697b
+ffffff80029824dc: je       0xffffff800298258d
+ffffff80029824e2: cmp      edx, 0xc0206937
+ffffff80029824e8: jne      0xffffff80029824ff
+ffffff80029824ea: mov      rdx, rbx
+ffffff80029824ed: add      rsp, 0x10
+ffffff80029824f1: pop      rbx
+ffffff80029824f2: pop      r14
+ffffff80029824f4: pop      rbp
+ffffff80029824f5: jmp      0xffffff8002982758  ; __ZN25IOSkywalkNetworkInterface14ioctl_sifmediaEP7__ifnetPv
+ffffff80029824fa: mov      eax, 0x16
+ffffff80029824ff: add      rsp, 0x10
+ffffff8002982503: pop      rbx
+ffffff8002982504: pop      r14
+ffffff8002982506: pop      rbp
+ffffff8002982507: ret      
+ffffff8002982508: cmp      edx, 0xc0286937
+ffffff800298250e: jle      0xffffff8002982552
+ffffff8002982510: cmp      edx, 0xc02c6938
+ffffff8002982516: je       0xffffff8002982528
+ffffff8002982518: cmp      edx, 0xc028697b
+ffffff800298251e: je       0xffffff800298258d
+ffffff8002982520: cmp      edx, 0xc0286938
+ffffff8002982526: jne      0xffffff80029824ff
+ffffff8002982528: mov      rcx, rbx
+ffffff800298252b: add      rsp, 0x10
+ffffff800298252f: pop      rbx
+ffffff8002982530: pop      r14
+ffffff8002982532: pop      rbp
+ffffff8002982533: jmp      0xffffff80029825d6  ; __ZN25IOSkywalkNetworkInterface14ioctl_gifmediaEP7__ifnetjPv
+ffffff8002982538: cmp      edx, 0x80206934
+ffffff800298253e: je       0xffffff80029825a4
+ffffff8002982540: cmp      edx, 0x80206945
+ffffff8002982546: jne      0xffffff80029824ff
+ffffff8002982548: mov      rdx, rbx
+ffffff800298254b: mov      ecx, 1
+ffffff8002982550: jmp      0xffffff80029825a9  ; __ZN25IOSkywalkNetworkInterface17processBSDCommandEP7__ifnetjPv+0x107
+ffffff8002982552: cmp      edx, 0xc0206944
+ffffff8002982558: je       0xffffff80029825b6
+ffffff800298255a: cmp      edx, 0xc020695b
+ffffff8002982560: jne      0xffffff80029824ff
+ffffff8002982562: lea      r14, [rbp - 0x14]
+ffffff8002982566: mov      dword ptr [r14], 0xaaaaaaaa
+ffffff800298256d: mov      rax, qword ptr [rdi]
+ffffff8002982570: call     qword ptr [rax + 0x988]
+ffffff8002982576: mov      esi, eax
+ffffff8002982578: mov      rdx, r14
+ffffff800298257b: call     0xffffff8002982d62  ; __ZN25IOSkywalkNetworkInterface16hwAssistsToIfcapEjPj
+ffffff8002982580: mov      eax, dword ptr [r14]
+ffffff8002982583: mov      dword ptr [rbx + 0x10], eax
+ffffff8002982586: xor      eax, eax
+ffffff8002982588: jmp      0xffffff80029824ff  ; __ZN25IOSkywalkNetworkInterface17processBSDCommandEP7__ifnetjPv+0x5d
+ffffff800298258d: mov      rax, qword ptr [rdi]
+ffffff8002982590: mov      rax, qword ptr [rax + 0x918]
+ffffff8002982597: mov      rsi, rbx
+ffffff800298259a: add      rsp, 0x10
+ffffff800298259e: pop      rbx
+ffffff800298259f: pop      r14
+ffffff80029825a1: pop      rbp
+ffffff80029825a2: jmp      rax
+ffffff80029825a4: mov      rdx, rbx
+ffffff80029825a7: xor      ecx, ecx
+ffffff80029825a9: add      rsp, 0x10
+ffffff80029825ad: pop      rbx
+ffffff80029825ae: pop      r14
+ffffff80029825b0: pop      rbp
+ffffff80029825b1: jmp      0xffffff8002982972  ; __ZN25IOSkywalkNetworkInterface12ioctl_sifmtuEP7__ifnetPvb
+ffffff80029825b6: mov      rdx, rbx
+ffffff80029825b9: add      rsp, 0x10
+ffffff80029825bd: pop      rbx
+ffffff80029825be: pop      r14
+ffffff80029825c0: pop      rbp
+ffffff80029825c1: jmp      0xffffff8002982904  ; __ZN25IOSkywalkNetworkInterface15ioctl_gifdevmtuEP7__ifnetPv
+ffffff80029825c6: mov      rdx, rbx
+ffffff80029825c9: add      rsp, 0x10
+ffffff80029825cd: pop      rbx
+ffffff80029825ce: pop      r14
+ffffff80029825d0: pop      rbp
+ffffff80029825d1: jmp      0xffffff8002982aba  ; __ZN25IOSkywalkNetworkInterface12ioctl_sifcapEP7__ifnetPv

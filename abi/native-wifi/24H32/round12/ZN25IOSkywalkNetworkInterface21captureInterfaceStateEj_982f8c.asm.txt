@@ -1,0 +1,6 @@
+# 0xffffff8002982f8c __ZN25IOSkywalkNetworkInterface21captureInterfaceStateEj
+ffffff8002982f8c: push     rbp
+ffffff8002982f8d: mov      rbp, rsp
+ffffff8002982f90: xor      eax, eax
+ffffff8002982f92: pop      rbp
+ffffff8002982f93: ret      

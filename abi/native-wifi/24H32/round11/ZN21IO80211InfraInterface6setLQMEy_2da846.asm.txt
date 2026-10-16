@@ -1,0 +1,29 @@
+# 0xffffff80022da846 __ZN21IO80211InfraInterface6setLQMEy
+ffffff80022da846: push     rbp
+ffffff80022da847: mov      rbp, rsp
+ffffff80022da84a: sub      rsp, 0x20
+ffffff80022da84e: mov      rdx, rdi
+ffffff80022da851: mov      rax, qword ptr [rip + 0xe18c0]  ; 0xffffff80023bc118
+ffffff80022da858: mov      rax, qword ptr [rax]
+ffffff80022da85b: mov      qword ptr [rbp - 8], rax
+ffffff80022da85f: lea      rcx, [rbp - 0x10]
+ffffff80022da863: mov      qword ptr [rcx], rsi
+ffffff80022da866: mov      rax, qword ptr [rdi + 0x110]
+ffffff80022da86d: mov      rdi, qword ptr [rax + 0x38]
+ffffff80022da871: mov      rax, qword ptr [rdi]
+ffffff80022da874: mov      qword ptr [rsp], 0
+ffffff80022da87c: lea      rsi, [rip + 0x2d]  ; 0xffffff80022da8b0
+ffffff80022da883: xor      r8d, r8d
+ffffff80022da886: xor      r9d, r9d
+ffffff80022da889: call     qword ptr [rax + 0x1a0]
+ffffff80022da88f: test     eax, eax
+ffffff80022da891: setne    al
+ffffff80022da894: mov      rcx, qword ptr [rip + 0xe187d]  ; 0xffffff80023bc118
+ffffff80022da89b: mov      rcx, qword ptr [rcx]
+ffffff80022da89e: cmp      rcx, qword ptr [rbp - 8]
+ffffff80022da8a2: jne      0xffffff80022da8aa
+ffffff80022da8a4: add      rsp, 0x20
+ffffff80022da8a8: pop      rbp
+ffffff80022da8a9: ret      
+ffffff80022da8aa: call     0xffffff8000383150  ; ___stack_chk_fail
+ffffff80022da8af: nop      

@@ -1,0 +1,42 @@
+# 0xffffff80022dc2d4 __ZN21IO80211InfraInterface19setCurrentApAddressEP10ether_addr
+ffffff80022dc2d4: push     rbp
+ffffff80022dc2d5: mov      rbp, rsp
+ffffff80022dc2d8: push     r15
+ffffff80022dc2da: push     r14
+ffffff80022dc2dc: push     rbx
+ffffff80022dc2dd: push     rax
+ffffff80022dc2de: mov      rbx, rdi
+ffffff80022dc2e1: mov      rax, qword ptr [rdi + 0x118]
+ffffff80022dc2e8: mov      r15, qword ptr [rax + 0x188]
+ffffff80022dc2ef: mov      rcx, qword ptr [r15 + 0x10]
+ffffff80022dc2f3: mov      rdi, qword ptr [rcx + 0x10]
+ffffff80022dc2f7: test     rsi, rsi
+ffffff80022dc2fa: je       0xffffff80022dc332
+ffffff80022dc2fc: mov      r14, rsi
+ffffff80022dc2ff: test     rdi, rdi
+ffffff80022dc302: je       0xffffff80022dc314
+ffffff80022dc304: mov      rax, qword ptr [rdi]
+ffffff80022dc307: call     qword ptr [rax + 0x150]
+ffffff80022dc30d: mov      rax, qword ptr [rbx + 0x118]
+ffffff80022dc314: mov      byte ptr [rax + 0x190], 1
+ffffff80022dc31b: mov      ecx, dword ptr [r14]
+ffffff80022dc31e: movzx    edx, word ptr [r14 + 4]
+ffffff80022dc323: mov      word ptr [rax + 0x1ac], dx
+ffffff80022dc32a: mov      dword ptr [rax + 0x1a8], ecx
+ffffff80022dc330: jmp      0xffffff80022dc35f  ; __ZN21IO80211InfraInterface19setCurrentApAddressEP10ether_addr+0x8b
+ffffff80022dc332: test     rdi, rdi
+ffffff80022dc335: je       0xffffff80022dc358
+ffffff80022dc337: mov      rax, qword ptr [rdi]
+ffffff80022dc33a: call     qword ptr [rax + 0x218]
+ffffff80022dc340: mov      rax, qword ptr [r15 + 0x10]
+ffffff80022dc344: mov      rdi, qword ptr [rax + 0x10]
+ffffff80022dc348: mov      rax, qword ptr [rdi]
+ffffff80022dc34b: call     qword ptr [rax + 0x158]
+ffffff80022dc351: mov      rax, qword ptr [rbx + 0x118]
+ffffff80022dc358: mov      byte ptr [rax + 0x190], 0
+ffffff80022dc35f: add      rsp, 8
+ffffff80022dc363: pop      rbx
+ffffff80022dc364: pop      r14
+ffffff80022dc366: pop      r15
+ffffff80022dc368: pop      rbp
+ffffff80022dc369: ret      

@@ -1,0 +1,75 @@
+# 0xffffff8002975924 __ZN18IOSkywalkBSDClient17findQueueWithRingEP19__kern_channel_ringb
+ffffff8002975924: push     rbp
+ffffff8002975925: mov      rbp, rsp
+ffffff8002975928: push     r15
+ffffff800297592a: push     r14
+ffffff800297592c: push     r13
+ffffff800297592e: push     r12
+ffffff8002975930: push     rbx
+ffffff8002975931: push     rax
+ffffff8002975932: mov      r15d, edx
+ffffff8002975935: mov      eax, r15d
+ffffff8002975938: xor      al, 1
+ffffff800297593a: movzx    eax, al
+ffffff800297593d: mov      r14, qword ptr [rdi + rax*8 + 0x98]
+ffffff8002975945: test     r14, r14
+ffffff8002975948: je       0xffffff80029759e6
+ffffff800297594e: mov      rbx, rsi
+ffffff8002975951: mov      rax, qword ptr [r14]
+ffffff8002975954: mov      rdi, r14
+ffffff8002975957: call     qword ptr [rax + 0x130]
+ffffff800297595d: cmp      eax, 1
+ffffff8002975960: jne      0xffffff8002975981
+ffffff8002975962: mov      rax, qword ptr [r14]
+ffffff8002975965: mov      rax, qword ptr [rax + 0x1e8]
+ffffff800297596c: mov      rdi, r14
+ffffff800297596f: xor      esi, esi
+ffffff8002975971: add      rsp, 8
+ffffff8002975975: pop      rbx
+ffffff8002975976: pop      r12
+ffffff8002975978: pop      r13
+ffffff800297597a: pop      r14
+ffffff800297597c: pop      r15
+ffffff800297597e: pop      rbp
+ffffff800297597f: jmp      rax
+ffffff8002975981: test     r15b, r15b
+ffffff8002975984: je       0xffffff80029759e6
+ffffff8002975986: mov      dword ptr [rbp - 0x2c], 0xaaaaaaaa
+ffffff800297598d: mov      rax, qword ptr [r14]
+ffffff8002975990: xor      r15d, r15d
+ffffff8002975993: mov      rdi, r14
+ffffff8002975996: xor      esi, esi
+ffffff8002975998: call     qword ptr [rax + 0x1e8]
+ffffff800297599e: test     rax, rax
+ffffff80029759a1: je       0xffffff80029759e9
+ffffff80029759a3: mov      r12d, 1
+ffffff80029759a9: lea      r13, [rbp - 0x2c]
+ffffff80029759ad: mov      r15, rax
+ffffff80029759b0: mov      rdi, rbx
+ffffff80029759b3: mov      rsi, r13
+ffffff80029759b6: call     0xffffff80009cb820  ; _kern_channel_get_service_class
+ffffff80029759bb: test     eax, eax
+ffffff80029759bd: jne      0xffffff80029759cc
+ffffff80029759bf: mov      rdi, r15
+ffffff80029759c2: call     0xffffff8002980bb0  ; __ZNK20IOSkywalkPacketQueue15getServiceClassEv
+ffffff80029759c7: cmp      eax, dword ptr [rbp - 0x2c]
+ffffff80029759ca: je       0xffffff80029759e9
+ffffff80029759cc: mov      rax, qword ptr [r14]
+ffffff80029759cf: mov      rdi, r14
+ffffff80029759d2: mov      esi, r12d
+ffffff80029759d5: call     qword ptr [rax + 0x1e8]
+ffffff80029759db: mov      r15, rax
+ffffff80029759de: inc      r12d
+ffffff80029759e1: test     rax, rax
+ffffff80029759e4: jne      0xffffff80029759b0
+ffffff80029759e6: xor      r15d, r15d
+ffffff80029759e9: mov      rax, r15
+ffffff80029759ec: add      rsp, 8
+ffffff80029759f0: pop      rbx
+ffffff80029759f1: pop      r12
+ffffff80029759f3: pop      r13
+ffffff80029759f5: pop      r14
+ffffff80029759f7: pop      r15
+ffffff80029759f9: pop      rbp
+ffffff80029759fa: ret      
+ffffff80029759fb: nop      

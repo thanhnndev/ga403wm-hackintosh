@@ -1,0 +1,96 @@
+# 0xffffff80021e697e __ZN18IO80211PeerManager20ioctl_internal_gatedEPvP18ioctl_internal_reqS0_S0_S0_
+ffffff80021e697e: push     rbp
+ffffff80021e697f: mov      rbp, rsp
+ffffff80021e6982: push     r15
+ffffff80021e6984: push     r14
+ffffff80021e6986: push     r12
+ffffff80021e6988: push     rbx
+ffffff80021e6989: sub      rsp, 0x10
+ffffff80021e698d: mov      rax, qword ptr [rip + 0x1d5784]  ; 0xffffff80023bc118
+ffffff80021e6994: mov      rax, qword ptr [rax]
+ffffff80021e6997: mov      qword ptr [rbp - 0x28], rax
+ffffff80021e699b: mov      rax, qword ptr [rdi + 0x18]
+ffffff80021e699f: mov      r14, qword ptr [rax + 0x518]
+ffffff80021e69a6: mov      r15d, 0xe00002c9
+ffffff80021e69ac: test     r14, r14
+ffffff80021e69af: je       0xffffff80021e6ab7
+ffffff80021e69b5: mov      rbx, rsi
+ffffff80021e69b8: cmp      byte ptr [rsi + 0x14], 1
+ffffff80021e69bc: jne      0xffffff80021e6a5f
+ffffff80021e69c2: mov      rax, qword ptr [r14]
+ffffff80021e69c5: mov      rdi, r14
+ffffff80021e69c8: call     qword ptr [rax + 0xc80]
+ffffff80021e69ce: test     rax, rax
+ffffff80021e69d1: je       0xffffff80021e6ab7
+ffffff80021e69d7: mov      rax, qword ptr [r14]
+ffffff80021e69da: mov      rdi, r14
+ffffff80021e69dd: call     qword ptr [rax + 0xc80]
+ffffff80021e69e3: mov      rax, qword ptr [rax + 0x110]
+ffffff80021e69ea: mov      rdi, qword ptr [rax + 0xd8]
+ffffff80021e69f1: test     rdi, rdi
+ffffff80021e69f4: je       0xffffff80021e6a29
+ffffff80021e69f6: mov      r8d, dword ptr [rbx + 0x10]
+ffffff80021e69fa: mov      rcx, qword ptr [rbx + 8]
+ffffff80021e69fe: mov      esi, dword ptr [rbx]
+ffffff80021e6a00: mov      edx, dword ptr [rbx + 4]
+ffffff80021e6a03: lea      r12, [rbp - 0x29]
+ffffff80021e6a07: mov      byte ptr [r12], 0
+ffffff80021e6a0c: mov      r9, r12
+ffffff80021e6a0f: call     0xffffff800212ad12  ; __ZN11IO80211Glue13sendIOUCToWclEjjPvmRb
+ffffff80021e6a14: cmp      byte ptr [r12], 1
+ffffff80021e6a19: jne      0xffffff80021e6a29
+ffffff80021e6a1b: mov      r15d, eax
+ffffff80021e6a1e: cmp      eax, 0xe082280f
+ffffff80021e6a23: jne      0xffffff80021e6ab7
+ffffff80021e6a29: mov      r15d, dword ptr [rbx]
+ffffff80021e6a2c: mov      r12d, dword ptr [rbx + 4]
+ffffff80021e6a30: mov      rax, qword ptr [r14]
+ffffff80021e6a33: mov      rdi, r14
+ffffff80021e6a36: call     qword ptr [rax + 0xc80]
+ffffff80021e6a3c: mov      rcx, qword ptr [rbx + 8]
+ffffff80021e6a40: mov      rdx, qword ptr [rip + 0x1d56d1]  ; 0xffffff80023bc118
+ffffff80021e6a47: mov      rdx, qword ptr [rdx]
+ffffff80021e6a4a: cmp      rdx, qword ptr [rbp - 0x28]
+ffffff80021e6a4e: jne      0xffffff80021e6ad7
+ffffff80021e6a54: mov      edi, r15d
+ffffff80021e6a57: mov      esi, r12d
+ffffff80021e6a5a: mov      rdx, rax
+ffffff80021e6a5d: jmp      0xffffff80021e6aa6  ; __ZN18IO80211PeerManager20ioctl_internal_gatedEPvP18ioctl_internal_reqS0_S0_S0_+0x128
+ffffff80021e6a5f: cmp      byte ptr [rbx + 0x15], 1
+ffffff80021e6a63: jne      0xffffff80021e6a75
+ffffff80021e6a65: mov      rax, qword ptr [r14 + 0x120]
+ffffff80021e6a6c: mov      rdx, qword ptr [rax + 0x190]
+ffffff80021e6a73: jmp      0xffffff80021e6a88  ; __ZN18IO80211PeerManager20ioctl_internal_gatedEPvP18ioctl_internal_reqS0_S0_S0_+0x10a
+ffffff80021e6a75: mov      rdx, qword ptr [rax + 0x550]
+ffffff80021e6a7c: test     rdx, rdx
+ffffff80021e6a7f: jne      0xffffff80021e6a8d
+ffffff80021e6a81: mov      rdx, qword ptr [rax + 0x548]
+ffffff80021e6a88: test     rdx, rdx
+ffffff80021e6a8b: je       0xffffff80021e6ab7
+ffffff80021e6a8d: mov      edi, dword ptr [rbx]
+ffffff80021e6a8f: mov      esi, dword ptr [rbx + 4]
+ffffff80021e6a92: mov      rcx, qword ptr [rbx + 8]
+ffffff80021e6a96: mov      rax, qword ptr [rip + 0x1d567b]  ; 0xffffff80023bc118
+ffffff80021e6a9d: mov      rax, qword ptr [rax]
+ffffff80021e6aa0: cmp      rax, qword ptr [rbp - 0x28]
+ffffff80021e6aa4: jne      0xffffff80021e6ad7
+ffffff80021e6aa6: add      rsp, 0x10
+ffffff80021e6aaa: pop      rbx
+ffffff80021e6aab: pop      r12
+ffffff80021e6aad: pop      r14
+ffffff80021e6aaf: pop      r15
+ffffff80021e6ab1: pop      rbp
+ffffff80021e6ab2: jmp      0xffffff80022e1948  ; __Z23apple80211RouteInternaljiP23IO80211SkywalkInterfacePv
+ffffff80021e6ab7: mov      rax, qword ptr [rip + 0x1d565a]  ; 0xffffff80023bc118
+ffffff80021e6abe: mov      rax, qword ptr [rax]
+ffffff80021e6ac1: cmp      rax, qword ptr [rbp - 0x28]
+ffffff80021e6ac5: jne      0xffffff80021e6ad7
+ffffff80021e6ac7: mov      eax, r15d
+ffffff80021e6aca: add      rsp, 0x10
+ffffff80021e6ace: pop      rbx
+ffffff80021e6acf: pop      r12
+ffffff80021e6ad1: pop      r14
+ffffff80021e6ad3: pop      r15
+ffffff80021e6ad5: pop      rbp
+ffffff80021e6ad6: ret      
+ffffff80021e6ad7: call     0xffffff8000383150  ; ___stack_chk_fail

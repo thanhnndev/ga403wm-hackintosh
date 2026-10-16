@@ -1,0 +1,28 @@
+# 0xffffff80022644c2 __ZN23IO80211SkywalkInterface18setHardwareAddressEP10ether_addr
+ffffff80022644c2: push     rbp
+ffffff80022644c3: mov      rbp, rsp
+ffffff80022644c6: test     rsi, rsi
+ffffff80022644c9: je       0xffffff80022644e8
+ffffff80022644cb: mov      rax, qword ptr [rdi + 0x110]
+ffffff80022644d2: mov      rdi, qword ptr [rax + 0x50]
+ffffff80022644d6: test     rdi, rdi
+ffffff80022644d9: je       0xffffff8002264509
+ffffff80022644db: mov      edx, 1
+ffffff80022644e0: xor      ecx, ecx
+ffffff80022644e2: pop      rbp
+ffffff80022644e3: jmp      0xffffff8002260b10  ; __ZN22IO80211MacAddressAgent13setMacAddressER10ether_addrjb
+ffffff80022644e8: lea      rdi, [rip + 0x11a527]  ; 0xffffff800237ea16
+ffffff80022644ef: lea      rsi, [rip + 0x11a549]  ; "setHardwareAddress"
+ffffff80022644f6: mov      edx, 0x689
+ffffff80022644fb: xor      eax, eax
+ffffff80022644fd: call     0xffffff8000ab6560  ; _IOLog
+ffffff8002264502: mov      eax, 0xe00002c2
+ffffff8002264507: jmp      0xffffff8002264528  ; __ZN23IO80211SkywalkInterface18setHardwareAddressEP10ether_addr+0x66
+ffffff8002264509: lea      rdi, [rip + 0x11a542]  ; 0xffffff800237ea52
+ffffff8002264510: lea      rsi, [rip + 0x11a528]  ; "setHardwareAddress"
+ffffff8002264517: mov      edx, 0x68c
+ffffff800226451c: xor      eax, eax
+ffffff800226451e: call     0xffffff8000ab6560  ; _IOLog
+ffffff8002264523: mov      eax, 0xe00002bc
+ffffff8002264528: pop      rbp
+ffffff8002264529: ret      

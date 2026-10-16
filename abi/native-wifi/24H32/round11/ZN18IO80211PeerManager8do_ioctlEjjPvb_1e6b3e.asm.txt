@@ -1,0 +1,52 @@
+# 0xffffff80021e6b3e __ZN18IO80211PeerManager8do_ioctlEjjPvb
+ffffff80021e6b3e: push     rbp
+ffffff80021e6b3f: mov      rbp, rsp
+ffffff80021e6b42: push     r15
+ffffff80021e6b44: push     r14
+ffffff80021e6b46: push     r12
+ffffff80021e6b48: push     rbx
+ffffff80021e6b49: mov      rbx, rcx
+ffffff80021e6b4c: mov      r14d, edx
+ffffff80021e6b4f: mov      r15d, esi
+ffffff80021e6b52: mov      r12, rdi
+ffffff80021e6b55: test     r8d, r8d
+ffffff80021e6b58: je       0xffffff80021e6b99
+ffffff80021e6b5a: mov      rax, qword ptr [r12 + 0x18]
+ffffff80021e6b5f: mov      rdi, qword ptr [rax + 0x518]
+ffffff80021e6b66: test     rdi, rdi
+ffffff80021e6b69: je       0xffffff80021e6b99
+ffffff80021e6b6b: mov      rax, qword ptr [rdi]
+ffffff80021e6b6e: call     qword ptr [rax + 0xc80]
+ffffff80021e6b74: test     rax, rax
+ffffff80021e6b77: je       0xffffff80021e6b99
+ffffff80021e6b79: mov      rax, qword ptr [r12 + 0x18]
+ffffff80021e6b7e: mov      rdi, qword ptr [rax + 0x518]
+ffffff80021e6b85: mov      rax, qword ptr [rdi]
+ffffff80021e6b88: call     qword ptr [rax + 0xc80]
+ffffff80021e6b8e: mov      edi, r15d
+ffffff80021e6b91: mov      esi, r14d
+ffffff80021e6b94: mov      rdx, rax
+ffffff80021e6b97: jmp      0xffffff80021e6bbc  ; __ZN18IO80211PeerManager8do_ioctlEjjPvb+0x7e
+ffffff80021e6b99: mov      rax, qword ptr [r12 + 0x18]
+ffffff80021e6b9e: mov      rdx, qword ptr [rax + 0x550]
+ffffff80021e6ba5: test     rdx, rdx
+ffffff80021e6ba8: jne      0xffffff80021e6bb6
+ffffff80021e6baa: mov      rdx, qword ptr [rax + 0x548]
+ffffff80021e6bb1: test     rdx, rdx
+ffffff80021e6bb4: je       0xffffff80021e6bcc
+ffffff80021e6bb6: mov      edi, r15d
+ffffff80021e6bb9: mov      esi, r14d
+ffffff80021e6bbc: mov      rcx, rbx
+ffffff80021e6bbf: pop      rbx
+ffffff80021e6bc0: pop      r12
+ffffff80021e6bc2: pop      r14
+ffffff80021e6bc4: pop      r15
+ffffff80021e6bc6: pop      rbp
+ffffff80021e6bc7: jmp      0xffffff80022e1948  ; __Z23apple80211RouteInternaljiP23IO80211SkywalkInterfacePv
+ffffff80021e6bcc: mov      eax, 0xe
+ffffff80021e6bd1: pop      rbx
+ffffff80021e6bd2: pop      r12
+ffffff80021e6bd4: pop      r14
+ffffff80021e6bd6: pop      r15
+ffffff80021e6bd8: pop      rbp
+ffffff80021e6bd9: ret      

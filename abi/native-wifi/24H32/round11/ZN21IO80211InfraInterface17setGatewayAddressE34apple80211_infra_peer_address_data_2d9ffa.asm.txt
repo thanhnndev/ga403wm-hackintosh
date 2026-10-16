@@ -1,0 +1,49 @@
+# 0xffffff80022d9ffa __ZN21IO80211InfraInterface17setGatewayAddressE34apple80211_infra_peer_address_data
+ffffff80022d9ffa: push     rbp
+ffffff80022d9ffb: mov      rbp, rsp
+ffffff80022d9ffe: push     r14
+ffffff80022da000: push     rbx
+ffffff80022da001: mov      rbx, rdi
+ffffff80022da004: lea      r14, [rbp + 0x10]
+ffffff80022da008: mov      rax, qword ptr [rdi + 0x110]
+ffffff80022da00f: mov      rax, qword ptr [rax + 0x28]
+ffffff80022da013: mov      rax, qword ptr [rax + 0x18]
+ffffff80022da017: mov      rcx, qword ptr [rax + 0x548]
+ffffff80022da01e: test     rcx, rcx
+ffffff80022da021: je       0xffffff80022da06e
+ffffff80022da023: mov      rcx, qword ptr [rcx + 0x110]
+ffffff80022da02a: cmp      dword ptr [rcx + 0x58], 1
+ffffff80022da02e: jne      0xffffff80022da06e
+ffffff80022da030: mov      rdi, qword ptr [rax + 0xb28]
+ffffff80022da037: test     rdi, rdi
+ffffff80022da03a: je       0xffffff80022da06e
+ffffff80022da03c: sub      rsp, 8
+ffffff80022da040: mov      rax, qword ptr [r14 + 0x30]
+ffffff80022da044: mov      rcx, qword ptr [r14 + 0x28]
+ffffff80022da048: mov      rdx, qword ptr [r14 + 0x20]
+ffffff80022da04c: mov      rsi, qword ptr [r14 + 0x18]
+ffffff80022da050: mov      r8, qword ptr [r14 + 0x10]
+ffffff80022da054: mov      r9, qword ptr [r14]
+ffffff80022da057: mov      r10, qword ptr [r14 + 8]
+ffffff80022da05b: push     rax
+ffffff80022da05c: push     rcx
+ffffff80022da05d: push     rdx
+ffffff80022da05e: push     rsi
+ffffff80022da05f: push     r8
+ffffff80022da061: push     r10
+ffffff80022da063: push     r9
+ffffff80022da065: call     0xffffff800213ce2e  ; __ZN25IO80211InfraPeersDatabase20updateGatewayAddressE34apple80211_infra_peer_address_data
+ffffff80022da06a: add      rsp, 0x40
+ffffff80022da06e: mov      rax, qword ptr [rbx + 0x118]
+ffffff80022da075: movzx    ecx, word ptr [r14 + 8]
+ffffff80022da07a: mov      word ptr [rax + 0x1bc], cx
+ffffff80022da081: mov      ecx, dword ptr [r14 + 4]
+ffffff80022da085: mov      dword ptr [rax + 0x1b8], ecx
+ffffff80022da08b: mov      rax, qword ptr [rbx + 0x118]
+ffffff80022da092: mov      ecx, dword ptr [r14 + 0x10]
+ffffff80022da096: mov      dword ptr [rax + 0x1b4], ecx
+ffffff80022da09c: pop      rbx
+ffffff80022da09d: pop      r14
+ffffff80022da09f: pop      rbp
+ffffff80022da0a0: ret      
+ffffff80022da0a1: nop      

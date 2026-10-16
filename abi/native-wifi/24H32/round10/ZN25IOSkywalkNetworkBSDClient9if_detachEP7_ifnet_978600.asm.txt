@@ -1,0 +1,7 @@
+# 0xffffff8002978600 __ZN25IOSkywalkNetworkBSDClient9if_detachEP7__ifnet
+ffffff8002978600: push     rbp
+ffffff8002978601: mov      rbp, rsp
+ffffff8002978604: call     0xffffff800069cc00  ; _ifnet_softc
+ffffff8002978609: mov      rdi, rax
+ffffff800297860c: pop      rbp
+ffffff800297860d: jmp      0xffffff8002978df6  ; __ZN25IOSkywalkNetworkBSDClient14handleIfDetachEP7__ifnet

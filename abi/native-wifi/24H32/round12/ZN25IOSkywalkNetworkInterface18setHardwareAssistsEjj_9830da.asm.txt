@@ -1,0 +1,12 @@
+# 0xffffff80029830da __ZN25IOSkywalkNetworkInterface18setHardwareAssistsEjj
+ffffff80029830da: push     rbp
+ffffff80029830db: mov      rbp, rsp
+ffffff80029830de: mov      rax, qword ptr [rdi + 0xb8]
+ffffff80029830e5: mov      rax, qword ptr [rax]
+ffffff80029830e8: not      edx
+ffffff80029830ea: and      edx, dword ptr [rax + 0x20]
+ffffff80029830ed: or       edx, esi
+ffffff80029830ef: mov      dword ptr [rax + 0x20], edx
+ffffff80029830f2: xor      eax, eax
+ffffff80029830f4: pop      rbp
+ffffff80029830f5: ret      

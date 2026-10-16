@@ -1,0 +1,7 @@
+# 0xffffff80022d9e8a __ZN21IO80211InfraInterface19getULLALiteDurationEv
+ffffff80022d9e8a: push     rbp
+ffffff80022d9e8b: mov      rbp, rsp
+ffffff80022d9e8e: mov      rax, qword ptr [rdi + 0x118]
+ffffff80022d9e95: mov      rax, qword ptr [rax + 0xd8]
+ffffff80022d9e9c: pop      rbp
+ffffff80022d9e9d: ret      

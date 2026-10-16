@@ -1,0 +1,65 @@
+# 0xffffff8002988b8a __ZN26IOSkywalkEthernetInterface24configureMulticastFilterEjPK10ether_addrj
+ffffff8002988b8a: push     rbp
+ffffff8002988b8b: mov      rbp, rsp
+ffffff8002988b8e: push     rbx
+ffffff8002988b8f: push     rax
+ffffff8002988b90: mov      rbx, rdi
+ffffff8002988b93: cmp      esi, 2
+ffffff8002988b96: je       0xffffff8002988bff
+ffffff8002988b98: cmp      esi, 1
+ffffff8002988b9b: je       0xffffff8002988c14
+ffffff8002988b9d: mov      eax, 0xe00002c7
+ffffff8002988ba2: test     esi, esi
+ffffff8002988ba4: jne      0xffffff8002988c55
+ffffff8002988baa: mov      rax, qword ptr [rbx + 0x108]
+ffffff8002988bb1: mov      ecx, dword ptr [rax + 8]
+ffffff8002988bb4: mov      eax, 0xe00002c7
+ffffff8002988bb9: test     cl, 2
+ffffff8002988bbc: je       0xffffff8002988bd6
+ffffff8002988bbe: mov      rax, qword ptr [rbx]
+ffffff8002988bc1: mov      rdi, rbx
+ffffff8002988bc4: xor      esi, esi
+ffffff8002988bc6: call     qword ptr [rax + 0xa88]
+ffffff8002988bcc: mov      rcx, qword ptr [rbx + 0x108]
+ffffff8002988bd3: mov      ecx, dword ptr [rcx + 8]
+ffffff8002988bd6: test     cl, 4
+ffffff8002988bd9: je       0xffffff8002988beb
+ffffff8002988bdb: mov      rax, qword ptr [rbx]
+ffffff8002988bde: mov      rdi, rbx
+ffffff8002988be1: xor      esi, esi
+ffffff8002988be3: xor      edx, edx
+ffffff8002988be5: call     qword ptr [rax + 0xa80]
+ffffff8002988beb: test     eax, eax
+ffffff8002988bed: je       0xffffff8002988c45
+ffffff8002988bef: mov      rax, qword ptr [rbx]
+ffffff8002988bf2: mov      rdi, rbx
+ffffff8002988bf5: xor      esi, esi
+ffffff8002988bf7: call     qword ptr [rax + 0xa88]
+ffffff8002988bfd: jmp      0xffffff8002988c47  ; __ZN26IOSkywalkEthernetInterface24configureMulticastFilterEjPK10ether_addrj+0xbd
+ffffff8002988bff: mov      rax, qword ptr [rbx]
+ffffff8002988c02: mov      rdi, rbx
+ffffff8002988c05: mov      rsi, rdx
+ffffff8002988c08: mov      edx, ecx
+ffffff8002988c0a: call     qword ptr [rax + 0xa80]
+ffffff8002988c10: test     eax, eax
+ffffff8002988c12: je       0xffffff8002988c36
+ffffff8002988c14: mov      rax, qword ptr [rbx]
+ffffff8002988c17: mov      rdi, rbx
+ffffff8002988c1a: mov      esi, 1
+ffffff8002988c1f: call     qword ptr [rax + 0xa88]
+ffffff8002988c25: test     eax, eax
+ffffff8002988c27: jne      0xffffff8002988c55
+ffffff8002988c29: mov      rax, qword ptr [rbx + 0x108]
+ffffff8002988c30: or       dword ptr [rax + 8], 2
+ffffff8002988c34: jmp      0xffffff8002988c41  ; __ZN26IOSkywalkEthernetInterface24configureMulticastFilterEjPK10ether_addrj+0xb7
+ffffff8002988c36: mov      rax, qword ptr [rbx + 0x108]
+ffffff8002988c3d: or       dword ptr [rax + 8], 4
+ffffff8002988c41: xor      eax, eax
+ffffff8002988c43: jmp      0xffffff8002988c55  ; __ZN26IOSkywalkEthernetInterface24configureMulticastFilterEjPK10ether_addrj+0xcb
+ffffff8002988c45: xor      eax, eax
+ffffff8002988c47: mov      rcx, qword ptr [rbx + 0x108]
+ffffff8002988c4e: mov      dword ptr [rcx + 8], 0
+ffffff8002988c55: add      rsp, 8
+ffffff8002988c59: pop      rbx
+ffffff8002988c5a: pop      rbp
+ffffff8002988c5b: ret      

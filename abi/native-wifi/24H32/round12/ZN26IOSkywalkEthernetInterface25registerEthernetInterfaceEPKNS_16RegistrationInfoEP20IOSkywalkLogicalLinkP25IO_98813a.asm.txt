@@ -1,0 +1,45 @@
+# 0xffffff800298813a __ZN26IOSkywalkEthernetInterface25registerEthernetInterfaceEPKNS_16RegistrationInfoEP20IOSkywalkLogicalLinkP25IOSkywalkPacketBufferPoolS6_j
+ffffff800298813a: push     rbp
+ffffff800298813b: mov      rbp, rsp
+ffffff800298813e: push     r15
+ffffff8002988140: push     r14
+ffffff8002988142: push     r13
+ffffff8002988144: push     r12
+ffffff8002988146: push     rbx
+ffffff8002988147: push     rax
+ffffff8002988148: mov      rbx, r8
+ffffff800298814b: mov      r14, rcx
+ffffff800298814e: mov      r15, rdx
+ffffff8002988151: mov      r12, rdi
+ffffff8002988154: call     0xffffff8002987fe4  ; __ZN26IOSkywalkEthernetInterface20copyRegistrationInfoEPKNS_16RegistrationInfoE
+ffffff8002988159: test     eax, eax
+ffffff800298815b: je       0xffffff800298817c
+ffffff800298815d: mov      r13d, eax
+ffffff8002988160: mov      rdi, r12
+ffffff8002988163: xor      esi, esi
+ffffff8002988165: call     0xffffff80029880e8  ; __ZN26IOSkywalkEthernetInterface27deregisterEthernetInterfaceEj
+ffffff800298816a: mov      eax, r13d
+ffffff800298816d: add      rsp, 8
+ffffff8002988171: pop      rbx
+ffffff8002988172: pop      r12
+ffffff8002988174: pop      r13
+ffffff8002988176: pop      r14
+ffffff8002988178: pop      r15
+ffffff800298817a: pop      rbp
+ffffff800298817b: ret      
+ffffff800298817c: mov      rax, qword ptr [r12 + 0x108]
+ffffff8002988184: mov      rsi, qword ptr [rax]
+ffffff8002988187: mov      rdi, r12
+ffffff800298818a: mov      rdx, r15
+ffffff800298818d: mov      rcx, r14
+ffffff8002988190: mov      r8, rbx
+ffffff8002988193: xor      r9d, r9d
+ffffff8002988196: add      rsp, 8
+ffffff800298819a: pop      rbx
+ffffff800298819b: pop      r12
+ffffff800298819d: pop      r13
+ffffff800298819f: pop      r14
+ffffff80029881a1: pop      r15
+ffffff80029881a3: pop      rbp
+ffffff80029881a4: jmp      0xffffff8002981eac  ; __ZN25IOSkywalkNetworkInterface24registerNetworkInterfaceEPKNS_16RegistrationInfoEP20IOSkywalkLogicalLinkP25IOSkywalkPacketBufferPoolS6_j
+ffffff80029881a9: nop      

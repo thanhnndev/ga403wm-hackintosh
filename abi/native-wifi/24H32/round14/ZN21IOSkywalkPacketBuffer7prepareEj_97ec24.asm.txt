@@ -1,0 +1,6 @@
+# 0xffffff800297ec24 __ZN21IOSkywalkPacketBuffer7prepareEj
+ffffff800297ec24: push     rbp
+ffffff800297ec25: mov      rbp, rsp
+ffffff800297ec28: xor      eax, eax
+ffffff800297ec2a: pop      rbp
+ffffff800297ec2b: ret      

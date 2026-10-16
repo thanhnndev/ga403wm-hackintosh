@@ -1,0 +1,3 @@
+# 0xffffff80029b1160 __ZN26IOSkywalkEthernetInterface10superClassE
+ffffff80029b1160: push     0x28b6a
+ffffff80029b1165: add      al, al

@@ -1,0 +1,10 @@
+# 0xffffff800222b360 __ZN17IO80211Controller15postMessageSyncEP23IO80211SkywalkInterfacejPvmb
+ffffff800222b360: push     rbp
+ffffff800222b361: mov      rbp, rsp
+ffffff800222b364: mov      rax, qword ptr [rdi + 0x120]
+ffffff800222b36b: mov      rdi, qword ptr [rax + 0xb08]
+ffffff800222b372: mov      rax, qword ptr [rdi]
+ffffff800222b375: mov      rax, qword ptr [rax + 0x128]
+ffffff800222b37c: pop      rbp
+ffffff800222b37d: jmp      rax
+ffffff800222b37f: nop      

@@ -1,0 +1,129 @@
+# 0xffffff80022d934c __ZN21IO80211InfraInterface21setLeakyApSsidMetricsEP32apple80211_leaky_ap_ssid_metrics
+ffffff80022d934c: push     rbp
+ffffff80022d934d: mov      rbp, rsp
+ffffff80022d9350: push     r15
+ffffff80022d9352: push     r14
+ffffff80022d9354: push     r12
+ffffff80022d9356: push     rbx
+ffffff80022d9357: test     rsi, rsi
+ffffff80022d935a: je       0xffffff80022d9443
+ffffff80022d9360: mov      rbx, rdi
+ffffff80022d9363: mov      rax, qword ptr [rdi + 0x118]
+ffffff80022d936a: cmp      dword ptr [rax + 0x108], 1
+ffffff80022d9371: jne      0xffffff80022d946c
+ffffff80022d9377: mov      rax, qword ptr [rbx + 0x110]
+ffffff80022d937e: mov      r14, qword ptr [rax + 0x40]
+ffffff80022d9382: test     r14, r14
+ffffff80022d9385: je       0xffffff80022d9474
+ffffff80022d938b: mov      r15, rsi
+ffffff80022d938e: cmp      dword ptr [rsi + 4], 0
+ffffff80022d9392: je       0xffffff80022d94a2
+ffffff80022d9398: mov      rdi, r14
+ffffff80022d939b: mov      rsi, r15
+ffffff80022d939e: call     0xffffff80022e554c  ; __ZN23IO80211InterfaceMonitor21setLeakyApSsidMetricsEP32apple80211_leaky_ap_ssid_metrics
+ffffff80022d93a3: test     eax, eax
+ffffff80022d93a5: je       0xffffff80022d94f2
+ffffff80022d93ab: mov      rax, qword ptr [rbx + 0x110]
+ffffff80022d93b2: mov      r12, qword ptr [rax + 0x40]
+ffffff80022d93b6: mov      edi, 0x938
+ffffff80022d93bb: add      rdi, qword ptr [r12 + 0x10]
+ffffff80022d93c0: mov      esi, 0x2358
+ffffff80022d93c5: call     0xffffff8000101100  ; _bzero
+ffffff80022d93ca: mov      rax, qword ptr [r12 + 0x10]
+ffffff80022d93cf: mov      dword ptr [rax + 0x938], 2
+ffffff80022d93d9: xor      r14d, r14d
+ffffff80022d93dc: mov      qword ptr [rax + 0x2c94], r14
+ffffff80022d93e3: mov      qword ptr [rax + 0x2c9c], r14
+ffffff80022d93ea: mov      dword ptr [rax + 0x2ca4], 0
+ffffff80022d93f4: mov      rax, qword ptr [r12 + 0x10]
+ffffff80022d93f9: mov      byte ptr [rax + 0x2c90], 0
+ffffff80022d9400: mov      rax, qword ptr [rbx]
+ffffff80022d9403: mov      rdi, rbx
+ffffff80022d9406: call     qword ptr [rax + 0x38]
+ffffff80022d9409: mov      rdi, rax
+ffffff80022d940c: call     0xffffff8000a4a150  ; __ZNK11OSMetaClass12getClassNameEv
+ffffff80022d9411: mov      ecx, dword ptr [r15 + 4]
+ffffff80022d9415: add      r15, 8
+ffffff80022d9419: test     ecx, ecx
+ffffff80022d941b: lea      r8, [rip + 0xc09c6]  ; 0xffffff8002399de8
+ffffff80022d9422: cmovne   r8, r15
+ffffff80022d9426: lea      rdi, [rip + 0xc10bf]  ; 0xffffff800239a4ec
+ffffff80022d942d: lea      rdx, [rip + 0xc10a2]  ; "setLeakyApSsidMetrics"
+ffffff80022d9434: mov      rsi, rax
+ffffff80022d9437: xor      eax, eax
+ffffff80022d9439: call     0xffffff8000ab6560  ; _IOLog
+ffffff80022d943e: jmp      0xffffff80022d94f5  ; __ZN21IO80211InfraInterface21setLeakyApSsidMetricsEP32apple80211_leaky_ap_ssid_metrics+0x1a9
+ffffff80022d9443: lea      rdi, [rip + 0xc0564]  ; 0xffffff80023999ae
+ffffff80022d944a: lea      rsi, [rip + 0xc057f]  ; "/AppleInternal/Library/BuildRoots/4~CW9mugA6gpmKPwyaAeCNWSZRmRlk6mvK_U3N5n0/Libr"
+ffffff80022d9451: lea      rdx, [rip + 0xc107e]  ; "setLeakyApSsidMetrics"
+ffffff80022d9458: xor      r14d, r14d
+ffffff80022d945b: mov      ecx, 0x87a
+ffffff80022d9460: xor      eax, eax
+ffffff80022d9462: call     0xffffff8000ab6560  ; _IOLog
+ffffff80022d9467: jmp      0xffffff80022d9564  ; __ZN21IO80211InfraInterface21setLeakyApSsidMetricsEP32apple80211_leaky_ap_ssid_metrics+0x218
+ffffff80022d946c: xor      r14d, r14d
+ffffff80022d946f: jmp      0xffffff80022d9564  ; __ZN21IO80211InfraInterface21setLeakyApSsidMetricsEP32apple80211_leaky_ap_ssid_metrics+0x218
+ffffff80022d9474: mov      rax, qword ptr [rbx]
+ffffff80022d9477: mov      rdi, rbx
+ffffff80022d947a: call     qword ptr [rax + 0x38]
+ffffff80022d947d: mov      rdi, rax
+ffffff80022d9480: call     0xffffff8000a4a150  ; __ZNK11OSMetaClass12getClassNameEv
+ffffff80022d9485: lea      rdi, [rip + 0xc1115]  ; "%s::%s ERROR: Failed to set Leaky AP SSID metric - Interface monitor is not set "
+ffffff80022d948c: lea      rdx, [rip + 0xc1043]  ; "setLeakyApSsidMetrics"
+ffffff80022d9493: xor      r14d, r14d
+ffffff80022d9496: mov      rsi, rax
+ffffff80022d9499: xor      eax, eax
+ffffff80022d949b: call     0xffffff8000ab6560  ; _IOLog
+ffffff80022d94a0: jmp      0xffffff80022d94f5  ; __ZN21IO80211InfraInterface21setLeakyApSsidMetricsEP32apple80211_leaky_ap_ssid_metrics+0x1a9
+ffffff80022d94a2: mov      edi, 0x45c
+ffffff80022d94a7: add      rdi, qword ptr [r14 + 0x10]
+ffffff80022d94ab: mov      esi, 0x4dc
+ffffff80022d94b0: call     0xffffff8000101100  ; _bzero
+ffffff80022d94b5: mov      rax, qword ptr [r14 + 0x10]
+ffffff80022d94b9: mov      byte ptr [rax + 0x2c90], 0
+ffffff80022d94c0: mov      rax, qword ptr [rbx]
+ffffff80022d94c3: mov      rdi, rbx
+ffffff80022d94c6: call     qword ptr [rax + 0x38]
+ffffff80022d94c9: mov      rdi, rax
+ffffff80022d94cc: call     0xffffff8000a4a150  ; __ZNK11OSMetaClass12getClassNameEv
+ffffff80022d94d1: mov      ecx, dword ptr [r15 + 4]
+ffffff80022d94d5: lea      rdi, [rip + 0xc1060]  ; "%s::%s ERROR: Got invalid Leaky AP SSID metric - SSID name len is %d, reseting s"
+ffffff80022d94dc: lea      rdx, [rip + 0xc0ff3]  ; "setLeakyApSsidMetrics"
+ffffff80022d94e3: xor      r14d, r14d
+ffffff80022d94e6: mov      rsi, rax
+ffffff80022d94e9: xor      eax, eax
+ffffff80022d94eb: call     0xffffff8000ab6560  ; _IOLog
+ffffff80022d94f0: jmp      0xffffff80022d94f5  ; __ZN21IO80211InfraInterface21setLeakyApSsidMetricsEP32apple80211_leaky_ap_ssid_metrics+0x1a9
+ffffff80022d94f2: mov      r14b, 1
+ffffff80022d94f5: mov      rax, qword ptr [rbx]
+ffffff80022d94f8: mov      rcx, qword ptr [rbx + 0x118]
+ffffff80022d94ff: mov      r15, qword ptr [rcx + 0x100]
+ffffff80022d9506: mov      rdi, rbx
+ffffff80022d9509: call     qword ptr [rax + 0x38]
+ffffff80022d950c: mov      rdi, rax
+ffffff80022d950f: call     0xffffff8000a4a150  ; __ZNK11OSMetaClass12getClassNameEv
+ffffff80022d9514: test     r15, r15
+ffffff80022d9517: je       0xffffff80022d954c
+ffffff80022d9519: lea      rdi, [rip + 0xc10d3]  ; "%s::%s Setting leaky ap stats reset timer  to 0 minutes... (received APPLE80211_"
+ffffff80022d9520: lea      rdx, [rip + 0xc0faf]  ; "setLeakyApSsidMetrics"
+ffffff80022d9527: mov      rsi, rax
+ffffff80022d952a: xor      eax, eax
+ffffff80022d952c: call     0xffffff8000ab6560  ; _IOLog
+ffffff80022d9531: mov      rax, qword ptr [rbx + 0x118]
+ffffff80022d9538: mov      rdi, qword ptr [rax + 0x100]
+ffffff80022d953f: mov      rax, qword ptr [rdi]
+ffffff80022d9542: xor      esi, esi
+ffffff80022d9544: call     qword ptr [rax + 0x1d0]
+ffffff80022d954a: jmp      0xffffff80022d9564  ; __ZN21IO80211InfraInterface21setLeakyApSsidMetricsEP32apple80211_leaky_ap_ssid_metrics+0x218
+ffffff80022d954c: lea      rdi, [rip + 0xc1111]  ; "%s::%s ERROR: Failed to reset leaky ap stats timer, the timer is not instantiate"
+ffffff80022d9553: lea      rdx, [rip + 0xc0f7c]  ; "setLeakyApSsidMetrics"
+ffffff80022d955a: mov      rsi, rax
+ffffff80022d955d: xor      eax, eax
+ffffff80022d955f: call     0xffffff8000ab6560  ; _IOLog
+ffffff80022d9564: mov      eax, r14d
+ffffff80022d9567: pop      rbx
+ffffff80022d9568: pop      r12
+ffffff80022d956a: pop      r14
+ffffff80022d956c: pop      r15
+ffffff80022d956e: pop      rbp
+ffffff80022d956f: ret      

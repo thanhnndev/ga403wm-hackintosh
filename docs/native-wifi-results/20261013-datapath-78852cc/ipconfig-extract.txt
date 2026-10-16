@@ -1,0 +1,39 @@
+<dictionary> {
+  IPv4 : <array> {
+    0 : <dictionary> {
+      ConfigMethod : DHCP
+      DHCP : <dictionary> {
+        ElapsedTime : 86
+        State : INIT
+      }
+      IsPublished : FALSE
+      LastFailureStatus : no server
+    }
+    1 : <dictionary> {
+      Addresses : <array> {
+        0 : <link-local>
+      }
+      ConfigMethod : LinkLocal
+      IsPublished : TRUE
+      SubnetMasks : <array> {
+        0 : 255.255.0.0
+      }
+    }
+  }
+  IPv6 : <array> {
+    0 : <dictionary> {
+      ConfigMethod : Automatic
+      DHCPv6 : <dictionary> {
+        Mode : None
+        State : Inactive
+      }
+      IsPublished : FALSE
+      LastFailureStatus : media inactive
+      RTADV : <dictionary> {
+        State : Solicit
+      }
+    }
+  }
+  InterfaceType : WiFi
+  LinkStatusActive : TRUE
+}

@@ -1,0 +1,137 @@
+# 0xffffff800212a274 __ZN11IO80211Glue13freeResourcesEv
+ffffff800212a274: push     rbp
+ffffff800212a275: mov      rbp, rsp
+ffffff800212a278: push     r15
+ffffff800212a27a: push     r14
+ffffff800212a27c: push     rbx
+ffffff800212a27d: push     rax
+ffffff800212a27e: mov      rbx, rdi
+ffffff800212a281: lea      rdi, [rip + 0x202cc8]  ; 0xffffff800232cf50
+ffffff800212a288: xor      eax, eax
+ffffff800212a28a: call     0xffffff8000ab6560  ; _IOLog
+ffffff800212a28f: mov      rcx, qword ptr [rbx + 0x18]
+ffffff800212a293: test     rcx, rcx
+ffffff800212a296: je       0xffffff800212a427
+ffffff800212a29c: mov      rdi, qword ptr [rcx + 0x18]
+ffffff800212a2a0: test     rdi, rdi
+ffffff800212a2a3: je       0xffffff800212a2af
+ffffff800212a2a5: mov      rax, qword ptr [rdi]
+ffffff800212a2a8: call     qword ptr [rax + 0x28]
+ffffff800212a2ab: mov      rcx, qword ptr [rbx + 0x18]
+ffffff800212a2af: mov      qword ptr [rcx + 0x18], 0
+ffffff800212a2b7: lea      rax, [rcx + 0x78]
+ffffff800212a2bb: mov      r14, qword ptr [rcx + 0x78]
+ffffff800212a2bf: cmp      rax, r14
+ffffff800212a2c2: je       0xffffff800212a328
+ffffff800212a2c4: xor      r15d, r15d
+ffffff800212a2c7: mov      rdx, qword ptr [r14]
+ffffff800212a2ca: sub      rcx, -0x80
+ffffff800212a2ce: lea      rsi, [rdx + 8]
+ffffff800212a2d2: cmp      rdx, rax
+ffffff800212a2d5: cmove    rsi, rcx
+ffffff800212a2d9: cmp      qword ptr [rsi], r14
+ffffff800212a2dc: jne      0xffffff800212a43f
+ffffff800212a2e2: mov      rcx, qword ptr [r14 + 8]
+ffffff800212a2e6: cmp      qword ptr [rcx], r14
+ffffff800212a2e9: jne      0xffffff800212a43f
+ffffff800212a2ef: mov      qword ptr [rsi], rcx
+ffffff800212a2f2: mov      qword ptr [rcx], rdx
+ffffff800212a2f5: mov      qword ptr [r14], r15
+ffffff800212a2f8: mov      qword ptr [r14 + 8], r15
+ffffff800212a2fc: mov      rdi, qword ptr [r14 + 0x10]
+ffffff800212a300: call     qword ptr [rdi + 0x10]
+ffffff800212a303: mov      rax, qword ptr [rbx + 0x18]
+ffffff800212a307: mov      rdi, qword ptr [rax + 0x70]
+ffffff800212a30b: mov      rax, qword ptr [rdi]
+ffffff800212a30e: mov      rsi, r14
+ffffff800212a311: call     qword ptr [rax + 0x138]
+ffffff800212a317: mov      rcx, qword ptr [rbx + 0x18]
+ffffff800212a31b: lea      rax, [rcx + 0x78]
+ffffff800212a31f: mov      r14, qword ptr [rcx + 0x78]
+ffffff800212a323: cmp      rax, r14
+ffffff800212a326: jne      0xffffff800212a2c7
+ffffff800212a328: cmp      dword ptr [rcx + 0x48], 2
+ffffff800212a32c: jne      0xffffff800212a349
+ffffff800212a32e: mov      rdi, qword ptr [rcx + 0x58]
+ffffff800212a332: test     rdi, rdi
+ffffff800212a335: je       0xffffff800212a341
+ffffff800212a337: mov      rax, qword ptr [rdi]
+ffffff800212a33a: call     qword ptr [rax + 0x28]
+ffffff800212a33d: mov      rcx, qword ptr [rbx + 0x18]
+ffffff800212a341: mov      qword ptr [rcx + 0x58], 0
+ffffff800212a349: mov      rdi, qword ptr [rcx + 0x60]
+ffffff800212a34d: test     rdi, rdi
+ffffff800212a350: je       0xffffff800212a35c
+ffffff800212a352: mov      rax, qword ptr [rdi]
+ffffff800212a355: call     qword ptr [rax + 0x28]
+ffffff800212a358: mov      rcx, qword ptr [rbx + 0x18]
+ffffff800212a35c: mov      qword ptr [rcx + 0x60], 0
+ffffff800212a364: mov      rdi, qword ptr [rcx + 0x68]
+ffffff800212a368: test     rdi, rdi
+ffffff800212a36b: je       0xffffff800212a377
+ffffff800212a36d: mov      rax, qword ptr [rdi]
+ffffff800212a370: call     qword ptr [rax + 0x28]
+ffffff800212a373: mov      rcx, qword ptr [rbx + 0x18]
+ffffff800212a377: mov      qword ptr [rcx + 0x68], 0
+ffffff800212a37f: mov      rdi, qword ptr [rcx + 0x10]
+ffffff800212a383: test     rdi, rdi
+ffffff800212a386: je       0xffffff800212a392
+ffffff800212a388: mov      rax, qword ptr [rdi]
+ffffff800212a38b: call     qword ptr [rax + 0x28]
+ffffff800212a38e: mov      rcx, qword ptr [rbx + 0x18]
+ffffff800212a392: mov      qword ptr [rcx + 0x10], 0
+ffffff800212a39a: mov      rdi, qword ptr [rcx + 0x40]
+ffffff800212a39e: test     rdi, rdi
+ffffff800212a3a1: je       0xffffff800212a3ad
+ffffff800212a3a3: mov      rax, qword ptr [rdi]
+ffffff800212a3a6: call     qword ptr [rax + 0x28]
+ffffff800212a3a9: mov      rcx, qword ptr [rbx + 0x18]
+ffffff800212a3ad: mov      qword ptr [rcx + 0x40], 0
+ffffff800212a3b5: mov      rsi, qword ptr [rbx + 0x18]
+ffffff800212a3b9: lea      rax, [rsi + 0x20]
+ffffff800212a3bd: mov      rdi, qword ptr [rsi + 0x20]
+ffffff800212a3c1: cmp      rax, rdi
+ffffff800212a3c4: je       0xffffff800212a413
+ffffff800212a3c6: xor      r14d, r14d
+ffffff800212a3c9: mov      rcx, qword ptr [rdi]
+ffffff800212a3cc: add      rsi, 0x28
+ffffff800212a3d0: lea      rdx, [rcx + 8]
+ffffff800212a3d4: cmp      rcx, rax
+ffffff800212a3d7: cmove    rdx, rsi
+ffffff800212a3db: cmp      qword ptr [rdx], rdi
+ffffff800212a3de: jne      0xffffff800212a449
+ffffff800212a3e0: mov      rsi, qword ptr [rdi + 8]
+ffffff800212a3e4: cmp      qword ptr [rsi], rdi
+ffffff800212a3e7: jne      0xffffff800212a449
+ffffff800212a3e9: mov      qword ptr [rdx], rsi
+ffffff800212a3ec: mov      qword ptr [rsi], rcx
+ffffff800212a3ef: mov      qword ptr [rdi], r14
+ffffff800212a3f2: mov      qword ptr [rdi + 8], r14
+ffffff800212a3f6: mov      esi, dword ptr [rdi + 0x14]
+ffffff800212a3f9: add      rsi, 0x20
+ffffff800212a3fd: call     0xffffff8000ab6290  ; _IOFreeData
+ffffff800212a402: mov      rsi, qword ptr [rbx + 0x18]
+ffffff800212a406: lea      rax, [rsi + 0x20]
+ffffff800212a40a: mov      rdi, qword ptr [rsi + 0x20]
+ffffff800212a40e: cmp      rax, rdi
+ffffff800212a411: jne      0xffffff800212a3c9
+ffffff800212a413: mov      qword ptr [rbx + 0x18], 0
+ffffff800212a41b: lea      rdi, [rip + 0x2d2fde]  ; 0xffffff80023fd400
+ffffff800212a422: call     0xffffff8000ab5a60  ; _IOFreeTypeImpl
+ffffff800212a427: lea      rdi, [rip + 0x202b74]  ; 0xffffff800232cfa2
+ffffff800212a42e: xor      eax, eax
+ffffff800212a430: add      rsp, 8
+ffffff800212a434: pop      rbx
+ffffff800212a435: pop      r14
+ffffff800212a437: pop      r15
+ffffff800212a439: pop      rbp
+ffffff800212a43a: jmp      0xffffff8000ab6560  ; _IOLog
+ffffff800212a43f: ud1      
+ffffff800212a442: cmp      ch, 0xbf
+ffffff800212a445: add      byte ptr [rax], al
+ffffff800212a447: ud2      
+ffffff800212a449: ud1      
+ffffff800212a44c: cmp      ch, 0xbf
+ffffff800212a44f: add      byte ptr [rax], al
+ffffff800212a451: ud2      
+ffffff800212a453: nop      

@@ -1,0 +1,16 @@
++-o StrixMetalGate  <class StrixMetalGate, id 0x100000253, registered, matched, active, busy 0 (0 ms), retain 5>
+    {
+      "IOProbeScore" = 0
+      "CFBundleIdentifier" = "com.itlmt7925.strixmetalgate"
+      "IOMatchCategory" = "StrixMetalGate"
+      "IOClass" = "StrixMetalGate"
+      "IOProviderClass" = "IOResources"
+      "CFBundleIdentifierKernel" = "com.itlmt7925.strixmetalgate"
+      "IOMatchedAtBoot" = Yes
+      "GateState" = "plugin-name-restored"
+      "RestoredAtSeconds" = 21
+      "IOResourceMatch" = "IOKit"
+      "GateVersion" = "0.1.1"
+    }
+    
+

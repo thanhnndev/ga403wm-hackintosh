@@ -1,0 +1,67 @@
+# 0xffffff800212a9c4 __ZN11IO80211Glue13printTaskInfoEPKcyy
+ffffff800212a9c4: push     rbp
+ffffff800212a9c5: mov      rbp, rsp
+ffffff800212a9c8: push     r15
+ffffff800212a9ca: push     r14
+ffffff800212a9cc: push     r13
+ffffff800212a9ce: push     r12
+ffffff800212a9d0: push     rbx
+ffffff800212a9d1: sub      rsp, 0x18
+ffffff800212a9d5: mov      r13, rcx
+ffffff800212a9d8: mov      rbx, rsi
+ffffff800212a9db: mov      r15, rdi
+ffffff800212a9de: mov      rax, qword ptr [rip + 0x291733]  ; 0xffffff80023bc118
+ffffff800212a9e5: mov      rax, qword ptr [rax]
+ffffff800212a9e8: mov      qword ptr [rbp - 0x30], rax
+ffffff800212a9ec: mov      r14, rcx
+ffffff800212a9ef: sub      r14, rdx
+ffffff800212a9f2: lea      r12, [rbp - 0x38]
+ffffff800212a9f6: mov      qword ptr [r12], 0
+ffffff800212a9fe: call     0xffffff80003cbf20  ; _mach_continuous_time
+ffffff800212aa03: mov      rdi, rax
+ffffff800212aa06: mov      rsi, r12
+ffffff800212aa09: call     0xffffff8000536d80  ; _absolutetime_to_nanoseconds
+ffffff800212aa0e: movabs   rax, 0x431bde82d7b634db
+ffffff800212aa18: mul      qword ptr [r12]
+ffffff800212aa1c: mov      r12, rdx
+ffffff800212aa1f: shr      r12, 0x12
+ffffff800212aa23: sub      r12, r13
+ffffff800212aa26: cmp      r14, 0x33
+ffffff800212aa2a: setae    al
+ffffff800212aa2d: cmp      r12, 0x33
+ffffff800212aa31: setae    cl
+ffffff800212aa34: or       cl, al
+ffffff800212aa36: cmp      cl, 1
+ffffff800212aa39: jne      0xffffff800212aa56
+ffffff800212aa3b: mov      rax, qword ptr [r15 + 0x18]
+ffffff800212aa3f: mov      rdi, qword ptr [rax + 0x50]
+ffffff800212aa43: test     rdi, rdi
+ffffff800212aa46: je       0xffffff800212aa56
+ffffff800212aa48: mov      esi, 1
+ffffff800212aa4d: call     0xffffff80031d421c  ; __ZN11CCLogStream9shouldLogE16CCStreamLogLevel
+ffffff800212aa52: test     al, al
+ffffff800212aa54: jne      0xffffff800212aa75
+ffffff800212aa56: mov      rax, qword ptr [rip + 0x2916bb]  ; 0xffffff80023bc118
+ffffff800212aa5d: mov      rax, qword ptr [rax]
+ffffff800212aa60: cmp      rax, qword ptr [rbp - 0x30]
+ffffff800212aa64: jne      0xffffff800212aaa3
+ffffff800212aa66: add      rsp, 0x18
+ffffff800212aa6a: pop      rbx
+ffffff800212aa6b: pop      r12
+ffffff800212aa6d: pop      r13
+ffffff800212aa6f: pop      r14
+ffffff800212aa71: pop      r15
+ffffff800212aa73: pop      rbp
+ffffff800212aa74: ret      
+ffffff800212aa75: mov      rax, qword ptr [r15 + 0x18]
+ffffff800212aa79: mov      rdi, qword ptr [rax + 0x50]
+ffffff800212aa7d: mov      qword ptr [rsp], r12
+ffffff800212aa81: lea      rsi, [rip + 0x202993]  ; 0xffffff800232d41b
+ffffff800212aa88: lea      rdx, [rip + 0x2029cf]  ; "printTaskInfo"
+ffffff800212aa8f: mov      ecx, 0x23c
+ffffff800212aa94: mov      r8, rbx
+ffffff800212aa97: mov      r9, r14
+ffffff800212aa9a: xor      eax, eax
+ffffff800212aa9c: call     0xffffff80031d252e  ; __ZN11CCLogStream8logAlertEPKcz
+ffffff800212aaa1: jmp      0xffffff800212aa56  ; __ZN11IO80211Glue13printTaskInfoEPKcyy+0x92
+ffffff800212aaa3: call     0xffffff8000383150  ; ___stack_chk_fail

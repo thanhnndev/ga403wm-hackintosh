@@ -1,0 +1,7 @@
+# 0xffffff8002988c68 __ZN26IOSkywalkEthernetInterface25setAllMulticastModeEnableEb
+ffffff8002988c68: push     rbp
+ffffff8002988c69: mov      rbp, rsp
+ffffff8002988c6c: mov      eax, 0xe00002c7
+ffffff8002988c71: pop      rbp
+ffffff8002988c72: ret      
+ffffff8002988c73: nop      

@@ -1,0 +1,31 @@
+# 0xffffff80022d926a __ZN21IO80211InfraInterface15getLeakyApStatsEPPK25apple80211_leaky_ap_stats
+ffffff80022d926a: push     rbp
+ffffff80022d926b: mov      rbp, rsp
+ffffff80022d926e: push     rbx
+ffffff80022d926f: push     rax
+ffffff80022d9270: test     rsi, rsi
+ffffff80022d9273: je       0xffffff80022d9295
+ffffff80022d9275: mov      rax, qword ptr [rdi + 0x110]
+ffffff80022d927c: mov      rax, qword ptr [rax + 0x40]
+ffffff80022d9280: test     rax, rax
+ffffff80022d9283: je       0xffffff80022d92ba
+ffffff80022d9285: mov      ecx, 0x938
+ffffff80022d928a: add      rcx, qword ptr [rax + 0x10]
+ffffff80022d928e: mov      qword ptr [rsi], rcx
+ffffff80022d9291: mov      bl, 1
+ffffff80022d9293: jmp      0xffffff80022d92bc  ; __ZN21IO80211InfraInterface15getLeakyApStatsEPPK25apple80211_leaky_ap_stats+0x52
+ffffff80022d9295: lea      rdi, [rip + 0xc0712]  ; 0xffffff80023999ae
+ffffff80022d929c: lea      rsi, [rip + 0xc072d]  ; "/AppleInternal/Library/BuildRoots/4~CW9mugA6gpmKPwyaAeCNWSZRmRlk6mvK_U3N5n0/Libr"
+ffffff80022d92a3: lea      rdx, [rip + 0xc121c]  ; "getLeakyApStats"
+ffffff80022d92aa: xor      ebx, ebx
+ffffff80022d92ac: mov      ecx, 0x85b
+ffffff80022d92b1: xor      eax, eax
+ffffff80022d92b3: call     0xffffff8000ab6560  ; _IOLog
+ffffff80022d92b8: jmp      0xffffff80022d92bc  ; __ZN21IO80211InfraInterface15getLeakyApStatsEPPK25apple80211_leaky_ap_stats+0x52
+ffffff80022d92ba: xor      ebx, ebx
+ffffff80022d92bc: mov      eax, ebx
+ffffff80022d92be: add      rsp, 8
+ffffff80022d92c2: pop      rbx
+ffffff80022d92c3: pop      rbp
+ffffff80022d92c4: ret      
+ffffff80022d92c5: nop      

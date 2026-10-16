@@ -1,0 +1,24 @@
+# 0xffffff800212ac5a __ZN11IO80211Glue15routeEventToWclEjPvm
+ffffff800212ac5a: push     rbp
+ffffff800212ac5b: mov      rbp, rsp
+ffffff800212ac5e: push     rbx
+ffffff800212ac5f: push     rax
+ffffff800212ac60: mov      rbx, rdi
+ffffff800212ac63: call     0xffffff800212ab3c  ; __ZN11IO80211Glue22addEventToPendingQueueEjPvm
+ffffff800212ac68: mov      rax, qword ptr [rbx + 0x18]
+ffffff800212ac6c: cmp      byte ptr [rax + 0x30], 0
+ffffff800212ac70: jne      0xffffff800212ac94
+ffffff800212ac72: mov      byte ptr [rax + 0x30], 1
+ffffff800212ac76: mov      rbx, qword ptr [rax + 0x60]
+ffffff800212ac7a: mov      rsi, qword ptr [rbx + 0x48]
+ffffff800212ac7e: add      rsi, 0x10
+ffffff800212ac82: mov      edi, 1
+ffffff800212ac87: call     0xffffff8000a48c30  ; _OSBitOrAtomic
+ffffff800212ac8c: mov      rdi, rbx
+ffffff800212ac8f: call     0xffffff8000afafb0  ; __ZN13IOEventSource19signalWorkAvailableEv
+ffffff800212ac94: xor      eax, eax
+ffffff800212ac96: add      rsp, 8
+ffffff800212ac9a: pop      rbx
+ffffff800212ac9b: pop      rbp
+ffffff800212ac9c: ret      
+ffffff800212ac9d: nop      

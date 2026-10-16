@@ -1,0 +1,81 @@
+# 0xffffff800212a812 __ZN11IO80211Glue18sendEventAndFilterEP21postMessageQueueEntry
+ffffff800212a812: push     rbp
+ffffff800212a813: mov      rbp, rsp
+ffffff800212a816: push     r15
+ffffff800212a818: push     r14
+ffffff800212a81a: push     r13
+ffffff800212a81c: push     r12
+ffffff800212a81e: push     rbx
+ffffff800212a81f: sub      rsp, 0x48
+ffffff800212a823: mov      rbx, rsi
+ffffff800212a826: mov      r14, rdi
+ffffff800212a829: mov      rax, qword ptr [rip + 0x2918e8]  ; 0xffffff80023bc118
+ffffff800212a830: mov      rax, qword ptr [rax]
+ffffff800212a833: mov      qword ptr [rbp - 0x30], rax
+ffffff800212a837: xor      r15d, r15d
+ffffff800212a83a: lea      r13, [rbp - 0x60]
+ffffff800212a83e: mov      qword ptr [r13], r15
+ffffff800212a842: call     0xffffff80003cbf20  ; _mach_continuous_time
+ffffff800212a847: mov      rdi, rax
+ffffff800212a84a: mov      rsi, r13
+ffffff800212a84d: call     0xffffff8000536d80  ; _absolutetime_to_nanoseconds
+ffffff800212a852: movabs   rax, 0x431bde82d7b634db
+ffffff800212a85c: mul      qword ptr [r13]
+ffffff800212a860: mov      r12, rdx
+ffffff800212a863: shr      r12, 0x12
+ffffff800212a867: lea      rsi, [rbx + 0x20]
+ffffff800212a86b: mov      eax, dword ptr [rbx + 0x10]
+ffffff800212a86e: mov      ecx, dword ptr [rbx + 0x14]
+ffffff800212a871: test     rcx, rcx
+ffffff800212a874: movabs   rdx, 0xaaaaaaaaaaaaaaaa
+ffffff800212a87e: mov      qword ptr [r13], rdx
+ffffff800212a882: mov      qword ptr [r13 + 0x28], rdx
+ffffff800212a886: mov      dword ptr [r13], eax
+ffffff800212a88a: mov      word ptr [r13 + 4], 0
+ffffff800212a891: mov      byte ptr [r13 + 6], r15b
+ffffff800212a895: mov      qword ptr [r13 + 8], rcx
+ffffff800212a899: mov      qword ptr [rbp - 0x68], rsi
+ffffff800212a89d: cmovne   rcx, rsi
+ffffff800212a8a1: mov      qword ptr [r13 + 0x10], rcx
+ffffff800212a8a5: mov      qword ptr [r13 + 0x18], r15
+ffffff800212a8a9: mov      qword ptr [r13 + 0x20], r15
+ffffff800212a8ad: mov      byte ptr [r13 + 0x28], r15b
+ffffff800212a8b1: mov      rax, qword ptr [r14]
+ffffff800212a8b4: mov      rdi, r14
+ffffff800212a8b7: mov      rsi, r13
+ffffff800212a8ba: call     qword ptr [rax + 0x120]
+ffffff800212a8c0: mov      r15b, byte ptr [r13 + 0x28]
+ffffff800212a8c4: mov      eax, dword ptr [rbx + 0x10]
+ffffff800212a8c7: lea      ecx, [rax - 0xf2]
+ffffff800212a8cd: cmp      ecx, 0xffffff0f
+ffffff800212a8d3: jae      0xffffff800212a8de
+ffffff800212a8d5: lea      rsi, [rip + 0x278acb]  ; "unknown APPLE80211_M_"
+ffffff800212a8dc: jmp      0xffffff800212a8e9  ; __ZN11IO80211Glue18sendEventAndFilterEP21postMessageQueueEntry+0xd7
+ffffff800212a8de: lea      rcx, [rip + 0x2c3a7b]  ; 0xffffff80023ee360
+ffffff800212a8e5: mov      rsi, qword ptr [rcx + rax*8]
+ffffff800212a8e9: mov      rdx, qword ptr [rbx + 0x18]
+ffffff800212a8ed: mov      rdi, r14
+ffffff800212a8f0: mov      rcx, r12
+ffffff800212a8f3: call     0xffffff800212a9c4  ; __ZN11IO80211Glue13printTaskInfoEPKcyy
+ffffff800212a8f8: test     r15b, r15b
+ffffff800212a8fb: jne      0xffffff800212a913
+ffffff800212a8fd: mov      rax, qword ptr [r14 + 0x18]
+ffffff800212a901: mov      rdi, qword ptr [rax]
+ffffff800212a904: mov      esi, dword ptr [rbx + 0x10]
+ffffff800212a907: mov      ecx, dword ptr [rbx + 0x14]
+ffffff800212a90a: mov      rdx, qword ptr [rbp - 0x68]
+ffffff800212a90e: call     0xffffff8002264b16  ; __ZN23IO80211SkywalkInterface15postMessageSyncEjPvm
+ffffff800212a913: mov      rax, qword ptr [rip + 0x2917fe]  ; 0xffffff80023bc118
+ffffff800212a91a: mov      rax, qword ptr [rax]
+ffffff800212a91d: cmp      rax, qword ptr [rbp - 0x30]
+ffffff800212a921: jne      0xffffff800212a932
+ffffff800212a923: add      rsp, 0x48
+ffffff800212a927: pop      rbx
+ffffff800212a928: pop      r12
+ffffff800212a92a: pop      r13
+ffffff800212a92c: pop      r14
+ffffff800212a92e: pop      r15
+ffffff800212a930: pop      rbp
+ffffff800212a931: ret      
+ffffff800212a932: call     0xffffff8000383150  ; ___stack_chk_fail
+ffffff800212a937: nop      

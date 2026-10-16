@@ -1,0 +1,39 @@
+# 0xffffff800297d84a __ZN25IOSkywalkPacketBufferPool22completePreparedPacketEP15IOSkywalkPacket
+ffffff800297d84a: push     rbp
+ffffff800297d84b: mov      rbp, rsp
+ffffff800297d84e: push     r14
+ffffff800297d850: push     rbx
+ffffff800297d851: mov      rbx, rsi
+ffffff800297d854: mov      rdi, rsi
+ffffff800297d857: call     0xffffff800297e7cc  ; __ZNK15IOSkywalkPacket20getTransferDirectionEv
+ffffff800297d85c: mov      r14d, eax
+ffffff800297d85f: mov      rax, qword ptr [rbx]
+ffffff800297d862: mov      rdi, rbx
+ffffff800297d865: xor      esi, esi
+ffffff800297d867: mov      edx, r14d
+ffffff800297d86a: xor      ecx, ecx
+ffffff800297d86c: call     qword ptr [rax + 0x198]
+ffffff800297d872: mov      rdi, rbx
+ffffff800297d875: call     0xffffff800297e498  ; __ZNK15IOSkywalkPacket14getSourceQueueEv
+ffffff800297d87a: cmp      r14d, 2
+ffffff800297d87e: setne    cl
+ffffff800297d881: test     rax, rax
+ffffff800297d884: setne    dl
+ffffff800297d887: and      dl, cl
+ffffff800297d889: cmp      dl, 1
+ffffff800297d88c: jne      0xffffff800297d8a8
+ffffff800297d88e: mov      rcx, qword ptr [rax]
+ffffff800297d891: mov      r8, qword ptr [rcx + 0x220]
+ffffff800297d898: mov      rdi, rax
+ffffff800297d89b: xor      esi, esi
+ffffff800297d89d: xor      edx, edx
+ffffff800297d89f: xor      ecx, ecx
+ffffff800297d8a1: pop      rbx
+ffffff800297d8a2: pop      r14
+ffffff800297d8a4: pop      rbp
+ffffff800297d8a5: jmp      r8
+ffffff800297d8a8: pop      rbx
+ffffff800297d8a9: pop      r14
+ffffff800297d8ab: pop      rbp
+ffffff800297d8ac: ret      
+ffffff800297d8ad: nop      

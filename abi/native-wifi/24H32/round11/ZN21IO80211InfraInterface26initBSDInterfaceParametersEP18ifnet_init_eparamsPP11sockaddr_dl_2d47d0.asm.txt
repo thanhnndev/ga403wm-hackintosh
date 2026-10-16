@@ -1,0 +1,5 @@
+# 0xffffff80022d47d0 __ZN21IO80211InfraInterface26initBSDInterfaceParametersEP18ifnet_init_eparamsPP11sockaddr_dl
+ffffff80022d47d0: push     rbp
+ffffff80022d47d1: mov      rbp, rsp
+ffffff80022d47d4: pop      rbp
+ffffff80022d47d5: jmp      0xffffff80022623ec  ; __ZN23IO80211SkywalkInterface26initBSDInterfaceParametersEP18ifnet_init_eparamsPP11sockaddr_dl

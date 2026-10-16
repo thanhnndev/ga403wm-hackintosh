@@ -1,0 +1,52 @@
+# 0xffffff80029770e8 __ZN35IOSkywalkNetworkNexusDomainProvider27registerNexusDomainProviderEv
+ffffff80029770e8: push     rbp
+ffffff80029770e9: mov      rbp, rsp
+ffffff80029770ec: push     r15
+ffffff80029770ee: push     r14
+ffffff80029770f0: push     rbx
+ffffff80029770f1: sub      rsp, 0x18
+ffffff80029770f5: mov      rbx, rdi
+ffffff80029770f8: mov      qword ptr [rbp - 0x30], 1
+ffffff8002977100: lea      rax, [rip + 0x8d]  ; 0xffffff8002977194
+ffffff8002977107: mov      qword ptr [rbp - 0x28], rax
+ffffff800297710b: lea      rax, [rip + 0x91]  ; 0xffffff80029771a3
+ffffff8002977112: mov      qword ptr [rbp - 0x20], rax
+ffffff8002977116: mov      rdi, qword ptr [rdi + 0x18]
+ffffff800297711a: test     rdi, rdi
+ffffff800297711d: je       0xffffff8002977161
+ffffff800297711f: call     0xffffff800052f900  ; _lck_mtx_lock
+ffffff8002977124: mov      r14b, 1
+ffffff8002977127: cmp      qword ptr [rbx], 0
+ffffff800297712b: jne      0xffffff800297717d
+ffffff800297712d: lea      r15, [rbx + 8]
+ffffff8002977131: lea      rsi, [rip + 0x2e1a0]  ; "IOSkywalkNetworkNexusDomainProvider"
+ffffff8002977138: lea      rdx, [rbp - 0x30]
+ffffff800297713c: mov      edi, 2
+ffffff8002977141: mov      ecx, 0x18
+ffffff8002977146: mov      r8, r15
+ffffff8002977149: call     0xffffff80009e83e0  ; _kern_nexus_register_domain_provider
+ffffff800297714e: test     eax, eax
+ffffff8002977150: je       0xffffff8002977166
+ffffff8002977152: cmp      qword ptr [rbx], 0
+ffffff8002977156: je       0xffffff800297717a
+ffffff8002977158: mov      qword ptr [rbx], 0
+ffffff800297715f: jmp      0xffffff800297717a  ; __ZN35IOSkywalkNetworkNexusDomainProvider27registerNexusDomainProviderEv+0x92
+ffffff8002977161: xor      r14d, r14d
+ffffff8002977164: jmp      0xffffff8002977186  ; __ZN35IOSkywalkNetworkNexusDomainProvider27registerNexusDomainProviderEv+0x9e
+ffffff8002977166: cmp      qword ptr [rbx], 0
+ffffff800297716a: je       0xffffff800297717a
+ffffff800297716c: mov      rdi, r15
+ffffff800297716f: call     0xffffff8000a84c20  ; _uuid_is_null
+ffffff8002977174: test     eax, eax
+ffffff8002977176: jne      0xffffff8002977152
+ffffff8002977178: jmp      0xffffff800297717d  ; __ZN35IOSkywalkNetworkNexusDomainProvider27registerNexusDomainProviderEv+0x95
+ffffff800297717a: xor      r14d, r14d
+ffffff800297717d: mov      rdi, qword ptr [rbx + 0x18]
+ffffff8002977181: call     0xffffff800052fc50  ; _lck_mtx_unlock
+ffffff8002977186: mov      eax, r14d
+ffffff8002977189: add      rsp, 0x18
+ffffff800297718d: pop      rbx
+ffffff800297718e: pop      r14
+ffffff8002977190: pop      r15
+ffffff8002977192: pop      rbp
+ffffff8002977193: ret      

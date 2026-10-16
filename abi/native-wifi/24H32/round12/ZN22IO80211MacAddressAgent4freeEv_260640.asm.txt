@@ -1,0 +1,20 @@
+# 0xffffff8002260640 __ZN22IO80211MacAddressAgent4freeEv
+ffffff8002260640: push     rbp
+ffffff8002260641: mov      rbp, rsp
+ffffff8002260644: push     rbx
+ffffff8002260645: push     rax
+ffffff8002260646: mov      rbx, rdi
+ffffff8002260649: cmp      qword ptr [rdi + 0x10], 0
+ffffff800226064e: je       0xffffff8002260670
+ffffff8002260650: mov      rdi, rbx
+ffffff8002260653: call     0xffffff8002260686  ; __ZN22IO80211MacAddressAgent13freeResourcesEv
+ffffff8002260658: mov      rsi, qword ptr [rbx + 0x10]
+ffffff800226065c: mov      qword ptr [rbx + 0x10], 0
+ffffff8002260664: lea      rdi, [rip + 0x1a0655]  ; 0xffffff8002400cc0
+ffffff800226066b: call     0xffffff8000ab5a60  ; _IOFreeTypeImpl
+ffffff8002260670: mov      rax, qword ptr [rip + 0x15ba99]  ; 0xffffff80023bc110
+ffffff8002260677: mov      rdi, rbx
+ffffff800226067a: add      rsp, 8
+ffffff800226067e: pop      rbx
+ffffff800226067f: pop      rbp
+ffffff8002260680: jmp      qword ptr [rax + 0xa0]

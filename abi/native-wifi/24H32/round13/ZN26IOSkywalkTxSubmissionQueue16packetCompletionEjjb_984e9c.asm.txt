@@ -1,0 +1,56 @@
+# 0xffffff8002984e9c __ZN26IOSkywalkTxSubmissionQueue16packetCompletionEjjb
+ffffff8002984e9c: push     rbp
+ffffff8002984e9d: mov      rbp, rsp
+ffffff8002984ea0: push     r15
+ffffff8002984ea2: push     r14
+ffffff8002984ea4: push     rbx
+ffffff8002984ea5: push     rax
+ffffff8002984ea6: mov      r14d, edx
+ffffff8002984ea9: mov      r15d, esi
+ffffff8002984eac: mov      rbx, rdi
+ffffff8002984eaf: lea      rsi, [rdi + 0x134]
+ffffff8002984eb6: mov      edi, r15d
+ffffff8002984eb9: call     0xffffff8000a48bc0  ; _OSAddAtomic
+ffffff8002984ebe: cmp      qword ptr [rbx + 0x68], 0
+ffffff8002984ec3: je       0xffffff8002984ef0
+ffffff8002984ec5: lea      rax, [rip + 0x29d9c]  ; 0xffffff80029aec68
+ffffff8002984ecc: xor      ecx, ecx
+ffffff8002984ece: cmp      dword ptr [rbx + 0x154], 0
+ffffff8002984ed5: setne    cl
+ffffff8002984ed8: mov      rdi, rbx
+ffffff8002984edb: mov      esi, r15d
+ffffff8002984ede: mov      edx, r14d
+ffffff8002984ee1: call     qword ptr [rax + 0x248]
+ffffff8002984ee7: cmp      dword ptr [rbx + 0x154], 0
+ffffff8002984eee: jne      0xffffff8002984f24
+ffffff8002984ef0: mov      edx, dword ptr [rbx + 0xac]
+ffffff8002984ef6: lea      rax, [rip + 0x31813]  ; 0xffffff80029b6710
+ffffff8002984efd: mov      ecx, dword ptr [rax]
+ffffff8002984eff: mov      eax, edx
+ffffff8002984f01: shr      eax, cl
+ffffff8002984f03: test     eax, eax
+ffffff8002984f05: mov      eax, 3
+ffffff8002984f0a: cmovne   eax, ecx
+ffffff8002984f0d: mov      ecx, eax
+ffffff8002984f0f: shr      edx, cl
+ffffff8002984f11: cmp      edx, dword ptr [rbx + 0x134]
+ffffff8002984f17: jbe      0xffffff8002984f24
+ffffff8002984f19: add      rsp, 8
+ffffff8002984f1d: pop      rbx
+ffffff8002984f1e: pop      r14
+ffffff8002984f20: pop      r15
+ffffff8002984f22: pop      rbp
+ffffff8002984f23: ret      
+ffffff8002984f24: mov      rax, qword ptr [rbx + 0x100]
+ffffff8002984f2b: inc      qword ptr [rax + 0x38]
+ffffff8002984f2f: inc      dword ptr [rbx + 0x148]
+ffffff8002984f35: mov      rdi, rbx
+ffffff8002984f38: add      rsp, 8
+ffffff8002984f3c: pop      rbx
+ffffff8002984f3d: pop      r14
+ffffff8002984f3f: pop      r15
+ffffff8002984f41: pop      rbp
+ffffff8002984f42: jmp      0xffffff8000afafb0  ; __ZN13IOEventSource19signalWorkAvailableEv
+ffffff8002984f47: nop      
+ffffff8002984f48: nop      
+ffffff8002984f49: nop      

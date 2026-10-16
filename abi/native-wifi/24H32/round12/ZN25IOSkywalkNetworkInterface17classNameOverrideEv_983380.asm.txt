@@ -1,0 +1,7 @@
+# 0xffffff8002983380 __ZN25IOSkywalkNetworkInterface17classNameOverrideEv
+ffffff8002983380: push     rbp
+ffffff8002983381: mov      rbp, rsp
+ffffff8002983384: lea      rax, [rip + 0x22253]  ; 0xffffff80029a55de
+ffffff800298338b: pop      rbp
+ffffff800298338c: ret      
+ffffff800298338d: nop      

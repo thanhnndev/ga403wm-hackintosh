@@ -1,0 +1,14 @@
+# 0xffffff800298306c __ZN25IOSkywalkNetworkInterface18getMaxTransferUnitEv
+ffffff800298306c: mov      rcx, qword ptr [rdi + 0xb8]
+ffffff8002983073: xor      eax, eax
+ffffff8002983075: test     rcx, rcx
+ffffff8002983078: je       0xffffff800298308a
+ffffff800298307a: push     rbp
+ffffff800298307b: mov      rbp, rsp
+ffffff800298307e: mov      rcx, qword ptr [rcx]
+ffffff8002983081: test     rcx, rcx
+ffffff8002983084: je       0xffffff8002983089
+ffffff8002983086: mov      eax, dword ptr [rcx + 0x48]
+ffffff8002983089: pop      rbp
+ffffff800298308a: ret      
+ffffff800298308b: nop      

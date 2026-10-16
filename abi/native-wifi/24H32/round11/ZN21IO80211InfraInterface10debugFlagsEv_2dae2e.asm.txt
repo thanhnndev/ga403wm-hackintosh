@@ -1,0 +1,7 @@
+# 0xffffff80022dae2e __ZN21IO80211InfraInterface10debugFlagsEv
+ffffff80022dae2e: push     rbp
+ffffff80022dae2f: mov      rbp, rsp
+ffffff80022dae32: mov      rax, qword ptr [rdi + 0x118]
+ffffff80022dae39: mov      rax, qword ptr [rax + 0x138]
+ffffff80022dae40: pop      rbp
+ffffff80022dae41: ret      

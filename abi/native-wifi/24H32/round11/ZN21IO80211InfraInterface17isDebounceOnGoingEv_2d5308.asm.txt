@@ -1,0 +1,8 @@
+# 0xffffff80022d5308 __ZN21IO80211InfraInterface17isDebounceOnGoingEv
+ffffff80022d5308: push     rbp
+ffffff80022d5309: mov      rbp, rsp
+ffffff80022d530c: mov      rax, qword ptr [rdi + 0x118]
+ffffff80022d5313: mov      al, byte ptr [rax + 0x158]
+ffffff80022d5319: pop      rbp
+ffffff80022d531a: ret      
+ffffff80022d531b: nop      

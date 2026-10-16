@@ -1,0 +1,43 @@
+# 0xffffff8002982fe2 __ZN25IOSkywalkNetworkInterface17setAggressivenessEmm
+ffffff8002982fe2: push     rbp
+ffffff8002982fe3: mov      rbp, rsp
+ffffff8002982fe6: push     r15
+ffffff8002982fe8: push     r14
+ffffff8002982fea: push     rbx
+ffffff8002982feb: push     rax
+ffffff8002982fec: mov      rbx, rdx
+ffffff8002982fef: mov      r14, rsi
+ffffff8002982ff2: mov      r15, rdi
+ffffff8002982ff5: mov      rax, qword ptr [rdi + 0xb8]
+ffffff8002982ffc: mov      rdi, qword ptr [rax + 0x18]
+ffffff8002983000: call     0xffffff800052f900  ; _lck_mtx_lock
+ffffff8002983005: mov      rax, qword ptr [r15 + 0xb8]
+ffffff800298300c: cmp      r14, 4
+ffffff8002983010: jne      0xffffff8002983042
+ffffff8002983012: cmp      byte ptr [rax + 0x40], 0
+ffffff8002983016: je       0xffffff8002983042
+ffffff8002983018: mov      rcx, qword ptr [rax]
+ffffff800298301b: test     rcx, rcx
+ffffff800298301e: je       0xffffff8002983042
+ffffff8002983020: test     byte ptr [rcx + 0x40], 8
+ffffff8002983024: je       0xffffff8002983042
+ffffff8002983026: mov      rax, qword ptr [r15]
+ffffff8002983029: mov      rdi, r15
+ffffff800298302c: mov      esi, 0xe0060104
+ffffff8002983031: xor      edx, edx
+ffffff8002983033: xor      ecx, ecx
+ffffff8002983035: call     qword ptr [rax + 0x740]
+ffffff800298303b: mov      rax, qword ptr [r15 + 0xb8]
+ffffff8002983042: mov      rdi, qword ptr [rax + 0x18]
+ffffff8002983046: call     0xffffff800052fc50  ; _lck_mtx_unlock
+ffffff800298304b: lea      rax, [rip + 0x24d36]  ; 0xffffff80029a7d88
+ffffff8002983052: mov      rdi, r15
+ffffff8002983055: mov      rsi, r14
+ffffff8002983058: mov      rdx, rbx
+ffffff800298305b: add      rsp, 8
+ffffff800298305f: pop      rbx
+ffffff8002983060: pop      r14
+ffffff8002983062: pop      r15
+ffffff8002983064: pop      rbp
+ffffff8002983065: jmp      qword ptr [rax + 0x7d0]
+ffffff800298306b: nop      

@@ -1,0 +1,17 @@
+# 0xffffff80022da7f8 __ZN21IO80211InfraInterface29reportDataTransferRatesStaticEPv
+ffffff80022da7f8: push     rbp
+ffffff80022da7f9: mov      rbp, rsp
+ffffff80022da7fc: test     rdi, rdi
+ffffff80022da7ff: je       0xffffff80022da80a
+ffffff80022da801: call     0xffffff80022d406a  ; __ZN21IO80211InfraInterface28reportDataTransferRatesTimerEP18IO80211TimerSource
+ffffff80022da806: xor      eax, eax
+ffffff80022da808: jmp      0xffffff80022da830  ; __ZN21IO80211InfraInterface29reportDataTransferRatesStaticEPv+0x38
+ffffff80022da80a: lea      rdi, [rip + 0xbf19d]  ; 0xffffff80023999ae
+ffffff80022da811: lea      rsi, [rip + 0xbf1b8]  ; "/AppleInternal/Library/BuildRoots/4~CW9mugA6gpmKPwyaAeCNWSZRmRlk6mvK_U3N5n0/Libr"
+ffffff80022da818: lea      rdx, [rip + 0xc04b7]  ; "reportDataTransferRatesStatic"
+ffffff80022da81f: mov      ecx, 0xac9
+ffffff80022da824: xor      eax, eax
+ffffff80022da826: call     0xffffff8000ab6560  ; _IOLog
+ffffff80022da82b: mov      eax, 0xe00002bc
+ffffff80022da830: pop      rbp
+ffffff80022da831: ret      

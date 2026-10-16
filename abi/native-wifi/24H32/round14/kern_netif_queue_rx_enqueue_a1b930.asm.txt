@@ -1,0 +1,71 @@
+# 0xffffff8000a1b930 _kern_netif_queue_rx_enqueue
+ffffff8000a1b930: push     rbp
+ffffff8000a1b931: mov      rbp, rsp
+ffffff8000a1b934: push     r14
+ffffff8000a1b936: push     rbx
+ffffff8000a1b937: sub      rsp, 0x20
+ffffff8000a1b93b: mov      rax, qword ptr [rdi + 0x10]
+ffffff8000a1b93f: mov      rax, qword ptr [rax]
+ffffff8000a1b942: and      rsi, 0xfffffffffffffff0
+ffffff8000a1b946: mov      rbx, qword ptr [rax]
+ffffff8000a1b949: mov      qword ptr [rbp - 0x20], 0
+ffffff8000a1b951: mov      qword ptr [rbp - 0x28], 0
+ffffff8000a1b959: cmp      byte ptr [rax + 0x3c], 2
+ffffff8000a1b95d: jne      0xffffff8000a1b985
+ffffff8000a1b95f: mov      dword ptr [rbp - 0x14], 0
+ffffff8000a1b966: lea      rax, [rbp - 0x14]
+ffffff8000a1b96a: mov      rdi, rsi
+ffffff8000a1b96d: mov      rsi, rax
+ffffff8000a1b970: call     0xffffff8000a37580  ; _pp_free_packet_chain
+ffffff8000a1b975: movsxd   rax, dword ptr [rbp - 0x14]
+ffffff8000a1b979: add      qword ptr [rbx + 0x450], rax
+ffffff8000a1b980: jmp      0xffffff8000a1ba48  ; _kern_netif_queue_rx_enqueue+0x118
+ffffff8000a1b985: lea      rdx, [rdi + 0x18]
+ffffff8000a1b989: xor      r8d, r8d
+ffffff8000a1b98c: mov      r10, rsi
+ffffff8000a1b98f: mov      r9, r10
+ffffff8000a1b992: mov      r10, qword ptr [r10 + 0xa8]
+ffffff8000a1b999: inc      r8d
+ffffff8000a1b99c: test     r10, r10
+ffffff8000a1b99f: jne      0xffffff8000a1b98f
+ffffff8000a1b9a1: mov      r10, qword ptr [rdi + 0x20]
+ffffff8000a1b9a5: mov      qword ptr [r10], rsi
+ffffff8000a1b9a8: add      dword ptr [rdi + 0x28], r8d
+ffffff8000a1b9ac: add      r9, 0xa8
+ffffff8000a1b9b3: mov      qword ptr [rdi + 0x20], r9
+ffffff8000a1b9b7: test     cl, 1
+ffffff8000a1b9ba: je       0xffffff8000a1ba48
+ffffff8000a1b9c0: mov      rsi, qword ptr [rdi + 0x18]
+ffffff8000a1b9c4: mov      qword ptr [rdi + 0x18], 0
+ffffff8000a1b9cc: mov      qword ptr [rdi + 0x20], rdx
+ffffff8000a1b9d0: mov      rbx, rdi
+ffffff8000a1b9d3: mov      dword ptr [rdi + 0x28], 0
+ffffff8000a1b9da: mov      rcx, qword ptr gs:[0x10]
+ffffff8000a1b9e3: mov      edx, dword ptr [rcx + 0x954]
+ffffff8000a1b9e9: mov      r8d, edx
+ffffff8000a1b9ec: and      r8d, 0x10000
+ffffff8000a1b9f3: mov      rdi, r8
+ffffff8000a1b9f6: xor      rdi, 0x10000
+ffffff8000a1b9fd: test     r8, r8
+ffffff8000a1ba00: jne      0xffffff8000a1ba0e
+ffffff8000a1ba02: or       edx, 0x10000
+ffffff8000a1ba08: mov      dword ptr [rcx + 0x954], edx
+ffffff8000a1ba0e: lea      r14, [rip + 0x1d18ef]  ; 0xffffff8000bed304
+ffffff8000a1ba15: add      r14, rdi
+ffffff8000a1ba18: mov      rax, qword ptr [rax]
+ffffff8000a1ba1b: mov      rax, qword ptr [rax + 0x4d8]
+ffffff8000a1ba22: mov      rdi, qword ptr [rax + 0x500]
+ffffff8000a1ba29: lea      rdx, [rbp - 0x28]
+ffffff8000a1ba2d: call     0xffffff8000a1a2e0  ; _netif_receive
+ffffff8000a1ba32: mov      rdi, r14
+ffffff8000a1ba35: call     0xffffff8000763e70  ; _rvi_init+0xb30
+ffffff8000a1ba3a: mov      esi, dword ptr [rbp - 0x28]
+ffffff8000a1ba3d: mov      edx, dword ptr [rbp - 0x20]
+ffffff8000a1ba40: mov      rdi, rbx
+ffffff8000a1ba43: call     0xffffff8000a1b7d0  ; _kern_netif_increment_queue_stats
+ffffff8000a1ba48: add      rsp, 0x20
+ffffff8000a1ba4c: pop      rbx
+ffffff8000a1ba4d: pop      r14
+ffffff8000a1ba4f: pop      rbp
+ffffff8000a1ba50: ret      
+ffffff8000a1ba51: nop      word ptr cs:[rax + rax]

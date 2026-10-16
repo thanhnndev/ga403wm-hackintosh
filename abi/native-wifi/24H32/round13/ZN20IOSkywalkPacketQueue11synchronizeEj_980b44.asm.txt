@@ -1,0 +1,7 @@
+# 0xffffff8002980b44 __ZN20IOSkywalkPacketQueue11synchronizeEj
+ffffff8002980b44: push     rbp
+ffffff8002980b45: mov      rbp, rsp
+ffffff8002980b48: mov      eax, 0xe00002c7
+ffffff8002980b4d: pop      rbp
+ffffff8002980b4e: ret      
+ffffff8002980b4f: nop      

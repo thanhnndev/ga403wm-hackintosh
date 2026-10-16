@@ -1,0 +1,6 @@
+# 0xffffff80022dc1ca __ZN21IO80211InfraInterface14pendingPacketsEh
+ffffff80022dc1ca: push     rbp
+ffffff80022dc1cb: mov      rbp, rsp
+ffffff80022dc1ce: xor      eax, eax
+ffffff80022dc1d0: pop      rbp
+ffffff80022dc1d1: ret      

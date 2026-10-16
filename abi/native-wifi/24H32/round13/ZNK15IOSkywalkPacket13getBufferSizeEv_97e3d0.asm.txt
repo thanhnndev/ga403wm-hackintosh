@@ -1,0 +1,8 @@
+# 0xffffff800297e3d0 __ZNK15IOSkywalkPacket13getBufferSizeEv
+ffffff800297e3d0: push     rbp
+ffffff800297e3d1: mov      rbp, rsp
+ffffff800297e3d4: mov      rax, qword ptr [rdi + 0x40]
+ffffff800297e3d8: mov      eax, dword ptr [rax + 0x30]
+ffffff800297e3db: pop      rbp
+ffffff800297e3dc: ret      
+ffffff800297e3dd: nop      

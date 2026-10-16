@@ -1,0 +1,25 @@
+# 0xffffff80022a5b28 __ZN23IO80211VirtualInterface14ioctl_internalEPv
+ffffff80022a5b28: push     rbp
+ffffff80022a5b29: mov      rbp, rsp
+ffffff80022a5b2c: push     r14
+ffffff80022a5b2e: push     rbx
+ffffff80022a5b2f: mov      rbx, rsi
+ffffff80022a5b32: mov      r14, rdi
+ffffff80022a5b35: mov      rax, qword ptr [rdi]
+ffffff80022a5b38: call     qword ptr [rax + 0xba8]
+ffffff80022a5b3e: mov      r10, qword ptr [rax]
+ffffff80022a5b41: xor      r11d, r11d
+ffffff80022a5b44: lea      rdx, [rip - 0x3b]
+ffffff80022a5b4b: mov      rdi, rax
+ffffff80022a5b4e: mov      rsi, r14
+ffffff80022a5b51: mov      rcx, r14
+ffffff80022a5b54: mov      r8, rbx
+ffffff80022a5b57: xor      r9d, r9d
+ffffff80022a5b5a: push     r11
+ffffff80022a5b5c: push     r11
+ffffff80022a5b5e: call     qword ptr [r10 + 0x850]
+ffffff80022a5b65: add      rsp, 0x10
+ffffff80022a5b69: pop      rbx
+ffffff80022a5b6a: pop      r14
+ffffff80022a5b6c: pop      rbp
+ffffff80022a5b6d: ret      

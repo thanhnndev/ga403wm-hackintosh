@@ -1,0 +1,20 @@
+# 0xffffff8002985caa __ZN26IOSkywalkRxSubmissionQueue16packetCompletionEP15IOSkywalkPacketP20IOSkywalkPacketQueuej
+ffffff8002985caa: push     rbp
+ffffff8002985cab: mov      rbp, rsp
+ffffff8002985cae: push     rbx
+ffffff8002985caf: push     rax
+ffffff8002985cb0: mov      rbx, rdi
+ffffff8002985cb3: add      rdi, 0x11c
+ffffff8002985cba: call     0xffffff8000a48bf0  ; _OSIncrementAtomic
+ffffff8002985cbf: mov      edi, dword ptr [rbx + 0x120]
+ffffff8002985cc5: test     dil, 2
+ffffff8002985cc9: jne      0xffffff8002985cd2
+ffffff8002985ccb: add      rsp, 8
+ffffff8002985ccf: pop      rbx
+ffffff8002985cd0: pop      rbp
+ffffff8002985cd1: ret      
+ffffff8002985cd2: lea      rsi, [rbx + 0x120]
+ffffff8002985cd9: mov      rdx, rbx
+ffffff8002985cdc: call     0xffffff80029a3486  ; __ZN26IOSkywalkRxSubmissionQueue16packetCompletionEP15IOSkywalkPacketP20IOSkywalkPacketQueuej.cold.1
+ffffff8002985ce1: jmp      0xffffff8002985ccb  ; __ZN26IOSkywalkRxSubmissionQueue16packetCompletionEP15IOSkywalkPacketP20IOSkywalkPacketQueuej+0x21
+ffffff8002985ce3: nop      

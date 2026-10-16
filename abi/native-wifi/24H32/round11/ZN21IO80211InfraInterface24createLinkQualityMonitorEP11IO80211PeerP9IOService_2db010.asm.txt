@@ -1,0 +1,403 @@
+# 0xffffff80022db010 __ZN21IO80211InfraInterface24createLinkQualityMonitorEP11IO80211PeerP9IOService
+ffffff80022db010: push     rbp
+ffffff80022db011: mov      rbp, rsp
+ffffff80022db014: push     r15
+ffffff80022db016: push     r14
+ffffff80022db018: push     r13
+ffffff80022db01a: push     r12
+ffffff80022db01c: push     rbx
+ffffff80022db01d: sub      rsp, 0x108
+ffffff80022db024: mov      r12, rdx
+ffffff80022db027: mov      r13, rsi
+ffffff80022db02a: mov      rbx, rdi
+ffffff80022db02d: mov      rax, qword ptr [rip + 0xe10e4]  ; 0xffffff80023bc118
+ffffff80022db034: mov      rax, qword ptr [rax]
+ffffff80022db037: mov      qword ptr [rbp - 0x30], rax
+ffffff80022db03b: xor      r14d, r14d
+ffffff80022db03e: mov      qword ptr [rbp - 0x38], r14
+ffffff80022db042: mov      qword ptr [rbp - 0x48], r14
+ffffff80022db046: mov      qword ptr [rbp - 0x50], r14
+ffffff80022db04a: mov      qword ptr [rbp - 0x58], r14
+ffffff80022db04e: mov      qword ptr [rbp - 0x60], r14
+ffffff80022db052: mov      qword ptr [rbp - 0x68], r14
+ffffff80022db056: mov      qword ptr [rbp - 0x70], r14
+ffffff80022db05a: mov      qword ptr [rbp - 0x78], r14
+ffffff80022db05e: mov      qword ptr [rbp - 0x80], r14
+ffffff80022db062: mov      qword ptr [rbp - 0x88], r14
+ffffff80022db069: mov      qword ptr [rbp - 0x90], r14
+ffffff80022db070: mov      qword ptr [rbp - 0x98], r14
+ffffff80022db077: mov      qword ptr [rbp - 0x40], rdi
+ffffff80022db07b: mov      eax, 1
+ffffff80022db080: mov      dword ptr [rbp - 0xe4], eax
+ffffff80022db086: mov      qword ptr [rbp - 0xe0], r14
+ffffff80022db08d: mov      dword ptr [rbp - 0x9c], r14d
+ffffff80022db094: mov      qword ptr [rbp - 0xa4], r14
+ffffff80022db09b: mov      qword ptr [rbp - 0xac], r14
+ffffff80022db0a2: mov      qword ptr [rbp - 0xb4], r14
+ffffff80022db0a9: mov      qword ptr [rbp - 0xbc], r14
+ffffff80022db0b0: mov      dword ptr [rbp - 0xc0], eax
+ffffff80022db0b6: mov      qword ptr [rbp - 0xf0], 1
+ffffff80022db0c1: mov      qword ptr [rbp - 0xc8], r14
+ffffff80022db0c8: mov      qword ptr [rbp - 0xd0], r14
+ffffff80022db0cf: mov      qword ptr [rbp - 0xd8], r14
+ffffff80022db0d6: mov      qword ptr [rbp - 0xf8], r14
+ffffff80022db0dd: mov      qword ptr [rbp - 0x100], r14
+ffffff80022db0e4: mov      dword ptr [rbp - 0x108], r14d
+ffffff80022db0eb: mov      qword ptr [rbp - 0x110], r14
+ffffff80022db0f2: mov      rax, qword ptr [rdi]
+ffffff80022db0f5: call     qword ptr [rax + 0xba8]
+ffffff80022db0fb: test     rax, rax
+ffffff80022db0fe: je       0xffffff80022db13e
+ffffff80022db100: mov      rax, qword ptr [rbx]
+ffffff80022db103: mov      rdi, rbx
+ffffff80022db106: call     qword ptr [rax + 0xba8]
+ffffff80022db10c: mov      rax, qword ptr [rax + 0x120]
+ffffff80022db113: mov      rax, qword ptr [rax + 0x188]
+ffffff80022db11a: test     rax, rax
+ffffff80022db11d: je       0xffffff80022db13b
+ffffff80022db11f: mov      rax, qword ptr [rax + 0x110]
+ffffff80022db126: mov      rdi, qword ptr [rax + 0x28]
+ffffff80022db12a: lea      rsi, [rip + 0x11beaf]  ; 0xffffff80023f6fe0
+ffffff80022db131: call     0xffffff8000a49ab0  ; __ZN15OSMetaClassBase12safeMetaCastEPKS_PK11OSMetaClass
+ffffff80022db136: mov      r14, rax
+ffffff80022db139: jmp      0xffffff80022db13e  ; __ZN21IO80211InfraInterface24createLinkQualityMonitorEP11IO80211PeerP9IOService+0x12e
+ffffff80022db13b: xor      r14d, r14d
+ffffff80022db13e: mov      rax, qword ptr [rbx]
+ffffff80022db141: mov      rdi, rbx
+ffffff80022db144: call     qword ptr [rax + 0xba8]
+ffffff80022db14a: mov      rax, qword ptr [rax + 0x120]
+ffffff80022db151: test     byte ptr [rax + 0xb2e], 8
+ffffff80022db158: je       0xffffff80022db735
+ffffff80022db15e: mov      rax, qword ptr [rbx + 0x110]
+ffffff80022db165: mov      rdi, qword ptr [rax + 0xd8]
+ffffff80022db16c: test     rdi, rdi
+ffffff80022db16f: je       0xffffff80022db1a8
+ffffff80022db171: lea      r15, [rbp - 0xe5]
+ffffff80022db178: mov      byte ptr [r15], 0
+ffffff80022db17c: lea      rcx, [rbp - 0xf0]
+ffffff80022db183: mov      r8d, 8
+ffffff80022db189: mov      esi, 0xc02869c9
+ffffff80022db18e: mov      edx, 0xf
+ffffff80022db193: mov      r9, r15
+ffffff80022db196: call     0xffffff800212ad12  ; __ZN11IO80211Glue13sendIOUCToWclEjjPvmRb
+ffffff80022db19b: cmp      byte ptr [r15], 1
+ffffff80022db19f: jne      0xffffff80022db1a8
+ffffff80022db1a1: cmp      eax, 0xe082280f
+ffffff80022db1a6: jne      0xffffff80022db1b7
+ffffff80022db1a8: lea      rsi, [rbp - 0xf0]
+ffffff80022db1af: mov      rdi, rbx
+ffffff80022db1b2: call     0xffffff80021f6a4a  ; __Z20apple80211getOP_MODEP23IO80211SkywalkInterfaceP22apple80211_opmode_data
+ffffff80022db1b7: mov      r15d, 0xe00002c9
+ffffff80022db1bd: test     eax, eax
+ffffff80022db1bf: jne      0xffffff80022db710
+ffffff80022db1c5: test     byte ptr [rbp - 0xec], 2
+ffffff80022db1cc: jne      0xffffff80022db68f
+ffffff80022db1d2: mov      byte ptr [rbp - 0x96], 0
+ffffff80022db1d9: test     r13, r13
+ffffff80022db1dc: je       0xffffff80022db6cf
+ffffff80022db1e2: mov      rax, qword ptr [r13 + 0x18]
+ffffff80022db1e6: mov      rax, qword ptr [rax + 0x4c0]
+ffffff80022db1ed: mov      qword ptr [rbp - 0x128], rax
+ffffff80022db1f4: test     rax, rax
+ffffff80022db1f7: je       0xffffff80022db6cf
+ffffff80022db1fd: mov      rax, qword ptr [rbx + 0x110]
+ffffff80022db204: mov      rdi, qword ptr [rax + 0xd8]
+ffffff80022db20b: test     rdi, rdi
+ffffff80022db20e: je       0xffffff80022db249
+ffffff80022db210: lea      r13, [rbp - 0xe5]
+ffffff80022db217: mov      byte ptr [r13], 0
+ffffff80022db21c: lea      rcx, [rbp - 0xc0]
+ffffff80022db223: mov      r8d, 0x28
+ffffff80022db229: mov      esi, 0xc02869c9
+ffffff80022db22e: mov      edx, 1
+ffffff80022db233: mov      r9, r13
+ffffff80022db236: call     0xffffff800212ad12  ; __ZN11IO80211Glue13sendIOUCToWclEjjPvmRb
+ffffff80022db23b: cmp      byte ptr [r13], 1
+ffffff80022db240: jne      0xffffff80022db249
+ffffff80022db242: cmp      eax, 0xe082280f
+ffffff80022db247: jne      0xffffff80022db258
+ffffff80022db249: lea      rsi, [rbp - 0xc0]
+ffffff80022db250: mov      rdi, rbx
+ffffff80022db253: call     0xffffff80021f65a4  ; __Z17apple80211getSSIDP23IO80211SkywalkInterfaceP20apple80211_ssid_data
+ffffff80022db258: test     eax, eax
+ffffff80022db25a: jne      0xffffff80022db710
+ffffff80022db260: mov      rax, qword ptr [rbx]
+ffffff80022db263: mov      rdi, rbx
+ffffff80022db266: call     qword ptr [rax + 0xba8]
+ffffff80022db26c: mov      rax, qword ptr [rax + 0x120]
+ffffff80022db273: cmp      qword ptr [rax + 0x188], 0
+ffffff80022db27b: je       0xffffff80022db315
+ffffff80022db281: mov      rax, qword ptr [rbx]
+ffffff80022db284: mov      rdi, rbx
+ffffff80022db287: call     qword ptr [rax + 0xba8]
+ffffff80022db28d: mov      rax, qword ptr [rax + 0x120]
+ffffff80022db294: mov      rax, qword ptr [rax + 0x188]
+ffffff80022db29b: mov      rax, qword ptr [rax + 0x110]
+ffffff80022db2a2: mov      rdi, qword ptr [rax + 0xd8]
+ffffff80022db2a9: test     rdi, rdi
+ffffff80022db2ac: je       0xffffff80022db2e7
+ffffff80022db2ae: lea      r13, [rbp - 0xe5]
+ffffff80022db2b5: mov      byte ptr [r13], 0
+ffffff80022db2ba: lea      rcx, [rbp - 0x110]
+ffffff80022db2c1: mov      r8d, 0xc
+ffffff80022db2c7: mov      esi, 0xc02869c9
+ffffff80022db2cc: mov      edx, 0x75
+ffffff80022db2d1: mov      r9, r13
+ffffff80022db2d4: call     0xffffff800212ad12  ; __ZN11IO80211Glue13sendIOUCToWclEjjPvmRb
+ffffff80022db2d9: cmp      byte ptr [r13], 1
+ffffff80022db2de: jne      0xffffff80022db2e7
+ffffff80022db2e0: cmp      eax, 0xe082280f
+ffffff80022db2e5: jne      0xffffff80022db30d
+ffffff80022db2e7: mov      rax, qword ptr [rbx]
+ffffff80022db2ea: mov      rdi, rbx
+ffffff80022db2ed: call     qword ptr [rax + 0xba8]
+ffffff80022db2f3: mov      rax, qword ptr [rax + 0x120]
+ffffff80022db2fa: mov      rdi, qword ptr [rax + 0x188]
+ffffff80022db301: lea      rsi, [rbp - 0x110]
+ffffff80022db308: call     0xffffff80021f77a0  ; __Z30apple80211getAWDL_SYNC_ENABLEDP23IO80211SkywalkInterfaceP28apple80211_awdl_sync_enabled
+ffffff80022db30d: test     eax, eax
+ffffff80022db30f: jne      0xffffff80022db710
+ffffff80022db315: mov      rax, qword ptr [rbx + 0x110]
+ffffff80022db31c: mov      rdi, qword ptr [rax + 0xd8]
+ffffff80022db323: test     rdi, rdi
+ffffff80022db326: je       0xffffff80022db361
+ffffff80022db328: lea      r13, [rbp - 0xe5]
+ffffff80022db32f: mov      byte ptr [r13], 0
+ffffff80022db334: lea      rcx, [rbp - 0xd8]
+ffffff80022db33b: mov      r8d, 0x18
+ffffff80022db341: mov      esi, 0xc02869c9
+ffffff80022db346: mov      edx, 0x175
+ffffff80022db34b: mov      r9, r13
+ffffff80022db34e: call     0xffffff800212ad12  ; __ZN11IO80211Glue13sendIOUCToWclEjjPvmRb
+ffffff80022db353: cmp      byte ptr [r13], 1
+ffffff80022db358: jne      0xffffff80022db361
+ffffff80022db35a: cmp      eax, 0xe082280f
+ffffff80022db35f: jne      0xffffff80022db370
+ffffff80022db361: lea      rsi, [rbp - 0xd8]
+ffffff80022db368: mov      rdi, rbx
+ffffff80022db36b: call     0xffffff80021f9ffd  ; __Z31apple80211getASSOC_READY_STATUSP23IO80211SkywalkInterfaceP22apple80211_assoc_ready
+ffffff80022db370: test     eax, eax
+ffffff80022db372: jne      0xffffff80022db710
+ffffff80022db378: mov      qword ptr [rbp - 0x120], r12
+ffffff80022db37f: mov      rax, qword ptr [rbx + 0x110]
+ffffff80022db386: mov      rdi, qword ptr [rax + 0xd8]
+ffffff80022db38d: test     rdi, rdi
+ffffff80022db390: je       0xffffff80022db3cb
+ffffff80022db392: lea      r13, [rbp - 0xe5]
+ffffff80022db399: mov      byte ptr [r13], 0
+ffffff80022db39e: lea      rcx, [rbp - 0xf8]
+ffffff80022db3a5: mov      r8d, 8
+ffffff80022db3ab: mov      esi, 0xc02869c9
+ffffff80022db3b0: mov      edx, 0x17a
+ffffff80022db3b5: mov      r9, r13
+ffffff80022db3b8: call     0xffffff800212ad12  ; __ZN11IO80211Glue13sendIOUCToWclEjjPvmRb
+ffffff80022db3bd: cmp      byte ptr [r13], 1
+ffffff80022db3c2: jne      0xffffff80022db3cb
+ffffff80022db3c4: cmp      eax, 0xe082280f
+ffffff80022db3c9: jne      0xffffff80022db3da
+ffffff80022db3cb: lea      rsi, [rbp - 0xf8]
+ffffff80022db3d2: mov      rdi, rbx
+ffffff80022db3d5: call     0xffffff80021fa1a6  ; __Z33apple80211getRANDOMISATION_STATUSP23IO80211SkywalkInterfaceP35apple80211_mac_randomisation_status
+ffffff80022db3da: test     eax, eax
+ffffff80022db3dc: sete     r12b
+ffffff80022db3e0: cmp      dword ptr [rbp - 0xf4], 0
+ffffff80022db3e7: setne    byte ptr [rbp - 0x112]
+ffffff80022db3ee: mov      rax, qword ptr [rbx + 0x110]
+ffffff80022db3f5: mov      rdi, qword ptr [rax + 0xd8]
+ffffff80022db3fc: test     rdi, rdi
+ffffff80022db3ff: je       0xffffff80022db43a
+ffffff80022db401: lea      r13, [rbp - 0xe5]
+ffffff80022db408: mov      byte ptr [r13], 0
+ffffff80022db40d: lea      rcx, [rbp - 0x100]
+ffffff80022db414: mov      r8d, 8
+ffffff80022db41a: mov      esi, 0xc02869c9
+ffffff80022db41f: mov      edx, 0x187
+ffffff80022db424: mov      r9, r13
+ffffff80022db427: call     0xffffff800212ad12  ; __ZN11IO80211Glue13sendIOUCToWclEjjPvmRb
+ffffff80022db42c: cmp      byte ptr [r13], 1
+ffffff80022db431: jne      0xffffff80022db43a
+ffffff80022db433: cmp      eax, 0xe082280f
+ffffff80022db438: jne      0xffffff80022db449
+ffffff80022db43a: lea      rsi, [rbp - 0x100]
+ffffff80022db441: mov      rdi, rbx
+ffffff80022db444: call     0xffffff80021fa3a7  ; __Z38apple80211getSLOW_WIFI_FEATURE_ENABLEDP23IO80211SkywalkInterfaceP36apple80211_slow_wifi_feature_enabled
+ffffff80022db449: test     eax, eax
+ffffff80022db44b: sete     r15b
+ffffff80022db44f: cmp      dword ptr [rbp - 0xfc], 0
+ffffff80022db456: setne    r13b
+ffffff80022db45a: lea      rdx, [rbp - 0x94]
+ffffff80022db461: lea      rcx, [rbp - 0x90]
+ffffff80022db468: lea      r8, [rbp - 0x8c]
+ffffff80022db46f: lea      r9, [rbp - 0x80]
+ffffff80022db473: lea      rax, [rbp - 0x7c]
+ffffff80022db477: lea      rsi, [rbp - 0x54]
+ffffff80022db47b: mov      rdi, rbx
+ffffff80022db47e: push     rsi
+ffffff80022db47f: push     rax
+ffffff80022db480: call     0xffffff80022db77c  ; __ZN21IO80211InfraInterface22getInfraLinkPropertiesEP11IO80211PeerRjS2_R18apple80211_channelR24apple80211_channel_widthR18apple80211_phymodeR23apple80211_channel_band
+ffffff80022db485: add      rsp, 0x10
+ffffff80022db489: test     al, al
+ffffff80022db48b: je       0xffffff80022db755
+ffffff80022db491: mov      rax, qword ptr [rbx + 0x110]
+ffffff80022db498: mov      rdi, qword ptr [rax + 0xd8]
+ffffff80022db49f: test     rdi, rdi
+ffffff80022db4a2: je       0xffffff80022db4f1
+ffffff80022db4a4: mov      byte ptr [rbp - 0x111], r12b
+ffffff80022db4ab: mov      r12d, r13d
+ffffff80022db4ae: lea      r13, [rbp - 0xe5]
+ffffff80022db4b5: mov      byte ptr [r13], 0
+ffffff80022db4ba: lea      rcx, [rbp - 0xe4]
+ffffff80022db4c1: mov      r8d, 0xc
+ffffff80022db4c7: mov      esi, 0xc02869c9
+ffffff80022db4cc: mov      edx, 9
+ffffff80022db4d1: mov      r9, r13
+ffffff80022db4d4: call     0xffffff800212ad12  ; __ZN11IO80211Glue13sendIOUCToWclEjjPvmRb
+ffffff80022db4d9: cmp      byte ptr [r13], 1
+ffffff80022db4de: mov      r13d, r12d
+ffffff80022db4e1: mov      r12b, byte ptr [rbp - 0x111]
+ffffff80022db4e8: jne      0xffffff80022db4f1
+ffffff80022db4ea: cmp      eax, 0xe082280f
+ffffff80022db4ef: jne      0xffffff80022db500
+ffffff80022db4f1: lea      rsi, [rbp - 0xe4]
+ffffff80022db4f8: mov      rdi, rbx
+ffffff80022db4fb: call     0xffffff80021f6838  ; __Z18apple80211getBSSIDP23IO80211SkywalkInterfaceP21apple80211_bssid_data
+ffffff80022db500: test     eax, eax
+ffffff80022db502: jne      0xffffff80022db6c7
+ffffff80022db508: lea      rax, [rbp - 0xe0]
+ffffff80022db50f: and      r12b, byte ptr [rbp - 0x112]
+ffffff80022db516: and      r15b, r13b
+ffffff80022db519: movzx    ecx, word ptr [rax + 4]
+ffffff80022db51d: mov      word ptr [rbp - 0x44], cx
+ffffff80022db521: mov      eax, dword ptr [rax]
+ffffff80022db523: mov      dword ptr [rbp - 0x48], eax
+ffffff80022db526: mov      rax, qword ptr [rbx]
+ffffff80022db529: mov      rdi, rbx
+ffffff80022db52c: call     qword ptr [rax + 0xba8]
+ffffff80022db532: mov      qword ptr [rbp - 0x38], rax
+ffffff80022db536: mov      byte ptr [rbp - 0x97], r12b
+ffffff80022db53d: mov      byte ptr [rbp - 0x98], r15b
+ffffff80022db544: mov      r13d, dword ptr [rbp - 0xbc]
+ffffff80022db54b: cmp      r13, 0x21
+ffffff80022db54f: jae      0xffffff80022db772
+ffffff80022db555: lea      rsi, [rbp - 0xb8]
+ffffff80022db55c: lea      r12, [rbp - 0x74]
+ffffff80022db560: mov      rdi, r12
+ffffff80022db563: mov      rdx, r13
+ffffff80022db566: call     0xffffff8000101050  ; _real_mode_bootstrap_end
+ffffff80022db56b: mov      dword ptr [r12 - 4], r13d
+ffffff80022db570: mov      rsi, qword ptr [rbp - 0x120]
+ffffff80022db577: test     rsi, rsi
+ffffff80022db57a: mov      r15, qword ptr [rbp - 0x128]
+ffffff80022db581: jne      0xffffff80022db58e
+ffffff80022db583: mov      rdi, rbx
+ffffff80022db586: call     0xffffff8000b53f70  ; __ZNK9IOService11GetProviderEv
+ffffff80022db58b: mov      rsi, rax
+ffffff80022db58e: lea      rdx, [rbp - 0x98]
+ffffff80022db595: mov      rdi, r15
+ffffff80022db598: call     0xffffff80022f88e2  ; __ZN18IO80211PeerMonitor24createLinkQualityMonitorEP9IOServicePK7Options
+ffffff80022db59d: test     al, al
+ffffff80022db59f: je       0xffffff80022db761
+ffffff80022db5a5: mov      rax, qword ptr [rbx + 0x110]
+ffffff80022db5ac: mov      rax, qword ptr [rax + 0x28]
+ffffff80022db5b0: test     rax, rax
+ffffff80022db5b3: je       0xffffff80022db6ac
+ffffff80022db5b9: mov      rax, qword ptr [rax + 0x18]
+ffffff80022db5bd: mov      rax, qword ptr [rax + 0x528]
+ffffff80022db5c4: test     rax, rax
+ffffff80022db5c7: je       0xffffff80022db6ac
+ffffff80022db5cd: mov      rax, qword ptr [rax + 0x18]
+ffffff80022db5d1: mov      rax, qword ptr [rax + 0x4c0]
+ffffff80022db5d8: test     rax, rax
+ffffff80022db5db: je       0xffffff80022db6ac
+ffffff80022db5e1: mov      rax, qword ptr [rax + 0x10]
+ffffff80022db5e5: mov      r12, qword ptr [rax + 0xa30]
+ffffff80022db5ec: test     r12, r12
+ffffff80022db5ef: je       0xffffff80022db6ac
+ffffff80022db5f5: cmp      dword ptr [rbp - 0x108], 0
+ffffff80022db5fc: je       0xffffff80022db616
+ffffff80022db5fe: mov      rdi, r12
+ffffff80022db601: mov      esi, 1
+ffffff80022db606: call     0xffffff800230315a  ; __ZN25IO80211LinkQualityMonitor31recordInterfaceConcurrencyStateEb
+ffffff80022db60b: mov      rax, qword ptr [r15 + 0x10]
+ffffff80022db60f: mov      byte ptr [rax + 0xaa0], 1
+ffffff80022db616: test     r14, r14
+ffffff80022db619: je       0xffffff80022db62e
+ffffff80022db61b: mov      rdi, r14
+ffffff80022db61e: call     0xffffff800218b902  ; __ZN22IO80211AWDLPeerManager14infraDutyCycleEv
+ffffff80022db623: mov      rcx, qword ptr [r12 + 0x10]
+ffffff80022db628: mov      dword ptr [rcx + 0x1c4], eax
+ffffff80022db62e: cmp      word ptr [rbp - 0xd8], 0
+ffffff80022db636: jne      0xffffff80022db652
+ffffff80022db638: mov      rdi, r12
+ffffff80022db63b: mov      esi, 1
+ffffff80022db640: mov      edx, 1
+ffffff80022db645: call     0xffffff80022ff072  ; __ZN25IO80211LinkQualityMonitor17runUIStateMachineE7UIEvent11UIEventData
+ffffff80022db64a: mov      rdi, r12
+ffffff80022db64d: call     0xffffff80023001a4  ; __ZN25IO80211LinkQualityMonitor23checkMeasurementTimeoutEv
+ffffff80022db652: mov      rax, qword ptr [rbx]
+ffffff80022db655: mov      rdi, rbx
+ffffff80022db658: call     qword ptr [rax + 0xba8]
+ffffff80022db65e: mov      rax, qword ptr [rax + 0x120]
+ffffff80022db665: test     byte ptr [rax + 0xb30], 0x20
+ffffff80022db66c: mov      rax, qword ptr [r12 + 0x10]
+ffffff80022db671: jne      0xffffff80022db6ec
+ffffff80022db673: mov      byte ptr [rax + 0x18e], 0
+ffffff80022db67a: lea      rdi, [rip + 0xd2626]  ; 0xffffff80023adca7
+ffffff80022db681: lea      rsi, [rip + 0xd2665]  ; "updateCcaExtCaps"
+ffffff80022db688: xor      r15d, r15d
+ffffff80022db68b: xor      edx, edx
+ffffff80022db68d: jmp      0xffffff80022db709  ; __ZN21IO80211InfraInterface24createLinkQualityMonitorEP11IO80211PeerP9IOService+0x6f9
+ffffff80022db68f: lea      rdi, [rip + 0xbf751]  ; 0xffffff800239ade7
+ffffff80022db696: lea      rsi, [rip + 0xbf77d]  ; "createLinkQualityMonitor"
+ffffff80022db69d: xor      eax, eax
+ffffff80022db69f: call     0xffffff8000ab6560  ; _IOLog
+ffffff80022db6a4: mov      r15d, 0xe00002c7
+ffffff80022db6aa: jmp      0xffffff80022db710  ; __ZN21IO80211InfraInterface24createLinkQualityMonitorEP11IO80211PeerP9IOService+0x700
+ffffff80022db6ac: lea      rdx, [rip + 0xbf7d8]  ; "Failed to get quality monitor"
+ffffff80022db6b3: movabs   rsi, 0x800000000000000
+ffffff80022db6bd: mov      rdi, rbx
+ffffff80022db6c0: xor      eax, eax
+ffffff80022db6c2: call     0xffffff8002261f9e  ; __ZN23IO80211SkywalkInterface8logDebugEyPKcz
+ffffff80022db6c7: mov      r15d, 0xe00002c9
+ffffff80022db6cd: jmp      0xffffff80022db710  ; __ZN21IO80211InfraInterface24createLinkQualityMonitorEP11IO80211PeerP9IOService+0x700
+ffffff80022db6cf: lea      rdx, [rip + 0xbf75d]  ; "PeerMonitor invalid"
+ffffff80022db6d6: movabs   rsi, 0x800000000000000
+ffffff80022db6e0: mov      rdi, rbx
+ffffff80022db6e3: xor      eax, eax
+ffffff80022db6e5: call     0xffffff8002261f9e  ; __ZN23IO80211SkywalkInterface8logDebugEyPKcz
+ffffff80022db6ea: jmp      0xffffff80022db710  ; __ZN21IO80211InfraInterface24createLinkQualityMonitorEP11IO80211PeerP9IOService+0x700
+ffffff80022db6ec: mov      byte ptr [rax + 0x18e], 1
+ffffff80022db6f3: lea      rdi, [rip + 0xd25ad]  ; 0xffffff80023adca7
+ffffff80022db6fa: lea      rsi, [rip + 0xd25ec]  ; "updateCcaExtCaps"
+ffffff80022db701: xor      r15d, r15d
+ffffff80022db704: mov      edx, 1
+ffffff80022db709: xor      eax, eax
+ffffff80022db70b: call     0xffffff8000ab6560  ; _IOLog
+ffffff80022db710: mov      rax, qword ptr [rip + 0xe0a01]  ; 0xffffff80023bc118
+ffffff80022db717: mov      rax, qword ptr [rax]
+ffffff80022db71a: cmp      rax, qword ptr [rbp - 0x30]
+ffffff80022db71e: jne      0xffffff80022db76d
+ffffff80022db720: mov      eax, r15d
+ffffff80022db723: add      rsp, 0x108
+ffffff80022db72a: pop      rbx
+ffffff80022db72b: pop      r12
+ffffff80022db72d: pop      r13
+ffffff80022db72f: pop      r14
+ffffff80022db731: pop      r15
+ffffff80022db733: pop      rbp
+ffffff80022db734: ret      
+ffffff80022db735: lea      rdx, [rip + 0xbf68a]  ; "LinkQualityMonitor not supported"
+ffffff80022db73c: movabs   rsi, 0x800000000000000
+ffffff80022db746: mov      rdi, rbx
+ffffff80022db749: xor      eax, eax
+ffffff80022db74b: call     0xffffff8002261f9e  ; __ZN23IO80211SkywalkInterface8logDebugEyPKcz
+ffffff80022db750: jmp      0xffffff80022db6a4  ; __ZN21IO80211InfraInterface24createLinkQualityMonitorEP11IO80211PeerP9IOService+0x694
+ffffff80022db755: lea      rdx, [rip + 0xbf6eb]  ; "Failed to get link properties"
+ffffff80022db75c: jmp      0xffffff80022db6b3  ; __ZN21IO80211InfraInterface24createLinkQualityMonitorEP11IO80211PeerP9IOService+0x6a3
+ffffff80022db761: lea      rdx, [rip + 0xbf6fd]  ; "Failed to create link quality monitor"
+ffffff80022db768: jmp      0xffffff80022db6b3  ; __ZN21IO80211InfraInterface24createLinkQualityMonitorEP11IO80211PeerP9IOService+0x6a3
+ffffff80022db76d: call     0xffffff8000383150  ; ___stack_chk_fail
+ffffff80022db772: ud1      
+ffffff80022db775: cmp      dh, 0xbf
+ffffff80022db778: add      byte ptr [rax], al
+ffffff80022db77a: ud2      

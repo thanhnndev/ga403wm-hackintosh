@@ -1,0 +1,8 @@
+# 0xffffff8002982f7a __ZN25IOSkywalkNetworkInterface17enableNetworkWakeEj
+ffffff8002982f7a: push     rbp
+ffffff8002982f7b: mov      rbp, rsp
+ffffff8002982f7e: mov      rax, qword ptr [rdi + 0xb8]
+ffffff8002982f85: mov      dword ptr [rax + 0x3c], esi
+ffffff8002982f88: xor      eax, eax
+ffffff8002982f8a: pop      rbp
+ffffff8002982f8b: ret      

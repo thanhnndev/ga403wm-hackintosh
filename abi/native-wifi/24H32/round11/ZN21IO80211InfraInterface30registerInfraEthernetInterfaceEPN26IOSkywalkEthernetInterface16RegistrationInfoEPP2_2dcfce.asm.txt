@@ -1,0 +1,178 @@
+# 0xffffff80022dcfce __ZN21IO80211InfraInterface30registerInfraEthernetInterfaceEPN26IOSkywalkEthernetInterface16RegistrationInfoEPP20IOSkywalkPacketQueuejP25IOSkywalkPacketBufferPoolS7_
+ffffff80022dcfce: push     rbp
+ffffff80022dcfcf: mov      rbp, rsp
+ffffff80022dcfd2: push     r15
+ffffff80022dcfd4: push     r14
+ffffff80022dcfd6: push     r13
+ffffff80022dcfd8: push     r12
+ffffff80022dcfda: push     rbx
+ffffff80022dcfdb: sub      rsp, 0x58
+ffffff80022dcfdf: mov      r12, r9
+ffffff80022dcfe2: mov      r15d, ecx
+ffffff80022dcfe5: mov      r13, rsi
+ffffff80022dcfe8: mov      rbx, rdi
+ffffff80022dcfeb: test     rsi, rsi
+ffffff80022dcfee: mov      qword ptr [rbp - 0x80], r8
+ffffff80022dcff2: mov      qword ptr [rbp - 0x78], rdx
+ffffff80022dcff6: je       0xffffff80022dd14a
+ffffff80022dcffc: mov      rax, qword ptr [rbx + 0x118]
+ffffff80022dd003: cmp      byte ptr [rax + 0x3c60], 0
+ffffff80022dd00a: je       0xffffff80022dd14a
+ffffff80022dd010: mov      rax, qword ptr [rbx + 0x110]
+ffffff80022dd017: cmp      dword ptr [rax + 0x58], 1
+ffffff80022dd01b: jne      0xffffff80022dd14a
+ffffff80022dd021: mov      rax, qword ptr [rbx]
+ffffff80022dd024: mov      rdi, rbx
+ffffff80022dd027: call     qword ptr [rax + 0xcf0]
+ffffff80022dd02d: movabs   r14, 0xffffffffffff
+ffffff80022dd037: and      r14, rax
+ffffff80022dd03a: mov      rcx, rax
+ffffff80022dd03d: mov      qword ptr [rbp - 0x60], rax
+ffffff80022dd041: mov      rax, r14
+ffffff80022dd044: shr      rax, 8
+ffffff80022dd048: mov      rdx, rax
+ffffff80022dd04b: mov      qword ptr [rbp - 0x58], rax
+ffffff80022dd04f: mov      rax, r14
+ffffff80022dd052: shr      rax, 0x10
+ffffff80022dd056: mov      rdi, rax
+ffffff80022dd059: mov      qword ptr [rbp - 0x50], rax
+ffffff80022dd05d: mov      rax, r14
+ffffff80022dd060: shr      rax, 0x18
+ffffff80022dd064: mov      r11, rax
+ffffff80022dd067: mov      qword ptr [rbp - 0x40], rax
+ffffff80022dd06b: mov      rax, r14
+ffffff80022dd06e: shr      rax, 0x20
+ffffff80022dd072: mov      r10, rax
+ffffff80022dd075: mov      qword ptr [rbp - 0x38], rax
+ffffff80022dd079: shr      r14, 0x28
+ffffff80022dd07d: movzx    esi, byte ptr [r13 + 0x108]
+ffffff80022dd085: mov      eax, 0xff
+ffffff80022dd08a: and      ecx, eax
+ffffff80022dd08c: mov      qword ptr [rbp - 0x48], rcx
+ffffff80022dd090: mov      qword ptr [rbp - 0x68], r12
+ffffff80022dd094: mov      r12d, edx
+ffffff80022dd097: and      r12d, eax
+ffffff80022dd09a: mov      qword ptr [rbp - 0x70], r15
+ffffff80022dd09e: mov      r15d, edi
+ffffff80022dd0a1: and      r15d, eax
+ffffff80022dd0a4: and      r11d, eax
+ffffff80022dd0a7: and      r10d, eax
+ffffff80022dd0aa: movzx    edx, byte ptr [r13 + 0x109]
+ffffff80022dd0b2: movzx    ecx, byte ptr [r13 + 0x10a]
+ffffff80022dd0ba: movzx    r8d, byte ptr [r13 + 0x10b]
+ffffff80022dd0c2: movzx    r9d, byte ptr [r13 + 0x10c]
+ffffff80022dd0ca: movzx    eax, byte ptr [r13 + 0x10d]
+ffffff80022dd0d2: mov      qword ptr [rbp - 0x30], rax
+ffffff80022dd0d6: sub      rsp, 8
+ffffff80022dd0da: lea      rdi, [rip + 0xbe26d]  ; "Override mac address for infra interface  mac address changed =<%02X:%02X:%02X:%"
+ffffff80022dd0e1: xor      eax, eax
+ffffff80022dd0e3: push     r14
+ffffff80022dd0e5: push     r10
+ffffff80022dd0e7: push     r11
+ffffff80022dd0e9: push     r15
+ffffff80022dd0eb: mov      r15, qword ptr [rbp - 0x70]
+ffffff80022dd0ef: push     r12
+ffffff80022dd0f1: mov      r12, qword ptr [rbp - 0x68]
+ffffff80022dd0f5: push     qword ptr [rbp - 0x48]
+ffffff80022dd0f8: push     qword ptr [rbp - 0x30]
+ffffff80022dd0fb: call     0xffffff8000ab6560  ; _IOLog
+ffffff80022dd100: mov      rdx, qword ptr [rbp - 0x78]
+ffffff80022dd104: mov      r8, qword ptr [rbp - 0x80]
+ffffff80022dd108: add      rsp, 0x40
+ffffff80022dd10c: mov      rax, qword ptr [rbp - 0x60]
+ffffff80022dd110: mov      byte ptr [r13 + 0x108], al
+ffffff80022dd117: mov      rax, qword ptr [rbp - 0x58]
+ffffff80022dd11b: mov      byte ptr [r13 + 0x109], al
+ffffff80022dd122: mov      rax, qword ptr [rbp - 0x50]
+ffffff80022dd126: mov      byte ptr [r13 + 0x10a], al
+ffffff80022dd12d: mov      rax, qword ptr [rbp - 0x40]
+ffffff80022dd131: mov      byte ptr [r13 + 0x10b], al
+ffffff80022dd138: mov      rax, qword ptr [rbp - 0x38]
+ffffff80022dd13c: mov      byte ptr [r13 + 0x10c], al
+ffffff80022dd143: mov      byte ptr [r13 + 0x10d], r14b
+ffffff80022dd14a: sub      rsp, 8
+ffffff80022dd14e: mov      rdi, rbx
+ffffff80022dd151: mov      rsi, r13
+ffffff80022dd154: mov      ecx, r15d
+ffffff80022dd157: mov      r9, r12
+ffffff80022dd15a: push     0
+ffffff80022dd15c: call     0xffffff8002988078  ; __ZN26IOSkywalkEthernetInterface25registerEthernetInterfaceEPKNS_16RegistrationInfoEPP20IOSkywalkPacketQueuejP25IOSkywalkPacketBufferPoolS7_j
+ffffff80022dd161: add      rsp, 0x10
+ffffff80022dd165: mov      r14d, eax
+ffffff80022dd168: mov      rax, qword ptr [rbx]
+ffffff80022dd16b: mov      rdi, rbx
+ffffff80022dd16e: call     qword ptr [rax + 0xd08]
+ffffff80022dd174: test     rax, rax
+ffffff80022dd177: je       0xffffff80022dd196
+ffffff80022dd179: mov      rax, qword ptr [rbx]
+ffffff80022dd17c: mov      rdi, rbx
+ffffff80022dd17f: call     qword ptr [rax + 0xd08]
+ffffff80022dd185: mov      rdi, rax
+ffffff80022dd188: mov      esi, 1
+ffffff80022dd18d: call     0xffffff80031d421c  ; __ZN11CCLogStream9shouldLogE16CCStreamLogLevel
+ffffff80022dd192: test     al, al
+ffffff80022dd194: jne      0xffffff80022dd1a8
+ffffff80022dd196: mov      eax, r14d
+ffffff80022dd199: add      rsp, 0x58
+ffffff80022dd19d: pop      rbx
+ffffff80022dd19e: pop      r12
+ffffff80022dd1a0: pop      r13
+ffffff80022dd1a2: pop      r14
+ffffff80022dd1a4: pop      r15
+ffffff80022dd1a6: pop      rbp
+ffffff80022dd1a7: ret      
+ffffff80022dd1a8: mov      rax, qword ptr [rbx]
+ffffff80022dd1ab: mov      rdi, rbx
+ffffff80022dd1ae: call     qword ptr [rax + 0xd08]
+ffffff80022dd1b4: mov      qword ptr [rbp - 0x38], rax
+ffffff80022dd1b8: mov      rax, qword ptr [rbx + 0x110]
+ffffff80022dd1bf: mov      eax, dword ptr [rax + 0x58]
+ffffff80022dd1c2: mov      dword ptr [rbp - 0x40], eax
+ffffff80022dd1c5: movzx    eax, byte ptr [r13 + 0x108]
+ffffff80022dd1cd: mov      qword ptr [rbp - 0x70], rax
+ffffff80022dd1d1: movzx    eax, byte ptr [r13 + 0x109]
+ffffff80022dd1d9: mov      qword ptr [rbp - 0x68], rax
+ffffff80022dd1dd: movzx    eax, byte ptr [r13 + 0x10a]
+ffffff80022dd1e5: mov      qword ptr [rbp - 0x60], rax
+ffffff80022dd1e9: movzx    eax, byte ptr [r13 + 0x10b]
+ffffff80022dd1f1: mov      qword ptr [rbp - 0x58], rax
+ffffff80022dd1f5: movzx    eax, byte ptr [r13 + 0x10c]
+ffffff80022dd1fd: mov      qword ptr [rbp - 0x50], rax
+ffffff80022dd201: movzx    eax, byte ptr [r13 + 0x10d]
+ffffff80022dd209: mov      qword ptr [rbp - 0x48], rax
+ffffff80022dd20d: mov      rdi, r13
+ffffff80022dd210: call     0xffffff800048cb00  ; _vm_kernel_addrhash_external
+ffffff80022dd215: mov      qword ptr [rbp - 0x30], rax
+ffffff80022dd219: mov      rdi, qword ptr [rbp - 0x78]
+ffffff80022dd21d: call     0xffffff800048cb00  ; _vm_kernel_addrhash_external
+ffffff80022dd222: mov      r13, rax
+ffffff80022dd225: mov      rdi, qword ptr [rbp - 0x80]
+ffffff80022dd229: call     0xffffff800048cb00  ; _vm_kernel_addrhash_external
+ffffff80022dd22e: mov      rbx, r15
+ffffff80022dd231: mov      r15, rax
+ffffff80022dd234: mov      rdi, r12
+ffffff80022dd237: call     0xffffff800048cb00  ; _vm_kernel_addrhash_external
+ffffff80022dd23c: mov      r10, rax
+ffffff80022dd23f: sub      rsp, 8
+ffffff80022dd243: lea      rsi, [rip + 0xbe186]  ; "[ik] %s@%d: ret[0x%08x] role[%u] MAC[%02X:%02X:%02X:%02X:%02X:%02X], numQueues[%"
+ffffff80022dd24a: lea      rdx, [rip + 0xbe1fd]  ; "registerInfraEthernetInterface"
+ffffff80022dd251: mov      rdi, qword ptr [rbp - 0x38]
+ffffff80022dd255: mov      ecx, 0x111b
+ffffff80022dd25a: mov      r8d, r14d
+ffffff80022dd25d: mov      r9d, dword ptr [rbp - 0x40]
+ffffff80022dd261: xor      eax, eax
+ffffff80022dd263: push     r10
+ffffff80022dd265: push     r15
+ffffff80022dd267: push     r13
+ffffff80022dd269: push     qword ptr [rbp - 0x30]
+ffffff80022dd26c: push     rbx
+ffffff80022dd26d: push     qword ptr [rbp - 0x48]
+ffffff80022dd270: push     qword ptr [rbp - 0x50]
+ffffff80022dd273: push     qword ptr [rbp - 0x58]
+ffffff80022dd276: push     qword ptr [rbp - 0x60]
+ffffff80022dd279: push     qword ptr [rbp - 0x68]
+ffffff80022dd27c: push     qword ptr [rbp - 0x70]
+ffffff80022dd27f: call     0xffffff80031d252e  ; __ZN11CCLogStream8logAlertEPKcz
+ffffff80022dd284: add      rsp, 0x60
+ffffff80022dd288: jmp      0xffffff80022dd196  ; __ZN21IO80211InfraInterface30registerInfraEthernetInterfaceEPN26IOSkywalkEthernetInterface16RegistrationInfoEPP20IOSkywalkPacketQueuejP25IOSkywalkPacketBufferPoolS7_+0x1c8
+ffffff80022dd28d: nop      

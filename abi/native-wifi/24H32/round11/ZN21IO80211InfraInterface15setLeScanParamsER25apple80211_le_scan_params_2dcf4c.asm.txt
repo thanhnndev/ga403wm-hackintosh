@@ -1,0 +1,31 @@
+# 0xffffff80022dcf4c __ZN21IO80211InfraInterface15setLeScanParamsER25apple80211_le_scan_params
+ffffff80022dcf4c: push     rbp
+ffffff80022dcf4d: mov      rbp, rsp
+ffffff80022dcf50: push     r14
+ffffff80022dcf52: push     rbx
+ffffff80022dcf53: mov      r14, rdi
+ffffff80022dcf56: cmp      byte ptr [rsi], 0
+ffffff80022dcf59: mov      rax, qword ptr [rdi + 0x118]
+ffffff80022dcf60: mov      rdi, qword ptr [rax + 0x188]
+ffffff80022dcf67: je       0xffffff80022dcf9b
+ffffff80022dcf69: mov      rbx, rsi
+ffffff80022dcf6c: mov      rax, qword ptr [rdi + 0x10]
+ffffff80022dcf70: cmp      byte ptr [rax], 0
+ffffff80022dcf73: je       0xffffff80022dcf8e
+ffffff80022dcf75: xor      esi, esi
+ffffff80022dcf77: xor      edx, edx
+ffffff80022dcf79: xor      ecx, ecx
+ffffff80022dcf7b: call     0xffffff8002118734  ; __ZN18IO80211AVCAdvisory18setAVCAdvisoryInfoEhtt
+ffffff80022dcf80: mov      rax, qword ptr [r14 + 0x118]
+ffffff80022dcf87: mov      rdi, qword ptr [rax + 0x188]
+ffffff80022dcf8e: movzx    ecx, word ptr [rbx + 8]
+ffffff80022dcf92: mov      esi, 1
+ffffff80022dcf97: mov      edx, ecx
+ffffff80022dcf99: jmp      0xffffff80022dcfa1  ; __ZN21IO80211InfraInterface15setLeScanParamsER25apple80211_le_scan_params+0x55
+ffffff80022dcf9b: xor      esi, esi
+ffffff80022dcf9d: xor      edx, edx
+ffffff80022dcf9f: xor      ecx, ecx
+ffffff80022dcfa1: pop      rbx
+ffffff80022dcfa2: pop      r14
+ffffff80022dcfa4: pop      rbp
+ffffff80022dcfa5: jmp      0xffffff8002118734  ; __ZN18IO80211AVCAdvisory18setAVCAdvisoryInfoEhtt

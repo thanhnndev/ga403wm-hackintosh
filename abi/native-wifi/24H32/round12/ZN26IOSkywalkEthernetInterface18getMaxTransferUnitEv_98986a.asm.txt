@@ -1,0 +1,11 @@
+# 0xffffff800298986a __ZN26IOSkywalkEthernetInterface18getMaxTransferUnitEv
+ffffff800298986a: push     rbp
+ffffff800298986b: mov      rbp, rsp
+ffffff800298986e: lea      rax, [rip + 0x25a3b]  ; 0xffffff80029af2b0
+ffffff8002989875: call     qword ptr [rax + 0x980]
+ffffff800298987b: test     eax, eax
+ffffff800298987d: mov      ecx, 0x5dc
+ffffff8002989882: cmove    eax, ecx
+ffffff8002989885: pop      rbp
+ffffff8002989886: ret      
+ffffff8002989887: nop      

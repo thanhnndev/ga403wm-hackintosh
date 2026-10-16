@@ -1,0 +1,94 @@
++-o StrixAccelerator  <class StrixAccelerator, id 0x100000474, registered, matched, active, busy 0 (2 ms), retain 7>
+  | {
+  |   "StrixAccel,Present,SubmitUsAvg" = 2
+  |   "InternalStatisticsAccm" = {}
+  |   "IOPersonalityPublisher" = "com.itlmt7925.strixaccel"
+  |   "AGCInfo" = {"fBusyCount"=0,"poweredOffByAGC"=No,"fSubmissionsSinceLastCheck"=0,"fLastSubmissionPID"=0}
+  |   "StrixAccel,AGDC,CapSeq" = "ws:0x4,ws:0x2,ws:0x1,ws:0x400,ws:0x1000,ws:0x2000,ws:0x4,ws:0x2,ws:0x1,ws:0x400,ws:0x1000,ws:0x2000,ws:0x4,ws:0x2,ws:0x1,ws:0x400,ws:0x1000,ws:0x2000,ws:0x4,ws"
+  |   "StrixAccel,Gate" = "PASS"
+  |   "IOMatchCategory" = "IOAccelerator"
+  |   "StrixAccel,Copied" = 24240
+  |   "StrixAccel,AGDC,Refused" = 49
+  |   "StrixAccel,AGDC,ClientSet" = 5
+  |   "StrixAccel,AGDC,BadSize" = 0
+  |   "AccelCaps" = 7
+  |   "StrixAccel,UnsupportedFormat" = 0
+  |   "StrixAccel,Tune,Caps" = 13327
+  |   "StrixAccel,AGDC,GpuCap" = 7
+  |   "IOProbeScore" = 0
+  |   "VRAM,totalMB" = 512
+  |   "StrixAccel,AGDC,ClientSetValue" = 1
+  |   "StrixAccel,Copy,DiffCompareUsAvg" = 5320
+  |   "IOClass" = "StrixAccelerator"
+  |   "StrixAccel,Copy,DiffWriteUsAvg" = 105
+  |   "StrixAccel,Copy,FullFrameUs" = 6396
+  |   "StrixAccel,Tune,Mode" = 1
+  |   "IOReportLegend" = ({"IOReportChannels"=((0,6442450945,"Command Buffer Bytes"),(1,6442450945,"GL Command Buffer Bytes"),(2,6442450945,"CL Command Buffer Bytes"),(3,6442450945,"2D Command Buffer Bytes"),(4,6442450945,"Video Command Buffer Bytes"),(5,6442450945,"Out-Of-Line Texture Creation Bytes"),(6,6442450945,"Shared System Memory Texture Creation Bytes"),(7,6442450945,"Private Video Memory Texture Creation Bytes"),(8,6442450945,"Private System Memory Texture Creation Bytes"),(9,6442450945,"IOSurface Backed Texture Creation Bytes"),(10,6442450945,"Out-Of-Line Texture Creation Count"),(11,6442450945,"Private Video Memory Texture Creation Count"),(12,6442450945,"Private System Memory Texture Creation Count"),(13,6442450945,"Shared System Memory Texture Creation Count"),(14,6442450945,"IOAccelSurfaceRef Texture Creation Count"),(15,6442450945,"IOAccelSurfaceBufferRef Texture Creation Count"),(16,6442450945,"IOSurface Backed Texture Creation Count"),(17,6442450945,"Texture Count"),(20,6442450945,"Bytes mapped into the GPU"),(21,6442450945,"Bytes unmapped from the GPU"),(82,6442450945,"IOAccelClientShared allocated bytes"),(22,6442450945,"Private textures bytes paged on"),(23,6442450945,"Out of line texture bytes paged on"),(24,6442450945,"IOAccelSurface bytes paged on"),(25,6442450945,"IOSurface bytes paged on"),(26,6442450945,"IOSurface bytes evicted"),(27,6442450945,"IOAccelSurface bytes evicted"),(28,6442450945,"Texture bytes evicted"),(29,6442450945,"IOSurface bytes paged off"),(30,6442450945,"IOAccelSurface bytes paged off"),(31,6442450945,"Texture bytes paged off"),(32,6442450945,"Texture bytes voluntarily paged off"),(33,6442450945,"IOAccelSurface count"),(34,6442450945,"Volatile IOAccelSurface count"),(35,6442450945,"2D context count"),(36,6442450945,"Video context count"),(37,6442450945,"OpenGL context count"),(38,6442450945,"OpenCL context count"),(39,6442450945,"Buffer swap count"),(40,6442450945,"Buffer flip count"),(41,6442450945,"Databuffer count"),(42,6442450945,"VRAM eviction wait time"),(43,6442450945,"CPU wait on GPU"),(44,6442450945,"CPU wait to submit to GPU"),(45,6442450945,"GL Client wait on GPU"),(46,6442450945,"CL Client wait on GPU"),(47,6442450945,"CPU Wait to evict resource"),(49,6442450945,"CPU wait for free databuffer"),(53,6442450945,"GL Client wait for swap complete"),(55,6442450945,"CPU Wait to copy in surface"),(56,6442450945,"CPU Wait to copy out surface"),(59,6442450945,"CPU Wait for surface idle"),(60,6442450945,"CPU Wait for resource read"),(61,6442450945,"CPU Wait for resource write"),(62,6442450945,"CPU Wait for all 2D finish"),(63,6442450945,"CPU Wait for 2D finish"),(64,6442450945,"CPU Wait for video finish"),(65,6442450945,"CPU Wait for GL finish"),(66,6442450945,"CPU Wait for CL finish"),(106,6442450945,"In use system memory"),(105,6442450945,"In use video memory"),(103,6442450945,"Command Queue Count"),(104,6442450945,"GPU Restart Count")),"IOReportGroupName"="Internal Statistics","IOReportChannelInfo"={"IOReportChannelUnit"=0}})
+  |   "StrixAccel,AGDC,CapLastClient" = "WindowServer"
+  |   "StrixAccel,Transactions" = 24240
+  |   "StrixAccel,Tune,Block" = 128
+  |   "CFBundleIdentifier" = "com.itlmt7925.strixaccel"
+  |   "StrixAccel,ABIProfile" = "macos15-24H32-x86_64-ioaccel485.2"
+  |   "IOCFPlugInTypes" = {"ACCF0000-0000-0000-0000-000a2789904e"="IOAccelerator2D.plugin"}
+  |   "StrixAccel,AGDC,CapFromOther" = 0
+  |   "StrixAccel,AGDC,Commands" = 120
+  |   "StrixAccel,Copy,Frames" = 24240
+  |   "StrixAccel,Probe,ApertureWriteUs" = 0
+  |   "StrixAccel,Present,SubmitUsMax" = 52
+  |   "StrixAccel,Txn,GammaSeen" = 0
+  |   "StrixAccel,NoPlane" = 0
+  |   "CFBundleIdentifierKernel" = "com.itlmt7925.strixaccel"
+  |   "StrixAccel,Copy,AvgKB" = 759
+  |   "IOReportLegendPublic" = Yes
+  |   "IOPCIPrimaryMatch" = "0x150e1002"
+  |   "StrixAccel,ClassCodeHW" = 229376
+  |   "StrixAccel,Txn,PipeOnlySeen" = 0
+  |   "StrixAccel,AGDC,FbCap" = 40
+  |   "StrixAccel,AGDC,LinkIndex" = 0
+  |   "StrixAccel,AGDC,CapIndex" = 0
+  |   "StrixAccel,Raster,Stride" = 11520
+  |   "StrixAccel,Copy,MaxUs" = 16873
+  |   "StrixAccel,AGDC,CapType" = 32768
+  |   "StrixAccel,Tune,SrcCache" = 0
+  |   "StrixAccel,Present,Coalesced" = 0
+  |   "StrixAccel,Probe,ShadowReadUs" = 0
+  |   "StrixAccel,AGDC,CapServed" = 35
+  |   "StrixAccel,Copy,FullFrames" = 14
+  |   "StrixAccel,AGDC,Up" = Yes
+  |   "StrixAccel,AGDC,NoFramebuffer" = 1
+  |   "PerformanceStatistics" = {"orphanedReusableVidMemoryHitRate"=0,"texturePageOutBytes"=0,"swapCompleteVideoWaitTime"=0,"orphanedReusableSysMemoryHitRate"=0,"dataBufferCount"=0,"oolTexturePageInBytes"=0,"textureCount"=4,"iosurfaceTextureCreationCount"=0,"surfaceReadLockIdleWaitTime"=0,"freeDataBufferWaitTime"=0,"orphanedReusableSysMemoryBytes"=0,"ioSurfaceReadOutBytes"=0,"agprefTextureCreationCount"=0,"orphanedReusableSysMemoryCount"=0,"finishAll2DWaitTime"=0,"orphanedNonReusableSysMemoryCount"=0,"ioSurfacePageOutBytes"=0,"surfaceBufferReadOutBytes"=0,"surfaceTextureCreationCount"=0,"textureReadOutBytes"=0,"gartMapInBytesPerSample"=0,"swapBytesPerSample"=0,"dataBytesPerSample"=0,"surfaceCount"=0,"clientGLWaitTime"=0,"surfaceCopyInWaitTime"=0,"clientSharedAllocatedBytes"=0,"surfaceCopyOutWaitTime"=0,"gartMapOutBytesPerSample"=0,"ioSurfacePageInBytes"=0,"gartCacheBytes"=33554432,"volatileSurfaceCount"=0,"vramEvictionWaitTime"=0,"oolTextureCreationBytes"=0,"freeToAllocGPUAddressWaitTime"=0,"oolTextureCreationCount"=0,"orphanedReusableVidMemoryCount"=0,"orphanedReusableVidMemoryBytes"=0,"context2DCount"=0,"inUseSysMemoryBytes"=41476096,"bufferSwapCount"=0,"orphanedNonReusableVidMemoryBytes"=0,"contextGLCount"=0,"finish2DWaitTime"=0,"gartSizeBytes"=11453247488,"recoveryCount"=0,"stdTexturePageInBytes"=0,"agprefTextureCreationBytes"=0,"gartUsedBytes"=41476096,"surfaceWriteLockIdleWaitTime"=0,"surfaceBufferPageInBytes"=0,"finishGLWaitTime"=0,"iosurfaceTextureCreationBytes"=0,"finishCLWaitTime"=0,"finishVideoWaitTime"=0,"contextCLCount"=0,"freeSurfaceBackingWaitTime"=0,"swapCompleteGLWaitTime"=0,"orphanedNonReusableSysMemoryBytes"=0,"inUseVidMemoryBytes"=0,"agpTextureCreationBytes"=0,"stdTextureCreationBytes"=0,"agpTextureCreationCount"=0,"stdTextureCreationCount"=0,"surfaceSetShapeIdleWaitTime"=0,"gartFreeBytes"=11411771392,"textureVolunteerUnloadBytes"=0,"bufferFlipCount"=0,"hardwareSubmitWaitTime"=0,"swapComplete2DWaitTime"=0,"surfaceBufferPageOutBytes"=0,"surfaceBufferTextureCreationCount"=0,"hardwareWaitTime"=0,"contextVideoCount"=0,"freeSurfaceSwapBufferWaitTime"=0,"orphanedNonReusableVidMemoryCount"=0}
+  |   "StrixAccel,Present,Submits" = 24240
+  |   "StrixAccel,AGDC,CapFromWS" = 80
+  |   "IOProviderClass" = "IOPCIDevice"
+  |   "StrixAccel,Skipped" = 0
+  |   "StrixAccel,Pipes" = 2
+  |   "StrixAccel,Begin" = 24240
+  |   "StrixAccel,Tune,CapLinType" = 4
+  |   "StrixAccel,Copy,AvgUs" = 5426
+  |   "StrixAccel,AGDC,LinkConfig" = 5
+  |   "StrixNative,MetalReady" = No
+  |   "SurfaceList" = ()
+  |   "StrixAccel,Tune,Async" = 1
+  |   "StrixAccel,Version" = "0.1.15"
+  |   "PerformanceStatisticsAccum" = {"orphanedReusableVidMemoryHitRate"=0,"texturePageOutBytes"=0,"swapCompleteVideoWaitTime"=0,"orphanedReusableSysMemoryHitRate"=0,"dataBufferCount"=0,"oolTexturePageInBytes"=0,"textureCount"=4,"iosurfaceTextureCreationCount"=0,"surfaceReadLockIdleWaitTime"=0,"freeDataBufferWaitTime"=0,"orphanedReusableSysMemoryBytes"=0,"ioSurfaceReadOutBytes"=0,"agprefTextureCreationCount"=0,"orphanedReusableSysMemoryCount"=0,"finishAll2DWaitTime"=0,"orphanedNonReusableSysMemoryCount"=0,"ioSurfacePageOutBytes"=0,"surfaceBufferReadOutBytes"=0,"surfaceTextureCreationCount"=0,"textureReadOutBytes"=0,"gartMapInBytesPerSample"=0,"swapBytesPerSample"=0,"dataBytesPerSample"=0,"surfaceCount"=0,"clientGLWaitTime"=0,"surfaceCopyInWaitTime"=0,"clientSharedAllocatedBytes"=0,"surfaceCopyOutWaitTime"=0,"gartMapOutBytesPerSample"=0,"ioSurfacePageInBytes"=0,"gartCacheBytes"=33554432,"volatileSurfaceCount"=0,"vramEvictionWaitTime"=0,"oolTextureCreationBytes"=0,"freeToAllocGPUAddressWaitTime"=0,"oolTextureCreationCount"=0,"orphanedReusableVidMemoryCount"=0,"orphanedReusableVidMemoryBytes"=0,"context2DCount"=0,"inUseSysMemoryBytes"=41476096,"bufferSwapCount"=0,"orphanedNonReusableVidMemoryBytes"=0,"contextGLCount"=0,"finish2DWaitTime"=0,"gartSizeBytes"=11453247488,"recoveryCount"=0,"stdTexturePageInBytes"=0,"agprefTextureCreationBytes"=0,"gartUsedBytes"=41476096,"surfaceWriteLockIdleWaitTime"=0,"surfaceBufferPageInBytes"=0,"finishGLWaitTime"=0,"iosurfaceTextureCreationBytes"=0,"finishCLWaitTime"=0,"finishVideoWaitTime"=0,"contextCLCount"=0,"freeSurfaceBackingWaitTime"=0,"swapCompleteGLWaitTime"=0,"orphanedNonReusableSysMemoryBytes"=0,"inUseVidMemoryBytes"=0,"agpTextureCreationBytes"=0,"stdTextureCreationBytes"=0,"agpTextureCreationCount"=0,"stdTextureCreationCount"=0,"surfaceSetShapeIdleWaitTime"=0,"gartFreeBytes"=11411771392,"textureVolunteerUnloadBytes"=0,"bufferFlipCount"=0,"hardwareSubmitWaitTime"=0,"swapComplete2DWaitTime"=0,"surfaceBufferPageOutBytes"=0,"surfaceBufferTextureCreationCount"=0,"hardwareWaitTime"=0,"contextVideoCount"=0,"freeSurfaceSwapBufferWaitTime"=0,"orphanedNonReusableVidMemoryCount"=0}
+  |   "StrixNative,ABIMajor" = 1
+  |   "InternalStatistics" = {}
+  |   "StrixAccel,ClassCodeSpoof" = 18446744073709551615
+  |   "IOAccelDisplayPipeCapabilities" = {"DisplayPipeSupported"=1,"TransactionsSupported"=1}
+  |   "model" = "AMD Radeon 890M"
+  |   "IOAccelRevision" = 2
+  |   "StrixAccel,ValidateFail" = 0
+  |   "StrixAccel,Raster,Width" = 2880
+  |   "StrixAccel,Raster,Height" = 1800
+  |   "StrixAccel,Probe,SrcReadUs" = 0
+  |   "StrixAccel,Tiled" = 0
+  |   "StrixAccel,AGDC,RefusedSeen" = "0x3,0x941,0x925,0x711"
+  |   "StrixAccel,AGDC,VendorInfo" = 14
+  | }
+  | 
+  +-o IOAccelDisplayPipeUserClient2  <class IOAccelDisplayPipeUserClient2, id 0x100000678, !registered, !matched, active, busy 0, retain 6>
+      {
+        "IOUserClientCreator" = "pid 1086, WindowServer"
+      }
+      
+

@@ -1,0 +1,6 @@
+# 0xffffff8002980be8 __ZNK20IOSkywalkPacketQueue20getPacketBufferCountEv
+ffffff8002980be8: push     rbp
+ffffff8002980be9: mov      rbp, rsp
+ffffff8002980bec: xor      eax, eax
+ffffff8002980bee: pop      rbp
+ffffff8002980bef: ret      

@@ -1,0 +1,117 @@
+# 0xffffff80022dc6d2 __ZN21IO80211InfraInterface17updateTxRxLatencyEv
+ffffff80022dc6d2: push     rbp
+ffffff80022dc6d3: mov      rbp, rsp
+ffffff80022dc6d6: push     r15
+ffffff80022dc6d8: push     r14
+ffffff80022dc6da: push     r12
+ffffff80022dc6dc: push     rbx
+ffffff80022dc6dd: sub      rsp, 0x110
+ffffff80022dc6e4: mov      rbx, rdi
+ffffff80022dc6e7: mov      rax, qword ptr [rip + 0xdfa2a]  ; 0xffffff80023bc118
+ffffff80022dc6ee: mov      rax, qword ptr [rax]
+ffffff80022dc6f1: mov      qword ptr [rbp - 0x28], rax
+ffffff80022dc6f5: xor      eax, eax
+ffffff80022dc6f7: mov      qword ptr [rbp - 0x30], rax
+ffffff80022dc6fb: mov      qword ptr [rbp - 0x38], rax
+ffffff80022dc6ff: mov      qword ptr [rbp - 0x40], rax
+ffffff80022dc703: mov      qword ptr [rbp - 0x48], rax
+ffffff80022dc707: mov      qword ptr [rbp - 0x50], rax
+ffffff80022dc70b: mov      qword ptr [rbp - 0x58], rax
+ffffff80022dc70f: mov      qword ptr [rbp - 0x60], rax
+ffffff80022dc713: mov      qword ptr [rbp - 0x68], rax
+ffffff80022dc717: mov      qword ptr [rbp - 0x70], rax
+ffffff80022dc71b: mov      qword ptr [rbp - 0x78], rax
+ffffff80022dc71f: mov      qword ptr [rbp - 0x80], rax
+ffffff80022dc723: mov      qword ptr [rbp - 0x88], rax
+ffffff80022dc72a: mov      qword ptr [rbp - 0x90], rax
+ffffff80022dc731: mov      qword ptr [rbp - 0x98], rax
+ffffff80022dc738: mov      qword ptr [rbp - 0xa0], rax
+ffffff80022dc73f: mov      qword ptr [rbp - 0xa8], rax
+ffffff80022dc746: mov      qword ptr [rbp - 0xb0], rax
+ffffff80022dc74d: mov      qword ptr [rbp - 0xb8], rax
+ffffff80022dc754: mov      qword ptr [rbp - 0xc0], rax
+ffffff80022dc75b: mov      qword ptr [rbp - 0xc8], rax
+ffffff80022dc762: mov      qword ptr [rbp - 0xd0], rax
+ffffff80022dc769: mov      qword ptr [rbp - 0xd8], rax
+ffffff80022dc770: mov      qword ptr [rbp - 0xe0], rax
+ffffff80022dc777: mov      qword ptr [rbp - 0xe8], rax
+ffffff80022dc77e: mov      qword ptr [rbp - 0xf0], rax
+ffffff80022dc785: mov      qword ptr [rbp - 0xf8], rax
+ffffff80022dc78c: mov      qword ptr [rbp - 0x100], rax
+ffffff80022dc793: mov      qword ptr [rbp - 0x108], rax
+ffffff80022dc79a: mov      qword ptr [rbp - 0x110], rax
+ffffff80022dc7a1: mov      qword ptr [rbp - 0x118], rax
+ffffff80022dc7a8: mov      qword ptr [rbp - 0x120], rax
+ffffff80022dc7af: mov      qword ptr [rbp - 0x128], rax
+ffffff80022dc7b6: mov      rax, qword ptr [rdi]
+ffffff80022dc7b9: call     qword ptr [rax + 0xba8]
+ffffff80022dc7bf: mov      rax, qword ptr [rax + 0x120]
+ffffff80022dc7c6: test     byte ptr [rax + 0xb35], 0x40
+ffffff80022dc7cd: je       0xffffff80022dc83b
+ffffff80022dc7cf: mov      rax, qword ptr [rbx]
+ffffff80022dc7d2: lea      r14, [rbp - 0xa8]
+ffffff80022dc7d9: lea      r15, [rbp - 0x128]
+ffffff80022dc7e0: mov      rdi, rbx
+ffffff80022dc7e3: mov      rsi, r14
+ffffff80022dc7e6: mov      rdx, r15
+ffffff80022dc7e9: call     qword ptr [rax + 0xe48]
+ffffff80022dc7ef: test     eax, eax
+ffffff80022dc7f1: jne      0xffffff80022dc85b
+ffffff80022dc7f3: xor      r12d, r12d
+ffffff80022dc7f6: mov      rax, qword ptr [rbx]
+ffffff80022dc7f9: mov      rdi, rbx
+ffffff80022dc7fc: call     qword ptr [rax + 0xba8]
+ffffff80022dc802: mov      rdi, rax
+ffffff80022dc805: mov      rsi, r14
+ffffff80022dc808: mov      edx, r12d
+ffffff80022dc80b: call     0xffffff80022268da  ; __ZN17IO80211Controller18incrementTxLatencyEP18apple80211_latencyj
+ffffff80022dc810: mov      rax, qword ptr [rbx]
+ffffff80022dc813: mov      rdi, rbx
+ffffff80022dc816: call     qword ptr [rax + 0xba8]
+ffffff80022dc81c: mov      rdi, rax
+ffffff80022dc81f: mov      rsi, r15
+ffffff80022dc822: mov      edx, r12d
+ffffff80022dc825: call     0xffffff8002226a3e  ; __ZN17IO80211Controller18incrementRxLatencyEP18apple80211_latencyj
+ffffff80022dc82a: inc      r12
+ffffff80022dc82d: add      r15, 0x20
+ffffff80022dc831: add      r14, 0x20
+ffffff80022dc835: cmp      r12, 4
+ffffff80022dc839: jne      0xffffff80022dc7f6
+ffffff80022dc83b: mov      rax, qword ptr [rip + 0xdf8d6]  ; 0xffffff80023bc118
+ffffff80022dc842: mov      rax, qword ptr [rax]
+ffffff80022dc845: cmp      rax, qword ptr [rbp - 0x28]
+ffffff80022dc849: jne      0xffffff80022dc8ba
+ffffff80022dc84b: add      rsp, 0x110
+ffffff80022dc852: pop      rbx
+ffffff80022dc853: pop      r12
+ffffff80022dc855: pop      r14
+ffffff80022dc857: pop      r15
+ffffff80022dc859: pop      rbp
+ffffff80022dc85a: ret      
+ffffff80022dc85b: mov      r12d, eax
+ffffff80022dc85e: mov      rax, qword ptr [rbx]
+ffffff80022dc861: mov      rdi, rbx
+ffffff80022dc864: call     qword ptr [rax + 0xd08]
+ffffff80022dc86a: test     rax, rax
+ffffff80022dc86d: je       0xffffff80022dc83b
+ffffff80022dc86f: mov      rax, qword ptr [rbx]
+ffffff80022dc872: mov      rdi, rbx
+ffffff80022dc875: call     qword ptr [rax + 0xd08]
+ffffff80022dc87b: mov      rdi, rax
+ffffff80022dc87e: mov      esi, 1
+ffffff80022dc883: call     0xffffff80031d421c  ; __ZN11CCLogStream9shouldLogE16CCStreamLogLevel
+ffffff80022dc888: test     al, al
+ffffff80022dc88a: je       0xffffff80022dc83b
+ffffff80022dc88c: mov      rax, qword ptr [rbx]
+ffffff80022dc88f: mov      rdi, rbx
+ffffff80022dc892: call     qword ptr [rax + 0xd08]
+ffffff80022dc898: lea      rsi, [rip + 0xbecd2]  ; 0xffffff800239b571
+ffffff80022dc89f: lea      rdx, [rip + 0xbecf1]  ; "updateTxRxLatency"
+ffffff80022dc8a6: mov      rdi, rax
+ffffff80022dc8a9: mov      ecx, 0x11a3
+ffffff80022dc8ae: mov      r8d, r12d
+ffffff80022dc8b1: xor      eax, eax
+ffffff80022dc8b3: call     0xffffff80031d252e  ; __ZN11CCLogStream8logAlertEPKcz
+ffffff80022dc8b8: jmp      0xffffff80022dc83b  ; __ZN21IO80211InfraInterface17updateTxRxLatencyEv+0x169
+ffffff80022dc8ba: call     0xffffff8000383150  ; ___stack_chk_fail
+ffffff80022dc8bf: nop      

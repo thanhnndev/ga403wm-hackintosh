@@ -1,0 +1,14 @@
+# 0xffffff8002983116 __ZN25IOSkywalkNetworkInterface21getInterfaceSubFamilyEv
+ffffff8002983116: mov      rcx, qword ptr [rdi + 0xb8]
+ffffff800298311d: xor      eax, eax
+ffffff800298311f: test     rcx, rcx
+ffffff8002983122: je       0xffffff8002983134
+ffffff8002983124: push     rbp
+ffffff8002983125: mov      rbp, rsp
+ffffff8002983128: mov      rcx, qword ptr [rcx]
+ffffff800298312b: test     rcx, rcx
+ffffff800298312e: je       0xffffff8002983133
+ffffff8002983130: mov      eax, dword ptr [rcx + 0xc]
+ffffff8002983133: pop      rbp
+ffffff8002983134: ret      
+ffffff8002983135: nop      

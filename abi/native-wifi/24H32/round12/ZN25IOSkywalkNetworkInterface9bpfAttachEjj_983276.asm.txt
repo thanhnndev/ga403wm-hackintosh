@@ -1,0 +1,9 @@
+# 0xffffff8002983276 __ZN25IOSkywalkNetworkInterface9bpfAttachEjj
+ffffff8002983276: push     rbp
+ffffff8002983277: mov      rbp, rsp
+ffffff800298327a: mov      rax, qword ptr [rdi + 0xb8]
+ffffff8002983281: mov      rdi, qword ptr [rax + 8]
+ffffff8002983285: lea      r8, [rip + 8]  ; 0xffffff8002983294
+ffffff800298328c: xor      ecx, ecx
+ffffff800298328e: pop      rbp
+ffffff800298328f: jmp      0xffffff8000622a10  ; _bpf_attach

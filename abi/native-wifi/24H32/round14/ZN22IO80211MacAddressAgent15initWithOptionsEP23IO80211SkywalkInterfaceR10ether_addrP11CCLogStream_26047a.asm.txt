@@ -1,0 +1,123 @@
+# 0xffffff800226047a __ZN22IO80211MacAddressAgent15initWithOptionsEP23IO80211SkywalkInterfaceR10ether_addrP11CCLogStream
+ffffff800226047a: push     rbp
+ffffff800226047b: mov      rbp, rsp
+ffffff800226047e: push     r15
+ffffff8002260480: push     r14
+ffffff8002260482: push     r12
+ffffff8002260484: push     rbx
+ffffff8002260485: sub      rsp, 0x20
+ffffff8002260489: mov      r15, rcx
+ffffff800226048c: mov      r14, rdx
+ffffff800226048f: mov      r12, rsi
+ffffff8002260492: mov      rbx, rdi
+ffffff8002260495: mov      rax, qword ptr [rip + 0x15bc7c]  ; 0xffffff80023bc118
+ffffff800226049c: mov      rax, qword ptr [rax]
+ffffff800226049f: mov      qword ptr [rbp - 0x28], rax
+ffffff80022604a3: mov      word ptr [rbp - 0x34], 0
+ffffff80022604a9: mov      dword ptr [rbp - 0x38], 0
+ffffff80022604b0: lea      rdi, [rip + 0x1a0849]  ; 0xffffff8002400d00
+ffffff80022604b7: call     0xffffff8000ab5930  ; _IOMallocTypeImpl
+ffffff80022604bc: mov      qword ptr [rbx + 0x10], rax
+ffffff80022604c0: test     rax, rax
+ffffff80022604c3: je       0xffffff8002260604
+ffffff80022604c9: mov      rax, qword ptr [rip + 0x15bc40]  ; 0xffffff80023bc110
+ffffff80022604d0: mov      rdi, rbx
+ffffff80022604d3: call     qword ptr [rax + 0x98]
+ffffff80022604d9: test     al, al
+ffffff80022604db: je       0xffffff800226060d
+ffffff80022604e1: mov      rcx, qword ptr [rbx + 0x10]
+ffffff80022604e5: mov      qword ptr [rcx], r12
+ffffff80022604e8: test     r12, r12
+ffffff80022604eb: je       0xffffff8002260616
+ffffff80022604f1: cmp      byte ptr [rcx + 0x27], 1
+ffffff80022604f5: jne      0xffffff8002260528
+ffffff80022604f7: mov      rax, qword ptr [r12 + 0x110]
+ffffff80022604ff: mov      rdx, qword ptr [rax + 0x38]
+ffffff8002260503: lea      rcx, [rip + 0x1d8]  ; 0xffffff80022606e2
+ffffff800226050a: mov      edi, 2
+ffffff800226050f: mov      rsi, rbx
+ffffff8002260512: call     0xffffff8002145a88  ; __ZN18IO80211TimerSource15allocWithParamsE26IO80211TimerSourcePriorityP8OSObjectP16IO80211WorkQueuePFvS2_PS_E
+ffffff8002260517: mov      rcx, qword ptr [rbx + 0x10]
+ffffff800226051b: mov      qword ptr [rcx + 0x10], rax
+ffffff800226051f: test     rax, rax
+ffffff8002260522: je       0xffffff8002260628
+ffffff8002260528: mov      qword ptr [rcx + 0x18], r15
+ffffff800226052c: test     r15, r15
+ffffff800226052f: je       0xffffff800226061f
+ffffff8002260535: mov      rax, qword ptr [r15]
+ffffff8002260538: mov      rdi, r15
+ffffff800226053b: call     qword ptr [rax + 0x20]
+ffffff800226053e: lea      rsi, [rbp - 0x38]
+ffffff8002260542: mov      rdi, rbx
+ffffff8002260545: call     0xffffff800226070a  ; __ZN22IO80211MacAddressAgent22overrideMacWithBootArgER10ether_addr
+ffffff800226054a: xor      edx, edx
+ffffff800226054c: test     al, al
+ffffff800226054e: jne      0xffffff80022605ca
+ffffff8002260550: lea      rdi, [rbp - 0x30]
+ffffff8002260554: mov      word ptr [rdi + 4], 0
+ffffff800226055a: mov      dword ptr [rdi], 0
+ffffff8002260560: mov      edx, 6
+ffffff8002260565: mov      rsi, r14
+ffffff8002260568: call     0xffffff8000104420  ; _memcmp
+ffffff800226056d: test     eax, eax
+ffffff800226056f: je       0xffffff800226058e
+ffffff8002260571: mov      al, byte ptr [r14]
+ffffff8002260574: and      al, 1
+ffffff8002260576: jne      0xffffff800226058e
+ffffff8002260578: movzx    eax, word ptr [r14 + 4]
+ffffff800226057d: mov      word ptr [rbp - 0x34], ax
+ffffff8002260581: mov      eax, dword ptr [r14]
+ffffff8002260584: mov      dword ptr [rbp - 0x38], eax
+ffffff8002260587: mov      edx, 3
+ffffff800226058c: jmp      0xffffff80022605ca  ; __ZN22IO80211MacAddressAgent15initWithOptionsEP23IO80211SkywalkInterfaceR10ether_addrP11CCLogStream+0x150
+ffffff800226058e: lea      r14, [rbp - 0x30]
+ffffff8002260592: mov      word ptr [r14 + 4], 0
+ffffff8002260599: mov      dword ptr [r14], 0
+ffffff80022605a0: mov      rdi, r14
+ffffff80022605a3: mov      esi, 6
+ffffff80022605a8: call     0xffffff800050aa10  ; _read_random
+ffffff80022605ad: mov      al, byte ptr [r14]
+ffffff80022605b0: and      al, 0xfc
+ffffff80022605b2: or       al, 2
+ffffff80022605b4: mov      byte ptr [r14], al
+ffffff80022605b7: mov      eax, dword ptr [r14]
+ffffff80022605ba: mov      ecx, dword ptr [r14 + 4]
+ffffff80022605be: mov      word ptr [rbp - 0x34], cx
+ffffff80022605c2: mov      dword ptr [rbp - 0x38], eax
+ffffff80022605c5: mov      edx, 4
+ffffff80022605ca: lea      rsi, [rbp - 0x38]
+ffffff80022605ce: mov      al, byte ptr [rsi]
+ffffff80022605d0: and      al, 0xfc
+ffffff80022605d2: or       al, 2
+ffffff80022605d4: mov      byte ptr [rsi], al
+ffffff80022605d6: mov      rdi, rbx
+ffffff80022605d9: mov      ecx, 1
+ffffff80022605de: call     0xffffff80022608f4  ; __ZN22IO80211MacAddressAgent16updateMacAddressER10ether_addrjb
+ffffff80022605e3: mov      bl, 1
+ffffff80022605e5: mov      rax, qword ptr [rip + 0x15bb2c]  ; 0xffffff80023bc118
+ffffff80022605ec: mov      rax, qword ptr [rax]
+ffffff80022605ef: cmp      rax, qword ptr [rbp - 0x28]
+ffffff80022605f3: jne      0xffffff800226063a
+ffffff80022605f5: mov      eax, ebx
+ffffff80022605f7: add      rsp, 0x20
+ffffff80022605fb: pop      rbx
+ffffff80022605fc: pop      r12
+ffffff80022605fe: pop      r14
+ffffff8002260600: pop      r15
+ffffff8002260602: pop      rbp
+ffffff8002260603: ret      
+ffffff8002260604: lea      rdi, [rip + 0x11d502]  ; 0xffffff800237db0d
+ffffff800226060b: jmp      0xffffff800226062f  ; __ZN22IO80211MacAddressAgent15initWithOptionsEP23IO80211SkywalkInterfaceR10ether_addrP11CCLogStream+0x1b5
+ffffff800226060d: lea      rdi, [rip + 0xc962d]  ; 0xffffff8002329c41
+ffffff8002260614: jmp      0xffffff800226062f  ; __ZN22IO80211MacAddressAgent15initWithOptionsEP23IO80211SkywalkInterfaceR10ether_addrP11CCLogStream+0x1b5
+ffffff8002260616: lea      rdi, [rip + 0x11d521]  ; 0xffffff800237db3e
+ffffff800226061d: jmp      0xffffff800226062f  ; __ZN22IO80211MacAddressAgent15initWithOptionsEP23IO80211SkywalkInterfaceR10ether_addrP11CCLogStream+0x1b5
+ffffff800226061f: lea      rdi, [rip + 0x11d588]  ; 0xffffff800237dbae
+ffffff8002260626: jmp      0xffffff800226062f  ; __ZN22IO80211MacAddressAgent15initWithOptionsEP23IO80211SkywalkInterfaceR10ether_addrP11CCLogStream+0x1b5
+ffffff8002260628: lea      rdi, [rip + 0x11d541]  ; 0xffffff800237db70
+ffffff800226062f: xor      ebx, ebx
+ffffff8002260631: xor      eax, eax
+ffffff8002260633: call     0xffffff8000ab6560  ; _IOLog
+ffffff8002260638: jmp      0xffffff80022605e5  ; __ZN22IO80211MacAddressAgent15initWithOptionsEP23IO80211SkywalkInterfaceR10ether_addrP11CCLogStream+0x16b
+ffffff800226063a: call     0xffffff8000383150  ; ___stack_chk_fail
+ffffff800226063f: nop      

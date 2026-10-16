@@ -1,0 +1,15 @@
+# 0xffffff8002989fca __ZN26IOSkywalkTxCompletionQueue6enableEv
+ffffff8002989fca: push     rbp
+ffffff8002989fcb: mov      rbp, rsp
+ffffff8002989fce: push     rbx
+ffffff8002989fcf: push     rax
+ffffff8002989fd0: mov      rbx, rdi
+ffffff8002989fd3: call     0xffffff8000afb010  ; __ZN13IOEventSource9closeGateEv
+ffffff8002989fd8: lea      rax, [rip + 0x24c89]  ; 0xffffff80029aec68
+ffffff8002989fdf: mov      rdi, rbx
+ffffff8002989fe2: call     qword ptr [rax + 0x160]
+ffffff8002989fe8: mov      rdi, rbx
+ffffff8002989feb: add      rsp, 8
+ffffff8002989fef: pop      rbx
+ffffff8002989ff0: pop      rbp
+ffffff8002989ff1: jmp      0xffffff8000afafd0  ; __ZN13IOEventSource8openGateEv

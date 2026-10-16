@@ -1,0 +1,34 @@
+# 0xffffff800298b474 __ZN21IOSkywalkPacketPoller7disableEv
+ffffff800298b474: push     rbp
+ffffff800298b475: mov      rbp, rsp
+ffffff800298b478: push     rbx
+ffffff800298b479: push     rax
+ffffff800298b47a: mov      rbx, rdi
+ffffff800298b47d: cmp      qword ptr [rdi + 0x30], 0
+ffffff800298b482: je       0xffffff800298b4d6
+ffffff800298b484: mov      rdi, rbx
+ffffff800298b487: call     0xffffff8000afb010  ; __ZN13IOEventSource9closeGateEv
+ffffff800298b48c: cmp      byte ptr [rbx + 0x128], 1
+ffffff800298b493: je       0xffffff800298b4f3
+ffffff800298b495: cmp      byte ptr [rbx + 0x12a], 1
+ffffff800298b49c: jne      0xffffff800298b4be
+ffffff800298b49e: mov      byte ptr [rbx + 0x12a], 0
+ffffff800298b4a5: mov      rdi, qword ptr [rbx + 0x70]
+ffffff800298b4a9: mov      rcx, qword ptr [rbx + 0x88]
+ffffff800298b4b0: mov      rsi, rbx
+ffffff800298b4b3: mov      edx, 1
+ffffff800298b4b8: call     qword ptr [rbx + 0x80]
+ffffff800298b4be: xor      eax, eax
+ffffff800298b4c0: mov      dword ptr [rbx + 0xf8], eax
+ffffff800298b4c6: mov      dword ptr [rbx + 0x108], eax
+ffffff800298b4cc: mov      rdi, rbx
+ffffff800298b4cf: call     0xffffff8000afafd0  ; __ZN13IOEventSource8openGateEv
+ffffff800298b4d4: jmp      0xffffff800298b4dd  ; __ZN21IOSkywalkPacketPoller7disableEv+0x69
+ffffff800298b4d6: mov      byte ptr [rbx + 0x12a], 0
+ffffff800298b4dd: mov      rax, qword ptr [rip + 0x1bc04]  ; 0xffffff80029a70e8
+ffffff800298b4e4: mov      rdi, rbx
+ffffff800298b4e7: add      rsp, 8
+ffffff800298b4eb: pop      rbx
+ffffff800298b4ec: pop      rbp
+ffffff800298b4ed: jmp      qword ptr [rax + 0x168]
+ffffff800298b4f3: call     0xffffff80029a4012  ; __ZN21IOSkywalkPacketPoller7disableEv.cold.1

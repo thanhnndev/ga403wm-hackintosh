@@ -1,0 +1,7 @@
+# 0xffffff80022d9e24 __ZN21IO80211InfraInterface29get5GLowHighBandSwitchCounterEv
+ffffff80022d9e24: push     rbp
+ffffff80022d9e25: mov      rbp, rsp
+ffffff80022d9e28: mov      rax, qword ptr [rdi + 0x118]
+ffffff80022d9e2f: mov      rax, qword ptr [rax + 0xa8]
+ffffff80022d9e36: pop      rbp
+ffffff80022d9e37: ret      

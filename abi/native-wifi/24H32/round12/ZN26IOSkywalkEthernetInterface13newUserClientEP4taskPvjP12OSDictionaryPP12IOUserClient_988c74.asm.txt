@@ -1,0 +1,80 @@
+# 0xffffff8002988c74 __ZN26IOSkywalkEthernetInterface13newUserClientEP4taskPvjP12OSDictionaryPP12IOUserClient
+ffffff8002988c74: push     rbp
+ffffff8002988c75: mov      rbp, rsp
+ffffff8002988c78: push     r15
+ffffff8002988c7a: push     r14
+ffffff8002988c7c: push     r13
+ffffff8002988c7e: push     r12
+ffffff8002988c80: push     rbx
+ffffff8002988c81: push     rax
+ffffff8002988c82: mov      qword ptr [rbp - 0x30], r9
+ffffff8002988c86: mov      r12, r8
+ffffff8002988c89: mov      r13d, ecx
+ffffff8002988c8c: mov      rbx, rdx
+ffffff8002988c8f: mov      r15, rsi
+ffffff8002988c92: mov      r14, rdi
+ffffff8002988c95: mov      rax, qword ptr [rdi]
+ffffff8002988c98: call     qword ptr [rax + 0x8f8]
+ffffff8002988c9e: test     rax, rax
+ffffff8002988ca1: je       0xffffff8002988d08
+ffffff8002988ca3: cmp      r13d, 0x6d444e53
+ffffff8002988caa: jne      0xffffff8002988d10
+ffffff8002988cac: lea      rdx, [rip + 0xb7]  ; 0xffffff8002988d6a
+ffffff8002988cb3: mov      rdi, r15
+ffffff8002988cb6: mov      rsi, rax
+ffffff8002988cb9: xor      ecx, ecx
+ffffff8002988cbb: xor      r8d, r8d
+ffffff8002988cbe: call     0xffffff8002880550  ; __ZN21mDNSOffloadUserClient8withTaskEP4taskP7__ifnetPFiP8OSObjectPS_P11mDNSHandoffPvEPFiS5_S6_yyS9_ES9_
+ffffff8002988cc3: mov      r15d, 0xe00002bc
+ffffff8002988cc9: test     rax, rax
+ffffff8002988ccc: je       0xffffff8002988d58
+ffffff8002988cd2: mov      r12, rax
+ffffff8002988cd5: mov      rax, qword ptr [rax]
+ffffff8002988cd8: mov      rdi, r12
+ffffff8002988cdb: mov      rsi, r14
+ffffff8002988cde: call     qword ptr [rax + 0x670]
+ffffff8002988ce4: test     al, al
+ffffff8002988ce6: je       0xffffff8002988d4e
+ffffff8002988ce8: mov      rax, qword ptr [r12]
+ffffff8002988cec: mov      rdi, r12
+ffffff8002988cef: mov      rsi, r14
+ffffff8002988cf2: call     qword ptr [rax + 0x5c0]
+ffffff8002988cf8: test     al, al
+ffffff8002988cfa: je       0xffffff8002988d3e
+ffffff8002988cfc: mov      rax, qword ptr [rbp - 0x30]
+ffffff8002988d00: mov      qword ptr [rax], r12
+ffffff8002988d03: xor      r15d, r15d
+ffffff8002988d06: jmp      0xffffff8002988d58  ; __ZN26IOSkywalkEthernetInterface13newUserClientEP4taskPvjP12OSDictionaryPP12IOUserClient+0xe4
+ffffff8002988d08: mov      r15d, 0xe00002f0
+ffffff8002988d0e: jmp      0xffffff8002988d58  ; __ZN26IOSkywalkEthernetInterface13newUserClientEP4taskPvjP12OSDictionaryPP12IOUserClient+0xe4
+ffffff8002988d10: lea      rax, [rip + 0x26599]  ; 0xffffff80029af2b0
+ffffff8002988d17: mov      rdi, r14
+ffffff8002988d1a: mov      rsi, r15
+ffffff8002988d1d: mov      rdx, rbx
+ffffff8002988d20: mov      ecx, r13d
+ffffff8002988d23: mov      r8, r12
+ffffff8002988d26: mov      r9, qword ptr [rbp - 0x30]
+ffffff8002988d2a: add      rsp, 8
+ffffff8002988d2e: pop      rbx
+ffffff8002988d2f: pop      r12
+ffffff8002988d31: pop      r13
+ffffff8002988d33: pop      r14
+ffffff8002988d35: pop      r15
+ffffff8002988d37: pop      rbp
+ffffff8002988d38: jmp      qword ptr [rax + 0x780]
+ffffff8002988d3e: mov      rax, qword ptr [r12]
+ffffff8002988d42: mov      rdi, r12
+ffffff8002988d45: mov      rsi, r14
+ffffff8002988d48: call     qword ptr [rax + 0x678]
+ffffff8002988d4e: mov      rax, qword ptr [r12]
+ffffff8002988d52: mov      rdi, r12
+ffffff8002988d55: call     qword ptr [rax + 0x28]
+ffffff8002988d58: mov      eax, r15d
+ffffff8002988d5b: add      rsp, 8
+ffffff8002988d5f: pop      rbx
+ffffff8002988d60: pop      r12
+ffffff8002988d62: pop      r13
+ffffff8002988d64: pop      r14
+ffffff8002988d66: pop      r15
+ffffff8002988d68: pop      rbp
+ffffff8002988d69: ret      

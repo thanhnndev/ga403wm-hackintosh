@@ -1,0 +1,11 @@
+# 0xffffff80022dc2a6 __ZN21IO80211InfraInterface18getHardwareAssistsEv
+ffffff80022dc2a6: push     rbp
+ffffff80022dc2a7: mov      rbp, rsp
+ffffff80022dc2aa: mov      rcx, qword ptr [rdi + 0x110]
+ffffff80022dc2b1: xor      eax, eax
+ffffff80022dc2b3: cmp      dword ptr [rcx + 0x58], 1
+ffffff80022dc2b7: sete     al
+ffffff80022dc2ba: shl      eax, 0x1a
+ffffff80022dc2bd: pop      rbp
+ffffff80022dc2be: ret      
+ffffff80022dc2bf: nop      

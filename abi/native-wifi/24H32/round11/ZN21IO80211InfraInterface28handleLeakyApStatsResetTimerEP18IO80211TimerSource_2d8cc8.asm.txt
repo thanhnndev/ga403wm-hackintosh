@@ -1,0 +1,325 @@
+# 0xffffff80022d8cc8 __ZN21IO80211InfraInterface28handleLeakyApStatsResetTimerEP18IO80211TimerSource
+ffffff80022d8cc8: push     rbp
+ffffff80022d8cc9: mov      rbp, rsp
+ffffff80022d8ccc: push     r15
+ffffff80022d8cce: push     r14
+ffffff80022d8cd0: push     r13
+ffffff80022d8cd2: push     r12
+ffffff80022d8cd4: push     rbx
+ffffff80022d8cd5: sub      rsp, 0xb8
+ffffff80022d8cdc: mov      rbx, rdi
+ffffff80022d8cdf: mov      rax, qword ptr [rip + 0xe3432]  ; 0xffffff80023bc118
+ffffff80022d8ce6: mov      rax, qword ptr [rax]
+ffffff80022d8ce9: mov      qword ptr [rbp - 0x30], rax
+ffffff80022d8ced: mov      rax, qword ptr [rdi + 0x110]
+ffffff80022d8cf4: mov      rdi, qword ptr [rax + 0x40]
+ffffff80022d8cf8: test     rdi, rdi
+ffffff80022d8cfb: je       0xffffff80022d90ec
+ffffff80022d8d01: mov      eax, 0xaaaaaaaa
+ffffff80022d8d06: mov      dword ptr [rbp - 0x38], eax
+ffffff80022d8d09: movabs   rcx, 0xaaaaaaaaaaaaaaaa
+ffffff80022d8d13: mov      qword ptr [rbp - 0x40], rcx
+ffffff80022d8d17: mov      qword ptr [rbp - 0x48], rcx
+ffffff80022d8d1b: mov      qword ptr [rbp - 0x50], rcx
+ffffff80022d8d1f: mov      qword ptr [rbp - 0x58], rcx
+ffffff80022d8d23: mov      dword ptr [rbp - 0xde], eax
+ffffff80022d8d29: mov      word ptr [rbp - 0xda], 0xaaaa
+ffffff80022d8d32: mov      qword ptr [rbp - 0x60], rcx
+ffffff80022d8d36: mov      qword ptr [rbp - 0x68], rcx
+ffffff80022d8d3a: mov      qword ptr [rbp - 0x70], rcx
+ffffff80022d8d3e: mov      qword ptr [rbp - 0x78], rcx
+ffffff80022d8d42: mov      qword ptr [rbp - 0x80], rcx
+ffffff80022d8d46: mov      qword ptr [rbp - 0x88], rcx
+ffffff80022d8d4d: mov      qword ptr [rbp - 0x90], rcx
+ffffff80022d8d54: mov      qword ptr [rbp - 0x98], rcx
+ffffff80022d8d5b: mov      qword ptr [rbp - 0xa0], rcx
+ffffff80022d8d62: mov      qword ptr [rbp - 0xa8], rcx
+ffffff80022d8d69: mov      qword ptr [rbp - 0xb0], rcx
+ffffff80022d8d70: mov      qword ptr [rbp - 0xb8], rcx
+ffffff80022d8d77: mov      qword ptr [rbp - 0xc0], rcx
+ffffff80022d8d7e: mov      qword ptr [rbp - 0xc8], rcx
+ffffff80022d8d85: mov      qword ptr [rbp - 0xd0], rcx
+ffffff80022d8d8c: xor      esi, esi
+ffffff80022d8d8e: xor      edx, edx
+ffffff80022d8d90: mov      ecx, 1
+ffffff80022d8d95: call     0xffffff80022e5dd6  ; __ZN23IO80211InterfaceMonitor27resetLeakyApRxRateDropStateEjjb
+ffffff80022d8d9a: mov      rax, qword ptr [rbx + 0x110]
+ffffff80022d8da1: mov      rdi, qword ptr [rax + 0x40]
+ffffff80022d8da5: call     0xffffff80022e54c6  ; __ZN23IO80211InterfaceMonitor31isLeakyApSsidMatchesSsidMetricsEv
+ffffff80022d8daa: test     al, al
+ffffff80022d8dac: je       0xffffff80022d8e53
+ffffff80022d8db2: mov      rax, qword ptr [rbx + 0x110]
+ffffff80022d8db9: mov      rax, qword ptr [rax + 0x40]
+ffffff80022d8dbd: mov      rdi, qword ptr [rax + 0x10]
+ffffff80022d8dc1: mov      r14d, dword ptr [rdi + 0x2c1c]
+ffffff80022d8dc8: lea      rsi, [rbp - 0xd8]
+ffffff80022d8dcf: mov      word ptr [rsi + 4], 0
+ffffff80022d8dd5: mov      dword ptr [rsi], 0
+ffffff80022d8ddb: add      rdi, 0x2c40
+ffffff80022d8de2: mov      edx, 6
+ffffff80022d8de7: call     0xffffff8000104420  ; _memcmp
+ffffff80022d8dec: test     eax, eax
+ffffff80022d8dee: je       0xffffff80022d8e53
+ffffff80022d8df0: test     r14d, r14d
+ffffff80022d8df3: je       0xffffff80022d8e53
+ffffff80022d8df5: mov      rax, qword ptr [rbx + 0x110]
+ffffff80022d8dfc: mov      rdi, qword ptr [rax + 0x40]
+ffffff80022d8e00: mov      rax, qword ptr [rdi + 0x10]
+ffffff80022d8e04: cmp      byte ptr [rax + 0x2c90], 1
+ffffff80022d8e0b: jne      0xffffff80022d8e53
+ffffff80022d8e0d: lea      rsi, [rbp - 0xd0]
+ffffff80022d8e14: call     0xffffff80022e58ce  ; __ZN23IO80211InterfaceMonitor22getBssidLeakyApMetricsEP33apple80211_leaky_ap_bssid_metrics
+ffffff80022d8e19: mov      r14d, eax
+ffffff80022d8e1c: mov      rax, qword ptr [rbx]
+ffffff80022d8e1f: mov      rdi, rbx
+ffffff80022d8e22: call     qword ptr [rax + 0x38]
+ffffff80022d8e25: mov      rdi, rax
+ffffff80022d8e28: call     0xffffff8000a4a150  ; __ZNK11OSMetaClass12getClassNameEv
+ffffff80022d8e2d: test     r14d, r14d
+ffffff80022d8e30: je       0xffffff80022d913a
+ffffff80022d8e36: lea      rdi, [rip + 0xc13b4]  ; 0xffffff800239a1f1
+ffffff80022d8e3d: lea      rdx, [rip + 0xc1304]  ; "handleLeakyApStatsResetTimer"
+ffffff80022d8e44: mov      rsi, rax
+ffffff80022d8e47: xor      eax, eax
+ffffff80022d8e49: call     0xffffff8000ab6560  ; _IOLog
+ffffff80022d8e4e: jmp      0xffffff80022d8efb  ; __ZN21IO80211InfraInterface28handleLeakyApStatsResetTimerEP18IO80211TimerSource+0x233
+ffffff80022d8e53: mov      rax, qword ptr [rbx]
+ffffff80022d8e56: mov      rdi, rbx
+ffffff80022d8e59: call     qword ptr [rax + 0x38]
+ffffff80022d8e5c: mov      rdi, rax
+ffffff80022d8e5f: call     0xffffff8000a4a150  ; __ZNK11OSMetaClass12getClassNameEv
+ffffff80022d8e64: mov      r14, rax
+ffffff80022d8e67: mov      rax, qword ptr [rbx + 0x110]
+ffffff80022d8e6e: mov      rdi, qword ptr [rax + 0x40]
+ffffff80022d8e72: call     0xffffff80022e54c6  ; __ZN23IO80211InterfaceMonitor31isLeakyApSsidMatchesSsidMetricsEv
+ffffff80022d8e77: lea      rcx, [rip + 0xc13f1]  ; " MATCHES"
+ffffff80022d8e7e: lea      r15, [rip + 0xc13f3]  ; "UNMATCHES"
+ffffff80022d8e85: test     al, al
+ffffff80022d8e87: cmovne   r15, rcx
+ffffff80022d8e8b: mov      rax, qword ptr [rbx + 0x110]
+ffffff80022d8e92: mov      rax, qword ptr [rax + 0x40]
+ffffff80022d8e96: mov      rdi, qword ptr [rax + 0x10]
+ffffff80022d8e9a: mov      r12d, dword ptr [rdi + 0x2c1c]
+ffffff80022d8ea1: lea      rsi, [rbp - 0xd8]
+ffffff80022d8ea8: mov      word ptr [rsi + 4], 0
+ffffff80022d8eae: mov      dword ptr [rsi], 0
+ffffff80022d8eb4: add      rdi, 0x2c40
+ffffff80022d8ebb: mov      edx, 6
+ffffff80022d8ec0: call     0xffffff8000104420  ; _memcmp
+ffffff80022d8ec5: test     r12d, r12d
+ffffff80022d8ec8: lea      r8, [rip + 0xc13b3]  ; " VALID"
+ffffff80022d8ecf: lea      rcx, [rip + 0xc13b3]  ; "INVALID"
+ffffff80022d8ed6: cmove    r8, rcx
+ffffff80022d8eda: test     eax, eax
+ffffff80022d8edc: cmove    r8, rcx
+ffffff80022d8ee0: lea      rdi, [rip + 0xc133f]  ; 0xffffff800239a226
+ffffff80022d8ee7: lea      rdx, [rip + 0xc125a]  ; "handleLeakyApStatsResetTimer"
+ffffff80022d8eee: mov      rsi, r14
+ffffff80022d8ef1: mov      rcx, r15
+ffffff80022d8ef4: xor      eax, eax
+ffffff80022d8ef6: call     0xffffff8000ab6560  ; _IOLog
+ffffff80022d8efb: mov      rax, qword ptr [rbx + 0x110]
+ffffff80022d8f02: mov      rdi, qword ptr [rax + 0x40]
+ffffff80022d8f06: call     0xffffff80022e55e8  ; __ZN23IO80211InterfaceMonitor20updateLeakyApNetworkEv
+ffffff80022d8f0b: mov      r12d, eax
+ffffff80022d8f0e: mov      rax, qword ptr [rbx + 0x110]
+ffffff80022d8f15: mov      rdi, qword ptr [rax + 0x40]
+ffffff80022d8f19: lea      r15, [rbp - 0xde]
+ffffff80022d8f20: mov      rsi, r15
+ffffff80022d8f23: call     0xffffff80022e583a  ; __ZN23IO80211InterfaceMonitor15getLeakyApBssidEP10ether_addr
+ffffff80022d8f28: mov      rax, qword ptr [rbx + 0x110]
+ffffff80022d8f2f: mov      rdi, qword ptr [rax + 0x40]
+ffffff80022d8f33: lea      r14, [rbp - 0x58]
+ffffff80022d8f37: mov      rsi, r14
+ffffff80022d8f3a: call     0xffffff80022e57ee  ; __ZN23IO80211InterfaceMonitor14getLeakyApSsidEP15apple80211_ssid
+ffffff80022d8f3f: mov      rax, qword ptr [rbx]
+ffffff80022d8f42: mov      rdi, rbx
+ffffff80022d8f45: call     qword ptr [rax + 0x38]
+ffffff80022d8f48: mov      rdi, rax
+ffffff80022d8f4b: call     0xffffff8000a4a150  ; __ZNK11OSMetaClass12getClassNameEv
+ffffff80022d8f50: mov      r8d, dword ptr [r14]
+ffffff80022d8f53: test     r8d, r8d
+ffffff80022d8f56: lea      r14, [rbp - 0x54]
+ffffff80022d8f5a: lea      rdx, [rip + 0xc0e87]  ; 0xffffff8002399de8
+ffffff80022d8f61: mov      rcx, r14
+ffffff80022d8f64: cmove    rcx, rdx
+ffffff80022d8f68: test     r12d, r12d
+ffffff80022d8f6b: movzx    r9d, byte ptr [r15]
+ffffff80022d8f6f: movzx    r10d, byte ptr [r15 + 1]
+ffffff80022d8f74: movzx    r11d, byte ptr [r15 + 2]
+ffffff80022d8f79: movzx    r12d, byte ptr [r15 + 3]
+ffffff80022d8f7e: movzx    r13d, byte ptr [r15 + 4]
+ffffff80022d8f83: movzx    r15d, byte ptr [r15 + 5]
+ffffff80022d8f88: lea      rdx, [rip + 0xc1302]  ; "%s::%s SUCEEDED to update leaky ap network: SSID %s name len %d BSSID: %02X:%02X"
+ffffff80022d8f8f: lea      rdi, [rip + 0xc1367]  ; "%s::%s ERROR: Failed to update leaky ap network: SSID %s name len %d BSSID: %02X"
+ffffff80022d8f96: cmove    rdi, rdx
+ffffff80022d8f9a: sub      rsp, 8
+ffffff80022d8f9e: lea      rdx, [rip + 0xc11a3]  ; "handleLeakyApStatsResetTimer"
+ffffff80022d8fa5: mov      rsi, rax
+ffffff80022d8fa8: xor      eax, eax
+ffffff80022d8faa: push     r15
+ffffff80022d8fac: push     r13
+ffffff80022d8fae: push     r12
+ffffff80022d8fb0: push     r11
+ffffff80022d8fb2: push     r10
+ffffff80022d8fb4: call     0xffffff8000ab6560  ; _IOLog
+ffffff80022d8fb9: add      rsp, 0x30
+ffffff80022d8fbd: mov      rax, qword ptr [rbx + 0x110]
+ffffff80022d8fc4: mov      rax, qword ptr [rax + 0x40]
+ffffff80022d8fc8: mov      rdi, qword ptr [rax + 0x10]
+ffffff80022d8fcc: mov      r15d, dword ptr [rdi + 0x2c1c]
+ffffff80022d8fd3: lea      rsi, [rbp - 0xd8]
+ffffff80022d8fda: mov      word ptr [rsi + 4], 0
+ffffff80022d8fe0: mov      dword ptr [rsi], 0
+ffffff80022d8fe6: add      rdi, 0x2c40
+ffffff80022d8fed: mov      edx, 6
+ffffff80022d8ff2: call     0xffffff8000104420  ; _memcmp
+ffffff80022d8ff7: test     eax, eax
+ffffff80022d8ff9: je       0xffffff80022d90c6
+ffffff80022d8fff: test     r15d, r15d
+ffffff80022d9002: je       0xffffff80022d90c6
+ffffff80022d9008: mov      rax, qword ptr [rbx + 0x110]
+ffffff80022d900f: mov      rdi, qword ptr [rax + 0x40]
+ffffff80022d9013: call     0xffffff80022e5924  ; __ZN23IO80211InterfaceMonitor38loadLeakyApBssidMetricsFromSsidMetricsEv
+ffffff80022d9018: mov      r12d, eax
+ffffff80022d901b: mov      rax, qword ptr [rbx + 0x110]
+ffffff80022d9022: mov      rdi, qword ptr [rax + 0x40]
+ffffff80022d9026: lea      r15, [rbp - 0xde]
+ffffff80022d902d: mov      rsi, r15
+ffffff80022d9030: call     0xffffff80022e583a  ; __ZN23IO80211InterfaceMonitor15getLeakyApBssidEP10ether_addr
+ffffff80022d9035: mov      rax, qword ptr [rbx + 0x110]
+ffffff80022d903c: mov      rdi, qword ptr [rax + 0x40]
+ffffff80022d9040: lea      r13, [rbp - 0x58]
+ffffff80022d9044: mov      rsi, r13
+ffffff80022d9047: call     0xffffff80022e57ee  ; __ZN23IO80211InterfaceMonitor14getLeakyApSsidEP15apple80211_ssid
+ffffff80022d904c: mov      rax, qword ptr [rbx]
+ffffff80022d904f: mov      rdi, rbx
+ffffff80022d9052: call     qword ptr [rax + 0x38]
+ffffff80022d9055: mov      rdi, rax
+ffffff80022d9058: call     0xffffff8000a4a150  ; __ZNK11OSMetaClass12getClassNameEv
+ffffff80022d905d: mov      r8d, dword ptr [r13]
+ffffff80022d9061: test     r8d, r8d
+ffffff80022d9064: lea      rcx, [rip + 0xc0d7d]  ; 0xffffff8002399de8
+ffffff80022d906b: cmove    r14, rcx
+ffffff80022d906f: test     r12d, r12d
+ffffff80022d9072: movzx    r9d, byte ptr [r15]
+ffffff80022d9076: movzx    r10d, byte ptr [r15 + 1]
+ffffff80022d907b: movzx    r11d, byte ptr [r15 + 2]
+ffffff80022d9080: movzx    ebx, byte ptr [r15 + 3]
+ffffff80022d9085: movzx    r12d, byte ptr [r15 + 4]
+ffffff80022d908a: movzx    r15d, byte ptr [r15 + 5]
+ffffff80022d908f: lea      rcx, [rip + 0xc12d8]  ; "%s::%s SUCEEDED to get leaky ap BSSID metrics from the SSID metrics, SSID %s nam"
+ffffff80022d9096: lea      rdi, [rip + 0xc1352]  ; "%s::%s ERROR: Failed to get leaky ap BSSID metrics from the SSID metrics, SSID %"
+ffffff80022d909d: cmove    rdi, rcx
+ffffff80022d90a1: sub      rsp, 8
+ffffff80022d90a5: lea      rdx, [rip + 0xc109c]  ; "handleLeakyApStatsResetTimer"
+ffffff80022d90ac: mov      rsi, rax
+ffffff80022d90af: mov      rcx, r14
+ffffff80022d90b2: xor      eax, eax
+ffffff80022d90b4: push     r15
+ffffff80022d90b6: push     r12
+ffffff80022d90b8: push     rbx
+ffffff80022d90b9: push     r11
+ffffff80022d90bb: push     r10
+ffffff80022d90bd: call     0xffffff8000ab6560  ; _IOLog
+ffffff80022d90c2: add      rsp, 0x30
+ffffff80022d90c6: mov      rax, qword ptr [rip + 0xe304b]  ; 0xffffff80023bc118
+ffffff80022d90cd: mov      rax, qword ptr [rax]
+ffffff80022d90d0: cmp      rax, qword ptr [rbp - 0x30]
+ffffff80022d90d4: jne      0xffffff80022d9265
+ffffff80022d90da: add      rsp, 0xb8
+ffffff80022d90e1: pop      rbx
+ffffff80022d90e2: pop      r12
+ffffff80022d90e4: pop      r13
+ffffff80022d90e6: pop      r14
+ffffff80022d90e8: pop      r15
+ffffff80022d90ea: pop      rbp
+ffffff80022d90eb: ret      
+ffffff80022d90ec: mov      rax, qword ptr [rbx]
+ffffff80022d90ef: mov      rdi, rbx
+ffffff80022d90f2: call     qword ptr [rax + 0x38]
+ffffff80022d90f5: mov      rdi, rax
+ffffff80022d90f8: call     0xffffff8000a4a150  ; __ZNK11OSMetaClass12getClassNameEv
+ffffff80022d90fd: mov      rcx, qword ptr [rip + 0xe3014]  ; 0xffffff80023bc118
+ffffff80022d9104: mov      rcx, qword ptr [rcx]
+ffffff80022d9107: cmp      rcx, qword ptr [rbp - 0x30]
+ffffff80022d910b: jne      0xffffff80022d9265
+ffffff80022d9111: lea      rdi, [rip + 0xc135d]  ; 0xffffff800239a475
+ffffff80022d9118: lea      rdx, [rip + 0xc1029]  ; "handleLeakyApStatsResetTimer"
+ffffff80022d911f: mov      rsi, rax
+ffffff80022d9122: xor      eax, eax
+ffffff80022d9124: add      rsp, 0xb8
+ffffff80022d912b: pop      rbx
+ffffff80022d912c: pop      r12
+ffffff80022d912e: pop      r13
+ffffff80022d9130: pop      r14
+ffffff80022d9132: pop      r15
+ffffff80022d9134: pop      rbp
+ffffff80022d9135: jmp      0xffffff8000ab6560  ; _IOLog
+ffffff80022d913a: lea      r15, [rbp - 0xc8]
+ffffff80022d9141: cmp      dword ptr [r15 - 4], 0
+ffffff80022d9146: lea      rdx, [rip + 0xc0c9b]  ; 0xffffff8002399de8
+ffffff80022d914d: mov      rcx, r15
+ffffff80022d9150: cmove    rcx, rdx
+ffffff80022d9154: mov      r8d, dword ptr [r15 - 8]
+ffffff80022d9158: movzx    r9d, byte ptr [r15 + 0x20]
+ffffff80022d915d: movzx    r10d, byte ptr [r15 + 0x21]
+ffffff80022d9162: movzx    r11d, byte ptr [r15 + 0x22]
+ffffff80022d9167: movzx    r14d, byte ptr [r15 + 0x23]
+ffffff80022d916c: movzx    r13d, byte ptr [r15 + 0x24]
+ffffff80022d9171: movzx    r12d, byte ptr [r15 + 0x25]
+ffffff80022d9176: sub      rsp, 8
+ffffff80022d917a: lea      rdi, [rip + 0xc0f5f]  ; "%s::%s Send BSSID metrics event to bsd layer: SSID %s name len %d BSSID: %02X:%0"
+ffffff80022d9181: lea      rdx, [rip + 0xc0fc0]  ; "handleLeakyApStatsResetTimer"
+ffffff80022d9188: mov      rsi, rax
+ffffff80022d918b: xor      eax, eax
+ffffff80022d918d: push     r12
+ffffff80022d918f: push     r13
+ffffff80022d9191: push     r14
+ffffff80022d9193: push     r11
+ffffff80022d9195: push     r10
+ffffff80022d9197: call     0xffffff8000ab6560  ; _IOLog
+ffffff80022d919c: add      rsp, 0x30
+ffffff80022d91a0: mov      rax, qword ptr [rbx]
+ffffff80022d91a3: lea      r14, [rbp - 0xd0]
+ffffff80022d91aa: mov      ecx, 0x78
+ffffff80022d91af: mov      rdi, rbx
+ffffff80022d91b2: mov      esi, 0x51
+ffffff80022d91b7: mov      rdx, r14
+ffffff80022d91ba: mov      r8d, 1
+ffffff80022d91c0: call     qword ptr [rax + 0xb10]
+ffffff80022d91c6: mov      rax, qword ptr [rbx + 0x110]
+ffffff80022d91cd: mov      rdi, qword ptr [rax + 0x40]
+ffffff80022d91d1: mov      rsi, r14
+ffffff80022d91d4: call     0xffffff80022e5aa2  ; __ZN23IO80211InterfaceMonitor37storeBssidLeakyApMetricsToSsidMetricsEP33apple80211_leaky_ap_bssid_metrics
+ffffff80022d91d9: test     eax, eax
+ffffff80022d91db: je       0xffffff80022d8efb
+ffffff80022d91e1: mov      rax, qword ptr [rbx]
+ffffff80022d91e4: mov      rdi, rbx
+ffffff80022d91e7: call     qword ptr [rax + 0x38]
+ffffff80022d91ea: mov      rdi, rax
+ffffff80022d91ed: call     0xffffff8000a4a150  ; __ZNK11OSMetaClass12getClassNameEv
+ffffff80022d91f2: movzx    ecx, byte ptr [rbp - 0xa8]
+ffffff80022d91f9: movzx    r8d, byte ptr [rbp - 0xa7]
+ffffff80022d9201: movzx    r9d, byte ptr [rbp - 0xa6]
+ffffff80022d9209: movzx    r10d, byte ptr [rbp - 0xa5]
+ffffff80022d9211: movzx    r11d, byte ptr [rbp - 0xa4]
+ffffff80022d9219: movzx    r14d, byte ptr [rbp - 0xa3]
+ffffff80022d9221: mov      r12d, dword ptr [rbp - 0xcc]
+ffffff80022d9228: test     r12d, r12d
+ffffff80022d922b: lea      rdx, [rip + 0xc0bb6]  ; 0xffffff8002399de8
+ffffff80022d9232: cmove    r15, rdx
+ffffff80022d9236: sub      rsp, 8
+ffffff80022d923a: lea      rdi, [rip + 0xc0f24]  ; "%s::%s ERROR: Failed to update leaky ap SSID metrics with the BSSID metrics, BSS"
+ffffff80022d9241: lea      rdx, [rip + 0xc0f00]  ; "handleLeakyApStatsResetTimer"
+ffffff80022d9248: mov      rsi, rax
+ffffff80022d924b: xor      eax, eax
+ffffff80022d924d: push     r15
+ffffff80022d924f: push     r12
+ffffff80022d9251: push     r14
+ffffff80022d9253: push     r11
+ffffff80022d9255: push     r10
+ffffff80022d9257: call     0xffffff8000ab6560  ; _IOLog
+ffffff80022d925c: add      rsp, 0x30
+ffffff80022d9260: jmp      0xffffff80022d8efb  ; __ZN21IO80211InfraInterface28handleLeakyApStatsResetTimerEP18IO80211TimerSource+0x233
+ffffff80022d9265: call     0xffffff8000383150  ; ___stack_chk_fail

@@ -1,0 +1,30 @@
+# 0xffffff8002982f22 __ZN25IOSkywalkNetworkInterface21getSupportedWakeFlagsEPj
+ffffff8002982f22: mov      eax, 0xe00002d8
+ffffff8002982f27: test     rsi, rsi
+ffffff8002982f2a: je       0xffffff8002982f78
+ffffff8002982f2c: push     rbp
+ffffff8002982f2d: mov      rbp, rsp
+ffffff8002982f30: push     r14
+ffffff8002982f32: push     rbx
+ffffff8002982f33: mov      r14, rdi
+ffffff8002982f36: mov      rcx, qword ptr [rdi + 0xb8]
+ffffff8002982f3d: cmp      qword ptr [rcx], 0
+ffffff8002982f41: je       0xffffff8002982f74
+ffffff8002982f43: mov      rbx, rsi
+ffffff8002982f46: mov      rax, qword ptr [r14]
+ffffff8002982f49: mov      rdi, r14
+ffffff8002982f4c: call     qword ptr [rax + 0x988]
+ffffff8002982f52: mov      dword ptr [rbx], 0
+ffffff8002982f58: mov      ecx, 1
+ffffff8002982f5d: bt       eax, 0x1a
+ffffff8002982f61: jb       0xffffff8002982f70
+ffffff8002982f63: mov      rax, qword ptr [r14 + 0xb8]
+ffffff8002982f6a: mov      rax, qword ptr [rax]
+ffffff8002982f6d: mov      ecx, dword ptr [rax + 0x10]
+ffffff8002982f70: mov      dword ptr [rbx], ecx
+ffffff8002982f72: xor      eax, eax
+ffffff8002982f74: pop      rbx
+ffffff8002982f75: pop      r14
+ffffff8002982f77: pop      rbp
+ffffff8002982f78: ret      
+ffffff8002982f79: nop      

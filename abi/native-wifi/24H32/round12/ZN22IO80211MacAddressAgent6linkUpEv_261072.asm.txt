@@ -1,0 +1,14 @@
+# 0xffffff8002261072 __ZN22IO80211MacAddressAgent6linkUpEv
+ffffff8002261072: push     rbp
+ffffff8002261073: mov      rbp, rsp
+ffffff8002261076: mov      rax, qword ptr [rdi + 0x10]
+ffffff800226107a: mov      byte ptr [rax + 0x26], 1
+ffffff800226107e: mov      rdi, qword ptr [rax + 0x10]
+ffffff8002261082: test     rdi, rdi
+ffffff8002261085: je       0xffffff8002261091
+ffffff8002261087: mov      rax, qword ptr [rdi]
+ffffff800226108a: pop      rbp
+ffffff800226108b: jmp      qword ptr [rax + 0x218]
+ffffff8002261091: pop      rbp
+ffffff8002261092: ret      
+ffffff8002261093: nop      

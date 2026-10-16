@@ -1,0 +1,13 @@
+# 0xffffff80022dadaa __ZN21IO80211InfraInterface13setDebugFlagsEyj
+ffffff80022dadaa: push     rbp
+ffffff80022dadab: mov      rbp, rsp
+ffffff80022dadae: mov      rax, qword ptr [rdi + 0x118]
+ffffff80022dadb5: mov      qword ptr [rax + 0x138], rsi
+ffffff80022dadbc: mov      rax, qword ptr [rdi + 0x110]
+ffffff80022dadc3: mov      rdi, qword ptr [rax + 0x28]
+ffffff80022dadc7: test     rdi, rdi
+ffffff80022dadca: je       0xffffff80022dadd2
+ffffff80022dadcc: pop      rbp
+ffffff80022dadcd: jmp      0xffffff80021e7cc6  ; __ZN18IO80211PeerManager22setPeerManagerLogFlagsEyj
+ffffff80022dadd2: pop      rbp
+ffffff80022dadd3: ret      

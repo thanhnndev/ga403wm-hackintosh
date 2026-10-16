@@ -1,0 +1,49 @@
+# 0xffffff800297eac8 __ZN21IOSkywalkPacketBuffer12initWithPoolEP25IOSkywalkPacketBufferPoolP31IOSkywalkPacketBufferDescriptorj
+ffffff800297eac8: push     rbp
+ffffff800297eac9: mov      rbp, rsp
+ffffff800297eacc: push     r15
+ffffff800297eace: push     r14
+ffffff800297ead0: push     r12
+ffffff800297ead2: push     rbx
+ffffff800297ead3: mov      rbx, rdx
+ffffff800297ead6: mov      r12, rsi
+ffffff800297ead9: mov      r14, rdi
+ffffff800297eadc: lea      rax, [rip + 0x2e6d5]  ; 0xffffff80029ad1b8
+ffffff800297eae3: mov      rsi, qword ptr [rax]
+ffffff800297eae6: mov      rdi, r12
+ffffff800297eae9: call     0xffffff8000a49ab0  ; __ZN15OSMetaClassBase12safeMetaCastEPKS_PK11OSMetaClass
+ffffff800297eaee: xor      r15d, r15d
+ffffff800297eaf1: test     rbx, rbx
+ffffff800297eaf4: je       0xffffff800297eb4a
+ffffff800297eaf6: test     rax, rax
+ffffff800297eaf9: je       0xffffff800297eb4a
+ffffff800297eafb: cmp      qword ptr [rbx + 8], 0
+ffffff800297eb00: je       0xffffff800297eb47
+ffffff800297eb02: mov      rax, qword ptr [rip + 0x285ff]  ; 0xffffff80029a7108
+ffffff800297eb09: mov      rdi, r14
+ffffff800297eb0c: call     qword ptr [rax + 0x98]
+ffffff800297eb12: test     al, al
+ffffff800297eb14: je       0xffffff800297eb47
+ffffff800297eb16: mov      qword ptr [r14 + 0x28], r12
+ffffff800297eb1a: mov      rax, qword ptr [rbx + 0x10]
+ffffff800297eb1e: mov      qword ptr [r14 + 0x70], rax
+ffffff800297eb22: mov      rdi, qword ptr [rbx + 8]
+ffffff800297eb26: mov      qword ptr [r14 + 0x58], rdi
+ffffff800297eb2a: mov      rax, qword ptr [rdi]
+ffffff800297eb2d: call     qword ptr [rax + 0x20]
+ffffff800297eb30: mov      rdi, qword ptr [rbx]
+ffffff800297eb33: mov      qword ptr [r14 + 0x50], rdi
+ffffff800297eb37: mov      r15b, 1
+ffffff800297eb3a: test     rdi, rdi
+ffffff800297eb3d: je       0xffffff800297eb4a
+ffffff800297eb3f: mov      rax, qword ptr [rdi]
+ffffff800297eb42: call     qword ptr [rax + 0x20]
+ffffff800297eb45: jmp      0xffffff800297eb4a  ; __ZN21IOSkywalkPacketBuffer12initWithPoolEP25IOSkywalkPacketBufferPoolP31IOSkywalkPacketBufferDescriptorj+0x82
+ffffff800297eb47: xor      r15d, r15d
+ffffff800297eb4a: mov      eax, r15d
+ffffff800297eb4d: pop      rbx
+ffffff800297eb4e: pop      r12
+ffffff800297eb50: pop      r14
+ffffff800297eb52: pop      r15
+ffffff800297eb54: pop      rbp
+ffffff800297eb55: ret      

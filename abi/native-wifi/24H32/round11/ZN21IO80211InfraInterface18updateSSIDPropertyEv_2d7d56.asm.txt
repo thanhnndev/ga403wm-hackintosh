@@ -1,0 +1,81 @@
+# 0xffffff80022d7d56 __ZN21IO80211InfraInterface18updateSSIDPropertyEv
+ffffff80022d7d56: push     rbp
+ffffff80022d7d57: mov      rbp, rsp
+ffffff80022d7d5a: push     r15
+ffffff80022d7d5c: push     r14
+ffffff80022d7d5e: push     rbx
+ffffff80022d7d5f: sub      rsp, 0x68
+ffffff80022d7d63: mov      rbx, rdi
+ffffff80022d7d66: mov      rax, qword ptr [rip + 0xe43ab]  ; 0xffffff80023bc118
+ffffff80022d7d6d: mov      rax, qword ptr [rax]
+ffffff80022d7d70: mov      qword ptr [rbp - 0x20], rax
+ffffff80022d7d74: xor      eax, eax
+ffffff80022d7d76: mov      qword ptr [rbp - 0x2c], rax
+ffffff80022d7d7a: mov      qword ptr [rbp - 0x34], rax
+ffffff80022d7d7e: mov      qword ptr [rbp - 0x3c], rax
+ffffff80022d7d82: mov      qword ptr [rbp - 0x44], rax
+ffffff80022d7d86: mov      dword ptr [rbp - 0x24], 0
+ffffff80022d7d8d: mov      dword ptr [rbp - 0x48], 1
+ffffff80022d7d94: mov      rax, qword ptr [rdi + 0x110]
+ffffff80022d7d9b: mov      rdi, qword ptr [rax + 0xd8]
+ffffff80022d7da2: test     rdi, rdi
+ffffff80022d7da5: je       0xffffff80022d7dd8
+ffffff80022d7da7: lea      r14, [rbp - 0x78]
+ffffff80022d7dab: mov      byte ptr [r14], 0
+ffffff80022d7daf: lea      rcx, [rbp - 0x48]
+ffffff80022d7db3: mov      r8d, 0x28
+ffffff80022d7db9: mov      esi, 0xc02869c9
+ffffff80022d7dbe: mov      edx, 1
+ffffff80022d7dc3: mov      r9, r14
+ffffff80022d7dc6: call     0xffffff800212ad12  ; __ZN11IO80211Glue13sendIOUCToWclEjjPvmRb
+ffffff80022d7dcb: cmp      byte ptr [r14], 1
+ffffff80022d7dcf: jne      0xffffff80022d7dd8
+ffffff80022d7dd1: cmp      eax, 0xe082280f
+ffffff80022d7dd6: jne      0xffffff80022d7de4
+ffffff80022d7dd8: lea      rsi, [rbp - 0x48]
+ffffff80022d7ddc: mov      rdi, rbx
+ffffff80022d7ddf: call     0xffffff80021f65a4  ; __Z17apple80211getSSIDP23IO80211SkywalkInterfaceP20apple80211_ssid_data
+ffffff80022d7de4: test     eax, eax
+ffffff80022d7de6: je       0xffffff80022d7df9
+ffffff80022d7de8: lea      rsi, [rip + 0xc20d2]  ; "IO80211SSID"
+ffffff80022d7def: mov      rdi, rbx
+ffffff80022d7df2: call     0xffffff800227dbf3  ; __Z20removePropertyHelperP9IOServicePKc
+ffffff80022d7df7: jmp      0xffffff80022d7e70  ; __ZN21IO80211InfraInterface18updateSSIDPropertyEv+0x11a
+ffffff80022d7df9: movabs   rax, 0xaaaaaaaaaaaaaaaa
+ffffff80022d7e03: mov      qword ptr [rbp - 0x50], rax
+ffffff80022d7e07: mov      r14d, dword ptr [rbp - 0x44]
+ffffff80022d7e0b: xor      eax, eax
+ffffff80022d7e0d: mov      qword ptr [rbp - 0x78], 0xff
+ffffff80022d7e15: mov      qword ptr [rbp - 0x70], rax
+ffffff80022d7e19: mov      qword ptr [rbp - 0x68], rax
+ffffff80022d7e1d: mov      qword ptr [rbp - 0x60], rax
+ffffff80022d7e21: mov      qword ptr [rbp - 0x58], rax
+ffffff80022d7e25: mov      byte ptr [rbp - 0x50], 0
+ffffff80022d7e29: cmp      r14, 0x20
+ffffff80022d7e2d: ja       0xffffff80022d7e48
+ffffff80022d7e2f: lea      r15, [rbp - 0x70]
+ffffff80022d7e33: lea      rsi, [rbp - 0x40]
+ffffff80022d7e37: mov      rdi, r15
+ffffff80022d7e3a: mov      rdx, r14
+ffffff80022d7e3d: call     0xffffff8000101050  ; _real_mode_bootstrap_end
+ffffff80022d7e42: mov      qword ptr [r15 - 8], r14
+ffffff80022d7e46: jmp      0xffffff80022d7e4f  ; __ZN21IO80211InfraInterface18updateSSIDPropertyEv+0xf9
+ffffff80022d7e48: lea      r15, [rip + 0xc377a]  ; "<SSID Invalid>"
+ffffff80022d7e4f: call     0xffffff800212d75a  ; __Z37IO80211_io80211isSensitiveInfoAllowedv
+ffffff80022d7e54: lea      rdx, [rip + 0xc375e]  ; "<SSID Redacted>"
+ffffff80022d7e5b: test     al, al
+ffffff80022d7e5d: cmovne   rdx, r15
+ffffff80022d7e61: lea      rsi, [rip + 0xc2059]  ; "IO80211SSID"
+ffffff80022d7e68: mov      rdi, rbx
+ffffff80022d7e6b: call     0xffffff800227da77  ; __Z17setPropertyHelperP9IOServicePKcS2_
+ffffff80022d7e70: mov      rax, qword ptr [rip + 0xe42a1]  ; 0xffffff80023bc118
+ffffff80022d7e77: mov      rax, qword ptr [rax]
+ffffff80022d7e7a: cmp      rax, qword ptr [rbp - 0x20]
+ffffff80022d7e7e: jne      0xffffff80022d7e8b
+ffffff80022d7e80: add      rsp, 0x68
+ffffff80022d7e84: pop      rbx
+ffffff80022d7e85: pop      r14
+ffffff80022d7e87: pop      r15
+ffffff80022d7e89: pop      rbp
+ffffff80022d7e8a: ret      
+ffffff80022d7e8b: call     0xffffff8000383150  ; ___stack_chk_fail

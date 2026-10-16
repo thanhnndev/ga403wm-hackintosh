@@ -1,0 +1,14 @@
+    | |   |       | |   "itlmt_native_trace" = "ctl:start; ctl:createWorkQueue begin; ctl:workQueue ok; ctl:logger ok; ctl:faultReporter ok; base start begin; ctl:base start ok; ctl:media auto=1; mk:start role=1 unit=9 explicit=0; mk:withController=ok; mk:attachInterface=1; sw:deferBSDAttach=0; ioctl:cmd=216 prohibited; sw:IO80211InfraInterface::start=1; sw:getWorkQueue=ok; pool=ok; queues rxSub=1 txComp=1 rxComp=1; sw:pool+queues=1; sw:addEventSource x6 ok; dp:bind=0; sw:registerInfraEthernetInterface=0; sw:registerService(8) done; sw:setRunningState(false) done; mk:startWithInfo ok; lp:wq=0xffffff8ba222d8d0 prov=0xffffff8ba222e470; lp:ctl=0xffffff8ba222d8d0 if=0xffffff8ba222d8d0; lp:inGate=0 onThread=0 wl=1; mk:deferBSDAttach(false)=0; ioctl:cmd=2c allowed; ioctl:cmd=2b allowed; ioctl:cmd=33 prohibited; ioctl:cmd=1c prohibited; dp:radio link=0; if:bsd cmd=c02c6938 begin; if:bsd cmd=c02c6938 result=0; ioctl:cmd=c prohibited; if:enable begin options=0; if:setInterfaceEnable=1 begin; if:setInterfaceEnable=1 done; dp:enable queues begin; dp:TX completion enable; dp:RX completion enable; dp:TX submission 0 enable; dp:TX submission 1 enable; dp:TX submission 2 enable; dp:TX submission 3 enable; dp:enabled; if:enable result=0; if:bsd cmd=80206910 begin; if:bsd cmd=80206910 result=0; if:bsd cmd=80206910 begin; if:bsd cmd=80206910 result=0; dp:radio link=1"
+    | |   |       | |   "itlmt_ioctl_rejected" = 385
+    | |   |       | |   "itlmt_native_last" = "dp:radio link=1"
+    | |   |       | | |   "itlmt_tx_drop" = 0
+    | |   |       | | |   "itlmt_tx_sent" = 0
+    | |   |       | | |   "itlmt_tx_stall" = 0
+    | |   |       | | |   "itlmt_tx_checksum_failed" = 0
+    | |   |       | | |   "itlmt_radio_link" = Yes
+    | |   |       | | |   "itlmt_tx_completed" = 0
+    | |   |       | | |   "itlmt_rx_delivered" = 0
+    | |   |       | | |   "itlmt_rx_drop" = 0
+    | |   |       | | |   "itlmt_rx_received" = 0
+    | |   |       | | |   "itlmt_datapath_enabled" = Yes
+    | |   |       | | |   "itlmt_tx_pending" = 0

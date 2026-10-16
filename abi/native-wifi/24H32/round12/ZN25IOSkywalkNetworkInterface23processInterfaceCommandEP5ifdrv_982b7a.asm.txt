@@ -1,0 +1,7 @@
+# 0xffffff8002982b7a __ZN25IOSkywalkNetworkInterface23processInterfaceCommandEP5ifdrv
+ffffff8002982b7a: push     rbp
+ffffff8002982b7b: mov      rbp, rsp
+ffffff8002982b7e: mov      eax, 0xe00002c7
+ffffff8002982b83: pop      rbp
+ffffff8002982b84: ret      
+ffffff8002982b85: nop      

@@ -1,11 +1,15 @@
 name: build-kexts
 
-# Builds itlmt7925, ItlXhciKick and ItlDiag with empty Wi-Fi credentials (credentials are injected locally, never in CI).
-# A tag "v*" additionally publishes the zipped kexts as a GitHub release.
+# Builds every kext (itlmt7925, itlmt7925Native, ItlXhciKick, ItlDiag, AsusWmi, AmdCppc, MtkBtFw, BtLeDlFix) with empty Wi-Fi credentials (credentials are injected locally, never in CI).
+# Also builds the menu bar apps (RogControl, ItlWiFi, TapGuard) and the CPU policy daemon, ad-hoc signed.
+# A tag "v*" (for example v1) additionally publishes everything as a GitHub release: kexts, apps, patched OpenCore,
+# the sanitized reference EFI, SHA256SUMS.txt. See .github/release-body.md for the release text.
+# A tag "kext-v*" (for example kext-v1.1) publishes only the kexts, apps and checksums: no OpenCore build, no reference EFI
+# (release text: .github/release-kexts-body.md).
 on:
   push:
     branches: [main]
-    tags: ["v*"]
+    tags: ["v*", "kext-v*"]
   pull_request:
   workflow_dispatch:
 
@@ -46,12 +50,27 @@ jobs:
       - name: Build kexts
         run: bash scripts/build.sh
 
+      - name: Fan-curve decoding test
+        run: bash scripts/test-rogcontrol.sh
+
+      - name: Build apps and the CPU policy daemon
+        run: |
+          bash scripts/build-rogcontrol.sh
+          bash scripts/build-itlwifi.sh
+          bash scripts/build-tapguard.sh
+          bash scripts/build-amdcppc-policy.sh
+          file build/RogControl.app/Contents/MacOS/RogControl build/AmdCppcPolicy
+
       - name: Package
         run: |
           mkdir -p dist
-          for k in itlmt7925 ItlXhciKick ItlDiag; do
+          for k in itlmt7925 itlmt7925Native ItlXhciKick ItlDiag AsusWmi AmdCppc MtkBtFw BtLeDlFix; do
             ditto -c -k --keepParent "build/$k.kext" "dist/$k.kext.zip"
           done
+          for a in RogControl ItlWiFi TapGuard; do
+            ditto -c -k --keepParent "build/$a.app" "dist/$a.app.zip"
+          done
+          zip -j -q dist/AmdCppcPolicy.zip build/AmdCppcPolicy
           cp fw/LICENCE.mediatek dist/LICENCE.mediatek
           cp LICENSE dist/LICENSE
           (cd dist && shasum -a 256 * > SHA256SUMS.txt && cat SHA256SUMS.txt)
@@ -63,20 +82,66 @@ jobs:
             build/*.kext
             dist/*
 
-  release:
+  opencore:
     if: startsWith(github.ref, 'refs/tags/v')
-    needs: build
+    uses: ./.github/workflows/opencore.yml
+
+  release:
+    # the patched OpenCore is a nice-to-have: a failed OpenCore build must not block the kexts and apps
+    if: ${{ always() && (startsWith(github.ref, 'refs/tags/v') || startsWith(github.ref, 'refs/tags/kext-v')) && needs.build.result == 'success' }}
+    needs: [build, opencore]
     runs-on: ubuntu-latest
     permissions:
       contents: write
     steps:
+      - uses: actions/checkout@v4
+
       - uses: actions/download-artifact@v4
         with:
           name: kexts
           path: artifact
+
+      - uses: actions/download-artifact@v4
+        continue-on-error: true
+        with:
+          name: opencore-zen5-fsb
+          path: oc
+
+      - name: Add OpenCore (Zen 5 patch) and the reference EFI
+        if: startsWith(github.ref, 'refs/tags/v')
+        run: |
+          D=artifact/dist
+          if [ -d oc ] && [ -n "$(ls -A oc)" ]; then
+            (cd oc && zip -r -q "../$D/OpenCore-1.0.9-zen5-fsb.zip" .)
+          else
+            echo "::warning::no patched OpenCore artifact; run the opencore workflow and attach it by hand"
+          fi
+          # sanitized reference EFI: config.plist (placeholders), SSDTs, kext list. NOT under the Clear BSD License.
+          python3 scripts/check-efi-privacy.py efi/OC/config.plist
+          mkdir -p ref/EFI-reference
+          cp -R efi/OC efi/README.md efi/KEXTS.md efi/kexts.json NOTICE.md ref/EFI-reference/
+          cp -R patches ref/EFI-reference/patches
+          (cd ref && zip -r -q "../$D/EFI-reference.zip" EFI-reference)
+
+      - name: Checksums
+        working-directory: artifact/dist
+        run: |
+          rm -f SHA256SUMS.txt
+          sha256sum * > SHA256SUMS.txt
+          cat SHA256SUMS.txt
+
       - name: Publish release
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh release create "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" --generate-notes \
-            --title "$GITHUB_REF_NAME" artifact/dist/*
+          if [[ "$GITHUB_REF_NAME" == kext-v* ]]; then
+            TITLE="$GITHUB_REF_NAME: kexts only (native Wi-Fi front end, A-MSDU off)"
+            NOTES=.github/release-kexts-body.md
+          else
+            TITLE="$GITHUB_REF_NAME: first public build"
+            NOTES=.github/release-body.md
+          fi
+          gh release create "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" \
+            --title "$TITLE" \
+            --notes-file "$NOTES" --generate-notes \
+            artifact/dist/*

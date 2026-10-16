@@ -1,0 +1,8 @@
+# 0xffffff80022d9e76 __ZN21IO80211InfraInterface20getCoPTxRTSFailCountEv
+ffffff80022d9e76: push     rbp
+ffffff80022d9e77: mov      rbp, rsp
+ffffff80022d9e7a: mov      rax, qword ptr [rdi + 0x118]
+ffffff80022d9e81: mov      eax, dword ptr [rax + 0xb4]
+ffffff80022d9e87: pop      rbp
+ffffff80022d9e88: ret      
+ffffff80022d9e89: nop      

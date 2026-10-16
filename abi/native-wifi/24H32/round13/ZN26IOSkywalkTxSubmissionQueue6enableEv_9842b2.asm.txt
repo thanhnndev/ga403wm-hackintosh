@@ -1,0 +1,30 @@
+# 0xffffff80029842b2 __ZN26IOSkywalkTxSubmissionQueue6enableEv
+ffffff80029842b2: push     rbp
+ffffff80029842b3: mov      rbp, rsp
+ffffff80029842b6: push     rbx
+ffffff80029842b7: push     rax
+ffffff80029842b8: mov      rbx, rdi
+ffffff80029842bb: call     0xffffff8000afb010  ; __ZN13IOEventSource9closeGateEv
+ffffff80029842c0: cmp      byte ptr [rbx + 0x28], 0
+ffffff80029842c4: jne      0xffffff8002984304
+ffffff80029842c6: lea      rax, [rip + 0x2a99b]  ; 0xffffff80029aec68
+ffffff80029842cd: mov      rdi, rbx
+ffffff80029842d0: call     qword ptr [rax + 0x160]
+ffffff80029842d6: cmp      qword ptr [rbx + 0x78], 0
+ffffff80029842db: je       0xffffff80029842f6
+ffffff80029842dd: test     byte ptr [rbx + 0x142], 4
+ffffff80029842e4: jne      0xffffff8002984304
+ffffff80029842e6: mov      rax, qword ptr [rbx]
+ffffff80029842e9: mov      rdi, rbx
+ffffff80029842ec: xor      esi, esi
+ffffff80029842ee: call     qword ptr [rax + 0x1d8]
+ffffff80029842f4: jmp      0xffffff8002984304  ; __ZN26IOSkywalkTxSubmissionQueue6enableEv+0x52
+ffffff80029842f6: mov      rax, qword ptr [rbx]
+ffffff80029842f9: mov      rdi, rbx
+ffffff80029842fc: xor      esi, esi
+ffffff80029842fe: call     qword ptr [rax + 0x1e0]
+ffffff8002984304: mov      rdi, rbx
+ffffff8002984307: add      rsp, 8
+ffffff800298430b: pop      rbx
+ffffff800298430c: pop      rbp
+ffffff800298430d: jmp      0xffffff8000afafd0  ; __ZN13IOEventSource8openGateEv

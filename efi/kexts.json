@@ -20,6 +20,12 @@
       "executable_sha256": null
     },
     {
+      "path": "Kexts/BlueToolFixup.kext",
+      "bundle_id": "as.acidanthera.BlueToolFixup",
+      "version": "2.7.2",
+      "executable_sha256": "f3244382a43866138ff449b14f1e54fb069ad3e4b14cbc753858650efdbbce52"
+    },
+    {
       "path": "Kexts/BrightnessKeys.kext",
       "bundle_id": "as.acidanthera.BrightnessKeys",
       "version": "1.0.4",
@@ -88,6 +94,12 @@
     {
       "path": "Kexts/UTBDefault.kext",
       "bundle_id": "com.dhinakg.USBToolBox.injector",
+      "version": "1.0",
+      "executable_sha256": null
+    },
+    {
+      "path": "Kexts/UTBMap.kext",
+      "bundle_id": "com.nullmoth.UTBMap",
       "version": "1.0",
       "executable_sha256": null
     },

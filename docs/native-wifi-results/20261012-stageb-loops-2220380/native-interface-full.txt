@@ -1,0 +1,12 @@
++-o itlmt7925WifiInterface  <class itlmt7925WifiInterface, id 0x100000326, registered, matched, active, busy 0 (0 ms), retain 7>
+    {
+      "IOInterfaceNamePrefix" = "en"
+      "IO80211InterfaceRole" = "Infrastructure"
+      "IOInterfaceUnit" = 9
+      "mDNS_Keepalive" = Yes
+      "IOPowerManagement" = {"DevicePowerState"=1,"CurrentPowerState"=1,"CapabilityFlags"=32770,"MaxPowerState"=1,"DriverPowerState"=0}
+      "mDNS_KEY" = "2009-07-30"
+      "IODeferBSDAttach" = Yes
+    }
+    
+

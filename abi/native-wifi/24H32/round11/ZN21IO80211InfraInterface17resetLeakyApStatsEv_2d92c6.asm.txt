@@ -1,0 +1,33 @@
+# 0xffffff80022d92c6 __ZN21IO80211InfraInterface17resetLeakyApStatsEv
+ffffff80022d92c6: push     rbp
+ffffff80022d92c7: mov      rbp, rsp
+ffffff80022d92ca: push     r14
+ffffff80022d92cc: push     rbx
+ffffff80022d92cd: mov      rax, qword ptr [rdi + 0x110]
+ffffff80022d92d4: mov      rbx, qword ptr [rax + 0x40]
+ffffff80022d92d8: test     rbx, rbx
+ffffff80022d92db: je       0xffffff80022d9340
+ffffff80022d92dd: mov      edi, 0x938
+ffffff80022d92e2: add      rdi, qword ptr [rbx + 0x10]
+ffffff80022d92e6: mov      esi, 0x2358
+ffffff80022d92eb: call     0xffffff8000101100  ; _bzero
+ffffff80022d92f0: mov      rax, qword ptr [rbx + 0x10]
+ffffff80022d92f4: mov      dword ptr [rax + 0x938], 2
+ffffff80022d92fe: xor      r14d, r14d
+ffffff80022d9301: mov      qword ptr [rax + 0x2c94], r14
+ffffff80022d9308: mov      qword ptr [rax + 0x2c9c], r14
+ffffff80022d930f: mov      dword ptr [rax + 0x2ca4], 0
+ffffff80022d9319: mov      rdi, qword ptr [rbx + 0x10]
+ffffff80022d931d: mov      byte ptr [rdi + 0x2c90], r14b
+ffffff80022d9324: add      rdi, 0x45c
+ffffff80022d932b: mov      esi, 0x4dc
+ffffff80022d9330: call     0xffffff8000101100  ; _bzero
+ffffff80022d9335: mov      rax, qword ptr [rbx + 0x10]
+ffffff80022d9339: mov      byte ptr [rax + 0x2c90], r14b
+ffffff80022d9340: test     rbx, rbx
+ffffff80022d9343: setne    al
+ffffff80022d9346: pop      rbx
+ffffff80022d9347: pop      r14
+ffffff80022d9349: pop      rbp
+ffffff80022d934a: ret      
+ffffff80022d934b: nop      

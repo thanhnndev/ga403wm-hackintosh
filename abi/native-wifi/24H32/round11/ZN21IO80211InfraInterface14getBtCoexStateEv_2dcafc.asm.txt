@@ -1,0 +1,8 @@
+# 0xffffff80022dcafc __ZN21IO80211InfraInterface14getBtCoexStateEv
+ffffff80022dcafc: push     rbp
+ffffff80022dcafd: mov      rbp, rsp
+ffffff80022dcb00: mov      rax, qword ptr [rdi + 0x118]
+ffffff80022dcb07: mov      eax, dword ptr [rax + 0x264]
+ffffff80022dcb0d: pop      rbp
+ffffff80022dcb0e: ret      
+ffffff80022dcb0f: nop      

@@ -1,0 +1,16 @@
+# 0xffffff80022dc9d4 __ZN21IO80211InfraInterface27getBonjourOffloadConfigDataERtRj
+ffffff80022dc9d4: push     rbp
+ffffff80022dc9d5: mov      rbp, rsp
+ffffff80022dc9d8: mov      rax, qword ptr [rdi + 0x118]
+ffffff80022dc9df: mov      rax, qword ptr [rax + 0x1a0]
+ffffff80022dc9e6: mov      rax, qword ptr [rax + 0x10]
+ffffff80022dc9ea: movzx    ecx, word ptr [rax + 0x18]
+ffffff80022dc9ee: mov      word ptr [rsi], cx
+ffffff80022dc9f1: movzx    ecx, byte ptr [rax + 0x1a]
+ffffff80022dc9f5: mov      dword ptr [rdx], ecx
+ffffff80022dc9f7: mov      word ptr [rax + 0x18], 0
+ffffff80022dc9fd: mov      byte ptr [rax + 0x1a], 0
+ffffff80022dca01: mov      rax, qword ptr [rax + 0x10]
+ffffff80022dca05: pop      rbp
+ffffff80022dca06: ret      
+ffffff80022dca07: nop      

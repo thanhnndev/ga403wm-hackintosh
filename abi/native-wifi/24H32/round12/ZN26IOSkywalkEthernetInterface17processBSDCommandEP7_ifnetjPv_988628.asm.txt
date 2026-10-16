@@ -1,0 +1,32 @@
+# 0xffffff8002988628 __ZN26IOSkywalkEthernetInterface17processBSDCommandEP7__ifnetjPv
+ffffff8002988628: push     rbp
+ffffff8002988629: mov      rbp, rsp
+ffffff800298862c: test     rsi, rsi
+ffffff800298862f: je       0xffffff800298864c
+ffffff8002988631: cmp      edx, 0x80206930
+ffffff8002988637: jle      0xffffff8002988653
+ffffff8002988639: lea      eax, [rdx + 0x7fdf96cf]
+ffffff800298863f: cmp      eax, 2
+ffffff8002988642: jae      0xffffff800298866d
+ffffff8002988644: xor      edx, edx
+ffffff8002988646: pop      rbp
+ffffff8002988647: jmp      0xffffff8002988766  ; __ZN26IOSkywalkEthernetInterface15ioctl_multicastEP7__ifnetb
+ffffff800298864c: mov      eax, 0x16
+ffffff8002988651: jmp      0xffffff800298866b  ; __ZN26IOSkywalkEthernetInterface17processBSDCommandEP7__ifnetjPv+0x43
+ffffff8002988653: xor      eax, eax
+ffffff8002988655: cmp      edx, 0x8020690c
+ffffff800298865b: je       0xffffff800298866b
+ffffff800298865d: cmp      edx, 0x80206910
+ffffff8002988663: jne      0xffffff800298867e
+ffffff8002988665: pop      rbp
+ffffff8002988666: jmp      0xffffff800298868c  ; __ZN26IOSkywalkEthernetInterface14ioctl_sifflagsEP7__ifnet
+ffffff800298866b: pop      rbp
+ffffff800298866c: ret      
+ffffff800298866d: cmp      edx, 0x8020693c
+ffffff8002988673: jne      0xffffff800298867e
+ffffff8002988675: mov      rdx, rcx
+ffffff8002988678: pop      rbp
+ffffff8002988679: jmp      0xffffff80029889ea  ; __ZN26IOSkywalkEthernetInterface12ioctl_lladdrEP7__ifnetPv
+ffffff800298867e: lea      rax, [rip + 0x26c2b]  ; 0xffffff80029af2b0
+ffffff8002988685: pop      rbp
+ffffff8002988686: jmp      qword ptr [rax + 0x920]

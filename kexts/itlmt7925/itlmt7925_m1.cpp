@@ -534,8 +534,19 @@ void itlmt7925::m1Main()
     PE_parse_boot_argn("itlmt_m1", &delay, sizeof(delay));
     if (PE_parse_boot_argn("itlmt_m2", &m2, sizeof(m2)) && m2) m2On = true;
     if (PE_parse_boot_argn("itlmt_m3", &m3, sizeof(m3)) && m3) m3On = m2On = true;
+    if (nativeMode) {
+        m3On = m2On = true;
+        m1log("native datapath radio engine enabled; legacy Ethernet disabled");
+    }
     uint32_t reo = 0;
     if (PE_parse_boot_argn("itlmt_reo", &reo, sizeof(reo)) && reo >= 5 && reo <= 500) reoMs = reo;
+    uint32_t no160 = 0;
+    if (PE_parse_boot_argn("itlmt_no160", &no160, sizeof(no160)) && no160) this->no160 = true;
+    uint32_t nopwr = 0, statS = 0;
+    if (PE_parse_boot_argn("itlmt_nopwr", &nopwr, sizeof(nopwr)) && nopwr) noPwr = true;
+    uint32_t amsduOn = 0;
+    if (PE_parse_boot_argn("itlmt_amsdu", &amsduOn, sizeof(amsduOn)) && amsduOn) noAmsdu = false;
+    if (PE_parse_boot_argn("itlmt_stat", &statS, sizeof(statS)) && statS >= 1 && statS <= 60) statSecs = statS;
     uint32_t fast = 0;
     if (PE_parse_boot_argn("itlmt_fast", &fast, sizeof(fast)) && fast) {
         m3fast = true;
@@ -557,13 +568,16 @@ void itlmt7925::m1Main()
     char s[48];
     snprintf(s, sizeof(s), "M1 rc=%d", rc);
     nvramLog(s);
+    if (rc != 0) publishService();                           // no firmware: the (radio-less) interface still has to exist
     if (rc == 0 && m2On) {
         int r2 = m2Run();
         m2log("RESULT rc=%d", r2);
         snprintf(s, sizeof(s), "M1 rc=0 M2 rc=%d", r2);
         nvramLog(s);
+        publishService();                                    // normally done by m2Run() right after the address is read
         if (m3On) m3Supervise();                             // connects, reconnects and takes user-client commands; never returns
     }
+    publishService();
 }
 
 void itlmt7925::m1Thread(void *arg)

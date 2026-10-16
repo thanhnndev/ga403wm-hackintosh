@@ -1,0 +1,41 @@
+# 0xffffff80029a1982 __ZN36IOUserNetworkTxSubmissionQueueCompat16packetCompletionEP15IOSkywalkPacketP20IOSkywalkPacketQueuej
+ffffff80029a1982: push     rbp
+ffffff80029a1983: mov      rbp, rsp
+ffffff80029a1986: push     rbx
+ffffff80029a1987: push     rax
+ffffff80029a1988: mov      rbx, rdi
+ffffff80029a198b: add      rdi, 0x12c
+ffffff80029a1992: call     0xffffff8000a48bf0  ; _OSIncrementAtomic
+ffffff80029a1997: cmp      qword ptr [rbx + 0x168], 0
+ffffff80029a199f: jne      0xffffff80029a19b4
+ffffff80029a19a1: mov      eax, dword ptr [rbx + 0xac]
+ffffff80029a19a7: mov      ecx, dword ptr [rbx + 0x12c]
+ffffff80029a19ad: shr      eax, 2
+ffffff80029a19b0: cmp      ecx, eax
+ffffff80029a19b2: jb       0xffffff80029a19fd
+ffffff80029a19b4: cmp      qword ptr [rbx + 0x78], 0
+ffffff80029a19b9: je       0xffffff80029a19e4
+ffffff80029a19bb: test     byte ptr [rbx + 0x172], 1
+ffffff80029a19c2: jne      0xffffff80029a19fd
+ffffff80029a19c4: cmp      dword ptr [rbx + 0x138], 0
+ffffff80029a19cb: je       0xffffff80029a19fd
+ffffff80029a19cd: mov      rax, qword ptr [rbx]
+ffffff80029a19d0: mov      rax, qword ptr [rax + 0x1d8]
+ffffff80029a19d7: mov      rdi, rbx
+ffffff80029a19da: xor      esi, esi
+ffffff80029a19dc: add      rsp, 8
+ffffff80029a19e0: pop      rbx
+ffffff80029a19e1: pop      rbp
+ffffff80029a19e2: jmp      rax
+ffffff80029a19e4: mov      rdi, qword ptr [rbx + 0x110]
+ffffff80029a19eb: test     rdi, rdi
+ffffff80029a19ee: je       0xffffff80029a19fd
+ffffff80029a19f0: xor      esi, esi
+ffffff80029a19f2: add      rsp, 8
+ffffff80029a19f6: pop      rbx
+ffffff80029a19f7: pop      rbp
+ffffff80029a19f8: jmp      0xffffff80009cb0e0  ; _kern_channel_notify
+ffffff80029a19fd: add      rsp, 8
+ffffff80029a1a01: pop      rbx
+ffffff80029a1a02: pop      rbp
+ffffff80029a1a03: ret      

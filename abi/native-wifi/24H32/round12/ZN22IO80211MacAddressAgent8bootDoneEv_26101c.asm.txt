@@ -1,0 +1,5 @@
+# 0xffffff800226101c __ZN22IO80211MacAddressAgent8bootDoneEv
+ffffff800226101c: push     rbp
+ffffff800226101d: mov      rbp, rsp
+ffffff8002261020: pop      rbp
+ffffff8002261021: jmp      0xffffff8002260f58  ; __ZN22IO80211MacAddressAgent24forceUpdateMacAddrOnBootEv

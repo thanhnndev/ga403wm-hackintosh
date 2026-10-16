@@ -1,0 +1,74 @@
+# 0xffffff80022d9ada __ZN21IO80211InfraInterface19setLeakyAPStatsModeEj
+ffffff80022d9ada: push     rbp
+ffffff80022d9adb: mov      rbp, rsp
+ffffff80022d9ade: push     r15
+ffffff80022d9ae0: push     r14
+ffffff80022d9ae2: push     r13
+ffffff80022d9ae4: push     r12
+ffffff80022d9ae6: push     rbx
+ffffff80022d9ae7: push     rax
+ffffff80022d9ae8: mov      ebx, esi
+ffffff80022d9aea: mov      r15, rdi
+ffffff80022d9aed: mov      rax, qword ptr [rdi]
+ffffff80022d9af0: call     qword ptr [rax + 0x38]
+ffffff80022d9af3: mov      rdi, rax
+ffffff80022d9af6: call     0xffffff8000a4a150  ; __ZNK11OSMetaClass12getClassNameEv
+ffffff80022d9afb: cmp      ebx, 2
+ffffff80022d9afe: ja       0xffffff80022d9b6b
+ffffff80022d9b00: cmp      ebx, 1
+ffffff80022d9b03: lea      r14, [rip + 0xc0fea]  ; "ENABLE"
+ffffff80022d9b0a: lea      rcx, [rip + 0xc0fea]  ; "UNSUPPORTED"
+ffffff80022d9b11: cmove    rcx, r14
+ffffff80022d9b15: test     ebx, ebx
+ffffff80022d9b17: lea      r13, [rip + 0xc0fce]  ; "DISABLE"
+ffffff80022d9b1e: cmove    rcx, r13
+ffffff80022d9b22: lea      rdi, [rip + 0xc0f7c]  ; 0xffffff800239aaa5
+ffffff80022d9b29: lea      rdx, [rip + 0xc0fa8]  ; "setLeakyAPStatsMode"
+ffffff80022d9b30: mov      rsi, rax
+ffffff80022d9b33: mov      r8d, ebx
+ffffff80022d9b36: xor      eax, eax
+ffffff80022d9b38: call     0xffffff8000ab6560  ; _IOLog
+ffffff80022d9b3d: mov      rax, qword ptr [r15 + 0x118]
+ffffff80022d9b44: mov      dword ptr [rax + 0x108], ebx
+ffffff80022d9b4a: mov      r12b, 1
+ffffff80022d9b4d: cmp      ebx, 2
+ffffff80022d9b50: je       0xffffff80022d9b8f
+ffffff80022d9b52: mov      rdi, qword ptr [rax + 0x110]
+ffffff80022d9b59: test     rdi, rdi
+ffffff80022d9b5c: je       0xffffff80022d9ba1
+ffffff80022d9b5e: mov      rax, qword ptr [rdi]
+ffffff80022d9b61: xor      esi, esi
+ffffff80022d9b63: call     qword ptr [rax + 0x1d0]
+ffffff80022d9b69: jmp      0xffffff80022d9b8f  ; __ZN21IO80211InfraInterface19setLeakyAPStatsModeEj+0xb5
+ffffff80022d9b6b: lea      rdi, [rip + 0xc1011]  ; "%s::%s ERROR: Failed to configure leaky ap stats mode to %u %s, invalid paramete"
+ffffff80022d9b72: lea      rdx, [rip + 0xc0f5f]  ; "setLeakyAPStatsMode"
+ffffff80022d9b79: lea      r8, [rip + 0xc0709]  ; "INVALID"
+ffffff80022d9b80: xor      r12d, r12d
+ffffff80022d9b83: mov      rsi, rax
+ffffff80022d9b86: mov      ecx, ebx
+ffffff80022d9b88: xor      eax, eax
+ffffff80022d9b8a: call     0xffffff8000ab6560  ; _IOLog
+ffffff80022d9b8f: mov      eax, r12d
+ffffff80022d9b92: add      rsp, 8
+ffffff80022d9b96: pop      rbx
+ffffff80022d9b97: pop      r12
+ffffff80022d9b99: pop      r13
+ffffff80022d9b9b: pop      r14
+ffffff80022d9b9d: pop      r15
+ffffff80022d9b9f: pop      rbp
+ffffff80022d9ba0: ret      
+ffffff80022d9ba1: mov      rax, qword ptr [r15]
+ffffff80022d9ba4: mov      rdi, r15
+ffffff80022d9ba7: call     qword ptr [rax + 0x38]
+ffffff80022d9baa: mov      rdi, rax
+ffffff80022d9bad: call     0xffffff8000a4a150  ; __ZNK11OSMetaClass12getClassNameEv
+ffffff80022d9bb2: test     ebx, ebx
+ffffff80022d9bb4: cmove    r14, r13
+ffffff80022d9bb8: lea      rdi, [rip + 0xc0f48]  ; "%s::%s ERROR: Failed to configure leaky ap stats mode to %s, The leaky ap stats "
+ffffff80022d9bbf: lea      rdx, [rip + 0xc0f12]  ; "setLeakyAPStatsMode"
+ffffff80022d9bc6: xor      r12d, r12d
+ffffff80022d9bc9: mov      rsi, rax
+ffffff80022d9bcc: mov      rcx, r14
+ffffff80022d9bcf: xor      eax, eax
+ffffff80022d9bd1: call     0xffffff8000ab6560  ; _IOLog
+ffffff80022d9bd6: jmp      0xffffff80022d9b8f  ; __ZN21IO80211InfraInterface19setLeakyAPStatsModeEj+0xb5

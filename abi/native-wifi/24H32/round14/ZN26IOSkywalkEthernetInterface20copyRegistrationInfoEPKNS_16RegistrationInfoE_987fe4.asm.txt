@@ -1,0 +1,42 @@
+# 0xffffff8002987fe4 __ZN26IOSkywalkEthernetInterface20copyRegistrationInfoEPKNS_16RegistrationInfoE
+ffffff8002987fe4: mov      eax, 0xe00002c2
+ffffff8002987fe9: test     rsi, rsi
+ffffff8002987fec: je       0xffffff8002988077
+ffffff8002987ff2: push     rbp
+ffffff8002987ff3: mov      rbp, rsp
+ffffff8002987ff6: push     r14
+ffffff8002987ff8: push     rbx
+ffffff8002987ff9: mov      r14, rsi
+ffffff8002987ffc: cmp      dword ptr [rsi], 1
+ffffff8002987fff: jne      0xffffff8002988073
+ffffff8002988001: cmp      dword ptr [r14 + 4], 0x130
+ffffff8002988009: jb       0xffffff8002988073
+ffffff800298800b: mov      rbx, rdi
+ffffff800298800e: lea      rdi, [rip + 0x2ffab]  ; 0xffffff80029b7fc0
+ffffff8002988015: call     0xffffff8000ab5930  ; _IOMallocTypeImpl
+ffffff800298801a: mov      rcx, qword ptr [rbx + 0x108]
+ffffff8002988021: mov      qword ptr [rcx], rax
+ffffff8002988024: test     rax, rax
+ffffff8002988027: je       0xffffff800298806e
+ffffff8002988029: mov      edx, 0x130
+ffffff800298802e: mov      rdi, rax
+ffffff8002988031: mov      rsi, r14
+ffffff8002988034: call     0xffffff8000101080  ; _memmove
+ffffff8002988039: mov      rax, qword ptr [rbx]
+ffffff800298803c: mov      rcx, qword ptr [rbx + 0x108]
+ffffff8002988043: mov      edx, 0x108
+ffffff8002988048: add      rdx, qword ptr [rcx]
+ffffff800298804b: lea      rsi, [rip + 0x1cfd1]  ; "IOMACAddress"
+ffffff8002988052: mov      rdi, rbx
+ffffff8002988055: mov      ecx, 6
+ffffff800298805a: call     qword ptr [rax + 0x288]
+ffffff8002988060: xor      ecx, ecx
+ffffff8002988062: test     al, al
+ffffff8002988064: mov      eax, 0xe00002be
+ffffff8002988069: cmovne   eax, ecx
+ffffff800298806c: jmp      0xffffff8002988073  ; __ZN26IOSkywalkEthernetInterface20copyRegistrationInfoEPKNS_16RegistrationInfoE+0x8f
+ffffff800298806e: mov      eax, 0xe00002bd
+ffffff8002988073: pop      rbx
+ffffff8002988074: pop      r14
+ffffff8002988076: pop      rbp
+ffffff8002988077: ret      

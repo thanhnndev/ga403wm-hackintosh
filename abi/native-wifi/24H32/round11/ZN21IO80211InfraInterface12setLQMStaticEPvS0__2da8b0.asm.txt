@@ -1,0 +1,24 @@
+# 0xffffff80022da8b0 __ZN21IO80211InfraInterface12setLQMStaticEPvS0_
+ffffff80022da8b0: push     rbp
+ffffff80022da8b1: mov      rbp, rsp
+ffffff80022da8b4: test     rdi, rdi
+ffffff80022da8b7: je       0xffffff80022da8c7
+ffffff80022da8b9: test     rsi, rsi
+ffffff80022da8bc: je       0xffffff80022da8e3
+ffffff80022da8be: mov      rsi, qword ptr [rsi]
+ffffff80022da8c1: pop      rbp
+ffffff80022da8c2: jmp      0xffffff80022da908  ; __ZN21IO80211InfraInterface11setLQMGatedEy
+ffffff80022da8c7: lea      rdi, [rip + 0xbf0e0]  ; 0xffffff80023999ae
+ffffff80022da8ce: lea      rsi, [rip + 0xbf0fb]  ; "/AppleInternal/Library/BuildRoots/4~CW9mugA6gpmKPwyaAeCNWSZRmRlk6mvK_U3N5n0/Libr"
+ffffff80022da8d5: lea      rdx, [rip + 0xc0470]  ; "setLQMStatic"
+ffffff80022da8dc: mov      ecx, 0xb9c
+ffffff80022da8e1: jmp      0xffffff80022da8fd  ; __ZN21IO80211InfraInterface12setLQMStaticEPvS0_+0x4d
+ffffff80022da8e3: lea      rdi, [rip + 0xbf0c4]  ; 0xffffff80023999ae
+ffffff80022da8ea: lea      rsi, [rip + 0xbf0df]  ; "/AppleInternal/Library/BuildRoots/4~CW9mugA6gpmKPwyaAeCNWSZRmRlk6mvK_U3N5n0/Libr"
+ffffff80022da8f1: lea      rdx, [rip + 0xc0454]  ; "setLQMStatic"
+ffffff80022da8f8: mov      ecx, 0xba1
+ffffff80022da8fd: xor      eax, eax
+ffffff80022da8ff: call     0xffffff8000ab6560  ; _IOLog
+ffffff80022da904: xor      eax, eax
+ffffff80022da906: pop      rbp
+ffffff80022da907: ret      

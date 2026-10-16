@@ -1,7 +1,78 @@
-# Handoff: state of the GA403WM macOS bring-up (2026-10-11)
+# Handoff: state of the GA403WM macOS bring-up (2026-10-12)
 
 Where the work stands, what is proven, what is open, and how to get data. Written to continue on the macOS side.
 No SMBIOS values, passphrases, MACs or neighbour SSIDs belong in this file.
+
+## Status update 2026-10-12 (confirmed by the owner)
+
+The numbered "Open issues" below are the 2026-10-11 investigation log. As of 2026-10-12 the owner reports these as **fixed**:
+
+| Item | Now | Where the details are / what is still missing from the notes |
+|---|---|---|
+| 1. Trackpad (I2C `ASUP1208`) | **works** | cause (owner-reported 2026-10-12): it is dead after a **warm reboot from Windows into macOS**; a **full shutdown and cold power on** fixes it. Boot macOS from cold, or shut down after Windows |
+| 7. HiDPI | **works, 2x** ("looks like 1440 x 900", like Windows 200 % scaling) | [SCRIPTS.md §4](SCRIPTS.md#4-hidpi-looks-like-1440-x-900-step-by-step); fractional scales are not supported |
+| 10. Wi-Fi throughput (`itlmt7925`) | **full link speed** (HE, 160 MHz) | the owner measured it at the maximum speed; the numbers (`iperf3`, AP model, band, distance) will be supplied by the owner later for comparison: [WIFI.md](WIFI.md). Not measured by the agent |
+| 13. Bluetooth, BLE mouse | **works** (`MtkBtFw` + `BtLeDlFix`) | [BLUETOOTH.md](BLUETOOTH.md) |
+| ROG controls | **all working**: profiles, power limits, fan curves/speeds, charge limit, keyboard light, Slash, RogControl | section "ASUS controls" below |
+| OLED brightness | **works** (`NVRMEdpBL`, DPCD AUX) | [OLED-BRIGHTNESS-DPCD.md](OLED-BRIGHTNESS-DPCD.md) (checklist results recorded 2026-10-12); the software dimmer was removed from RogControl (2026-10-12) |
+| 4. Wi-Fi shows as Ethernet | **native port in progress** | [WIFI-AS-WIFI.md](WIFI-AS-WIFI.md); `itlmt7925` stays as the fallback |
+
+Still open: sleep/wake (broad testing), audio, SD reader, battery %, a second owner reproducing the install, the USB map and the
+standard EFI in the release, upstreaming the NullMoth patch (AUX backlight; the VRAM clear was dropped 2026-10-13). Plan: [ROADMAP.md](ROADMAP.md).
+
+### Measure-and-record session 2026-10-12: skipped on purpose (decided by the owner), and not measurable
+
+Nothing below is a result. These are the items the session did **not** produce numbers or screenshots for, and why, so nobody
+reads a gap as a pass.
+
+| Item | Status | Why / what is needed |
+|---|---|---|
+| Wi-Fi throughput numbers (`iperf3`, latency, loss) | **skipped by the owner** | the link is at full speed (HE, 160 MHz) per the owner; the figures are supplied later and go into [WIFI.md](WIFI.md) with AP model, band and distance |
+| Battery drain / battery life | **skipped by the owner** | no promise is made ([ROADMAP.md](ROADMAP.md) row 24); the short on-battery bench (40 %, Silent / Performance) is in [ASUSCTL-MACOS.md](ASUSCTL-MACOS.md) and is not a drain test |
+| Sleep / wake, 5 cycles | **skipped by the owner** | sleep/wake is a known ❌ and roadmap row 22; the machine is used plugged in, without deep sleep |
+| Clean-up of the **live** ESP boot-args | **skipped by the owner** | the live config keeps its debug and `itlmt_native*` experiment arguments. Only the **exported release EFI** (made by `scripts/export-efi.py`, outside the repo) is cleaned: there `debug=0x100 keepsyms=1 msgbuf=1048576` and `itlmt_native=1 itlmt_native_if=1` are removed, `itlmt_m2=1 itlmt_m3=1 itlmt_fast=6` added (`itlmt_m1=0` kept), `itlmt7925Native.kext` disabled; `ocvalidate` clean, privacy check clean. The cleaned config has **not been booted** |
+| ItlWiFi screenshot | **skipped on purpose** | the owner is porting the native Wi-Fi stack; the menu app is not representative until that lands, so no shot was taken. Add `itlwifi.png` afterwards |
+| RogControl Manual mode, power limits | **new finding, not investigated** | 2026-10-13, popover, on AC, coming from Turbo: choosing Manual switched the UI and the fan mode but showed "power limit 45 W was refused" (defaults SPL 45 / SPPT 65 / FPPT 80 W); choosing Turbo again applied cleanly. Needs a look at which `Asus.set(.spl)` return code the kext gives and why |
+| App screenshots (RogControl popover / window / fan curves, About This Mac) | **done 2026-10-13** | PNGs in [images/](images/README.md); About This Mac redacted (name, serial). Hero (`hero.jpg`) composed from those shots; no OpenCore picker shot (dropped); TapGuard has no UI |
+| Fn+F7 / Fn+F8 visible dimming, other Fn keys | **not measured** | needs a person to look at the panel and press the keys ([ROADMAP.md](ROADMAP.md) row 23) |
+| Touchpad tap / scroll / TapGuard, BLE re-pair | **not measured** | needs hands on the device |
+| Audible audio, SD card insert, lid close, external monitor hot-plug | **not measured** | needs a person (sound, a card, the lid); the devices only enumerate (card reader `10ec:525a` with `Sinetek-rtsx` loaded, internal audio, the ASUS webcam) |
+| Charge limit read-back | **not available** | RogControl writes 60 % at login; the firmware offers no read-back that this session could use |
+
+## ASUS controls, RogControl and Bluetooth LE (was missing from this file)
+
+Details live in [ASUSCTL-MACOS.md](ASUSCTL-MACOS.md), [CPU-POWER.md](CPU-POWER.md), [BLUETOOTH.md](BLUETOOTH.md) and
+[rog-control-design.md](rog-control-design.md); this is the summary a new session needs.
+
+* **`AsusWmi.kext`** (ABI 1-3) calls the ASUS ATKD/WMI device from the kernel (`ATKD.WMNB`, 20-byte argument buffer, `DSTS`/`DEVS`) the way
+  Linux `asus-wmi` does: performance profile (0 balanced = "Performance", 1 turbo, 2 silent; DSTS always returns 3 on this BIOS, so the
+  last set value is tracked), PPT limits through AMD ALIB (the BIOS does not report them), fan curves and speeds, charge limit, battery
+  EC readout fix (`EC0._REG(3,1)`), keyboard light and Slash lighting (HID reports `0x5A` / `0x5D` sent from the kernel because user
+  space cannot open the keyboard without Input Monitoring), hotkeys through `_WED` (Fn+F2/F3/F4/F5). Interface: `debug.asuswmi.*`.
+* The profiles are what lifted the **2000 MHz cap on the Zen 5 cores**; together with `AmdCppc` + `AmdCppcPolicy` they now boost to
+  ~4.9 GHz under load (see the CPU section at the end of this file).
+* **`RogControl.app`** (menu bar popover + window): modes, Manual SPL/SPPT/FPPT, fan curves, charge limit, keyboard light, Slash,
+  AC/battery settings re-applied on power change and wake, `--bench`. Build/install: `scripts/build-rogcontrol.sh --install`.
+* **OLED brightness**: the panel is AUX-only; the fix is `NVRMEdpBL` (DPCD `0x722/3`, mode `0x721 = 2`), see the OLED document. The
+  EC backlight (`WMAA`, GBLD/SBLD) is not the OLED's; `AsusWmi` leaves it alone on the brightness keys.
+* **Bluetooth**: `MtkBtFw` downloads the MT7925 firmware over USB (Linux `btmtk` procedure), `BlueToolFixup` makes `bluetoothd` accept
+  the controller, and **`BtLeDlFix`** (Lilu plugin, patches one `cmp eax,8` in `bluetoothd`) removes the wait for the LE Data Length
+  Change event that kept BLE mice in `LE_READY_WAIT_FOR_LENGTH`. It must be re-derived if an OS update changes the bytes.
+
+## Public repository and releases (added 2026-10-12)
+
+* The repository is being prepared for public use: README (EN/VI) with a vibe-code warning and a status table, install guides
+  ([INSTALL.md](INSTALL.md), [INSTALL.vi.md](INSTALL.vi.md)), [COMPONENTS.md](COMPONENTS.md), [SCRIPTS.md](SCRIPTS.md) (every script, undo,
+  author-specific flags, HiDPI walkthrough), [ROADMAP.md](ROADMAP.md) (workstreams, milestones, codebase standardisation), issue
+  templates. **macOS 15 only; macOS 26 is out of scope** until 15 is stable.
+* **Release v1** (not tagged yet): `build-kexts` (`.github/workflows/build.yml`) builds the 7 kexts, the 3 apps and `AmdCppcPolicy`,
+  and on a `v*` tag attaches them with the patched OpenCore (`opencore.yml`), a sanitized `EFI-reference.zip` and `SHA256SUMS.txt`
+  (text: `.github/release-body.md`). The app and OpenCore build steps had never run in CI before this commit: run `build-kexts`
+  by hand and check before tagging. Kexts in releases always carry empty Wi-Fi credentials.
+* The **author's tested standard EFI** (real USB map, tested settings) is uploaded to the release **later** by the owner; run
+  `python3 scripts/check-efi-privacy.py` on its `config.plist` first. README/INSTALL carry a "coming soon" note to remove then.
+* **Standardisation rule**: no cleanup or renaming of a component before it passes the stability gate (14 days of daily use, a second
+  machine, a baseline). The clock for the components fixed on 2026-10-12 started that day. See the roadmap.
 
 ## Machine and boot chain
 
@@ -28,7 +99,7 @@ No SMBIOS values, passphrases, MACs or neighbour SSIDs belong in this file.
 
 ## Open issues (highest value first)
 
-1. **Trackpad dead on Windows and macOS.** Windows: `I2C HID Device ACPI\ASUP1208` problem 10, status `0xC000009E`
+1. **[RESOLVED 2026-10-12; cause: warm reboot from Windows into macOS, fix: full shutdown and power on (owner-reported)] Trackpad dead on Windows and macOS.** Windows: `I2C HID Device ACPI\ASUP1208` problem 10, status `0xC000009E`
    (device not ready); AMD I2C and GPIO controllers are OK. macOS: `TPD1` has a `VoodooI2CDeviceNub` but no HID child.
    Windows logged "Touchpad QA verification succeeded" on every boot until 2026-10-10 19:51 local; it was missing from
    the 19:59 boot on. That is after the macOS session of 12:55 UTC (the first with `itlmt7925` enabled since a bisect)
@@ -59,7 +130,7 @@ No SMBIOS values, passphrases, MACs or neighbour SSIDs belong in this file.
    * Tried and dropped: a macOS display override (EDID with a 120 Hz base DTD). The generator and sources were removed from
      the repo. Checked on macOS 2026-10-11: `/Library/Displays/Contents/Resources/Overrides` is empty, it was never installed.
      The panel boots and stays at 120 Hz on 1.13.0. HiDPI without touching the EDID: item 7.
-4. **Wi-Fi shows as Ethernet** in macOS (works: en2, DHCP). Runtime control: see 8. Clean-room `IO80211Controller` subclass (plan in `WIFI-AS-WIFI.md`, extract
+4. **[native port in progress 2026-10-12] Wi-Fi shows as Ethernet** in macOS (works: en2, DHCP). Runtime control: see 8. Clean-room `IO80211Controller` subclass (plan in `WIFI-AS-WIFI.md`, extract
    the ABI from the kernel collection with `tools/kc.py`; do not copy GPL `itlwm`). Step 1 (controller vtable, 12 pure virtuals)
    is in `IO80211-ABI.md`; the kernel collection is available at `Previous Content/com.apple.installer/` on the Data volume,
    so no BaseSystem.dmg download is needed. Skywalk interface and `apple80211_*` structs are not mapped yet.
@@ -77,7 +148,7 @@ No SMBIOS values, passphrases, MACs or neighbour SSIDs belong in this file.
    (The 1.9.0 lead "every cursor move is a primary flip" was fixed upstream in 1.10.0; installed now is 1.13.0.)
    Tools: `tools/framepace.swift` (no sudo), `scripts/macos-ws-frame-sample.sh` (sudo, WindowServer sample of the same frames).
 
-7. **HiDPI: not possible on NullMoth 1.13 (2026-10-11, measured).** With the scale-resolutions override macOS offers no HiDPI
+7. **HiDPI: only "1440 x 900" works on NullMoth 1.13+; update 2026-10-11 19:13: with the round-f override below it works from System Settings at 120 Hz (user report; user guide: [SCRIPTS.md §4](SCRIPTS.md#4-hidpi-looks-like-1440-x-900-step-by-step)). The rest of this item is the chronological investigation and its early conclusions are superseded.** Original text: not possible on NullMoth 1.13 (2026-10-11, measured). With the scale-resolutions override macOS offers no HiDPI
    mode at all (every mode has points == pixels; listed with CGDisplayCopyAllDisplayModes). "1440 x 900" is a low-resolution
    mode `0x80001000`: NVRMFB implements it as a 1440x900 surface scaled by NVKMS to the 2880x1800 raster, the NVKMS test commit
    fails (`switchMode 0x80001000: test 1440x900 -> raster 2880x1800 ... -> 0`), NVRMFB stays on 0x10100 while WindowServer has
@@ -109,7 +180,7 @@ No SMBIOS values, passphrases, MACs or neighbour SSIDs belong in this file.
    (1440x900, 1680x1050, 1280x800 "looks like"); no EDID change, no prefs deleted, so no new NVKMS mode. It lives in the
    same directory `scripts/remove-display-override.sh` (Linux) deletes, so that script removes it too. **Not applied yet.**
 
-8. **Wi-Fi runtime control** (option B of `WIFI-AS-WIFI.md`): user client + supervisor in `itlmt7925` (scan, join, disconnect,
+8. **[works 2026-10-12] Wi-Fi runtime control** (option B of `WIFI-AS-WIFI.md`): user client + supervisor in `itlmt7925` (scan, join, disconnect,
    reconnect after deauth/beacon loss, link down while between networks) and the ItlWiFi menu bar app (`macos/ItlWiFi`,
    `scripts/build-itlwifi.sh`). Builds clean, all symbols resolve against 24.6.0, app runs. **Kext not run on hardware yet.**
    Install: `scripts/macos-install-kext.sh itlmt7925` (keeps the plist credentials, backup in `EFI/OC/Kexts-backup/`).
@@ -200,7 +271,8 @@ No SMBIOS values, passphrases, MACs or neighbour SSIDs belong in this file.
      `1e8b2715e63437e6f09ec416a856d2b1061c00c85491e6e53db732be026a6e44`.
      Backup: `EFI/OC/Kexts-backup/itlmt7925.kext.20261011-211949`. Saved credentials were copied and verified privately;
      OpenCore config was verified unchanged, with the existing Kernel/Add entry enabled. No reboot performed.
-   * Brightness: existing AUX/DPCD limitation and RogControl software dimming documented in ASUSCTL-MACOS.md remain;
+   * Brightness: the AUX/DPCD limitation was documented in ASUSCTL-MACOS.md (later solved by `NVRMEdpBL`; the RogControl
+     software dimming mentioned there is gone);
      this continuation does not change GPU/backlight code.
 
 10d. **ItlWiFi speed-test error:** the screenshot's "speed.cloudflare.com not reachable over en2" was caused by
@@ -225,7 +297,7 @@ No SMBIOS values, passphrases, MACs or neighbour SSIDs belong in this file.
      `build/ItlWiFi.before-speed-fix.app`. LaunchServices initially returned -600 just after stopping the old process;
      launching the installed executable directly succeeded (PID 24849). No kext / ESP / VPN configuration changed.
 
-10. **Wi-Fi after boot did not come back (fixed in code 2026-10-11, round c):** the supervisor change wiped the credentials in
+10. **[Wi-Fi throughput: full link speed since 2026-10-12] Wi-Fi after boot did not come back (fixed in code 2026-10-11, round c):** the supervisor change wiped the credentials in
     `m3Run1()` after the first selection, so when L6 passed no unicast and the ladder stepped down, the next level ended in
     `nocred` (rc -22) and the supervisor started again at L6, forever. Now the ladder keeps them and `lvlCap` remembers the
     level that worked. RSSI decoding works (2 chains, 0xff for the unused ones; `rssi-probe` holds raw samples).
@@ -239,17 +311,17 @@ No SMBIOS values, passphrases, MACs or neighbour SSIDs belong in this file.
     typing quiet time needs VoodooPS2Keyboard; this keyboard is USB): `scripts/build-tapguard.sh --install`, Accessibility
     permission, `defaults write com.itlmt7925.TapGuard QuietMs -int <ms>`.
 
-12. **CPU clock** (`tools/cpuclock.c`): 1.4-1.8 GHz sustained single-thread at first (AC), 3.0-3.8 GHz later on battery.
+12. **[RESOLVED: AsusWmi profiles + AmdCppc, see the CPU sections at the end] CPU clock** (`tools/cpuclock.c`): 1.4-1.8 GHz sustained single-thread at first (AC), 3.0-3.8 GHz later on battery.
     macOS has no AMD P-state/CPPC driver; the clock follows the firmware and the Armoury Crate profile. Measure on AC with
     the Performance/Turbo profile before writing a CPPC kext. On AC (03:45): still 1.4-3.3 GHz. `AmdCppc.kext` (round d) reads
     HWCR/PStateCtl/CPPC on every CPU (`sysctl debug.amdcppc.report`) and changes them only through root sysctls
     (`pstate`, `boost`, `cppc`, `epp`), so the fix can be tried without a reboot.
 
-13. **Bluetooth** (MT7925 BT, USB 0489:e11e): no macOS driver; bluetoothd idles out and is respawned every ~32 s.
+13. **[RESOLVED 2026-10-12] Bluetooth** (MT7925 BT, USB 0489:e11e): no macOS driver; bluetoothd idles out and is respawned every ~32 s.
     2026-10-11: `kexts/MtkBtFw` loads the firmware (Linux btmtk procedure) and BlueToolFixup 2.7.2 + the two NVRAM
     variables are on the ESP. Controller comes up (State On, real address, firmware v9736); pairing not tested yet. See
     [BLUETOOTH.md](BLUETOOTH.md).
-14. **CPU clock** (AmdCppc, `sysctl debug.amdcppc.freq`, 2026-10-11, AC, CPPC off): the 4 Zen 5 cores (cpu0-7) sit at exactly
+14. **[RESOLVED, see the CPU sections at the end] CPU clock** (AmdCppc, `sysctl debug.amdcppc.freq`, 2026-10-11, AC, CPPC off): the 4 Zen 5 cores (cpu0-7) sit at exactly
     2000 MHz (P0, hardware P-state status FID 0x190) and never boost; the 8 Zen 5c cores (cpu8-23) run up to 3300 MHz, their
     CPPC highest perf (125 vs 196-208 for Zen 5). A single thread therefore gets 2.0 or 3.3 GHz depending on where the
     scheduler puts it, never the 5.1 GHz boost. CPPC on + EPP 0 did not change `cpuclock` once; per-core numbers with CPPC
@@ -280,6 +352,48 @@ Prompt for Claude Code on Linux (paste as is):
 > Never print Wi-Fi passphrases, SMBIOS values or MACs. If any step fails, stop and show me the output, do not improvise
 > on the ESP. At the end show `ls -la /boot/EFI/OC/Kexts /boot/EFI/OC/Kexts-backup` and the boot-args, then tell me to
 > reboot into macOS.
+
+## Next steps (2026-10-12): after the reboot into 1.14.2 + local patches
+
+State on the machine (nothing of this is loaded until the reboot): upstream NullMoth **1.14.2**, NVRMFB = VRAM-clear
+patch + AUX-brightness hook, `NVRMEdpBL.kext`, `nvrmacpibl=1` in boot-args. Read `NULLMOTH.md` ("Local patches on top of
+upstream"), `VRAM-GRANT-STALL.md`, `OLED-BRIGHTNESS-DPCD.md`.
+
+1. Boots? Both displays up (OLED 2880x1800 @ 120 Hz, Mi Monitor 1920x1080 @ 144 Hz). If not: boot-arg `nvrmedpbl=0`, or
+   `scripts/macos-edpbl-install.sh --undo`, or the picker's "Start once without NVIDIA driver".
+2. Brightness: the checklist in `OLED-BRIGHTNESS-DPCD.md` ("Verify after the reboot"); record the result in that file
+   (done 2026-10-12; the software dimmer is gone from RogControl).
+3. `scripts/macos-nvrmfb-vramclear-ab.sh` (root): MB/s for `clear_mode` 0 and 1; record in `VRAM-GRANT-STALL.md`; re-check
+   the stall picture and `tools/framepace.swift`.
+4. Report upstream: the VRAM clear (branch `nvrmfb-vram-clear-nontemporal`) and the AUX backlight (branch
+   `nvrm-edp-aux-backlight`, commit `3501a25`) as PRs from the fork; (2026-10-13: both are pushed to the fork, rebased onto
+   v1.15.0, next to the combined branch `ga403wm`; no PR opened. The VRAM clear is no longer worth proposing: the cause was the
+   PAT slot, see `VRAM-GRANT-STALL.md`. The AUX backlight is the one to send.)
+
+## Next steps (2026-10-13): after the reboot into 1.15.0 + overlay
+
+State on the machine (nothing of this is loaded until the reboot): upstream NullMoth **1.15.0** (installed 17:43, backup
+`/Library/NullMoth/backup-20261013-174350.lXzh5Q`), NVRMFB = upstream + the AUX-brightness hook only (`b9040104...`, swapped
+17:59), `NVRMEdpBL.kext` (`433dfcbf...`), boot-arg `nvrmacpibl=1`. Built from fork `ga403wm` @ `f5b5eaa` (= v1.15.0 + the
+brightness patch). 1.15.0 fixed neither of our patches; it is "the last release for macOS 15". The VRAM-clear patch is **dropped**
+(PAT was the cause; tag `ga403wm-with-vramclear`). Read `NULLMOTH.md`, `OLED-BRIGHTNESS-DPCD.md`, `VRAM-GRANT-STALL.md`.
+
+1. Boots? Both displays up (OLED 2880x1800 @ 120 Hz, Mi Monitor 1920x1080 @ 144 Hz) and `kmutil showloaded | grep nullmoth` lists
+   `NVRMEdpBL`. If not: boot-arg `nvrmedpbl=0`, or `scripts/macos-edpbl-install.sh --undo` (upstream 1.15.0 stays), or
+   `uninstall.sh /Library/NullMoth/backup-20261013-174350.lXzh5Q` (back to the 1.14.7 files), or the picker's "Start once without
+   NVIDIA driver".
+2. Brightness: the checklist in `OLED-BRIGHTNESS-DPCD.md` ("Verify after the reboot"). Still without a recorded result: on the
+   17:27 boot (1.14.7 overlay) the kext was loaded, but `log show --boot --info --debug` found no `NVRM-edpbl:` line (the
+   `nvrm-dpcd` read as a normal user returns 0x1b, insufficient permissions), so test the slider / Fn+F7/F8 and read DPCD `0x721`
+   (= 02) with `nvrm-dpcd` as root.
+3. WindowServer: 1.15.0 claims "high WindowServer CPU and low frame rate at 4K", "old content after a redraw" and "window copies
+   up to 35x faster". Re-measure with the same interval as 2026-10-12 17:43 (33.4 % of one CPU, 34.5 flips/s; `tools/framepace.swift`)
+   and record it in `WINDOWSERVER-CPU.md`. The instrumented readback plugin is gone (an upgrade removes it; rebuild from
+   `claude/windowserver-iosurface-readback` against v1.15.0 if stage 2 is ever needed).
+4. Chrome / Edge / Electron: 1.15.0 turns their GPU path (ANGLE Metal) on again by default; if pages show corrupted areas, start
+   with `NVMTL_ANGLE_METAL=0` and tell upstream (their known issue).
+5. `macos-ws-pat-check.sh` still checks PAT PA6 = WC and the WindowServer CPU; it skips the clear A/B (`debug.nvrmfb_clear_*` is
+   gone with the dropped patch). To see whether the clear still matters, `macos-vramtest.sh` (8 MB grants, no counters needed).
 
 ## NullMoth update to 1.12.0 (manual route, EFI part done 2026-10-11)
 
@@ -366,3 +480,39 @@ means "no framebuffer", not "kernel hung" (the diag worker kept writing).
 * Do not re-run 1401 "Build" on the ESP; take a backup (`config.plist.<name>`) before every ESP config edit.
 * NVRAM-based `itl*` variables do not land in the NVIDIA-driver configuration; use `ITLLOG.BIN`.
 * Windows boots through OpenCore too: OC ACPI patches apply to Windows as well.
+* NullMoth driver changes are upstream-first: build from the fork (`thanhnndev/nvidia-macos-driver`), install the release
+  package with its own `install.sh`, then layer the machine patch with a script that checks hashes, backs up and has
+  `--undo` (`scripts/macos-edpbl-install.sh`). Never edit installed kexts by hand.
+* Root steps are run by the agent through `osascript -e 'do shell script "<wrapper file>" with administrator privileges'`
+  (the user types the password in the dialog); do not ask the user to run `sudo` in a terminal. Put the commands in a
+  wrapper file: `$?` inside the `-e` string breaks AppleScript quoting.
+* One branch per concern in the fork for upstream PRs (AUX backlight: `nvrm-edp-aux-backlight`); the branch `ga403wm` (upstream
+  tag + that patch + the machine packaging, pushed 2026-10-13, worktree `nvidia-macos-driver-ws-ga403`) is what the README/INSTALL send users to and what
+  the build script uses. Rebase it onto the next upstream tag. Leave other sessions' work (Wi-Fi, Bluetooth, RogControl) untouched.
+
+## CPU policy update (2026-10-12)
+
+AmdCppcPolicy LaunchDaemon is installed and active: enables CPPC and sets autonomous EPP by
+ASUS profile / power source, verifies all 24 CPUs, pauses during sleep and restores after wake.
+One live round: Zen 5 all-worker load 4.89–4.91 GHz, Zen 5c 3.33 GHz; actual sleep/wake restored
+AC Performance EPP128. A single worker mostly ran on Zen 5c (~3.2 GHz); do not claim a pinned
+5.1 GHz single-core benchmark. AmdCppc 0.2.0 installed on ESP (backup 20261012-170224), not yet
+loaded: running kext remains 0.1.0 until reboot. See CPU-POWER.md for validation and rollback.
+
+## WindowServer PAT research (2026-10-12 17:29, reboot pending)
+
+ESP and repo PAT patch now set PA6=WC instead of UC-: table 0001010600070106.
+Only one entry changes; do not switch to the all-WB Shaneee variant. AmdCppc 0.2.1
+is installed on ESP for read-only debug.amdcppc.cache diagnostics; live remains 0.2.0.
+Backup config.plist.pre-pat-pa6-20261012-172936-498961; kext backup 20261012-172936.
+After reboot, run scripts/macos-ws-pat-check.sh through osascript administrator privileges.
+It checks the actual PAT on all 24 CPUs, runs clear A/B and a desktop CPU interval.
+No live PAT read / post-fix speedup yet: probe was blocked by approval, hot-unload was
+refused because AmdCppc is retained. CPU policy daemon was restored. See WINDOWSERVER-RESEARCH.md.
+
+### PAT reboot validation completed (2026-10-12 17:43)
+
+AmdCppc 0.2.1 and corrected PAT are active: PA6=1 on all 24 CPUs.
+Clear mode 1 now 1043–1094 MB/s (~9–10x before); mode 0 1008–1048 MB/s.
+WindowServer 33.4% of one CPU, 34.5 flips/s, zero errors/drops. clear_mode=1 restored.
+No further reboot is needed for these changes; see WINDOWSERVER-RESEARCH.md.

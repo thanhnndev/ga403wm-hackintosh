@@ -1,0 +1,51 @@
+# 0xffffff800298e6d8 __ZN24IOUserNetworkPacketQueue12initWithPoolEP25IOSkywalkPacketBufferPooljjjjP8OSObjectPFvS3_zEP25IODataQueueDispatchSourcePv
+ffffff800298e6d8: push     rbp
+ffffff800298e6d9: mov      rbp, rsp
+ffffff800298e6dc: push     r15
+ffffff800298e6de: push     r14
+ffffff800298e6e0: push     r13
+ffffff800298e6e2: push     r12
+ffffff800298e6e4: push     rbx
+ffffff800298e6e5: push     rax
+ffffff800298e6e6: mov      dword ptr [rbp - 0x2c], r9d
+ffffff800298e6ea: mov      r15d, r8d
+ffffff800298e6ed: mov      r12d, ecx
+ffffff800298e6f0: mov      r13d, edx
+ffffff800298e6f3: mov      r14, rsi
+ffffff800298e6f6: mov      rbx, rdi
+ffffff800298e6f9: call     0xffffff8000ab70f0  ; _IORecursiveLockAlloc
+ffffff800298e6fe: mov      qword ptr [rbx + 0xe0], rax
+ffffff800298e705: test     rax, rax
+ffffff800298e708: je       0xffffff800298e758
+ffffff800298e70a: lea      rax, [rip + 0x20557]  ; 0xffffff80029aec68
+ffffff800298e711: sub      rsp, 8
+ffffff800298e715: mov      rdi, rbx
+ffffff800298e718: mov      rsi, r14
+ffffff800298e71b: mov      edx, r13d
+ffffff800298e71e: mov      ecx, r12d
+ffffff800298e721: mov      r8d, r15d
+ffffff800298e724: mov      r9d, dword ptr [rbp - 0x2c]
+ffffff800298e728: push     qword ptr [rbp + 0x28]
+ffffff800298e72b: push     qword ptr [rbp + 0x18]
+ffffff800298e72e: push     qword ptr [rbp + 0x10]
+ffffff800298e731: call     qword ptr [rax + 0x240]
+ffffff800298e737: add      rsp, 0x20
+ffffff800298e73b: test     al, al
+ffffff800298e73d: je       0xffffff800298e758
+ffffff800298e73f: mov      rdi, qword ptr [rbp + 0x20]
+ffffff800298e743: mov      qword ptr [rbx + 0xd8], rdi
+ffffff800298e74a: mov      rax, qword ptr [rdi]
+ffffff800298e74d: call     qword ptr [rax + 0x20]
+ffffff800298e750: mov      byte ptr [rbx + 0x28], 0
+ffffff800298e754: mov      al, 1
+ffffff800298e756: jmp      0xffffff800298e75a  ; __ZN24IOUserNetworkPacketQueue12initWithPoolEP25IOSkywalkPacketBufferPooljjjjP8OSObjectPFvS3_zEP25IODataQueueDispatchSourcePv+0x82
+ffffff800298e758: xor      eax, eax
+ffffff800298e75a: add      rsp, 8
+ffffff800298e75e: pop      rbx
+ffffff800298e75f: pop      r12
+ffffff800298e761: pop      r13
+ffffff800298e763: pop      r14
+ffffff800298e765: pop      r15
+ffffff800298e767: pop      rbp
+ffffff800298e768: ret      
+ffffff800298e769: nop      

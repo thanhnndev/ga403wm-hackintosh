@@ -191,8 +191,13 @@ bool itlmt7925::start(IOService *provider)
 {
     if (!super::start(provider)) return false;
     uint32_t m1 = 0;
+    bool runM1 = false;
     txLock = IOLockAlloc();
     cmdLock = IOLockAlloc();
+    nativeLock = IOLockAlloc();
+    if (!nativeLock) return false;
+    uint32_t nativeDP = 0;
+    nativeMode = PE_parse_boot_argn("itlmt_native_dp", &nativeDP, sizeof(nativeDP)) && nativeDP;
     setProperty("wifi-state", "off");                         // until M3 runs (boot-arg itlmt_m3=1)
 
     pci = OSDynamicCast(IOPCIDevice, provider);
@@ -224,10 +229,15 @@ bool itlmt7925::start(IOService *provider)
 
     holdLog();
 
-    registerService();
-
     // M1 only runs when asked for: boot-arg itlmt_m1=<seconds to wait before touching DMA/firmware>
-    if (PE_parse_boot_argn("itlmt_m1", &m1, sizeof(m1)) && !m1Started) {
+    runM1 = PE_parse_boot_argn("itlmt_m1", &m1, sizeof(m1)) && !m1Started;
+    // Native mode: the Wi-Fi interface takes its station address from this service when it matches, and the address the radio
+    // uses on air is the firmware's, read by M2. Publishing the service before that would give the interface a different
+    // address from the one in the 802.11 headers (DHCP / ARP replies are then addressed to a station the AP never heard of).
+    // The worker publishes (publishService) as soon as the address is known, or when M1 / M2 gave up.
+    if (nativeMode && runM1) regPending = true;
+    else registerService();
+    if (runM1) {
         m1Started = true;
         startThread(m1Thread, this);
     }
@@ -237,6 +247,15 @@ fail:
     holdLog();
     stop(provider);
     return false;
+}
+
+// Once only, from the worker thread (or from start() when no worker runs).
+void itlmt7925::publishService()
+{
+    if (__atomic_exchange_n(&regPending, false, __ATOMIC_ACQ_REL)) {
+        note(getProperty("itlmt_mac_source") ? "registerService (native: address known)" : "registerService (native: address not read)");
+        registerService();
+    }
 }
 
 void itlmt7925::stop(IOService *provider)

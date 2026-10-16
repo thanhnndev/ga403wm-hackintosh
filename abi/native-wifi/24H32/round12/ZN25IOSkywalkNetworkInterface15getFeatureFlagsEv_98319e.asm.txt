@@ -1,0 +1,6 @@
+# 0xffffff800298319e __ZN25IOSkywalkNetworkInterface15getFeatureFlagsEv
+ffffff800298319e: push     rbp
+ffffff800298319f: mov      rbp, rsp
+ffffff80029831a2: xor      eax, eax
+ffffff80029831a4: pop      rbp
+ffffff80029831a5: ret      

@@ -1,0 +1,7 @@
+# 0xffffff80022dca20 __ZN21IO80211InfraInterface22getProtocolOffloadDataER32apple80211_protocol_offload_data
+ffffff80022dca20: push     rbp
+ffffff80022dca21: mov      rbp, rsp
+ffffff80022dca24: mov      rax, qword ptr [rdi + 0x118]
+ffffff80022dca2b: mov      rdi, qword ptr [rax + 0x198]
+ffffff80022dca32: pop      rbp
+ffffff80022dca33: jmp      0xffffff8002267a84  ; __ZN26IO80211DataPathInformAgent22getProtocolOffloadDataER32apple80211_protocol_offload_data

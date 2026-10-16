@@ -1,0 +1,10 @@
+# 0xffffff80022d454e __ZN21IO80211InfraInterface24publishOffloadCapabilityEv
+ffffff80022d454e: push     rbp
+ffffff80022d454f: mov      rbp, rsp
+ffffff80022d4552: mov      rax, qword ptr [rdi]
+ffffff80022d4555: mov      rax, qword ptr [rax + 0xa98]
+ffffff80022d455c: movabs   rsi, 0x100001000101010
+ffffff80022d4566: movabs   rdx, 0x2000040a00640100
+ffffff80022d4570: pop      rbp
+ffffff80022d4571: jmp      rax
+ffffff80022d4573: nop      

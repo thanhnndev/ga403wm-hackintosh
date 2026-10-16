@@ -1,0 +1,6 @@
+# 0xffffff80022dc1d2 __ZN21IO80211InfraInterface11packetSpaceEh
+ffffff80022dc1d2: push     rbp
+ffffff80022dc1d3: mov      rbp, rsp
+ffffff80022dc1d6: xor      eax, eax
+ffffff80022dc1d8: pop      rbp
+ffffff80022dc1d9: ret      

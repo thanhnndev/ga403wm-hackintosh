@@ -1,0 +1,12 @@
+# 0xffffff80022dad6c __ZN21IO80211InfraInterface12setAMPDUstatEP22apple80211_stat_reportP28apple80211_ampdu_stat_report
+ffffff80022dad6c: push     rbp
+ffffff80022dad6d: mov      rbp, rsp
+ffffff80022dad70: mov      rax, qword ptr [rdi + 0x110]
+ffffff80022dad77: mov      rdi, qword ptr [rax + 0x40]
+ffffff80022dad7b: test     rdi, rdi
+ffffff80022dad7e: je       0xffffff80022dad86
+ffffff80022dad80: pop      rbp
+ffffff80022dad81: jmp      0xffffff80022e9e78  ; __ZN23IO80211InterfaceMonitor12setAMPDUstatEP22apple80211_stat_reportP28apple80211_ampdu_stat_report
+ffffff80022dad86: xor      eax, eax
+ffffff80022dad88: pop      rbp
+ffffff80022dad89: ret      

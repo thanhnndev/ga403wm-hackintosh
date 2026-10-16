@@ -1,0 +1,34 @@
+# 0xffffff800298961c __ZN26IOSkywalkEthernetInterface16inet_mask_to_lenEPhm
+ffffff800298961c: push     rbp
+ffffff800298961d: mov      rbp, rsp
+ffffff8002989620: test     rdx, rdx
+ffffff8002989623: je       0xffffff8002989641
+ffffff8002989625: xor      ecx, ecx
+ffffff8002989627: xor      edi, edi
+ffffff8002989629: xor      eax, eax
+ffffff800298962b: mov      dil, byte ptr [rsi + rdi]
+ffffff800298962f: cmp      dil, 0xff
+ffffff8002989633: jne      0xffffff8002989645
+ffffff8002989635: inc      eax
+ffffff8002989637: mov      rdi, rax
+ffffff800298963a: cmp      rax, rdx
+ffffff800298963d: jb       0xffffff800298962b
+ffffff800298963f: jmp      0xffffff800298964c  ; __ZN26IOSkywalkEthernetInterface16inet_mask_to_lenEPhm+0x30
+ffffff8002989641: xor      eax, eax
+ffffff8002989643: jmp      0xffffff800298964a  ; __ZN26IOSkywalkEthernetInterface16inet_mask_to_lenEPhm+0x2e
+ffffff8002989645: test     dil, dil
+ffffff8002989648: js       0xffffff8002989654
+ffffff800298964a: xor      ecx, ecx
+ffffff800298964c: shl      eax, 3
+ffffff800298964f: add      rax, rcx
+ffffff8002989652: pop      rbp
+ffffff8002989653: ret      
+ffffff8002989654: xor      ecx, ecx
+ffffff8002989656: mov      edx, ecx
+ffffff8002989658: inc      rcx
+ffffff800298965b: cmp      edx, 6
+ffffff800298965e: ja       0xffffff800298964c
+ffffff8002989660: add      dil, dil
+ffffff8002989663: js       0xffffff8002989656
+ffffff8002989665: jmp      0xffffff800298964c  ; __ZN26IOSkywalkEthernetInterface16inet_mask_to_lenEPhm+0x30
+ffffff8002989667: nop      

@@ -1,0 +1,8 @@
+# 0xffffff8002978926 __ZN25IOSkywalkNetworkBSDClient14runGatedActionEPFiP8OSObjectPvS2_S2_S2_ES2_S2_S2_S2_
+ffffff8002978926: push     rbp
+ffffff8002978927: mov      rbp, rsp
+ffffff800297892a: mov      rdi, qword ptr [rdi + 0x90]
+ffffff8002978931: mov      rax, qword ptr [rdi]
+ffffff8002978934: mov      rax, qword ptr [rax + 0x1c8]
+ffffff800297893b: pop      rbp
+ffffff800297893c: jmp      rax

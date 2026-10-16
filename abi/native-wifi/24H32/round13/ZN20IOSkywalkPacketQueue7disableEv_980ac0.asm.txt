@@ -1,0 +1,16 @@
+# 0xffffff8002980ac0 __ZN20IOSkywalkPacketQueue7disableEv
+ffffff8002980ac0: push     rbp
+ffffff8002980ac1: mov      rbp, rsp
+ffffff8002980ac4: push     rbx
+ffffff8002980ac5: push     rax
+ffffff8002980ac6: mov      rbx, rdi
+ffffff8002980ac9: cmp      qword ptr [rdi + 0x68], 0
+ffffff8002980ace: je       0xffffff8002980ad8
+ffffff8002980ad0: mov      rdi, rbx
+ffffff8002980ad3: call     0xffffff8002980aee  ; __ZN20IOSkywalkPacketQueue9resetABFSEv
+ffffff8002980ad8: mov      rax, qword ptr [rip + 0x265f1]  ; 0xffffff80029a70d0
+ffffff8002980adf: mov      rdi, rbx
+ffffff8002980ae2: add      rsp, 8
+ffffff8002980ae6: pop      rbx
+ffffff8002980ae7: pop      rbp
+ffffff8002980ae8: jmp      qword ptr [rax + 0x168]

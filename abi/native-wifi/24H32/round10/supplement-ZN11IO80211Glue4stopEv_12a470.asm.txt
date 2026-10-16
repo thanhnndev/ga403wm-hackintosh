@@ -1,0 +1,45 @@
+# 0xffffff800212a470 __ZN11IO80211Glue4stopEv
+ffffff800212a470: push     rbp
+ffffff800212a471: mov      rbp, rsp
+ffffff800212a474: push     rbx
+ffffff800212a475: sub      rsp, 0x38
+ffffff800212a479: mov      rbx, rdi
+ffffff800212a47c: mov      rax, qword ptr [rip + 0x291c95]  ; 0xffffff80023bc118
+ffffff800212a483: mov      rax, qword ptr [rax]
+ffffff800212a486: mov      qword ptr [rbp - 0x10], rax
+ffffff800212a48a: mov      rax, qword ptr [rip + 0x291b6f]  ; 0xffffff80023bc000
+ffffff800212a491: lea      rdx, [rbp - 0x38]
+ffffff800212a495: mov      qword ptr [rdx], rax
+ffffff800212a498: mov      qword ptr [rdx + 8], 0x40000000
+ffffff800212a4a0: lea      rax, [rip + 0x25b]  ; 0xffffff800212a702
+ffffff800212a4a7: mov      qword ptr [rdx + 0x10], rax
+ffffff800212a4ab: lea      rax, [rip + 0x298ad6]  ; 0xffffff80023c2f88
+ffffff800212a4b2: mov      qword ptr [rdx + 0x18], rax
+ffffff800212a4b6: mov      qword ptr [rdx + 0x20], rdi
+ffffff800212a4ba: xor      esi, esi
+ffffff800212a4bc: call     0xffffff800212a51c  ; __ZN11IO80211Glue22runActionBlockOnSerialEbU13block_pointerFivE
+ffffff800212a4c1: mov      rax, qword ptr [rbx + 0x18]
+ffffff800212a4c5: mov      rdi, qword ptr [rax + 0x50]
+ffffff800212a4c9: test     rdi, rdi
+ffffff800212a4cc: je       0xffffff800212a4dc
+ffffff800212a4ce: mov      esi, 1
+ffffff800212a4d3: call     0xffffff80031d421c  ; __ZN11CCLogStream9shouldLogE16CCStreamLogLevel
+ffffff800212a4d8: test     al, al
+ffffff800212a4da: jne      0xffffff800212a4f3
+ffffff800212a4dc: mov      rax, qword ptr [rip + 0x291c35]  ; 0xffffff80023bc118
+ffffff800212a4e3: mov      rax, qword ptr [rax]
+ffffff800212a4e6: cmp      rax, qword ptr [rbp - 0x10]
+ffffff800212a4ea: jne      0xffffff800212a517
+ffffff800212a4ec: add      rsp, 0x38
+ffffff800212a4f0: pop      rbx
+ffffff800212a4f1: pop      rbp
+ffffff800212a4f2: ret      
+ffffff800212a4f3: mov      rax, qword ptr [rbx + 0x18]
+ffffff800212a4f7: mov      rdi, qword ptr [rax + 0x50]
+ffffff800212a4fb: lea      rsi, [rip + 0x202acd]  ; "[wcl] %s@%d:Stop compleated"
+ffffff800212a502: lea      rdx, [rip + 0x202ae2]  ; "stop"
+ffffff800212a509: mov      ecx, 0xb6
+ffffff800212a50e: xor      eax, eax
+ffffff800212a510: call     0xffffff80031d252e  ; __ZN11CCLogStream8logAlertEPKcz
+ffffff800212a515: jmp      0xffffff800212a4dc  ; __ZN11IO80211Glue4stopEv+0x6c
+ffffff800212a517: call     0xffffff8000383150  ; ___stack_chk_fail

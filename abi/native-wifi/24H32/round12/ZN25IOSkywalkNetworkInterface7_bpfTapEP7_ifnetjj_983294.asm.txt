@@ -1,0 +1,23 @@
+# 0xffffff8002983294 __ZN25IOSkywalkNetworkInterface7_bpfTapEP7__ifnetjj
+ffffff8002983294: push     rbp
+ffffff8002983295: mov      rbp, rsp
+ffffff8002983298: push     r14
+ffffff800298329a: push     rbx
+ffffff800298329b: mov      ebx, edx
+ffffff800298329d: mov      r14d, esi
+ffffff80029832a0: call     0xffffff800069cc00  ; _ifnet_softc
+ffffff80029832a5: mov      rcx, qword ptr [rax]
+ffffff80029832a8: mov      rdi, rax
+ffffff80029832ab: call     qword ptr [rcx + 0x680]
+ffffff80029832b1: lea      rsi, [rip + 0x337b0]  ; 0xffffff80029b6a68
+ffffff80029832b8: mov      rdi, rax
+ffffff80029832bb: call     0xffffff8000a49ab0  ; __ZN15OSMetaClassBase12safeMetaCastEPKS_PK11OSMetaClass
+ffffff80029832c0: mov      rcx, qword ptr [rax]
+ffffff80029832c3: mov      rcx, qword ptr [rcx + 0x9d8]
+ffffff80029832ca: mov      rdi, rax
+ffffff80029832cd: mov      esi, r14d
+ffffff80029832d0: mov      edx, ebx
+ffffff80029832d2: pop      rbx
+ffffff80029832d3: pop      r14
+ffffff80029832d5: pop      rbp
+ffffff80029832d6: jmp      rcx

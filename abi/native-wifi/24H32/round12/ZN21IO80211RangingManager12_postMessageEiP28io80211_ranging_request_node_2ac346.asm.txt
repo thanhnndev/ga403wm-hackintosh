@@ -1,0 +1,44 @@
+# 0xffffff80022ac346 __ZN21IO80211RangingManager12_postMessageEiP28io80211_ranging_request_node
+ffffff80022ac346: push     rbp
+ffffff80022ac347: mov      rbp, rsp
+ffffff80022ac34a: push     rbx
+ffffff80022ac34b: sub      rsp, 0x18
+ffffff80022ac34f: mov      rbx, rdi
+ffffff80022ac352: mov      rax, qword ptr [rip + 0x10fdbf]  ; 0xffffff80023bc118
+ffffff80022ac359: mov      rax, qword ptr [rax]
+ffffff80022ac35c: mov      qword ptr [rbp - 0x10], rax
+ffffff80022ac360: mov      qword ptr [rbp - 0x1c], 1
+ffffff80022ac368: mov      dword ptr [rbp - 0x14], esi
+ffffff80022ac36b: test     rdx, rdx
+ffffff80022ac36e: je       0xffffff80022ac382
+ffffff80022ac370: mov      rax, qword ptr [rdx + 0x738]
+ffffff80022ac377: test     rax, rax
+ffffff80022ac37a: je       0xffffff80022ac382
+ffffff80022ac37c: mov      eax, dword ptr [rax + 4]
+ffffff80022ac37f: mov      dword ptr [rbp - 0x18], eax
+ffffff80022ac382: mov      rax, qword ptr [rbx + 0x10]
+ffffff80022ac386: mov      rdi, qword ptr [rax + 8]
+ffffff80022ac38a: mov      rax, qword ptr [rdi]
+ffffff80022ac38d: call     qword ptr [rax + 0xc80]
+ffffff80022ac393: test     rax, rax
+ffffff80022ac396: je       0xffffff80022ac3ca
+ffffff80022ac398: mov      rax, qword ptr [rbx + 0x10]
+ffffff80022ac39c: mov      rdi, qword ptr [rax + 8]
+ffffff80022ac3a0: mov      rax, qword ptr [rdi]
+ffffff80022ac3a3: call     qword ptr [rax + 0xc80]
+ffffff80022ac3a9: mov      r9, qword ptr [rax]
+ffffff80022ac3ac: lea      rdx, [rbp - 0x1c]
+ffffff80022ac3b0: mov      ecx, 0xc
+ffffff80022ac3b5: mov      rdi, rax
+ffffff80022ac3b8: mov      esi, 0x53
+ffffff80022ac3bd: mov      r8d, 1
+ffffff80022ac3c3: call     qword ptr [r9 + 0xb10]
+ffffff80022ac3ca: mov      rax, qword ptr [rip + 0x10fd47]  ; 0xffffff80023bc118
+ffffff80022ac3d1: mov      rax, qword ptr [rax]
+ffffff80022ac3d4: cmp      rax, qword ptr [rbp - 0x10]
+ffffff80022ac3d8: jne      0xffffff80022ac3e1
+ffffff80022ac3da: add      rsp, 0x18
+ffffff80022ac3de: pop      rbx
+ffffff80022ac3df: pop      rbp
+ffffff80022ac3e0: ret      
+ffffff80022ac3e1: call     0xffffff8000383150  ; ___stack_chk_fail

@@ -1,0 +1,30 @@
+# 0xffffff8002978612 __ZN25IOSkywalkNetworkBSDClient20prepareNexusCallbackEP10kern_nexusP7__ifnet
+ffffff8002978612: push     rbp
+ffffff8002978613: mov      rbp, rsp
+ffffff8002978616: push     r15
+ffffff8002978618: push     r14
+ffffff800297861a: push     rbx
+ffffff800297861b: push     rax
+ffffff800297861c: mov      rbx, rsi
+ffffff800297861f: mov      r14, rdi
+ffffff8002978622: call     0xffffff80009e9f80  ; _kern_nexus_get_context
+ffffff8002978627: mov      r15, rax
+ffffff800297862a: mov      qword ptr [rax + 0x100], r14
+ffffff8002978631: mov      rdi, qword ptr [rax + 0x90]
+ffffff8002978638: mov      rax, qword ptr [rdi]
+ffffff800297863b: lea      rsi, [rip + 0x2fc]  ; 0xffffff800297893e
+ffffff8002978642: mov      rdx, rbx
+ffffff8002978645: xor      ecx, ecx
+ffffff8002978647: xor      r8d, r8d
+ffffff800297864a: xor      r9d, r9d
+ffffff800297864d: call     qword ptr [rax + 0x1c8]
+ffffff8002978653: mov      rcx, qword ptr [r15]
+ffffff8002978656: mov      rcx, qword ptr [rcx + 0x788]
+ffffff800297865d: mov      rdi, r15
+ffffff8002978660: mov      esi, eax
+ffffff8002978662: add      rsp, 8
+ffffff8002978666: pop      rbx
+ffffff8002978667: pop      r14
+ffffff8002978669: pop      r15
+ffffff800297866b: pop      rbp
+ffffff800297866c: jmp      rcx

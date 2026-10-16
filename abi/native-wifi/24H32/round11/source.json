@@ -1,0 +1,622 @@
+{
+  "sha256": "cd013c14a7f21dbb8181fb06c44e079de8646b6a674abe21f6e47f42e8979af3",
+  "tool": "tools/dump_native_wifi_round11.py",
+  "functions": {
+    "__ZN21IO80211InfraInterface18setInterfaceEnableEb": {
+      "file": "ZN21IO80211InfraInterface18setInterfaceEnableEb_2dc416.asm.txt",
+      "address": "0xffffff80022dc416"
+    },
+    "__ZN23IO80211SkywalkInterface18setInterfaceEnableEb": {
+      "file": "ZN23IO80211SkywalkInterface18setInterfaceEnableEb_265a04.asm.txt",
+      "address": "0xffffff8002265a04"
+    },
+    "__ZN21IO80211InfraInterface25updateCountryCodePropertyEb": {
+      "file": "ZN21IO80211InfraInterface25updateCountryCodePropertyEb_2d7e90.asm.txt",
+      "address": "0xffffff80022d7e90"
+    },
+    "__ZN11IO80211Glue13sendIOUCToWclEjjPvmRb": {
+      "file": "ZN11IO80211Glue13sendIOUCToWclEjjPvmRb_12ad12.asm.txt",
+      "address": "0xffffff800212ad12"
+    },
+    "__ZN18IO80211PeerManager20ioctl_internal_gatedEPvP18ioctl_internal_reqS0_S0_S0_": {
+      "file": "ZN18IO80211PeerManager20ioctl_internal_gatedEPvP18ioctl_internal_reqS0_S0_S0__1e697e.asm.txt",
+      "address": "0xffffff80021e697e"
+    },
+    "__ZN18IO80211PeerManager14ioctl_internalEP18ioctl_internal_req": {
+      "file": "ZN18IO80211PeerManager14ioctl_internalEP18ioctl_internal_req_1e6adc.asm.txt",
+      "address": "0xffffff80021e6adc"
+    },
+    "__ZN18IO80211PeerManager8do_ioctlEjjPvb": {
+      "file": "ZN18IO80211PeerManager8do_ioctlEjjPvb_1e6b3e.asm.txt",
+      "address": "0xffffff80021e6b3e"
+    },
+    "__ZN23IO80211VirtualInterface20ioctl_internal_gatedEPvS0_S0_S0_S0_": {
+      "file": "ZN23IO80211VirtualInterface20ioctl_internal_gatedEPvS0_S0_S0_S0__2a5b10.asm.txt",
+      "address": "0xffffff80022a5b10"
+    },
+    "__ZN23IO80211VirtualInterface14ioctl_internalEPv": {
+      "file": "ZN23IO80211VirtualInterface14ioctl_internalEPv_2a5b28.asm.txt",
+      "address": "0xffffff80022a5b28"
+    },
+    "__ZN23IO80211VirtualInterface11handleIoctlEP7__ifnetmPv": {
+      "file": "ZN23IO80211VirtualInterface11handleIoctlEP7_ifnetmPv_2a5d18.asm.txt",
+      "address": "0xffffff80022a5d18"
+    },
+    "__ZN23IO80211VirtualInterface16handleIoctlGatedEPvS0_S0_S0_S0_": {
+      "file": "ZN23IO80211VirtualInterface16handleIoctlGatedEPvS0_S0_S0_S0__2a5db0.asm.txt",
+      "address": "0xffffff80022a5db0"
+    },
+    "__ZN21IO80211InfraInterface5startEP9IOService": {
+      "file": "ZN21IO80211InfraInterface5startEP9IOService_2d3c42.asm.txt",
+      "address": "0xffffff80022d3c42"
+    },
+    "__ZN21IO80211InfraInterface23triggerLinkStatusUpdateEP18IO80211TimerSource": {
+      "file": "ZN21IO80211InfraInterface23triggerLinkStatusUpdateEP18IO80211TimerSource_2d3fc8.asm.txt",
+      "address": "0xffffff80022d3fc8"
+    },
+    "__ZN21IO80211InfraInterface28reportDataTransferRatesTimerEP18IO80211TimerSource": {
+      "file": "ZN21IO80211InfraInterface28reportDataTransferRatesTimerEP18IO80211TimerSource_2d406a.asm.txt",
+      "address": "0xffffff80022d406a"
+    },
+    "__ZN21IO80211InfraInterface24publishOffloadCapabilityEv": {
+      "file": "ZN21IO80211InfraInterface24publishOffloadCapabilityEv_2d454e.asm.txt",
+      "address": "0xffffff80022d454e"
+    },
+    "__ZN21IO80211InfraInterface4stopEP9IOService": {
+      "file": "ZN21IO80211InfraInterface4stopEP9IOService_2d4574.asm.txt",
+      "address": "0xffffff80022d4574"
+    },
+    "__ZN21IO80211InfraInterface4initEv": {
+      "file": "ZN21IO80211InfraInterface4initEv_2d461a.asm.txt",
+      "address": "0xffffff80022d461a"
+    },
+    "__ZN21IO80211InfraInterface4freeEv": {
+      "file": "ZN21IO80211InfraInterface4freeEv_2d4650.asm.txt",
+      "address": "0xffffff80022d4650"
+    },
+    "__ZN21IO80211InfraInterface13createLQMDataEv": {
+      "file": "ZN21IO80211InfraInterface13createLQMDataEv_2d47c8.asm.txt",
+      "address": "0xffffff80022d47c8"
+    },
+    "__ZN21IO80211InfraInterface26initBSDInterfaceParametersEP18ifnet_init_eparamsPP11sockaddr_dl": {
+      "file": "ZN21IO80211InfraInterface26initBSDInterfaceParametersEP18ifnet_init_eparamsPP11sockaddr_dl_2d47d0.asm.txt",
+      "address": "0xffffff80022d47d0"
+    },
+    "__ZN21IO80211InfraInterface19prepareBSDInterfaceEP7__ifnetj": {
+      "file": "ZN21IO80211InfraInterface19prepareBSDInterfaceEP7_ifnetj_2d47da.asm.txt",
+      "address": "0xffffff80022d47da"
+    },
+    "__ZN21IO80211InfraInterface22updateStaticPropertiesEv": {
+      "file": "ZN21IO80211InfraInterface22updateStaticPropertiesEv_2d4946.asm.txt",
+      "address": "0xffffff80022d4946"
+    },
+    "__ZN21IO80211InfraInterface17processBSDCommandEP7__ifnetjPv": {
+      "file": "ZN21IO80211InfraInterface17processBSDCommandEP7_ifnetjPv_2d4b0c.asm.txt",
+      "address": "0xffffff80022d4b0c"
+    },
+    "__ZN21IO80211InfraInterface18updateMediumStatusEP10ifmediareq": {
+      "file": "ZN21IO80211InfraInterface18updateMediumStatusEP10ifmediareq_2d519a.asm.txt",
+      "address": "0xffffff80022d519a"
+    },
+    "__ZN21IO80211InfraInterface17isDebounceOnGoingEv": {
+      "file": "ZN21IO80211InfraInterface17isDebounceOnGoingEv_2d5308.asm.txt",
+      "address": "0xffffff80022d5308"
+    },
+    "__ZN21IO80211InfraInterface12setLinkStateE16IO80211LinkStatejbj": {
+      "file": "ZN21IO80211InfraInterface12setLinkStateE16IO80211LinkStatejbj_2d531c.asm.txt",
+      "address": "0xffffff80022d531c"
+    },
+    "__ZN21IO80211InfraInterface20setLinkStateInternalE16IO80211LinkStatejbj": {
+      "file": "ZN21IO80211InfraInterface20setLinkStateInternalE16IO80211LinkStatejbj_2d532e.asm.txt",
+      "address": "0xffffff80022d532e"
+    },
+    "__ZN21IO80211InfraInterface13handleKeyDoneEbb": {
+      "file": "ZN21IO80211InfraInterface13handleKeyDoneEbb_2d590c.asm.txt",
+      "address": "0xffffff80022d590c"
+    },
+    "__ZN21IO80211InfraInterface15updateLinkSpeedEv": {
+      "file": "ZN21IO80211InfraInterface15updateLinkSpeedEv_2d5a10.asm.txt",
+      "address": "0xffffff80022d5a10"
+    },
+    "__ZN21IO80211InfraInterface19cancelDebounceTimerEv": {
+      "file": "ZN21IO80211InfraInterface19cancelDebounceTimerEv_2d5e80.asm.txt",
+      "address": "0xffffff80022d5e80"
+    },
+    "__ZN21IO80211InfraInterface9linkStateEv": {
+      "file": "ZN21IO80211InfraInterface9linkStateEv_2d5f8a.asm.txt",
+      "address": "0xffffff80022d5f8a"
+    },
+    "__ZN21IO80211InfraInterface11postMessageEjPvmb": {
+      "file": "ZN21IO80211InfraInterface11postMessageEjPvmb_2d5f9a.asm.txt",
+      "address": "0xffffff80022d5f9a"
+    },
+    "__ZN21IO80211InfraInterface12getInfraPeerEv": {
+      "file": "ZN21IO80211InfraInterface12getInfraPeerEv_2d740c.asm.txt",
+      "address": "0xffffff80022d740c"
+    },
+    "__ZN21IO80211InfraInterface11bssidChangeEPvm": {
+      "file": "ZN21IO80211InfraInterface11bssidChangeEPvm_2d7432.asm.txt",
+      "address": "0xffffff80022d7432"
+    },
+    "__ZN21IO80211InfraInterface18UpdateULLADurationEPy": {
+      "file": "ZN21IO80211InfraInterface18UpdateULLADurationEPy_2d75ae.asm.txt",
+      "address": "0xffffff80022d75ae"
+    },
+    "__ZN21IO80211InfraInterface18finishSIBCoexTimerEv": {
+      "file": "ZN21IO80211InfraInterface18finishSIBCoexTimerEv_2d7642.asm.txt",
+      "address": "0xffffff80022d7642"
+    },
+    "__ZN21IO80211InfraInterface14getAVCAdvisoryEv": {
+      "file": "ZN21IO80211InfraInterface14getAVCAdvisoryEv_2d7788.asm.txt",
+      "address": "0xffffff80022d7788"
+    },
+    "__ZN21IO80211InfraInterface20updateChanOutageTimeEP38apple80211_infra_scan_start_event_data": {
+      "file": "ZN21IO80211InfraInterface20updateChanOutageTimeEP38apple80211_infra_scan_start_event_data_2d779c.asm.txt",
+      "address": "0xffffff80022d779c"
+    },
+    "__ZN21IO80211InfraInterface14loadHwChannelsEv": {
+      "file": "ZN21IO80211InfraInterface14loadHwChannelsEv_2d7a5e.asm.txt",
+      "address": "0xffffff80022d7a5e"
+    },
+    "__ZN21IO80211InfraInterface15loadChannelInfoEv": {
+      "file": "ZN21IO80211InfraInterface15loadChannelInfoEv_2d7b24.asm.txt",
+      "address": "0xffffff80022d7b24"
+    },
+    "__ZN21IO80211InfraInterface14resetInterfaceEPvm": {
+      "file": "ZN21IO80211InfraInterface14resetInterfaceEPvm_2d7bea.asm.txt",
+      "address": "0xffffff80022d7bea"
+    },
+    "__ZN21IO80211InfraInterface18updateSSIDPropertyEv": {
+      "file": "ZN21IO80211InfraInterface18updateSSIDPropertyEv_2d7d56.asm.txt",
+      "address": "0xffffff80022d7d56"
+    },
+    "__ZN21IO80211InfraInterface19routeToP2PInterfaceEjPvm": {
+      "file": "ZN21IO80211InfraInterface19routeToP2PInterfaceEjPvm_2d810c.asm.txt",
+      "address": "0xffffff80022d810c"
+    },
+    "__ZN21IO80211InfraInterface19updateBSSIDPropertyER10ether_addrR18apple80211_channelb": {
+      "file": "ZN21IO80211InfraInterface19updateBSSIDPropertyER10ether_addrR18apple80211_channelb_2d826c.asm.txt",
+      "address": "0xffffff80022d826c"
+    },
+    "__ZN21IO80211InfraInterface21updateChannelPropertyER18apple80211_channel": {
+      "file": "ZN21IO80211InfraInterface21updateChannelPropertyER18apple80211_channel_2d8438.asm.txt",
+      "address": "0xffffff80022d8438"
+    },
+    "__ZN21IO80211InfraInterface20updateLocalePropertyEv": {
+      "file": "ZN21IO80211InfraInterface20updateLocalePropertyEv_2d87e6.asm.txt",
+      "address": "0xffffff80022d87e6"
+    },
+    "__ZN21IO80211InfraInterface13setWoWEnabledEb": {
+      "file": "ZN21IO80211InfraInterface13setWoWEnabledEb_2d8a64.asm.txt",
+      "address": "0xffffff80022d8a64"
+    },
+    "__ZN21IO80211InfraInterface16setScanningStateEjbP20apple80211_scan_datai": {
+      "file": "ZN21IO80211InfraInterface16setScanningStateEjbP20apple80211_scan_datai_2d8a82.asm.txt",
+      "address": "0xffffff80022d8a82"
+    },
+    "__ZN21IO80211InfraInterface15configureReportEP19IOReportChannelListjPvS2_": {
+      "file": "ZN21IO80211InfraInterface15configureReportEP19IOReportChannelListjPvS2__2d8abc.asm.txt",
+      "address": "0xffffff80022d8abc"
+    },
+    "__ZN21IO80211InfraInterface12updateReportEP19IOReportChannelListjPvS2_": {
+      "file": "ZN21IO80211InfraInterface12updateReportEP19IOReportChannelListjPvS2__2d8b9c.asm.txt",
+      "address": "0xffffff80022d8b9c"
+    },
+    "__ZN21IO80211InfraInterface28handleLeakyApStatsResetTimerEP18IO80211TimerSource": {
+      "file": "ZN21IO80211InfraInterface28handleLeakyApStatsResetTimerEP18IO80211TimerSource_2d8cc8.asm.txt",
+      "address": "0xffffff80022d8cc8"
+    },
+    "__ZN21IO80211InfraInterface15getLeakyApStatsEPPK25apple80211_leaky_ap_stats": {
+      "file": "ZN21IO80211InfraInterface15getLeakyApStatsEPPK25apple80211_leaky_ap_stats_2d926a.asm.txt",
+      "address": "0xffffff80022d926a"
+    },
+    "__ZN21IO80211InfraInterface17resetLeakyApStatsEv": {
+      "file": "ZN21IO80211InfraInterface17resetLeakyApStatsEv_2d92c6.asm.txt",
+      "address": "0xffffff80022d92c6"
+    },
+    "__ZN21IO80211InfraInterface21setLeakyApSsidMetricsEP32apple80211_leaky_ap_ssid_metrics": {
+      "file": "ZN21IO80211InfraInterface21setLeakyApSsidMetricsEP32apple80211_leaky_ap_ssid_metrics_2d934c.asm.txt",
+      "address": "0xffffff80022d934c"
+    },
+    "__ZN21IO80211InfraInterface15setLeakyAPStatsEP25apple80211_leaky_ap_event": {
+      "file": "ZN21IO80211InfraInterface15setLeakyAPStatsEP25apple80211_leaky_ap_event_2d9570.asm.txt",
+      "address": "0xffffff80022d9570"
+    },
+    "__ZN21IO80211InfraInterface19setLeakyAPStatsModeEj": {
+      "file": "ZN21IO80211InfraInterface19setLeakyAPStatsModeEj_2d9ada.asm.txt",
+      "address": "0xffffff80022d9ada"
+    },
+    "__ZN21IO80211InfraInterface19recordOutputPacketsEP24TxSubmissionDequeueStatsS1_": {
+      "file": "ZN21IO80211InfraInterface19recordOutputPacketsEP24TxSubmissionDequeueStatsS1__2d9bd8.asm.txt",
+      "address": "0xffffff80022d9bd8"
+    },
+    "__ZN21IO80211InfraInterface11logTxPacketEP20IO80211NetworkPacketP20PacketSkywalkScratch17apple80211_wme_acb": {
+      "file": "ZN21IO80211InfraInterface11logTxPacketEP20IO80211NetworkPacketP20PacketSkywalkScratch17apple80211_wme_acb_2d9c52.asm.txt",
+      "address": "0xffffff80022d9c52"
+    },
+    "__ZN21IO80211InfraInterface19getAwdlMaxBandWidthEv": {
+      "file": "ZN21IO80211InfraInterface19getAwdlMaxBandWidthEv_2d9da2.asm.txt",
+      "address": "0xffffff80022d9da2"
+    },
+    "__ZN21IO80211InfraInterface29get5GLowHighBandSwitchCounterEv": {
+      "file": "ZN21IO80211InfraInterface29get5GLowHighBandSwitchCounterEv_2d9e24.asm.txt",
+      "address": "0xffffff80022d9e24"
+    },
+    "__ZN21IO80211InfraInterface33get5GLowHighBandSwitchSuccessPercEv": {
+      "file": "ZN21IO80211InfraInterface33get5GLowHighBandSwitchSuccessPercEv_2d9e38.asm.txt",
+      "address": "0xffffff80022d9e38"
+    },
+    "__ZN21IO80211InfraInterface22getULLAClassicDurationEv": {
+      "file": "ZN21IO80211InfraInterface22getULLAClassicDurationEv_2d9e62.asm.txt",
+      "address": "0xffffff80022d9e62"
+    },
+    "__ZN21IO80211InfraInterface20getCoPTxRTSFailCountEv": {
+      "file": "ZN21IO80211InfraInterface20getCoPTxRTSFailCountEv_2d9e76.asm.txt",
+      "address": "0xffffff80022d9e76"
+    },
+    "__ZN21IO80211InfraInterface19getULLALiteDurationEv": {
+      "file": "ZN21IO80211InfraInterface19getULLALiteDurationEv_2d9e8a.asm.txt",
+      "address": "0xffffff80022d9e8a"
+    },
+    "__ZN21IO80211InfraInterface22resetCoPTxRTSFailCountEv": {
+      "file": "ZN21IO80211InfraInterface22resetCoPTxRTSFailCountEv_2d9e9e.asm.txt",
+      "address": "0xffffff80022d9e9e"
+    },
+    "__ZN21IO80211InfraInterface21resetSIBTurnOnMetricsEv": {
+      "file": "ZN21IO80211InfraInterface21resetSIBTurnOnMetricsEv_2d9eb6.asm.txt",
+      "address": "0xffffff80022d9eb6"
+    },
+    "__ZN21IO80211InfraInterface24getCoPSIBCoexTurnOnCountEv": {
+      "file": "ZN21IO80211InfraInterface24getCoPSIBCoexTurnOnCountEv_2d9fd2.asm.txt",
+      "address": "0xffffff80022d9fd2"
+    },
+    "__ZN21IO80211InfraInterface27getCoPSIBCoexTurnOnDurationEv": {
+      "file": "ZN21IO80211InfraInterface27getCoPSIBCoexTurnOnDurationEv_2d9fe6.asm.txt",
+      "address": "0xffffff80022d9fe6"
+    },
+    "__ZN21IO80211InfraInterface17setGatewayAddressE34apple80211_infra_peer_address_data": {
+      "file": "ZN21IO80211InfraInterface17setGatewayAddressE34apple80211_infra_peer_address_data_2d9ffa.asm.txt",
+      "address": "0xffffff80022d9ffa"
+    },
+    "__ZN21IO80211InfraInterface26setUnicastInfraPeerAddressE34apple80211_infra_peer_address_data": {
+      "file": "ZN21IO80211InfraInterface26setUnicastInfraPeerAddressE34apple80211_infra_peer_address_data_2da0a2.asm.txt",
+      "address": "0xffffff80022da0a2"
+    },
+    "__ZN21IO80211InfraInterface27setInfraPeersLoggingEnabledEb": {
+      "file": "ZN21IO80211InfraInterface27setInfraPeersLoggingEnabledEb_2da0b8.asm.txt",
+      "address": "0xffffff80022da0b8"
+    },
+    "__ZN21IO80211InfraInterface23recordCompletionPacketsEP24TxCompletionEnqueueStatsS1_": {
+      "file": "ZN21IO80211InfraInterface23recordCompletionPacketsEP24TxCompletionEnqueueStatsS1__2da0ce.asm.txt",
+      "address": "0xffffff80022da0ce"
+    },
+    "__ZN21IO80211InfraInterface21logTxCompletionPacketEP20IO80211NetworkPacketP20PacketSkywalkScratchPh17apple80211_wme_acijbb": {
+      "file": "ZN21IO80211InfraInterface21logTxCompletionPacketEP20IO80211NetworkPacketP20PacketSkywalkScratchPh17apple80211__2da146.asm.txt",
+      "address": "0xffffff80022da146"
+    },
+    "__ZN21IO80211InfraInterface11inputPacketEP20IO80211NetworkPacketP15packet_info_tagP12ether_headerPbb": {
+      "file": "ZN21IO80211InfraInterface11inputPacketEP20IO80211NetworkPacketP15packet_info_tagP12ether_headerPbb_2da30c.asm.txt",
+      "address": "0xffffff80022da30c"
+    },
+    "__ZN21IO80211InfraInterface20updateLinkParametersEP33apple80211_interface_availability": {
+      "file": "ZN21IO80211InfraInterface20updateLinkParametersEP33apple80211_interface_availability_2da42e.asm.txt",
+      "address": "0xffffff80022da42e"
+    },
+    "__ZN21IO80211InfraInterface26updateLinkParametersStaticEPvS0_": {
+      "file": "ZN21IO80211InfraInterface26updateLinkParametersStaticEPvS0__2da470.asm.txt",
+      "address": "0xffffff80022da470"
+    },
+    "__ZN21IO80211InfraInterface25updateLinkParametersGatedEP33apple80211_interface_availability": {
+      "file": "ZN21IO80211InfraInterface25updateLinkParametersGatedEP33apple80211_interface_availability_2da4c6.asm.txt",
+      "address": "0xffffff80022da4c6"
+    },
+    "__ZN21IO80211InfraInterface26updateInterfaceCoexRiskPctEy": {
+      "file": "ZN21IO80211InfraInterface26updateInterfaceCoexRiskPctEy_2da692.asm.txt",
+      "address": "0xffffff80022da692"
+    },
+    "__ZN21IO80211InfraInterface23reportDataTransferRatesEv": {
+      "file": "ZN21IO80211InfraInterface23reportDataTransferRatesEv_2da6e6.asm.txt",
+      "address": "0xffffff80022da6e6"
+    },
+    "__ZN21IO80211InfraInterface28setBTCoexWLANLostAntennaTimeEyybP24apple80211_btCoex_report": {
+      "file": "ZN21IO80211InfraInterface28setBTCoexWLANLostAntennaTimeEyybP24apple80211_btCoex_report_2da784.asm.txt",
+      "address": "0xffffff80022da784"
+    },
+    "__ZN21IO80211InfraInterface29reportDataTransferRatesStaticEPv": {
+      "file": "ZN21IO80211InfraInterface29reportDataTransferRatesStaticEPv_2da7f8.asm.txt",
+      "address": "0xffffff80022da7f8"
+    },
+    "__ZN21IO80211InfraInterface10getLQMDataEv": {
+      "file": "ZN21IO80211InfraInterface10getLQMDataEv_2da832.asm.txt",
+      "address": "0xffffff80022da832"
+    },
+    "__ZN21IO80211InfraInterface6setLQMEy": {
+      "file": "ZN21IO80211InfraInterface6setLQMEy_2da846.asm.txt",
+      "address": "0xffffff80022da846"
+    },
+    "__ZN21IO80211InfraInterface12setLQMStaticEPvS0_": {
+      "file": "ZN21IO80211InfraInterface12setLQMStaticEPvS0__2da8b0.asm.txt",
+      "address": "0xffffff80022da8b0"
+    },
+    "__ZN21IO80211InfraInterface11setLQMGatedEy": {
+      "file": "ZN21IO80211InfraInterface11setLQMGatedEy_2da908.asm.txt",
+      "address": "0xffffff80022da908"
+    },
+    "__ZN21IO80211InfraInterface16updateLinkStatusEv": {
+      "file": "ZN21IO80211InfraInterface16updateLinkStatusEv_2da992.asm.txt",
+      "address": "0xffffff80022da992"
+    },
+    "__ZN21IO80211InfraInterface22updateLinkStatusStaticEPv": {
+      "file": "ZN21IO80211InfraInterface22updateLinkStatusStaticEPv_2da9ce.asm.txt",
+      "address": "0xffffff80022da9ce"
+    },
+    "__ZN21IO80211InfraInterface21updateLinkStatusGatedEv": {
+      "file": "ZN21IO80211InfraInterface21updateLinkStatusGatedEv_2daa0c.asm.txt",
+      "address": "0xffffff80022daa0c"
+    },
+    "__ZN21IO80211InfraInterface23setInterfaceExtendedCCAE18apple80211_channelP21apple80211_cca_report": {
+      "file": "ZN21IO80211InfraInterface23setInterfaceExtendedCCAE18apple80211_channelP21apple80211_cca_report_2dac82.asm.txt",
+      "address": "0xffffff80022dac82"
+    },
+    "__ZN21IO80211InfraInterface15setInterfaceCCAE18apple80211_channeli": {
+      "file": "ZN21IO80211InfraInterface15setInterfaceCCAE18apple80211_channeli_2daca4.asm.txt",
+      "address": "0xffffff80022daca4"
+    },
+    "__ZN21IO80211InfraInterface14setInterfaceNFE18apple80211_channelx": {
+      "file": "ZN21IO80211InfraInterface14setInterfaceNFE18apple80211_channelx_2dacc6.asm.txt",
+      "address": "0xffffff80022dacc6"
+    },
+    "__ZN21IO80211InfraInterface23setInterfaceOFDMDesenseE18apple80211_channelx": {
+      "file": "ZN21IO80211InfraInterface23setInterfaceOFDMDesenseE18apple80211_channelx_2dad4a.asm.txt",
+      "address": "0xffffff80022dad4a"
+    },
+    "__ZN21IO80211InfraInterface12setAMPDUstatEP22apple80211_stat_reportP28apple80211_ampdu_stat_report": {
+      "file": "ZN21IO80211InfraInterface12setAMPDUstatEP22apple80211_stat_reportP28apple80211_ampdu_stat_report_2dad6c.asm.txt",
+      "address": "0xffffff80022dad6c"
+    },
+    "__ZN21IO80211InfraInterface16setDataPathStateEb": {
+      "file": "ZN21IO80211InfraInterface16setDataPathStateEb_2dad8a.asm.txt",
+      "address": "0xffffff80022dad8a"
+    },
+    "__ZN21IO80211InfraInterface13setDebugFlagsEyj": {
+      "file": "ZN21IO80211InfraInterface13setDebugFlagsEyj_2dadaa.asm.txt",
+      "address": "0xffffff80022dadaa"
+    },
+    "__ZN21IO80211InfraInterface21setPeerManagerLogFlagEjjj": {
+      "file": "ZN21IO80211InfraInterface21setPeerManagerLogFlagEjjj_2dadd4.asm.txt",
+      "address": "0xffffff80022dadd4"
+    },
+    "__ZN21IO80211InfraInterface10debugFlagsEv": {
+      "file": "ZN21IO80211InfraInterface10debugFlagsEv_2dae2e.asm.txt",
+      "address": "0xffffff80022dae2e"
+    },
+    "__ZN21IO80211InfraInterface24setInterfaceChipCountersEP22apple80211_stat_reportP27apple80211_chip_counters_txP33apple80211_chip_error_counters_txP27apple80211_chip_counters_rx": {
+      "file": "ZN21IO80211InfraInterface24setInterfaceChipCountersEP22apple80211_stat_reportP27apple80211_chip_counters_txP33_2dae42.asm.txt",
+      "address": "0xffffff80022dae42"
+    },
+    "__ZN21IO80211InfraInterface20setInterfaceMIBdot11EP22apple80211_stat_reportP50apple80211_ManagementInformationBasedot11_counters": {
+      "file": "ZN21IO80211InfraInterface20setInterfaceMIBdot11EP22apple80211_stat_reportP50apple80211_ManagementInformationBa_2dae60.asm.txt",
+      "address": "0xffffff80022dae60"
+    },
+    "__ZN21IO80211InfraInterface13setFrameStatsEP22apple80211_stat_reportP25apple80211_frame_counters": {
+      "file": "ZN21IO80211InfraInterface13setFrameStatsEP22apple80211_stat_reportP25apple80211_frame_counters_2dae7e.asm.txt",
+      "address": "0xffffff80022dae7e"
+    },
+    "__ZN21IO80211InfraInterface26setInfraSpecificFrameStatsEP22apple80211_stat_reportP31apple80211_infra_specific_stats": {
+      "file": "ZN21IO80211InfraInterface26setInfraSpecificFrameStatsEP22apple80211_stat_reportP31apple80211_infra_specific_st_2dae9c.asm.txt",
+      "address": "0xffffff80022dae9c"
+    },
+    "__ZN21IO80211InfraInterface16getWmeTxCountersEPy": {
+      "file": "ZN21IO80211InfraInterface16getWmeTxCountersEPy_2daeba.asm.txt",
+      "address": "0xffffff80022daeba"
+    },
+    "__ZN21IO80211InfraInterface22resetTxPathHealthCheckEv": {
+      "file": "ZN21IO80211InfraInterface22resetTxPathHealthCheckEv_2dafa6.asm.txt",
+      "address": "0xffffff80022dafa6"
+    },
+    "__ZN21IO80211InfraInterface24createLinkQualityMonitorEP11IO80211PeerP9IOService": {
+      "file": "ZN21IO80211InfraInterface24createLinkQualityMonitorEP11IO80211PeerP9IOService_2db010.asm.txt",
+      "address": "0xffffff80022db010"
+    },
+    "__ZN21IO80211InfraInterface22getInfraLinkPropertiesEP11IO80211PeerRjS2_R18apple80211_channelR24apple80211_channel_widthR18apple80211_phymodeR23apple80211_channel_band": {
+      "file": "ZN21IO80211InfraInterface22getInfraLinkPropertiesEP11IO80211PeerRjS2_R18apple80211_channelR24apple80211_channe_2db77c.asm.txt",
+      "address": "0xffffff80022db77c"
+    },
+    "__ZN21IO80211InfraInterface25releaseLinkQualityMonitorEP11IO80211Peer": {
+      "file": "ZN21IO80211InfraInterface25releaseLinkQualityMonitorEP11IO80211Peer_2dbbfc.asm.txt",
+      "address": "0xffffff80022dbbfc"
+    },
+    "__ZN21IO80211InfraInterface21notifyAWDLStateChangeEb": {
+      "file": "ZN21IO80211InfraInterface21notifyAWDLStateChangeEb_2dbc62.asm.txt",
+      "address": "0xffffff80022dbc62"
+    },
+    "__ZN21IO80211InfraInterface15bpfOutputPacketEP6__mbufPv": {
+      "file": "ZN21IO80211InfraInterface15bpfOutputPacketEP6_mbufPv_2dbcc2.asm.txt",
+      "address": "0xffffff80022dbcc2"
+    },
+    "__ZN21IO80211InfraInterface9bpfOutputEjP6__mbuf": {
+      "file": "ZN21IO80211InfraInterface9bpfOutputEjP6_mbuf_2dbd0e.asm.txt",
+      "address": "0xffffff80022dbd0e"
+    },
+    "__ZN21IO80211InfraInterface6bpfTapEjj": {
+      "file": "ZN21IO80211InfraInterface6bpfTapEjj_2dbd1e.asm.txt",
+      "address": "0xffffff80022dbd1e"
+    },
+    "__ZN21IO80211InfraInterface14bpfTapInternalEjj": {
+      "file": "ZN21IO80211InfraInterface14bpfTapInternalEjj_2dbd4a.asm.txt",
+      "address": "0xffffff80022dbd4a"
+    },
+    "__ZN21IO80211InfraInterface13getWMMBWResetEv": {
+      "file": "ZN21IO80211InfraInterface13getWMMBWResetEv_2dc13e.asm.txt",
+      "address": "0xffffff80022dc13e"
+    },
+    "__ZN21IO80211InfraInterface13setWMMBWResetEb": {
+      "file": "ZN21IO80211InfraInterface13setWMMBWResetEb_2dc152.asm.txt",
+      "address": "0xffffff80022dc152"
+    },
+    "__ZN21IO80211InfraInterface10wowEnabledEv": {
+      "file": "ZN21IO80211InfraInterface10wowEnabledEv_2dc192.asm.txt",
+      "address": "0xffffff80022dc192"
+    },
+    "__ZN21IO80211InfraInterface14getScanManagerEv": {
+      "file": "ZN21IO80211InfraInterface14getScanManagerEv_2dc1a6.asm.txt",
+      "address": "0xffffff80022dc1a6"
+    },
+    "__ZN21IO80211InfraInterface14getMonitorModeEv": {
+      "file": "ZN21IO80211InfraInterface14getMonitorModeEv_2dc1b6.asm.txt",
+      "address": "0xffffff80022dc1b6"
+    },
+    "__ZN21IO80211InfraInterface14pendingPacketsEh": {
+      "file": "ZN21IO80211InfraInterface14pendingPacketsEh_2dc1ca.asm.txt",
+      "address": "0xffffff80022dc1ca"
+    },
+    "__ZN21IO80211InfraInterface11packetSpaceEh": {
+      "file": "ZN21IO80211InfraInterface11packetSpaceEh_2dc1d2.asm.txt",
+      "address": "0xffffff80022dc1d2"
+    },
+    "__ZN21IO80211InfraInterface13getLQMSummaryEP22apple80211_lqm_summary": {
+      "file": "ZN21IO80211InfraInterface13getLQMSummaryEP22apple80211_lqm_summary_2dc1da.asm.txt",
+      "address": "0xffffff80022dc1da"
+    },
+    "__ZN21IO80211InfraInterface17getTrafficMonitorEv": {
+      "file": "ZN21IO80211InfraInterface17getTrafficMonitorEv_2dc264.asm.txt",
+      "address": "0xffffff80022dc264"
+    },
+    "__ZN21IO80211InfraInterface18getHardwareAssistsEv": {
+      "file": "ZN21IO80211InfraInterface18getHardwareAssistsEv_2dc2a6.asm.txt",
+      "address": "0xffffff80022dc2a6"
+    },
+    "__ZN21IO80211InfraInterface13getAssocStateEv": {
+      "file": "ZN21IO80211InfraInterface13getAssocStateEv_2dc2c0.asm.txt",
+      "address": "0xffffff80022dc2c0"
+    },
+    "__ZN21IO80211InfraInterface19setCurrentApAddressEP10ether_addr": {
+      "file": "ZN21IO80211InfraInterface19setCurrentApAddressEP10ether_addr_2dc2d4.asm.txt",
+      "address": "0xffffff80022dc2d4"
+    },
+    "__ZN21IO80211InfraInterface19getCurrentApAddressEv": {
+      "file": "ZN21IO80211InfraInterface19getCurrentApAddressEv_2dc36a.asm.txt",
+      "address": "0xffffff80022dc36a"
+    },
+    "__ZN21IO80211InfraInterface12setLQMConfigEP23apple80211_lqm_config_t": {
+      "file": "ZN21IO80211InfraInterface12setLQMConfigEP23apple80211_lqm_config_t_2dc38a.asm.txt",
+      "address": "0xffffff80022dc38a"
+    },
+    "__ZN21IO80211InfraInterface15onDispatchQueueEv": {
+      "file": "ZN21IO80211InfraInterface15onDispatchQueueEv_2dc5c6.asm.txt",
+      "address": "0xffffff80022dc5c6"
+    },
+    "__ZN21IO80211InfraInterface21setWCL_ADVISORTY_INFOEP28apple80211_wcl_advisory_info": {
+      "file": "ZN21IO80211InfraInterface21setWCL_ADVISORTY_INFOEP28apple80211_wcl_advisory_info_2dc616.asm.txt",
+      "address": "0xffffff80022dc616"
+    },
+    "__ZN21IO80211InfraInterface20getWCL_TX_RX_LATENCYEP28apple80211_wcl_tx_rx_latency": {
+      "file": "ZN21IO80211InfraInterface20getWCL_TX_RX_LATENCYEP28apple80211_wcl_tx_rx_latency_2dc632.asm.txt",
+      "address": "0xffffff80022dc632"
+    },
+    "__ZN21IO80211InfraInterface17updateTxRxLatencyEv": {
+      "file": "ZN21IO80211InfraInterface17updateTxRxLatencyEv_2dc6d2.asm.txt",
+      "address": "0xffffff80022dc6d2"
+    },
+    "__ZN21IO80211InfraInterface13setIPv4ParamsEP22apple80211_ipv4_params": {
+      "file": "ZN21IO80211InfraInterface13setIPv4ParamsEP22apple80211_ipv4_params_2dc8c0.asm.txt",
+      "address": "0xffffff80022dc8c0"
+    },
+    "__ZN21IO80211InfraInterface13getIPv4ParamsEv": {
+      "file": "ZN21IO80211InfraInterface13getIPv4ParamsEv_2dc8f0.asm.txt",
+      "address": "0xffffff80022dc8f0"
+    },
+    "__ZN21IO80211InfraInterface13setIPv6ParamsEP22apple80211_ipv6_params": {
+      "file": "ZN21IO80211InfraInterface13setIPv6ParamsEP22apple80211_ipv6_params_2dc902.asm.txt",
+      "address": "0xffffff80022dc902"
+    },
+    "__ZN21IO80211InfraInterface13getIPv6ParamsEv": {
+      "file": "ZN21IO80211InfraInterface13getIPv6ParamsEv_2dc92e.asm.txt",
+      "address": "0xffffff80022dc92e"
+    },
+    "__ZN21IO80211InfraInterface19getPacketFilterDataER29apple80211_packet_filter_data": {
+      "file": "ZN21IO80211InfraInterface19getPacketFilterDataER29apple80211_packet_filter_data_2dc940.asm.txt",
+      "address": "0xffffff80022dc940"
+    },
+    "__ZN21IO80211InfraInterface22getTcpUdpKeepAliveDataER33apple80211_tcp_udp_keepalive_data": {
+      "file": "ZN21IO80211InfraInterface22getTcpUdpKeepAliveDataER33apple80211_tcp_udp_keepalive_data_2dc958.asm.txt",
+      "address": "0xffffff80022dc958"
+    },
+    "__ZN21IO80211InfraInterface28bonjourOffloadNumActivePortsERj": {
+      "file": "ZN21IO80211InfraInterface28bonjourOffloadNumActivePortsERj_2dc970.asm.txt",
+      "address": "0xffffff80022dc970"
+    },
+    "__ZN21IO80211InfraInterface25getTcpKeepAliveConfigDataEv": {
+      "file": "ZN21IO80211InfraInterface25getTcpKeepAliveConfigDataEv_2dc9a2.asm.txt",
+      "address": "0xffffff80022dc9a2"
+    },
+    "__ZN21IO80211InfraInterface27getBonjourOffloadConfigDataERtRj": {
+      "file": "ZN21IO80211InfraInterface27getBonjourOffloadConfigDataERtRj_2dc9d4.asm.txt",
+      "address": "0xffffff80022dc9d4"
+    },
+    "__ZN21IO80211InfraInterface19getArpKeepAliveDataER29apple80211_arp_keepalive_datab": {
+      "file": "ZN21IO80211InfraInterface19getArpKeepAliveDataER29apple80211_arp_keepalive_datab_2dca08.asm.txt",
+      "address": "0xffffff80022dca08"
+    },
+    "__ZN21IO80211InfraInterface22getProtocolOffloadDataER32apple80211_protocol_offload_data": {
+      "file": "ZN21IO80211InfraInterface22getProtocolOffloadDataER32apple80211_protocol_offload_data_2dca20.asm.txt",
+      "address": "0xffffff80022dca20"
+    },
+    "__ZN21IO80211InfraInterface19getMagicPatternDataER29apple80211_magic_pattern_data": {
+      "file": "ZN21IO80211InfraInterface19getMagicPatternDataER29apple80211_magic_pattern_data_2dca38.asm.txt",
+      "address": "0xffffff80022dca38"
+    },
+    "__ZN21IO80211InfraInterface8getSTATSEP21apple80211_stats_data": {
+      "file": "ZN21IO80211InfraInterface8getSTATSEP21apple80211_stats_data_2dca50.asm.txt",
+      "address": "0xffffff80022dca50"
+    },
+    "__ZN21IO80211InfraInterface14getBtCoexStateEv": {
+      "file": "ZN21IO80211InfraInterface14getBtCoexStateEv_2dcafc.asm.txt",
+      "address": "0xffffff80022dcafc"
+    },
+    "__ZN21IO80211InfraInterface16getBT_COEX_FLAGSEP21apple80211_state_data": {
+      "file": "ZN21IO80211InfraInterface16getBT_COEX_FLAGSEP21apple80211_state_data_2dcb10.asm.txt",
+      "address": "0xffffff80022dcb10"
+    },
+    "__ZN21IO80211InfraInterface16setBT_COEX_FLAGSEP21apple80211_state_data": {
+      "file": "ZN21IO80211InfraInterface16setBT_COEX_FLAGSEP21apple80211_state_data_2dcb34.asm.txt",
+      "address": "0xffffff80022dcb34"
+    },
+    "__ZN21IO80211InfraInterface13setPowerStateEmP9IOService": {
+      "file": "ZN21IO80211InfraInterface13setPowerStateEmP9IOService_2dcb58.asm.txt",
+      "address": "0xffffff80022dcb58"
+    },
+    "__ZN21IO80211InfraInterface17setWCLSystemStateER23apple80211_system_state": {
+      "file": "ZN21IO80211InfraInterface17setWCLSystemStateER23apple80211_system_state_2dcc7c.asm.txt",
+      "address": "0xffffff80022dcc7c"
+    },
+    "__ZN21IO80211InfraInterface20hwConfigNicProxyDataEP15nicproxy_info_s": {
+      "file": "ZN21IO80211InfraInterface20hwConfigNicProxyDataEP15nicproxy_info_s_2dcecc.asm.txt",
+      "address": "0xffffff80022dcecc"
+    },
+    "__ZN21IO80211InfraInterface15setLeScanParamsER25apple80211_le_scan_params": {
+      "file": "ZN21IO80211InfraInterface15setLeScanParamsER25apple80211_le_scan_params_2dcf4c.asm.txt",
+      "address": "0xffffff80022dcf4c"
+    },
+    "__ZN21IO80211InfraInterface13getHwChannelsER27apple80211_sup_channel_data": {
+      "file": "ZN21IO80211InfraInterface13getHwChannelsER27apple80211_sup_channel_data_2dcfaa.asm.txt",
+      "address": "0xffffff80022dcfaa"
+    },
+    "__ZN21IO80211InfraInterface30registerInfraEthernetInterfaceEPN26IOSkywalkEthernetInterface16RegistrationInfoEPP20IOSkywalkPacketQueuejP25IOSkywalkPacketBufferPoolS7_": {
+      "file": "ZN21IO80211InfraInterface30registerInfraEthernetInterfaceEPN26IOSkywalkEthernetInterface16RegistrationInfoEPP2_2dcfce.asm.txt",
+      "address": "0xffffff80022dcfce"
+    },
+    "__ZN21IO80211InfraInterface9getLOCALEEP22apple80211_locale_data": {
+      "file": "ZN21IO80211InfraInterface9getLOCALEEP22apple80211_locale_data_2dd28e.asm.txt",
+      "address": "0xffffff80022dd28e"
+    },
+    "__ZN21IO80211InfraInterface10superClassE": {
+      "file": "ZN21IO80211InfraInterface10superClassE_3e5de0.asm.txt",
+      "address": "0xffffff80023e5de0"
+    },
+    "__ZN21IO80211InfraInterface9metaClassE": {
+      "file": "ZN21IO80211InfraInterface9metaClassE_3e6f20.asm.txt",
+      "address": "0xffffff80023e6f20"
+    }
+  }
+}

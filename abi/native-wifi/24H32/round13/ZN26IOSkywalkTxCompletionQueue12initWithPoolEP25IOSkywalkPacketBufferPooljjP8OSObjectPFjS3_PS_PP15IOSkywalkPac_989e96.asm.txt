@@ -1,0 +1,58 @@
+# 0xffffff8002989e96 __ZN26IOSkywalkTxCompletionQueue12initWithPoolEP25IOSkywalkPacketBufferPooljjP8OSObjectPFjS3_PS_PP15IOSkywalkPacketjPvES8_j
+ffffff8002989e96: push     rbp
+ffffff8002989e97: mov      rbp, rsp
+ffffff8002989e9a: push     r14
+ffffff8002989e9c: push     rbx
+ffffff8002989e9d: mov      r10, r9
+ffffff8002989ea0: mov      rax, r8
+ffffff8002989ea3: mov      r9d, ecx
+ffffff8002989ea6: mov      r8d, edx
+ffffff8002989ea9: test     rsi, rsi
+ffffff8002989eac: sete     cl
+ffffff8002989eaf: cmp      edx, 2
+ffffff8002989eb2: setb     dl
+ffffff8002989eb5: or       dl, cl
+ffffff8002989eb7: cmp      dword ptr [rbp + 0x18], 0
+ffffff8002989ebb: setne    cl
+ffffff8002989ebe: or       cl, dl
+ffffff8002989ec0: je       0xffffff8002989ec7
+ffffff8002989ec2: xor      r14d, r14d
+ffffff8002989ec5: jmp      0xffffff8002989f45  ; __ZN26IOSkywalkTxCompletionQueue12initWithPoolEP25IOSkywalkPacketBufferPooljjP8OSObjectPFjS3_PS_PP15IOSkywalkPacketjPvES8_j+0xaf
+ffffff8002989ec7: mov      rbx, rdi
+ffffff8002989eca: lea      r11, [rip + 0x24d97]  ; 0xffffff80029aec68
+ffffff8002989ed1: sub      rsp, 8
+ffffff8002989ed5: xor      r14d, r14d
+ffffff8002989ed8: xor      edx, edx
+ffffff8002989eda: mov      ecx, 1
+ffffff8002989edf: push     qword ptr [rbp + 0x10]
+ffffff8002989ee2: push     r10
+ffffff8002989ee4: push     rax
+ffffff8002989ee5: call     qword ptr [r11 + 0x240]
+ffffff8002989eec: add      rsp, 0x20
+ffffff8002989ef0: test     al, al
+ffffff8002989ef2: je       0xffffff8002989f45
+ffffff8002989ef4: mov      rax, qword ptr [rbx]
+ffffff8002989ef7: xor      r14d, r14d
+ffffff8002989efa: mov      rdi, rbx
+ffffff8002989efd: xor      esi, esi
+ffffff8002989eff: call     qword ptr [rax + 0x1b8]
+ffffff8002989f05: test     eax, eax
+ffffff8002989f07: jne      0xffffff8002989f45
+ffffff8002989f09: mov      esi, dword ptr [rbx + 0xac]
+ffffff8002989f0f: shl      rsi, 3
+ffffff8002989f13: lea      rdi, [rip + 0x2ebe6]  ; 0xffffff80029b8b00
+ffffff8002989f1a: call     0xffffff8000ab6300  ; _IOMallocTypeVarImpl
+ffffff8002989f1f: mov      qword ptr [rbx + 0xe0], rax
+ffffff8002989f26: test     rax, rax
+ffffff8002989f29: je       0xffffff8002989ec2
+ffffff8002989f2b: lea      rdi, [rip + 0x2e18e]  ; 0xffffff80029b80c0
+ffffff8002989f32: call     0xffffff8000ab5930  ; _IOMallocTypeImpl
+ffffff8002989f37: mov      qword ptr [rbx + 0xf8], rax
+ffffff8002989f3e: test     rax, rax
+ffffff8002989f41: setne    r14b
+ffffff8002989f45: mov      eax, r14d
+ffffff8002989f48: pop      rbx
+ffffff8002989f49: pop      r14
+ffffff8002989f4b: pop      rbp
+ffffff8002989f4c: ret      
+ffffff8002989f4d: nop      

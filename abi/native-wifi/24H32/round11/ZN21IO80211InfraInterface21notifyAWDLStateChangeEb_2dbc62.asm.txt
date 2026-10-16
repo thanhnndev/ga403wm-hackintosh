@@ -1,0 +1,30 @@
+# 0xffffff80022dbc62 __ZN21IO80211InfraInterface21notifyAWDLStateChangeEb
+ffffff80022dbc62: push     rbp
+ffffff80022dbc63: mov      rbp, rsp
+ffffff80022dbc66: push     r14
+ffffff80022dbc68: push     rbx
+ffffff80022dbc69: mov      rax, qword ptr [rdi + 0x110]
+ffffff80022dbc70: mov      rax, qword ptr [rax + 0x28]
+ffffff80022dbc74: test     rax, rax
+ffffff80022dbc77: je       0xffffff80022dbcbd
+ffffff80022dbc79: mov      rax, qword ptr [rax + 0x18]
+ffffff80022dbc7d: mov      rax, qword ptr [rax + 0x528]
+ffffff80022dbc84: test     rax, rax
+ffffff80022dbc87: je       0xffffff80022dbcbd
+ffffff80022dbc89: mov      rax, qword ptr [rax + 0x18]
+ffffff80022dbc8d: mov      r14, qword ptr [rax + 0x4c0]
+ffffff80022dbc94: test     r14, r14
+ffffff80022dbc97: je       0xffffff80022dbcbd
+ffffff80022dbc99: mov      ebx, esi
+ffffff80022dbc9b: mov      rax, qword ptr [r14 + 0x10]
+ffffff80022dbc9f: mov      rdi, qword ptr [rax + 0xa30]
+ffffff80022dbca6: test     rdi, rdi
+ffffff80022dbca9: je       0xffffff80022dbcb3
+ffffff80022dbcab: movzx    esi, bl
+ffffff80022dbcae: call     0xffffff800230315a  ; __ZN25IO80211LinkQualityMonitor31recordInterfaceConcurrencyStateEb
+ffffff80022dbcb3: mov      rax, qword ptr [r14 + 0x10]
+ffffff80022dbcb7: mov      byte ptr [rax + 0xaa0], bl
+ffffff80022dbcbd: pop      rbx
+ffffff80022dbcbe: pop      r14
+ffffff80022dbcc0: pop      rbp
+ffffff80022dbcc1: ret      

@@ -1,0 +1,13 @@
+# 0xffffff8002983436 __ZN25IOSkywalkNetworkInterface25getKeepAliveOffloadFramesEP29ifnet_keepalive_offload_framejmPj
+ffffff8002983436: push     rbp
+ffffff8002983437: mov      rbp, rsp
+ffffff800298343a: mov      rax, qword ptr [rdi + 0xb8]
+ffffff8002983441: mov      rdi, qword ptr [rax + 8]
+ffffff8002983445: test     rdi, rdi
+ffffff8002983448: je       0xffffff8002983450
+ffffff800298344a: pop      rbp
+ffffff800298344b: jmp      0xffffff80006a0a90  ; _ifnet_get_keepalive_offload_frames
+ffffff8002983450: mov      eax, 0xe00002cd
+ffffff8002983455: pop      rbp
+ffffff8002983456: ret      
+ffffff8002983457: nop      

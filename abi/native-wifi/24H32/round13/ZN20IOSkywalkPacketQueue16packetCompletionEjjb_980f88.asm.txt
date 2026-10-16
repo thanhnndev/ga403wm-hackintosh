@@ -1,0 +1,147 @@
+# 0xffffff8002980f88 __ZN20IOSkywalkPacketQueue16packetCompletionEjjb
+ffffff8002980f88: push     rbp
+ffffff8002980f89: mov      rbp, rsp
+ffffff8002980f8c: push     r15
+ffffff8002980f8e: push     r14
+ffffff8002980f90: push     r13
+ffffff8002980f92: push     r12
+ffffff8002980f94: push     rbx
+ffffff8002980f95: sub      rsp, 0x18
+ffffff8002980f99: mov      r13d, ecx
+ffffff8002980f9c: mov      r14, rdi
+ffffff8002980f9f: mov      rcx, qword ptr [rdi + 0x68]
+ffffff8002980fa3: mov      esi, dword ptr [rcx + 0x18]
+ffffff8002980fa6: mov      ebx, dword ptr [rcx + 0x20]
+ffffff8002980fa9: mov      edi, dword ptr [rcx + 0x2c]
+ffffff8002980fac: mov      r12d, esi
+ffffff8002980faf: sub      r12d, edi
+ffffff8002980fb2: xor      r8d, r8d
+ffffff8002980fb5: sub      r12d, ebx
+ffffff8002980fb8: cmovb    r12d, r8d
+ffffff8002980fbc: lea      r15d, [rdi + rdx]
+ffffff8002980fc0: mov      eax, dword ptr [rcx + 0x28]
+ffffff8002980fc3: cmp      esi, r15d
+ffffff8002980fc6: sete     r9b
+ffffff8002980fca: test     r13b, r9b
+ffffff8002980fcd: je       0xffffff8002981013
+ffffff8002980fcf: mov      edi, dword ptr [rcx + 0x14]
+ffffff8002980fd2: sub      edi, esi
+ffffff8002980fd4: cmovb    edi, r8d
+ffffff8002980fd8: cmp      edi, edx
+ffffff8002980fda: seta     sil
+ffffff8002980fde: add      edx, edx
+ffffff8002980fe0: cmp      ebx, edx
+ffffff8002980fe2: seta     dl
+ffffff8002980fe5: or       dl, sil
+ffffff8002980fe8: jne      0xffffff8002980ffb
+ffffff8002980fea: xor      edx, edx
+ffffff8002980fec: mov      esi, r15d
+ffffff8002980fef: sub      esi, eax
+ffffff8002980ff1: cmovb    esi, edx
+ffffff8002980ff4: add      esi, ebx
+ffffff8002980ff6: add      esi, dword ptr [rcx + 0x30]
+ffffff8002980ff9: mov      ebx, esi
+ffffff8002980ffb: mov      dword ptr [rcx + 0x34], 0xffffffff
+ffffff8002981002: call     0xffffff8000536cc0  ; _mach_absolute_time
+ffffff8002981007: mov      rcx, qword ptr [r14 + 0x68]
+ffffff800298100b: mov      qword ptr [rcx], rax
+ffffff800298100e: jmp      0xffffff80029810e4  ; __ZN20IOSkywalkPacketQueue16packetCompletionEjjb+0x15c
+ffffff8002981013: cmp      byte ptr [rcx + 0x3d], 0
+ffffff8002981017: jne      0xffffff800298102a
+ffffff8002981019: cmp      r15d, eax
+ffffff800298101c: setae    r9b
+ffffff8002981020: and      r9b, byte ptr [rcx + 0x3c]
+ffffff8002981024: cmp      r9b, 1
+ffffff8002981028: je       0xffffff8002980fcf
+ffffff800298102a: cmp      esi, r15d
+ffffff800298102d: je       0xffffff80029810e4
+ffffff8002981033: cmp      eax, edi
+ffffff8002981035: je       0xffffff80029810e4
+ffffff800298103b: cmp      r15d, eax
+ffffff800298103e: jae      0xffffff80029810e4
+ffffff8002981044: mov      dword ptr [rbp - 0x2c], r13d
+ffffff8002981048: mov      edi, dword ptr [rcx + 0x30]
+ffffff800298104b: lea      esi, [rdi + rbx]
+ffffff800298104e: add      edx, edx
+ffffff8002981050: xor      eax, eax
+ffffff8002981052: sub      esi, edx
+ffffff8002981054: cmovb    esi, eax
+ffffff8002981057: test     edi, edi
+ffffff8002981059: je       0xffffff8002981065
+ffffff800298105b: mov      eax, dword ptr [rcx + 0x24]
+ffffff800298105e: xor      edx, edx
+ffffff8002981060: sub      eax, edi
+ffffff8002981062: cmovb    eax, edx
+ffffff8002981065: cmp      esi, eax
+ffffff8002981067: cmova    eax, esi
+ffffff800298106a: mov      edx, dword ptr [rcx + 0x34]
+ffffff800298106d: cmp      eax, edx
+ffffff800298106f: cmovae   eax, edx
+ffffff8002981072: mov      dword ptr [rcx + 0x34], eax
+ffffff8002981075: call     0xffffff8000536cc0  ; _mach_absolute_time
+ffffff800298107a: movabs   rcx, 0xaaaaaaaaaaaaaaaa
+ffffff8002981084: lea      r13, [rbp - 0x38]
+ffffff8002981088: mov      qword ptr [r13], rcx
+ffffff800298108c: mov      rcx, qword ptr [r14 + 0x68]
+ffffff8002981090: sub      rax, qword ptr [rcx]
+ffffff8002981093: mov      rdi, rax
+ffffff8002981096: mov      rsi, r13
+ffffff8002981099: call     0xffffff8000536d80  ; _absolutetime_to_nanoseconds
+ffffff800298109e: mov      rax, qword ptr [r13]
+ffffff80029810a2: mov      rcx, qword ptr [r14 + 0x68]
+ffffff80029810a6: cmp      rax, qword ptr [rcx + 8]
+ffffff80029810aa: jb       0xffffff80029810e0
+ffffff80029810ac: xor      eax, eax
+ffffff80029810ae: sub      ebx, dword ptr [rcx + 0x34]
+ffffff80029810b1: cmovb    ebx, eax
+ffffff80029810b4: movzx    r13d, byte ptr [rcx + 0x3d]
+ffffff80029810b9: shl      r13d, 0xb
+ffffff80029810bd: add      r13d, ebx
+ffffff80029810c0: mov      eax, dword ptr [rcx + 0x38]
+ffffff80029810c3: cmp      r13d, eax
+ffffff80029810c6: cmovbe   r13d, eax
+ffffff80029810ca: mov      dword ptr [rcx + 0x34], 0xffffffff
+ffffff80029810d1: call     0xffffff8000536cc0  ; _mach_absolute_time
+ffffff80029810d6: mov      rcx, qword ptr [r14 + 0x68]
+ffffff80029810da: mov      qword ptr [rcx], rax
+ffffff80029810dd: mov      ebx, r13d
+ffffff80029810e0: mov      r13d, dword ptr [rbp - 0x2c]
+ffffff80029810e4: cmp      ebx, dword ptr [rcx + 0x20]
+ffffff80029810e7: je       0xffffff80029810ef
+ffffff80029810e9: mov      dword ptr [rcx + 0x20], ebx
+ffffff80029810ec: xor      r12d, r12d
+ffffff80029810ef: mov      eax, ebx
+ffffff80029810f1: add      eax, r15d
+ffffff80029810f4: mov      dword ptr [rcx + 0x1c], eax
+ffffff80029810f7: mov      rsi, qword ptr [r14 + 0x68]
+ffffff80029810fb: jb       0xffffff8002981106
+ffffff80029810fd: cmp      dword ptr [rsi + 0x1c], 0xffff0000
+ffffff8002981104: jb       0xffffff8002981132
+ffffff8002981106: mov      r15d, r15d
+ffffff8002981109: neg      r15
+ffffff800298110c: add      rsi, 0x14
+ffffff8002981110: mov      rdi, r15
+ffffff8002981113: call     0xffffff8000a48bd0  ; _OSAddAtomic64
+ffffff8002981118: mov      rsi, qword ptr [r14 + 0x68]
+ffffff800298111c: add      rsi, 0x18
+ffffff8002981120: mov      rdi, r15
+ffffff8002981123: call     0xffffff8000a48bd0  ; _OSAddAtomic64
+ffffff8002981128: mov      rsi, qword ptr [r14 + 0x68]
+ffffff800298112c: mov      dword ptr [rsi + 0x1c], ebx
+ffffff800298112f: xor      r15d, r15d
+ffffff8002981132: mov      byte ptr [rsi + 0x3c], r13b
+ffffff8002981136: mov      eax, dword ptr [rsi + 0x10]
+ffffff8002981139: mov      ecx, dword ptr [rsi + 0x18]
+ffffff800298113c: mov      dword ptr [rsi + 0x24], eax
+ffffff800298113f: mov      dword ptr [rsi + 0x30], r12d
+ffffff8002981143: mov      dword ptr [rsi + 0x2c], r15d
+ffffff8002981147: mov      dword ptr [rsi + 0x28], ecx
+ffffff800298114a: add      rsp, 0x18
+ffffff800298114e: pop      rbx
+ffffff800298114f: pop      r12
+ffffff8002981151: pop      r13
+ffffff8002981153: pop      r14
+ffffff8002981155: pop      r15
+ffffff8002981157: pop      rbp
+ffffff8002981158: ret      
+ffffff8002981159: nop      

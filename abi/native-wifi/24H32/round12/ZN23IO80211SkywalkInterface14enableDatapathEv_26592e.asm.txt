@@ -1,0 +1,6 @@
+# 0xffffff800226592e __ZN23IO80211SkywalkInterface14enableDatapathEv
+ffffff800226592e: push     rbp
+ffffff800226592f: mov      rbp, rsp
+ffffff8002265932: xor      eax, eax
+ffffff8002265934: pop      rbp
+ffffff8002265935: ret      

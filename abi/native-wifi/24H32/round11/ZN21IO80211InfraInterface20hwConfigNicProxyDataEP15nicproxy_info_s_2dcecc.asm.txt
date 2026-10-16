@@ -1,0 +1,35 @@
+# 0xffffff80022dcecc __ZN21IO80211InfraInterface20hwConfigNicProxyDataEP15nicproxy_info_s
+ffffff80022dcecc: push     rbp
+ffffff80022dcecd: mov      rbp, rsp
+ffffff80022dced0: push     r14
+ffffff80022dced2: push     rbx
+ffffff80022dced3: sub      rsp, 0x10
+ffffff80022dced7: mov      rbx, rsi
+ffffff80022dceda: mov      r14, rdi
+ffffff80022dcedd: mov      rax, qword ptr [rip + 0xdf234]  ; 0xffffff80023bc118
+ffffff80022dcee4: mov      rax, qword ptr [rax]
+ffffff80022dcee7: mov      qword ptr [rbp - 0x18], rax
+ffffff80022dceeb: mov      rax, qword ptr [rdi]
+ffffff80022dceee: call     qword ptr [rax + 0xcf0]
+ffffff80022dcef4: lea      rdx, [rbp - 0x20]
+ffffff80022dcef8: mov      dword ptr [rdx], eax
+ffffff80022dcefa: shr      rax, 0x20
+ffffff80022dcefe: mov      word ptr [rdx + 4], ax
+ffffff80022dcf02: mov      rax, qword ptr [r14 + 0x118]
+ffffff80022dcf09: mov      rdi, qword ptr [rax + 0x198]
+ffffff80022dcf10: mov      rsi, rbx
+ffffff80022dcf13: call     0xffffff8002266d6e  ; __ZN26IO80211DataPathInformAgent20hwConfigNicProxyDataEP15nicproxy_info_sR10ether_addr
+ffffff80022dcf18: mov      rax, qword ptr [r14 + 0x118]
+ffffff80022dcf1f: mov      rdi, qword ptr [rax + 0x1a0]
+ffffff80022dcf26: mov      rax, qword ptr [rip + 0xdf1eb]  ; 0xffffff80023bc118
+ffffff80022dcf2d: mov      rax, qword ptr [rax]
+ffffff80022dcf30: cmp      rax, qword ptr [rbp - 0x18]
+ffffff80022dcf34: jne      0xffffff80022dcf46
+ffffff80022dcf36: mov      rsi, rbx
+ffffff80022dcf39: add      rsp, 0x10
+ffffff80022dcf3d: pop      rbx
+ffffff80022dcf3e: pop      r14
+ffffff80022dcf40: pop      rbp
+ffffff80022dcf41: jmp      0xffffff8002268d32  ; __ZN26IO80211BonjourOffloadAgent29parseBonjourOffloadConfigDataEP15nicproxy_info_s
+ffffff80022dcf46: call     0xffffff8000383150  ; ___stack_chk_fail
+ffffff80022dcf4b: nop      

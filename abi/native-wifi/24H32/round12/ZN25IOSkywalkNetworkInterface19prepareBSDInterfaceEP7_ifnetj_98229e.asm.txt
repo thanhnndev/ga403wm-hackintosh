@@ -1,0 +1,30 @@
+# 0xffffff800298229e __ZN25IOSkywalkNetworkInterface19prepareBSDInterfaceEP7__ifnetj
+ffffff800298229e: push     rbp
+ffffff800298229f: mov      rbp, rsp
+ffffff80029822a2: push     rbx
+ffffff80029822a3: push     rax
+ffffff80029822a4: mov      rax, rsi
+ffffff80029822a7: mov      rbx, rdi
+ffffff80029822aa: mov      rcx, qword ptr [rdi + 0xb8]
+ffffff80029822b1: mov      qword ptr [rcx + 8], rsi
+ffffff80029822b5: mov      rcx, qword ptr [rcx]
+ffffff80029822b8: mov      esi, dword ptr [rcx + 0x4c]
+ffffff80029822bb: mov      rdi, rax
+ffffff80029822be: call     0xffffff800069dc30  ; _ifnet_set_mtu
+ffffff80029822c3: mov      ecx, eax
+ffffff80029822c5: mov      eax, 0xe00002c2
+ffffff80029822ca: test     ecx, ecx
+ffffff80029822cc: jne      0xffffff80029822f4
+ffffff80029822ce: mov      rax, qword ptr [rbx + 0xb8]
+ffffff80029822d5: mov      rdi, qword ptr [rax + 0x18]
+ffffff80029822d9: call     0xffffff800052f900  ; _lck_mtx_lock
+ffffff80029822de: mov      rax, qword ptr [rbx + 0xb8]
+ffffff80029822e5: mov      byte ptr [rax + 0x40], 1
+ffffff80029822e9: mov      rdi, qword ptr [rax + 0x18]
+ffffff80029822ed: call     0xffffff800052fc50  ; _lck_mtx_unlock
+ffffff80029822f2: xor      eax, eax
+ffffff80029822f4: add      rsp, 8
+ffffff80029822f8: pop      rbx
+ffffff80029822f9: pop      rbp
+ffffff80029822fa: ret      
+ffffff80029822fb: nop      

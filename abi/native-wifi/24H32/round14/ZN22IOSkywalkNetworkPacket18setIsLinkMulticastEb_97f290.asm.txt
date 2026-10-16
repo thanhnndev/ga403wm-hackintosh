@@ -1,0 +1,11 @@
+# 0xffffff800297f290 __ZN22IOSkywalkNetworkPacket18setIsLinkMulticastEb
+ffffff800297f290: push     rbp
+ffffff800297f291: mov      rbp, rsp
+ffffff800297f294: mov      rdi, qword ptr [rdi + 0x28]
+ffffff800297f298: call     0xffffff8000a34da0  ; _kern_packet_set_link_multicast
+ffffff800297f29d: test     eax, eax
+ffffff800297f29f: mov      ecx, 0xe00002c2
+ffffff800297f2a4: cmovne   eax, ecx
+ffffff800297f2a7: pop      rbp
+ffffff800297f2a8: ret      
+ffffff800297f2a9: nop      

@@ -1,0 +1,67 @@
+# 0xffffff80022dcb58 __ZN21IO80211InfraInterface13setPowerStateEmP9IOService
+ffffff80022dcb58: push     rbp
+ffffff80022dcb59: mov      rbp, rsp
+ffffff80022dcb5c: push     r15
+ffffff80022dcb5e: push     r14
+ffffff80022dcb60: push     rbx
+ffffff80022dcb61: sub      rsp, 0x68
+ffffff80022dcb65: mov      rbx, rdi
+ffffff80022dcb68: mov      rax, qword ptr [rip + 0xdf5a9]  ; 0xffffff80023bc118
+ffffff80022dcb6f: mov      rax, qword ptr [rax]
+ffffff80022dcb72: mov      qword ptr [rbp - 0x20], rax
+ffffff80022dcb76: lea      r15, [rbp - 0x50]
+ffffff80022dcb7a: mov      qword ptr [r15], 0
+ffffff80022dcb81: mov      qword ptr [r15 + 8], r15
+ffffff80022dcb85: movabs   rax, 0x3002000000
+ffffff80022dcb8f: mov      qword ptr [r15 + 0x10], rax
+ffffff80022dcb93: lea      rax, [rip + 0xcd]  ; 0xffffff80022dcc67
+ffffff80022dcb9a: mov      qword ptr [r15 + 0x18], rax
+ffffff80022dcb9e: lea      rax, [rip + 0xd0]  ; 0xffffff80022dcc75
+ffffff80022dcba5: mov      qword ptr [r15 + 0x20], rax
+ffffff80022dcba9: xor      eax, eax
+ffffff80022dcbab: cmp      rsi, 1
+ffffff80022dcbaf: sete     al
+ffffff80022dcbb2: inc      eax
+ffffff80022dcbb4: mov      dword ptr [r15 + 0x28], eax
+ffffff80022dcbb8: mov      dword ptr [r15 + 0x2c], 0
+ffffff80022dcbc0: call     0xffffff80022647e4  ; __ZN23IO80211SkywalkInterface13setPowerStateEmP9IOService
+ffffff80022dcbc5: mov      r14d, eax
+ffffff80022dcbc8: mov      rax, qword ptr [rbx + 0x110]
+ffffff80022dcbcf: mov      rdi, qword ptr [rax + 0x38]
+ffffff80022dcbd3: mov      rax, qword ptr [rdi]
+ffffff80022dcbd6: call     qword ptr [rax + 0x138]
+ffffff80022dcbdc: test     al, al
+ffffff80022dcbde: je       0xffffff80022dcbf2
+ffffff80022dcbe0: mov      rsi, qword ptr [rbp - 0x48]
+ffffff80022dcbe4: add      rsi, 0x28
+ffffff80022dcbe8: mov      rdi, rbx
+ffffff80022dcbeb: call     0xffffff80022dcc7c  ; __ZN21IO80211InfraInterface17setWCLSystemStateER23apple80211_system_state
+ffffff80022dcbf0: jmp      0xffffff80022dcc36  ; __ZN21IO80211InfraInterface13setPowerStateEmP9IOService+0xde
+ffffff80022dcbf2: mov      rax, qword ptr [rbx + 0x110]
+ffffff80022dcbf9: mov      rdi, qword ptr [rax + 0x38]
+ffffff80022dcbfd: mov      rax, qword ptr [rip + 0xdf3fc]  ; 0xffffff80023bc000
+ffffff80022dcc04: lea      rsi, [rbp - 0x80]
+ffffff80022dcc08: mov      qword ptr [rsi], rax
+ffffff80022dcc0b: mov      qword ptr [rsi + 8], 0x42000000
+ffffff80022dcc13: lea      rax, [rip + 0x298]  ; 0xffffff80022dceb2
+ffffff80022dcc1a: mov      qword ptr [rsi + 0x10], rax
+ffffff80022dcc1e: lea      rax, [rip + 0x10a1eb]  ; 0xffffff80023e6e10
+ffffff80022dcc25: mov      qword ptr [rsi + 0x18], rax
+ffffff80022dcc29: mov      qword ptr [rsi + 0x28], rbx
+ffffff80022dcc2d: mov      qword ptr [rsi + 0x20], r15
+ffffff80022dcc31: call     0xffffff8000afa760  ; __ZN10IOWorkLoop14runActionBlockEU13block_pointerFivE
+ffffff80022dcc36: lea      rdi, [rbp - 0x50]
+ffffff80022dcc3a: mov      esi, 8
+ffffff80022dcc3f: call     0xffffff8000a96f50  ; __Block_object_dispose
+ffffff80022dcc44: mov      rax, qword ptr [rip + 0xdf4cd]  ; 0xffffff80023bc118
+ffffff80022dcc4b: mov      rax, qword ptr [rax]
+ffffff80022dcc4e: cmp      rax, qword ptr [rbp - 0x20]
+ffffff80022dcc52: jne      0xffffff80022dcc62
+ffffff80022dcc54: mov      eax, r14d
+ffffff80022dcc57: add      rsp, 0x68
+ffffff80022dcc5b: pop      rbx
+ffffff80022dcc5c: pop      r14
+ffffff80022dcc5e: pop      r15
+ffffff80022dcc60: pop      rbp
+ffffff80022dcc61: ret      
+ffffff80022dcc62: call     0xffffff8000383150  ; ___stack_chk_fail

@@ -1,0 +1,33 @@
+name: Bug report
+description: Something in this repository misbehaves (kext, app, script, docs).
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Please read the warning in the README: kexts run in the kernel. Redact serials, MACs, SSIDs and passwords from anything you paste.
+  - type: dropdown
+    id: component
+    attributes:
+      label: Component
+      options: [itlmt7925, ItlXhciKick, AsusWmi, AmdCppc / AmdCppcPolicy, MtkBtFw, BtLeDlFix, RogControl, ItlWiFi, TapGuard, EFI / config.plist, scripts, docs, other]
+    validations:
+      required: true
+  - type: input
+    id: env
+    attributes:
+      label: Machine, BIOS, macOS build
+      placeholder: "GA403WM, GA403WM.310, 15.8.1 (24H32)"
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: What happened, and what you expected
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs (redacted)
+      render: shell

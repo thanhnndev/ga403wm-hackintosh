@@ -1,0 +1,81 @@
+# 0xffffff80029857ee __ZN26IOSkywalkRxSubmissionQueue12initWithPoolEP25IOSkywalkPacketBufferPooljjjP8OSObjectPFjS3_PS_PKP15IOSkywalkPacketjPvES9_j
+ffffff80029857ee: push     rbp
+ffffff80029857ef: mov      rbp, rsp
+ffffff80029857f2: push     r15
+ffffff80029857f4: push     r14
+ffffff80029857f6: push     r12
+ffffff80029857f8: push     rbx
+ffffff80029857f9: xor      r14d, r14d
+ffffff80029857fc: cmp      edx, 2
+ffffff80029857ff: jb       0xffffff8002985907
+ffffff8002985805: mov      r12, rsi
+ffffff8002985808: test     rsi, rsi
+ffffff800298580b: je       0xffffff8002985907
+ffffff8002985811: mov      r10, qword ptr [rbp + 0x10]
+ffffff8002985815: test     r10, r10
+ffffff8002985818: je       0xffffff8002985907
+ffffff800298581e: mov      rax, r9
+ffffff8002985821: mov      r9d, r8d
+ffffff8002985824: mov      r15d, ecx
+ffffff8002985827: mov      r8d, edx
+ffffff800298582a: mov      rbx, rdi
+ffffff800298582d: lea      r11, [rip + 0x29434]  ; 0xffffff80029aec68
+ffffff8002985834: sub      rsp, 8
+ffffff8002985838: xor      r14d, r14d
+ffffff800298583b: mov      rsi, r12
+ffffff800298583e: xor      edx, edx
+ffffff8002985840: mov      ecx, 2
+ffffff8002985845: push     qword ptr [rbp + 0x18]
+ffffff8002985848: push     r10
+ffffff800298584a: push     rax
+ffffff800298584b: call     qword ptr [r11 + 0x240]
+ffffff8002985852: add      rsp, 0x20
+ffffff8002985856: test     al, al
+ffffff8002985858: je       0xffffff8002985907
+ffffff800298585e: mov      dword ptr [rbx + 0x114], r14d
+ffffff8002985865: mov      dword ptr [rbx + 0x11c], r14d
+ffffff800298586c: mov      dword ptr [rbx + 0x110], r15d
+ffffff8002985873: cmp      dword ptr [r12 + 0x34], r15d
+ffffff8002985878: jb       0xffffff8002985907
+ffffff800298587e: mov      eax, dword ptr [rbp + 0x20]
+ffffff8002985881: test     al, 1
+ffffff8002985883: je       0xffffff800298588c
+ffffff8002985885: or       byte ptr [rbx + 0x126], 1
+ffffff800298588c: test     al, 2
+ffffff800298588e: je       0xffffff8002985897
+ffffff8002985890: or       byte ptr [rbx + 0x126], 0x10
+ffffff8002985897: mov      edi, dword ptr [rbx + 0xac]
+ffffff800298589d: call     0xffffff80029812ae  ; __ZN20IOSkywalkPacketTable17createPacketTableEj
+ffffff80029858a2: mov      qword ptr [rbx + 0xe0], rax
+ffffff80029858a9: test     rax, rax
+ffffff80029858ac: je       0xffffff8002985904
+ffffff80029858ae: mov      rax, qword ptr [rbx]
+ffffff80029858b1: xor      r14d, r14d
+ffffff80029858b4: mov      rdi, rbx
+ffffff80029858b7: xor      esi, esi
+ffffff80029858b9: call     qword ptr [rax + 0x1b8]
+ffffff80029858bf: test     eax, eax
+ffffff80029858c1: jne      0xffffff8002985907
+ffffff80029858c3: lea      rdi, [rip + 0x4a]  ; 0xffffff8002985914
+ffffff80029858ca: mov      rsi, rbx
+ffffff80029858cd: mov      edx, 1
+ffffff80029858d2: mov      ecx, 1
+ffffff80029858d7: call     0xffffff8000433c40  ; _thread_call_allocate_with_options
+ffffff80029858dc: mov      qword ptr [rbx + 0x100], rax
+ffffff80029858e3: test     rax, rax
+ffffff80029858e6: je       0xffffff8002985904
+ffffff80029858e8: lea      rdi, [rip + 0x32391]  ; 0xffffff80029b7c80
+ffffff80029858ef: call     0xffffff8000ab5930  ; _IOMallocTypeImpl
+ffffff80029858f4: mov      qword ptr [rbx + 0xf8], rax
+ffffff80029858fb: test     rax, rax
+ffffff80029858fe: setne    r14b
+ffffff8002985902: jmp      0xffffff8002985907  ; __ZN26IOSkywalkRxSubmissionQueue12initWithPoolEP25IOSkywalkPacketBufferPooljjjP8OSObjectPFjS3_PS_PKP15IOSkywalkPacketjPvES9_j+0x119
+ffffff8002985904: xor      r14d, r14d
+ffffff8002985907: mov      eax, r14d
+ffffff800298590a: pop      rbx
+ffffff800298590b: pop      r12
+ffffff800298590d: pop      r14
+ffffff800298590f: pop      r15
+ffffff8002985911: pop      rbp
+ffffff8002985912: ret      
+ffffff8002985913: nop      

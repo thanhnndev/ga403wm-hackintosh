@@ -1,0 +1,8 @@
+    | |   |       | |   "itlmt_native_trace" = "mk:start role=1 unit=9 explicit=0; mk:withController=ok; mk:attachInterface=1; sw:deferBSDAttach=0; sw:IO80211InfraInterface::start=1; sw:getWorkQueue=ok; pool=ok; queues rxSub=1 txComp=1 rxComp=1; sw:pool+queues=1; sw:addEventSource x6 ok; sw:registerInfraEthernetInterface=0; sw:registerService(8) done; sw:setRunningState(false) done; mk:startWithInfo ok; lp:wq=0xffffff91ae151100 prov=0xffffff91ae14f290; lp:ctl=0xffffff91ae151100 if=0xffffff91ae151100; lp:inGate=0 onThread=0 wl=1; mk:deferBSDAttach(false)=0"
+    | |   |       | | |   "IO80211InterfaceRole" = "Infrastructure"
+    | |   |       | | |   "IOInterfaceUnit" = 9
+    | |   |       | | |   "IOInterfaceNamePrefix" = "en"
+    | |   |   |   |   |     |   "IOInterfaceUnit" = 1
+    | |   |   |   |   |     |   "IOInterfaceNamePrefix" = "en"
+    | |     |   "IOInterfaceUnit" = 0
+    | |     |   "IOInterfaceNamePrefix" = "en"

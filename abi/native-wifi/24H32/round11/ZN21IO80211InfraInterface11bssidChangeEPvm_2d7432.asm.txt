@@ -1,0 +1,82 @@
+# 0xffffff80022d7432 __ZN21IO80211InfraInterface11bssidChangeEPvm
+ffffff80022d7432: test     rsi, rsi
+ffffff80022d7435: je       0xffffff80022d74d3
+ffffff80022d743b: cmp      rdx, 0x18
+ffffff80022d743f: jne      0xffffff80022d74d3
+ffffff80022d7445: push     rbp
+ffffff80022d7446: mov      rbp, rsp
+ffffff80022d7449: push     r15
+ffffff80022d744b: push     r14
+ffffff80022d744d: push     r13
+ffffff80022d744f: push     r12
+ffffff80022d7451: push     rbx
+ffffff80022d7452: sub      rsp, 0x18
+ffffff80022d7456: mov      r14, rsi
+ffffff80022d7459: mov      rbx, rdi
+ffffff80022d745c: mov      rax, qword ptr [rdi]
+ffffff80022d745f: call     qword ptr [rax + 0xd08]
+ffffff80022d7465: test     rax, rax
+ffffff80022d7468: je       0xffffff80022d7487
+ffffff80022d746a: mov      rax, qword ptr [rbx]
+ffffff80022d746d: mov      rdi, rbx
+ffffff80022d7470: call     qword ptr [rax + 0xd08]
+ffffff80022d7476: mov      rdi, rax
+ffffff80022d7479: mov      esi, 1
+ffffff80022d747e: call     0xffffff80031d421c  ; __ZN11CCLogStream9shouldLogE16CCStreamLogLevel
+ffffff80022d7483: test     al, al
+ffffff80022d7485: jne      0xffffff80022d74d4
+ffffff80022d7487: mov      rax, qword ptr [rbx]
+ffffff80022d748a: mov      rdi, rbx
+ffffff80022d748d: call     qword ptr [rax + 0xba8]
+ffffff80022d7493: lea      r15, [r14 + 8]
+ffffff80022d7497: mov      rdi, rax
+ffffff80022d749a: mov      rsi, r15
+ffffff80022d749d: call     0xffffff8002223f44  ; __ZN17IO80211Controller15setInfraChannelEP18apple80211_channel
+ffffff80022d74a2: xor      ecx, ecx
+ffffff80022d74a4: cmp      dword ptr [r14 + 0x14], 2
+ffffff80022d74a9: setne    cl
+ffffff80022d74ac: mov      rdi, rbx
+ffffff80022d74af: mov      rsi, r14
+ffffff80022d74b2: mov      rdx, r15
+ffffff80022d74b5: call     0xffffff80022d826c  ; __ZN21IO80211InfraInterface19updateBSSIDPropertyER10ether_addrR18apple80211_channelb
+ffffff80022d74ba: mov      rdi, rbx
+ffffff80022d74bd: mov      rsi, r15
+ffffff80022d74c0: add      rsp, 0x18
+ffffff80022d74c4: pop      rbx
+ffffff80022d74c5: pop      r12
+ffffff80022d74c7: pop      r13
+ffffff80022d74c9: pop      r14
+ffffff80022d74cb: pop      r15
+ffffff80022d74cd: pop      rbp
+ffffff80022d74ce: jmp      0xffffff80022d8438  ; __ZN21IO80211InfraInterface21updateChannelPropertyER18apple80211_channel
+ffffff80022d74d3: ret      
+ffffff80022d74d4: mov      rax, qword ptr [rbx]
+ffffff80022d74d7: mov      rdi, rbx
+ffffff80022d74da: call     qword ptr [rax + 0xd08]
+ffffff80022d74e0: mov      r8d, dword ptr [r14 + 0x14]
+ffffff80022d74e4: mov      r9d, dword ptr [r14 + 0xc]
+ffffff80022d74e8: mov      ecx, dword ptr [r14 + 0x10]
+ffffff80022d74ec: mov      qword ptr [rbp - 0x38], rcx
+ffffff80022d74f0: movzx    ecx, byte ptr [r14]
+ffffff80022d74f4: mov      qword ptr [rbp - 0x30], rcx
+ffffff80022d74f8: movzx    r15d, byte ptr [r14 + 1]
+ffffff80022d74fd: movzx    r12d, byte ptr [r14 + 2]
+ffffff80022d7502: movzx    r13d, byte ptr [r14 + 3]
+ffffff80022d7507: movzx    r10d, byte ptr [r14 + 4]
+ffffff80022d750c: movzx    r11d, byte ptr [r14 + 5]
+ffffff80022d7511: sub      rsp, 8
+ffffff80022d7515: lea      rsi, [rip + 0xc3f78]  ; "[ik] %s@%d:BSSID Changed reason=<%d> ch=<%d:%x> bssid=<%02X:%02X:%02X:%02X:%02X:"
+ffffff80022d751c: lea      rdx, [rip + 0xc3fc9]  ; "bssidChange"
+ffffff80022d7523: mov      rdi, rax
+ffffff80022d7526: mov      ecx, 0x117b
+ffffff80022d752b: xor      eax, eax
+ffffff80022d752d: push     r11
+ffffff80022d752f: push     r10
+ffffff80022d7531: push     r13
+ffffff80022d7533: push     r12
+ffffff80022d7535: push     r15
+ffffff80022d7537: push     qword ptr [rbp - 0x30]
+ffffff80022d753a: push     qword ptr [rbp - 0x38]
+ffffff80022d753d: call     0xffffff80031d252e  ; __ZN11CCLogStream8logAlertEPKcz
+ffffff80022d7542: add      rsp, 0x40
+ffffff80022d7546: jmp      0xffffff80022d7487  ; __ZN21IO80211InfraInterface11bssidChangeEPvm+0x55

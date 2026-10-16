@@ -1,0 +1,17 @@
+# 0xffffff80022da992 __ZN21IO80211InfraInterface16updateLinkStatusEv
+ffffff80022da992: push     rbp
+ffffff80022da993: mov      rbp, rsp
+ffffff80022da996: sub      rsp, 0x10
+ffffff80022da99a: mov      rdx, rdi
+ffffff80022da99d: mov      rax, qword ptr [rdi + 0x110]
+ffffff80022da9a4: mov      rdi, qword ptr [rax + 0x38]
+ffffff80022da9a8: mov      rax, qword ptr [rdi]
+ffffff80022da9ab: mov      qword ptr [rsp], 0
+ffffff80022da9b3: lea      rsi, [rip + 0x14]  ; 0xffffff80022da9ce
+ffffff80022da9ba: xor      ecx, ecx
+ffffff80022da9bc: xor      r8d, r8d
+ffffff80022da9bf: xor      r9d, r9d
+ffffff80022da9c2: call     qword ptr [rax + 0x1a0]
+ffffff80022da9c8: add      rsp, 0x10
+ffffff80022da9cc: pop      rbp
+ffffff80022da9cd: ret      

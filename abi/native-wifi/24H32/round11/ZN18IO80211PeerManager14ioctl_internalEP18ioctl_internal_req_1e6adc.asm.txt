@@ -1,0 +1,30 @@
+# 0xffffff80021e6adc __ZN18IO80211PeerManager14ioctl_internalEP18ioctl_internal_req
+ffffff80021e6adc: push     rbp
+ffffff80021e6add: mov      rbp, rsp
+ffffff80021e6ae0: push     r14
+ffffff80021e6ae2: push     rbx
+ffffff80021e6ae3: sub      rsp, 0x10
+ffffff80021e6ae7: mov      r14, rdi
+ffffff80021e6aea: mov      rax, qword ptr [rdi + 0x18]
+ffffff80021e6aee: mov      rdi, qword ptr [rax + 0x518]
+ffffff80021e6af5: test     rdi, rdi
+ffffff80021e6af8: je       0xffffff80021e6b30
+ffffff80021e6afa: mov      rbx, rsi
+ffffff80021e6afd: mov      rax, qword ptr [rdi]
+ffffff80021e6b00: call     qword ptr [rax + 0xc78]
+ffffff80021e6b06: mov      r10, qword ptr [rax]
+ffffff80021e6b09: mov      qword ptr [rsp], 0
+ffffff80021e6b11: lea      rdx, [rip - 0x19a]
+ffffff80021e6b18: mov      rdi, rax
+ffffff80021e6b1b: mov      rsi, r14
+ffffff80021e6b1e: mov      rcx, rbx
+ffffff80021e6b21: xor      r8d, r8d
+ffffff80021e6b24: xor      r9d, r9d
+ffffff80021e6b27: call     qword ptr [r10 + 0x120]
+ffffff80021e6b2e: jmp      0xffffff80021e6b35  ; __ZN18IO80211PeerManager14ioctl_internalEP18ioctl_internal_req+0x59
+ffffff80021e6b30: mov      eax, 0xe00002bc
+ffffff80021e6b35: add      rsp, 0x10
+ffffff80021e6b39: pop      rbx
+ffffff80021e6b3a: pop      r14
+ffffff80021e6b3c: pop      rbp
+ffffff80021e6b3d: ret      

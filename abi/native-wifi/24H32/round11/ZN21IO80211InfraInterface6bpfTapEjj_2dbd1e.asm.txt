@@ -1,0 +1,18 @@
+# 0xffffff80022dbd1e __ZN21IO80211InfraInterface6bpfTapEjj
+ffffff80022dbd1e: push     rbp
+ffffff80022dbd1f: mov      rbp, rsp
+ffffff80022dbd22: push     r14
+ffffff80022dbd24: push     rbx
+ffffff80022dbd25: mov      ebx, edx
+ffffff80022dbd27: mov      r14d, esi
+ffffff80022dbd2a: lea      rsi, [rip + 0x11c59f]  ; 0xffffff80023f82d0
+ffffff80022dbd31: call     0xffffff8000a49ab0  ; __ZN15OSMetaClassBase12safeMetaCastEPKS_PK11OSMetaClass
+ffffff80022dbd36: mov      edi, r14d
+ffffff80022dbd39: mov      esi, ebx
+ffffff80022dbd3b: mov      rdx, rax
+ffffff80022dbd3e: call     0xffffff80022de95e  ; __ZN16IO80211QueueCall15io80211_bpf_tapEjjP23IO80211SkywalkInterface
+ffffff80022dbd43: xor      eax, eax
+ffffff80022dbd45: pop      rbx
+ffffff80022dbd46: pop      r14
+ffffff80022dbd48: pop      rbp
+ffffff80022dbd49: ret      

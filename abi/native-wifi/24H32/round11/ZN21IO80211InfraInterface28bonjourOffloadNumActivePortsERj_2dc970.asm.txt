@@ -1,0 +1,16 @@
+# 0xffffff80022dc970 __ZN21IO80211InfraInterface28bonjourOffloadNumActivePortsERj
+ffffff80022dc970: push     rbp
+ffffff80022dc971: mov      rbp, rsp
+ffffff80022dc974: mov      rax, qword ptr [rdi + 0x118]
+ffffff80022dc97b: mov      rax, qword ptr [rax + 0x1a0]
+ffffff80022dc982: mov      dword ptr [rsi], 0
+ffffff80022dc988: mov      rax, qword ptr [rax + 0x10]
+ffffff80022dc98c: test     rax, rax
+ffffff80022dc98f: je       0xffffff80022dc99b
+ffffff80022dc991: movzx    eax, byte ptr [rax + 0x1a]
+ffffff80022dc995: mov      dword ptr [rsi], eax
+ffffff80022dc997: xor      eax, eax
+ffffff80022dc999: jmp      0xffffff80022dc9a0  ; __ZN21IO80211InfraInterface28bonjourOffloadNumActivePortsERj+0x30
+ffffff80022dc99b: mov      eax, 0xe00002bc
+ffffff80022dc9a0: pop      rbp
+ffffff80022dc9a1: ret      

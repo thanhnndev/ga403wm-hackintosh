@@ -1,0 +1,20 @@
+# 0xffffff80029792f4 __ZN25IOSkywalkNetworkBSDClient21powerStateDidChangeToEmmP9IOService
+ffffff80029792f4: test     sil, 2
+ffffff80029792f8: je       0xffffff8002979330
+ffffff80029792fa: cmp      qword ptr [rdi + 0xe8], rcx
+ffffff8002979301: jne      0xffffff8002979330
+ffffff8002979303: push     rbp
+ffffff8002979304: mov      rbp, rsp
+ffffff8002979307: mov      rax, qword ptr [rdi + 0x90]
+ffffff800297930e: mov      rsi, qword ptr [rdi + 0x110]
+ffffff8002979315: mov      r10, qword ptr [rax]
+ffffff8002979318: mov      edx, 1
+ffffff800297931d: mov      rdi, rax
+ffffff8002979320: xor      ecx, ecx
+ffffff8002979322: xor      r8d, r8d
+ffffff8002979325: xor      r9d, r9d
+ffffff8002979328: call     qword ptr [r10 + 0x1c8]
+ffffff800297932f: pop      rbp
+ffffff8002979330: xor      eax, eax
+ffffff8002979332: ret      
+ffffff8002979333: nop      

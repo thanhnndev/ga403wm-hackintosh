@@ -1,0 +1,105 @@
+# 0xffffff80022d4946 __ZN21IO80211InfraInterface22updateStaticPropertiesEv
+ffffff80022d4946: push     rbp
+ffffff80022d4947: mov      rbp, rsp
+ffffff80022d494a: push     r14
+ffffff80022d494c: push     rbx
+ffffff80022d494d: sub      rsp, 0x230
+ffffff80022d4954: mov      rbx, rdi
+ffffff80022d4957: mov      rax, qword ptr [rip + 0xe77ba]  ; 0xffffff80023bc118
+ffffff80022d495e: mov      rax, qword ptr [rax]
+ffffff80022d4961: mov      qword ptr [rbp - 0x18], rax
+ffffff80022d4965: lea      r14, [rbp - 0x11c]
+ffffff80022d496c: mov      esi, 0x104
+ffffff80022d4971: mov      rdi, r14
+ffffff80022d4974: call     0xffffff8000101100  ; _bzero
+ffffff80022d4979: mov      dword ptr [r14 - 4], 1
+ffffff80022d4981: lea      rdi, [rbp - 0x230]
+ffffff80022d4988: mov      edx, 0x101
+ffffff80022d498d: mov      esi, 0xaa
+ffffff80022d4992: call     0xffffff80001010c0  ; _secure_memset
+ffffff80022d4997: mov      rax, qword ptr [rbx + 0x110]
+ffffff80022d499e: mov      rdi, qword ptr [rax + 0xd8]
+ffffff80022d49a5: test     rdi, rdi
+ffffff80022d49a8: je       0xffffff80022d49e1
+ffffff80022d49aa: lea      r14, [rbp - 0x231]
+ffffff80022d49b1: mov      byte ptr [r14], 0
+ffffff80022d49b5: lea      rcx, [rbp - 0x120]
+ffffff80022d49bc: mov      r8d, 0x108
+ffffff80022d49c2: mov      esi, 0xc02869c9
+ffffff80022d49c7: mov      edx, 0x2c
+ffffff80022d49cc: mov      r9, r14
+ffffff80022d49cf: call     0xffffff800212ad12  ; __ZN11IO80211Glue13sendIOUCToWclEjjPvmRb
+ffffff80022d49d4: cmp      byte ptr [r14], 1
+ffffff80022d49d8: jne      0xffffff80022d49e1
+ffffff80022d49da: cmp      eax, 0xe082280f
+ffffff80022d49df: jne      0xffffff80022d49f0
+ffffff80022d49e1: lea      rsi, [rbp - 0x120]
+ffffff80022d49e8: mov      rdi, rbx
+ffffff80022d49eb: call     0xffffff80021f6ee9  ; __Z29apple80211getHARDWARE_VERSIONP23IO80211SkywalkInterfaceP23apple80211_version_data
+ffffff80022d49f0: test     eax, eax
+ffffff80022d49f2: jne      0xffffff80022d4a37
+ffffff80022d49f4: lea      r14, [rbp - 0x230]
+ffffff80022d49fb: mov      esi, 0x101
+ffffff80022d4a00: mov      rdi, r14
+ffffff80022d4a03: call     0xffffff8000101100  ; _bzero
+ffffff80022d4a08: lea      rsi, [rbp - 0x11a]
+ffffff80022d4a0f: movzx    eax, word ptr [rsi - 2]
+ffffff80022d4a13: mov      edx, 0x100
+ffffff80022d4a18: cmp      eax, edx
+ffffff80022d4a1a: cmovb    edx, eax
+ffffff80022d4a1d: mov      rdi, r14
+ffffff80022d4a20: call     0xffffff8000101050  ; _real_mode_bootstrap_end
+ffffff80022d4a25: lea      rsi, [rip + 0xc54a1]  ; "IO80211HardwareVersion"
+ffffff80022d4a2c: mov      rdi, rbx
+ffffff80022d4a2f: mov      rdx, r14
+ffffff80022d4a32: call     0xffffff800227da77  ; __Z17setPropertyHelperP9IOServicePKcS2_
+ffffff80022d4a37: mov      dword ptr [rbp - 0x120], 1
+ffffff80022d4a41: mov      rax, qword ptr [rbx + 0x110]
+ffffff80022d4a48: mov      rdi, qword ptr [rax + 0xd8]
+ffffff80022d4a4f: test     rdi, rdi
+ffffff80022d4a52: je       0xffffff80022d4a8b
+ffffff80022d4a54: lea      r14, [rbp - 0x231]
+ffffff80022d4a5b: mov      byte ptr [r14], 0
+ffffff80022d4a5f: lea      rcx, [rbp - 0x120]
+ffffff80022d4a66: mov      r8d, 0x108
+ffffff80022d4a6c: mov      esi, 0xc02869c9
+ffffff80022d4a71: mov      edx, 0x2b
+ffffff80022d4a76: mov      r9, r14
+ffffff80022d4a79: call     0xffffff800212ad12  ; __ZN11IO80211Glue13sendIOUCToWclEjjPvmRb
+ffffff80022d4a7e: cmp      byte ptr [r14], 1
+ffffff80022d4a82: jne      0xffffff80022d4a8b
+ffffff80022d4a84: cmp      eax, 0xe082280f
+ffffff80022d4a89: jne      0xffffff80022d4a9a
+ffffff80022d4a8b: lea      rsi, [rbp - 0x120]
+ffffff80022d4a92: mov      rdi, rbx
+ffffff80022d4a95: call     0xffffff80021f6e85  ; __Z27apple80211getDRIVER_VERSIONP23IO80211SkywalkInterfaceP23apple80211_version_data
+ffffff80022d4a9a: test     eax, eax
+ffffff80022d4a9c: jne      0xffffff80022d4ae1
+ffffff80022d4a9e: lea      r14, [rbp - 0x230]
+ffffff80022d4aa5: mov      esi, 0x101
+ffffff80022d4aaa: mov      rdi, r14
+ffffff80022d4aad: call     0xffffff8000101100  ; _bzero
+ffffff80022d4ab2: lea      rsi, [rbp - 0x11a]
+ffffff80022d4ab9: movzx    eax, word ptr [rsi - 2]
+ffffff80022d4abd: mov      edx, 0x100
+ffffff80022d4ac2: cmp      eax, edx
+ffffff80022d4ac4: cmovb    edx, eax
+ffffff80022d4ac7: mov      rdi, r14
+ffffff80022d4aca: call     0xffffff8000101050  ; _real_mode_bootstrap_end
+ffffff80022d4acf: lea      rsi, [rip + 0xc540e]  ; "IO80211DriverVersion"
+ffffff80022d4ad6: mov      rdi, rbx
+ffffff80022d4ad9: mov      rdx, r14
+ffffff80022d4adc: call     0xffffff800227da77  ; __Z17setPropertyHelperP9IOServicePKcS2_
+ffffff80022d4ae1: mov      rdi, rbx
+ffffff80022d4ae4: xor      esi, esi
+ffffff80022d4ae6: call     0xffffff80022d7e90  ; __ZN21IO80211InfraInterface25updateCountryCodePropertyEb
+ffffff80022d4aeb: mov      rax, qword ptr [rip + 0xe7626]  ; 0xffffff80023bc118
+ffffff80022d4af2: mov      rax, qword ptr [rax]
+ffffff80022d4af5: cmp      rax, qword ptr [rbp - 0x18]
+ffffff80022d4af9: jne      0xffffff80022d4b07
+ffffff80022d4afb: add      rsp, 0x230
+ffffff80022d4b02: pop      rbx
+ffffff80022d4b03: pop      r14
+ffffff80022d4b05: pop      rbp
+ffffff80022d4b06: ret      
+ffffff80022d4b07: call     0xffffff8000383150  ; ___stack_chk_fail

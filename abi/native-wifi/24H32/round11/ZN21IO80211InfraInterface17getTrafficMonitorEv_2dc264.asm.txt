@@ -1,0 +1,20 @@
+# 0xffffff80022dc264 __ZN21IO80211InfraInterface17getTrafficMonitorEv
+ffffff80022dc264: mov      rax, qword ptr [rdi + 0x118]
+ffffff80022dc26b: mov      rax, qword ptr [rax + 0x168]
+ffffff80022dc272: test     rax, rax
+ffffff80022dc275: je       0xffffff80022dc278
+ffffff80022dc277: ret      
+ffffff80022dc278: push     rbp
+ffffff80022dc279: mov      rbp, rsp
+ffffff80022dc27c: push     rbx
+ffffff80022dc27d: push     rax
+ffffff80022dc27e: mov      rbx, rdi
+ffffff80022dc281: mov      rax, qword ptr [rdi + 0x110]
+ffffff80022dc288: mov      rdi, qword ptr [rax + 0x38]
+ffffff80022dc28c: call     0xffffff800215e2a8  ; __ZN21IO80211TrafficMonitor9withParamEP16IO80211WorkQueue
+ffffff80022dc291: mov      rcx, qword ptr [rbx + 0x118]
+ffffff80022dc298: mov      qword ptr [rcx + 0x168], rax
+ffffff80022dc29f: add      rsp, 8
+ffffff80022dc2a3: pop      rbx
+ffffff80022dc2a4: pop      rbp
+ffffff80022dc2a5: ret      

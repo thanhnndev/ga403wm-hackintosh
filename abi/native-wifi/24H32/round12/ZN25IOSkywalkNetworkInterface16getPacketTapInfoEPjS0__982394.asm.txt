@@ -1,0 +1,7 @@
+# 0xffffff8002982394 __ZN25IOSkywalkNetworkInterface16getPacketTapInfoEPjS0_
+ffffff8002982394: push     rbp
+ffffff8002982395: mov      rbp, rsp
+ffffff8002982398: mov      eax, 0xe00002c7
+ffffff800298239d: pop      rbp
+ffffff800298239e: ret      
+ffffff800298239f: nop      

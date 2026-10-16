@@ -1,0 +1,47 @@
+# 0xffffff800297b174 __ZN36IOUserNetworkTxCompletionQueueCompat12initWithPoolEP25IOSkywalkPacketBufferPoolP8OSObjectjjP25IODataQueueDispatchSource
+ffffff800297b174: push     rbp
+ffffff800297b175: mov      rbp, rsp
+ffffff800297b178: push     r14
+ffffff800297b17a: push     rbx
+ffffff800297b17b: mov      rax, r9
+ffffff800297b17e: mov      r9d, r8d
+ffffff800297b181: mov      r8d, ecx
+ffffff800297b184: mov      r10, rdx
+ffffff800297b187: test     rsi, rsi
+ffffff800297b18a: sete     cl
+ffffff800297b18d: cmp      r8d, 2
+ffffff800297b191: setb     dl
+ffffff800297b194: or       dl, cl
+ffffff800297b196: je       0xffffff800297b19d
+ffffff800297b198: xor      r14d, r14d
+ffffff800297b19b: jmp      0xffffff800297b1ef  ; __ZN36IOUserNetworkTxCompletionQueueCompat12initWithPoolEP25IOSkywalkPacketBufferPoolP8OSObjectjjP25IODataQueueDispatchSource+0x7b
+ffffff800297b19d: mov      rbx, rdi
+ffffff800297b1a0: lea      r11, [rip + 0x30bf9]  ; 0xffffff80029abda0
+ffffff800297b1a7: xor      r14d, r14d
+ffffff800297b1aa: xor      edx, edx
+ffffff800297b1ac: mov      ecx, 1
+ffffff800297b1b1: push     r14
+ffffff800297b1b3: push     rax
+ffffff800297b1b4: push     r14
+ffffff800297b1b6: push     r10
+ffffff800297b1b8: call     qword ptr [r11 + 0x2a8]
+ffffff800297b1bf: add      rsp, 0x20
+ffffff800297b1c3: test     al, al
+ffffff800297b1c5: je       0xffffff800297b1ef
+ffffff800297b1c7: mov      rax, qword ptr [rbx]
+ffffff800297b1ca: xor      r14d, r14d
+ffffff800297b1cd: mov      rdi, rbx
+ffffff800297b1d0: xor      esi, esi
+ffffff800297b1d2: call     qword ptr [rax + 0x1b8]
+ffffff800297b1d8: test     eax, eax
+ffffff800297b1da: jne      0xffffff800297b1ef
+ffffff800297b1dc: call     0xffffff8000afa570  ; __ZN10IOWorkLoop8workLoopEv
+ffffff800297b1e1: mov      qword ptr [rbx + 0x108], rax
+ffffff800297b1e8: test     rax, rax
+ffffff800297b1eb: setne    r14b
+ffffff800297b1ef: mov      eax, r14d
+ffffff800297b1f2: pop      rbx
+ffffff800297b1f3: pop      r14
+ffffff800297b1f5: pop      rbp
+ffffff800297b1f6: ret      
+ffffff800297b1f7: nop      

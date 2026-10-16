@@ -1,0 +1,33 @@
+# 0xffffff8002978df6 __ZN25IOSkywalkNetworkBSDClient14handleIfDetachEP7__ifnet
+ffffff8002978df6: push     rbp
+ffffff8002978df7: mov      rbp, rsp
+ffffff8002978dfa: push     r14
+ffffff8002978dfc: push     rbx
+ffffff8002978dfd: sub      rsp, 0x10
+ffffff8002978e01: mov      rbx, rdi
+ffffff8002978e04: lea      r14, [rbp - 0x11]
+ffffff8002978e08: mov      byte ptr [r14], 0
+ffffff8002978e0c: mov      rax, qword ptr [rdi]
+ffffff8002978e0f: call     qword ptr [rax + 0x20]
+ffffff8002978e12: lea      rax, [rip + 0x3125f]  ; 0xffffff80029aa078
+ffffff8002978e19: mov      rsi, qword ptr [rbx + 0xe8]
+ffffff8002978e20: mov      rdi, rbx
+ffffff8002978e23: xor      edx, edx
+ffffff8002978e25: mov      rcx, r14
+ffffff8002978e28: call     qword ptr [rax + 0x418]
+ffffff8002978e2e: mov      rdi, qword ptr [rbx + 0x90]
+ffffff8002978e35: mov      rdx, qword ptr [rbx + 0xe8]
+ffffff8002978e3c: mov      rax, qword ptr [rdi]
+ffffff8002978e3f: lea      rsi, [rip - 0xb4]
+ffffff8002978e46: xor      ecx, ecx
+ffffff8002978e48: xor      r8d, r8d
+ffffff8002978e4b: xor      r9d, r9d
+ffffff8002978e4e: call     qword ptr [rax + 0x1c8]
+ffffff8002978e54: mov      rax, qword ptr [rbx]
+ffffff8002978e57: mov      rdi, rbx
+ffffff8002978e5a: call     qword ptr [rax + 0x28]
+ffffff8002978e5d: add      rsp, 0x10
+ffffff8002978e61: pop      rbx
+ffffff8002978e62: pop      r14
+ffffff8002978e64: pop      rbp
+ffffff8002978e65: ret      

@@ -1,0 +1,10 @@
+# 0xffffff80022dc36a __ZN21IO80211InfraInterface19getCurrentApAddressEv
+ffffff80022dc36a: push     rbp
+ffffff80022dc36b: mov      rbp, rsp
+ffffff80022dc36e: mov      rax, qword ptr [rdi + 0x118]
+ffffff80022dc375: mov      ecx, dword ptr [rax + 0x1a8]
+ffffff80022dc37b: mov      eax, dword ptr [rax + 0x1ac]
+ffffff80022dc381: shl      rax, 0x20
+ffffff80022dc385: or       rax, rcx
+ffffff80022dc388: pop      rbp
+ffffff80022dc389: ret      

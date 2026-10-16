@@ -1,0 +1,51 @@
+# 0xffffff800298648a __ZN26IOSkywalkRxCompletionQueue12initWithPoolEP25IOSkywalkPacketBufferPooljjP8OSObjectPFjS3_PS_PP15IOSkywalkPacketjPvES8_j
+ffffff800298648a: push     rbp
+ffffff800298648b: mov      rbp, rsp
+ffffff800298648e: push     r15
+ffffff8002986490: push     r14
+ffffff8002986492: push     rbx
+ffffff8002986493: push     rax
+ffffff8002986494: mov      r14, r9
+ffffff8002986497: mov      rax, r8
+ffffff800298649a: mov      r9d, ecx
+ffffff800298649d: mov      r8d, edx
+ffffff80029864a0: test     rsi, rsi
+ffffff80029864a3: sete     cl
+ffffff80029864a6: cmp      edx, 2
+ffffff80029864a9: setb     dl
+ffffff80029864ac: or       dl, cl
+ffffff80029864ae: je       0xffffff80029864b5
+ffffff80029864b0: xor      r15d, r15d
+ffffff80029864b3: jmp      0xffffff8002986518  ; __ZN26IOSkywalkRxCompletionQueue12initWithPoolEP25IOSkywalkPacketBufferPooljjP8OSObjectPFjS3_PS_PP15IOSkywalkPacketjPvES8_j+0x8e
+ffffff80029864b5: mov      rbx, rdi
+ffffff80029864b8: lea      r10, [rip + 0x287a9]  ; 0xffffff80029aec68
+ffffff80029864bf: sub      rsp, 8
+ffffff80029864c3: xor      r15d, r15d
+ffffff80029864c6: xor      edx, edx
+ffffff80029864c8: mov      ecx, 2
+ffffff80029864cd: push     qword ptr [rbp + 0x10]
+ffffff80029864d0: push     r14
+ffffff80029864d2: push     rax
+ffffff80029864d3: call     qword ptr [r10 + 0x240]
+ffffff80029864da: add      rsp, 0x20
+ffffff80029864de: test     al, al
+ffffff80029864e0: je       0xffffff8002986518
+ffffff80029864e2: test     r14, r14
+ffffff80029864e5: je       0xffffff80029864fe
+ffffff80029864e7: mov      edi, dword ptr [rbx + 0xac]
+ffffff80029864ed: call     0xffffff80029812ae  ; __ZN20IOSkywalkPacketTable17createPacketTableEj
+ffffff80029864f2: mov      qword ptr [rbx + 0xe8], rax
+ffffff80029864f9: test     rax, rax
+ffffff80029864fc: je       0xffffff80029864b0
+ffffff80029864fe: lea      rdi, [rip + 0x3187b]  ; 0xffffff80029b7d80
+ffffff8002986505: call     0xffffff8000ab5930  ; _IOMallocTypeImpl
+ffffff800298650a: mov      qword ptr [rbx + 0x100], rax
+ffffff8002986511: test     rax, rax
+ffffff8002986514: setne    r15b
+ffffff8002986518: mov      eax, r15d
+ffffff800298651b: add      rsp, 8
+ffffff800298651f: pop      rbx
+ffffff8002986520: pop      r14
+ffffff8002986522: pop      r15
+ffffff8002986524: pop      rbp
+ffffff8002986525: ret      

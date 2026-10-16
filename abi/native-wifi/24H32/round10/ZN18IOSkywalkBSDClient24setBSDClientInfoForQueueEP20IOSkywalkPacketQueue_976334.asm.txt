@@ -1,0 +1,6 @@
+# 0xffffff8002976334 __ZN18IOSkywalkBSDClient24setBSDClientInfoForQueueEP20IOSkywalkPacketQueue
+ffffff8002976334: push     rbp
+ffffff8002976335: mov      rbp, rsp
+ffffff8002976338: xor      eax, eax
+ffffff800297633a: pop      rbp
+ffffff800297633b: ret      

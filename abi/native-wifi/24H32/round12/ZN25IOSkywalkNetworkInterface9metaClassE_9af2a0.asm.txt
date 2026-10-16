@@ -1,0 +1,3 @@
+# 0xffffff80029af2a0 __ZN25IOSkywalkNetworkInterface9metaClassE
+ffffff80029af2a0: push     0x28b6a
+ffffff80029af2a5: add      byte ptr [rax], al

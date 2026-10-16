@@ -1,0 +1,7 @@
+# 0xffffff8002983780 __ZN25IOSkywalkNetworkInterface35_RESERVEDIOSkywalkNetworkInterface8Ev
+ffffff8002983780: push     rbp
+ffffff8002983781: mov      rbp, rsp
+ffffff8002983784: lea      rdi, [rip + 0x332dd]  ; 0xffffff80029b6a68
+ffffff800298378b: mov      esi, 8
+ffffff8002983790: pop      rbp
+ffffff8002983791: jmp      0xffffff8000a4b1f0  ; __ZNK11OSMetaClass14reservedCalledEi

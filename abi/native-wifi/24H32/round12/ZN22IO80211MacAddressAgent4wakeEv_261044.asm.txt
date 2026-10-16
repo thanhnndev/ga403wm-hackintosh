@@ -1,0 +1,18 @@
+# 0xffffff8002261044 __ZN22IO80211MacAddressAgent4wakeEv
+ffffff8002261044: push     rbp
+ffffff8002261045: mov      rbp, rsp
+ffffff8002261048: mov      rax, qword ptr [rdi + 0x10]
+ffffff800226104c: cmp      byte ptr [rax + 0x27], 1
+ffffff8002261050: jne      0xffffff8002261058
+ffffff8002261052: cmp      byte ptr [rax + 0x26], 0
+ffffff8002261056: je       0xffffff8002261066
+ffffff8002261058: cmp      byte ptr [rax + 0x29], 1
+ffffff800226105c: jne      0xffffff8002261064
+ffffff800226105e: cmp      byte ptr [rax + 0x26], 0
+ffffff8002261062: je       0xffffff800226106c
+ffffff8002261064: pop      rbp
+ffffff8002261065: ret      
+ffffff8002261066: pop      rbp
+ffffff8002261067: jmp      0xffffff8002260dd0  ; __ZN22IO80211MacAddressAgent12setIdleTimerEv
+ffffff800226106c: pop      rbp
+ffffff800226106d: jmp      0xffffff8002260f58  ; __ZN22IO80211MacAddressAgent24forceUpdateMacAddrOnBootEv

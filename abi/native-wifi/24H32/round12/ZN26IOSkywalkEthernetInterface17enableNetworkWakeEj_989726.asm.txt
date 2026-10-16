@@ -1,0 +1,50 @@
+# 0xffffff8002989726 __ZN26IOSkywalkEthernetInterface17enableNetworkWakeEj
+ffffff8002989726: push     rbp
+ffffff8002989727: mov      rbp, rsp
+ffffff800298972a: push     r14
+ffffff800298972c: push     rbx
+ffffff800298972d: mov      ebx, esi
+ffffff800298972f: mov      r14, rdi
+ffffff8002989732: mov      rdi, qword ptr [rdi + 0xf8]
+ffffff8002989739: test     rdi, rdi
+ffffff800298973c: je       0xffffff8002989793
+ffffff800298973e: mov      rax, qword ptr [rdi]
+ffffff8002989741: call     qword ptr [rax + 0x2e0]
+ffffff8002989747: test     rax, rax
+ffffff800298974a: je       0xffffff80029897b9
+ffffff800298974c: mov      rcx, qword ptr [r14 + 0x108]
+ffffff8002989753: mov      rcx, qword ptr [rcx]
+ffffff8002989756: movzx    edx, word ptr [rcx + 0x10c]
+ffffff800298975d: mov      word ptr [rax + 8], dx
+ffffff8002989761: mov      ecx, dword ptr [rcx + 0x108]
+ffffff8002989767: mov      dword ptr [rax + 4], ecx
+ffffff800298976a: mov      cl, byte ptr [rax + 0xa]
+ffffff800298976d: and      cl, 0xbf
+ffffff8002989770: mov      edx, ebx
+ffffff8002989772: shl      dl, 6
+ffffff8002989775: and      dl, 0x40
+ffffff8002989778: or       dl, cl
+ffffff800298977a: mov      byte ptr [rax + 0xa], dl
+ffffff800298977d: lea      rax, [rip + 0x25b2c]  ; 0xffffff80029af2b0
+ffffff8002989784: mov      rdi, r14
+ffffff8002989787: mov      esi, ebx
+ffffff8002989789: call     qword ptr [rax + 0x970]
+ffffff800298978f: xor      eax, eax
+ffffff8002989791: jmp      0xffffff80029897be  ; __ZN26IOSkywalkEthernetInterface17enableNetworkWakeEj+0x98
+ffffff8002989793: mov      esi, 0x50
+ffffff8002989798: mov      rdi, r14
+ffffff800298979b: call     0xffffff8002988d8e  ; __ZN26IOSkywalkEthernetInterface12initNicProxyEm
+ffffff80029897a0: mov      ecx, eax
+ffffff80029897a2: mov      eax, 0xe00002c7
+ffffff80029897a7: test     ecx, ecx
+ffffff80029897a9: jne      0xffffff80029897be
+ffffff80029897ab: mov      rdi, qword ptr [r14 + 0xf8]
+ffffff80029897b2: test     rdi, rdi
+ffffff80029897b5: jne      0xffffff800298973e
+ffffff80029897b7: jmp      0xffffff80029897be  ; __ZN26IOSkywalkEthernetInterface17enableNetworkWakeEj+0x98
+ffffff80029897b9: mov      eax, 0xe00002bd
+ffffff80029897be: pop      rbx
+ffffff80029897bf: pop      r14
+ffffff80029897c1: pop      rbp
+ffffff80029897c2: ret      
+ffffff80029897c3: nop      

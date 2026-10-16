@@ -1,0 +1,14 @@
+# 0xffffff800298317e __ZN25IOSkywalkNetworkInterface15getInitialMediaEv
+ffffff800298317e: mov      rcx, qword ptr [rdi + 0xb8]
+ffffff8002983185: xor      eax, eax
+ffffff8002983187: test     rcx, rcx
+ffffff800298318a: je       0xffffff800298319c
+ffffff800298318c: push     rbp
+ffffff800298318d: mov      rbp, rsp
+ffffff8002983190: mov      rcx, qword ptr [rcx]
+ffffff8002983193: test     rcx, rcx
+ffffff8002983196: je       0xffffff800298319b
+ffffff8002983198: mov      eax, dword ptr [rcx + 0x28]
+ffffff800298319b: pop      rbp
+ffffff800298319c: ret      
+ffffff800298319d: nop      

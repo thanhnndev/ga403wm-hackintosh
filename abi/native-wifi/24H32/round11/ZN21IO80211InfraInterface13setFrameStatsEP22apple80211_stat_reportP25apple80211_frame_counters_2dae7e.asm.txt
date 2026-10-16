@@ -1,0 +1,12 @@
+# 0xffffff80022dae7e __ZN21IO80211InfraInterface13setFrameStatsEP22apple80211_stat_reportP25apple80211_frame_counters
+ffffff80022dae7e: push     rbp
+ffffff80022dae7f: mov      rbp, rsp
+ffffff80022dae82: mov      rax, qword ptr [rdi + 0x110]
+ffffff80022dae89: mov      rdi, qword ptr [rax + 0x40]
+ffffff80022dae8d: test     rdi, rdi
+ffffff80022dae90: je       0xffffff80022dae98
+ffffff80022dae92: pop      rbp
+ffffff80022dae93: jmp      0xffffff80022e917c  ; __ZN23IO80211InterfaceMonitor13setFrameStatsEP22apple80211_stat_reportP25apple80211_frame_counters
+ffffff80022dae98: mov      al, 1
+ffffff80022dae9a: pop      rbp
+ffffff80022dae9b: ret      

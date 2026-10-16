@@ -1,0 +1,35 @@
+# 0xffffff80022dadd4 __ZN21IO80211InfraInterface21setPeerManagerLogFlagEjjj
+ffffff80022dadd4: push     rbp
+ffffff80022dadd5: mov      rbp, rsp
+ffffff80022dadd8: push     r15
+ffffff80022dadda: push     r14
+ffffff80022daddc: push     r12
+ffffff80022dadde: push     rbx
+ffffff80022daddf: mov      ebx, ecx
+ffffff80022dade1: mov      r15d, edx
+ffffff80022dade4: mov      r12d, esi
+ffffff80022dade7: mov      r14, rdi
+ffffff80022dadea: mov      rax, qword ptr [rdi]
+ffffff80022daded: call     qword ptr [rax + 0xc08]
+ffffff80022dadf3: mov      edx, 1
+ffffff80022dadf8: mov      ecx, r15d
+ffffff80022dadfb: shl      edx, cl
+ffffff80022dadfd: test     r12d, r12d
+ffffff80022dae00: je       0xffffff80022dae0a
+ffffff80022dae02: movsxd   rcx, edx
+ffffff80022dae05: or       rax, rcx
+ffffff80022dae08: jmp      0xffffff80022dae12  ; __ZN21IO80211InfraInterface21setPeerManagerLogFlagEjjj+0x3e
+ffffff80022dae0a: not      edx
+ffffff80022dae0c: movsxd   rcx, edx
+ffffff80022dae0f: and      rax, rcx
+ffffff80022dae12: mov      rcx, qword ptr [r14]
+ffffff80022dae15: mov      rcx, qword ptr [rcx + 0xc00]
+ffffff80022dae1c: mov      rdi, r14
+ffffff80022dae1f: mov      rsi, rax
+ffffff80022dae22: mov      edx, ebx
+ffffff80022dae24: pop      rbx
+ffffff80022dae25: pop      r12
+ffffff80022dae27: pop      r14
+ffffff80022dae29: pop      r15
+ffffff80022dae2b: pop      rbp
+ffffff80022dae2c: jmp      rcx

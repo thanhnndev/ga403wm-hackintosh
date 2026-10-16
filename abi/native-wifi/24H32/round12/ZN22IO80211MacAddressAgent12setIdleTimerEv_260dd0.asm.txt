@@ -1,0 +1,71 @@
+# 0xffffff8002260dd0 __ZN22IO80211MacAddressAgent12setIdleTimerEv
+ffffff8002260dd0: push     rbp
+ffffff8002260dd1: mov      rbp, rsp
+ffffff8002260dd4: push     r15
+ffffff8002260dd6: push     r14
+ffffff8002260dd8: push     rbx
+ffffff8002260dd9: sub      rsp, 0x18
+ffffff8002260ddd: mov      r14, rdi
+ffffff8002260de0: mov      rax, qword ptr [rip + 0x15b331]  ; 0xffffff80023bc118
+ffffff8002260de7: mov      rax, qword ptr [rax]
+ffffff8002260dea: mov      qword ptr [rbp - 0x20], rax
+ffffff8002260dee: lea      r15, [rbp - 0x24]
+ffffff8002260df2: mov      dword ptr [r15], 0xaaaaaaaa
+ffffff8002260df9: mov      rdi, r15
+ffffff8002260dfc: mov      esi, 4
+ffffff8002260e01: call     0xffffff800050aa10  ; _read_random
+ffffff8002260e06: mov      ebx, dword ptr [r15]
+ffffff8002260e09: imul     rax, rbx, 0x57619f1
+ffffff8002260e10: shr      rax, 0x27
+ffffff8002260e14: imul     eax, eax, 0x1770
+ffffff8002260e1a: sub      ebx, eax
+ffffff8002260e1c: mov      dword ptr [r15], ebx
+ffffff8002260e1f: mov      rcx, qword ptr [r14 + 0x10]
+ffffff8002260e23: cmp      qword ptr [rcx + 0x10], 0
+ffffff8002260e28: je       0xffffff8002260e85
+ffffff8002260e2a: mov      rax, qword ptr [rcx]
+ffffff8002260e2d: mov      rax, qword ptr [rax + 0x110]
+ffffff8002260e34: mov      rdi, qword ptr [rax + 0xb8]
+ffffff8002260e3b: test     rdi, rdi
+ffffff8002260e3e: je       0xffffff8002260e52
+ffffff8002260e40: mov      rax, qword ptr [rdi]
+ffffff8002260e43: call     qword ptr [rax + 0x148]
+ffffff8002260e49: mov      r15, rax
+ffffff8002260e4c: mov      rcx, qword ptr [r14 + 0x10]
+ffffff8002260e50: jmp      0xffffff8002260e55  ; __ZN22IO80211MacAddressAgent12setIdleTimerEv+0x85
+ffffff8002260e52: xor      r15d, r15d
+ffffff8002260e55: add      ebx, 0x2ee0
+ffffff8002260e5b: mov      rdi, qword ptr [rcx + 0x18]
+ffffff8002260e5f: test     rdi, rdi
+ffffff8002260e62: je       0xffffff8002260e76
+ffffff8002260e64: mov      esi, 1
+ffffff8002260e69: call     0xffffff80031d421c  ; __ZN11CCLogStream9shouldLogE16CCStreamLogLevel
+ffffff8002260e6e: mov      rcx, qword ptr [r14 + 0x10]
+ffffff8002260e72: test     al, al
+ffffff8002260e74: jne      0xffffff8002260ea0
+ffffff8002260e76: mov      rdi, qword ptr [rcx + 0x10]
+ffffff8002260e7a: mov      rax, qword ptr [rdi]
+ffffff8002260e7d: mov      esi, ebx
+ffffff8002260e7f: call     qword ptr [rax + 0x1d0]
+ffffff8002260e85: mov      rax, qword ptr [rip + 0x15b28c]  ; 0xffffff80023bc118
+ffffff8002260e8c: mov      rax, qword ptr [rax]
+ffffff8002260e8f: cmp      rax, qword ptr [rbp - 0x20]
+ffffff8002260e93: jne      0xffffff8002260eca
+ffffff8002260e95: add      rsp, 0x18
+ffffff8002260e99: pop      rbx
+ffffff8002260e9a: pop      r14
+ffffff8002260e9c: pop      r15
+ffffff8002260e9e: pop      rbp
+ffffff8002260e9f: ret      
+ffffff8002260ea0: mov      rdi, qword ptr [rcx + 0x18]
+ffffff8002260ea4: lea      rsi, [rip + 0x11cfbe]  ; 0xffffff800237de69
+ffffff8002260eab: lea      rdx, [rip + 0x11cff1]  ; "setIdleTimer"
+ffffff8002260eb2: mov      ecx, 0x17b
+ffffff8002260eb7: mov      r8, r15
+ffffff8002260eba: mov      r9d, ebx
+ffffff8002260ebd: xor      eax, eax
+ffffff8002260ebf: call     0xffffff80031d252e  ; __ZN11CCLogStream8logAlertEPKcz
+ffffff8002260ec4: mov      rcx, qword ptr [r14 + 0x10]
+ffffff8002260ec8: jmp      0xffffff8002260e76  ; __ZN22IO80211MacAddressAgent12setIdleTimerEv+0xa6
+ffffff8002260eca: call     0xffffff8000383150  ; ___stack_chk_fail
+ffffff8002260ecf: nop      

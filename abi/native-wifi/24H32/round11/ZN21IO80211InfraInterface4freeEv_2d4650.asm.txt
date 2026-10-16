@@ -1,0 +1,85 @@
+# 0xffffff80022d4650 __ZN21IO80211InfraInterface4freeEv
+ffffff80022d4650: push     rbp
+ffffff80022d4651: mov      rbp, rsp
+ffffff80022d4654: push     r14
+ffffff80022d4656: push     rbx
+ffffff80022d4657: mov      rbx, rdi
+ffffff80022d465a: mov      rdi, qword ptr [rdi + 0x118]
+ffffff80022d4661: test     rdi, rdi
+ffffff80022d4664: je       0xffffff80022d47bb
+ffffff80022d466a: mov      byte ptr [rdi + 0x160], 1
+ffffff80022d4671: mov      rax, qword ptr [rdi + 0x188]
+ffffff80022d4678: test     rax, rax
+ffffff80022d467b: je       0xffffff80022d468d
+ffffff80022d467d: mov      rcx, qword ptr [rax]
+ffffff80022d4680: mov      rdi, rax
+ffffff80022d4683: call     qword ptr [rcx + 0x28]
+ffffff80022d4686: mov      rdi, qword ptr [rbx + 0x118]
+ffffff80022d468d: mov      qword ptr [rdi + 0x188], 0
+ffffff80022d4698: mov      rax, qword ptr [rdi + 0x198]
+ffffff80022d469f: test     rax, rax
+ffffff80022d46a2: je       0xffffff80022d46b4
+ffffff80022d46a4: mov      rcx, qword ptr [rax]
+ffffff80022d46a7: mov      rdi, rax
+ffffff80022d46aa: call     qword ptr [rcx + 0x28]
+ffffff80022d46ad: mov      rdi, qword ptr [rbx + 0x118]
+ffffff80022d46b4: mov      qword ptr [rdi + 0x198], 0
+ffffff80022d46bf: mov      rax, qword ptr [rdi]
+ffffff80022d46c2: test     rax, rax
+ffffff80022d46c5: je       0xffffff80022d46d7
+ffffff80022d46c7: mov      rcx, qword ptr [rax]
+ffffff80022d46ca: mov      rdi, rax
+ffffff80022d46cd: call     qword ptr [rcx + 0x28]
+ffffff80022d46d0: mov      rdi, qword ptr [rbx + 0x118]
+ffffff80022d46d7: mov      qword ptr [rdi], 0
+ffffff80022d46de: mov      rax, qword ptr [rdi + 0x168]
+ffffff80022d46e5: test     rax, rax
+ffffff80022d46e8: je       0xffffff80022d4705
+ffffff80022d46ea: mov      rcx, qword ptr [rax]
+ffffff80022d46ed: mov      rdi, rax
+ffffff80022d46f0: call     qword ptr [rcx + 0x28]
+ffffff80022d46f3: mov      rdi, qword ptr [rbx + 0x118]
+ffffff80022d46fa: mov      qword ptr [rdi + 0x168], 0
+ffffff80022d4705: mov      rax, qword ptr [rdi + 0x100]
+ffffff80022d470c: test     rax, rax
+ffffff80022d470f: je       0xffffff80022d4743
+ffffff80022d4711: mov      rcx, qword ptr [rax]
+ffffff80022d4714: mov      rdi, rax
+ffffff80022d4717: call     qword ptr [rcx + 0x158]
+ffffff80022d471d: mov      rax, qword ptr [rbx + 0x118]
+ffffff80022d4724: mov      rdi, qword ptr [rax + 0x100]
+ffffff80022d472b: mov      rax, qword ptr [rdi]
+ffffff80022d472e: call     qword ptr [rax + 0x28]
+ffffff80022d4731: mov      rdi, qword ptr [rbx + 0x118]
+ffffff80022d4738: mov      qword ptr [rdi + 0x100], 0
+ffffff80022d4743: mov      rax, qword ptr [rdi + 0x148]
+ffffff80022d474a: test     rax, rax
+ffffff80022d474d: je       0xffffff80022d475f
+ffffff80022d474f: mov      rcx, qword ptr [rax]
+ffffff80022d4752: mov      rdi, rax
+ffffff80022d4755: call     qword ptr [rcx + 0x28]
+ffffff80022d4758: mov      rdi, qword ptr [rbx + 0x118]
+ffffff80022d475f: mov      qword ptr [rdi + 0x148], 0
+ffffff80022d476a: mov      rax, qword ptr [rdi + 0x150]
+ffffff80022d4771: test     rax, rax
+ffffff80022d4774: je       0xffffff80022d4786
+ffffff80022d4776: mov      rcx, qword ptr [rax]
+ffffff80022d4779: mov      rdi, rax
+ffffff80022d477c: call     qword ptr [rcx + 0x28]
+ffffff80022d477f: mov      rdi, qword ptr [rbx + 0x118]
+ffffff80022d4786: xor      r14d, r14d
+ffffff80022d4789: mov      qword ptr [rdi + 0x150], r14
+ffffff80022d4790: mov      esi, 0x3c68
+ffffff80022d4795: mov      ecx, 0x3c68
+ffffff80022d479a: xor      edx, edx
+ffffff80022d479c: call     0xffffff8000454290  ; _memset_s
+ffffff80022d47a1: mov      rsi, qword ptr [rbx + 0x118]
+ffffff80022d47a8: mov      qword ptr [rbx + 0x118], r14
+ffffff80022d47af: lea      rdi, [rip + 0x13080a]  ; 0xffffff8002404fc0
+ffffff80022d47b6: call     0xffffff8000ab5a60  ; _IOFreeTypeImpl
+ffffff80022d47bb: mov      rdi, rbx
+ffffff80022d47be: pop      rbx
+ffffff80022d47bf: pop      r14
+ffffff80022d47c1: pop      rbp
+ffffff80022d47c2: jmp      0xffffff8002262214  ; __ZN23IO80211SkywalkInterface4freeEv
+ffffff80022d47c7: nop      

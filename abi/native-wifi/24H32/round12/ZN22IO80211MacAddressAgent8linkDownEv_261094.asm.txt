@@ -1,0 +1,21 @@
+# 0xffffff8002261094 __ZN22IO80211MacAddressAgent8linkDownEv
+ffffff8002261094: mov      rax, qword ptr [rdi + 0x10]
+ffffff8002261098: mov      byte ptr [rax + 0x26], 0
+ffffff800226109c: cmp      byte ptr [rax + 0x27], 1
+ffffff80022610a0: jne      0xffffff80022610cf
+ffffff80022610a2: cmp      dword ptr [rax + 8], 2
+ffffff80022610a6: jl       0xffffff80022610cf
+ffffff80022610a8: push     rbp
+ffffff80022610a9: mov      rbp, rsp
+ffffff80022610ac: push     rbx
+ffffff80022610ad: push     rax
+ffffff80022610ae: mov      rbx, rdi
+ffffff80022610b1: call     0xffffff8002260dd0  ; __ZN22IO80211MacAddressAgent12setIdleTimerEv
+ffffff80022610b6: mov      rax, qword ptr [rbx + 0x10]
+ffffff80022610ba: mov      dword ptr [rax + 8], 5
+ffffff80022610c1: mov      rdi, rbx
+ffffff80022610c4: add      rsp, 8
+ffffff80022610c8: pop      rbx
+ffffff80022610c9: pop      rbp
+ffffff80022610ca: jmp      0xffffff8002260ed0  ; __ZN22IO80211MacAddressAgent27generateAndSetRandomMacAddrEv
+ffffff80022610cf: ret      

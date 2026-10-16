@@ -1,0 +1,7 @@
+# 0xffffff80022dc958 __ZN21IO80211InfraInterface22getTcpUdpKeepAliveDataER33apple80211_tcp_udp_keepalive_data
+ffffff80022dc958: push     rbp
+ffffff80022dc959: mov      rbp, rsp
+ffffff80022dc95c: mov      rax, qword ptr [rdi + 0x118]
+ffffff80022dc963: mov      rdi, qword ptr [rax + 0x198]
+ffffff80022dc96a: pop      rbp
+ffffff80022dc96b: jmp      0xffffff8002266eea  ; __ZN26IO80211DataPathInformAgent22getTcpUdpKeepAliveDataER33apple80211_tcp_udp_keepalive_data

@@ -1,0 +1,7 @@
+# 0xffffff80022d5f8a __ZN21IO80211InfraInterface9linkStateEv
+ffffff80022d5f8a: push     rbp
+ffffff80022d5f8b: mov      rbp, rsp
+ffffff80022d5f8e: mov      rax, qword ptr [rdi + 0x118]
+ffffff80022d5f95: mov      eax, dword ptr [rax + 0x18]
+ffffff80022d5f98: pop      rbp
+ffffff80022d5f99: ret      

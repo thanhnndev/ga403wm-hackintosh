@@ -1,0 +1,49 @@
+# 0xffffff8002981ca6 __ZN25IOSkywalkNetworkInterface4freeEv
+ffffff8002981ca6: push     rbp
+ffffff8002981ca7: mov      rbp, rsp
+ffffff8002981caa: push     rbx
+ffffff8002981cab: push     rax
+ffffff8002981cac: mov      rbx, rdi
+ffffff8002981caf: call     0xffffff8002981b54  ; __ZN25IOSkywalkNetworkInterface26deregisterNetworkInterfaceEj
+ffffff8002981cb4: mov      rax, qword ptr [rbx + 0xb8]
+ffffff8002981cbb: test     rax, rax
+ffffff8002981cbe: je       0xffffff8002981d67
+ffffff8002981cc4: mov      rdi, qword ptr [rax + 0x28]
+ffffff8002981cc8: test     rdi, rdi
+ffffff8002981ccb: je       0xffffff8002981cf1
+ffffff8002981ccd: call     0xffffff80004346c0  ; _thread_call_cancel
+ffffff8002981cd2: mov      rax, qword ptr [rbx + 0xb8]
+ffffff8002981cd9: mov      rdi, qword ptr [rax + 0x28]
+ffffff8002981cdd: call     0xffffff8000434000  ; _thread_call_free
+ffffff8002981ce2: mov      rax, qword ptr [rbx + 0xb8]
+ffffff8002981ce9: mov      qword ptr [rax + 0x28], 0
+ffffff8002981cf1: mov      rdi, qword ptr [rax + 0x10]
+ffffff8002981cf5: test     rdi, rdi
+ffffff8002981cf8: je       0xffffff8002981d0e
+ffffff8002981cfa: call     0xffffff8000ab6ee0  ; _IOLockFree
+ffffff8002981cff: mov      rax, qword ptr [rbx + 0xb8]
+ffffff8002981d06: mov      qword ptr [rax + 0x10], 0
+ffffff8002981d0e: mov      rdi, qword ptr [rax + 0x18]
+ffffff8002981d12: test     rdi, rdi
+ffffff8002981d15: je       0xffffff8002981d2b
+ffffff8002981d17: call     0xffffff8000ab6ee0  ; _IOLockFree
+ffffff8002981d1c: mov      rax, qword ptr [rbx + 0xb8]
+ffffff8002981d23: mov      qword ptr [rax + 0x18], 0
+ffffff8002981d2b: mov      rdi, qword ptr [rax + 0x20]
+ffffff8002981d2f: test     rdi, rdi
+ffffff8002981d32: je       0xffffff8002981d49
+ffffff8002981d34: mov      rax, qword ptr [rdi]
+ffffff8002981d37: call     qword ptr [rax + 0x28]
+ffffff8002981d3a: mov      rax, qword ptr [rbx + 0xb8]
+ffffff8002981d41: mov      qword ptr [rax + 0x20], 0
+ffffff8002981d49: mov      rsi, qword ptr [rbx + 0xb8]
+ffffff8002981d50: mov      qword ptr [rbx + 0xb8], 0
+ffffff8002981d5b: lea      rdi, [rip + 0x35b5e]  ; 0xffffff80029b78c0
+ffffff8002981d62: call     0xffffff8000ab5a60  ; _IOFreeTypeImpl
+ffffff8002981d67: lea      rax, [rip + 0x2601a]  ; 0xffffff80029a7d88
+ffffff8002981d6e: mov      rdi, rbx
+ffffff8002981d71: add      rsp, 8
+ffffff8002981d75: pop      rbx
+ffffff8002981d76: pop      rbp
+ffffff8002981d77: jmp      qword ptr [rax + 0xa0]
+ffffff8002981d7d: nop      

@@ -1,0 +1,152 @@
+# 0xffffff8000a35500 _kern_packet_finalize
+ffffff8000a35500: push     rbp
+ffffff8000a35501: mov      rbp, rsp
+ffffff8000a35504: push     r15
+ffffff8000a35506: push     r14
+ffffff8000a35508: push     r13
+ffffff8000a3550a: push     r12
+ffffff8000a3550c: push     rbx
+ffffff8000a3550d: push     rax
+ffffff8000a3550e: mov      rcx, rdi
+ffffff8000a35511: and      rcx, 0xfffffffffffffff0
+ffffff8000a35515: and      word ptr [rcx + 0x18], 0xfffc
+ffffff8000a3551a: mov      r8d, edi
+ffffff8000a3551d: and      r8d, 3
+ffffff8000a35521: mov      ax, 1
+ffffff8000a35525: cmp      r8, 1
+ffffff8000a35529: je       0xffffff8000a35545
+ffffff8000a3552b: cmp      r8d, 2
+ffffff8000a3552f: jne      0xffffff8000a356fb
+ffffff8000a35535: movzx    eax, word ptr [rcx + 0xd8]
+ffffff8000a3553c: test     ax, ax
+ffffff8000a3553f: je       0xffffff8000a3561e
+ffffff8000a35545: lea      rdx, [rcx + 0x10]
+ffffff8000a35549: mov      dword ptr [rcx + 0x10], 0
+ffffff8000a35550: movzx    r10d, ax
+ffffff8000a35554: lea      r11, [rcx + 0x40]
+ffffff8000a35558: xor      eax, eax
+ffffff8000a3555a: xor      r9d, r9d
+ffffff8000a3555d: xor      esi, esi
+ffffff8000a3555f: xor      ebx, ebx
+ffffff8000a35561: jmp      0xffffff8000a3557f  ; _kern_packet_finalize+0x7f
+ffffff8000a35563: nop      word ptr cs:[rax + rax]
+ffffff8000a35570: add      esi, r15d
+ffffff8000a35573: dec      r10d
+ffffff8000a35576: test     r10d, r10d
+ffffff8000a35579: je       0xffffff8000a35609
+ffffff8000a3557f: cmp      r8d, 2
+ffffff8000a35583: jne      0xffffff8000a35590
+ffffff8000a35585: test     rbx, rbx
+ffffff8000a35588: je       0xffffff8000a3559c
+ffffff8000a3558a: mov      rbx, qword ptr [rbx]
+ffffff8000a3558d: jmp      0xffffff8000a355ad  ; _kern_packet_finalize+0xad
+ffffff8000a3558f: nop      
+ffffff8000a35590: test     rbx, rbx
+ffffff8000a35593: mov      rbx, r11
+ffffff8000a35596: je       0xffffff8000a355a6
+ffffff8000a35598: xor      ebx, ebx
+ffffff8000a3559a: jmp      0xffffff8000a355ad  ; _kern_packet_finalize+0xad
+ffffff8000a3559c: cmp      qword ptr [rcx + 0x48], 0
+ffffff8000a355a1: mov      rbx, r11
+ffffff8000a355a4: je       0xffffff8000a35604
+ffffff8000a355a6: mov      eax, dword ptr [rbx + 0x1c]
+ffffff8000a355a9: mov      r9d, dword ptr [rbx + 0x20]
+ffffff8000a355ad: mov      r15, qword ptr [rbx + 8]
+ffffff8000a355b1: mov      r13, qword ptr [rbx + 0x2a]
+ffffff8000a355b5: mov      r12, qword ptr [r13 + 8]
+ffffff8000a355b9: cmp      r15, r12
+ffffff8000a355bc: jb       0xffffff8000a355f0
+ffffff8000a355be: mov      r14d, dword ptr [rbx + 0x1c]
+ffffff8000a355c2: add      r15, r14
+ffffff8000a355c5: mov      r13d, dword ptr [r13 + 0x20]
+ffffff8000a355c9: add      r13, r12
+ffffff8000a355cc: cmp      r15, r13
+ffffff8000a355cf: ja       0xffffff8000a355f0
+ffffff8000a355d1: mov      r15d, dword ptr [rbx + 0x24]
+ffffff8000a355d5: mov      r12d, dword ptr [rbx + 0x20]
+ffffff8000a355d9: add      r12d, r15d
+ffffff8000a355dc: setb     r13b
+ffffff8000a355e0: not      r13b
+ffffff8000a355e3: cmp      r12d, r14d
+ffffff8000a355e6: setbe    r14b
+ffffff8000a355ea: test     r13b, r14b
+ffffff8000a355ed: jne      0xffffff8000a35570
+ffffff8000a355ef: nop      
+ffffff8000a355f0: bt       qword ptr [rcx + 0x90], 0x26
+ffffff8000a355f9: jae      0xffffff8000a35662
+ffffff8000a355fb: mov      r15d, dword ptr [rbx + 0x24]
+ffffff8000a355ff: jmp      0xffffff8000a35570  ; _kern_packet_finalize+0x70
+ffffff8000a35604: mov      rbx, qword ptr [r11]
+ffffff8000a35607: jmp      0xffffff8000a355a6  ; _kern_packet_finalize+0xa6
+ffffff8000a35609: cmp      r8d, 2
+ffffff8000a3560d: jne      0xffffff8000a35696
+ffffff8000a35613: cmp      r9d, 0xff
+ffffff8000a3561a: jbe      0xffffff8000a3563e
+ffffff8000a3561c: jmp      0xffffff8000a35662  ; _kern_packet_finalize+0x162
+ffffff8000a3561e: mov      rax, qword ptr [rcx + 0x28]
+ffffff8000a35622: test     byte ptr [rax + 0x14], 0x20
+ffffff8000a35626: je       0xffffff8000a356e3
+ffffff8000a3562c: lea      rdx, [rcx + 0x10]
+ffffff8000a35630: mov      dword ptr [rcx + 0x10], 0
+ffffff8000a35637: xor      esi, esi
+ffffff8000a35639: xor      r9d, r9d
+ffffff8000a3563c: xor      eax, eax
+ffffff8000a3563e: mov      byte ptr [rcx + 0x7a], r9b
+ffffff8000a35642: shr      edi, 2
+ffffff8000a35645: and      edi, 3
+ffffff8000a35648: cmp      edi, 1
+ffffff8000a3564b: je       0xffffff8000a35673
+ffffff8000a3564d: cmp      edi, 2
+ffffff8000a35650: jne      0xffffff8000a35713
+ffffff8000a35656: movzx    edi, byte ptr [rcx + 0x7b]
+ffffff8000a3565a: add      r9d, edi
+ffffff8000a3565d: cmp      r9d, eax
+ffffff8000a35660: jb       0xffffff8000a35683
+ffffff8000a35662: mov      eax, 0x22
+ffffff8000a35667: mov      dword ptr [rdx], 0
+ffffff8000a3566d: mov      dx, 2
+ffffff8000a35671: jmp      0xffffff8000a3569e  ; _kern_packet_finalize+0x19e
+ffffff8000a35673: mov      eax, 0x22
+ffffff8000a35678: test     r9d, r9d
+ffffff8000a3567b: jne      0xffffff8000a35667
+ffffff8000a3567d: cmp      byte ptr [rcx + 0x7b], 0
+ffffff8000a35681: jne      0xffffff8000a35667
+ffffff8000a35683: movabs   rax, 0x16c0f00000000
+ffffff8000a3568d: test     qword ptr [rcx + 0x90], rax
+ffffff8000a35694: jne      0xffffff8000a356b1
+ffffff8000a35696: mov      dword ptr [rdx], esi
+ffffff8000a35698: xor      eax, eax
+ffffff8000a3569a: mov      dx, 1
+ffffff8000a3569e: or       word ptr [rcx + 0x18], dx
+ffffff8000a356a2: add      rsp, 8
+ffffff8000a356a6: pop      rbx
+ffffff8000a356a7: pop      r12
+ffffff8000a356a9: pop      r13
+ffffff8000a356ab: pop      r14
+ffffff8000a356ad: pop      r15
+ffffff8000a356af: pop      rbp
+ffffff8000a356b0: ret      
+ffffff8000a356b1: mov      rax, qword ptr [rcx + 0x98]
+ffffff8000a356b8: bt       qword ptr [rcx + 0x90], 0x22
+ffffff8000a356c1: jae      0xffffff8000a356ca
+ffffff8000a356c3: cmp      qword ptr [rax + 0x10], 0
+ffffff8000a356c8: je       0xffffff8000a356dc
+ffffff8000a356ca: bt       qword ptr [rcx + 0x90], 0x23
+ffffff8000a356d3: jae      0xffffff8000a35696
+ffffff8000a356d5: cmp      word ptr [rax + 0x22], 0
+ffffff8000a356da: jne      0xffffff8000a35696
+ffffff8000a356dc: mov      eax, 0x16
+ffffff8000a356e1: jmp      0xffffff8000a35667  ; _kern_packet_finalize+0x167
+ffffff8000a356e3: lea      rdi, [rip + 0x2669f9]  ; "bcnt != 0 || PP_HAS_BUFFER_ON_DEMAND(PKT_ADDR(ph)->pkt_qum.qum_pp)"
+ffffff8000a356ea: lea      rsi, [rip + 0x266a35]  ; "/AppleInternal/Library/BuildRoots/4~CW9lugACYD8QAGtFjTvKiXyhBKr9ucQxzQx1uoc/Libr"
+ffffff8000a356f1: mov      edx, 0x437
+ffffff8000a356f6: call     0xffffff8000bdb615  ; _panic_machine_check64+0xc11
+ffffff8000a356fb: lea      rdi, [rip + 0x1e973e]  ; 0xffffff8000c1ee40
+ffffff8000a35702: lea      rsi, [rip + 0x266a1d]  ; "/AppleInternal/Library/BuildRoots/4~CW9lugACYD8QAGtFjTvKiXyhBKr9ucQxzQx1uoc/Libr"
+ffffff8000a35709: mov      edx, 0x449
+ffffff8000a3570e: call     0xffffff8000bdb615  ; _panic_machine_check64+0xc11
+ffffff8000a35713: lea      rdi, [rip + 0x1e9726]  ; 0xffffff8000c1ee40
+ffffff8000a3571a: lea      rsi, [rip + 0x266a05]  ; "/AppleInternal/Library/BuildRoots/4~CW9lugACYD8QAGtFjTvKiXyhBKr9ucQxzQx1uoc/Libr"
+ffffff8000a35721: mov      edx, 0x595
+ffffff8000a35726: call     0xffffff8000bdb615  ; _panic_machine_check64+0xc11
+ffffff8000a3572b: nop      dword ptr [rax + rax]

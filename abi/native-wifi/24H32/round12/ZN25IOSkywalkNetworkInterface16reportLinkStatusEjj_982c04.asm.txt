@@ -1,0 +1,57 @@
+# 0xffffff8002982c04 __ZN25IOSkywalkNetworkInterface16reportLinkStatusEjj
+ffffff8002982c04: push     rbp
+ffffff8002982c05: mov      rbp, rsp
+ffffff8002982c08: push     r15
+ffffff8002982c0a: push     r14
+ffffff8002982c0c: push     rbx
+ffffff8002982c0d: push     rax
+ffffff8002982c0e: mov      r15d, edx
+ffffff8002982c11: mov      r14d, esi
+ffffff8002982c14: mov      rbx, rdi
+ffffff8002982c17: mov      rax, qword ptr [rdi]
+ffffff8002982c1a: call     qword ptr [rax + 0x8f8]
+ffffff8002982c20: test     rax, rax
+ffffff8002982c23: je       0xffffff8002982c66
+ffffff8002982c25: mov      rax, qword ptr [rbx + 0xb8]
+ffffff8002982c2c: test     r15d, r15d
+ffffff8002982c2f: jne      0xffffff8002982c35
+ffffff8002982c31: mov      r15d, dword ptr [rax + 0x30]
+ffffff8002982c35: mov      rdi, qword ptr [rax + 0x10]
+ffffff8002982c39: call     0xffffff800052f900  ; _lck_mtx_lock
+ffffff8002982c3e: mov      rax, qword ptr [rbx + 0xb8]
+ffffff8002982c45: mov      dword ptr [rax + 0x30], r15d
+ffffff8002982c49: mov      ecx, r14d
+ffffff8002982c4c: and      ecx, 7
+ffffff8002982c4f: test     r14d, r14d
+ffffff8002982c52: js       0xffffff8002982c76
+ffffff8002982c54: cmp      ecx, dword ptr [rax + 0x38]
+ffffff8002982c57: jne      0xffffff8002982c76
+ffffff8002982c59: mov      rdi, qword ptr [rax + 0x10]
+ffffff8002982c5d: call     0xffffff800052fc50  ; _lck_mtx_unlock
+ffffff8002982c62: xor      eax, eax
+ffffff8002982c64: jmp      0xffffff8002982c6b  ; __ZN25IOSkywalkNetworkInterface16reportLinkStatusEjj+0x67
+ffffff8002982c66: mov      eax, 0xe00002d8
+ffffff8002982c6b: add      rsp, 8
+ffffff8002982c6f: pop      rbx
+ffffff8002982c70: pop      r14
+ffffff8002982c72: pop      r15
+ffffff8002982c74: pop      rbp
+ffffff8002982c75: ret      
+ffffff8002982c76: and      r14d, 3
+ffffff8002982c7a: xor      edx, edx
+ffffff8002982c7c: cmp      r14d, 1
+ffffff8002982c80: sete     dl
+ffffff8002982c83: lea      r14d, [rdx*2 - 0x1ff9ff00]
+ffffff8002982c8b: mov      dword ptr [rax + 0x38], ecx
+ffffff8002982c8e: mov      rdi, qword ptr [rax + 0x10]
+ffffff8002982c92: call     0xffffff800052fc50  ; _lck_mtx_unlock
+ffffff8002982c97: mov      rdi, rbx
+ffffff8002982c9a: mov      esi, r14d
+ffffff8002982c9d: xor      edx, edx
+ffffff8002982c9f: xor      ecx, ecx
+ffffff8002982ca1: add      rsp, 8
+ffffff8002982ca5: pop      rbx
+ffffff8002982ca6: pop      r14
+ffffff8002982ca8: pop      r15
+ffffff8002982caa: pop      rbp
+ffffff8002982cab: jmp      0xffffff800298223e  ; __ZN25IOSkywalkNetworkInterface15reportEventTypeEjPvm

@@ -1,0 +1,29 @@
+# 0xffffff80029880e8 __ZN26IOSkywalkEthernetInterface27deregisterEthernetInterfaceEj
+ffffff80029880e8: push     rbp
+ffffff80029880e9: mov      rbp, rsp
+ffffff80029880ec: push     r15
+ffffff80029880ee: push     r14
+ffffff80029880f0: push     rbx
+ffffff80029880f1: push     rax
+ffffff80029880f2: mov      rbx, rdi
+ffffff80029880f5: call     0xffffff8002981b54  ; __ZN25IOSkywalkNetworkInterface26deregisterNetworkInterfaceEj
+ffffff80029880fa: mov      r14d, eax
+ffffff80029880fd: test     eax, eax
+ffffff80029880ff: jne      0xffffff800298812c
+ffffff8002988101: mov      rax, qword ptr [rbx + 0x108]
+ffffff8002988108: mov      rsi, qword ptr [rax]
+ffffff800298810b: test     rsi, rsi
+ffffff800298810e: je       0xffffff800298812c
+ffffff8002988110: xor      r15d, r15d
+ffffff8002988113: mov      qword ptr [rax], r15
+ffffff8002988116: lea      rdi, [rip + 0x2fee3]  ; 0xffffff80029b8000
+ffffff800298811d: call     0xffffff8000ab5a60  ; _IOFreeTypeImpl
+ffffff8002988122: mov      rax, qword ptr [rbx + 0x108]
+ffffff8002988129: mov      qword ptr [rax], r15
+ffffff800298812c: mov      eax, r14d
+ffffff800298812f: add      rsp, 8
+ffffff8002988133: pop      rbx
+ffffff8002988134: pop      r14
+ffffff8002988136: pop      r15
+ffffff8002988138: pop      rbp
+ffffff8002988139: ret      

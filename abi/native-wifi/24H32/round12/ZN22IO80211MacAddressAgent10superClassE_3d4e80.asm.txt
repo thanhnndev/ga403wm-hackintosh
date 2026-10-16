@@ -1,0 +1,3 @@
+# 0xffffff80023d4e80 __ZN22IO80211MacAddressAgent10superClassE
+ffffff80023d4e80: enter    0x23ed, 1
+ffffff80023d4e84: add      byte ptr [rax], al

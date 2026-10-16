@@ -1,0 +1,14 @@
+# 0xffffff800298309e __ZN25IOSkywalkNetworkInterface16getMinPacketSizeEv
+ffffff800298309e: mov      rcx, qword ptr [rdi + 0xb8]
+ffffff80029830a5: xor      eax, eax
+ffffff80029830a7: test     rcx, rcx
+ffffff80029830aa: je       0xffffff80029830bc
+ffffff80029830ac: push     rbp
+ffffff80029830ad: mov      rbp, rsp
+ffffff80029830b0: mov      rcx, qword ptr [rcx]
+ffffff80029830b3: test     rcx, rcx
+ffffff80029830b6: je       0xffffff80029830bb
+ffffff80029830b8: mov      eax, dword ptr [rcx + 0x44]
+ffffff80029830bb: pop      rbp
+ffffff80029830bc: ret      
+ffffff80029830bd: nop      

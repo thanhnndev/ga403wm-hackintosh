@@ -1,0 +1,16 @@
++-o AsusWmi  <class AsusWmi, id 0x10000025b, registered, matched, active, busy 0 (27 ms), retain 5>
+    {
+      "IOPropertyMatch" = {"_UID"="ATK"}
+      "CFBundleIdentifier" = "com.itlmt7925.asuswmi"
+      "IOProviderClass" = "IOACPIPlatformDevice"
+      "IOClass" = "AsusWmi"
+      "IOProbeScore" = 0
+      "CFBundleIdentifierKernel" = "com.itlmt7925.asuswmi"
+      "IOMatchedAtBoot" = Yes
+      "IONameMatch" = "PNP0C14"
+      "IOMatchCategory" = "IODefaultMatchCategory"
+      "IONameMatched" = "PNP0C14"
+      "asus-log" = "INIT 00000001;SFUN 00000021;acpi: AWMI yes (backlight max 200), BAT1 yes, EC0 yes;hotkeys hooked;ECOK=0 OKEC=0 _BIF unit=1 design=5 full=5 tech=1 volt=5 _BST state=0 rate=5 remain=5 volt=10000;battery fan_custom=0 set_profile=-1 set_charge=-1 backlight=70/200 kbd=-1 slash=-1 last_key=00 ppt_spl=0 ppt_sppt=0 ppt_fppt=0 ;set 1=0 -> ok ret 00000001;set 5=60 -> ok ret 00000001;kbd 0 -> 00000000;slash mode 7 bright 0 interval 0 -> 00000000;"
+    }
+    
+

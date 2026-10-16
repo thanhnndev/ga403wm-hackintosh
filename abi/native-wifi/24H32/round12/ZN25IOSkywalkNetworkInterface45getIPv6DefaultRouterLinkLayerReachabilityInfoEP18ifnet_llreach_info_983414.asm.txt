@@ -1,0 +1,13 @@
+# 0xffffff8002983414 __ZN25IOSkywalkNetworkInterface45getIPv6DefaultRouterLinkLayerReachabilityInfoEP18ifnet_llreach_info
+ffffff8002983414: push     rbp
+ffffff8002983415: mov      rbp, rsp
+ffffff8002983418: mov      rax, qword ptr [rdi + 0xb8]
+ffffff800298341f: mov      rdi, qword ptr [rax + 8]
+ffffff8002983423: test     rdi, rdi
+ffffff8002983426: je       0xffffff800298342e
+ffffff8002983428: pop      rbp
+ffffff8002983429: jmp      0xffffff800069d3b0  ; _ifnet_inet6_defrouter_llreachinfo
+ffffff800298342e: mov      eax, 0xe00002cd
+ffffff8002983433: pop      rbp
+ffffff8002983434: ret      
+ffffff8002983435: nop      

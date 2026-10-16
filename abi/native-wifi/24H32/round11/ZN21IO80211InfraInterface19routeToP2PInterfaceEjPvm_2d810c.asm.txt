@@ -1,0 +1,104 @@
+# 0xffffff80022d810c __ZN21IO80211InfraInterface19routeToP2PInterfaceEjPvm
+ffffff80022d810c: push     rbp
+ffffff80022d810d: mov      rbp, rsp
+ffffff80022d8110: push     r15
+ffffff80022d8112: push     r14
+ffffff80022d8114: push     r12
+ffffff80022d8116: push     rbx
+ffffff80022d8117: mov      rbx, rcx
+ffffff80022d811a: mov      r14, rdx
+ffffff80022d811d: mov      r15d, esi
+ffffff80022d8120: mov      r12, rdi
+ffffff80022d8123: mov      eax, 1
+ffffff80022d8128: cmp      esi, 8
+ffffff80022d812b: jle      0xffffff80022d8141
+ffffff80022d812d: cmp      r15d, 0x4f
+ffffff80022d8131: jg       0xffffff80022d814c
+ffffff80022d8133: cmp      r15d, 9
+ffffff80022d8137: je       0xffffff80022d8164
+ffffff80022d8139: cmp      r15d, 0x42
+ffffff80022d813d: je       0xffffff80022d8164
+ffffff80022d813f: jmp      0xffffff80022d815b  ; __ZN21IO80211InfraInterface19routeToP2PInterfaceEjPvm+0x4f
+ffffff80022d8141: lea      ecx, [r15 - 2]
+ffffff80022d8145: cmp      ecx, 3
+ffffff80022d8148: jb       0xffffff80022d8164
+ffffff80022d814a: jmp      0xffffff80022d815b  ; __ZN21IO80211InfraInterface19routeToP2PInterfaceEjPvm+0x4f
+ffffff80022d814c: cmp      r15d, 0x50
+ffffff80022d8150: je       0xffffff80022d8164
+ffffff80022d8152: cmp      r15d, 0x8b
+ffffff80022d8159: je       0xffffff80022d8164
+ffffff80022d815b: xor      eax, eax
+ffffff80022d815d: cmp      r15d, 0x7f
+ffffff80022d8161: sete     al
+ffffff80022d8164: mov      ecx, 1
+ffffff80022d8169: lea      edx, [r15 - 0x7d]
+ffffff80022d816d: cmp      edx, 2
+ffffff80022d8170: jb       0xffffff80022d8187
+ffffff80022d8172: cmp      r15d, 0xc6
+ffffff80022d8179: je       0xffffff80022d8187
+ffffff80022d817b: xor      ecx, ecx
+ffffff80022d817d: cmp      r15d, 0xa0
+ffffff80022d8184: sete     cl
+ffffff80022d8187: or       ecx, eax
+ffffff80022d8189: je       0xffffff80022d8262
+ffffff80022d818f: mov      rax, qword ptr [r12]
+ffffff80022d8193: mov      rdi, r12
+ffffff80022d8196: call     qword ptr [rax + 0xba8]
+ffffff80022d819c: test     rax, rax
+ffffff80022d819f: je       0xffffff80022d81f3
+ffffff80022d81a1: mov      rax, qword ptr [r12]
+ffffff80022d81a5: mov      rdi, r12
+ffffff80022d81a8: call     qword ptr [rax + 0xba8]
+ffffff80022d81ae: mov      rax, qword ptr [rax + 0x120]
+ffffff80022d81b5: mov      rax, qword ptr [rax + 0x3a8]
+ffffff80022d81bc: test     rax, rax
+ffffff80022d81bf: je       0xffffff80022d81f3
+ffffff80022d81c1: mov      rax, qword ptr [rax + 0x110]
+ffffff80022d81c8: mov      rdi, qword ptr [rax + 0x28]
+ffffff80022d81cc: lea      rsi, [rip + 0x11f9b5]  ; 0xffffff80023f7b88
+ffffff80022d81d3: call     0xffffff8000a49ab0  ; __ZN15OSMetaClassBase12safeMetaCastEPKS_PK11OSMetaClass
+ffffff80022d81d8: test     rax, rax
+ffffff80022d81db: je       0xffffff80022d81f3
+ffffff80022d81dd: mov      r8, qword ptr [rax]
+ffffff80022d81e0: mov      rdi, rax
+ffffff80022d81e3: mov      esi, r15d
+ffffff80022d81e6: mov      rdx, r14
+ffffff80022d81e9: mov      rcx, rbx
+ffffff80022d81ec: call     qword ptr [r8 + 0x288]
+ffffff80022d81f3: mov      rax, qword ptr [r12]
+ffffff80022d81f7: mov      rdi, r12
+ffffff80022d81fa: call     qword ptr [rax + 0xba8]
+ffffff80022d8200: test     rax, rax
+ffffff80022d8203: je       0xffffff80022d8262
+ffffff80022d8205: mov      rax, qword ptr [r12]
+ffffff80022d8209: mov      rdi, r12
+ffffff80022d820c: call     qword ptr [rax + 0xba8]
+ffffff80022d8212: mov      rax, qword ptr [rax + 0x120]
+ffffff80022d8219: mov      rax, qword ptr [rax + 0x188]
+ffffff80022d8220: test     rax, rax
+ffffff80022d8223: je       0xffffff80022d8262
+ffffff80022d8225: mov      rax, qword ptr [rax + 0x110]
+ffffff80022d822c: mov      rdi, qword ptr [rax + 0x28]
+ffffff80022d8230: lea      rsi, [rip + 0x11eda9]  ; 0xffffff80023f6fe0
+ffffff80022d8237: call     0xffffff8000a49ab0  ; __ZN15OSMetaClassBase12safeMetaCastEPKS_PK11OSMetaClass
+ffffff80022d823c: test     rax, rax
+ffffff80022d823f: je       0xffffff80022d8262
+ffffff80022d8241: mov      rcx, qword ptr [rax]
+ffffff80022d8244: mov      r8, qword ptr [rcx + 0x288]
+ffffff80022d824b: mov      rdi, rax
+ffffff80022d824e: mov      esi, r15d
+ffffff80022d8251: mov      rdx, r14
+ffffff80022d8254: mov      rcx, rbx
+ffffff80022d8257: pop      rbx
+ffffff80022d8258: pop      r12
+ffffff80022d825a: pop      r14
+ffffff80022d825c: pop      r15
+ffffff80022d825e: pop      rbp
+ffffff80022d825f: jmp      r8
+ffffff80022d8262: pop      rbx
+ffffff80022d8263: pop      r12
+ffffff80022d8265: pop      r14
+ffffff80022d8267: pop      r15
+ffffff80022d8269: pop      rbp
+ffffff80022d826a: ret      
+ffffff80022d826b: nop      

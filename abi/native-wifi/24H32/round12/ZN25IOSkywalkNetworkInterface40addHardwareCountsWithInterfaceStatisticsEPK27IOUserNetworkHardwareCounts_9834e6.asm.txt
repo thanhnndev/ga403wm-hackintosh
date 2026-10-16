@@ -1,0 +1,53 @@
+# 0xffffff80029834e6 __ZN25IOSkywalkNetworkInterface40addHardwareCountsWithInterfaceStatisticsEPK27IOUserNetworkHardwareCounts
+ffffff80029834e6: test     rsi, rsi
+ffffff80029834e9: je       0xffffff8002983598
+ffffff80029834ef: push     rbp
+ffffff80029834f0: mov      rbp, rsp
+ffffff80029834f3: sub      rsp, 0x20
+ffffff80029834f7: movabs   rcx, 0xaaaaaaaaaaaaaaaa
+ffffff8002983501: mov      qword ptr [rbp - 0x14], rcx
+ffffff8002983505: mov      rax, qword ptr [rdi + 0xb8]
+ffffff800298350c: mov      rdi, qword ptr [rax + 8]
+ffffff8002983510: test     rdi, rdi
+ffffff8002983513: je       0xffffff800298359e
+ffffff8002983519: mov      eax, 0xe00002e8
+ffffff800298351e: cmp      dword ptr [rsi + 4], 0
+ffffff8002983522: jne      0xffffff80029835a3
+ffffff8002983524: cmp      dword ptr [rsi + 0xc], 0
+ffffff8002983528: jne      0xffffff80029835a3
+ffffff800298352a: mov      rdx, qword ptr [rsi + 0x18]
+ffffff800298352e: mov      r8, rdx
+ffffff8002983531: shr      r8, 0x20
+ffffff8002983535: jne      0xffffff80029835a3
+ffffff8002983537: cmp      dword ptr [rsi + 0xa4], 0
+ffffff800298353e: jne      0xffffff80029835a3
+ffffff8002983540: cmp      dword ptr [rsi + 0xac], 0
+ffffff8002983547: jne      0xffffff80029835a3
+ffffff8002983549: mov      r8, qword ptr [rsi + 0xb8]
+ffffff8002983550: mov      r9, r8
+ffffff8002983553: shr      r9, 0x20
+ffffff8002983557: jne      0xffffff80029835a3
+ffffff8002983559: mov      r9, qword ptr [rsi + 0x140]
+ffffff8002983560: mov      r10, r9
+ffffff8002983563: shr      r10, 0x20
+ffffff8002983567: jne      0xffffff80029835a3
+ffffff8002983569: mov      r10, qword ptr [rsi + 0x148]
+ffffff8002983570: mov      rsi, r10
+ffffff8002983573: shr      rsi, 0x20
+ffffff8002983577: jne      0xffffff80029835a3
+ffffff8002983579: lea      rsi, [rbp - 0x20]
+ffffff800298357d: mov      qword ptr [rsi], rcx
+ffffff8002983580: mov      dword ptr [rsi + 8], edx
+ffffff8002983583: mov      dword ptr [rsi + 0x14], r8d
+ffffff8002983587: mov      dword ptr [rsi + 0x18], r9d
+ffffff800298358b: mov      dword ptr [rsi + 0x1c], r10d
+ffffff800298358f: call     0xffffff800069e5b0  ; _ifnet_stat_increment
+ffffff8002983594: xor      eax, eax
+ffffff8002983596: jmp      0xffffff80029835a3  ; __ZN25IOSkywalkNetworkInterface40addHardwareCountsWithInterfaceStatisticsEPK27IOUserNetworkHardwareCounts+0xbd
+ffffff8002983598: mov      eax, 0xe00002c2
+ffffff800298359d: ret      
+ffffff800298359e: mov      eax, 0xe00002cd
+ffffff80029835a3: add      rsp, 0x20
+ffffff80029835a7: pop      rbp
+ffffff80029835a8: ret      
+ffffff80029835a9: nop      

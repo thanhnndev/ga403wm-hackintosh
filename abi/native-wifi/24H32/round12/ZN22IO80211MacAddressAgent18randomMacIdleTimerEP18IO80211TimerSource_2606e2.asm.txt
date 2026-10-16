@@ -1,0 +1,17 @@
+# 0xffffff80022606e2 __ZN22IO80211MacAddressAgent18randomMacIdleTimerEP18IO80211TimerSource
+ffffff80022606e2: mov      rax, qword ptr [rdi + 0x10]
+ffffff80022606e6: cmp      byte ptr [rax + 0x27], 1
+ffffff80022606ea: jne      0xffffff8002260708
+ffffff80022606ec: push     rbp
+ffffff80022606ed: mov      rbp, rsp
+ffffff80022606f0: push     rbx
+ffffff80022606f1: push     rax
+ffffff80022606f2: mov      rbx, rdi
+ffffff80022606f5: call     0xffffff8002260dd0  ; __ZN22IO80211MacAddressAgent12setIdleTimerEv
+ffffff80022606fa: mov      rdi, rbx
+ffffff80022606fd: add      rsp, 8
+ffffff8002260701: pop      rbx
+ffffff8002260702: pop      rbp
+ffffff8002260703: jmp      0xffffff8002260ed0  ; __ZN22IO80211MacAddressAgent27generateAndSetRandomMacAddrEv
+ffffff8002260708: ret      
+ffffff8002260709: nop      

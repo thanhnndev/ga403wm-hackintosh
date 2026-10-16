@@ -1,0 +1,16 @@
+# 0xffffff8002988d6a __ZN26IOSkywalkEthernetInterface16nicProxyCallbackEP21mDNSOffloadUserClientP11mDNSHandoffPv
+ffffff8002988d6a: push     rbp
+ffffff8002988d6b: mov      rbp, rsp
+ffffff8002988d6e: push     r14
+ffffff8002988d70: push     rbx
+ffffff8002988d71: mov      rbx, rdx
+ffffff8002988d74: mov      r14, rdi
+ffffff8002988d77: mov      rax, qword ptr [rdx]
+ffffff8002988d7a: mov      rdi, rdx
+ffffff8002988d7d: call     qword ptr [rax + 0x20]
+ffffff8002988d80: mov      qword ptr [r14 + 0xf0], rbx
+ffffff8002988d87: xor      eax, eax
+ffffff8002988d89: pop      rbx
+ffffff8002988d8a: pop      r14
+ffffff8002988d8c: pop      rbp
+ffffff8002988d8d: ret      

@@ -1,0 +1,92 @@
+# 0xffffff8002982972 __ZN25IOSkywalkNetworkInterface12ioctl_sifmtuEP7__ifnetPvb
+ffffff8002982972: push     rbp
+ffffff8002982973: mov      rbp, rsp
+ffffff8002982976: push     r15
+ffffff8002982978: push     r14
+ffffff800298297a: push     r13
+ffffff800298297c: push     r12
+ffffff800298297e: push     rbx
+ffffff800298297f: push     rax
+ffffff8002982980: mov      r14d, ecx
+ffffff8002982983: mov      r12, rdx
+ffffff8002982986: mov      r15, rsi
+ffffff8002982989: mov      rbx, rdi
+ffffff800298298c: mov      rax, qword ptr [rdi]
+ffffff800298298f: call     qword ptr [rax + 0x980]
+ffffff8002982995: mov      r13d, eax
+ffffff8002982998: mov      rax, qword ptr [rbx]
+ffffff800298299b: mov      rdi, rbx
+ffffff800298299e: call     qword ptr [rax + 0x970]
+ffffff80029829a4: mov      ecx, eax
+ffffff80029829a6: test     r13d, r13d
+ffffff80029829a9: setne    al
+ffffff80029829ac: test     ecx, ecx
+ffffff80029829ae: setne    dl
+ffffff80029829b1: and      dl, al
+ffffff80029829b3: mov      eax, 0x2d
+ffffff80029829b8: cmp      dl, 1
+ffffff80029829bb: jne      0xffffff80029829dc
+ffffff80029829bd: mov      eax, 0x16
+ffffff80029829c2: test     r12, r12
+ffffff80029829c5: je       0xffffff80029829dc
+ffffff80029829c7: mov      r12d, dword ptr [r12 + 0x10]
+ffffff80029829cc: cmp      r12d, r13d
+ffffff80029829cf: setb     dl
+ffffff80029829d2: cmp      r12d, ecx
+ffffff80029829d5: seta     cl
+ffffff80029829d8: or       cl, dl
+ffffff80029829da: je       0xffffff80029829eb
+ffffff80029829dc: add      rsp, 8
+ffffff80029829e0: pop      rbx
+ffffff80029829e1: pop      r12
+ffffff80029829e3: pop      r13
+ffffff80029829e5: pop      r14
+ffffff80029829e7: pop      r15
+ffffff80029829e9: pop      rbp
+ffffff80029829ea: ret      
+ffffff80029829eb: mov      rdi, r15
+ffffff80029829ee: call     0xffffff800069dc50  ; _ifnet_mtu
+ffffff80029829f3: xor      esi, esi
+ffffff80029829f5: cmp      eax, r12d
+ffffff80029829f8: je       0xffffff8002982a5f
+ffffff80029829fa: mov      r13d, eax
+ffffff80029829fd: test     r14b, r14b
+ffffff8002982a00: cmove    r13d, r12d
+ffffff8002982a04: mov      rax, qword ptr [rbx + 0xb8]
+ffffff8002982a0b: cmp      r12d, dword ptr [rax + 0x54]
+ffffff8002982a0f: jbe      0xffffff8002982a26
+ffffff8002982a11: mov      rax, qword ptr [rbx]
+ffffff8002982a14: mov      rdi, rbx
+ffffff8002982a17: mov      esi, r12d
+ffffff8002982a1a: call     qword ptr [rax + 0x978]
+ffffff8002982a20: mov      esi, eax
+ffffff8002982a22: test     eax, eax
+ffffff8002982a24: jne      0xffffff8002982a5f
+ffffff8002982a26: mov      rdi, r15
+ffffff8002982a29: mov      esi, r13d
+ffffff8002982a2c: call     0xffffff800069dc30  ; _ifnet_set_mtu
+ffffff8002982a31: test     eax, eax
+ffffff8002982a33: mov      esi, 0xe00002c2
+ffffff8002982a38: cmove    esi, eax
+ffffff8002982a3b: mov      rax, qword ptr [rbx + 0xb8]
+ffffff8002982a42: mov      ecx, dword ptr [rax + 0x54]
+ffffff8002982a45: test     ecx, ecx
+ffffff8002982a47: setne    dl
+ffffff8002982a4a: or       r14b, dl
+ffffff8002982a4d: cmp      r12d, ecx
+ffffff8002982a50: seta     cl
+ffffff8002982a53: and      cl, r14b
+ffffff8002982a56: cmp      cl, 1
+ffffff8002982a59: jne      0xffffff8002982a5f
+ffffff8002982a5b: mov      dword ptr [rax + 0x54], r12d
+ffffff8002982a5f: mov      rax, qword ptr [rbx]
+ffffff8002982a62: mov      rax, qword ptr [rax + 0x788]
+ffffff8002982a69: mov      rdi, rbx
+ffffff8002982a6c: add      rsp, 8
+ffffff8002982a70: pop      rbx
+ffffff8002982a71: pop      r12
+ffffff8002982a73: pop      r13
+ffffff8002982a75: pop      r14
+ffffff8002982a77: pop      r15
+ffffff8002982a79: pop      rbp
+ffffff8002982a7a: jmp      rax

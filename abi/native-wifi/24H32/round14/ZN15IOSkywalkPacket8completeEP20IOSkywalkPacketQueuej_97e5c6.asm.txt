@@ -1,0 +1,32 @@
+# 0xffffff800297e5c6 __ZN15IOSkywalkPacket8completeEP20IOSkywalkPacketQueuej
+ffffff800297e5c6: test     byte ptr [rdi + 0x58], 2
+ffffff800297e5ca: jne      0xffffff800297e5cf
+ffffff800297e5cc: xor      eax, eax
+ffffff800297e5ce: ret      
+ffffff800297e5cf: push     rbp
+ffffff800297e5d0: mov      rbp, rsp
+ffffff800297e5d3: push     r15
+ffffff800297e5d5: push     r14
+ffffff800297e5d7: push     rbx
+ffffff800297e5d8: push     rax
+ffffff800297e5d9: mov      ebx, edx
+ffffff800297e5db: mov      r14, rsi
+ffffff800297e5de: mov      r15, rdi
+ffffff800297e5e1: test     rsi, rsi
+ffffff800297e5e4: je       0xffffff800297e5f2
+ffffff800297e5e6: mov      rdi, r14
+ffffff800297e5e9: call     0xffffff8002980b74  ; __ZNK20IOSkywalkPacketQueue12getDirectionEv
+ffffff800297e5ee: mov      edx, eax
+ffffff800297e5f0: jmp      0xffffff800297e5f4  ; __ZN15IOSkywalkPacket8completeEP20IOSkywalkPacketQueuej+0x2e
+ffffff800297e5f2: xor      edx, edx
+ffffff800297e5f4: mov      rax, qword ptr [r15]
+ffffff800297e5f7: mov      rax, qword ptr [rax + 0x198]
+ffffff800297e5fe: mov      rdi, r15
+ffffff800297e601: mov      rsi, r14
+ffffff800297e604: mov      ecx, ebx
+ffffff800297e606: add      rsp, 8
+ffffff800297e60a: pop      rbx
+ffffff800297e60b: pop      r14
+ffffff800297e60d: pop      r15
+ffffff800297e60f: pop      rbp
+ffffff800297e610: jmp      rax

@@ -1,0 +1,32 @@
+# 0xffffff800298366e __ZN25IOSkywalkNetworkInterface24reportDetailedLinkStatusEPK14if_link_status
+ffffff800298366e: push     rbp
+ffffff800298366f: mov      rbp, rsp
+ffffff8002983672: push     rbx
+ffffff8002983673: push     rax
+ffffff8002983674: mov      rax, qword ptr [rdi + 0xb8]
+ffffff800298367b: mov      rdi, qword ptr [rax + 8]
+ffffff800298367f: test     rdi, rdi
+ffffff8002983682: je       0xffffff80029836ad
+ffffff8002983684: mov      ebx, 0xe00002c2
+ffffff8002983689: test     rsi, rsi
+ffffff800298368c: je       0xffffff80029836bd
+ffffff800298368e: mov      edx, 0x78
+ffffff8002983693: call     0xffffff80006a1360  ; _ifnet_link_status_report
+ffffff8002983698: test     eax, eax
+ffffff800298369a: je       0xffffff80029836b4
+ffffff800298369c: cmp      eax, 0x16
+ffffff800298369f: je       0xffffff80029836bd
+ffffff80029836a1: cmp      eax, 2
+ffffff80029836a4: jne      0xffffff80029836b8
+ffffff80029836a6: mov      ebx, 0xe00002f0
+ffffff80029836ab: jmp      0xffffff80029836bd  ; __ZN25IOSkywalkNetworkInterface24reportDetailedLinkStatusEPK14if_link_status+0x4f
+ffffff80029836ad: mov      ebx, 0xe00002cd
+ffffff80029836b2: jmp      0xffffff80029836bd  ; __ZN25IOSkywalkNetworkInterface24reportDetailedLinkStatusEPK14if_link_status+0x4f
+ffffff80029836b4: mov      ebx, eax
+ffffff80029836b6: jmp      0xffffff80029836bd  ; __ZN25IOSkywalkNetworkInterface24reportDetailedLinkStatusEPK14if_link_status+0x4f
+ffffff80029836b8: mov      ebx, 0xe00002bc
+ffffff80029836bd: mov      eax, ebx
+ffffff80029836bf: add      rsp, 8
+ffffff80029836c3: pop      rbx
+ffffff80029836c4: pop      rbp
+ffffff80029836c5: ret      

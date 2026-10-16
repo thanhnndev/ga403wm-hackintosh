@@ -1,0 +1,59 @@
+# 0xffffff80022daeba __ZN21IO80211InfraInterface16getWmeTxCountersEPy
+ffffff80022daeba: push     rbp
+ffffff80022daebb: mov      rbp, rsp
+ffffff80022daebe: push     r15
+ffffff80022daec0: push     r14
+ffffff80022daec2: push     r12
+ffffff80022daec4: push     rbx
+ffffff80022daec5: mov      r14, rdi
+ffffff80022daec8: mov      rax, qword ptr [rdi + 0x110]
+ffffff80022daecf: mov      rdi, qword ptr [rax + 0x40]
+ffffff80022daed3: test     rdi, rdi
+ffffff80022daed6: je       0xffffff80022daf9d
+ffffff80022daedc: mov      rbx, rsi
+ffffff80022daedf: mov      rax, qword ptr [rdi + 0x10]
+ffffff80022daee3: mov      r12, qword ptr [rax + 0xf8]
+ffffff80022daeea: movabs   r15, 0x49665478506b4265
+ffffff80022daef4: lea      rsi, [r15 + 6]
+ffffff80022daef8: call     0xffffff80022e52ae  ; __ZN23IO80211InterfaceMonitor10modifyChIDEy
+ffffff80022daefd: mov      rdi, r12
+ffffff80022daf00: mov      rsi, rax
+ffffff80022daf03: call     0xffffff8000b48c80  ; __ZN16IOSimpleReporter8getValueEy
+ffffff80022daf08: mov      qword ptr [rbx + 8], rax
+ffffff80022daf0c: mov      rax, qword ptr [r14 + 0x110]
+ffffff80022daf13: mov      rdi, qword ptr [rax + 0x40]
+ffffff80022daf17: mov      rax, qword ptr [rdi + 0x10]
+ffffff80022daf1b: mov      r12, qword ptr [rax + 0xf8]
+ffffff80022daf22: mov      rsi, r15
+ffffff80022daf25: call     0xffffff80022e52ae  ; __ZN23IO80211InterfaceMonitor10modifyChIDEy
+ffffff80022daf2a: mov      rdi, r12
+ffffff80022daf2d: mov      rsi, rax
+ffffff80022daf30: call     0xffffff8000b48c80  ; __ZN16IOSimpleReporter8getValueEy
+ffffff80022daf35: mov      qword ptr [rbx], rax
+ffffff80022daf38: mov      rax, qword ptr [r14 + 0x110]
+ffffff80022daf3f: mov      rdi, qword ptr [rax + 0x40]
+ffffff80022daf43: mov      rax, qword ptr [rdi + 0x10]
+ffffff80022daf47: mov      r12, qword ptr [rax + 0xf8]
+ffffff80022daf4e: lea      rsi, [r15 + 0x140a]
+ffffff80022daf55: call     0xffffff80022e52ae  ; __ZN23IO80211InterfaceMonitor10modifyChIDEy
+ffffff80022daf5a: mov      rdi, r12
+ffffff80022daf5d: mov      rsi, rax
+ffffff80022daf60: call     0xffffff8000b48c80  ; __ZN16IOSimpleReporter8getValueEy
+ffffff80022daf65: mov      qword ptr [rbx + 0x18], rax
+ffffff80022daf69: mov      rax, qword ptr [r14 + 0x110]
+ffffff80022daf70: mov      rdi, qword ptr [rax + 0x40]
+ffffff80022daf74: mov      rax, qword ptr [rdi + 0x10]
+ffffff80022daf78: mov      r14, qword ptr [rax + 0xf8]
+ffffff80022daf7f: add      r15, 0x1404
+ffffff80022daf86: mov      rsi, r15
+ffffff80022daf89: call     0xffffff80022e52ae  ; __ZN23IO80211InterfaceMonitor10modifyChIDEy
+ffffff80022daf8e: mov      rdi, r14
+ffffff80022daf91: mov      rsi, rax
+ffffff80022daf94: call     0xffffff8000b48c80  ; __ZN16IOSimpleReporter8getValueEy
+ffffff80022daf99: mov      qword ptr [rbx + 0x10], rax
+ffffff80022daf9d: pop      rbx
+ffffff80022daf9e: pop      r12
+ffffff80022dafa0: pop      r14
+ffffff80022dafa2: pop      r15
+ffffff80022dafa4: pop      rbp
+ffffff80022dafa5: ret      

@@ -1,0 +1,77 @@
+# 0xffffff80022d7642 __ZN21IO80211InfraInterface18finishSIBCoexTimerEv
+ffffff80022d7642: push     rbp
+ffffff80022d7643: mov      rbp, rsp
+ffffff80022d7646: push     r15
+ffffff80022d7648: push     r14
+ffffff80022d764a: push     rbx
+ffffff80022d764b: sub      rsp, 0x18
+ffffff80022d764f: mov      rax, qword ptr [rip + 0xe4ac2]  ; 0xffffff80023bc118
+ffffff80022d7656: mov      rax, qword ptr [rax]
+ffffff80022d7659: mov      qword ptr [rbp - 0x20], rax
+ffffff80022d765d: mov      rax, qword ptr [rdi + 0x118]
+ffffff80022d7664: cmp      dword ptr [rax + 0xc0], 0
+ffffff80022d766b: je       0xffffff80022d7768
+ffffff80022d7671: mov      rbx, rdi
+ffffff80022d7674: movabs   r14, 0x800000000000000
+ffffff80022d767e: lea      r15, [rbp - 0x28]
+ffffff80022d7682: mov      qword ptr [r15], 0
+ffffff80022d7689: call     0xffffff80003cbf20  ; _mach_continuous_time
+ffffff80022d768e: mov      rdi, rax
+ffffff80022d7691: mov      rsi, r15
+ffffff80022d7694: call     0xffffff8000536d80  ; _absolutetime_to_nanoseconds
+ffffff80022d7699: mov      rcx, qword ptr [r15]
+ffffff80022d769c: mov      rax, rcx
+ffffff80022d769f: shr      rax, 9
+ffffff80022d76a3: movabs   rdx, 0x44b82fa09b5a53
+ffffff80022d76ad: mul      rdx
+ffffff80022d76b0: shr      rdx, 0xb
+ffffff80022d76b4: mov      rsi, qword ptr [rbx + 0x118]
+ffffff80022d76bb: mov      qword ptr [rsi + 0xf0], rdx
+ffffff80022d76c2: cmp      rcx, 0x3b9aca00
+ffffff80022d76c9: jb       0xffffff80022d76e3
+ffffff80022d76cb: mov      rax, qword ptr [rsi + 0xe8]
+ffffff80022d76d2: test     rax, rax
+ffffff80022d76d5: je       0xffffff80022d76e3
+ffffff80022d76d7: sub      rdx, rax
+ffffff80022d76da: add      qword ptr [rsi + 0xc8], rdx
+ffffff80022d76e1: jmp      0xffffff80022d7705  ; __ZN21IO80211InfraInterface18finishSIBCoexTimerEv+0xc3
+ffffff80022d76e3: lea      rdx, [rip + 0xc386b]  ; 0xffffff800239af55
+ffffff80022d76ea: lea      rcx, [rip + 0xc38a6]  ; "finishSIBCoexTimer"
+ffffff80022d76f1: mov      rdi, rbx
+ffffff80022d76f4: mov      rsi, r14
+ffffff80022d76f7: xor      eax, eax
+ffffff80022d76f9: call     0xffffff8002261f9e  ; __ZN23IO80211SkywalkInterface8logDebugEyPKcz
+ffffff80022d76fe: mov      rsi, qword ptr [rbx + 0x118]
+ffffff80022d7705: movzx    eax, byte ptr [rsi + 0xf8]
+ffffff80022d770c: cmp      eax, 0x14
+ffffff80022d770f: je       0xffffff80022d771d
+ffffff80022d7711: cmp      eax, 0x40
+ffffff80022d7714: jne      0xffffff80022d7734
+ffffff80022d7716: mov      eax, 0xd8
+ffffff80022d771b: jmp      0xffffff80022d7722  ; __ZN21IO80211InfraInterface18finishSIBCoexTimerEv+0xe0
+ffffff80022d771d: mov      eax, 0xd0
+ffffff80022d7722: add      rsi, rax
+ffffff80022d7725: mov      rdi, rbx
+ffffff80022d7728: call     0xffffff80022d75ae  ; __ZN21IO80211InfraInterface18UpdateULLADurationEPy
+ffffff80022d772d: mov      rsi, qword ptr [rbx + 0x118]
+ffffff80022d7734: mov      r8d, dword ptr [rsi + 0xc4]
+ffffff80022d773b: mov      r9, qword ptr [rsi + 0xd0]
+ffffff80022d7742: mov      rax, qword ptr [rsi + 0xd8]
+ffffff80022d7749: mov      qword ptr [rsp], rax
+ffffff80022d774d: lea      rdx, [rip + 0xc3856]  ; "%s: CoPSIBCoexTurnOnCount:%llu, UllaClassicDuration:%llu  CoPUllaLiteDuration:%d"
+ffffff80022d7754: lea      rcx, [rip + 0xc383c]  ; "finishSIBCoexTimer"
+ffffff80022d775b: mov      rdi, rbx
+ffffff80022d775e: mov      rsi, r14
+ffffff80022d7761: xor      eax, eax
+ffffff80022d7763: call     0xffffff8002261f9e  ; __ZN23IO80211SkywalkInterface8logDebugEyPKcz
+ffffff80022d7768: mov      rax, qword ptr [rip + 0xe49a9]  ; 0xffffff80023bc118
+ffffff80022d776f: mov      rax, qword ptr [rax]
+ffffff80022d7772: cmp      rax, qword ptr [rbp - 0x20]
+ffffff80022d7776: jne      0xffffff80022d7783
+ffffff80022d7778: add      rsp, 0x18
+ffffff80022d777c: pop      rbx
+ffffff80022d777d: pop      r14
+ffffff80022d777f: pop      r15
+ffffff80022d7781: pop      rbp
+ffffff80022d7782: ret      
+ffffff80022d7783: call     0xffffff8000383150  ; ___stack_chk_fail

@@ -1,0 +1,57 @@
+{
+  "sha256": "cd013c14a7f21dbb8181fb06c44e079de8646b6a674abe21f6e47f42e8979af3",
+  "functions": {
+    "__ZN11IO80211Glue13freeResourcesEv": {
+      "address": "0xffffff800212a274",
+      "file": "supplement-ZN11IO80211Glue13freeResourcesEv_12a274.asm.txt"
+    },
+    "__ZN11IO80211Glue4freeEv": {
+      "address": "0xffffff800212a454",
+      "file": "supplement-ZN11IO80211Glue4freeEv_12a454.asm.txt"
+    },
+    "__ZN11IO80211Glue4stopEv": {
+      "address": "0xffffff800212a470",
+      "file": "supplement-ZN11IO80211Glue4stopEv_12a470.asm.txt"
+    },
+    "__ZNK11IO80211Glue9getLoggerEv": {
+      "address": "0xffffff800212a71c",
+      "file": "supplement-ZNK11IO80211Glue9getLoggerEv_12a71c.asm.txt"
+    },
+    "__ZN11IO80211Glue30processPendingEventQueueSourceEP16IO80211WorkQueue": {
+      "address": "0xffffff800212a72a",
+      "file": "supplement-ZN11IO80211Glue30processPendingEventQueueSourceEP16IO80211WorkQueue_12a72a.asm.txt"
+    },
+    "__ZN11IO80211Glue23processPendingIoucQueueEP16IO80211WorkQueue": {
+      "address": "0xffffff800212a79e",
+      "file": "supplement-ZN11IO80211Glue23processPendingIoucQueueEP16IO80211WorkQueue_12a79e.asm.txt"
+    },
+    "__ZN11IO80211Glue18sendEventAndFilterEP21postMessageQueueEntry": {
+      "address": "0xffffff800212a812",
+      "file": "supplement-ZN11IO80211Glue18sendEventAndFilterEP21postMessageQueueEntry_12a812.asm.txt"
+    },
+    "__ZN11IO80211Glue13printTaskInfoEPKcyy": {
+      "address": "0xffffff800212a9c4",
+      "file": "supplement-ZN11IO80211Glue13printTaskInfoEPKcyy_12a9c4.asm.txt"
+    },
+    "__ZN11IO80211Glue24processPendingEventQueueEv": {
+      "address": "0xffffff800212aaa8",
+      "file": "supplement-ZN11IO80211Glue24processPendingEventQueueEv_12aaa8.asm.txt"
+    },
+    "__ZN11IO80211Glue22addEventToPendingQueueEjPvm": {
+      "address": "0xffffff800212ab3c",
+      "file": "supplement-ZN11IO80211Glue22addEventToPendingQueueEjPvm_12ab3c.asm.txt"
+    },
+    "__ZN11IO80211Glue15routeEventToWclEjPvm": {
+      "address": "0xffffff800212ac5a",
+      "file": "supplement-ZN11IO80211Glue15routeEventToWclEjPvm_12ac5a.asm.txt"
+    },
+    "__ZN11IO80211Glue13sendIOUCToWclEjjPvmRb": {
+      "address": "0xffffff800212ad12",
+      "file": "supplement-ZN11IO80211Glue13sendIOUCToWclEjjPvmRb_12ad12.asm.txt"
+    },
+    "__ZN11IO80211Glue11isMsgNeededER23CommonGlueMessageHeader": {
+      "address": "0xffffff800212b18e",
+      "file": "supplement-ZN11IO80211Glue11isMsgNeededER23CommonGlueMessageHeader_12b18e.asm.txt"
+    }
+  }
+}

@@ -1,0 +1,19 @@
+# 0xffffff80029845c0 __ZN26IOSkywalkTxSubmissionQueue11synchronizeEj
+ffffff80029845c0: lea      rax, [rip + 0x3215d]  ; 0xffffff80029b6724
+ffffff80029845c7: cmp      dword ptr [rax], 0
+ffffff80029845ca: je       0xffffff80029845d6
+ffffff80029845cc: mov      esi, 1
+ffffff80029845d1: jmp      0xffffff8002984356  ; __ZN26IOSkywalkTxSubmissionQueue24packetSubmissionForKPipeEb
+ffffff80029845d6: push     rbp
+ffffff80029845d7: mov      rbp, rsp
+ffffff80029845da: push     rbx
+ffffff80029845db: push     rax
+ffffff80029845dc: lea      rbx, [rbp - 0xc]
+ffffff80029845e0: mov      rsi, rbx
+ffffff80029845e3: call     0xffffff80029a2eb2  ; __ZN26IOSkywalkTxSubmissionQueue11synchronizeEj.cold.1
+ffffff80029845e8: mov      eax, dword ptr [rbx]
+ffffff80029845ea: add      rsp, 8
+ffffff80029845ee: pop      rbx
+ffffff80029845ef: pop      rbp
+ffffff80029845f0: ret      
+ffffff80029845f1: nop      

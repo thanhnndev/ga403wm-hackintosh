@@ -1,0 +1,169 @@
+# 0xffffff8002988766 __ZN26IOSkywalkEthernetInterface15ioctl_multicastEP7__ifnetb
+ffffff8002988766: push     rbp
+ffffff8002988767: mov      rbp, rsp
+ffffff800298876a: push     r15
+ffffff800298876c: push     r14
+ffffff800298876e: push     r13
+ffffff8002988770: push     r12
+ffffff8002988772: push     rbx
+ffffff8002988773: sub      rsp, 0x28
+ffffff8002988777: mov      r12d, edx
+ffffff800298877a: mov      r15, rsi
+ffffff800298877d: mov      rbx, rdi
+ffffff8002988780: mov      rax, qword ptr [rip + 0x1e991]  ; 0xffffff80029a7118
+ffffff8002988787: mov      rax, qword ptr [rax]
+ffffff800298878a: mov      qword ptr [rbp - 0x30], rax
+ffffff800298878e: mov      qword ptr [rbp - 0x48], 0
+ffffff8002988796: mov      rdi, rsi
+ffffff8002988799: call     0xffffff800069cde0  ; _ifnet_flags
+ffffff800298879e: movzx    r13d, ax
+ffffff80029887a2: mov      r14d, 0x32
+ffffff80029887a8: test     r13b, 0x40
+ffffff80029887ac: je       0xffffff80029889b3
+ffffff80029887b2: test     r12b, r12b
+ffffff80029887b5: je       0xffffff80029887cc
+ffffff80029887b7: xor      ecx, ecx
+ffffff80029887b9: bt       r13d, 9
+ffffff80029887be: jb       0xffffff8002988977
+ffffff80029887c4: xor      r15d, r15d
+ffffff80029887c7: jmp      0xffffff8002988943  ; __ZN26IOSkywalkEthernetInterface15ioctl_multicastEP7__ifnetb+0x1dd
+ffffff80029887cc: movabs   rax, 0xaaaaaaaaaaaaaaaa
+ffffff80029887d6: mov      qword ptr [rbp - 0x40], rax
+ffffff80029887da: mov      qword ptr [rbp - 0x38], rax
+ffffff80029887de: lea      rsi, [rbp - 0x48]
+ffffff80029887e2: mov      rdi, r15
+ffffff80029887e5: call     0xffffff800069f620  ; _ifnet_get_multicast_list
+ffffff80029887ea: mov      r14d, eax
+ffffff80029887ed: test     eax, eax
+ffffff80029887ef: jne      0xffffff80029889a5
+ffffff80029887f5: mov      rax, qword ptr [rbx + 0x108]
+ffffff80029887fc: mov      dword ptr [rax + 0x18], 0
+ffffff8002988803: mov      rax, qword ptr [rbp - 0x48]
+ffffff8002988807: mov      rdi, qword ptr [rax]
+ffffff800298880a: xor      r14d, r14d
+ffffff800298880d: mov      r15d, 0
+ffffff8002988813: test     rdi, rdi
+ffffff8002988816: je       0xffffff800298893c
+ffffff800298881c: mov      r12d, 8
+ffffff8002988822: lea      r15, [rbp - 0x40]
+ffffff8002988826: mov      rsi, r15
+ffffff8002988829: mov      edx, 0x10
+ffffff800298882e: call     0xffffff80006a0040  ; _ifmaddr_address
+ffffff8002988833: movzx    eax, byte ptr [rbp - 0x3f]
+ffffff8002988837: cmp      eax, 0x12
+ffffff800298883a: je       0xffffff8002988840
+ffffff800298883c: test     eax, eax
+ffffff800298883e: jne      0xffffff800298884a
+ffffff8002988840: mov      rax, qword ptr [rbx + 0x108]
+ffffff8002988847: inc      dword ptr [rax + 0x18]
+ffffff800298884a: mov      rax, qword ptr [rbp - 0x48]
+ffffff800298884e: mov      rdi, qword ptr [rax + r12]
+ffffff8002988852: add      r12, 8
+ffffff8002988856: test     rdi, rdi
+ffffff8002988859: jne      0xffffff8002988826
+ffffff800298885b: mov      r12, qword ptr [rbx + 0x108]
+ffffff8002988862: mov      eax, dword ptr [r12 + 0x18]
+ffffff8002988867: mov      r15d, 0
+ffffff800298886d: test     eax, eax
+ffffff800298886f: je       0xffffff800298893c
+ffffff8002988875: add      eax, eax
+ffffff8002988877: lea      r15d, [rax + rax*2]
+ffffff800298887b: mov      rdi, qword ptr [r12 + 0x10]
+ffffff8002988880: test     rdi, rdi
+ffffff8002988883: je       0xffffff8002988894
+ffffff8002988885: mov      rax, qword ptr [rdi]
+ffffff8002988888: call     qword ptr [rax + 0x28]
+ffffff800298888b: mov      qword ptr [r12 + 0x10], 0
+ffffff8002988894: mov      edi, r15d
+ffffff8002988897: call     0xffffff8000a50020  ; __ZN6OSData12withCapacityEj
+ffffff800298889c: mov      r15, rax
+ffffff800298889f: mov      r12, qword ptr [rbx + 0x108]
+ffffff80029888a6: mov      rdi, qword ptr [r12 + 0x10]
+ffffff80029888ab: mov      rax, r12
+ffffff80029888ae: test     rdi, rdi
+ffffff80029888b1: je       0xffffff80029888c0
+ffffff80029888b3: mov      rax, qword ptr [rdi]
+ffffff80029888b6: call     qword ptr [rax + 0x28]
+ffffff80029888b9: mov      rax, qword ptr [rbx + 0x108]
+ffffff80029888c0: mov      qword ptr [r12 + 0x10], r15
+ffffff80029888c5: cmp      qword ptr [rax + 0x10], 0
+ffffff80029888ca: je       0xffffff80029889d5
+ffffff80029888d0: mov      rax, qword ptr [rbp - 0x48]
+ffffff80029888d4: mov      rdi, qword ptr [rax]
+ffffff80029888d7: mov      r15d, 2
+ffffff80029888dd: test     rdi, rdi
+ffffff80029888e0: je       0xffffff800298893c
+ffffff80029888e2: mov      r12d, 8
+ffffff80029888e8: lea      rsi, [rbp - 0x40]
+ffffff80029888ec: mov      edx, 0x10
+ffffff80029888f1: call     0xffffff80006a0040  ; _ifmaddr_address
+ffffff80029888f6: movzx    eax, byte ptr [rbp - 0x3f]
+ffffff80029888fa: lea      rsi, [rbp - 0x3e]
+ffffff80029888fe: test     eax, eax
+ffffff8002988900: je       0xffffff8002988912
+ffffff8002988902: cmp      eax, 0x12
+ffffff8002988905: jne      0xffffff800298892b
+ffffff8002988907: movzx    esi, byte ptr [rbp - 0x3b]
+ffffff800298890b: lea      rax, [rbp - 0x38]
+ffffff800298890f: add      rsi, rax
+ffffff8002988912: mov      rax, qword ptr [rbx + 0x108]
+ffffff8002988919: mov      rdi, qword ptr [rax + 0x10]
+ffffff800298891d: mov      rax, qword ptr [rdi]
+ffffff8002988920: mov      edx, 6
+ffffff8002988925: call     qword ptr [rax + 0x168]
+ffffff800298892b: mov      rax, qword ptr [rbp - 0x48]
+ffffff800298892f: mov      rdi, qword ptr [rax + r12]
+ffffff8002988933: add      r12, 8
+ffffff8002988937: test     rdi, rdi
+ffffff800298893a: jne      0xffffff80029888e8
+ffffff800298893c: bt       r13d, 9
+ffffff8002988941: jb       0xffffff80029889a5
+ffffff8002988943: mov      rax, qword ptr [rbx + 0x108]
+ffffff800298894a: mov      rdi, qword ptr [rax + 0x10]
+ffffff800298894e: test     rdi, rdi
+ffffff8002988951: je       0xffffff8002988981
+ffffff8002988953: cmp      dword ptr [rax + 0x18], 0
+ffffff8002988957: je       0xffffff8002988981
+ffffff8002988959: mov      rax, qword ptr [rdi]
+ffffff800298895c: call     qword ptr [rax + 0x178]
+ffffff8002988962: mov      rdx, rax
+ffffff8002988965: mov      rax, qword ptr [rbx + 0x108]
+ffffff800298896c: mov      ecx, dword ptr [rax + 0x18]
+ffffff800298896f: mov      r15d, 2
+ffffff8002988975: jmp      0xffffff8002988985  ; __ZN26IOSkywalkEthernetInterface15ioctl_multicastEP7__ifnetb+0x21f
+ffffff8002988977: mov      r15d, 1
+ffffff800298897d: xor      edx, edx
+ffffff800298897f: jmp      0xffffff8002988985  ; __ZN26IOSkywalkEthernetInterface15ioctl_multicastEP7__ifnetb+0x21f
+ffffff8002988981: xor      edx, edx
+ffffff8002988983: xor      ecx, ecx
+ffffff8002988985: mov      rax, qword ptr [rbx]
+ffffff8002988988: mov      rdi, rbx
+ffffff800298898b: mov      esi, r15d
+ffffff800298898e: call     qword ptr [rax + 0xa78]
+ffffff8002988994: mov      rcx, qword ptr [rbx]
+ffffff8002988997: mov      rdi, rbx
+ffffff800298899a: mov      esi, eax
+ffffff800298899c: call     qword ptr [rcx + 0x788]
+ffffff80029889a2: mov      r14d, eax
+ffffff80029889a5: mov      rdi, qword ptr [rbp - 0x48]
+ffffff80029889a9: test     rdi, rdi
+ffffff80029889ac: je       0xffffff80029889b3
+ffffff80029889ae: call     0xffffff800069f750  ; _ifnet_free_multicast_list
+ffffff80029889b3: mov      rax, qword ptr [rip + 0x1e75e]  ; 0xffffff80029a7118
+ffffff80029889ba: mov      rax, qword ptr [rax]
+ffffff80029889bd: cmp      rax, qword ptr [rbp - 0x30]
+ffffff80029889c1: jne      0xffffff80029889e4
+ffffff80029889c3: mov      eax, r14d
+ffffff80029889c6: add      rsp, 0x28
+ffffff80029889ca: pop      rbx
+ffffff80029889cb: pop      r12
+ffffff80029889cd: pop      r13
+ffffff80029889cf: pop      r14
+ffffff80029889d1: pop      r15
+ffffff80029889d3: pop      rbp
+ffffff80029889d4: ret      
+ffffff80029889d5: mov      dword ptr [rax + 0x18], 0
+ffffff80029889dc: mov      r14d, 0xc
+ffffff80029889e2: jmp      0xffffff80029889a5  ; __ZN26IOSkywalkEthernetInterface15ioctl_multicastEP7__ifnetb+0x23f
+ffffff80029889e4: call     0xffffff8000383150  ; ___stack_chk_fail
+ffffff80029889e9: nop      

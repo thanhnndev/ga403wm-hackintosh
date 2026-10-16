@@ -1,0 +1,32 @@
+# 0xffffff8002982ec4 __ZN25IOSkywalkNetworkInterface23reportInterfaceAdvisoryEPK24ifnet_interface_advisory
+ffffff8002982ec4: push     rbp
+ffffff8002982ec5: mov      rbp, rsp
+ffffff8002982ec8: push     rbx
+ffffff8002982ec9: push     rax
+ffffff8002982eca: mov      ebx, 0xe00002c2
+ffffff8002982ecf: test     rsi, rsi
+ffffff8002982ed2: je       0xffffff8002982f09
+ffffff8002982ed4: mov      rax, qword ptr [rdi + 0xb8]
+ffffff8002982edb: mov      rdi, qword ptr [rax + 0x58]
+ffffff8002982edf: test     rdi, rdi
+ffffff8002982ee2: je       0xffffff8002982f04
+ffffff8002982ee4: mov      rax, qword ptr [rax + 0x60]
+ffffff8002982ee8: test     rax, rax
+ffffff8002982eeb: je       0xffffff8002982f04
+ffffff8002982eed: call     rax
+ffffff8002982eef: test     eax, eax
+ffffff8002982ef1: je       0xffffff8002982f12
+ffffff8002982ef3: cmp      eax, 0x16
+ffffff8002982ef6: je       0xffffff8002982f09
+ffffff8002982ef8: cmp      eax, 2
+ffffff8002982efb: jne      0xffffff8002982f04
+ffffff8002982efd: mov      ebx, 0xe00002f0
+ffffff8002982f02: jmp      0xffffff8002982f09  ; __ZN25IOSkywalkNetworkInterface23reportInterfaceAdvisoryEPK24ifnet_interface_advisory+0x45
+ffffff8002982f04: mov      ebx, 0xe00002bc
+ffffff8002982f09: mov      eax, ebx
+ffffff8002982f0b: add      rsp, 8
+ffffff8002982f0f: pop      rbx
+ffffff8002982f10: pop      rbp
+ffffff8002982f11: ret      
+ffffff8002982f12: mov      ebx, eax
+ffffff8002982f14: jmp      0xffffff8002982f09  ; __ZN25IOSkywalkNetworkInterface23reportInterfaceAdvisoryEPK24ifnet_interface_advisory+0x45

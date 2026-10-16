@@ -1,0 +1,47 @@
+# 0xffffff80022d4574 __ZN21IO80211InfraInterface4stopEP9IOService
+ffffff80022d4574: push     rbp
+ffffff80022d4575: mov      rbp, rsp
+ffffff80022d4578: push     r14
+ffffff80022d457a: push     rbx
+ffffff80022d457b: mov      rbx, rdi
+ffffff80022d457e: call     0xffffff80022648be  ; __ZN23IO80211SkywalkInterface4stopEP9IOService
+ffffff80022d4583: mov      rax, qword ptr [rbx + 0x118]
+ffffff80022d458a: mov      rdi, qword ptr [rax + 0x178]
+ffffff80022d4591: test     rdi, rdi
+ffffff80022d4594: je       0xffffff80022d45a6
+ffffff80022d4596: mov      rax, qword ptr [rdi]
+ffffff80022d4599: call     qword ptr [rax + 0x90]
+ffffff80022d459f: mov      rax, qword ptr [rbx + 0x118]
+ffffff80022d45a6: mov      rdi, qword ptr [rax]
+ffffff80022d45a9: test     rdi, rdi
+ffffff80022d45ac: je       0xffffff80022d45ba
+ffffff80022d45ae: call     0xffffff800229d7e6  ; __ZN18IO80211ScanManager4stopEv
+ffffff80022d45b3: mov      rax, qword ptr [rbx + 0x118]
+ffffff80022d45ba: mov      r14, qword ptr [rax + 0x188]
+ffffff80022d45c1: test     r14, r14
+ffffff80022d45c4: je       0xffffff80022d45f4
+ffffff80022d45c6: mov      rcx, qword ptr [r14 + 0x10]
+ffffff80022d45ca: mov      rdi, qword ptr [rcx + 0x10]
+ffffff80022d45ce: test     rdi, rdi
+ffffff80022d45d1: je       0xffffff80022d45f4
+ffffff80022d45d3: mov      rax, qword ptr [rdi]
+ffffff80022d45d6: call     qword ptr [rax + 0x218]
+ffffff80022d45dc: mov      rax, qword ptr [r14 + 0x10]
+ffffff80022d45e0: mov      rdi, qword ptr [rax + 0x10]
+ffffff80022d45e4: mov      rax, qword ptr [rdi]
+ffffff80022d45e7: call     qword ptr [rax + 0x158]
+ffffff80022d45ed: mov      rax, qword ptr [rbx + 0x118]
+ffffff80022d45f4: mov      rdi, qword ptr [rax + 0x148]
+ffffff80022d45fb: test     rdi, rdi
+ffffff80022d45fe: je       0xffffff80022d4614
+ffffff80022d4600: mov      byte ptr [rax + 0x158], 0
+ffffff80022d4607: mov      rax, qword ptr [rdi]
+ffffff80022d460a: pop      rbx
+ffffff80022d460b: pop      r14
+ffffff80022d460d: pop      rbp
+ffffff80022d460e: jmp      qword ptr [rax + 0x218]
+ffffff80022d4614: pop      rbx
+ffffff80022d4615: pop      r14
+ffffff80022d4617: pop      rbp
+ffffff80022d4618: ret      
+ffffff80022d4619: nop      

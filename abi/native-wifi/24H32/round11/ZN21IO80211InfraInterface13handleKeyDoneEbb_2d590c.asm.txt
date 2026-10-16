@@ -1,0 +1,75 @@
+# 0xffffff80022d590c __ZN21IO80211InfraInterface13handleKeyDoneEbb
+ffffff80022d590c: push     rbp
+ffffff80022d590d: mov      rbp, rsp
+ffffff80022d5910: push     r15
+ffffff80022d5912: push     r14
+ffffff80022d5914: push     r12
+ffffff80022d5916: push     rbx
+ffffff80022d5917: mov      rax, qword ptr [rdi + 0x110]
+ffffff80022d591e: cmp      dword ptr [rax + 0x58], 1
+ffffff80022d5922: jne      0xffffff80022d59cf
+ffffff80022d5928: mov      rbx, rdi
+ffffff80022d592b: movabs   r14, 0x800000000000000
+ffffff80022d5935: test     sil, sil
+ffffff80022d5938: je       0xffffff80022d59d8
+ffffff80022d593e: mov      r15d, edx
+ffffff80022d5941: lea      rcx, [rip + 0xc5bdc]  ; 0xffffff800239b524
+ffffff80022d5948: lea      r12, [rip + 0xc4499]  ; 0xffffff8002399de8
+ffffff80022d594f: test     r15b, r15b
+ffffff80022d5952: cmove    rcx, r12
+ffffff80022d5956: lea      rdx, [rip + 0xc5b9b]  ; " set IO80211RSNDone to signal %skey updated"
+ffffff80022d595d: mov      rdi, rbx
+ffffff80022d5960: mov      rsi, r14
+ffffff80022d5963: xor      eax, eax
+ffffff80022d5965: call     0xffffff8002261f9e  ; __ZN23IO80211SkywalkInterface8logDebugEyPKcz
+ffffff80022d596a: mov      rax, qword ptr [rip + 0xe67d7]  ; 0xffffff80023bc148
+ffffff80022d5971: mov      rax, qword ptr [rax]
+ffffff80022d5974: mov      rdx, qword ptr [rax]
+ffffff80022d5977: lea      rsi, [rip + 0xc5ba9]  ; "IO80211RSNDone"
+ffffff80022d597e: mov      rdi, rbx
+ffffff80022d5981: call     0xffffff800227d9c3  ; __Z17setPropertyHelperP9IOServicePKcPK8OSObject
+ffffff80022d5986: test     al, al
+ffffff80022d5988: jne      0xffffff80022d59af
+ffffff80022d598a: lea      rax, [rip + 0xc5bc3]  ; " rekey"
+ffffff80022d5991: test     r15b, r15b
+ffffff80022d5994: cmovne   r12, rax
+ffffff80022d5998: lea      rdx, [rip + 0xc5b97]  ; "%s fail to set IO80211RSNDone"
+ffffff80022d599f: mov      rdi, rbx
+ffffff80022d59a2: mov      rsi, r14
+ffffff80022d59a5: mov      rcx, r12
+ffffff80022d59a8: xor      eax, eax
+ffffff80022d59aa: call     0xffffff8002261f9e  ; __ZN23IO80211SkywalkInterface8logDebugEyPKcz
+ffffff80022d59af: mov      rax, qword ptr [rbx]
+ffffff80022d59b2: mov      rax, qword ptr [rax + 0x740]
+ffffff80022d59b9: mov      rdi, rbx
+ffffff80022d59bc: mov      esi, 0xe0000130
+ffffff80022d59c1: xor      edx, edx
+ffffff80022d59c3: xor      ecx, ecx
+ffffff80022d59c5: pop      rbx
+ffffff80022d59c6: pop      r12
+ffffff80022d59c8: pop      r14
+ffffff80022d59ca: pop      r15
+ffffff80022d59cc: pop      rbp
+ffffff80022d59cd: jmp      rax
+ffffff80022d59cf: pop      rbx
+ffffff80022d59d0: pop      r12
+ffffff80022d59d2: pop      r14
+ffffff80022d59d4: pop      r15
+ffffff80022d59d6: pop      rbp
+ffffff80022d59d7: ret      
+ffffff80022d59d8: lea      rdx, [rip + 0xc5b7c]  ; " reset IO80211RSNDone"
+ffffff80022d59df: mov      rdi, rbx
+ffffff80022d59e2: mov      rsi, r14
+ffffff80022d59e5: xor      eax, eax
+ffffff80022d59e7: call     0xffffff8002261f9e  ; __ZN23IO80211SkywalkInterface8logDebugEyPKcz
+ffffff80022d59ec: mov      rax, qword ptr [rip + 0xe674d]  ; 0xffffff80023bc140
+ffffff80022d59f3: mov      rax, qword ptr [rax]
+ffffff80022d59f6: mov      rdx, qword ptr [rax]
+ffffff80022d59f9: lea      rsi, [rip + 0xc5b27]  ; "IO80211RSNDone"
+ffffff80022d5a00: mov      rdi, rbx
+ffffff80022d5a03: pop      rbx
+ffffff80022d5a04: pop      r12
+ffffff80022d5a06: pop      r14
+ffffff80022d5a08: pop      r15
+ffffff80022d5a0a: pop      rbp
+ffffff80022d5a0b: jmp      0xffffff800227d9c3  ; __Z17setPropertyHelperP9IOServicePKcPK8OSObject

@@ -1,0 +1,36 @@
+# 0xffffff800212ac9e __ZN11IO80211Glue22receiveMessageInternalER17CommonGlueMessage
+ffffff800212ac9e: cmp      byte ptr [rsi + 4], 1
+ffffff800212aca2: jne      0xffffff800212acbe
+ffffff800212aca4: mov      eax, dword ptr [rsi]
+ffffff800212aca6: mov      rcx, qword ptr [rdi + 0x18]
+ffffff800212acaa: mov      rdx, qword ptr [rcx]
+ffffff800212acad: cmp      byte ptr [rsi + 5], 1
+ffffff800212acb1: jne      0xffffff800212ad01
+ffffff800212acb3: mov      rcx, qword ptr [rsi + 0x20]
+ffffff800212acb7: mov      edi, 0xc02869c9
+ffffff800212acbc: jmp      0xffffff800212ad0a  ; __ZN11IO80211Glue22receiveMessageInternalER17CommonGlueMessage+0x6c
+ffffff800212acbe: mov      r8, qword ptr [rsi + 8]
+ffffff800212acc2: mov      rcx, r8
+ffffff800212acc5: test     r8, r8
+ffffff800212acc8: je       0xffffff800212acce
+ffffff800212acca: mov      rcx, qword ptr [rsi + 0x10]
+ffffff800212acce: push     rbp
+ffffff800212accf: mov      rbp, rsp
+ffffff800212acd2: mov      rdx, qword ptr [rdi + 0x18]
+ffffff800212acd6: mov      rax, qword ptr [rdx]
+ffffff800212acd9: mov      rdi, qword ptr [rdx + 8]
+ffffff800212acdd: mov      edx, dword ptr [rsi]
+ffffff800212acdf: mov      rsi, qword ptr [rdi + 0x120]
+ffffff800212ace6: mov      rdi, qword ptr [rsi + 0xb08]
+ffffff800212aced: mov      r10, qword ptr [rdi]
+ffffff800212acf0: mov      rsi, rax
+ffffff800212acf3: xor      r9d, r9d
+ffffff800212acf6: call     qword ptr [r10 + 0x120]
+ffffff800212acfd: xor      eax, eax
+ffffff800212acff: pop      rbp
+ffffff800212ad00: ret      
+ffffff800212ad01: mov      rcx, qword ptr [rsi + 0x10]
+ffffff800212ad05: mov      edi, 0x802869c8
+ffffff800212ad0a: mov      esi, eax
+ffffff800212ad0c: jmp      0xffffff80022e1948  ; __Z23apple80211RouteInternaljiP23IO80211SkywalkInterfacePv
+ffffff800212ad11: nop      

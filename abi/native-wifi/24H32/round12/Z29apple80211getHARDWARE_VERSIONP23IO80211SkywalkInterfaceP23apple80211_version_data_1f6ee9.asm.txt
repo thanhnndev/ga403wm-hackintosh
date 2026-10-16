@@ -1,0 +1,35 @@
+# 0xffffff80021f6ee9 __Z29apple80211getHARDWARE_VERSIONP23IO80211SkywalkInterfaceP23apple80211_version_data
+ffffff80021f6ee9: push     rbp
+ffffff80021f6eea: mov      rbp, rsp
+ffffff80021f6eed: push     r14
+ffffff80021f6eef: push     rbx
+ffffff80021f6ef0: mov      rbx, rsi
+ffffff80021f6ef3: mov      r14, rdi
+ffffff80021f6ef6: mov      rax, qword ptr [rdi]
+ffffff80021f6ef9: mov      esi, 0x2c
+ffffff80021f6efe: call     qword ptr [rax + 0xcc0]
+ffffff80021f6f04: test     eax, eax
+ffffff80021f6f06: je       0xffffff80021f6f0d
+ffffff80021f6f08: pop      rbx
+ffffff80021f6f09: pop      r14
+ffffff80021f6f0b: pop      rbp
+ffffff80021f6f0c: ret      
+ffffff80021f6f0d: lea      rsi, [rip + 0x2013bc]  ; 0xffffff80023f82d0
+ffffff80021f6f14: mov      rdi, r14
+ffffff80021f6f17: call     0xffffff8000a49ab0  ; __ZN15OSMetaClassBase12safeMetaCastEPKS_PK11OSMetaClass
+ffffff80021f6f1c: test     rax, rax
+ffffff80021f6f1f: je       0xffffff80021f6f46
+ffffff80021f6f21: mov      rax, qword ptr [r14]
+ffffff80021f6f24: mov      rdi, r14
+ffffff80021f6f27: call     qword ptr [rax + 0xba8]
+ffffff80021f6f2d: mov      rcx, qword ptr [rax]
+ffffff80021f6f30: mov      rcx, qword ptr [rcx + 0xcc8]
+ffffff80021f6f37: mov      rdi, rax
+ffffff80021f6f3a: mov      rsi, r14
+ffffff80021f6f3d: mov      rdx, rbx
+ffffff80021f6f40: pop      rbx
+ffffff80021f6f41: pop      r14
+ffffff80021f6f43: pop      rbp
+ffffff80021f6f44: jmp      rcx
+ffffff80021f6f46: mov      eax, 0xe082280e
+ffffff80021f6f4b: jmp      0xffffff80021f6f08  ; __Z29apple80211getHARDWARE_VERSIONP23IO80211SkywalkInterfaceP23apple80211_version_data+0x1f

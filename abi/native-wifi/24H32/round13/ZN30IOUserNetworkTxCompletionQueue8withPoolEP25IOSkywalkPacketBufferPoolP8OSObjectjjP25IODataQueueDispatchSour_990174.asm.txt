@@ -1,0 +1,50 @@
+# 0xffffff8002990174 __ZN30IOUserNetworkTxCompletionQueue8withPoolEP25IOSkywalkPacketBufferPoolP8OSObjectjjP25IODataQueueDispatchSource
+ffffff8002990174: push     rbp
+ffffff8002990175: mov      rbp, rsp
+ffffff8002990178: push     r15
+ffffff800299017a: push     r14
+ffffff800299017c: push     r13
+ffffff800299017e: push     r12
+ffffff8002990180: push     rbx
+ffffff8002990181: sub      rsp, 0x18
+ffffff8002990185: mov      qword ptr [rbp - 0x38], r8
+ffffff8002990189: mov      dword ptr [rbp - 0x2c], ecx
+ffffff800299018c: mov      r12d, edx
+ffffff800299018f: mov      r13, rsi
+ffffff8002990192: mov      r14, rdi
+ffffff8002990195: lea      rdi, [rip + 0x284a4]  ; 0xffffff80029b8640
+ffffff800299019c: mov      esi, 0x120
+ffffff80029901a1: call     0xffffff8000a4be90  ; _OSObject_typed_operator_new
+ffffff80029901a6: mov      rbx, rax
+ffffff80029901a9: lea      r15, [rip + 0x26bd8]  ; 0xffffff80029b6d88
+ffffff80029901b0: mov      rdi, rax
+ffffff80029901b3: mov      rsi, r15
+ffffff80029901b6: call     0xffffff800298e548  ; __ZN24IOUserNetworkPacketQueueC2EPK11OSMetaClass
+ffffff80029901bb: lea      rax, [rip + 0x24fc6]  ; 0xffffff80029b5188
+ffffff80029901c2: mov      qword ptr [rbx], rax
+ffffff80029901c5: mov      rdi, r15
+ffffff80029901c8: call     0xffffff8000a4a700  ; __ZNK11OSMetaClass19instanceConstructedEv
+ffffff80029901cd: mov      rax, qword ptr [rbx]
+ffffff80029901d0: mov      rdi, rbx
+ffffff80029901d3: mov      rsi, r14
+ffffff80029901d6: mov      rdx, r13
+ffffff80029901d9: mov      ecx, r12d
+ffffff80029901dc: mov      r8d, dword ptr [rbp - 0x2c]
+ffffff80029901e0: mov      r9, qword ptr [rbp - 0x38]
+ffffff80029901e4: call     qword ptr [rax + 0x2c0]
+ffffff80029901ea: test     al, al
+ffffff80029901ec: jne      0xffffff80029901f9
+ffffff80029901ee: mov      rax, qword ptr [rbx]
+ffffff80029901f1: mov      rdi, rbx
+ffffff80029901f4: call     qword ptr [rax + 0x28]
+ffffff80029901f7: xor      ebx, ebx
+ffffff80029901f9: mov      rax, rbx
+ffffff80029901fc: add      rsp, 0x18
+ffffff8002990200: pop      rbx
+ffffff8002990201: pop      r12
+ffffff8002990203: pop      r13
+ffffff8002990205: pop      r14
+ffffff8002990207: pop      r15
+ffffff8002990209: pop      rbp
+ffffff800299020a: ret      
+ffffff800299020b: nop      

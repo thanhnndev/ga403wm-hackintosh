@@ -1,0 +1,82 @@
+# 0xffffff8002981d7e __ZN25IOSkywalkNetworkInterface24registerNetworkInterfaceEPKNS_16RegistrationInfoEPP20IOSkywalkPacketQueuejP25IOSkywalkPacketBufferPoolS7_j
+ffffff8002981d7e: push     rbp
+ffffff8002981d7f: mov      rbp, rsp
+ffffff8002981d82: push     r15
+ffffff8002981d84: push     r14
+ffffff8002981d86: push     r13
+ffffff8002981d88: push     r12
+ffffff8002981d8a: push     rbx
+ffffff8002981d8b: sub      rsp, 0x78
+ffffff8002981d8f: mov      qword ptr [rbp - 0x98], r9
+ffffff8002981d96: mov      r14, r8
+ffffff8002981d99: mov      eax, ecx
+ffffff8002981d9b: mov      r13, rdx
+ffffff8002981d9e: mov      r15, rsi
+ffffff8002981da1: mov      r12, rdi
+ffffff8002981da4: mov      rcx, qword ptr [rip + 0x2536d]  ; 0xffffff80029a7118
+ffffff8002981dab: mov      rcx, qword ptr [rcx]
+ffffff8002981dae: mov      qword ptr [rbp - 0x30], rcx
+ffffff8002981db2: lea      rsi, [rip + 0x24f1f]  ; 0xffffff80029a6cd8
+ffffff8002981db9: lea      rdi, [rbp - 0x80]
+ffffff8002981dbd: mov      ecx, 0xa
+ffffff8002981dc2: rep movsq qword ptr [rdi], qword ptr [rsi]
+ffffff8002981dc5: mov      dword ptr [rbp - 0x84], 3
+ffffff8002981dcf: mov      ebx, eax
+ffffff8002981dd1: mov      rdi, rdx
+ffffff8002981dd4: mov      rsi, rbx
+ffffff8002981dd7: call     0xffffff800298ac44  ; __ZN17IOSkywalkQueueSet22isWMMSchedModelCapableEPP20IOSkywalkPacketQueuem
+ffffff8002981ddc: test     al, al
+ffffff8002981dde: je       0xffffff8002981dea
+ffffff8002981de0: mov      dword ptr [rbp - 0x84], 0xb
+ffffff8002981dea: lea      rdx, [rbp - 0x84]
+ffffff8002981df1: mov      rdi, r13
+ffffff8002981df4: mov      rsi, rbx
+ffffff8002981df7: call     0xffffff800298a81c  ; __ZN17IOSkywalkQueueSet16createWithQueuesEPP20IOSkywalkPacketQueuemPNS_14QueueSetInfo_sE
+ffffff8002981dfc: mov      qword ptr [rbp - 0x90], rax
+ffffff8002981e03: test     rax, rax
+ffffff8002981e06: je       0xffffff8002981e64
+ffffff8002981e08: lea      rdx, [rbp - 0x80]
+ffffff8002981e0c: mov      dword ptr [rdx], 1
+ffffff8002981e12: lea      rdi, [rbp - 0x90]
+ffffff8002981e19: mov      esi, 1
+ffffff8002981e1e: call     0xffffff80029839c6  ; __ZN20IOSkywalkLogicalLink18createWithQueueSetEPP17IOSkywalkQueueSetmPNS_17LogicalLinkInfo_sE
+ffffff8002981e23: test     rax, rax
+ffffff8002981e26: je       0xffffff8002981e6b
+ffffff8002981e28: mov      r13, rax
+ffffff8002981e2b: mov      rdi, r12
+ffffff8002981e2e: mov      rsi, r15
+ffffff8002981e31: mov      rdx, rax
+ffffff8002981e34: mov      rcx, r14
+ffffff8002981e37: mov      r8, qword ptr [rbp - 0x98]
+ffffff8002981e3e: call     0xffffff8002981eac  ; __ZN25IOSkywalkNetworkInterface24registerNetworkInterfaceEPKNS_16RegistrationInfoEP20IOSkywalkLogicalLinkP25IOSkywalkPacketBufferPoolS6_j
+ffffff8002981e43: mov      ebx, eax
+ffffff8002981e45: mov      rdi, qword ptr [rbp - 0x90]
+ffffff8002981e4c: test     rdi, rdi
+ffffff8002981e4f: je       0xffffff8002981e57
+ffffff8002981e51: mov      rax, qword ptr [rdi]
+ffffff8002981e54: call     qword ptr [rax + 0x28]
+ffffff8002981e57: mov      qword ptr [rbp - 0x90], 0
+ffffff8002981e62: jmp      0xffffff8002981e7c  ; __ZN25IOSkywalkNetworkInterface24registerNetworkInterfaceEPKNS_16RegistrationInfoEPP20IOSkywalkPacketQueuejP25IOSkywalkPacketBufferPoolS7_j+0xfe
+ffffff8002981e64: mov      ebx, 0xe00002c2
+ffffff8002981e69: jmp      0xffffff8002981e86  ; __ZN25IOSkywalkNetworkInterface24registerNetworkInterfaceEPKNS_16RegistrationInfoEPP20IOSkywalkPacketQueuejP25IOSkywalkPacketBufferPoolS7_j+0x108
+ffffff8002981e6b: mov      r13, qword ptr [rbp - 0x90]
+ffffff8002981e72: mov      ebx, 0xe00002c2
+ffffff8002981e77: test     r13, r13
+ffffff8002981e7a: je       0xffffff8002981e86
+ffffff8002981e7c: mov      rax, qword ptr [r13]
+ffffff8002981e80: mov      rdi, r13
+ffffff8002981e83: call     qword ptr [rax + 0x28]
+ffffff8002981e86: mov      rax, qword ptr [rip + 0x2528b]  ; 0xffffff80029a7118
+ffffff8002981e8d: mov      rax, qword ptr [rax]
+ffffff8002981e90: cmp      rax, qword ptr [rbp - 0x30]
+ffffff8002981e94: jne      0xffffff8002981ea7
+ffffff8002981e96: mov      eax, ebx
+ffffff8002981e98: add      rsp, 0x78
+ffffff8002981e9c: pop      rbx
+ffffff8002981e9d: pop      r12
+ffffff8002981e9f: pop      r13
+ffffff8002981ea1: pop      r14
+ffffff8002981ea3: pop      r15
+ffffff8002981ea5: pop      rbp
+ffffff8002981ea6: ret      
+ffffff8002981ea7: call     0xffffff8000383150  ; ___stack_chk_fail

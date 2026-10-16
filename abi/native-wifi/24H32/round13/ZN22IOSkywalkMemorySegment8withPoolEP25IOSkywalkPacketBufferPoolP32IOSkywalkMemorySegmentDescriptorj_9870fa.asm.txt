@@ -1,0 +1,46 @@
+# 0xffffff80029870fa __ZN22IOSkywalkMemorySegment8withPoolEP25IOSkywalkPacketBufferPoolP32IOSkywalkMemorySegmentDescriptorj
+ffffff80029870fa: push     rbp
+ffffff80029870fb: mov      rbp, rsp
+ffffff80029870fe: push     r15
+ffffff8002987100: push     r14
+ffffff8002987102: push     r13
+ffffff8002987104: push     r12
+ffffff8002987106: push     rbx
+ffffff8002987107: push     rax
+ffffff8002987108: mov      r14d, edx
+ffffff800298710b: mov      r15, rsi
+ffffff800298710e: mov      r12, rdi
+ffffff8002987111: lea      rdi, [rip + 0x30d28]  ; 0xffffff80029b7e40
+ffffff8002987118: mov      esi, 0x78
+ffffff800298711d: call     0xffffff8000a4be90  ; _OSObject_typed_operator_new
+ffffff8002987122: mov      rbx, rax
+ffffff8002987125: lea      r13, [rip + 0x2fa04]  ; 0xffffff80029b6b30
+ffffff800298712c: mov      rdi, rax
+ffffff800298712f: mov      rsi, r13
+ffffff8002987132: call     0xffffff8000a4c000  ; __ZN8OSObjectC2EPK11OSMetaClass
+ffffff8002987137: lea      rax, [rip + 0x29b72]  ; 0xffffff80029b0cb0
+ffffff800298713e: mov      qword ptr [rbx], rax
+ffffff8002987141: mov      rdi, r13
+ffffff8002987144: call     0xffffff8000a4a700  ; __ZNK11OSMetaClass19instanceConstructedEv
+ffffff8002987149: mov      rax, qword ptr [rbx]
+ffffff800298714c: mov      rdi, rbx
+ffffff800298714f: mov      rsi, r12
+ffffff8002987152: mov      rdx, r15
+ffffff8002987155: mov      ecx, r14d
+ffffff8002987158: call     qword ptr [rax + 0x118]
+ffffff800298715e: test     al, al
+ffffff8002987160: jne      0xffffff800298716d
+ffffff8002987162: mov      rax, qword ptr [rbx]
+ffffff8002987165: mov      rdi, rbx
+ffffff8002987168: call     qword ptr [rax + 0x28]
+ffffff800298716b: xor      ebx, ebx
+ffffff800298716d: mov      rax, rbx
+ffffff8002987170: add      rsp, 8
+ffffff8002987174: pop      rbx
+ffffff8002987175: pop      r12
+ffffff8002987177: pop      r13
+ffffff8002987179: pop      r14
+ffffff800298717b: pop      r15
+ffffff800298717d: pop      rbp
+ffffff800298717e: ret      
+ffffff800298717f: nop      

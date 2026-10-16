@@ -1,0 +1,31 @@
+# 0xffffff8002978d92 __ZN25IOSkywalkNetworkBSDClient15detachInterfaceEP25IOSkywalkNetworkInterface
+ffffff8002978d92: push     rbp
+ffffff8002978d93: mov      rbp, rsp
+ffffff8002978d96: push     r14
+ffffff8002978d98: push     rbx
+ffffff8002978d99: mov      r14, rsi
+ffffff8002978d9c: mov      rbx, rdi
+ffffff8002978d9f: mov      rdi, qword ptr [rdi + 0x90]
+ffffff8002978da6: test     rdi, rdi
+ffffff8002978da9: je       0xffffff8002978dc9
+ffffff8002978dab: mov      rax, qword ptr [rdi]
+ffffff8002978dae: call     qword ptr [rax + 0x168]
+ffffff8002978db4: test     rax, rax
+ffffff8002978db7: je       0xffffff8002978dc9
+ffffff8002978db9: mov      rcx, qword ptr [rax]
+ffffff8002978dbc: mov      rdi, rax
+ffffff8002978dbf: call     qword ptr [rcx + 0x138]
+ffffff8002978dc5: test     al, al
+ffffff8002978dc7: je       0xffffff8002978df0
+ffffff8002978dc9: mov      rdi, rbx
+ffffff8002978dcc: mov      rsi, r14
+ffffff8002978dcf: call     0xffffff800297866e  ; __ZN25IOSkywalkNetworkBSDClient14closeInterfaceEP25IOSkywalkNetworkInterface
+ffffff8002978dd4: mov      rdi, qword ptr [rbx + 0xf8]
+ffffff8002978ddb: call     0xffffff800069cbc0  ; _ifnet_release
+ffffff8002978de0: mov      qword ptr [rbx + 0xf8], 0
+ffffff8002978deb: pop      rbx
+ffffff8002978dec: pop      r14
+ffffff8002978dee: pop      rbp
+ffffff8002978def: ret      
+ffffff8002978df0: call     0xffffff80029a0f63  ; __ZN25IOSkywalkNetworkBSDClient15detachInterfaceEP25IOSkywalkNetworkInterface.cold.1
+ffffff8002978df5: nop      

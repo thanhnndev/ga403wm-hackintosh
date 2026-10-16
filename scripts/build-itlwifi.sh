@@ -10,7 +10,7 @@ cd "$(dirname "$0")/.."
 APP=build/ItlWiFi.app
 rm -rf "$APP"; mkdir -p "$APP/Contents/MacOS"
 cp macos/ItlWiFi/Info.plist "$APP/Contents/Info.plist"
-swiftc -O -target x86_64-apple-macos13.0 macos/ItlWiFi/ItlWiFi.swift macos/ItlWiFi/SpeedTest.swift -o "$APP/Contents/MacOS/ItlWiFi" -framework IOKit -framework Security -framework SwiftUI
+swiftc -O -target x86_64-apple-macos13.0 macos/ItlWiFi/ItlWiFi.swift macos/ItlWiFi/SpeedTest.swift -o "$APP/Contents/MacOS/ItlWiFi" -framework IOKit -framework SwiftUI
 codesign --force --sign - "$APP" >/dev/null
 echo "built $APP"
 if [ "${1:-}" = "--install" ]; then

@@ -1,0 +1,85 @@
+# 0xffffff80029881be __ZN26IOSkywalkEthernetInterface26initBSDInterfaceParametersEP18ifnet_init_eparamsPP11sockaddr_dl
+ffffff80029881be: mov      eax, 0xe00002c2
+ffffff80029881c3: cmp      dword ptr [rsi], 2
+ffffff80029881c6: jne      0xffffff8002988332
+ffffff80029881cc: push     rbp
+ffffff80029881cd: mov      rbp, rsp
+ffffff80029881d0: push     r15
+ffffff80029881d2: push     r14
+ffffff80029881d4: push     rbx
+ffffff80029881d5: sub      rsp, 0x18
+ffffff80029881d9: mov      rbx, rsi
+ffffff80029881dc: cmp      dword ptr [rsi + 4], 0x158
+ffffff80029881e3: jne      0xffffff8002988328
+ffffff80029881e9: mov      r15, rdx
+ffffff80029881ec: mov      r14, rdi
+ffffff80029881ef: lea      rsi, [rbp - 0x26]
+ffffff80029881f3: mov      dword ptr [rsi], 0
+ffffff80029881f9: mov      word ptr [rsi + 4], 0
+ffffff80029881ff: mov      rax, qword ptr [rdi + 0x108]
+ffffff8002988206: mov      rax, qword ptr [rax]
+ffffff8002988209: movzx    ecx, word ptr [rax + 0x10c]
+ffffff8002988210: lea      rdi, [rbp - 0x20]
+ffffff8002988214: mov      word ptr [rdi + 4], cx
+ffffff8002988218: mov      eax, dword ptr [rax + 0x108]
+ffffff800298821e: mov      dword ptr [rdi], eax
+ffffff8002988220: mov      edx, 6
+ffffff8002988225: call     0xffffff8000104420  ; _memcmp
+ffffff800298822a: test     eax, eax
+ffffff800298822c: je       0xffffff8002988305
+ffffff8002988232: mov      rax, qword ptr [r14 + 0x108]
+ffffff8002988239: mov      rcx, qword ptr [rax]
+ffffff800298823c: movzx    edx, word ptr [rcx + 0x10c]
+ffffff8002988243: mov      ecx, dword ptr [rcx + 0x108]
+ffffff8002988249: mov      dword ptr [rax + 0x26], ecx
+ffffff800298824c: mov      word ptr [rax + 0x2a], dx
+ffffff8002988250: mov      rax, qword ptr [r14 + 0x108]
+ffffff8002988257: lea      rcx, [rax + 0x1e]
+ffffff800298825b: mov      word ptr [rax + 0x1e], 0x120e
+ffffff8002988261: mov      byte ptr [rax + 0x24], 6
+ffffff8002988265: mov      qword ptr [r15], rcx
+ffffff8002988268: mov      rax, qword ptr [r14 + 0x108]
+ffffff800298826f: mov      ecx, 0x108
+ffffff8002988274: add      rcx, qword ptr [rax]
+ffffff8002988277: mov      qword ptr [rbx + 0x10], rcx
+ffffff800298827b: mov      eax, 6
+ffffff8002988280: mov      dword ptr [rbx + 0x18], eax
+ffffff8002988283: lea      rcx, [rip + 0x1eb7e]  ; 0xffffff80029a6e08
+ffffff800298828a: mov      qword ptr [rbx + 0x128], rcx
+ffffff8002988291: mov      dword ptr [rbx + 0x130], eax
+ffffff8002988297: mov      rcx, qword ptr [rip + 0x1ee9a]  ; 0xffffff80029a7138
+ffffff800298829e: mov      qword ptr [rbx + 0xd8], rcx
+ffffff80029882a5: mov      rcx, qword ptr [rip + 0x1ee74]  ; 0xffffff80029a7120
+ffffff80029882ac: mov      qword ptr [rbx + 0xe0], rcx
+ffffff80029882b3: mov      rcx, qword ptr [rip + 0x1ee76]  ; 0xffffff80029a7130
+ffffff80029882ba: mov      qword ptr [rbx + 0xe8], rcx
+ffffff80029882c1: mov      rcx, qword ptr [rip + 0x1ee60]  ; 0xffffff80029a7128
+ffffff80029882c8: mov      qword ptr [rbx + 0xf0], rcx
+ffffff80029882cf: mov      rcx, qword ptr [rip + 0x1ee6a]  ; 0xffffff80029a7140
+ffffff80029882d6: mov      qword ptr [rbx + 0xf8], rcx
+ffffff80029882dd: mov      dword ptr [rbx + 0x30], eax
+ffffff80029882e0: mov      rax, qword ptr [r14]
+ffffff80029882e3: mov      rdi, r14
+ffffff80029882e6: call     qword ptr [rax + 0x998]
+ffffff80029882ec: mov      dword ptr [rbx + 0x2c], eax
+ffffff80029882ef: mov      rax, qword ptr [r14]
+ffffff80029882f2: mov      rdi, r14
+ffffff80029882f5: call     qword ptr [rax + 0x9a0]
+ffffff80029882fb: mov      dword ptr [rbx + 0x140], eax
+ffffff8002988301: xor      eax, eax
+ffffff8002988303: jmp      0xffffff8002988328  ; __ZN26IOSkywalkEthernetInterface26initBSDInterfaceParametersEP18ifnet_init_eparamsPP11sockaddr_dl+0x16a
+ffffff8002988305: mov      rax, qword ptr [r14]
+ffffff8002988308: mov      rcx, qword ptr [r14 + 0x108]
+ffffff800298830f: mov      esi, 0x108
+ffffff8002988314: add      rsi, qword ptr [rcx]
+ffffff8002988317: mov      rdi, r14
+ffffff800298831a: call     qword ptr [rax + 0xa60]
+ffffff8002988320: test     eax, eax
+ffffff8002988322: je       0xffffff8002988232
+ffffff8002988328: add      rsp, 0x18
+ffffff800298832c: pop      rbx
+ffffff800298832d: pop      r14
+ffffff800298832f: pop      r15
+ffffff8002988331: pop      rbp
+ffffff8002988332: ret      
+ffffff8002988333: nop      

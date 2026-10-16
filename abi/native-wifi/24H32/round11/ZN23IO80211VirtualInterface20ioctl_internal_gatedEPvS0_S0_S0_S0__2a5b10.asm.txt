@@ -1,0 +1,10 @@
+# 0xffffff80022a5b10 __ZN23IO80211VirtualInterface20ioctl_internal_gatedEPvS0_S0_S0_S0_
+ffffff80022a5b10: push     rbp
+ffffff80022a5b11: mov      rbp, rsp
+ffffff80022a5b14: mov      rdx, rdi
+ffffff80022a5b17: mov      edi, dword ptr [rsi]
+ffffff80022a5b19: mov      eax, dword ptr [rsi + 4]
+ffffff80022a5b1c: mov      rcx, qword ptr [rsi + 8]
+ffffff80022a5b20: mov      esi, eax
+ffffff80022a5b22: pop      rbp
+ffffff80022a5b23: jmp      0xffffff80022e1948  ; __Z23apple80211RouteInternaljiP23IO80211SkywalkInterfacePv

@@ -1,0 +1,7 @@
+# 0xffffff800298837e __ZN26IOSkywalkEthernetInterface18setHardwareAddressEP10ether_addr
+ffffff800298837e: push     rbp
+ffffff800298837f: mov      rbp, rsp
+ffffff8002988382: mov      eax, 0xe00002c7
+ffffff8002988387: pop      rbp
+ffffff8002988388: ret      
+ffffff8002988389: nop      

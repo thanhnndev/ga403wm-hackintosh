@@ -1,0 +1,129 @@
+# 0xffffff8002978e66 __ZN25IOSkywalkNetworkBSDClient7messageEjP9IOServicePv
+ffffff8002978e66: push     rbp
+ffffff8002978e67: mov      rbp, rsp
+ffffff8002978e6a: push     r15
+ffffff8002978e6c: push     r14
+ffffff8002978e6e: push     rbx
+ffffff8002978e6f: sub      rsp, 0x38
+ffffff8002978e73: mov      r14, rcx
+ffffff8002978e76: mov      rbx, rdi
+ffffff8002978e79: mov      rax, qword ptr [rip + 0x2e298]  ; 0xffffff80029a7118
+ffffff8002978e80: mov      rax, qword ptr [rax]
+ffffff8002978e83: mov      qword ptr [rbp - 0x20], rax
+ffffff8002978e87: lea      eax, [rsi + 0x1ff9ff00]
+ffffff8002978e8d: cmp      eax, 6
+ffffff8002978e90: ja       0xffffff8002978f85
+ffffff8002978e96: lea      rcx, [rip + 0x1d7]  ; 0xffffff8002979074
+ffffff8002978e9d: movsxd   rax, dword ptr [rcx + rax*4]
+ffffff8002978ea1: add      rax, rcx
+ffffff8002978ea4: jmp      rax
+ffffff8002978ea6: cmp      qword ptr [rbx + 0xe8], 0
+ffffff8002978eae: je       0xffffff8002978f7a
+ffffff8002978eb4: mov      rdi, qword ptr [rbx + 0xf8]
+ffffff8002978ebb: test     rdi, rdi
+ffffff8002978ebe: je       0xffffff8002978f7a
+ffffff8002978ec4: xor      eax, eax
+ffffff8002978ec6: lea      r14, [rbp - 0x30]
+ffffff8002978eca: mov      qword ptr [r14 - 0x10], rax
+ffffff8002978ece: mov      qword ptr [r14 + 8], rax
+ffffff8002978ed2: mov      qword ptr [r14], rax
+ffffff8002978ed5: mov      qword ptr [r14 - 8], rax
+ffffff8002978ed9: movabs   rax, 0x100000030
+ffffff8002978ee3: mov      qword ptr [r14 - 0x20], rax
+ffffff8002978ee7: movabs   rax, 0x200000001
+ffffff8002978ef1: mov      qword ptr [r14 - 0x18], rax
+ffffff8002978ef5: xor      eax, eax
+ffffff8002978ef7: cmp      esi, 0xe0060100
+ffffff8002978efd: sete     al
+ffffff8002978f00: or       eax, 0xc
+ffffff8002978f03: mov      dword ptr [r14 - 0xc], eax
+ffffff8002978f07: call     0xffffff800069cc40  ; _ifnet_family
+ffffff8002978f0c: mov      dword ptr [r14 - 8], eax
+ffffff8002978f10: mov      rdi, qword ptr [rbx + 0xf8]
+ffffff8002978f17: call     0xffffff800069cc80  ; _ifnet_unit
+ffffff8002978f1c: mov      dword ptr [r14 - 4], eax
+ffffff8002978f20: mov      rdi, qword ptr [rbx + 0xf8]
+ffffff8002978f27: call     0xffffff800069cc20  ; _ifnet_name
+ffffff8002978f2c: mov      edx, 0x10
+ffffff8002978f31: mov      ecx, 0x10
+ffffff8002978f36: mov      rdi, r14
+ffffff8002978f39: mov      rsi, rax
+ffffff8002978f3c: call     0xffffff80004ef4e0  ; ___strncpy_chk
+ffffff8002978f41: mov      rdi, qword ptr [rbx + 0xf8]
+ffffff8002978f48: lea      rsi, [rbp - 0x50]
+ffffff8002978f4c: call     0xffffff80006488a0  ; _ifnet_event
+ffffff8002978f51: mov      rdi, qword ptr [rbx + 0x90]
+ffffff8002978f58: mov      rsi, qword ptr [rbx + 0x118]
+ffffff8002978f5f: mov      rax, qword ptr [rdi]
+ffffff8002978f62: xor      r15d, r15d
+ffffff8002978f65: xor      edx, edx
+ffffff8002978f67: xor      ecx, ecx
+ffffff8002978f69: xor      r8d, r8d
+ffffff8002978f6c: xor      r9d, r9d
+ffffff8002978f6f: call     qword ptr [rax + 0x1c8]
+ffffff8002978f75: jmp      0xffffff800297904e  ; __ZN25IOSkywalkNetworkBSDClient7messageEjP9IOServicePv+0x1e8
+ffffff8002978f7a: mov      r15d, 0xe00002d8
+ffffff8002978f80: jmp      0xffffff800297904e  ; __ZN25IOSkywalkNetworkBSDClient7messageEjP9IOServicePv+0x1e8
+ffffff8002978f85: mov      rax, qword ptr [rip + 0x2e18c]  ; 0xffffff80029a7118
+ffffff8002978f8c: mov      rax, qword ptr [rax]
+ffffff8002978f8f: cmp      rax, qword ptr [rbp - 0x20]
+ffffff8002978f93: jne      0xffffff800297906c
+ffffff8002978f99: lea      rax, [rip + 0x310d8]  ; 0xffffff80029aa078
+ffffff8002978fa0: mov      rdi, rbx
+ffffff8002978fa3: mov      rcx, r14
+ffffff8002978fa6: add      rsp, 0x38
+ffffff8002978faa: pop      rbx
+ffffff8002978fab: pop      r14
+ffffff8002978fad: pop      r15
+ffffff8002978faf: pop      rbp
+ffffff8002978fb0: jmp      qword ptr [rax + 0x740]
+ffffff8002978fb6: test     r14, r14
+ffffff8002978fb9: je       0xffffff8002979048
+ffffff8002978fbf: mov      r15, qword ptr [rbx + 0x100]
+ffffff8002978fc6: mov      rdi, r14
+ffffff8002978fc9: call     0xffffff8002983ce8  ; __ZN20IOSkywalkLogicalLink23getLogicalLinkNexusInfoEv
+ffffff8002978fce: mov      rdi, r15
+ffffff8002978fd1: mov      rsi, rax
+ffffff8002978fd4: call     0xffffff8000a1bc90  ; _kern_nexus_netif_llink_add
+ffffff8002978fd9: mov      r15d, 0xe00002bc
+ffffff8002978fdf: test     eax, eax
+ffffff8002978fe1: jne      0xffffff800297904e
+ffffff8002978fe3: mov      rax, qword ptr [rbx + 0xe8]
+ffffff8002978fea: mov      rdi, qword ptr [rax + 0xc0]
+ffffff8002978ff1: mov      rax, qword ptr [rdi]
+ffffff8002978ff4: mov      rsi, r14
+ffffff8002978ff7: call     qword ptr [rax + 0x1b8]
+ffffff8002978ffd: jmp      0xffffff8002979043  ; __ZN25IOSkywalkNetworkBSDClient7messageEjP9IOServicePv+0x1dd
+ffffff8002978fff: test     r14, r14
+ffffff8002979002: je       0xffffff8002979048
+ffffff8002979004: mov      r15, qword ptr [rbx + 0x100]
+ffffff800297900b: mov      rdi, r14
+ffffff800297900e: call     0xffffff8002983ce8  ; __ZN20IOSkywalkLogicalLink23getLogicalLinkNexusInfoEv
+ffffff8002979013: mov      rsi, qword ptr [rax + 0x10]
+ffffff8002979017: mov      rdi, r15
+ffffff800297901a: call     0xffffff8000a1bd80  ; _kern_nexus_netif_llink_remove
+ffffff800297901f: mov      r15d, 0xe00002bc
+ffffff8002979025: test     eax, eax
+ffffff8002979027: jne      0xffffff800297904e
+ffffff8002979029: mov      rax, qword ptr [rbx + 0xe8]
+ffffff8002979030: mov      rdi, qword ptr [rax + 0xc0]
+ffffff8002979037: mov      rax, qword ptr [rdi]
+ffffff800297903a: mov      rsi, r14
+ffffff800297903d: call     qword ptr [rax + 0x1c0]
+ffffff8002979043: xor      r15d, r15d
+ffffff8002979046: jmp      0xffffff800297904e  ; __ZN25IOSkywalkNetworkBSDClient7messageEjP9IOServicePv+0x1e8
+ffffff8002979048: mov      r15d, 0xe00002c2
+ffffff800297904e: mov      rax, qword ptr [rip + 0x2e0c3]  ; 0xffffff80029a7118
+ffffff8002979055: mov      rax, qword ptr [rax]
+ffffff8002979058: cmp      rax, qword ptr [rbp - 0x20]
+ffffff800297905c: jne      0xffffff800297906c
+ffffff800297905e: mov      eax, r15d
+ffffff8002979061: add      rsp, 0x38
+ffffff8002979065: pop      rbx
+ffffff8002979066: pop      r14
+ffffff8002979068: pop      r15
+ffffff800297906a: pop      rbp
+ffffff800297906b: ret      
+ffffff800297906c: call     0xffffff8000383150  ; ___stack_chk_fail
+ffffff8002979071: nop      dword ptr [rax]
+ffffff8002979074: xor      bh, dh

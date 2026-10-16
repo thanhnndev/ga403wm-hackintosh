@@ -1,0 +1,85 @@
+# 0xffffff800212ab3c __ZN11IO80211Glue22addEventToPendingQueueEjPvm
+ffffff800212ab3c: push     rbp
+ffffff800212ab3d: mov      rbp, rsp
+ffffff800212ab40: push     r15
+ffffff800212ab42: push     r14
+ffffff800212ab44: push     r13
+ffffff800212ab46: push     r12
+ffffff800212ab48: push     rbx
+ffffff800212ab49: sub      rsp, 0x18
+ffffff800212ab4d: mov      r15, rcx
+ffffff800212ab50: mov      r12, rdx
+ffffff800212ab53: mov      r13d, esi
+ffffff800212ab56: mov      r14, rdi
+ffffff800212ab59: mov      rax, qword ptr [rip + 0x2915b8]  ; 0xffffff80023bc118
+ffffff800212ab60: mov      rax, qword ptr [rax]
+ffffff800212ab63: mov      qword ptr [rbp - 0x30], rax
+ffffff800212ab67: lea      rdi, [rcx + 0x20]
+ffffff800212ab6b: call     0xffffff8000ab6220  ; _IOMallocZeroData_external
+ffffff800212ab70: test     rax, rax
+ffffff800212ab73: je       0xffffff800212ac27
+ffffff800212ab79: mov      rbx, rax
+ffffff800212ab7c: mov      dword ptr [rbp - 0x3c], r13d
+ffffff800212ab80: mov      r13, r12
+ffffff800212ab83: mov      r12, r14
+ffffff800212ab86: lea      r14, [rbp - 0x38]
+ffffff800212ab8a: mov      qword ptr [r14], 0
+ffffff800212ab91: call     0xffffff80003cbf20  ; _mach_continuous_time
+ffffff800212ab96: mov      rdi, rax
+ffffff800212ab99: mov      rsi, r14
+ffffff800212ab9c: call     0xffffff8000536d80  ; _absolutetime_to_nanoseconds
+ffffff800212aba1: movabs   rax, 0x431bde82d7b634db
+ffffff800212abab: mul      qword ptr [r14]
+ffffff800212abae: shr      rdx, 0x12
+ffffff800212abb2: mov      qword ptr [rbx + 0x18], rdx
+ffffff800212abb6: mov      eax, dword ptr [rbp - 0x3c]
+ffffff800212abb9: mov      dword ptr [rbx + 0x10], eax
+ffffff800212abbc: mov      dword ptr [rbx + 0x14], r15d
+ffffff800212abc0: test     r15, r15
+ffffff800212abc3: sete     al
+ffffff800212abc6: test     r13, r13
+ffffff800212abc9: sete     cl
+ffffff800212abcc: or       cl, al
+ffffff800212abce: jne      0xffffff800212abe8
+ffffff800212abd0: cmp      r15, -0x20
+ffffff800212abd4: jae      0xffffff800212ac50
+ffffff800212abd6: mov      rdi, rbx
+ffffff800212abd9: add      rdi, 0x20
+ffffff800212abdd: mov      rsi, r13
+ffffff800212abe0: mov      rdx, r15
+ffffff800212abe3: call     0xffffff8000101080  ; _memmove
+ffffff800212abe8: mov      rcx, qword ptr [r12 + 0x18]
+ffffff800212abed: lea      rax, [rcx + 0x20]
+ffffff800212abf1: mov      rdx, qword ptr [rcx + 0x28]
+ffffff800212abf5: cmp      qword ptr [rdx], rax
+ffffff800212abf8: jne      0xffffff800212ac46
+ffffff800212abfa: mov      qword ptr [rbx + 8], rdx
+ffffff800212abfe: mov      qword ptr [rbx], rax
+ffffff800212ac01: mov      qword ptr [rdx], rbx
+ffffff800212ac04: mov      qword ptr [rcx + 0x28], rbx
+ffffff800212ac08: mov      rax, qword ptr [rip + 0x291509]  ; 0xffffff80023bc118
+ffffff800212ac0f: mov      rax, qword ptr [rax]
+ffffff800212ac12: cmp      rax, qword ptr [rbp - 0x30]
+ffffff800212ac16: jne      0xffffff800212ac41
+ffffff800212ac18: add      rsp, 0x18
+ffffff800212ac1c: pop      rbx
+ffffff800212ac1d: pop      r12
+ffffff800212ac1f: pop      r13
+ffffff800212ac21: pop      r14
+ffffff800212ac23: pop      r15
+ffffff800212ac25: pop      rbp
+ffffff800212ac26: ret      
+ffffff800212ac27: lea      rdi, [rip + 0x2026a8]  ; ""Failed to alloc postMessageQueueEntry\n" @%s:%d"
+ffffff800212ac2e: lea      rsi, [rip + 0x2026d2]  ; "IO80211Glue.cpp"
+ffffff800212ac35: mov      edx, 0x14e
+ffffff800212ac3a: xor      eax, eax
+ffffff800212ac3c: call     0xffffff8000bd073c  ; _panic
+ffffff800212ac41: call     0xffffff8000383150  ; ___stack_chk_fail
+ffffff800212ac46: ud1      
+ffffff800212ac49: cmp      ch, 0xbf
+ffffff800212ac4c: add      byte ptr [rax], al
+ffffff800212ac4e: ud2      
+ffffff800212ac50: ud1      
+ffffff800212ac53: cmp      dh, 0xbf
+ffffff800212ac56: add      byte ptr [rax], al
+ffffff800212ac58: ud2      

@@ -1,0 +1,29 @@
+# 0xffffff8002989668 __ZN26IOSkywalkEthernetInterface8print_rrEmP18nicproxy_rr_info_s
+ffffff8002989668: push     rbp
+ffffff8002989669: mov      rbp, rsp
+ffffff800298966c: mov      al, byte ptr [rdx + rsi]
+ffffff800298966f: test     al, al
+ffffff8002989671: je       0xffffff80029896a7
+ffffff8002989673: add      rsi, rdx
+ffffff8002989676: cmp      al, 0xc0
+ffffff8002989678: jb       0xffffff8002989694
+ffffff800298967a: and      al, 0x3f
+ffffff800298967c: movzx    eax, al
+ffffff800298967f: shl      eax, 8
+ffffff8002989682: movzx    ecx, byte ptr [rsi + 1]
+ffffff8002989686: or       rcx, rax
+ffffff8002989689: mov      esi, dword ptr [rdx + 0xc]
+ffffff800298968c: add      rsi, rdx
+ffffff800298968f: add      rsi, rcx
+ffffff8002989692: jmp      0xffffff80029896a1  ; __ZN26IOSkywalkEthernetInterface8print_rrEmP18nicproxy_rr_info_s+0x39
+ffffff8002989694: cmp      al, 0x42
+ffffff8002989696: jae      0xffffff80029896a9
+ffffff8002989698: movzx    eax, al
+ffffff800298969b: add      rsi, rax
+ffffff800298969e: inc      rsi
+ffffff80029896a1: mov      al, byte ptr [rsi]
+ffffff80029896a3: test     al, al
+ffffff80029896a5: jne      0xffffff8002989676
+ffffff80029896a7: pop      rbp
+ffffff80029896a8: ret      
+ffffff80029896a9: call     0xffffff80029a39ae  ; __ZN26IOSkywalkEthernetInterface8print_rrEmP18nicproxy_rr_info_s.cold.1

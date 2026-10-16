@@ -1,0 +1,43 @@
+# 0xffffff80022d3fc8 __ZN21IO80211InfraInterface23triggerLinkStatusUpdateEP18IO80211TimerSource
+ffffff80022d3fc8: push     rbp
+ffffff80022d3fc9: mov      rbp, rsp
+ffffff80022d3fcc: push     rbx
+ffffff80022d3fcd: push     rax
+ffffff80022d3fce: mov      rbx, rdi
+ffffff80022d3fd1: mov      rax, qword ptr [rdi + 0x118]
+ffffff80022d3fd8: mov      byte ptr [rax + 0x158], 0
+ffffff80022d3fdf: mov      dword ptr [rax + 0x18], 1
+ffffff80022d3fe6: lea      rdx, [rip + 0xc6da5]  ; 0xffffff800239ad92
+ffffff80022d3fed: movabs   rsi, 0x800000000000000
+ffffff80022d3ff7: xor      eax, eax
+ffffff80022d3ff9: call     0xffffff8002261f9e  ; __ZN23IO80211SkywalkInterface8logDebugEyPKcz
+ffffff80022d3ffe: mov      rax, qword ptr [rbx]
+ffffff80022d4001: mov      rdi, rbx
+ffffff80022d4004: call     qword ptr [rax + 0xba8]
+ffffff80022d400a: test     rax, rax
+ffffff80022d400d: je       0xffffff80022d4034
+ffffff80022d400f: mov      rax, qword ptr [rbx]
+ffffff80022d4012: mov      rdi, rbx
+ffffff80022d4015: call     qword ptr [rax + 0xba8]
+ffffff80022d401b: mov      r9, qword ptr [rax]
+ffffff80022d401e: mov      rdi, rax
+ffffff80022d4021: mov      esi, 1
+ffffff80022d4026: xor      edx, edx
+ffffff80022d4028: xor      ecx, ecx
+ffffff80022d402a: xor      r8d, r8d
+ffffff80022d402d: call     qword ptr [r9 + 0x980]
+ffffff80022d4034: mov      rdi, rbx
+ffffff80022d4037: mov      esi, 1
+ffffff80022d403c: mov      edx, 0x80
+ffffff80022d4041: call     0xffffff8002982c04  ; __ZN25IOSkywalkNetworkInterface16reportLinkStatusEjj
+ffffff80022d4046: mov      rax, qword ptr [rbx]
+ffffff80022d4049: mov      rax, qword ptr [rax + 0xb10]
+ffffff80022d4050: mov      rdi, rbx
+ffffff80022d4053: mov      esi, 0xbf
+ffffff80022d4058: xor      edx, edx
+ffffff80022d405a: xor      ecx, ecx
+ffffff80022d405c: mov      r8d, 1
+ffffff80022d4062: add      rsp, 8
+ffffff80022d4066: pop      rbx
+ffffff80022d4067: pop      rbp
+ffffff80022d4068: jmp      rax

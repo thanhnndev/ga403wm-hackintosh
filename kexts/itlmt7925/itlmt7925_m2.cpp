@@ -170,12 +170,18 @@ void itlmt7925::rxParseFrame(const uint8_t *p, uint32_t len)
     if (m3dataOn && m3RxData(p, len)) return;
     if (m3dataOn && lvl >= 1 && m3RxCtl(p, len)) return;                                     // Block Ack action frame / BlockAckReq
     if (m3wantFc && m3RxMgmt(p, len)) return;
-    if (m3linkUp && len >= 32 + 26) {                  // deauthentication / disassociation from our AP: the link is gone
+    if ((m3linkUp || m3wantEapol) && len >= 32 + 26) {                  // deauthentication / disassociation from our AP: the link is gone
         for (uint32_t off = 32; off + 26 <= len && off < 160; off++) {
             uint8_t fc = p[off];
             if ((fc != 0xc0 && fc != 0xa0) || p[off + 1] != 0) continue;
             if (memcmp(p + off + 10, tgtBssid, 6) != 0 || memcmp(p + off + 16, tgtBssid, 6) != 0) continue;
             if (memcmp(p + off + 4, mac, 6) != 0 && !(p[off + 4] & 1)) continue;
+            if (m3wantEapol) {
+                m3hsApLeave = true;
+                m3hsApReason = (uint16_t)(p[off + 24] | (p[off + 25] << 8));
+                m3log("eapol AP %s reason=%u", fc == 0xc0 ? "deauthentication" : "disassociation", m3hsApReason);
+                return;
+            }
             snprintf(m3lostWhy, sizeof(m3lostWhy), "%s from the AP, reason %u", fc == 0xc0 ? "deauthentication" : "disassociation",
                      (unsigned)(p[off + 24] | (p[off + 25] << 8)));
             m3lost = true;
@@ -214,6 +220,7 @@ void itlmt7925::rxParseFrame(const uint8_t *p, uint32_t len)
         return;
     }
     rxOther++;
+    if (m3dataOn) szOther[szClass(len > 120 ? len - 120 : 0)]++;
 }
 
 void itlmt7925::rxFrameDump(const uint8_t *p, uint32_t len)
@@ -293,7 +300,9 @@ int itlmt7925::m2Scan(const char *ssidArg)
     memset(w + 4, 0xff, 6);
     w += 16;
     put16(w + 0, 12); put16(w + 2, 136);            // UNI_SCAN_CHANNEL
-    static const uint8_t chans[][2] = { {1, 1}, {1, 6}, {1, 11}, {2, 36}, {2, 40}, {2, 44}, {2, 48}, {2, 149}, {2, 153},
+    // every 2.4 GHz channel a network is commonly on (a router left on auto picks any of 1..11), then the 5 GHz set
+    static const uint8_t chans[][2] = { {1, 1}, {1, 2}, {1, 3}, {1, 4}, {1, 5}, {1, 6}, {1, 7}, {1, 8}, {1, 9}, {1, 10}, {1, 11},
+                                        {2, 36}, {2, 40}, {2, 44}, {2, 48}, {2, 149}, {2, 153},
                                         {2, 157}, {2, 161}, {2, 165} };
     w[4] = 4;                                         // specified channels
     w[5] = sizeof(chans) / sizeof(chans[0]);
@@ -380,6 +389,23 @@ int itlmt7925::m2Run()
               ev[40], ev[41], ev[42], ev[43], ev[44], ev[45], ev[46], ev[47], ev[48], ev[49], ev[50], ev[51], ev[52], ev[53],
               ev[54], ev[55], ev[56], ev[57], ev[58], ev[59], ev[60], ev[61], ev[62], ev[63]);
     if (!gotMac) { static const uint8_t def[6] = {0x02, 0x11, 0x22, 0x33, 0x44, 0x55}; memcpy(mac, def, 6); }
+    // Native interface: the firmware's own address is used when it is a usable unicast one (not zero, not group-addressed), and
+    // it is published as IOMACAddress on this service for the native kext (the Ethernet front end that used to publish it is
+    // disabled in native mode). Otherwise the locally administered placeholder of the earlier stages stays.
+    if (nativeMode) {
+        static const uint8_t nativeMac[6] = {0x02, 0x00, 0x79, 0x25, 0x00, 0x01};
+        const bool zero = !(mac[0] | mac[1] | mac[2] | mac[3] | mac[4] | mac[5]);
+        const bool usable = gotMac && !zero && !(mac[0] & 1);
+        if (!usable) memcpy(mac, nativeMac, 6);
+        // The Family sets the locally administered bit on the interface address (its "private address" step: dc:.. becomes
+        // de:..) while setMacAddress is refused, so a globally unique address on air and the interface's one differ in that
+        // bit alone: DHCP answers were addressed to the interface address, which no station on the AP has (joined, no data
+        // back, only EAPOL ever received). Using the address with the bit already set makes the two the same.
+        mac[0] |= 0x02;
+        setProperty("IOMACAddress", mac, 6);
+        setProperty("itlmt_mac_source", usable ? "firmware+LA" : "placeholder");
+        publishService();                                    // the native kext matches now and reads IOMACAddress at start
+    }
     m2log("mac=%02x:%02x:%02x:%02x:%02x:%02x%s", mac[0], mac[1], mac[2], mac[3], mac[4], mac[5], gotMac ? "" : " (default)");
 
     // 2. DEV_INFO_UPDATE: {omac_idx, band_idx, pad[2]} + {tag=0 (ACTIVE), len=12, active, link_idx, omac_addr}

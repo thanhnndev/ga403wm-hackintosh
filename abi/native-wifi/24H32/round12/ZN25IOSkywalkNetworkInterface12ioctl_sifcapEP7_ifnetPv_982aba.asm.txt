@@ -1,0 +1,66 @@
+# 0xffffff8002982aba __ZN25IOSkywalkNetworkInterface12ioctl_sifcapEP7__ifnetPv
+ffffff8002982aba: push     rbp
+ffffff8002982abb: mov      rbp, rsp
+ffffff8002982abe: push     r15
+ffffff8002982ac0: push     r14
+ffffff8002982ac2: push     r12
+ffffff8002982ac4: push     rbx
+ffffff8002982ac5: sub      rsp, 0x10
+ffffff8002982ac9: test     rdx, rdx
+ffffff8002982acc: je       0xffffff8002982b38
+ffffff8002982ace: mov      r14, rdi
+ffffff8002982ad1: mov      rax, qword ptr [rdi + 0xb8]
+ffffff8002982ad8: mov      r15, qword ptr [rax]
+ffffff8002982adb: test     r15, r15
+ffffff8002982ade: je       0xffffff8002982b38
+ffffff8002982ae0: mov      rbx, rsi
+ffffff8002982ae3: lea      rax, [rbp - 0x24]
+ffffff8002982ae7: mov      dword ptr [rax], 0xaaaaaaaa
+ffffff8002982aed: mov      esi, dword ptr [rdx + 0x10]
+ffffff8002982af0: mov      rdx, rax
+ffffff8002982af3: call     0xffffff8002982daa  ; __ZN25IOSkywalkNetworkInterface16ifcapToHwAssistsEjPj
+ffffff8002982af8: mov      r15d, dword ptr [r15 + 0x20]
+ffffff8002982afc: test     r15d, r15d
+ffffff8002982aff: je       0xffffff8002982b38
+ffffff8002982b01: mov      r12d, dword ptr [rbp - 0x24]
+ffffff8002982b05: mov      rax, qword ptr [r14]
+ffffff8002982b08: mov      rdi, r14
+ffffff8002982b0b: mov      esi, r12d
+ffffff8002982b0e: mov      edx, r15d
+ffffff8002982b11: call     qword ptr [rax + 0x990]
+ffffff8002982b17: test     eax, eax
+ffffff8002982b19: je       0xffffff8002982b4a
+ffffff8002982b1b: mov      rcx, qword ptr [r14]
+ffffff8002982b1e: mov      rcx, qword ptr [rcx + 0x788]
+ffffff8002982b25: mov      rdi, r14
+ffffff8002982b28: mov      esi, eax
+ffffff8002982b2a: add      rsp, 0x10
+ffffff8002982b2e: pop      rbx
+ffffff8002982b2f: pop      r12
+ffffff8002982b31: pop      r14
+ffffff8002982b33: pop      r15
+ffffff8002982b35: pop      rbp
+ffffff8002982b36: jmp      rcx
+ffffff8002982b38: mov      eax, 0x16
+ffffff8002982b3d: add      rsp, 0x10
+ffffff8002982b41: pop      rbx
+ffffff8002982b42: pop      r12
+ffffff8002982b44: pop      r14
+ffffff8002982b46: pop      r15
+ffffff8002982b48: pop      rbp
+ffffff8002982b49: ret      
+ffffff8002982b4a: and      r12d, r15d
+ffffff8002982b4d: lea      r14, [rbp - 0x28]
+ffffff8002982b51: mov      dword ptr [r14], 0xaaaaaaaa
+ffffff8002982b58: mov      esi, r12d
+ffffff8002982b5b: mov      rdx, r14
+ffffff8002982b5e: call     0xffffff8002982df0  ; __ZN25IOSkywalkNetworkInterface22hwAssistsToIfHwAssistsEjPj
+ffffff8002982b63: mov      esi, dword ptr [r14]
+ffffff8002982b66: mov      rdi, rbx
+ffffff8002982b69: add      rsp, 0x10
+ffffff8002982b6d: pop      rbx
+ffffff8002982b6e: pop      r12
+ffffff8002982b70: pop      r14
+ffffff8002982b72: pop      r15
+ffffff8002982b74: pop      rbp
+ffffff8002982b75: jmp      0xffffff800069d780  ; _ifnet_set_offload_enabled

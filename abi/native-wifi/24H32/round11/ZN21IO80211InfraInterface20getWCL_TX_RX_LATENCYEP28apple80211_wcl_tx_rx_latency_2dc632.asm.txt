@@ -1,0 +1,47 @@
+# 0xffffff80022dc632 __ZN21IO80211InfraInterface20getWCL_TX_RX_LATENCYEP28apple80211_wcl_tx_rx_latency
+ffffff80022dc632: push     rbp
+ffffff80022dc633: mov      rbp, rsp
+ffffff80022dc636: push     r15
+ffffff80022dc638: push     r14
+ffffff80022dc63a: push     rbx
+ffffff80022dc63b: push     rax
+ffffff80022dc63c: mov      r15d, 0xe00002bc
+ffffff80022dc642: test     rsi, rsi
+ffffff80022dc645: je       0xffffff80022dc6c3
+ffffff80022dc647: mov      rbx, rsi
+ffffff80022dc64a: mov      r14, rdi
+ffffff80022dc64d: mov      rax, qword ptr [rdi]
+ffffff80022dc650: call     qword ptr [rax + 0xba8]
+ffffff80022dc656: test     rax, rax
+ffffff80022dc659: je       0xffffff80022dc6c3
+ffffff80022dc65b: mov      rax, qword ptr [r14 + 0x118]
+ffffff80022dc662: cmp      qword ptr [rax + 0x188], 0
+ffffff80022dc66a: je       0xffffff80022dc6c3
+ffffff80022dc66c: mov      rdi, r14
+ffffff80022dc66f: call     0xffffff80022dc6d2  ; __ZN21IO80211InfraInterface17updateTxRxLatencyEv
+ffffff80022dc674: mov      rax, qword ptr [r14]
+ffffff80022dc677: mov      rdi, r14
+ffffff80022dc67a: call     qword ptr [rax + 0xba8]
+ffffff80022dc680: mov      rdi, rax
+ffffff80022dc683: mov      rsi, rbx
+ffffff80022dc686: call     0xffffff8002226924  ; __ZN17IO80211Controller23getTxLatencyClearOnReadER25apple80211_latency_all_ac
+ffffff80022dc68b: mov      rax, qword ptr [r14]
+ffffff80022dc68e: mov      rdi, r14
+ffffff80022dc691: call     qword ptr [rax + 0xba8]
+ffffff80022dc697: lea      rsi, [rbx + 0x80]
+ffffff80022dc69e: mov      rdi, rax
+ffffff80022dc6a1: call     0xffffff8002226b1c  ; __ZN17IO80211Controller23getRxLatencyClearOnReadER25apple80211_latency_all_ac
+ffffff80022dc6a6: mov      rax, qword ptr [r14 + 0x118]
+ffffff80022dc6ad: mov      rax, qword ptr [rax + 0x188]
+ffffff80022dc6b4: mov      rax, qword ptr [rax + 0x10]
+ffffff80022dc6b8: mov      al, byte ptr [rax]
+ffffff80022dc6ba: mov      byte ptr [rbx + 0x100], al
+ffffff80022dc6c0: xor      r15d, r15d
+ffffff80022dc6c3: mov      eax, r15d
+ffffff80022dc6c6: add      rsp, 8
+ffffff80022dc6ca: pop      rbx
+ffffff80022dc6cb: pop      r14
+ffffff80022dc6cd: pop      r15
+ffffff80022dc6cf: pop      rbp
+ffffff80022dc6d0: ret      
+ffffff80022dc6d1: nop      

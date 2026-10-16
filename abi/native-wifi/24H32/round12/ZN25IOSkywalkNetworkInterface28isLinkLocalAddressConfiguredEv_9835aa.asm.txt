@@ -1,0 +1,63 @@
+# 0xffffff80029835aa __ZN25IOSkywalkNetworkInterface28isLinkLocalAddressConfiguredEv
+ffffff80029835aa: push     rbp
+ffffff80029835ab: mov      rbp, rsp
+ffffff80029835ae: push     r15
+ffffff80029835b0: push     r14
+ffffff80029835b2: push     rbx
+ffffff80029835b3: sub      rsp, 0x28
+ffffff80029835b7: mov      rax, qword ptr [rdi + 0xb8]
+ffffff80029835be: mov      rdi, qword ptr [rax + 8]
+ffffff80029835c2: test     rdi, rdi
+ffffff80029835c5: je       0xffffff80029835ea
+ffffff80029835c7: movabs   r14, 0xaaaaaaaaaaaaaaaa
+ffffff80029835d1: lea      rsi, [rbp - 0x20]
+ffffff80029835d5: mov      qword ptr [rsi], r14
+ffffff80029835d8: mov      edx, 0x1e
+ffffff80029835dd: call     0xffffff800069eee0  ; _ifnet_get_address_list_family
+ffffff80029835e2: test     eax, eax
+ffffff80029835e4: je       0xffffff80029835ee
+ffffff80029835e6: xor      ebx, ebx
+ffffff80029835e8: jmp      0xffffff8002983661  ; __ZN25IOSkywalkNetworkInterface28isLinkLocalAddressConfiguredEv+0xb7
+ffffff80029835ea: mov      bl, 1
+ffffff80029835ec: jmp      0xffffff8002983661  ; __ZN25IOSkywalkNetworkInterface28isLinkLocalAddressConfiguredEv+0xb7
+ffffff80029835ee: mov      rdi, qword ptr [rbp - 0x20]
+ffffff80029835f2: cmp      qword ptr [rdi], 0
+ffffff80029835f6: je       0xffffff8002983652
+ffffff80029835f8: mov      r15d, 8
+ffffff80029835fe: lea      rbx, [rbp - 0x3c]
+ffffff8002983602: mov      dword ptr [rbp - 0x3c], 0xaaaaaaaa
+ffffff8002983609: mov      qword ptr [rbp - 0x38], r14
+ffffff800298360d: mov      qword ptr [rbp - 0x30], r14
+ffffff8002983611: mov      qword ptr [rbp - 0x28], r14
+ffffff8002983615: mov      rdi, qword ptr [rdi]
+ffffff8002983618: mov      rsi, rbx
+ffffff800298361b: mov      edx, 0x1c
+ffffff8002983620: call     0xffffff800069fd10  ; _ifaddr_address
+ffffff8002983625: test     eax, eax
+ffffff8002983627: jne      0xffffff8002983638
+ffffff8002983629: cmp      byte ptr [rbp - 0x34], 0xfe
+ffffff800298362d: jne      0xffffff8002983638
+ffffff800298362f: mov      al, byte ptr [rbp - 0x33]
+ffffff8002983632: and      al, 0xc0
+ffffff8002983634: neg      al
+ffffff8002983636: jo       0xffffff8002983656
+ffffff8002983638: mov      rax, qword ptr [rbp - 0x20]
+ffffff800298363c: lea      rdi, [rax + r15]
+ffffff8002983640: cmp      qword ptr [rax + r15], 0
+ffffff8002983645: lea      r15, [r15 + 8]
+ffffff8002983649: jne      0xffffff8002983602
+ffffff800298364b: xor      ebx, ebx
+ffffff800298364d: mov      rdi, rax
+ffffff8002983650: jmp      0xffffff800298365c  ; __ZN25IOSkywalkNetworkInterface28isLinkLocalAddressConfiguredEv+0xb2
+ffffff8002983652: xor      ebx, ebx
+ffffff8002983654: jmp      0xffffff800298365c  ; __ZN25IOSkywalkNetworkInterface28isLinkLocalAddressConfiguredEv+0xb2
+ffffff8002983656: mov      bl, 1
+ffffff8002983658: mov      rdi, qword ptr [rbp - 0x20]
+ffffff800298365c: call     0xffffff800069eff0  ; _ifnet_free_address_list
+ffffff8002983661: mov      eax, ebx
+ffffff8002983663: add      rsp, 0x28
+ffffff8002983667: pop      rbx
+ffffff8002983668: pop      r14
+ffffff800298366a: pop      r15
+ffffff800298366c: pop      rbp
+ffffff800298366d: ret      

@@ -1,0 +1,32 @@
+# 0xffffff80029896ae __ZN26IOSkywalkEthernetInterface20reportNicProxyLimitsE22nicproxy_limits_info_s
+ffffff80029896ae: push     rbp
+ffffff80029896af: mov      rbp, rsp
+ffffff80029896b2: mov      qword ptr [rdi + 0xd8], rsi
+ffffff80029896b9: mov      qword ptr [rdi + 0xe0], rdx
+ffffff80029896c0: movzx    ecx, sil
+ffffff80029896c4: mov      r8d, esi
+ffffff80029896c7: shr      r8d, 4
+ffffff80029896cb: and      r8d, 0xff0
+ffffff80029896d2: mov      rax, rsi
+ffffff80029896d5: shr      rax, 0x30
+ffffff80029896d9: movzx    r9d, dx
+ffffff80029896dd: mov      r10d, esi
+ffffff80029896e0: shr      r10d, 0xb
+ffffff80029896e4: and      r10d, 0xffffffe0
+ffffff80029896e8: add      r10, r8
+ffffff80029896eb: shr      rsi, 0x20
+ffffff80029896ef: movzx    esi, si
+ffffff80029896f2: imul     rsi, rsi, 0x38
+ffffff80029896f6: mov      r8d, edx
+ffffff80029896f9: shr      r8d, 0x10
+ffffff80029896fd: add      r8d, ecx
+ffffff8002989700: shr      rdx, 0x30
+ffffff8002989704: add      eax, r9d
+ffffff8002989707: lea      rax, [r10 + rax*2]
+ffffff800298970b: add      rax, rdx
+ffffff800298970e: add      rax, rsi
+ffffff8002989711: lea      rsi, [rax + r8*4]
+ffffff8002989715: add      rsi, 0x50
+ffffff8002989719: mov      qword ptr [rdi + 0xe8], rsi
+ffffff8002989720: pop      rbp
+ffffff8002989721: jmp      0xffffff8002988d8e  ; __ZN26IOSkywalkEthernetInterface12initNicProxyEm

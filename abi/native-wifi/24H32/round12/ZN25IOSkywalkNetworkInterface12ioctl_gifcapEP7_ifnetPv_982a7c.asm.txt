@@ -1,0 +1,23 @@
+# 0xffffff8002982a7c __ZN25IOSkywalkNetworkInterface12ioctl_gifcapEP7__ifnetPv
+ffffff8002982a7c: push     rbp
+ffffff8002982a7d: mov      rbp, rsp
+ffffff8002982a80: push     r14
+ffffff8002982a82: push     rbx
+ffffff8002982a83: sub      rsp, 0x10
+ffffff8002982a87: mov      rbx, rdx
+ffffff8002982a8a: lea      r14, [rbp - 0x14]
+ffffff8002982a8e: mov      dword ptr [r14], 0xaaaaaaaa
+ffffff8002982a95: mov      rax, qword ptr [rdi]
+ffffff8002982a98: call     qword ptr [rax + 0x988]
+ffffff8002982a9e: mov      esi, eax
+ffffff8002982aa0: mov      rdx, r14
+ffffff8002982aa3: call     0xffffff8002982d62  ; __ZN25IOSkywalkNetworkInterface16hwAssistsToIfcapEjPj
+ffffff8002982aa8: mov      eax, dword ptr [r14]
+ffffff8002982aab: mov      dword ptr [rbx + 0x10], eax
+ffffff8002982aae: xor      eax, eax
+ffffff8002982ab0: add      rsp, 0x10
+ffffff8002982ab4: pop      rbx
+ffffff8002982ab5: pop      r14
+ffffff8002982ab7: pop      rbp
+ffffff8002982ab8: ret      
+ffffff8002982ab9: nop      

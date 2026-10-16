@@ -1,0 +1,43 @@
+# 0xffffff80022da908 __ZN21IO80211InfraInterface11setLQMGatedEy
+ffffff80022da908: push     rbp
+ffffff80022da909: mov      rbp, rsp
+ffffff80022da90c: push     r15
+ffffff80022da90e: push     r14
+ffffff80022da910: push     rbx
+ffffff80022da911: push     rax
+ffffff80022da912: mov      r15, rsi
+ffffff80022da915: mov      r14, rdi
+ffffff80022da918: mov      rax, qword ptr [rdi + 0x110]
+ffffff80022da91f: mov      rdi, qword ptr [rax + 0x38]
+ffffff80022da923: mov      rax, qword ptr [rdi]
+ffffff80022da926: call     qword ptr [rax + 0x138]
+ffffff80022da92c: mov      ebx, eax
+ffffff80022da92e: test     al, al
+ffffff80022da930: je       0xffffff80022da963
+ffffff80022da932: mov      rax, qword ptr [r14 + 0x110]
+ffffff80022da939: mov      rdi, qword ptr [rax + 0x40]
+ffffff80022da93d: test     rdi, rdi
+ffffff80022da940: je       0xffffff80022da94a
+ffffff80022da942: mov      esi, r15d
+ffffff80022da945: call     0xffffff80022ece5c  ; __ZN23IO80211InterfaceMonitor6setLQMEi
+ffffff80022da94a: mov      rdi, r14
+ffffff80022da94d: mov      esi, r15d
+ffffff80022da950: call     0xffffff8002982e8a  ; __ZN25IOSkywalkNetworkInterface17reportLinkQualityEj
+ffffff80022da955: mov      rax, qword ptr [r14]
+ffffff80022da958: mov      rdi, r14
+ffffff80022da95b: call     qword ptr [rax + 0xbc8]
+ffffff80022da961: jmp      0xffffff80022da984  ; __ZN21IO80211InfraInterface11setLQMGatedEy+0x7c
+ffffff80022da963: lea      rdi, [rip + 0xbf044]  ; 0xffffff80023999ae
+ffffff80022da96a: lea      rsi, [rip + 0xbf05f]  ; "/AppleInternal/Library/BuildRoots/4~CW9mugA6gpmKPwyaAeCNWSZRmRlk6mvK_U3N5n0/Libr"
+ffffff80022da971: lea      rdx, [rip + 0xc03e1]  ; "setLQMGated"
+ffffff80022da978: mov      ecx, 0xbad
+ffffff80022da97d: xor      eax, eax
+ffffff80022da97f: call     0xffffff8000ab6560  ; _IOLog
+ffffff80022da984: mov      eax, ebx
+ffffff80022da986: add      rsp, 8
+ffffff80022da98a: pop      rbx
+ffffff80022da98b: pop      r14
+ffffff80022da98d: pop      r15
+ffffff80022da98f: pop      rbp
+ffffff80022da990: ret      
+ffffff80022da991: nop      

@@ -1,0 +1,11 @@
+# 0xffffff8002989888 __ZN26IOSkywalkEthernetInterface16getMinPacketSizeEv
+ffffff8002989888: push     rbp
+ffffff8002989889: mov      rbp, rsp
+ffffff800298988c: lea      rax, [rip + 0x25a1d]  ; 0xffffff80029af2b0
+ffffff8002989893: call     qword ptr [rax + 0x990]
+ffffff8002989899: test     eax, eax
+ffffff800298989b: mov      ecx, 0x2e
+ffffff80029898a0: cmove    eax, ecx
+ffffff80029898a3: pop      rbp
+ffffff80029898a4: ret      
+ffffff80029898a5: nop      

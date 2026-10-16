@@ -1,0 +1,113 @@
+# 0xffffff80029825d6 __ZN25IOSkywalkNetworkInterface14ioctl_gifmediaEP7__ifnetjPv
+ffffff80029825d6: push     rbp
+ffffff80029825d7: mov      rbp, rsp
+ffffff80029825da: push     r15
+ffffff80029825dc: push     r14
+ffffff80029825de: push     r13
+ffffff80029825e0: push     r12
+ffffff80029825e2: push     rbx
+ffffff80029825e3: sub      rsp, 0x18
+ffffff80029825e7: mov      dword ptr [rbp - 0x2c], 0
+ffffff80029825ee: mov      r15d, 0x16
+ffffff80029825f4: test     rcx, rcx
+ffffff80029825f7: je       0xffffff8002982745
+ffffff80029825fd: mov      rbx, rcx
+ffffff8002982600: mov      r12d, dword ptr [rcx + 0x20]
+ffffff8002982604: test     r12d, r12d
+ffffff8002982607: js       0xffffff8002982745
+ffffff800298260d: mov      r14, rdi
+ffffff8002982610: mov      rax, qword ptr [rdi + 0xb8]
+ffffff8002982617: mov      rax, qword ptr [rax]
+ffffff800298261a: test     rax, rax
+ffffff800298261d: je       0xffffff8002982745
+ffffff8002982623: mov      r13d, dword ptr [rax + 0x14]
+ffffff8002982627: test     r13, r13
+ffffff800298262a: je       0xffffff800298269b
+ffffff800298262c: test     r12d, r12d
+ffffff800298262f: je       0xffffff80029826a6
+ffffff8002982631: mov      dword ptr [rbp - 0x30], edx
+ffffff8002982634: mov      r15, r13
+ffffff8002982637: shl      r15, 2
+ffffff800298263b: mov      rdi, r15
+ffffff800298263e: call     0xffffff8000ab6220  ; _IOMallocZeroData_external
+ffffff8002982643: test     rax, rax
+ffffff8002982646: je       0xffffff80029826af
+ffffff8002982648: mov      qword ptr [rbp - 0x38], r15
+ffffff800298264c: lea      rdx, [rbp - 0x2c]
+ffffff8002982650: mov      dword ptr [rdx], r13d
+ffffff8002982653: mov      rcx, qword ptr [r14]
+ffffff8002982656: mov      rdi, r14
+ffffff8002982659: mov      r15, rax
+ffffff800298265c: mov      rsi, rax
+ffffff800298265f: call     qword ptr [rcx + 0x940]
+ffffff8002982665: test     eax, eax
+ffffff8002982667: setne    cl
+ffffff800298266a: lea      rax, [rbp - 0x2c]
+ffffff800298266e: mov      eax, dword ptr [rax]
+ffffff8002982670: lea      edx, [rax - 1]
+ffffff8002982673: cmp      edx, r13d
+ffffff8002982676: setae    dl
+ffffff8002982679: or       dl, cl
+ffffff800298267b: cmp      dl, 1
+ffffff800298267e: jne      0xffffff80029826ba
+ffffff8002982680: mov      rdi, r15
+ffffff8002982683: mov      rsi, qword ptr [rbp - 0x38]
+ffffff8002982687: call     0xffffff8000ab6290  ; _IOFreeData
+ffffff800298268c: mov      dword ptr [rbp - 0x2c], 0
+ffffff8002982693: mov      r15d, 5
+ffffff8002982699: jmp      0xffffff80029826b5  ; __ZN25IOSkywalkNetworkInterface14ioctl_gifmediaEP7__ifnetjPv+0xdf
+ffffff800298269b: mov      r15d, 0x66
+ffffff80029826a1: jmp      0xffffff8002982745  ; __ZN25IOSkywalkNetworkInterface14ioctl_gifmediaEP7__ifnetjPv+0x16f
+ffffff80029826a6: mov      dword ptr [rbp - 0x2c], r13d
+ffffff80029826aa: xor      r15d, r15d
+ffffff80029826ad: jmp      0xffffff800298270f  ; __ZN25IOSkywalkNetworkInterface14ioctl_gifmediaEP7__ifnetjPv+0x139
+ffffff80029826af: mov      r15d, 0xc
+ffffff80029826b5: xor      r13d, r13d
+ffffff80029826b8: jmp      0xffffff800298270f  ; __ZN25IOSkywalkNetworkInterface14ioctl_gifmediaEP7__ifnetjPv+0x139
+ffffff80029826ba: mov      rdx, r15
+ffffff80029826bd: xor      ecx, ecx
+ffffff80029826bf: cmp      r12d, eax
+ffffff80029826c2: mov      r15d, 7
+ffffff80029826c8: cmovae   r15d, ecx
+ffffff80029826cc: cmova    r15d, ecx
+ffffff80029826d0: cmovb    eax, r12d
+ffffff80029826d4: cmp      dword ptr [rbp - 0x30], 0xc02c6938
+ffffff80029826db: jne      0xffffff80029826e3
+ffffff80029826dd: mov      rsi, qword ptr [rbx + 0x24]
+ffffff80029826e1: jmp      0xffffff80029826e6  ; __ZN25IOSkywalkNetworkInterface14ioctl_gifmediaEP7__ifnetjPv+0x110
+ffffff80029826e3: mov      esi, dword ptr [rbx + 0x24]
+ffffff80029826e6: test     rsi, rsi
+ffffff80029826e9: mov      r12, rdx
+ffffff80029826ec: je       0xffffff80029826ff
+ffffff80029826ee: mov      edx, eax
+ffffff80029826f0: shl      rdx, 2
+ffffff80029826f4: mov      rdi, r12
+ffffff80029826f7: call     0xffffff800052d520  ; _copyout
+ffffff80029826fc: mov      r15d, eax
+ffffff80029826ff: mov      rdi, r12
+ffffff8002982702: mov      rsi, qword ptr [rbp - 0x38]
+ffffff8002982706: call     0xffffff8000ab6290  ; _IOFreeData
+ffffff800298270b: mov      r13d, dword ptr [rbp - 0x2c]
+ffffff800298270f: mov      dword ptr [rbx + 0x20], r13d
+ffffff8002982713: mov      rax, qword ptr [r14 + 0xb8]
+ffffff800298271a: mov      rdi, qword ptr [rax + 0x10]
+ffffff800298271e: call     0xffffff800052f900  ; _lck_mtx_lock
+ffffff8002982723: mov      rax, qword ptr [r14 + 0xb8]
+ffffff800298272a: mov      ecx, dword ptr [rax + 0x30]
+ffffff800298272d: mov      dword ptr [rbx + 0x1c], ecx
+ffffff8002982730: mov      ecx, dword ptr [rax + 0x34]
+ffffff8002982733: mov      dword ptr [rbx + 0x10], ecx
+ffffff8002982736: mov      ecx, dword ptr [rax + 0x38]
+ffffff8002982739: mov      dword ptr [rbx + 0x18], ecx
+ffffff800298273c: mov      rdi, qword ptr [rax + 0x10]
+ffffff8002982740: call     0xffffff800052fc50  ; _lck_mtx_unlock
+ffffff8002982745: mov      eax, r15d
+ffffff8002982748: add      rsp, 0x18
+ffffff800298274c: pop      rbx
+ffffff800298274d: pop      r12
+ffffff800298274f: pop      r13
+ffffff8002982751: pop      r14
+ffffff8002982753: pop      r15
+ffffff8002982755: pop      rbp
+ffffff8002982756: ret      
+ffffff8002982757: nop      

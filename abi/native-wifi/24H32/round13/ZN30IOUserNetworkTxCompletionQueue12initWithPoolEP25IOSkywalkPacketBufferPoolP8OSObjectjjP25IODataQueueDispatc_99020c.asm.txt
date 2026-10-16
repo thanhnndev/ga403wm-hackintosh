@@ -1,0 +1,47 @@
+# 0xffffff800299020c __ZN30IOUserNetworkTxCompletionQueue12initWithPoolEP25IOSkywalkPacketBufferPoolP8OSObjectjjP25IODataQueueDispatchSource
+ffffff800299020c: push     rbp
+ffffff800299020d: mov      rbp, rsp
+ffffff8002990210: push     r14
+ffffff8002990212: push     rbx
+ffffff8002990213: mov      rax, r9
+ffffff8002990216: mov      r9d, r8d
+ffffff8002990219: mov      r8d, ecx
+ffffff800299021c: mov      r10, rdx
+ffffff800299021f: test     rsi, rsi
+ffffff8002990222: sete     cl
+ffffff8002990225: cmp      r8d, 2
+ffffff8002990229: setb     dl
+ffffff800299022c: or       dl, cl
+ffffff800299022e: je       0xffffff8002990235
+ffffff8002990230: xor      r14d, r14d
+ffffff8002990233: jmp      0xffffff8002990287  ; __ZN30IOUserNetworkTxCompletionQueue12initWithPoolEP25IOSkywalkPacketBufferPoolP8OSObjectjjP25IODataQueueDispatchSource+0x7b
+ffffff8002990235: mov      rbx, rdi
+ffffff8002990238: lea      r11, [rip + 0x244a1]  ; 0xffffff80029b46e0
+ffffff800299023f: xor      r14d, r14d
+ffffff8002990242: xor      edx, edx
+ffffff8002990244: mov      ecx, 1
+ffffff8002990249: push     r14
+ffffff800299024b: push     rax
+ffffff800299024c: push     r14
+ffffff800299024e: push     r10
+ffffff8002990250: call     qword ptr [r11 + 0x2a8]
+ffffff8002990257: add      rsp, 0x20
+ffffff800299025b: test     al, al
+ffffff800299025d: je       0xffffff8002990287
+ffffff800299025f: mov      rax, qword ptr [rbx]
+ffffff8002990262: xor      r14d, r14d
+ffffff8002990265: mov      rdi, rbx
+ffffff8002990268: xor      esi, esi
+ffffff800299026a: call     qword ptr [rax + 0x1b8]
+ffffff8002990270: test     eax, eax
+ffffff8002990272: jne      0xffffff8002990287
+ffffff8002990274: call     0xffffff8000afa570  ; __ZN10IOWorkLoop8workLoopEv
+ffffff8002990279: mov      qword ptr [rbx + 0x108], rax
+ffffff8002990280: test     rax, rax
+ffffff8002990283: setne    r14b
+ffffff8002990287: mov      eax, r14d
+ffffff800299028a: pop      rbx
+ffffff800299028b: pop      r14
+ffffff800299028d: pop      rbp
+ffffff800299028e: ret      
+ffffff800299028f: nop      

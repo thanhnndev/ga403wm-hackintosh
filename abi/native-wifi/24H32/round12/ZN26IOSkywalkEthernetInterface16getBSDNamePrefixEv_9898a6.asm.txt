@@ -1,0 +1,11 @@
+# 0xffffff80029898a6 __ZN26IOSkywalkEthernetInterface16getBSDNamePrefixEv
+ffffff80029898a6: push     rbp
+ffffff80029898a7: mov      rbp, rsp
+ffffff80029898aa: lea      rax, [rip + 0x259ff]  ; 0xffffff80029af2b0
+ffffff80029898b1: call     qword ptr [rax + 0x9f0]
+ffffff80029898b7: test     rax, rax
+ffffff80029898ba: lea      rcx, [rip + 0x1cad0]  ; 0xffffff80029a6391
+ffffff80029898c1: cmove    rax, rcx
+ffffff80029898c5: pop      rbp
+ffffff80029898c6: ret      
+ffffff80029898c7: nop      

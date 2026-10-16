@@ -1,0 +1,43 @@
+# 0xffffff80022dc38a __ZN21IO80211InfraInterface12setLQMConfigEP23apple80211_lqm_config_t
+ffffff80022dc38a: push     rbp
+ffffff80022dc38b: mov      rbp, rsp
+ffffff80022dc38e: push     rbx
+ffffff80022dc38f: push     rax
+ffffff80022dc390: mov      rbx, rdi
+ffffff80022dc393: mov      rax, qword ptr [rdi + 0x118]
+ffffff80022dc39a: mov      rdi, qword ptr [rax + 0x178]
+ffffff80022dc3a1: test     rdi, rdi
+ffffff80022dc3a4: je       0xffffff80022dc3b1
+ffffff80022dc3a6: add      rsp, 8
+ffffff80022dc3aa: pop      rbx
+ffffff80022dc3ab: pop      rbp
+ffffff80022dc3ac: jmp      0xffffff80022b0ef0  ; __ZN14IO80211LQMData13setLQM_CONFIGEP23apple80211_lqm_config_t
+ffffff80022dc3b1: mov      rax, qword ptr [rbx]
+ffffff80022dc3b4: mov      rdi, rbx
+ffffff80022dc3b7: call     qword ptr [rax + 0xd08]
+ffffff80022dc3bd: test     rax, rax
+ffffff80022dc3c0: je       0xffffff80022dc3df
+ffffff80022dc3c2: mov      rax, qword ptr [rbx]
+ffffff80022dc3c5: mov      rdi, rbx
+ffffff80022dc3c8: call     qword ptr [rax + 0xd08]
+ffffff80022dc3ce: mov      rdi, rax
+ffffff80022dc3d1: mov      esi, 3
+ffffff80022dc3d6: call     0xffffff80031d421c  ; __ZN11CCLogStream9shouldLogE16CCStreamLogLevel
+ffffff80022dc3db: test     al, al
+ffffff80022dc3dd: jne      0xffffff80022dc3e8
+ffffff80022dc3df: xor      eax, eax
+ffffff80022dc3e1: add      rsp, 8
+ffffff80022dc3e5: pop      rbx
+ffffff80022dc3e6: pop      rbp
+ffffff80022dc3e7: ret      
+ffffff80022dc3e8: mov      rax, qword ptr [rbx]
+ffffff80022dc3eb: mov      rdi, rbx
+ffffff80022dc3ee: call     qword ptr [rax + 0xd08]
+ffffff80022dc3f4: lea      rsi, [rip + 0xbed03]  ; "[ik] %s@%d:IO80211InfraInterface::%s: IO80211LQMData is NULL"
+ffffff80022dc3fb: lea      rdx, [rip + 0xbed39]  ; "setLQMConfig"
+ffffff80022dc402: mov      rdi, rax
+ffffff80022dc405: mov      ecx, 0xeec
+ffffff80022dc40a: mov      r8, rdx
+ffffff80022dc40d: xor      eax, eax
+ffffff80022dc40f: call     0xffffff80031d27ce  ; __ZN11CCLogStream7logWarnEPKcz
+ffffff80022dc414: jmp      0xffffff80022dc3df  ; __ZN21IO80211InfraInterface12setLQMConfigEP23apple80211_lqm_config_t+0x55

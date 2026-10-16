@@ -1,0 +1,46 @@
+# 0xffffff800297efea __ZN22IOSkywalkNetworkPacket8withPoolEP25IOSkywalkPacketBufferPoolP25IOSkywalkPacketDescriptorj
+ffffff800297efea: push     rbp
+ffffff800297efeb: mov      rbp, rsp
+ffffff800297efee: push     r15
+ffffff800297eff0: push     r14
+ffffff800297eff2: push     r13
+ffffff800297eff4: push     r12
+ffffff800297eff6: push     rbx
+ffffff800297eff7: push     rax
+ffffff800297eff8: mov      r14d, edx
+ffffff800297effb: mov      r15, rsi
+ffffff800297effe: mov      r12, rdi
+ffffff800297f001: lea      rdi, [rip + 0x38678]  ; 0xffffff80029b7680
+ffffff800297f008: mov      esi, 0x78
+ffffff800297f00d: call     0xffffff8000a4be90  ; _OSObject_typed_operator_new
+ffffff800297f012: mov      rbx, rax
+ffffff800297f015: lea      r13, [rip + 0x37984]  ; 0xffffff80029b69a0
+ffffff800297f01c: mov      rdi, rax
+ffffff800297f01f: mov      rsi, r13
+ffffff800297f022: call     0xffffff800297e0c2  ; __ZN15IOSkywalkPacketC2EPK11OSMetaClass
+ffffff800297f027: lea      rax, [rip + 0x2ea4a]  ; 0xffffff80029ada78
+ffffff800297f02e: mov      qword ptr [rbx], rax
+ffffff800297f031: mov      rdi, r13
+ffffff800297f034: call     0xffffff8000a4a700  ; __ZNK11OSMetaClass19instanceConstructedEv
+ffffff800297f039: mov      rax, qword ptr [rbx]
+ffffff800297f03c: mov      rdi, rbx
+ffffff800297f03f: mov      rsi, r12
+ffffff800297f042: mov      rdx, r15
+ffffff800297f045: mov      ecx, r14d
+ffffff800297f048: call     qword ptr [rax + 0x118]
+ffffff800297f04e: test     al, al
+ffffff800297f050: jne      0xffffff800297f05d
+ffffff800297f052: mov      rax, qword ptr [rbx]
+ffffff800297f055: mov      rdi, rbx
+ffffff800297f058: call     qword ptr [rax + 0x28]
+ffffff800297f05b: xor      ebx, ebx
+ffffff800297f05d: mov      rax, rbx
+ffffff800297f060: add      rsp, 8
+ffffff800297f064: pop      rbx
+ffffff800297f065: pop      r12
+ffffff800297f067: pop      r13
+ffffff800297f069: pop      r14
+ffffff800297f06b: pop      r15
+ffffff800297f06d: pop      rbp
+ffffff800297f06e: ret      
+ffffff800297f06f: nop      

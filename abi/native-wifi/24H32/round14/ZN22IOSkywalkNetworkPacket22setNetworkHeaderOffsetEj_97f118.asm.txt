@@ -1,0 +1,15 @@
+# 0xffffff800297f118 __ZN22IOSkywalkNetworkPacket22setNetworkHeaderOffsetEj
+ffffff800297f118: mov      eax, 0xe00002c2
+ffffff800297f11d: cmp      esi, 0xff
+ffffff800297f123: ja       0xffffff800297f143
+ffffff800297f125: push     rbp
+ffffff800297f126: mov      rbp, rsp
+ffffff800297f129: mov      rdi, qword ptr [rdi + 0x28]
+ffffff800297f12d: movzx    esi, sil
+ffffff800297f131: call     0xffffff8000a34d40  ; _kern_packet_set_link_header_length
+ffffff800297f136: mov      ecx, eax
+ffffff800297f138: test     eax, eax
+ffffff800297f13a: mov      eax, 0xe00002c2
+ffffff800297f13f: cmove    eax, ecx
+ffffff800297f142: pop      rbp
+ffffff800297f143: ret      

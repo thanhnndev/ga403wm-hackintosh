@@ -1,0 +1,25 @@
+# 0xffffff8002978c6e __ZN25IOSkywalkNetworkBSDClient9connectedEv
+ffffff8002978c6e: push     rbp
+ffffff8002978c6f: mov      rbp, rsp
+ffffff8002978c72: push     r14
+ffffff8002978c74: push     rbx
+ffffff8002978c75: mov      rbx, rdi
+ffffff8002978c78: mov      rdi, qword ptr [rdi + 0x90]
+ffffff8002978c7f: mov      rdx, qword ptr [rbx + 0xe8]
+ffffff8002978c86: mov      rax, qword ptr [rdi]
+ffffff8002978c89: lea      rsi, [rip - 0x4a]
+ffffff8002978c90: xor      ecx, ecx
+ffffff8002978c92: xor      r8d, r8d
+ffffff8002978c95: xor      r9d, r9d
+ffffff8002978c98: call     qword ptr [rax + 0x1c8]
+ffffff8002978c9e: mov      r14d, eax
+ffffff8002978ca1: test     eax, eax
+ffffff8002978ca3: jne      0xffffff8002978cad
+ffffff8002978ca5: mov      rdi, rbx
+ffffff8002978ca8: call     0xffffff800297604a  ; __ZN18IOSkywalkBSDClient16resetIOReportingEv
+ffffff8002978cad: mov      eax, r14d
+ffffff8002978cb0: pop      rbx
+ffffff8002978cb1: pop      r14
+ffffff8002978cb3: pop      rbp
+ffffff8002978cb4: ret      
+ffffff8002978cb5: nop      

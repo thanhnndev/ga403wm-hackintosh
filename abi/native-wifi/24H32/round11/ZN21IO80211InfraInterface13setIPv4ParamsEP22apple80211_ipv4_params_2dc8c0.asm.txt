@@ -1,0 +1,16 @@
+# 0xffffff80022dc8c0 __ZN21IO80211InfraInterface13setIPv4ParamsEP22apple80211_ipv4_params
+ffffff80022dc8c0: test     rsi, rsi
+ffffff80022dc8c3: je       0xffffff80022dc8e9
+ffffff80022dc8c5: push     rbp
+ffffff80022dc8c6: mov      rbp, rsp
+ffffff80022dc8c9: mov      rax, qword ptr [rdi + 0x118]
+ffffff80022dc8d0: mov      rcx, qword ptr [rsi]
+ffffff80022dc8d3: mov      rdx, qword ptr [rsi + 8]
+ffffff80022dc8d7: mov      qword ptr [rax + 0x1b8], rdx
+ffffff80022dc8de: mov      qword ptr [rax + 0x1b0], rcx
+ffffff80022dc8e5: xor      eax, eax
+ffffff80022dc8e7: pop      rbp
+ffffff80022dc8e8: ret      
+ffffff80022dc8e9: mov      eax, 0xe00002bc
+ffffff80022dc8ee: ret      
+ffffff80022dc8ef: nop      

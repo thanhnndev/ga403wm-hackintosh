@@ -1,0 +1,7 @@
+# 0xffffff80029836c6 __ZN25IOSkywalkNetworkInterface13getTSOOptionsEPNS_19IOSkywalkTSOOptionsE
+ffffff80029836c6: push     rbp
+ffffff80029836c7: mov      rbp, rsp
+ffffff80029836ca: mov      eax, 0xe00002c7
+ffffff80029836cf: pop      rbp
+ffffff80029836d0: ret      
+ffffff80029836d1: nop      

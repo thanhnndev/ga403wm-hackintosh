@@ -1,0 +1,26 @@
+# 0xffffff800226442a __ZN23IO80211SkywalkInterface18getHardwareAddressEP10ether_addr
+ffffff800226442a: push     rbp
+ffffff800226442b: mov      rbp, rsp
+ffffff800226442e: push     rbx
+ffffff800226442f: push     rax
+ffffff8002264430: test     rsi, rsi
+ffffff8002264433: je       0xffffff8002264454
+ffffff8002264435: mov      rbx, rsi
+ffffff8002264438: mov      rax, qword ptr [rdi]
+ffffff800226443b: call     qword ptr [rax + 0xcf0]
+ffffff8002264441: mov      dword ptr [rbx], eax
+ffffff8002264443: shr      rax, 0x20
+ffffff8002264447: mov      word ptr [rbx + 4], ax
+ffffff800226444b: xor      eax, eax
+ffffff800226444d: add      rsp, 8
+ffffff8002264451: pop      rbx
+ffffff8002264452: pop      rbp
+ffffff8002264453: ret      
+ffffff8002264454: lea      rdi, [rip + 0x11a5bb]  ; 0xffffff800237ea16
+ffffff800226445b: lea      rsi, [rip + 0x11a5ca]  ; "getHardwareAddress"
+ffffff8002264462: mov      edx, 0x668
+ffffff8002264467: xor      eax, eax
+ffffff8002264469: call     0xffffff8000ab6560  ; _IOLog
+ffffff800226446e: mov      eax, 0xe00002c2
+ffffff8002264473: jmp      0xffffff800226444d  ; __ZN23IO80211SkywalkInterface18getHardwareAddressEP10ether_addr+0x23
+ffffff8002264475: nop      

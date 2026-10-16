@@ -1,0 +1,11 @@
+# 0xffffff8002260af8 __ZN22IO80211MacAddressAgent13getMacAddressEv
+ffffff8002260af8: push     rbp
+ffffff8002260af9: mov      rbp, rsp
+ffffff8002260afc: mov      rax, qword ptr [rdi + 0x10]
+ffffff8002260b00: mov      ecx, dword ptr [rax + 0x20]
+ffffff8002260b03: mov      eax, dword ptr [rax + 0x24]
+ffffff8002260b06: shl      rax, 0x20
+ffffff8002260b0a: or       rax, rcx
+ffffff8002260b0d: pop      rbp
+ffffff8002260b0e: ret      
+ffffff8002260b0f: nop      

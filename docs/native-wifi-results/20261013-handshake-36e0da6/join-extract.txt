@@ -1,0 +1,21 @@
+pmk ready
+auth resp alg=0 seq=2 status=0
+assoc resp status=0 aid=2
+eapol m1 info=008a len=121
+eapol m2 tx #1 queued
+eapol m2 tx #2 queued
+eapol m2 tx #3 queued
+eapol m2 tx #4 queued
+eapol: no msg3
+pmk ready
+auth resp alg=0 seq=2 status=0
+assoc resp status=0 aid=2
+eapol m1 info=008a len=121
+eapol m2 tx #1 queued
+eapol m2 tx #2 queued
+eapol m2 tx #3 queued
+eapol m2 tx #4 queued
+eapol: no msg3
+assoc:request ssidLen=18 cipher=6 keyLen=32
+assoc:request ssidLen=18 cipher=6 keyLen=32
+assoc:result ok=0 stage=6

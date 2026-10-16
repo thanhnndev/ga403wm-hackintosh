@@ -1,0 +1,25 @@
+# 0xffffff8002979110 __ZN25IOSkywalkNetworkBSDClient16configCapabilityE18kern_nexus_capab_tPvPj
+ffffff8002979110: push     rbp
+ffffff8002979111: mov      rbp, rsp
+ffffff8002979114: cmp      esi, 2
+ffffff8002979117: je       0xffffff800297912f
+ffffff8002979119: mov      eax, 0xe00002c7
+ffffff800297911e: cmp      esi, 1
+ffffff8002979121: jne      0xffffff8002979154
+ffffff8002979123: mov      rsi, rdx
+ffffff8002979126: mov      rdx, rcx
+ffffff8002979129: pop      rbp
+ffffff800297912a: jmp      0xffffff8002979156  ; __ZN25IOSkywalkNetworkBSDClient26configureInterfaceAdvisoryEPvPj
+ffffff800297912f: mov      eax, 0xe00002c2
+ffffff8002979134: test     rdx, rdx
+ffffff8002979137: je       0xffffff8002979154
+ffffff8002979139: cmp      dword ptr [rcx], 0x18
+ffffff800297913c: jne      0xffffff8002979154
+ffffff800297913e: cmp      dword ptr [rdx], 1
+ffffff8002979141: jne      0xffffff8002979154
+ffffff8002979143: lea      rax, [rip + 0xd2]  ; 0xffffff800297921c
+ffffff800297914a: mov      qword ptr [rdx + 0x10], rax
+ffffff800297914e: mov      qword ptr [rdx + 8], rdi
+ffffff8002979152: xor      eax, eax
+ffffff8002979154: pop      rbp
+ffffff8002979155: ret      

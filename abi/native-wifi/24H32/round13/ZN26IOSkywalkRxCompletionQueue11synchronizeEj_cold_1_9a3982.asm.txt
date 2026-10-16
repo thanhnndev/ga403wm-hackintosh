@@ -1,0 +1,16 @@
+# 0xffffff80029a3982 __ZN26IOSkywalkRxCompletionQueue11synchronizeEj.cold.1
+ffffff80029a3982: push     rbp
+ffffff80029a3983: mov      rbp, rsp
+ffffff80029a3986: mov      rax, rdx
+ffffff80029a3989: and      edi, 0xfffffffd
+ffffff80029a398c: mov      dword ptr [rsi], edi
+ffffff80029a398e: mov      rcx, qword ptr [rdx + 0x100]
+ffffff80029a3995: and      qword ptr [rcx], 0
+ffffff80029a3999: mov      rcx, qword ptr [rdx]
+ffffff80029a399c: mov      rsi, qword ptr [rdx + 0x58]
+ffffff80029a39a0: push     1
+ffffff80029a39a2: pop      rdx
+ffffff80029a39a3: mov      rdi, rax
+ffffff80029a39a6: call     qword ptr [rcx + 0x298]
+ffffff80029a39ac: pop      rbp
+ffffff80029a39ad: ret      

@@ -1,0 +1,7 @@
+# 0xffffff8002989960 __ZN26IOSkywalkEthernetInterface36_RESERVEDIOSkywalkEthernetInterface7Ev
+ffffff8002989960: push     rbp
+ffffff8002989961: mov      rbp, rsp
+ffffff8002989964: lea      rdi, [rip + 0x2d215]  ; 0xffffff80029b6b80
+ffffff800298996b: mov      esi, 7
+ffffff8002989970: pop      rbp
+ffffff8002989971: jmp      0xffffff8000a4b1f0  ; __ZNK11OSMetaClass14reservedCalledEi

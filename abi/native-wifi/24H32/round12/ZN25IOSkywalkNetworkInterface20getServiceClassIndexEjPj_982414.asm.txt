@@ -1,0 +1,14 @@
+# 0xffffff8002982414 __ZN25IOSkywalkNetworkInterface20getServiceClassIndexEjPj
+ffffff8002982414: test     rsi, rsi
+ffffff8002982417: je       0xffffff8002982430
+ffffff8002982419: push     rbp
+ffffff800298241a: mov      rbp, rsp
+ffffff800298241d: call     0xffffff8000a35060  ; _kern_packet_get_service_class_index
+ffffff8002982422: mov      ecx, eax
+ffffff8002982424: test     eax, eax
+ffffff8002982426: mov      eax, 0xe00002c2
+ffffff800298242b: cmove    eax, ecx
+ffffff800298242e: pop      rbp
+ffffff800298242f: ret      
+ffffff8002982430: mov      eax, 0xe00002c2
+ffffff8002982435: ret      

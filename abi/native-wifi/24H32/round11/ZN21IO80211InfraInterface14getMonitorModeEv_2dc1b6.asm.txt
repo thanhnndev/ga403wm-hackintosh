@@ -1,0 +1,8 @@
+# 0xffffff80022dc1b6 __ZN21IO80211InfraInterface14getMonitorModeEv
+ffffff80022dc1b6: push     rbp
+ffffff80022dc1b7: mov      rbp, rsp
+ffffff80022dc1ba: mov      rax, qword ptr [rdi + 0x118]
+ffffff80022dc1c1: mov      al, byte ptr [rax + 0x180]
+ffffff80022dc1c7: pop      rbp
+ffffff80022dc1c8: ret      
+ffffff80022dc1c9: nop      

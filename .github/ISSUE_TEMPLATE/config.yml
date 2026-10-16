@@ -1,0 +1,5 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Read this first
+    url: https://github.com/thanhnndev/ga403wm-hackintosh#readme
+    about: This is a vibe-coded, one-laptop project. Check the README status table, docs/ROADMAP.md and docs/INSTALL.md before opening an issue.

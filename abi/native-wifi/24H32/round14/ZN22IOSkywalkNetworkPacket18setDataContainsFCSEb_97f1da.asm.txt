@@ -1,0 +1,14 @@
+# 0xffffff800297f1da __ZN22IOSkywalkNetworkPacket18setDataContainsFCSEb
+ffffff800297f1da: mov      eax, 0xe00002c7
+ffffff800297f1df: test     esi, esi
+ffffff800297f1e1: je       0xffffff800297f1fd
+ffffff800297f1e3: push     rbp
+ffffff800297f1e4: mov      rbp, rsp
+ffffff800297f1e7: mov      rdi, qword ptr [rdi + 0x28]
+ffffff800297f1eb: call     0xffffff8000a34db0  ; _kern_packet_set_link_ethfcs
+ffffff800297f1f0: mov      ecx, eax
+ffffff800297f1f2: test     eax, eax
+ffffff800297f1f4: mov      eax, 0xe00002c7
+ffffff800297f1f9: cmove    eax, ecx
+ffffff800297f1fc: pop      rbp
+ffffff800297f1fd: ret      

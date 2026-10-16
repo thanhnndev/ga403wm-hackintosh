@@ -1,0 +1,7 @@
+# 0xffffff8002988c5c __ZN26IOSkywalkEthernetInterface21setMulticastAddressesEPK10ether_addrj
+ffffff8002988c5c: push     rbp
+ffffff8002988c5d: mov      rbp, rsp
+ffffff8002988c60: mov      eax, 0xe00002c7
+ffffff8002988c65: pop      rbp
+ffffff8002988c66: ret      
+ffffff8002988c67: nop      

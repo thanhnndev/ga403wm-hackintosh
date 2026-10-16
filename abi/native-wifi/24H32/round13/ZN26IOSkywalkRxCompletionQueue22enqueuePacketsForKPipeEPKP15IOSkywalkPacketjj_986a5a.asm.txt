@@ -1,0 +1,66 @@
+# 0xffffff8002986a5a __ZN26IOSkywalkRxCompletionQueue22enqueuePacketsForKPipeEPKP15IOSkywalkPacketjj
+ffffff8002986a5a: push     rbp
+ffffff8002986a5b: mov      rbp, rsp
+ffffff8002986a5e: push     r15
+ffffff8002986a60: push     r14
+ffffff8002986a62: push     r13
+ffffff8002986a64: push     r12
+ffffff8002986a66: push     rbx
+ffffff8002986a67: sub      rsp, 0x18
+ffffff8002986a6b: mov      r12, rdi
+ffffff8002986a6e: mov      r15d, 0
+ffffff8002986a74: mov      dword ptr [rbp - 0x2c], edx
+ffffff8002986a77: test     edx, edx
+ffffff8002986a79: je       0xffffff8002986ac6
+ffffff8002986a7b: mov      r14, rsi
+ffffff8002986a7e: mov      eax, dword ptr [rbp - 0x2c]
+ffffff8002986a81: mov      qword ptr [rbp - 0x38], rax
+ffffff8002986a85: xor      ebx, ebx
+ffffff8002986a87: xor      r15d, r15d
+ffffff8002986a8a: mov      r13, qword ptr [r14 + rbx*8]
+ffffff8002986a8e: mov      rdi, r13
+ffffff8002986a91: call     0xffffff800297e498  ; __ZNK15IOSkywalkPacket14getSourceQueueEv
+ffffff8002986a96: mov      rax, qword ptr [r13]
+ffffff8002986a9a: mov      rdi, r13
+ffffff8002986a9d: call     qword ptr [rax + 0x140]
+ffffff8002986aa3: add      r15d, eax
+ffffff8002986aa6: mov      rax, qword ptr [r13]
+ffffff8002986aaa: mov      rdi, r13
+ffffff8002986aad: mov      rsi, r12
+ffffff8002986ab0: mov      edx, 2
+ffffff8002986ab5: xor      ecx, ecx
+ffffff8002986ab7: call     qword ptr [rax + 0x198]
+ffffff8002986abd: inc      rbx
+ffffff8002986ac0: cmp      qword ptr [rbp - 0x38], rbx
+ffffff8002986ac4: jne      0xffffff8002986a8a
+ffffff8002986ac6: mov      rax, qword ptr [r12 + 0xe8]
+ffffff8002986ace: mov      ecx, dword ptr [rax]
+ffffff8002986ad0: mov      esi, dword ptr [rbp - 0x2c]
+ffffff8002986ad3: add      ecx, esi
+ffffff8002986ad5: mov      edx, dword ptr [rax + 4]
+ffffff8002986ad8: cmp      ecx, edx
+ffffff8002986ada: mov      edi, 0
+ffffff8002986adf: cmovae   edi, edx
+ffffff8002986ae2: mov      ecx, dword ptr [rax]
+ffffff8002986ae4: add      ecx, esi
+ffffff8002986ae6: sub      ecx, edi
+ffffff8002986ae8: mov      dword ptr [rax], ecx
+ffffff8002986aea: mov      rdi, qword ptr [r12 + 0xf8]
+ffffff8002986af2: test     rdi, rdi
+ffffff8002986af5: je       0xffffff8002986b03
+ffffff8002986af7: mov      rax, qword ptr [rdi]
+ffffff8002986afa: mov      edx, r15d
+ffffff8002986afd: call     qword ptr [rax + 0x268]
+ffffff8002986b03: mov      rax, qword ptr [r12]
+ffffff8002986b07: mov      rdi, r12
+ffffff8002986b0a: xor      esi, esi
+ffffff8002986b0c: call     qword ptr [rax + 0x1e0]
+ffffff8002986b12: mov      eax, r15d
+ffffff8002986b15: add      rsp, 0x18
+ffffff8002986b19: pop      rbx
+ffffff8002986b1a: pop      r12
+ffffff8002986b1c: pop      r13
+ffffff8002986b1e: pop      r14
+ffffff8002986b20: pop      r15
+ffffff8002986b22: pop      rbp
+ffffff8002986b23: ret      

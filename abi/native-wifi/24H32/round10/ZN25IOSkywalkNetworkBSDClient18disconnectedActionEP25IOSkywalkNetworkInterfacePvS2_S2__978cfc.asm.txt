@@ -1,0 +1,19 @@
+# 0xffffff8002978cfc __ZN25IOSkywalkNetworkBSDClient18disconnectedActionEP25IOSkywalkNetworkInterfacePvS2_S2_
+ffffff8002978cfc: mov      byte ptr [rdi + 0x13e], 0
+ffffff8002978d03: mov      rax, qword ptr [rdi + 0xf0]
+ffffff8002978d0a: test     byte ptr [rax + 0x1b], 0x10
+ffffff8002978d0e: jne      0xffffff8002978d36
+ffffff8002978d10: cmp      byte ptr [rdi + 0x141], 1
+ffffff8002978d17: jne      0xffffff8002978d36
+ffffff8002978d19: mov      rsi, qword ptr [rdi + 0xf8]
+ffffff8002978d20: test     rsi, rsi
+ffffff8002978d23: je       0xffffff8002978d36
+ffffff8002978d25: push     rbp
+ffffff8002978d26: mov      rbp, rsp
+ffffff8002978d29: mov      edx, 0x80206910
+ffffff8002978d2e: xor      ecx, ecx
+ffffff8002978d30: call     0xffffff8002977f46  ; __ZN25IOSkywalkNetworkBSDClient12ioctlHandlerEP7__ifnetjPv
+ffffff8002978d35: pop      rbp
+ffffff8002978d36: xor      eax, eax
+ffffff8002978d38: ret      
+ffffff8002978d39: nop      

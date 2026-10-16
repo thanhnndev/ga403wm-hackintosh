@@ -1,0 +1,53 @@
+# 0xffffff80029a24d0 __ZN15IOSkywalkPacket22setDataOffsetAndLengthEtj
+ffffff80029a24d0: mov      ecx, dword ptr [rdi + 0x64]
+ffffff80029a24d3: test     ecx, ecx
+ffffff80029a24d5: je       0xffffff80029a2552
+ffffff80029a24d7: push     rbp
+ffffff80029a24d8: mov      rbp, rsp
+ffffff80029a24db: push     r15
+ffffff80029a24dd: push     r14
+ffffff80029a24df: push     r13
+ffffff80029a24e1: push     r12
+ffffff80029a24e3: push     rbx
+ffffff80029a24e4: push     rax
+ffffff80029a24e5: mov      ebx, edx
+ffffff80029a24e7: mov      r14, rdi
+ffffff80029a24ea: mov      rax, qword ptr [rdi + 0x40]
+ffffff80029a24ee: mov      r12d, dword ptr [rax + 0x30]
+ffffff80029a24f2: movzx    edx, si
+ffffff80029a24f5: mov      eax, 0xe00002c2
+ffffff80029a24fa: cmp      r12d, edx
+ffffff80029a24fd: jb       0xffffff80029a2543
+ffffff80029a24ff: add      edx, ebx
+ffffff80029a2501: imul     ecx, r12d
+ffffff80029a2505: cmp      edx, ecx
+ffffff80029a2507: ja       0xffffff80029a2543
+ffffff80029a2509: xor      r13d, r13d
+ffffff80029a250c: mov      eax, esi
+ffffff80029a250e: movzx    esi, ax
+ffffff80029a2511: mov      r15d, r12d
+ffffff80029a2514: sub      r15d, esi
+ffffff80029a2517: cmp      ebx, r15d
+ffffff80029a251a: cmovb    r15d, ebx
+ffffff80029a251e: mov      rax, qword ptr [r14 + 0x30]
+ffffff80029a2522: mov      rdi, qword ptr [rax + r13*8]
+ffffff80029a2526: mov      rdx, r15
+ffffff80029a2529: call     0xffffff80029a263c  ; __ZN21IOSkywalkPacketBuffer16setDataOffAndLenExm
+ffffff80029a252e: test     eax, eax
+ffffff80029a2530: jne      0xffffff80029a2543
+ffffff80029a2532: sub      ebx, r15d
+ffffff80029a2535: inc      r13
+ffffff80029a2538: mov      ecx, dword ptr [r14 + 0x64]
+ffffff80029a253c: xor      eax, eax
+ffffff80029a253e: cmp      r13, rcx
+ffffff80029a2541: jb       0xffffff80029a250e
+ffffff80029a2543: add      rsp, 8
+ffffff80029a2547: pop      rbx
+ffffff80029a2548: pop      r12
+ffffff80029a254a: pop      r13
+ffffff80029a254c: pop      r14
+ffffff80029a254e: pop      r15
+ffffff80029a2550: pop      rbp
+ffffff80029a2551: ret      
+ffffff80029a2552: mov      eax, 0xe00002f0
+ffffff80029a2557: ret      

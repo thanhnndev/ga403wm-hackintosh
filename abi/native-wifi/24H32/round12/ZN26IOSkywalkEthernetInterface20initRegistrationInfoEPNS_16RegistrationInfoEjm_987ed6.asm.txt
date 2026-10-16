@@ -1,0 +1,72 @@
+# 0xffffff8002987ed6 __ZN26IOSkywalkEthernetInterface20initRegistrationInfoEPNS_16RegistrationInfoEjm
+ffffff8002987ed6: push     rbp
+ffffff8002987ed7: mov      rbp, rsp
+ffffff8002987eda: push     r15
+ffffff8002987edc: push     r14
+ffffff8002987ede: push     r12
+ffffff8002987ee0: push     rbx
+ffffff8002987ee1: test     rsi, rsi
+ffffff8002987ee4: setne    al
+ffffff8002987ee7: cmp      edx, 1
+ffffff8002987eea: sete     dl
+ffffff8002987eed: cmp      rcx, 0x130
+ffffff8002987ef4: sete     r14b
+ffffff8002987ef8: and      r14b, dl
+ffffff8002987efb: and      r14b, al
+ffffff8002987efe: cmp      r14b, 1
+ffffff8002987f02: jne      0xffffff8002987fd7
+ffffff8002987f08: mov      rbx, rsi
+ffffff8002987f0b: mov      r15, rdi
+ffffff8002987f0e: lea      rdi, [rsi + 8]
+ffffff8002987f12: mov      esi, 0x128
+ffffff8002987f17: call     0xffffff8000101100  ; _bzero
+ffffff8002987f1c: movabs   rax, 0x13000000001
+ffffff8002987f26: mov      qword ptr [rbx], rax
+ffffff8002987f29: mov      dword ptr [rbx + 0x14], 0x100
+ffffff8002987f30: lea      r12, [rip + 0x27379]  ; 0xffffff80029af2b0
+ffffff8002987f37: mov      rdi, r15
+ffffff8002987f3a: call     qword ptr [r12 + 0x9a8]
+ffffff8002987f42: test     eax, eax
+ffffff8002987f44: mov      ecx, 2
+ffffff8002987f49: cmovne   ecx, eax
+ffffff8002987f4c: mov      dword ptr [rbx + 8], ecx
+ffffff8002987f4f: mov      rdi, r15
+ffffff8002987f52: call     qword ptr [r12 + 0x9b0]
+ffffff8002987f5a: mov      dword ptr [rbx + 0xc], eax
+ffffff8002987f5d: mov      dword ptr [rbx + 0x24], 0x22
+ffffff8002987f64: mov      rdi, r15
+ffffff8002987f67: call     qword ptr [r12 + 0x9b8]
+ffffff8002987f6f: test     eax, eax
+ffffff8002987f71: mov      ecx, 0x20
+ffffff8002987f76: cmovne   ecx, eax
+ffffff8002987f79: mov      dword ptr [rbx + 0x28], ecx
+ffffff8002987f7c: mov      rdi, r15
+ffffff8002987f7f: call     qword ptr [r12 + 0x9f0]
+ffffff8002987f87: test     rax, rax
+ffffff8002987f8a: lea      rcx, [rip + 0x1e400]  ; 0xffffff80029a6391
+ffffff8002987f91: cmovne   rcx, rax
+ffffff8002987f95: mov      qword ptr [rbx + 0x30], rcx
+ffffff8002987f99: mov      rdi, r15
+ffffff8002987f9c: call     0xffffff800298315c  ; __ZN25IOSkywalkNetworkInterface16getBSDUnitNumberEv
+ffffff8002987fa1: mov      dword ptr [rbx + 0x38], eax
+ffffff8002987fa4: mov      rdi, r15
+ffffff8002987fa7: call     qword ptr [r12 + 0x990]
+ffffff8002987faf: test     eax, eax
+ffffff8002987fb1: mov      ecx, 0x2e
+ffffff8002987fb6: cmovne   ecx, eax
+ffffff8002987fb9: mov      dword ptr [rbx + 0x44], ecx
+ffffff8002987fbc: mov      rdi, r15
+ffffff8002987fbf: call     qword ptr [r12 + 0x980]
+ffffff8002987fc7: test     eax, eax
+ffffff8002987fc9: mov      ecx, 0x5dc
+ffffff8002987fce: cmovne   ecx, eax
+ffffff8002987fd1: mov      dword ptr [rbx + 0x48], ecx
+ffffff8002987fd4: mov      dword ptr [rbx + 0x4c], ecx
+ffffff8002987fd7: mov      eax, r14d
+ffffff8002987fda: pop      rbx
+ffffff8002987fdb: pop      r12
+ffffff8002987fdd: pop      r14
+ffffff8002987fdf: pop      r15
+ffffff8002987fe1: pop      rbp
+ffffff8002987fe2: ret      
+ffffff8002987fe3: nop      

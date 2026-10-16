@@ -1,0 +1,38 @@
+# 0xffffff80022610f2 __ZN22IO80211MacAddressAgent18setInterfaceEnableEb
+ffffff80022610f2: test     esi, esi
+ffffff80022610f4: je       0xffffff8002261142
+ffffff80022610f6: push     rbp
+ffffff80022610f7: mov      rbp, rsp
+ffffff80022610fa: push     rbx
+ffffff80022610fb: push     rax
+ffffff80022610fc: mov      rbx, rdi
+ffffff80022610ff: mov      rsi, qword ptr [rdi + 0x10]
+ffffff8002261103: cmp      byte ptr [rsi + 0x28], 1
+ffffff8002261107: jne      0xffffff800226113c
+ffffff8002261109: mov      rdi, qword ptr [rsi + 0x18]
+ffffff800226110d: test     rdi, rdi
+ffffff8002261110: je       0xffffff8002261124
+ffffff8002261112: mov      esi, 1
+ffffff8002261117: call     0xffffff80031d421c  ; __ZN11CCLogStream9shouldLogE16CCStreamLogLevel
+ffffff800226111c: mov      rsi, qword ptr [rbx + 0x10]
+ffffff8002261120: test     al, al
+ffffff8002261122: jne      0xffffff8002261143
+ffffff8002261124: mov      rdi, qword ptr [rsi]
+ffffff8002261127: add      rsi, 0x20
+ffffff800226112b: mov      rax, qword ptr [rdi]
+ffffff800226112e: call     qword ptr [rax + 0xa70]
+ffffff8002261134: mov      rax, qword ptr [rbx + 0x10]
+ffffff8002261138: mov      byte ptr [rax + 0x28], 0
+ffffff800226113c: add      rsp, 8
+ffffff8002261140: pop      rbx
+ffffff8002261141: pop      rbp
+ffffff8002261142: ret      
+ffffff8002261143: mov      rdi, qword ptr [rsi + 0x18]
+ffffff8002261147: lea      rsi, [rip + 0x11cd62]  ; 0xffffff800237deb0
+ffffff800226114e: lea      rdx, [rip + 0x11cd9c]  ; "setInterfaceEnable"
+ffffff8002261155: mov      ecx, 0x185
+ffffff800226115a: xor      eax, eax
+ffffff800226115c: call     0xffffff80031d252e  ; __ZN11CCLogStream8logAlertEPKcz
+ffffff8002261161: mov      rsi, qword ptr [rbx + 0x10]
+ffffff8002261165: jmp      0xffffff8002261124  ; __ZN22IO80211MacAddressAgent18setInterfaceEnableEb+0x32
+ffffff8002261167: nop      

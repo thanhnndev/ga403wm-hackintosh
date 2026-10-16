@@ -1,0 +1,7 @@
+# 0xffffff8002980b5c __ZN20IOSkywalkPacketQueue16packetSubmissionEb
+ffffff8002980b5c: push     rbp
+ffffff8002980b5d: mov      rbp, rsp
+ffffff8002980b60: mov      eax, 0xe00002c7
+ffffff8002980b65: pop      rbp
+ffffff8002980b66: ret      
+ffffff8002980b67: nop      

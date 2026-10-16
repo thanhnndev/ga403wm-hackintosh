@@ -1,0 +1,144 @@
+# 0xffffff80022daa0c __ZN21IO80211InfraInterface21updateLinkStatusGatedEv
+ffffff80022daa0c: push     rbp
+ffffff80022daa0d: mov      rbp, rsp
+ffffff80022daa10: push     rbx
+ffffff80022daa11: push     rax
+ffffff80022daa12: mov      rbx, rdi
+ffffff80022daa15: mov      rax, qword ptr [rdi + 0x110]
+ffffff80022daa1c: mov      rdi, qword ptr [rax + 0x38]
+ffffff80022daa20: mov      rax, qword ptr [rdi]
+ffffff80022daa23: call     qword ptr [rax + 0x138]
+ffffff80022daa29: test     al, al
+ffffff80022daa2b: je       0xffffff80022daa6c
+ffffff80022daa2d: mov      rsi, qword ptr [rbx + 0x118]
+ffffff80022daa34: movabs   rax, 0x7000000001
+ffffff80022daa3e: mov      qword ptr [rsi + 0x28], rax
+ffffff80022daa42: mov      rax, qword ptr [rbx + 0x110]
+ffffff80022daa49: mov      rdi, qword ptr [rax + 0x40]
+ffffff80022daa4d: test     rdi, rdi
+ffffff80022daa50: je       0xffffff80022daa66
+ffffff80022daa52: add      rsi, 0x38
+ffffff80022daa56: call     0xffffff80022ecfda  ; __ZN23IO80211InterfaceMonitor29getEffectiveTxBWSinceLastReadEPj
+ffffff80022daa5b: mov      rsi, qword ptr [rbx + 0x118]
+ffffff80022daa62: test     eax, eax
+ffffff80022daa64: je       0xffffff80022daa97
+ffffff80022daa66: and      byte ptr [rsi + 0x30], 0xfd
+ffffff80022daa6a: jmp      0xffffff80022daa9b  ; __ZN21IO80211InfraInterface21updateLinkStatusGatedEv+0x8f
+ffffff80022daa6c: lea      rdi, [rip + 0xbef3b]  ; 0xffffff80023999ae
+ffffff80022daa73: lea      rsi, [rip + 0xbef56]  ; "/AppleInternal/Library/BuildRoots/4~CW9mugA6gpmKPwyaAeCNWSZRmRlk6mvK_U3N5n0/Libr"
+ffffff80022daa7a: lea      rdx, [rip + 0xc02fb]  ; "updateLinkStatusGated"
+ffffff80022daa81: mov      ecx, 0xbdc
+ffffff80022daa86: xor      eax, eax
+ffffff80022daa88: call     0xffffff8000ab6560  ; _IOLog
+ffffff80022daa8d: mov      eax, 0xe00002bc
+ffffff80022daa92: jmp      0xffffff80022dac6b  ; __ZN21IO80211InfraInterface21updateLinkStatusGatedEv+0x25f
+ffffff80022daa97: or       byte ptr [rsi + 0x30], 2
+ffffff80022daa9b: mov      rax, qword ptr [rbx + 0x110]
+ffffff80022daaa2: mov      rdi, qword ptr [rax + 0x40]
+ffffff80022daaa6: test     rdi, rdi
+ffffff80022daaa9: je       0xffffff80022daabf
+ffffff80022daaab: mov      rsi, qword ptr [rbx + 0x118]
+ffffff80022daab2: add      rsi, 0x58
+ffffff80022daab6: call     0xffffff80022ed0f2  ; __ZN23IO80211InterfaceMonitor29getEffectiveRxBWSinceLastReadEPj
+ffffff80022daabb: test     eax, eax
+ffffff80022daabd: je       0xffffff80022daacf
+ffffff80022daabf: mov      rax, qword ptr [rbx + 0x118]
+ffffff80022daac6: and      dword ptr [rax + 0x30], 0xfffffdff
+ffffff80022daacd: jmp      0xffffff80022daadd  ; __ZN21IO80211InfraInterface21updateLinkStatusGatedEv+0xd1
+ffffff80022daacf: mov      rax, qword ptr [rbx + 0x118]
+ffffff80022daad6: or       dword ptr [rax + 0x30], 0x200
+ffffff80022daadd: mov      rax, qword ptr [rbx]
+ffffff80022daae0: mov      rdi, rbx
+ffffff80022daae3: call     qword ptr [rax + 0xba8]
+ffffff80022daae9: mov      rax, qword ptr [rax + 0x120]
+ffffff80022daaf0: cmp      qword ptr [rax + 0x30], 0
+ffffff80022daaf5: je       0xffffff80022dab22
+ffffff80022daaf7: mov      rax, qword ptr [rbx]
+ffffff80022daafa: mov      rdi, rbx
+ffffff80022daafd: call     qword ptr [rax + 0xba8]
+ffffff80022dab03: mov      rax, qword ptr [rax + 0x120]
+ffffff80022dab0a: mov      rdi, qword ptr [rax + 0x30]
+ffffff80022dab0e: mov      rsi, qword ptr [rbx + 0x118]
+ffffff80022dab15: add      rsi, 0x6c
+ffffff80022dab19: call     0xffffff8002312cbe  ; __ZN24IO80211ControllerMonitor14getRxErrorRateEPj
+ffffff80022dab1e: test     eax, eax
+ffffff80022dab20: je       0xffffff80022dab32
+ffffff80022dab22: mov      rax, qword ptr [rbx + 0x118]
+ffffff80022dab29: and      dword ptr [rax + 0x30], 0xffffbfff
+ffffff80022dab30: jmp      0xffffff80022dab40  ; __ZN21IO80211InfraInterface21updateLinkStatusGatedEv+0x134
+ffffff80022dab32: mov      rax, qword ptr [rbx + 0x118]
+ffffff80022dab39: or       dword ptr [rax + 0x30], 0x4000
+ffffff80022dab40: mov      rax, qword ptr [rbx]
+ffffff80022dab43: mov      rdi, rbx
+ffffff80022dab46: call     qword ptr [rax + 0xba8]
+ffffff80022dab4c: mov      rax, qword ptr [rax + 0x120]
+ffffff80022dab53: cmp      qword ptr [rax + 0x30], 0
+ffffff80022dab58: je       0xffffff80022dab85
+ffffff80022dab5a: mov      rax, qword ptr [rbx]
+ffffff80022dab5d: mov      rdi, rbx
+ffffff80022dab60: call     qword ptr [rax + 0xba8]
+ffffff80022dab66: mov      rax, qword ptr [rax + 0x120]
+ffffff80022dab6d: mov      rdi, qword ptr [rax + 0x30]
+ffffff80022dab71: mov      rsi, qword ptr [rbx + 0x118]
+ffffff80022dab78: add      rsi, 0x54
+ffffff80022dab7c: call     0xffffff8002312d86  ; __ZN24IO80211ControllerMonitor14getTxErrorRateEPj
+ffffff80022dab81: test     eax, eax
+ffffff80022dab83: je       0xffffff80022dab95
+ffffff80022dab85: mov      rax, qword ptr [rbx + 0x118]
+ffffff80022dab8c: and      dword ptr [rax + 0x30], 0xffffff7f
+ffffff80022dab93: jmp      0xffffff80022daba3  ; __ZN21IO80211InfraInterface21updateLinkStatusGatedEv+0x197
+ffffff80022dab95: mov      rax, qword ptr [rbx + 0x118]
+ffffff80022dab9c: or       dword ptr [rax + 0x30], 0x80
+ffffff80022daba3: mov      rax, qword ptr [rbx]
+ffffff80022daba6: mov      rdi, rbx
+ffffff80022daba9: call     qword ptr [rax + 0xba8]
+ffffff80022dabaf: mov      rax, qword ptr [rax + 0x120]
+ffffff80022dabb6: cmp      qword ptr [rax + 0x30], 0
+ffffff80022dabbb: je       0xffffff80022dabe8
+ffffff80022dabbd: mov      rax, qword ptr [rbx]
+ffffff80022dabc0: mov      rdi, rbx
+ffffff80022dabc3: call     qword ptr [rax + 0xba8]
+ffffff80022dabc9: mov      rax, qword ptr [rax + 0x120]
+ffffff80022dabd0: mov      rdi, qword ptr [rax + 0x30]
+ffffff80022dabd4: mov      rsi, qword ptr [rbx + 0x118]
+ffffff80022dabdb: add      rsi, 0x4c
+ffffff80022dabdf: call     0xffffff8002312e24  ; __ZN24IO80211ControllerMonitor19getTxRetransmitRateEPj
+ffffff80022dabe4: test     eax, eax
+ffffff80022dabe6: je       0xffffff80022dabf5
+ffffff80022dabe8: mov      rax, qword ptr [rbx + 0x118]
+ffffff80022dabef: and      dword ptr [rax + 0x30], 0xffffffbf
+ffffff80022dabf3: jmp      0xffffff80022dac00  ; __ZN21IO80211InfraInterface21updateLinkStatusGatedEv+0x1f4
+ffffff80022dabf5: mov      rax, qword ptr [rbx + 0x118]
+ffffff80022dabfc: or       dword ptr [rax + 0x30], 0x40
+ffffff80022dac00: mov      rax, qword ptr [rbx + 0x110]
+ffffff80022dac07: mov      rax, qword ptr [rax + 0x28]
+ffffff80022dac0b: test     rax, rax
+ffffff80022dac0e: je       0xffffff80022dac44
+ffffff80022dac10: mov      rax, qword ptr [rax + 0x18]
+ffffff80022dac14: mov      rax, qword ptr [rax + 0x528]
+ffffff80022dac1b: test     rax, rax
+ffffff80022dac1e: je       0xffffff80022dac44
+ffffff80022dac20: mov      rax, qword ptr [rax + 0x18]
+ffffff80022dac24: mov      rdi, qword ptr [rax + 0x4c0]
+ffffff80022dac2b: test     rdi, rdi
+ffffff80022dac2e: je       0xffffff80022dac44
+ffffff80022dac30: mov      rsi, qword ptr [rbx + 0x118]
+ffffff80022dac37: add      rsi, 0x50
+ffffff80022dac3b: call     0xffffff80022f46fe  ; __ZN18IO80211PeerMonitor24getTotalTxPacketsGivenUpEPj
+ffffff80022dac40: test     eax, eax
+ffffff80022dac42: je       0xffffff80022dac72
+ffffff80022dac44: mov      rax, qword ptr [rbx + 0x118]
+ffffff80022dac4b: and      dword ptr [rax + 0x30], 0xfffffeff
+ffffff80022dac52: mov      rax, qword ptr [rbx]
+ffffff80022dac55: mov      rsi, qword ptr [rbx + 0x118]
+ffffff80022dac5c: add      rsi, 0x28
+ffffff80022dac60: mov      rdi, rbx
+ffffff80022dac63: call     qword ptr [rax + 0xa00]
+ffffff80022dac69: xor      eax, eax
+ffffff80022dac6b: add      rsp, 8
+ffffff80022dac6f: pop      rbx
+ffffff80022dac70: pop      rbp
+ffffff80022dac71: ret      
+ffffff80022dac72: mov      rax, qword ptr [rbx + 0x118]
+ffffff80022dac79: or       dword ptr [rax + 0x30], 0x100
+ffffff80022dac80: jmp      0xffffff80022dac52  ; __ZN21IO80211InfraInterface21updateLinkStatusGatedEv+0x246

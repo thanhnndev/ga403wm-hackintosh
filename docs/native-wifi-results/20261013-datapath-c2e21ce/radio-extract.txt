@@ -1,0 +1,3 @@
+efuse a71 tag=2 block=8200000000000000
+clc 00 env 1 encap 0: power 6 ext 6
+RESULT rc=0 link up

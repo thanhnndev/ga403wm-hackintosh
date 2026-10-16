@@ -1,0 +1,14 @@
+# 0xffffff80022d9e38 __ZN21IO80211InfraInterface33get5GLowHighBandSwitchSuccessPercEv
+ffffff80022d9e38: push     rbp
+ffffff80022d9e39: mov      rbp, rsp
+ffffff80022d9e3c: mov      rax, qword ptr [rdi + 0x118]
+ffffff80022d9e43: imul     ecx, dword ptr [rax + 0xb0], 0x64
+ffffff80022d9e4a: mov      rsi, qword ptr [rax + 0xa8]
+ffffff80022d9e51: mov      rax, rsi
+ffffff80022d9e54: shr      rax, 1
+ffffff80022d9e57: add      rax, rcx
+ffffff80022d9e5a: xor      edx, edx
+ffffff80022d9e5c: div      rsi
+ffffff80022d9e5f: pop      rbp
+ffffff80022d9e60: ret      
+ffffff80022d9e61: nop      

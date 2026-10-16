@@ -1,0 +1,29 @@
++-o itlmt7925Wifi  <class itlmt7925Wifi, id 0x1000002d9, registered, matched, active, busy 0 (1 ms), retain 14>
+    {
+      "IOClass" = "itlmt7925Wifi"
+      "IOActiveMedium" = ""
+      "Debuggable - isDevFusedOrCSRInternal" = No
+      "IO80211Family.BuildTag" = "IO80211_kexts-1485.17"
+      "IOMatchedAtBoot" = Yes
+      "IOReportLegendPublic" = Yes
+      "IOMinPacketSize" = 64
+      "IOProviderClass" = "itlmt7925"
+      "IOLinkStatus" = 0
+      "Debuggable - IO80211_io80211isDebuggable" = Yes
+      "itlmt_native_trace" = "mk:start role=1 unit=9 explicit=0; mk:withController=ok; mk:attachInterface=1; sw:deferBSDAttach=0; sw:IO80211InfraInterface::start=1; sw:getWorkQueue=ok; pool=ok; queues rxSub=1 txComp=1 rxComp=1; sw:pool+queues=1; sw:addEventSource x6 ok; sw:registerInfraEthernetInterface=0; sw:registerService(8) done; sw:setRunningState(false) done; mk:startWithInfo ok; mk:loops wq=0xffffff90543a5a10 provider=0xffffff90543a6d30 ctl=0xffffff90543a6d30 iface=0xfffff"
+      "IOPacketFilters" = {"IONetworkFilterGroup"=275,"IOEthernetWakeOnLANFilterGroup"=0}
+      "IOProbeScore" = 1000
+      "AVBControllerState" = 1
+      "CFBundleIdentifierKernel" = "com.itlmt7925.native"
+      "IOMatchCategory" = "IODefaultMatchCategory"
+      "CFBundleIdentifier" = "com.itlmt7925.native"
+      "IOMaxPacketSize" = 1518
+      "IOSelectedMedium" = ""
+      "IO80211Family.BuildDate" = "Aug 23 2026 20:24:58"
+      "IOLinkSpeed" = 0
+      "IO80211Family.BuildTagGit" = ""IO80211_kexts-1485.17""
+      "Debuggable - IO80211_isDebugCommandActionAllowed" = No
+      "IOFeatures" = 0
+    }
+    
+

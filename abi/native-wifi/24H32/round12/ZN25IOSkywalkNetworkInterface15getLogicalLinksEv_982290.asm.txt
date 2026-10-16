@@ -1,0 +1,7 @@
+# 0xffffff8002982290 __ZN25IOSkywalkNetworkInterface15getLogicalLinksEv
+ffffff8002982290: push     rbp
+ffffff8002982291: mov      rbp, rsp
+ffffff8002982294: mov      rax, qword ptr [rdi + 0xc0]
+ffffff800298229b: pop      rbp
+ffffff800298229c: ret      
+ffffff800298229d: nop      

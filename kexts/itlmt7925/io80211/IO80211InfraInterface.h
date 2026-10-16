@@ -77,7 +77,7 @@ public:
     /* 366 */ virtual IOReturn pendingPackets(uint8_t a1) override;
     /* 367 */ virtual IOReturn packetSpace(uint8_t a1) override;
     /* 369 */ virtual bool isDebounceOnGoing() override;
-    /* 370 */ virtual IOReturn setLinkState(IO80211LinkState a1, uint32_t a2, bool a3, uint32_t a4) override;
+    /* 370 */ virtual bool setLinkState(IO80211LinkState a1, uint32_t a2, bool a3, uint32_t a4) override;
     /* 371 */ virtual uint32_t linkState() override;
     /* 372 */ virtual IOReturn setScanningState(uint32_t a1, bool a2, apple80211_scan_data* a3, int a4) override;
     /* 373 */ virtual void setDataPathState(bool a1) override;
@@ -107,7 +107,7 @@ public:
     /* 440 */ virtual IOReturn getLQMSummary(apple80211_lqm_summary* a1) override;
 
     // new virtuals, slots 462..466
-    /* 462 */ virtual void setLinkStateInternal(IO80211LinkState a1, uint32_t a2, bool a3, uint32_t a4);   // ret: guess from name
+    /* 462 */ virtual bool setLinkStateInternal(IO80211LinkState a1, uint32_t a2, bool a3, uint32_t a4);   // ret: 24H32 InfraInterface::setLinkStateInternal returns success flag in eax
     /* 463 */ virtual void setCurrentApAddress(ether_addr* a1);   // ret: guess from name
     /* 464 */ virtual void setWCL_ADVISORTY_INFO(apple80211_wcl_advisory_info* a1);   // ret: guess from name
     /* 465 */ virtual IOReturn getWCL_TX_RX_LATENCY(apple80211_wcl_tx_rx_latency* a1);   // ret: guess

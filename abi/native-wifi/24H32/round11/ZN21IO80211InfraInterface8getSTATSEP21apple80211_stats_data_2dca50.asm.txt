@@ -1,0 +1,51 @@
+# 0xffffff80022dca50 __ZN21IO80211InfraInterface8getSTATSEP21apple80211_stats_data
+ffffff80022dca50: push     rbp
+ffffff80022dca51: mov      rbp, rsp
+ffffff80022dca54: push     r15
+ffffff80022dca56: push     r14
+ffffff80022dca58: push     rbx
+ffffff80022dca59: sub      rsp, 0x68
+ffffff80022dca5d: mov      rax, qword ptr [rip + 0xdf6b4]  ; 0xffffff80023bc118
+ffffff80022dca64: mov      rax, qword ptr [rax]
+ffffff80022dca67: mov      qword ptr [rbp - 0x20], rax
+ffffff80022dca6b: xor      ebx, ebx
+ffffff80022dca6d: mov      qword ptr [rbp - 0x28], rbx
+ffffff80022dca71: mov      qword ptr [rbp - 0x30], rbx
+ffffff80022dca75: mov      qword ptr [rbp - 0x38], rbx
+ffffff80022dca79: mov      qword ptr [rbp - 0x40], rbx
+ffffff80022dca7d: mov      qword ptr [rbp - 0x48], rbx
+ffffff80022dca81: mov      qword ptr [rbp - 0x50], rbx
+ffffff80022dca85: mov      qword ptr [rbp - 0x58], rbx
+ffffff80022dca89: mov      qword ptr [rbp - 0x60], rbx
+ffffff80022dca8d: mov      qword ptr [rbp - 0x68], rbx
+ffffff80022dca91: mov      qword ptr [rbp - 0x70], rbx
+ffffff80022dca95: mov      qword ptr [rbp - 0x78], rbx
+ffffff80022dca99: test     rsi, rsi
+ffffff80022dca9c: je       0xffffff80022dcaf0
+ffffff80022dca9e: mov      r14, rsi
+ffffff80022dcaa1: lea      r15, [rbp - 0x78]
+ffffff80022dcaa5: mov      rsi, r15
+ffffff80022dcaa8: call     0xffffff80029834b8  ; __ZN25IOSkywalkNetworkInterface22getInterfaceStatisticsEP17ifnet_stats_param
+ffffff80022dcaad: mov      dword ptr [r14], 1
+ffffff80022dcab4: mov      eax, dword ptr [r15 + 0x20]
+ffffff80022dcab8: mov      dword ptr [r14 + 4], eax
+ffffff80022dcabc: mov      eax, dword ptr [r15 + 0x38]
+ffffff80022dcac0: mov      dword ptr [r14 + 8], eax
+ffffff80022dcac4: mov      eax, dword ptr [r15]
+ffffff80022dcac7: mov      dword ptr [r14 + 0xc], eax
+ffffff80022dcacb: mov      eax, dword ptr [r15 + 0x18]
+ffffff80022dcacf: mov      dword ptr [r14 + 0x10], eax
+ffffff80022dcad3: mov      rax, qword ptr [rip + 0xdf63e]  ; 0xffffff80023bc118
+ffffff80022dcada: mov      rax, qword ptr [rax]
+ffffff80022dcadd: cmp      rax, qword ptr [rbp - 0x20]
+ffffff80022dcae1: jne      0xffffff80022dcaf7
+ffffff80022dcae3: mov      eax, ebx
+ffffff80022dcae5: add      rsp, 0x68
+ffffff80022dcae9: pop      rbx
+ffffff80022dcaea: pop      r14
+ffffff80022dcaec: pop      r15
+ffffff80022dcaee: pop      rbp
+ffffff80022dcaef: ret      
+ffffff80022dcaf0: mov      ebx, 0x16
+ffffff80022dcaf5: jmp      0xffffff80022dcad3  ; __ZN21IO80211InfraInterface8getSTATSEP21apple80211_stats_data+0x83
+ffffff80022dcaf7: call     0xffffff8000383150  ; ___stack_chk_fail

@@ -3,7 +3,7 @@
 // RogControl: a small ROG Control Center for macOS on the GA403WM (ROG Zephyrus G14 2025): performance mode (Silent,
 // Performance, Turbo, Manual power limits), battery charge limit, CPU temperature / package power / fan speeds, GPU MUX
 // state. Settings are kept per power source (AC / battery) and applied again when the source changes and at login, as asusd
-// does. Menu bar popover, SwiftUI, SF Symbols only.
+// does. Native app window and menu bar popover, SwiftUI, SF Symbols only.
 //
 // Inspired by asusctl / rog-control-center (asus-linux.org, Luke Jones and contributors, MPL-2.0); no code is taken from it.
 // Talks to kexts/AsusWmi through its user client (ABI: kexts/AsusWmi/asuswmi_abi.h, no sudo) and reads the sysctl
@@ -15,6 +15,7 @@
 // Build: scripts/build-rogcontrol.sh
 import AppKit
 import SwiftUI
+import Charts
 import IOKit
 import IOKit.ps
 
@@ -179,7 +180,7 @@ enum LoginItem {
     static func set(_ on: Bool) {
         if !on { try? FileManager.default.removeItem(at: plist); return }
         let exe = Bundle.main.executablePath ?? CommandLine.arguments[0]
-        let d: [String: Any] = ["Label": label, "ProgramArguments": [exe], "RunAtLoad": true, "ProcessType": "Interactive",
+        let d: [String: Any] = ["Label": label, "ProgramArguments": [exe, "--background"], "RunAtLoad": true, "ProcessType": "Interactive",
                                 "LimitLoadToSessionType": "Aqua"]
         try? FileManager.default.createDirectory(at: plist.deletingLastPathComponent(), withIntermediateDirectories: true)
         (d as NSDictionary).write(to: plist, atomically: true)
@@ -223,15 +224,25 @@ final class RogModel: ObservableObject {
     @Published var charge = UserDefaults.standard.object(forKey: "charge") == nil ? 100 : UserDefaults.standard.integer(forKey: "charge")
     @Published var kbd = UserDefaults.standard.object(forKey: "kbd") == nil ? 2 : UserDefaults.standard.integer(forKey: "kbd")
     @Published var slash = UserDefaults.standard.object(forKey: "slash") == nil ? Slash() : Slash(packed: UserDefaults.standard.integer(forKey: "slash"))
-    @Published var dim = UserDefaults.standard.object(forKey: "dim") as? Bool ?? true
     @Published var message = ""
     @Published var loginEnabled = LoginItem.enabled
-    @Published var curve: [UInt8]? = nil       // CPU fan curve of the Manual fan base, for the small chart
+    @Published var curve: [UInt8]? = nil
+    @Published var gpuCurve: [UInt8]? = nil
+    @Published var curveMode: Mode = .performance
+    @Published var profileError = ""
+    @Published var chargeError = ""
+    @Published var lightingError = ""
+    var activeMode: Mode? { st.present ? (st.fanCustom ? .manual : Mode.from(profile: st.profile)) : nil }
+    var modeLabel: String { activeMode?.title ?? "Unavailable" }
+    var currentSlash: Slash { st.slash.map { Slash(packed: $0) } ?? slash }
+    var manualDirty: Bool {
+        let saved = SourceSettings.load(ac: st.ac)
+        return settings.spl != saved.spl || settings.sppt != saved.sppt || settings.fppt != saved.fppt || settings.fanBase != saved.fanBase
+    }
     var onChange: (() -> Void)?
     private var timer: Timer?
     private var lastAC: Bool?
     var visible = false { didSet { schedule() } }
-    let dimmer = Dimmer()
 
     init() {
         refresh()
@@ -244,10 +255,11 @@ final class RogModel: ObservableObject {
         settings = SourceSettings.load(ac: st.ac)
         applyAll(reason: "start")
         applyLighting()
-        dimmer.enabled = dim
         NSWorkspace.shared.notificationCenter.addObserver(forName: NSWorkspace.didWakeNotification, object: nil, queue: .main) { [weak self] _ in
             // the keyboard comes back from sleep with its own defaults: give it a moment, then send ours again
-            DispatchQueue.main.asyncAfter(deadline: .now() + 2) { MainActor.assumeIsolated { self?.applyLighting() } }
+            // bind self once (a `self?` inside the delayed closure is a captured weak var, which older toolchains reject there)
+            guard let model = self else { return }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 2) { MainActor.assumeIsolated { model.applyLighting() } }
         }
         let ctx = Unmanaged.passUnretained(self).toOpaque()
         if let src = IOPSNotificationCreateRunLoopSource({ ctx in
@@ -268,11 +280,13 @@ final class RogModel: ObservableObject {
     }
 
     func refresh() {
+        let previousMode = activeMode
         st = Asus.state()
         let s = Sensors.read()
-        tctl = s.tctl; if s.watts != nil { watts = s.watts }
+        tctl = s.tctl; watts = s.watts
         if st.present, lastAC != nil, lastAC != st.ac { powerChanged() }
         lastAC = st.ac
+        if previousMode != activeMode { loadCurve() }
         onChange?()
     }
 
@@ -286,11 +300,12 @@ final class RogModel: ObservableObject {
 
     func applyAll(reason: String) {
         guard st.present else { message = "AsusWmi is not loaded"; return }
-        var errs: [String] = []
-        if let e = Apply.mode(settings, state: st) { errs.append(e) }
-        if st.charge != charge, Asus.set(.charge, charge) != KERN_SUCCESS { errs.append("charge limit refused") }
-        loadCurve()
+        profileError = Apply.mode(settings, state: st) ?? ""
+        chargeError = ""
+        if st.charge != charge, Asus.set(.charge, charge) != KERN_SUCCESS { chargeError = "Charge limit was not applied." }
         st = Asus.state()
+        loadCurve()
+        let errs = [profileError, chargeError].filter { !$0.isEmpty }
         message = errs.isEmpty ? "\(settings.mode.title) applied (\(reason))" : errs.joined(separator: "; ")
         onChange?()
     }
@@ -303,7 +318,8 @@ final class RogModel: ObservableObject {
     func saveManual() { settings.save(ac: st.ac); applyAll(reason: "manual limits") }
     func setCharge(_ v: Int) {
         charge = v; UserDefaults.standard.set(v, forKey: "charge")
-        message = Asus.set(.charge, v) == KERN_SUCCESS ? "charge limit \(v) %" : "charge limit refused"
+        chargeError = Asus.set(.charge, v) == KERN_SUCCESS ? "" : "Charge limit was not applied."
+        message = chargeError.isEmpty ? "charge limit \(v) %" : chargeError
         st = Asus.state()
     }
     func applyLighting() {
@@ -312,21 +328,19 @@ final class RogModel: ObservableObject {
         if Asus.set(.kbd, kbd) != KERN_SUCCESS { errs.append("keyboard light refused") }
         if Asus.set(.slash, slash.packed) != KERN_SUCCESS { errs.append("Slash refused") }
         st = Asus.state()
-        if !errs.isEmpty { message = errs.joined(separator: "; ") }
-    }
-    func setDim(_ on: Bool) {
-        dim = on; UserDefaults.standard.set(on, forKey: "dim")
-        dimmer.enabled = on
+        lightingError = errs.joined(separator: "; ")
+        if !errs.isEmpty { message = lightingError }
     }
     func setKbd(_ v: Int) {
         kbd = v; UserDefaults.standard.set(v, forKey: "kbd")
-        message = Asus.set(.kbd, v) == KERN_SUCCESS ? "keyboard light \(v)" : "keyboard light refused (keyboard not found?)"
+        lightingError = Asus.set(.kbd, v) == KERN_SUCCESS ? "" : "Keyboard light was not applied. Check the keyboard connection."
+        message = lightingError.isEmpty ? "keyboard light \(v)" : lightingError
         st = Asus.state()
     }
     func setSlash(_ s: Slash) {
         slash = s; UserDefaults.standard.set(s.packed, forKey: "slash")
-        message = Asus.set(.slash, s.packed) == KERN_SUCCESS ? (s.bright == 0 ? "Slash off" : "Slash \(Slash.modes[s.mode])")
-                                                             : "Slash refused (keyboard not found?)"
+        lightingError = Asus.set(.slash, s.packed) == KERN_SUCCESS ? "" : "Slash lighting was not applied. Check the keyboard connection."
+        message = lightingError.isEmpty ? (s.bright == 0 ? "Slash off" : "Slash \(Slash.modes[s.mode])") : lightingError
         st = Asus.state()
     }
     var batteryLine: String {
@@ -337,7 +351,13 @@ final class RogModel: ObservableObject {
         if st.batState & 2 != 0 { s += " · charging \(st.batRate) mA" } else if st.batState & 1 != 0 { s += " · \(st.batRate) mA" }
         return s
     }
-    func loadCurve() { curve = Asus.fanCurve(fan: 0, profile: (settings.mode == .manual ? settings.fanBase : settings.mode).firmwareProfile) }
+    func loadCurve() {
+        // Manual shows the selected firmware reference, not an editable or measured RPM curve.
+        curveMode = settings.mode == .manual ? settings.fanBase : (Mode.from(profile: st.profile) ?? .performance)
+        if curveMode == .turbo && !st.ac { curveMode = .performance }
+        curve = st.present ? Asus.fanCurve(fan: 0, profile: curveMode.firmwareProfile) : nil
+        gpuCurve = st.present ? Asus.fanCurve(fan: 1, profile: curveMode.firmwareProfile) : nil
+    }
     func setLogin(_ on: Bool) { LoginItem.set(on); loginEnabled = LoginItem.enabled }
 }
 
@@ -347,29 +367,134 @@ struct Stat: View {
     var body: some View {
         VStack(spacing: 2) {
             Image(systemName: symbol).font(.system(size: 13)).foregroundStyle(.secondary)
-            Text(value).font(.system(size: 13, weight: .semibold)).monospacedDigit()
+            Text(value).font(.system(size: 24, weight: .semibold)).monospacedDigit()
             Text(label).font(.system(size: 10)).foregroundStyle(.secondary)
         }
         .frame(maxWidth: .infinity)
     }
 }
 
+// ABI: eight temperatures followed by eight fan duties. Raw firmware can contain
+// 255 endpoints and repeated temperatures; never extrapolate or invent replacements.
+struct FanCurvePoint: Identifiable {
+    let id: Int
+    let temperature: Int
+    let duty: Int
+    let segment: Int
+}
+struct FanCurveData {
+    let points: [FanCurvePoint]
+    let omitted: Int
+    init(_ bytes: [UInt8]) {
+        guard bytes.count == 16 else { points = []; omitted = bytes.count == 0 ? 0 : 8; return }
+        var valid: [FanCurvePoint] = []
+        var skipped = 0, segment = 0
+        var previous: Int?
+        for i in 0..<8 {
+            let temperature = Int(bytes[i]), duty = Int(bytes[8 + i])
+            guard (20...105).contains(temperature), (0...100).contains(duty),
+                  previous == nil || temperature >= previous! else {
+                skipped += 1; segment += 1; continue
+            }
+            valid.append(FanCurvePoint(id: i, temperature: temperature, duty: duty, segment: segment))
+            previous = temperature
+        }
+        points = valid; omitted = skipped
+    }
+}
+
 struct CurveChart: View {
     let c: [UInt8]
+    let compact: Bool
+    @State private var hovered: Int?
+    private var data: FanCurveData { FanCurveData(c) }
     var body: some View {
-        GeometryReader { g in
-            let pts = (0..<8).map { i -> CGPoint in
-                let t = (Double(c[i]) - 20) / 85, d = Double(c[8 + i]) / 100
-                return CGPoint(x: g.size.width * t, y: g.size.height * (1 - d))
+        VStack(alignment: .leading, spacing: 8) {
+            HStack {
+                Text("Fan duty (%)").font(.caption).foregroundStyle(.secondary)
+                Spacer()
+                if let point = data.points.first(where: { $0.id == hovered }) {
+                    Text("\(point.temperature)°C · \(point.duty)%").font(.caption).monospacedDigit()
+                }
+            }.frame(height: 16)
+            if data.points.isEmpty {
+                Text("No valid fan curve data.").font(.callout).foregroundStyle(.secondary).frame(height: 100)
+            } else {
+                Chart(data.points) { point in
+                    LineMark(x: .value("Temperature", point.temperature), y: .value("Fan duty", point.duty),
+                             series: .value("Segment", point.segment))
+                        .interpolationMethod(.linear).lineStyle(StrokeStyle(lineWidth: 2))
+                        .foregroundStyle(Color.accentColor)
+                    PointMark(x: .value("Temperature", point.temperature), y: .value("Fan duty", point.duty))
+                        .symbolSize(point.id == hovered ? 70 : 24).foregroundStyle(Color.accentColor)
+                }
+                .chartXScale(domain: 20...105).chartYScale(domain: 0...100)
+                .chartXAxis {
+                    AxisMarks(values: [20, 40, 60, 80, 100]) { value in
+                        AxisGridLine(); AxisTick()
+                        AxisValueLabel { if let n = value.as(Int.self) { Text("\(n)°") } }
+                    }
+                }
+                .chartYAxis {
+                    AxisMarks(position: .leading, values: [0, 25, 50, 75, 100]) { value in
+                        AxisGridLine(); AxisTick()
+                        AxisValueLabel { if let n = value.as(Int.self) { Text("\(n)%") } }
+                    }
+                }
+                .chartLegend(.hidden)
+                .chartOverlay { proxy in
+                    GeometryReader { geometry in
+                        Rectangle().fill(.clear).contentShape(Rectangle())
+                            .onContinuousHover { phase in
+                                switch phase {
+                                case .active(let location):
+                                    let origin = geometry[proxy.plotAreaFrame].origin
+                                    let local = CGPoint(x: location.x - origin.x, y: location.y - origin.y)
+                                    hovered = data.points.min { a, b in
+                                        distance(a, to: local, proxy: proxy) < distance(b, to: local, proxy: proxy)
+                                    }?.id
+                                case .ended: hovered = nil
+                                }
+                            }
+                    }
+                }
+                .frame(height: compact ? 130 : 220)
+                Text("Temperature (°C)").font(.caption).foregroundStyle(.secondary).frame(maxWidth: .infinity)
             }
-            ZStack {
-                RoundedRectangle(cornerRadius: 6).fill(Color.primary.opacity(0.05))
-                Path { p in p.addLines(pts) }.stroke(Color.accentColor, lineWidth: 1.5)
-                ForEach(0..<8, id: \.self) { i in Circle().fill(Color.accentColor).frame(width: 4, height: 4).position(pts[i]) }
+            if data.omitted > 0 {
+                Text("\(data.omitted) firmware point(s) outside the valid range or order are not plotted.")
+                    .font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
             }
         }
-        .frame(height: 54)
-        .help((0..<8).map { "\(c[$0])°C \(c[8 + $0])%" }.joined(separator: "  "))
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("Fan duty by temperature")
+        .accessibilityValue(data.points.map { "\($0.temperature) degrees Celsius, \($0.duty) percent" }.joined(separator: "; "))
+    }
+    private func distance(_ point: FanCurvePoint, to position: CGPoint, proxy: ChartProxy) -> CGFloat {
+        guard let x = proxy.position(forX: point.temperature), let y = proxy.position(forY: point.duty) else { return .infinity }
+        return pow(x - position.x, 2) + pow(y - position.y, 2)
+    }
+}
+
+struct FanCurveView: View {
+    @ObservedObject var m: RogModel
+    var compact = false
+    @State private var fan = 0
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack {
+                Text("\(m.curveMode.title) firmware curve").font(.system(size: 12, weight: .medium))
+                Spacer()
+                Picker("Fan", selection: $fan) { Text("CPU").tag(0); Text("GPU").tag(1) }
+                    .pickerStyle(.segmented).frame(width: 105).controlSize(.small)
+            }
+            if let bytes = fan == 0 ? m.curve : m.gpuCurve { CurveChart(c: bytes, compact: compact) }
+            else { Text("Fan curve unavailable from firmware.").font(.caption).foregroundStyle(.secondary) }
+            if !compact {
+                Text("Firmware reference, not live RPM. Hover a point to read its temperature and duty.")
+                    .font(.caption).foregroundStyle(.secondary)
+            }
+        }
     }
 }
 
@@ -381,50 +506,112 @@ struct LimitSlider: View {
         HStack {
             Text(name).font(.system(size: 12)).frame(width: 44, alignment: .leading).help(help)
             Slider(value: Binding(get: { Double(value) }, set: { value = Int($0.rounded()) }),
-                   in: Double(range.0)...Double(max(range.1, range.0 + 1)), step: 1).controlSize(.small)
+                   in: Double(range.0)...Double(max(range.1, range.0 + 1))).controlSize(.small)
             Text("\(value) W").font(.system(size: 12)).monospacedDigit().frame(width: 40, alignment: .trailing)
         }
     }
 }
 
-struct ContentView: View {
-    @ObservedObject var m: RogModel
-    var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            HStack {
-                Text("ROG Zephyrus G14").font(.system(size: 13, weight: .semibold))
-                Spacer()
-                Label(m.st.ac ? "AC" : "Battery", systemImage: m.st.ac ? "powerplug" : "battery.75")
-                    .font(.system(size: 11)).foregroundStyle(.secondary)
-            }
-            if !m.st.present {
-                Text("AsusWmi is not loaded (kexts/AsusWmi in OpenCore).").font(.system(size: 12)).foregroundStyle(.secondary)
-            }
-            HStack {
-                Stat(symbol: "thermometer.medium", value: m.tctl.map { String(format: "%.0f°", $0) } ?? "–", label: "CPU")
-                Stat(symbol: "bolt", value: m.watts.map { String(format: "%.1f W", $0) } ?? "–", label: "Package")
-                Stat(symbol: "fan", value: "\(m.st.cpuFan)", label: "CPU fan rpm")
-                Stat(symbol: "fan", value: "\(m.st.gpuFan)", label: "GPU fan rpm")
-            }
-            .padding(.vertical, 4)
+enum RogPage: String, CaseIterable, Identifiable {
+    case overview = "Overview", performance = "Performance", lighting = "Lighting", battery = "Battery & Display", settings = "Settings"
+    var id: String { rawValue }
+    var symbol: String {
+        switch self {
+        case .overview: return "square.grid.2x2"
+        case .performance: return "gauge.with.dots.needle.50percent"
+        case .lighting: return "keyboard"
+        case .battery: return "battery.75"
+        case .settings: return "gearshape"
+        }
+    }
+}
 
-            Text("Performance").font(.system(size: 11, weight: .medium)).foregroundStyle(.secondary)
-            HStack(spacing: 6) {
-                ForEach(Mode.allCases) { mode in
-                    let off = mode == .turbo && !m.st.ac
-                    Button { m.choose(mode) } label: {
-                        VStack(spacing: 3) {
-                            Image(systemName: mode.symbol).font(.system(size: 14))
-                            Text(mode.title).font(.system(size: 11))
-                        }
-                        .frame(maxWidth: .infinity).padding(.vertical, 6)
-                        .background(RoundedRectangle(cornerRadius: 7).fill(m.settings.mode == mode ? Color.accentColor.opacity(0.25) : Color.primary.opacity(0.06)))
+struct RogSection<Content: View>: View {
+    let title: String
+    @ViewBuilder var content: Content
+    var body: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            Text(title).font(.system(size: 15, weight: .semibold))
+            content
+        }
+        .padding(20).frame(maxWidth: .infinity, alignment: .leading)
+        .background(Color(nsColor: .controlBackgroundColor), in: RoundedRectangle(cornerRadius: 12))
+        .overlay(RoundedRectangle(cornerRadius: 12).strokeBorder(Color.primary.opacity(0.08)))
+    }
+}
+
+struct RogControls: View {
+    @ObservedObject var m: RogModel
+    let page: RogPage
+    var compact = false
+    var body: some View {
+        VStack(alignment: .leading, spacing: 20) {
+            if !m.st.present {
+                Label("Hardware controls unavailable. Load AsusWmi through OpenCore to connect your G14.", systemImage: "exclamationmark.triangle")
+                    .font(.callout).foregroundStyle(.secondary)
+            }
+            if page == .overview {
+                RogSection(title: "Live telemetry") {
+                    HStack(spacing: 16) {
+                        Stat(symbol: "thermometer.medium", value: m.tctl.map { String(format: "%.0f°", $0) } ?? "–", label: "CPU temperature")
+                        Stat(symbol: "bolt", value: m.watts.map { String(format: "%.1f W", $0) } ?? "–", label: "Package power")
+                        Stat(symbol: "fan", value: m.st.present ? "\(m.st.cpuFan)" : "–", label: "CPU fan · RPM")
+                        Stat(symbol: "fan", value: m.st.present ? "\(m.st.gpuFan)" : "–", label: "GPU fan · RPM")
                     }
-                    .buttonStyle(.plain).disabled(off).opacity(off ? 0.4 : 1)
-                    .help(off ? "Turbo needs the AC adapter" : mode.title)
                 }
             }
-
+            if page == .overview || page == .performance {
+                RogSection(title: "Performance mode") { modes.disabled(!m.st.present) }
+            }
+            if page == .performance {
+                RogSection(title: "Power & cooling") {
+                    VStack(alignment: .leading, spacing: 12) {
+                        manualControls
+                        FanCurveView(m: m)
+                        if m.settings.mode != .manual {
+                            Text("Firmware manages power limits in this mode. Choose Manual to adjust them.").font(.callout).foregroundStyle(.secondary)
+                        }
+                    }.disabled(!m.st.present)
+                }
+            }
+            if page == .lighting {
+                RogSection(title: "Keyboard & Slash lighting") {
+                    VStack(alignment: .leading, spacing: 12) {
+                        lightingControls
+                        if !m.st.lighting { Text("Lighting is unavailable. AsusWmi ABI 3 and the N-KEY keyboard are required.").foregroundStyle(.secondary) }
+                    }.disabled(!m.st.present)
+                }
+            }
+            if page == .overview || page == .battery {
+                RogSection(title: "Battery care") {
+                    VStack(alignment: .leading, spacing: 12) {
+                        batteryControls
+                        Text("60% for desk use · 80% for everyday use · 100% for travel").font(.callout).foregroundStyle(.secondary)
+                    }.disabled(!m.st.present)
+                }
+            }
+            if page == .overview {
+                RogSection(title: "Graphics") { Text(gpuLine).font(.callout).foregroundStyle(.secondary) }
+            }
+            if page == .settings {
+                RogSection(title: "Startup") {
+                    Toggle("Open at Login", isOn: Binding(get: { m.loginEnabled }, set: { m.setLogin($0) })).toggleStyle(.switch)
+                    Text("Runs quietly in the menu bar at login. Closing the window keeps hardware control active.").font(.callout).foregroundStyle(.secondary)
+                }
+                RogSection(title: "About ROG Control") {
+                    Text("ROG Zephyrus G14 · GA403WM").font(.headline)
+                    Text("Settings are saved independently for AC and battery, then restored when your power source changes.").foregroundStyle(.secondary)
+                    Link("Created by thanhnndev · github.com/thanhnndev", destination: URL(string: "https://github.com/thanhnndev")!)
+                    Link("Inspired by asusctl and the asus-linux community", destination: URL(string: "https://asus-linux.org")!)
+                }
+            }
+            if !m.message.isEmpty {
+                Label(m.message, systemImage: "info.circle").font(.callout).foregroundStyle(.secondary).textSelection(.enabled)
+            }
+        }
+    }
+    var manualControls: some View {
+        VStack(alignment: .leading, spacing: 8) {
             if m.settings.mode == .manual {
                 VStack(alignment: .leading, spacing: 4) {
                     LimitSlider(name: "SPL", help: "PL1, sustained power", value: $m.settings.spl, range: m.st.ranges[0])
@@ -436,48 +623,54 @@ struct ContentView: View {
                             ForEach([Mode.silent, .performance, .turbo]) { Text($0.title + " curve").tag($0) }
                         }
                         .labelsHidden().controlSize(.small).frame(width: 150)
+                        .onChange(of: m.settings.fanBase) { _ in m.loadCurve() }
                         Spacer()
                         Button("Apply") { m.saveManual() }.controlSize(.small)
                     }
+                    HStack {
+                        Text((m.manualDirty || m.activeMode != .manual || !m.profileError.isEmpty) ? "Changes not applied" : "Applied limits: " + m.st.ppt.map { "\($0) W" }.joined(separator: " / "))
+                            .font(.caption).foregroundStyle(.secondary)
+                        Spacer()
+                    }
                 }
             }
-            if let c = m.curve { CurveChart(c: c) }
 
+        }
+    }
+    var lightingControls: some View {
+        VStack(alignment: .leading, spacing: 8) {
             if m.st.lighting {
-                Text("Lighting").font(.system(size: 11, weight: .medium)).foregroundStyle(.secondary)
+                KeyboardRow(level: m.st.kbd) { m.setKbd($0) }
+                slashControls
+            }
+        }
+    }
+    var slashControls: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            if m.st.lighting {
                 HStack(spacing: 6) {
-                    Image(systemName: "keyboard").font(.system(size: 11)).foregroundStyle(.secondary)
-                    ForEach(0...3, id: \.self) { v in
-                        Button(v == 0 ? "Off" : "\(v)") { m.setKbd(v) }
-                            .controlSize(.small).buttonStyle(.bordered)
-                            .tint(m.kbd == v ? .accentColor : nil)
-                    }
-                    Spacer()
-                }
-                .help("Keyboard backlight (Fn+F2 / Fn+F3 step it)")
-                HStack(spacing: 6) {
-                    Toggle("Slash", isOn: Binding(get: { m.slash.bright > 0 }, set: { on in
-                        var s = m.slash; s.bright = on ? (UserDefaults.standard.object(forKey: "slash.on.bright") as? Int ?? 2) : 0
-                        if !on { UserDefaults.standard.set(m.slash.bright, forKey: "slash.on.bright") }
+                    Toggle("Slash", isOn: Binding(get: { (m.st.slash.map { Slash(packed: $0).bright } ?? 0) > 0 }, set: { on in
+                        var s = m.currentSlash; s.bright = on ? (UserDefaults.standard.object(forKey: "slash.on.bright") as? Int ?? 2) : 0
+                        if !on { UserDefaults.standard.set(m.currentSlash.bright, forKey: "slash.on.bright") }
                         m.setSlash(s)
                     }))
                     .toggleStyle(.switch).controlSize(.mini).font(.system(size: 12))
-                    Picker("", selection: Binding(get: { m.slash.mode }, set: { v in var s = m.slash; s.mode = v; if s.bright == 0 { s.bright = 2 }; m.setSlash(s) })) {
+                    Picker("", selection: Binding(get: { m.currentSlash.mode }, set: { v in var s = m.currentSlash; s.mode = v; if s.bright == 0 { s.bright = 2 }; m.setSlash(s) })) {
                         ForEach(0..<Slash.modes.count, id: \.self) { Text(Slash.modes[$0]).tag($0) }
                     }
                     .labelsHidden().controlSize(.small).frame(maxWidth: 130)
                     Spacer()
                 }
                 .help("Slash lighting on the lid (Fn+F4 switches it on / off)")
-                if m.slash.bright > 0 {
+                if m.currentSlash.bright > 0 {
                     HStack(spacing: 6) {
                         Text("brightness").font(.system(size: 11)).foregroundStyle(.secondary)
-                        Picker("", selection: Binding(get: { m.slash.bright }, set: { v in var s = m.slash; s.bright = v; m.setSlash(s) })) {
+                        Picker("", selection: Binding(get: { m.currentSlash.bright }, set: { v in var s = m.currentSlash; s.bright = v; m.setSlash(s) })) {
                             ForEach(1...3, id: \.self) { Text("\($0)").tag($0) }
                         }
                         .pickerStyle(.segmented).labelsHidden().controlSize(.small).frame(width: 90)
                         Text("interval").font(.system(size: 11)).foregroundStyle(.secondary)
-                        Picker("", selection: Binding(get: { m.slash.interval }, set: { v in var s = m.slash; s.interval = v; m.setSlash(s) })) {
+                        Picker("", selection: Binding(get: { m.currentSlash.interval }, set: { v in var s = m.currentSlash; s.interval = v; m.setSlash(s) })) {
                             ForEach(0...5, id: \.self) { Text("\($0)").tag($0) }
                         }
                         .labelsHidden().controlSize(.small).frame(width: 52)
@@ -486,37 +679,23 @@ struct ContentView: View {
                 }
             }
 
-            Toggle("Dim the built-in OLED in software", isOn: Binding(get: { m.dim }, set: { m.setDim($0) }))
-                .toggleStyle(.switch).controlSize(.mini).font(.system(size: 12))
-                .help("Follows the brightness slider and Fn+F7 / Fn+F8: NullMoth's backlight control does not reach this panel")
-
-            Text("Battery").font(.system(size: 11, weight: .medium)).foregroundStyle(.secondary)
+        }
+    }
+    var batteryControls: some View {
+        VStack(alignment: .leading, spacing: 8) {
             HStack(spacing: 6) {
                 ForEach([60, 80, 100], id: \.self) { v in
-                    Button("\(v) %") { m.setCharge(v) }
-                        .controlSize(.small).buttonStyle(.bordered)
-                        .tint(m.charge == v ? .accentColor : nil)
+                    ChoiceButton(title: "\(v)%", selected: m.st.charge == v) { m.setCharge(v) }
                 }
                 Spacer()
                 Text(m.st.charge.map { "limit \($0) %" } ?? "–").font(.system(size: 11)).foregroundStyle(.secondary)
             }
             Text(m.batteryLine).font(.system(size: 11)).foregroundStyle(.secondary)
 
-            Text(gpuLine).font(.system(size: 11)).foregroundStyle(.secondary)
-            if !m.message.isEmpty { Text(m.message).font(.system(size: 11)).foregroundStyle(.secondary).lineLimit(2) }
-
-            Divider()
-            HStack {
-                Toggle("Open at Login", isOn: Binding(get: { m.loginEnabled }, set: { m.setLogin($0) }))
-                    .toggleStyle(.switch).controlSize(.mini).font(.system(size: 12))
-                Spacer()
-                Link("asusctl", destination: URL(string: "https://asus-linux.org")!).font(.system(size: 11))
-                    .help("Feature set from asusctl / rog-control-center by Luke Jones and the asus-linux contributors (MPL-2.0)")
-                Button("Quit") { NSApp.terminate(nil) }.buttonStyle(.borderless).font(.system(size: 12))
-            }
         }
-        .padding(14)
-        .frame(width: 340)
+    }
+    var modes: some View {
+        ModeRow(active: m.activeMode, ac: m.st.ac, compact: compact) { m.choose($0) }
     }
     var gpuLine: String {
         var s = "GPU: "
@@ -528,82 +707,239 @@ struct ContentView: View {
     }
 }
 
-// ---- software dimming of the built-in OLED -----------------------------------------------------------------------------------
-// NullMoth sets the panel brightness through NVKMS (the BIOS reports an AUX backlight), which this Samsung OLED does not follow,
-// and its framebuffer has no gamma table (setGammaTable is a stub), so the brightness slider and Fn+F7 / Fn+F8 would move
-// without effect. Dimmer follows the built-in display's brightness (DisplayServices: the value the slider and the keys set)
-// and darkens that screen with a black, click-through window above everything else. An OLED shows black as off pixels, so this
-// lowers the light (and the power) as a backlight would; only the pointer stays at full brightness.
-@MainActor
-final class Dimmer {
-    typealias GetBrightness = @convention(c) (CGDirectDisplayID, UnsafeMutablePointer<Float>) -> Int32
-    private static let get: GetBrightness? = {
-        guard let h = dlopen("/System/Library/PrivateFrameworks/DisplayServices.framework/DisplayServices", RTLD_NOW),
-              let f = dlsym(h, "DisplayServicesGetBrightness") else { return nil }
-        return unsafeBitCast(f, to: GetBrightness.self)
-    }()
-    static let floor: CGFloat = 0.15            // pixel scale at brightness 0 (about 2 % of the light), so the screen stays usable
-    private var win: NSWindow?
-    private var timer: Timer?
-    var enabled = false {
-        didSet {
-            timer?.invalidate(); timer = nil
-            if enabled {
-                timer = Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { [weak self] _ in MainActor.assumeIsolated { self?.tick() } }
-                tick()
-            } else { win?.orderOut(nil) }
+
+// The mode row and the keyboard-light row take plain values (what is active, which level) instead of reading the model:
+// the popover showed "Active: Silent" next to a Performance highlight that never moved. Their identity follows the value, so a
+// change always rebuilds them, whatever the observation path above them does.
+struct ModeRow: View {
+    let active: Mode?
+    let ac: Bool
+    let compact: Bool
+    let choose: (Mode) -> Void
+    var body: some View {
+        HStack(spacing: compact ? 4 : 8) {
+            ForEach(Mode.allCases) { mode in
+                let selected = active == mode
+                let unavailable = mode == .turbo && !ac
+                Button { choose(mode) } label: {
+                    VStack(spacing: compact ? 5 : 8) {
+                        Image(systemName: mode.symbol).font(.system(size: compact ? 16 : 20))
+                        Text(mode.title).font(.system(size: compact ? 11 : 12, weight: .medium))
+                    }
+                    .frame(maxWidth: .infinity).padding(.vertical, compact ? 6 : 16)
+                    .foregroundStyle(selected ? Color.accentColor : Color.primary)
+                    .background(selected ? Color.accentColor.opacity(0.12) : Color.primary.opacity(0.04), in: RoundedRectangle(cornerRadius: 8))
+                    .overlay(RoundedRectangle(cornerRadius: 8).strokeBorder(selected ? Color.accentColor : Color.clear))
+                }
+                .buttonStyle(.plain).disabled(unavailable).opacity(unavailable ? 0.4 : 1)
+                .accessibilityLabel(mode.title + (selected ? ", selected" : ""))
+                .help(unavailable ? "Turbo needs the AC adapter" : mode.title)
+            }
+        }
+        .id("mode-\(active?.rawValue ?? "none")-\(ac)")
+    }
+}
+
+struct KeyboardRow: View {
+    let level: Int?
+    let set: (Int) -> Void
+    var body: some View {
+        HStack(spacing: 6) {
+            Text("Keyboard").font(.system(size: 12))
+            ForEach(0...3, id: \.self) { v in
+                ChoiceButton(title: ["Off", "Low", "Med", "High"][v], selected: level == v) { set(v) }.disabled(level == nil)
+            }
+            Spacer()
+        }
+        .id("kbd-\(level ?? -1)")
+        .help("Keyboard backlight (Fn+F2 / Fn+F3 step it)")
+    }
+}
+
+struct ChoiceButton: View {
+    let title: String
+    let selected: Bool
+    let action: () -> Void
+    var body: some View {
+        Button(action: action) {
+            Text(title).font(.system(size: 12, weight: selected ? .semibold : .regular))
+                .fixedSize().padding(.horizontal, 8).padding(.vertical, 5)
+                .foregroundStyle(selected ? Color.accentColor : Color.primary)
+                .background(selected ? Color.accentColor.opacity(0.12) : Color.primary.opacity(0.04), in: RoundedRectangle(cornerRadius: 6))
+                .overlay(RoundedRectangle(cornerRadius: 6).strokeBorder(selected ? Color.accentColor : Color.clear))
+        }.buttonStyle(.plain).accessibilityLabel(title + (selected ? ", active" : ""))
+    }
+}
+
+// The popover's manual limits and Slash rows are RogControls sections wrapped in their own View with its own @ObservedObject
+// (calling `RogControls(...).x` straight from ContentView.body leaves them without an observer). The mode row and the keyboard
+// light row are ModeRow / KeyboardRow, built in ContentView.body from plain values.
+struct PopoverPart: View {
+    enum Part { case manual, slash }
+    @ObservedObject var m: RogModel
+    let part: Part
+    @ViewBuilder var body: some View {
+        let c = RogControls(m: m, page: .overview, compact: true)
+        switch part {
+        case .manual: c.manualControls
+        case .slash: c.slashControls
         }
     }
+}
 
-    // brightness is perceptual (the slider), pixel values are gamma encoded: scaling them linearly by it is close to right
-    func tick() {
-        guard enabled, let get = Dimmer.get,
-              let screen = NSScreen.screens.first(where: {
-                  ($0.deviceDescription[NSDeviceDescriptionKey("NSScreenNumber")] as? NSNumber).map { CGDisplayIsBuiltin($0.uint32Value) != 0 } ?? false }),
-              let id = (screen.deviceDescription[NSDeviceDescriptionKey("NSScreenNumber")] as? NSNumber)?.uint32Value
-        else { win?.orderOut(nil); return }
-        var b: Float = 1
-        guard get(id, &b) == 0 else { win?.orderOut(nil); return }
-        let alpha = 1 - (Dimmer.floor + (1 - Dimmer.floor) * CGFloat(min(max(b, 0), 1)))
-        if alpha < 0.005 { win?.orderOut(nil); return }
-        let w = win ?? make()
-        if w.frame != screen.frame { w.setFrame(screen.frame, display: false) }
-        if abs(w.alphaValue - alpha) > 0.001 { w.alphaValue = alpha }
-        if !w.isVisible { w.orderFrontRegardless() }
+// Primary surface: stable compact rows, immediate controls, optional details.
+struct ContentView: View {
+    @ObservedObject var m: RogModel
+    let openWindow: () -> Void
+    @State private var showCurves = false
+    private var controls: RogControls { RogControls(m: m, page: .overview, compact: true) }
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack {
+                Text("ROG Control").font(.system(size: 13, weight: .semibold))
+                Spacer()
+                Label(m.st.present ? (m.st.ac ? "AC" : "Battery") : "Disconnected",
+                      systemImage: m.st.ac ? "powerplug" : "battery.75")
+                    .font(.caption).foregroundStyle(.secondary)
+            }
+            HStack(spacing: 6) {
+                quickStat(m.tctl.map { String(format: "%.0f°C", $0) } ?? "–", "CPU")
+                quickStat(m.watts.map { String(format: "%.1f W", $0) } ?? "–", "Power")
+                quickStat(m.st.present ? "\(m.st.cpuFan)" : "–", "CPU RPM")
+                quickStat(m.st.present ? "\(m.st.gpuFan)" : "–", "GPU RPM")
+            }
+            ModeRow(active: m.activeMode, ac: m.st.ac, compact: true) { m.choose($0) }.disabled(!m.st.present)
+            HStack {
+                Text("Active: \(m.modeLabel)").font(.caption).foregroundStyle(.secondary)
+                Spacer()
+                Text("Editing \(m.st.ac ? "AC" : "battery") settings").font(.caption).foregroundStyle(.secondary)
+            }
+            inlineError(m.profileError)
+            // Optional curve content scrolls; daily controls and footer stay in place.
+            if m.settings.mode == .manual {
+                PopoverPart(m: m, part: .manual).disabled(!m.st.present)
+            }
+            Divider()
+            HStack(spacing: 8) {
+                Text("Charge limit").font(.system(size: 12)).frame(width: 76, alignment: .leading)
+                ForEach([60, 80, 100], id: \.self) { value in
+                    ChoiceButton(title: "\(value)%", selected: m.st.charge == value) { m.setCharge(value) }
+                }
+                Spacer(minLength: 0)
+            }.disabled(!m.st.present || m.st.charge == nil)
+            inlineError(m.chargeError)
+            if m.st.batFull > 0 {
+                HStack {
+                    Text("Battery \(min(100, max(0, m.st.batNow * 100 / m.st.batFull)))%")
+                    Spacer()
+                    Text(m.st.batState & 2 != 0 ? "Charging" : m.st.ac ? "On AC" : "Discharging")
+                }.font(.caption).foregroundStyle(.secondary)
+            }
+            Divider()
+            if m.st.lighting {
+                KeyboardRow(level: m.st.kbd) { m.setKbd($0) }.disabled(!m.st.present)
+                PopoverPart(m: m, part: .slash).disabled(!m.st.present)
+                inlineError(m.lightingError)
+            } else {
+                Text("Keyboard / Slash unavailable").font(.caption).foregroundStyle(.secondary)
+            }
+            DisclosureGroup("Fan curves", isExpanded: $showCurves) {
+                ScrollView { FanCurveView(m: m, compact: true).padding(.top, 8) }.frame(height: curveDetailHeight)
+            }.font(.caption)
+            if !m.st.present { Text("AsusWmi is not loaded. Hardware controls are unavailable.").font(.caption).foregroundStyle(.secondary) }
+            Divider()
+            HStack {
+                Menu("Settings") {
+                    Toggle("Open at Login", isOn: Binding(get: { m.loginEnabled }, set: { m.setLogin($0) }))
+                    Text(m.batteryLine)
+                    Text(controls.gpuLine)
+                    Button("Created by thanhnndev (GitHub)") { NSWorkspace.shared.open(URL(string: "https://github.com/thanhnndev")!) }
+                    Button("Quit ROG Control") { NSApp.terminate(nil) }
+                }.menuStyle(.borderlessButton).fixedSize().font(.caption)
+                Spacer()
+                Button("Open app", action: openWindow).buttonStyle(.borderless).font(.caption)
+            }
+        }.padding(14).frame(width: 350)
     }
+    private var curveDetailHeight: CGFloat {
+        let available = (NSScreen.main?.visibleFrame.height ?? 800) - (m.settings.mode == .manual ? 590 : 490)
+        return min(210, max(95, available))
+    }
+    private func inlineError(_ text: String) -> some View {
+        Group {
+            if !text.isEmpty {
+                Label(text, systemImage: "exclamationmark.triangle").font(.caption)
+                    .foregroundStyle(.red).fixedSize(horizontal: false, vertical: true)
+            }
+        }
+    }
+    private func quickStat(_ value: String, _ label: String) -> some View {
+        VStack(alignment: .leading, spacing: 3) {
+            Text(value).font(.system(size: 14, weight: .semibold)).monospacedDigit()
+            Text(label).font(.system(size: 10)).foregroundStyle(.secondary)
+        }.frame(maxWidth: .infinity, alignment: .leading)
+    }
+}
 
-    private func make() -> NSWindow {
-        let w = NSWindow(contentRect: .zero, styleMask: .borderless, backing: .buffered, defer: false)
-        w.isReleasedWhenClosed = false
-        w.backgroundColor = .black
-        w.isOpaque = false
-        w.hasShadow = false
-        w.ignoresMouseEvents = true
-        w.sharingType = .none                   // not in screenshots and recordings
-        w.level = NSWindow.Level(rawValue: Int(CGWindowLevelForKey(.assistiveTechHighWindow)))   // above the menu bar, Dock, menus
-        w.collectionBehavior = [.canJoinAllSpaces, .stationary, .ignoresCycle, .fullScreenAuxiliary]
-        win = w
-        return w
+struct RogWindowView: View {
+    @ObservedObject var m: RogModel
+    @State private var page: RogPage = .overview
+    var body: some View {
+        HStack(spacing: 0) {
+            VStack(alignment: .leading, spacing: 20) {
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("ROG Control").font(.system(size: 21, weight: .semibold))
+                    Text("ZEPHYRUS G14").font(.system(size: 10, weight: .medium)).tracking(1.5).foregroundStyle(.secondary)
+                }.padding(.horizontal, 12).padding(.top, 20)
+                VStack(spacing: 4) {
+                    ForEach(RogPage.allCases) { destination in
+                        Button { page = destination } label: {
+                            Label(destination.rawValue, systemImage: destination.symbol)
+                                .font(.system(size: 13, weight: page == destination ? .semibold : .regular))
+                                .frame(maxWidth: .infinity, alignment: .leading).padding(12)
+                                .foregroundStyle(page == destination ? Color.accentColor : Color.primary)
+                                .background(page == destination ? Color.accentColor.opacity(0.12) : Color.clear, in: RoundedRectangle(cornerRadius: 8))
+                        }.buttonStyle(.plain)
+                    }
+                }
+                Spacer()
+                Label(m.st.ac ? "Connected to AC" : "On battery", systemImage: m.st.ac ? "powerplug" : "battery.75")
+                    .font(.caption).foregroundStyle(.secondary).padding(12)
+            }.padding(12).frame(width: 210).background(Color(nsColor: .windowBackgroundColor))
+            Divider()
+            ScrollView {
+                VStack(alignment: .leading, spacing: 24) {
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text(page.rawValue).font(.system(size: 24, weight: .semibold))
+                        Text("\(m.st.ac ? "AC" : "Battery") settings · Active mode: \(m.modeLabel)").font(.callout).foregroundStyle(.secondary)
+                    }
+                    RogControls(m: m, page: page)
+                }.padding(32).frame(maxWidth: 900, alignment: .leading).frame(maxWidth: .infinity)
+            }.background(Color(nsColor: .underPageBackgroundColor))
+        }.frame(minWidth: 800, minHeight: 600)
     }
 }
 
 // ---- status item -------------------------------------------------------------------------------------------------------------
 @MainActor
-final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate {
+final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate, NSWindowDelegate {
     let item = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
     let popover = NSPopover()
     var model: RogModel!
+    var window: NSWindow?
 
     func applicationDidFinishLaunching(_ n: Notification) {
         model = RogModel()
         popover.behavior = .transient
         popover.animates = false
         popover.delegate = self
-        popover.contentViewController = NSHostingController(rootView: ContentView(m: model))
+        popover.contentViewController = NSHostingController(rootView: ContentView(m: model, openWindow: { [weak self] in self?.showWindow() }))
         item.button?.target = self
         item.button?.action = #selector(toggle)
         model.onChange = { [weak self] in self?.updateIcon() }
         updateIcon()
+        setupMenus()
+        if !CommandLine.arguments.contains("--background") { showWindow() }
     }
 
     @objc func toggle() {
@@ -615,15 +951,70 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate {
         popover.show(relativeTo: b.bounds, of: b, preferredEdge: .minY)
         popover.contentViewController?.view.window?.makeKey()
     }
-    func popoverDidClose(_ n: Notification) { model.visible = false }
+    func popoverDidClose(_ n: Notification) { updateVisibility() }
+    func updateVisibility() { model.visible = popover.isShown || window?.isVisible == true }
+    func windowWillClose(_ n: Notification) {
+        model.visible = popover.isShown
+        NSApp.setActivationPolicy(.accessory)
+    }
+    func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool { false }
+    func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool {
+        showWindow(); return true
+    }
+    @objc func showWindow() {
+        popover.performClose(nil)
+        if window == nil {
+            let w = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 980, height: 720),
+                             styleMask: [.titled, .closable, .miniaturizable, .resizable], backing: .buffered, defer: false)
+            w.title = "ROG Control"
+            w.isReleasedWhenClosed = false
+            w.minSize = NSSize(width: 800, height: 640)
+            w.contentViewController = NSHostingController(rootView: RogWindowView(m: model))
+            w.delegate = self
+            w.center()
+            w.setFrameAutosaveName("RogControl.MainWindow")
+            window = w
+        }
+        NSApp.setActivationPolicy(.regular)
+        window?.makeKeyAndOrderFront(nil)
+        NSApp.activate(ignoringOtherApps: true)
+        model.refresh(); model.loadCurve(); updateVisibility()
+    }
+    @objc func refreshNow() { model.refresh(); model.loadCurve() }
+    @objc func showAbout() {
+        let credits = NSMutableAttributedString(string: "Created by thanhnndev\ngithub.com/thanhnndev\n\nInspired by asusctl and the asus-linux community.",
+                                                attributes: [.font: NSFont.systemFont(ofSize: 11), .foregroundColor: NSColor.labelColor])
+        credits.addAttribute(.link, value: URL(string: "https://github.com/thanhnndev")!, range: (credits.string as NSString).range(of: "github.com/thanhnndev"))
+        NSApp.orderFrontStandardAboutPanel(options: [.credits: credits])
+        NSApp.activate(ignoringOtherApps: true)
+    }
+    func setupMenus() {
+        let menu = NSMenu()
+        let appItem = NSMenuItem(); menu.addItem(appItem)
+        let appMenu = NSMenu(); appItem.submenu = appMenu
+        let about = appMenu.addItem(withTitle: "About ROG Control", action: #selector(showAbout), keyEquivalent: "")
+        about.target = self
+        appMenu.addItem(.separator())
+        appMenu.addItem(withTitle: "Hide ROG Control", action: #selector(NSApplication.hide(_:)), keyEquivalent: "h")
+        appMenu.addItem(.separator())
+        appMenu.addItem(withTitle: "Quit ROG Control", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q")
+        let windowItem = NSMenuItem(); menu.addItem(windowItem)
+        let windowMenu = NSMenu(title: "Window"); windowItem.submenu = windowMenu
+        let open = windowMenu.addItem(withTitle: "Open ROG Control", action: #selector(showWindow), keyEquivalent: "0"); open.target = self
+        let refresh = windowMenu.addItem(withTitle: "Refresh", action: #selector(refreshNow), keyEquivalent: "r"); refresh.target = self
+        windowMenu.addItem(withTitle: "Minimize", action: #selector(NSWindow.performMiniaturize(_:)), keyEquivalent: "m")
+        windowMenu.addItem(withTitle: "Close", action: #selector(NSWindow.performClose(_:)), keyEquivalent: "w")
+        NSApp.mainMenu = menu
+        NSApp.windowsMenu = windowMenu
+    }
 
     func updateIcon() {
         guard let b = item.button else { return }
-        let mode = model.settings.mode
+        let mode = model.activeMode ?? .performance
         let img = NSImage(systemSymbolName: mode.symbol, accessibilityDescription: "ROG: \(mode.title)")
         img?.isTemplate = true
         b.image = img
-        var tip = "ROG: \(mode.title)"
+        var tip = "ROG: \(model.modeLabel)"
         if let t = model.tctl { tip += String(format: " · CPU %.0f°C", t) }
         if let w = model.watts { tip += String(format: " · %.1f W", w) }
         b.toolTip = tip

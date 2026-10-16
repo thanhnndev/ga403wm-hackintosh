@@ -1,0 +1,7 @@
+# 0xffffff800212a71c __ZNK11IO80211Glue9getLoggerEv
+ffffff800212a71c: push     rbp
+ffffff800212a71d: mov      rbp, rsp
+ffffff800212a720: mov      rax, qword ptr [rdi + 0x18]
+ffffff800212a724: mov      rax, qword ptr [rax + 0x50]
+ffffff800212a728: pop      rbp
+ffffff800212a729: ret      

@@ -1,0 +1,24 @@
+# 0xffffff80029822fc __ZN25IOSkywalkNetworkInterface20finalizeBSDInterfaceEP7__ifnetj
+ffffff80029822fc: push     rbp
+ffffff80029822fd: mov      rbp, rsp
+ffffff8002982300: push     rbx
+ffffff8002982301: push     rax
+ffffff8002982302: mov      rbx, rdi
+ffffff8002982305: mov      rax, qword ptr [rdi + 0xb8]
+ffffff800298230c: mov      rdi, qword ptr [rax + 0x18]
+ffffff8002982310: call     0xffffff800052f900  ; _lck_mtx_lock
+ffffff8002982315: mov      rax, qword ptr [rbx + 0xb8]
+ffffff800298231c: mov      byte ptr [rax + 0x40], 0
+ffffff8002982320: mov      rdi, qword ptr [rax + 0x18]
+ffffff8002982324: call     0xffffff800052fc50  ; _lck_mtx_unlock
+ffffff8002982329: mov      rax, qword ptr [rbx]
+ffffff800298232c: mov      rdi, rbx
+ffffff800298232f: xor      esi, esi
+ffffff8002982331: call     qword ptr [rax + 0x858]
+ffffff8002982337: mov      rax, qword ptr [rbx + 0xb8]
+ffffff800298233e: mov      qword ptr [rax + 8], 0
+ffffff8002982346: add      rsp, 8
+ffffff800298234a: pop      rbx
+ffffff800298234b: pop      rbp
+ffffff800298234c: ret      
+ffffff800298234d: nop      

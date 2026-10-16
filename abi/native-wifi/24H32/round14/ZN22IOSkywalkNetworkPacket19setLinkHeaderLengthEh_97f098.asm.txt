@@ -1,0 +1,11 @@
+# 0xffffff800297f098 __ZN22IOSkywalkNetworkPacket19setLinkHeaderLengthEh
+ffffff800297f098: push     rbp
+ffffff800297f099: mov      rbp, rsp
+ffffff800297f09c: mov      rdi, qword ptr [rdi + 0x28]
+ffffff800297f0a0: call     0xffffff8000a34d40  ; _kern_packet_set_link_header_length
+ffffff800297f0a5: test     eax, eax
+ffffff800297f0a7: mov      ecx, 0xe00002c2
+ffffff800297f0ac: cmovne   eax, ecx
+ffffff800297f0af: pop      rbp
+ffffff800297f0b0: ret      
+ffffff800297f0b1: nop      

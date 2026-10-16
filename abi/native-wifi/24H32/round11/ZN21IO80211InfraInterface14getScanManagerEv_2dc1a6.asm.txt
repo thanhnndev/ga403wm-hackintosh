@@ -1,0 +1,7 @@
+# 0xffffff80022dc1a6 __ZN21IO80211InfraInterface14getScanManagerEv
+ffffff80022dc1a6: push     rbp
+ffffff80022dc1a7: mov      rbp, rsp
+ffffff80022dc1aa: mov      rax, qword ptr [rdi + 0x118]
+ffffff80022dc1b1: mov      rax, qword ptr [rax]
+ffffff80022dc1b4: pop      rbp
+ffffff80022dc1b5: ret      

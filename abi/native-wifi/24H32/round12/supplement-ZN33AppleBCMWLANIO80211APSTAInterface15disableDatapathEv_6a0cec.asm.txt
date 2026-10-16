@@ -1,0 +1,120 @@
+# 0xffffff80016a0cec __ZN33AppleBCMWLANIO80211APSTAInterface15disableDatapathEv
+ffffff80016a0cec: push     rbp
+ffffff80016a0ced: mov      rbp, rsp
+ffffff80016a0cf0: push     r14
+ffffff80016a0cf2: push     rbx
+ffffff80016a0cf3: mov      rbx, rdi
+ffffff80016a0cf6: mov      rax, qword ptr [rdi]
+ffffff80016a0cf9: call     qword ptr [rax + 0xd08]
+ffffff80016a0cff: test     rax, rax
+ffffff80016a0d02: je       0xffffff80016a0d25
+ffffff80016a0d04: mov      rax, qword ptr [rbx]
+ffffff80016a0d07: mov      rdi, rbx
+ffffff80016a0d0a: call     qword ptr [rax + 0xd08]
+ffffff80016a0d10: mov      rdi, rax
+ffffff80016a0d13: mov      esi, 5
+ffffff80016a0d18: call     0xffffff80031d421c  ; __ZN11CCLogStream9shouldLogE16CCStreamLogLevel
+ffffff80016a0d1d: test     al, al
+ffffff80016a0d1f: jne      0xffffff80016a0e73
+ffffff80016a0d25: mov      rax, qword ptr [rbx + 0x120]
+ffffff80016a0d2c: mov      rdi, qword ptr [rax + 0x2d0]
+ffffff80016a0d33: mov      rax, qword ptr [rdi]
+ffffff80016a0d36: mov      rsi, rbx
+ffffff80016a0d39: call     qword ptr [rax + 0x128]
+ffffff80016a0d3f: mov      rax, qword ptr [rbx + 0x120]
+ffffff80016a0d46: mov      rdi, qword ptr [rax + 0x2f0]
+ffffff80016a0d4d: test     rdi, rdi
+ffffff80016a0d50: je       0xffffff80016a0d82
+ffffff80016a0d52: mov      rax, qword ptr [rdi]
+ffffff80016a0d55: call     qword ptr [rax + 0x158]
+ffffff80016a0d5b: mov      rax, qword ptr [rbx + 0x120]
+ffffff80016a0d62: mov      rdi, qword ptr [rax + 0x2e8]
+ffffff80016a0d69: test     rdi, rdi
+ffffff80016a0d6c: je       0xffffff80016a0dd7
+ffffff80016a0d6e: mov      rax, qword ptr [rdi]
+ffffff80016a0d71: call     qword ptr [rax + 0x158]
+ffffff80016a0d77: xor      r14d, r14d
+ffffff80016a0d7a: mov      eax, r14d
+ffffff80016a0d7d: pop      rbx
+ffffff80016a0d7e: pop      r14
+ffffff80016a0d80: pop      rbp
+ffffff80016a0d81: ret      
+ffffff80016a0d82: mov      rax, qword ptr [rbx]
+ffffff80016a0d85: mov      rdi, rbx
+ffffff80016a0d88: call     qword ptr [rax + 0xd08]
+ffffff80016a0d8e: test     rax, rax
+ffffff80016a0d91: je       0xffffff80016a0e09
+ffffff80016a0d93: mov      rax, qword ptr [rbx]
+ffffff80016a0d96: mov      rdi, rbx
+ffffff80016a0d99: call     qword ptr [rax + 0xd08]
+ffffff80016a0d9f: mov      rdi, rax
+ffffff80016a0da2: mov      esi, 2
+ffffff80016a0da7: call     0xffffff80031d421c  ; __ZN11CCLogStream9shouldLogE16CCStreamLogLevel
+ffffff80016a0dac: test     al, al
+ffffff80016a0dae: je       0xffffff80016a0e09
+ffffff80016a0db0: mov      rax, qword ptr [rbx]
+ffffff80016a0db3: mov      rdi, rbx
+ffffff80016a0db6: call     qword ptr [rax + 0xd08]
+ffffff80016a0dbc: lea      rsi, [rip + 0x5fab6]  ; 0xffffff8001700879
+ffffff80016a0dc3: lea      rdx, [rip + 0x5fc29]  ; "disableDatapath"
+ffffff80016a0dca: mov      rdi, rax
+ffffff80016a0dcd: mov      ecx, 0x1492
+ffffff80016a0dd2: jmp      0xffffff80016a0ec3  ; __ZN33AppleBCMWLANIO80211APSTAInterface15disableDatapathEv+0x1d7
+ffffff80016a0dd7: mov      rax, qword ptr [rbx]
+ffffff80016a0dda: mov      rdi, rbx
+ffffff80016a0ddd: call     qword ptr [rax + 0xd08]
+ffffff80016a0de3: test     rax, rax
+ffffff80016a0de6: je       0xffffff80016a0e09
+ffffff80016a0de8: mov      rax, qword ptr [rbx]
+ffffff80016a0deb: mov      rdi, rbx
+ffffff80016a0dee: call     qword ptr [rax + 0xd08]
+ffffff80016a0df4: mov      rdi, rax
+ffffff80016a0df7: mov      esi, 2
+ffffff80016a0dfc: call     0xffffff80031d421c  ; __ZN11CCLogStream9shouldLogE16CCStreamLogLevel
+ffffff80016a0e01: test     al, al
+ffffff80016a0e03: jne      0xffffff80016a0ea1
+ffffff80016a0e09: mov      rax, qword ptr [rbx]
+ffffff80016a0e0c: mov      rdi, rbx
+ffffff80016a0e0f: call     qword ptr [rax + 0xd08]
+ffffff80016a0e15: mov      r14d, 0xe00002bc
+ffffff80016a0e1b: test     rax, rax
+ffffff80016a0e1e: je       0xffffff80016a0d7a
+ffffff80016a0e24: mov      rax, qword ptr [rbx]
+ffffff80016a0e27: mov      rdi, rbx
+ffffff80016a0e2a: call     qword ptr [rax + 0xd08]
+ffffff80016a0e30: mov      rdi, rax
+ffffff80016a0e33: mov      esi, 2
+ffffff80016a0e38: call     0xffffff80031d421c  ; __ZN11CCLogStream9shouldLogE16CCStreamLogLevel
+ffffff80016a0e3d: test     al, al
+ffffff80016a0e3f: je       0xffffff80016a0d7a
+ffffff80016a0e45: mov      rax, qword ptr [rbx]
+ffffff80016a0e48: mov      rdi, rbx
+ffffff80016a0e4b: call     qword ptr [rax + 0xd08]
+ffffff80016a0e51: lea      rsi, [rip + 0x5fc54]  ; 0xffffff8001700aac
+ffffff80016a0e58: lea      rdx, [rip + 0x5fb94]  ; "disableDatapath"
+ffffff80016a0e5f: mov      rdi, rax
+ffffff80016a0e62: mov      ecx, 0x149b
+ffffff80016a0e67: xor      eax, eax
+ffffff80016a0e69: call     0xffffff80031d267e  ; __ZN11CCLogStream7logCritEPKcz
+ffffff80016a0e6e: jmp      0xffffff80016a0d7a  ; __ZN33AppleBCMWLANIO80211APSTAInterface15disableDatapathEv+0x8e
+ffffff80016a0e73: mov      rax, qword ptr [rbx]
+ffffff80016a0e76: mov      rdi, rbx
+ffffff80016a0e79: call     qword ptr [rax + 0xd08]
+ffffff80016a0e7f: lea      rsi, [rip + 0xaddea]  ; 0xffffff800174ec70
+ffffff80016a0e86: lea      rdx, [rip + 0x5fb66]  ; "disableDatapath"
+ffffff80016a0e8d: mov      rdi, rax
+ffffff80016a0e90: mov      ecx, 0x148e
+ffffff80016a0e95: xor      eax, eax
+ffffff80016a0e97: call     0xffffff80031d2a6e  ; __ZN11CCLogStream7logInfoEPKcz
+ffffff80016a0e9c: jmp      0xffffff80016a0d25  ; __ZN33AppleBCMWLANIO80211APSTAInterface15disableDatapathEv+0x39
+ffffff80016a0ea1: mov      rax, qword ptr [rbx]
+ffffff80016a0ea4: mov      rdi, rbx
+ffffff80016a0ea7: call     qword ptr [rax + 0xd08]
+ffffff80016a0ead: lea      rsi, [rip + 0x5f99b]  ; 0xffffff800170084f
+ffffff80016a0eb4: lea      rdx, [rip + 0x5fb38]  ; "disableDatapath"
+ffffff80016a0ebb: mov      rdi, rax
+ffffff80016a0ebe: mov      ecx, 0x1495
+ffffff80016a0ec3: xor      eax, eax
+ffffff80016a0ec5: call     0xffffff80031d267e  ; __ZN11CCLogStream7logCritEPKcz
+ffffff80016a0eca: jmp      0xffffff80016a0e09  ; __ZN33AppleBCMWLANIO80211APSTAInterface15disableDatapathEv+0x11d
+ffffff80016a0ecf: nop      

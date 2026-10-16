@@ -1,0 +1,13 @@
+# 0xffffff8002982360 __ZN25IOSkywalkNetworkInterface10setBSDNameEPKc
+ffffff8002982360: push     rbp
+ffffff8002982361: mov      rbp, rsp
+ffffff8002982364: test     rsi, rsi
+ffffff8002982367: je       0xffffff800298237f
+ffffff8002982369: mov      rdi, qword ptr [rdi + 0xb8]
+ffffff8002982370: add      rdi, 0x41
+ffffff8002982374: mov      edx, 0x10
+ffffff8002982379: pop      rbp
+ffffff800298237a: jmp      0xffffff80004ef150  ; _strlcpy
+ffffff800298237f: pop      rbp
+ffffff8002982380: ret      
+ffffff8002982381: nop      

@@ -1,0 +1,49 @@
+name: Hardware report (does it work on your GA403?)
+description: Tell us what worked and what did not on your machine. This is the most useful thing you can send.
+labels: ["needs-hardware-report"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        **Redact** serial numbers, MLB, SystemUUID, ROM, Wi-Fi passwords, your MAC address and the SSIDs/BSSIDs of other networks.
+        This project is vibe-coded and tested on one unit; your result matters.
+  - type: input
+    id: model
+    attributes:
+      label: Exact model and BIOS
+      placeholder: "GA403WM, BIOS GA403WM.310, 2880x1800 OLED, RTX 5060"
+    validations:
+      required: true
+  - type: input
+    id: macos
+    attributes:
+      label: macOS version and build
+      placeholder: "15.8.1 (24H32)"
+    validations:
+      required: true
+  - type: dropdown
+    id: gpu-mode
+    attributes:
+      label: GPU mode
+      options: ["Ultimate (MUX, dGPU only)", "Hybrid", "Other / unsure"]
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Repository commit or release
+      placeholder: "v0.1 or commit hash"
+  - type: textarea
+    id: works
+    attributes:
+      label: What works
+      placeholder: "boot, GPU, USB, Wi-Fi (speed?), Bluetooth, RogControl profiles, ..."
+  - type: textarea
+    id: broken
+    attributes:
+      label: What does not work, and what you saw
+      description: Kernel panic text, screen photo, `ioreg`/`sysctl` output (redacted).
+  - type: textarea
+    id: diffs
+    attributes:
+      label: What you changed from the reference EFI / install guide

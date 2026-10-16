@@ -1,0 +1,56 @@
+# 0xffffff80029a3afc __ZN26IOSkywalkTxCompletionQueue14enqueuePacketsEPKP15IOSkywalkPacketjj
+ffffff80029a3afc: push     rbp
+ffffff80029a3afd: mov      rbp, rsp
+ffffff80029a3b00: push     r15
+ffffff80029a3b02: push     r14
+ffffff80029a3b04: push     r12
+ffffff80029a3b06: push     rbx
+ffffff80029a3b07: mov      rax, qword ptr [rdi + 0xf8]
+ffffff80029a3b0e: inc      qword ptr [rax]
+ffffff80029a3b11: test     rsi, rsi
+ffffff80029a3b14: sete     al
+ffffff80029a3b17: test     edx, edx
+ffffff80029a3b19: sete     cl
+ffffff80029a3b1c: or       cl, al
+ffffff80029a3b1e: mov      r12d, 0xe00002c2
+ffffff80029a3b24: jne      0xffffff80029a3b97
+ffffff80029a3b26: mov      rbx, rdi
+ffffff80029a3b29: mov      r14d, edx
+ffffff80029a3b2c: cmp      dword ptr [rdi + 0xac], edx
+ffffff80029a3b32: jbe      0xffffff80029a3b97
+ffffff80029a3b34: cmp      qword ptr [rbx + 0x30], 0
+ffffff80029a3b39: je       0xffffff80029a3ba3
+ffffff80029a3b3b: mov      r15, rsi
+ffffff80029a3b3e: mov      rdi, rbx
+ffffff80029a3b41: call     0xffffff8000afb010  ; __ZN13IOEventSource9closeGateEv
+ffffff80029a3b46: mov      r12d, 0xe00002d7
+ffffff80029a3b4c: cmp      byte ptr [rbx + 0x28], 1
+ffffff80029a3b50: jne      0xffffff80029a3b8f
+ffffff80029a3b52: cmp      byte ptr [rbx + 0xcc], 1
+ffffff80029a3b59: jne      0xffffff80029a3b8f
+ffffff80029a3b5b: test     byte ptr [rbx + 0x108], 1
+ffffff80029a3b62: jne      0xffffff80029a3bab
+ffffff80029a3b64: mov      edx, r14d
+ffffff80029a3b67: shl      rdx, 3
+ffffff80029a3b6b: mov      rdi, qword ptr [rbx + 0xe0]
+ffffff80029a3b72: mov      rsi, r15
+ffffff80029a3b75: call     0xffffff8000101080  ; _memmove
+ffffff80029a3b7a: mov      rsi, qword ptr [rbx + 0xe0]
+ffffff80029a3b81: mov      rdi, rbx
+ffffff80029a3b84: mov      edx, r14d
+ffffff80029a3b87: call     0xffffff800298a03c  ; __ZN26IOSkywalkTxCompletionQueue15completePacketsEPP15IOSkywalkPacketj
+ffffff80029a3b8c: xor      r12d, r12d
+ffffff80029a3b8f: mov      rdi, rbx
+ffffff80029a3b92: call     0xffffff8000afafd0  ; __ZN13IOEventSource8openGateEv
+ffffff80029a3b97: mov      eax, r12d
+ffffff80029a3b9a: pop      rbx
+ffffff80029a3b9b: pop      r12
+ffffff80029a3b9d: pop      r14
+ffffff80029a3b9f: pop      r15
+ffffff80029a3ba1: pop      rbp
+ffffff80029a3ba2: ret      
+ffffff80029a3ba3: mov      r12d, 0xe00002d8
+ffffff80029a3ba9: jmp      0xffffff80029a3b97  ; __ZN26IOSkywalkTxCompletionQueue14enqueuePacketsEPKP15IOSkywalkPacketjj+0x9b
+ffffff80029a3bab: mov      r12d, 0xe00002d5
+ffffff80029a3bb1: jmp      0xffffff80029a3b8f  ; __ZN26IOSkywalkTxCompletionQueue14enqueuePacketsEPKP15IOSkywalkPacketjj+0x93
+ffffff80029a3bb3: nop      

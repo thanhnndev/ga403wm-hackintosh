@@ -1,0 +1,7 @@
+# 0xffffff800297ebd8 __ZNK21IOSkywalkPacketBuffer13getDataOffsetEv
+ffffff800297ebd8: push     rbp
+ffffff800297ebd9: mov      rbp, rsp
+ffffff800297ebdc: movzx    eax, word ptr [rdi + 0x80]
+ffffff800297ebe3: pop      rbp
+ffffff800297ebe4: ret      
+ffffff800297ebe5: nop      

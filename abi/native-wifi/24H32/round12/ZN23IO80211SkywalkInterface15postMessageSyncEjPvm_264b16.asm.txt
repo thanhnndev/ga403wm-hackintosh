@@ -1,0 +1,143 @@
+# 0xffffff8002264b16 __ZN23IO80211SkywalkInterface15postMessageSyncEjPvm
+ffffff8002264b16: push     rbp
+ffffff8002264b17: mov      rbp, rsp
+ffffff8002264b1a: push     r15
+ffffff8002264b1c: push     r14
+ffffff8002264b1e: push     r13
+ffffff8002264b20: push     r12
+ffffff8002264b22: push     rbx
+ffffff8002264b23: sub      rsp, 0x118
+ffffff8002264b2a: mov      r14, rcx
+ffffff8002264b2d: mov      r12, rdx
+ffffff8002264b30: mov      r15d, esi
+ffffff8002264b33: mov      rbx, rdi
+ffffff8002264b36: mov      rax, qword ptr [rip + 0x1575db]  ; 0xffffff80023bc118
+ffffff8002264b3d: mov      rax, qword ptr [rax]
+ffffff8002264b40: mov      qword ptr [rbp - 0x30], rax
+ffffff8002264b44: mov      rax, qword ptr [rdi]
+ffffff8002264b47: call     qword ptr [rax + 0xde0]
+ffffff8002264b4d: test     al, al
+ffffff8002264b4f: je       0xffffff8002264d31
+ffffff8002264b55: mov      rdi, rbx
+ffffff8002264b58: call     0xffffff800226205a  ; __ZN23IO80211SkywalkInterface10getBSDNameEv
+ffffff8002264b5d: mov      r9, qword ptr [rbx]
+ffffff8002264b60: mov      rdi, rbx
+ffffff8002264b63: mov      rsi, rax
+ffffff8002264b66: mov      edx, r15d
+ffffff8002264b69: mov      rcx, r12
+ffffff8002264b6c: mov      r8, r14
+ffffff8002264b6f: call     qword ptr [r9 + 0xdd8]
+ffffff8002264b76: test     eax, eax
+ffffff8002264b78: je       0xffffff8002264bad
+ffffff8002264b7a: mov      r12d, eax
+ffffff8002264b7d: mov      rdi, rbx
+ffffff8002264b80: call     0xffffff800226205a  ; __ZN23IO80211SkywalkInterface10getBSDNameEv
+ffffff8002264b85: cmp      r12d, 0xe00002be
+ffffff8002264b8c: jne      0xffffff8002264bc3
+ffffff8002264b8e: lea      ecx, [r15 - 0xf2]
+ffffff8002264b95: cmp      ecx, 0xffffff0f
+ffffff8002264b9b: jae      0xffffff8002264ce0
+ffffff8002264ba1: lea      r10, [rip + 0x13e7ff]  ; "unknown APPLE80211_M_"
+ffffff8002264ba8: jmp      0xffffff8002264cee  ; __ZN23IO80211SkywalkInterface15postMessageSyncEjPvm+0x1d8
+ffffff8002264bad: mov      rax, qword ptr [rbx + 0x110]
+ffffff8002264bb4: mov      dword ptr [rax + 0xd0], 0
+ffffff8002264bbe: jmp      0xffffff8002264d31  ; __ZN23IO80211SkywalkInterface15postMessageSyncEjPvm+0x21b
+ffffff8002264bc3: sub      rsp, 8
+ffffff8002264bc7: lea      rdi, [rip - 0x154bce]
+ffffff8002264bce: mov      rsi, qword ptr [rip + 0x15754b]  ; 0xffffff80023bc120
+ffffff8002264bd5: lea      rcx, [rip + 0x1515b4]  ; 0xffffff80023b6190
+ffffff8002264bdc: lea      r8, [rip + 0x119f92]  ; "postMessageSync"
+ffffff8002264be3: xor      edx, edx
+ffffff8002264be5: mov      r9, rax
+ffffff8002264be8: xor      eax, eax
+ffffff8002264bea: push     r12
+ffffff8002264bec: call     0xffffff8000a85d00  ; __os_log_internal
+ffffff8002264bf1: add      rsp, 0x10
+ffffff8002264bf5: mov      rax, qword ptr [rbx + 0x110]
+ffffff8002264bfc: mov      ecx, dword ptr [rax + 0xd0]
+ffffff8002264c02: lea      edx, [rcx + 1]
+ffffff8002264c05: mov      dword ptr [rax + 0xd0], edx
+ffffff8002264c0b: test     ecx, ecx
+ffffff8002264c0d: jne      0xffffff8002264d31
+ffffff8002264c13: lea      r13, [rbp - 0x130]
+ffffff8002264c1a: mov      edx, 0x100
+ffffff8002264c1f: mov      rdi, r13
+ffffff8002264c22: mov      esi, 0xaa
+ffffff8002264c27: call     0xffffff80001010c0  ; _secure_memset
+ffffff8002264c2c: mov      rax, qword ptr [rbx]
+ffffff8002264c2f: mov      rdi, rbx
+ffffff8002264c32: xor      esi, esi
+ffffff8002264c34: call     qword ptr [rax + 0x780]
+ffffff8002264c3a: mov      r10, rax
+ffffff8002264c3d: lea      rdx, [rip + 0x119f41]  ; 0xffffff800237eb85
+ffffff8002264c44: mov      esi, 0x100
+ffffff8002264c49: mov      rdi, r13
+ffffff8002264c4c: mov      ecx, r15d
+ffffff8002264c4f: mov      r8d, r14d
+ffffff8002264c52: mov      r9d, 0x66
+ffffff8002264c58: xor      eax, eax
+ffffff8002264c5a: push     r12
+ffffff8002264c5c: push     r10
+ffffff8002264c5e: call     0xffffff8000939da0  ; _snprintf
+ffffff8002264c63: add      rsp, 0x10
+ffffff8002264c67: mov      rax, qword ptr [rbx]
+ffffff8002264c6a: mov      rdi, rbx
+ffffff8002264c6d: call     qword ptr [rax + 0xba8]
+ffffff8002264c73: mov      r8, qword ptr [rax]
+ffffff8002264c76: mov      rdi, rax
+ffffff8002264c79: mov      esi, 0xe0822805
+ffffff8002264c7e: mov      rdx, r13
+ffffff8002264c81: xor      ecx, ecx
+ffffff8002264c83: call     qword ptr [r8 + 0xd78]
+ffffff8002264c8a: mov      rax, qword ptr [rbx + 0x110]
+ffffff8002264c91: cmp      dword ptr [rax + 0xc0], 0
+ffffff8002264c98: jne      0xffffff8002264d31
+ffffff8002264c9e: lea      rsi, [rbp - 0x134]
+ffffff8002264ca5: mov      dword ptr [rsi], 0
+ffffff8002264cab: lea      rdi, [rip + 0x119f1b]  ; " wlan.panic.postmessage"
+ffffff8002264cb2: mov      edx, 4
+ffffff8002264cb7: call     0xffffff8000b92970  ; _PE_parse_boot_argn
+ffffff8002264cbc: test     eax, eax
+ffffff8002264cbe: je       0xffffff8002264ccd
+ffffff8002264cc0: cmp      dword ptr [rbp - 0x134], 0
+ffffff8002264cc7: jne      0xffffff8002264d5a
+ffffff8002264ccd: mov      rax, qword ptr [rbx + 0x110]
+ffffff8002264cd4: mov      dword ptr [rax + 0xc0], 1
+ffffff8002264cde: jmp      0xffffff8002264d31  ; __ZN23IO80211SkywalkInterface15postMessageSyncEjPvm+0x21b
+ffffff8002264ce0: mov      ecx, r15d
+ffffff8002264ce3: lea      rdx, [rip + 0x189676]  ; 0xffffff80023ee360
+ffffff8002264cea: mov      r10, qword ptr [rdx + rcx*8]
+ffffff8002264cee: sub      rsp, 8
+ffffff8002264cf2: lea      rdi, [rip - 0x154cf9]
+ffffff8002264cf9: mov      rsi, qword ptr [rip + 0x157420]  ; 0xffffff80023bc120
+ffffff8002264d00: lea      rcx, [rip + 0x151449]  ; 0xffffff80023b6150
+ffffff8002264d07: lea      r8, [rip + 0x119e67]  ; "postMessageSync"
+ffffff8002264d0e: xor      edx, edx
+ffffff8002264d10: mov      r9, rax
+ffffff8002264d13: xor      eax, eax
+ffffff8002264d15: push     r14
+ffffff8002264d17: push     r10
+ffffff8002264d19: push     r15
+ffffff8002264d1b: call     0xffffff8000a85d00  ; __os_log_internal
+ffffff8002264d20: add      rsp, 0x20
+ffffff8002264d24: mov      rax, qword ptr [rbx + 0x110]
+ffffff8002264d2b: inc      dword ptr [rax + 0xd0]
+ffffff8002264d31: mov      rax, qword ptr [rip + 0x1573e0]  ; 0xffffff80023bc118
+ffffff8002264d38: mov      rax, qword ptr [rax]
+ffffff8002264d3b: cmp      rax, qword ptr [rbp - 0x30]
+ffffff8002264d3f: jne      0xffffff8002264d55
+ffffff8002264d41: xor      eax, eax
+ffffff8002264d43: add      rsp, 0x118
+ffffff8002264d4a: pop      rbx
+ffffff8002264d4b: pop      r12
+ffffff8002264d4d: pop      r13
+ffffff8002264d4f: pop      r14
+ffffff8002264d51: pop      r15
+ffffff8002264d53: pop      rbp
+ffffff8002264d54: ret      
+ffffff8002264d55: call     0xffffff8000383150  ; ___stack_chk_fail
+ffffff8002264d5a: lea      rdi, [rip + 0x119e84]  ; ""kev_post_msg failure" @%s:%d"
+ffffff8002264d61: lea      rsi, [rip + 0x119345]  ; "IO80211SkywalkInterface.cpp"
+ffffff8002264d68: mov      edx, 0x82b
+ffffff8002264d6d: xor      eax, eax
+ffffff8002264d6f: call     0xffffff8000bd073c  ; _panic

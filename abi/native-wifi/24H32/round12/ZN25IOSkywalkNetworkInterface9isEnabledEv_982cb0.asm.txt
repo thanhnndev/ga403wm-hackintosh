@@ -1,0 +1,6 @@
+# 0xffffff8002982cb0 __ZN25IOSkywalkNetworkInterface9isEnabledEv
+ffffff8002982cb0: push     rbp
+ffffff8002982cb1: mov      rbp, rsp
+ffffff8002982cb4: mov      al, byte ptr [rdi + 0xc8]
+ffffff8002982cba: pop      rbp
+ffffff8002982cbb: ret      

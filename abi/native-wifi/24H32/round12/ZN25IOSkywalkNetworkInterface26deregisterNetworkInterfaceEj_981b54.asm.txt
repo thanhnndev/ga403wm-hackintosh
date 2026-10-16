@@ -1,0 +1,86 @@
+# 0xffffff8002981b54 __ZN25IOSkywalkNetworkInterface26deregisterNetworkInterfaceEj
+ffffff8002981b54: push     rbp
+ffffff8002981b55: mov      rbp, rsp
+ffffff8002981b58: push     r15
+ffffff8002981b5a: push     r14
+ffffff8002981b5c: push     rbx
+ffffff8002981b5d: push     rax
+ffffff8002981b5e: mov      rbx, rdi
+ffffff8002981b61: mov      rdi, qword ptr [rdi + 0xc0]
+ffffff8002981b68: test     rdi, rdi
+ffffff8002981b6b: je       0xffffff8002981c17
+ffffff8002981b71: mov      rax, qword ptr [rdi]
+ffffff8002981b74: call     qword ptr [rax + 0x1d8]
+ffffff8002981b7a: lea      rcx, [rip + 0x2e28f]  ; 0xffffff80029afe10
+ffffff8002981b81: mov      r14, qword ptr [rcx]
+ffffff8002981b84: mov      rdi, rax
+ffffff8002981b87: mov      rsi, r14
+ffffff8002981b8a: call     0xffffff8000a49ab0  ; __ZN15OSMetaClassBase12safeMetaCastEPKS_PK11OSMetaClass
+ffffff8002981b8f: test     rax, rax
+ffffff8002981b92: je       0xffffff8002981b9e
+ffffff8002981b94: mov      rdi, rax
+ffffff8002981b97: xor      esi, esi
+ffffff8002981b99: call     0xffffff8002983d14  ; __ZN20IOSkywalkLogicalLink12setInterfaceEP18IOSkywalkInterface
+ffffff8002981b9e: mov      rdi, qword ptr [rbx + 0xc0]
+ffffff8002981ba5: mov      rax, qword ptr [rdi]
+ffffff8002981ba8: call     qword ptr [rax + 0x130]
+ffffff8002981bae: cmp      eax, 2
+ffffff8002981bb1: jb       0xffffff8002981bfa
+ffffff8002981bb3: mov      r15d, 1
+ffffff8002981bb9: mov      rdi, qword ptr [rbx + 0xc0]
+ffffff8002981bc0: mov      rax, qword ptr [rdi]
+ffffff8002981bc3: mov      esi, r15d
+ffffff8002981bc6: call     qword ptr [rax + 0x1f8]
+ffffff8002981bcc: mov      rdi, rax
+ffffff8002981bcf: mov      rsi, r14
+ffffff8002981bd2: call     0xffffff8000a49ab0  ; __ZN15OSMetaClassBase12safeMetaCastEPKS_PK11OSMetaClass
+ffffff8002981bd7: mov      rdi, rbx
+ffffff8002981bda: mov      rsi, rax
+ffffff8002981bdd: call     0xffffff80029820e2  ; __ZN25IOSkywalkNetworkInterface17deleteLogicalLinkEP20IOSkywalkLogicalLink
+ffffff8002981be2: inc      r15d
+ffffff8002981be5: mov      rdi, qword ptr [rbx + 0xc0]
+ffffff8002981bec: mov      rax, qword ptr [rdi]
+ffffff8002981bef: call     qword ptr [rax + 0x130]
+ffffff8002981bf5: cmp      r15d, eax
+ffffff8002981bf8: jb       0xffffff8002981bb9
+ffffff8002981bfa: mov      rdi, qword ptr [rbx + 0xc0]
+ffffff8002981c01: test     rdi, rdi
+ffffff8002981c04: je       0xffffff8002981c0c
+ffffff8002981c06: mov      rax, qword ptr [rdi]
+ffffff8002981c09: call     qword ptr [rax + 0x28]
+ffffff8002981c0c: mov      qword ptr [rbx + 0xc0], 0
+ffffff8002981c17: mov      rdi, qword ptr [rbx + 0xa0]
+ffffff8002981c1e: test     rdi, rdi
+ffffff8002981c21: je       0xffffff8002981c29
+ffffff8002981c23: mov      rax, qword ptr [rdi]
+ffffff8002981c26: call     qword ptr [rax + 0x28]
+ffffff8002981c29: mov      qword ptr [rbx + 0xa0], 0
+ffffff8002981c34: mov      rdi, qword ptr [rbx + 0x98]
+ffffff8002981c3b: test     rdi, rdi
+ffffff8002981c3e: je       0xffffff8002981c46
+ffffff8002981c40: mov      rax, qword ptr [rdi]
+ffffff8002981c43: call     qword ptr [rax + 0x28]
+ffffff8002981c46: mov      qword ptr [rbx + 0x98], 0
+ffffff8002981c51: mov      rdi, qword ptr [rbx + 0x90]
+ffffff8002981c58: test     rdi, rdi
+ffffff8002981c5b: je       0xffffff8002981c63
+ffffff8002981c5d: mov      rax, qword ptr [rdi]
+ffffff8002981c60: call     qword ptr [rax + 0x28]
+ffffff8002981c63: mov      qword ptr [rbx + 0x90], 0
+ffffff8002981c6e: mov      rax, qword ptr [rbx + 0xb8]
+ffffff8002981c75: mov      rsi, qword ptr [rax]
+ffffff8002981c78: test     rsi, rsi
+ffffff8002981c7b: je       0xffffff8002981c99
+ffffff8002981c7d: xor      r14d, r14d
+ffffff8002981c80: mov      qword ptr [rax], r14
+ffffff8002981c83: lea      rdi, [rip + 0x35cf6]  ; 0xffffff80029b7980
+ffffff8002981c8a: call     0xffffff8000ab5a60  ; _IOFreeTypeImpl
+ffffff8002981c8f: mov      rax, qword ptr [rbx + 0xb8]
+ffffff8002981c96: mov      qword ptr [rax], r14
+ffffff8002981c99: xor      eax, eax
+ffffff8002981c9b: add      rsp, 8
+ffffff8002981c9f: pop      rbx
+ffffff8002981ca0: pop      r14
+ffffff8002981ca2: pop      r15
+ffffff8002981ca4: pop      rbp
+ffffff8002981ca5: ret      

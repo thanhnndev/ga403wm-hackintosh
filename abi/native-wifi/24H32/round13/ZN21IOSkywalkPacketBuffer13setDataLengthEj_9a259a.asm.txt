@@ -1,0 +1,15 @@
+# 0xffffff80029a259a __ZN21IOSkywalkPacketBuffer13setDataLengthEj
+ffffff80029a259a: mov      ecx, dword ptr [rdi + 0x80]
+ffffff80029a25a0: mov      eax, 0xe00002c2
+ffffff80029a25a5: add      ecx, esi
+ffffff80029a25a7: jb       0xffffff80029a25bc
+ffffff80029a25a9: push     rbp
+ffffff80029a25aa: mov      rbp, rsp
+ffffff80029a25ad: mov      rdx, qword ptr [rdi + 0x28]
+ffffff80029a25b1: cmp      ecx, dword ptr [rdx + 0x30]
+ffffff80029a25b4: ja       0xffffff80029a25bb
+ffffff80029a25b6: mov      dword ptr [rdi + 0x7c], esi
+ffffff80029a25b9: xor      eax, eax
+ffffff80029a25bb: pop      rbp
+ffffff80029a25bc: ret      
+ffffff80029a25bd: nop      

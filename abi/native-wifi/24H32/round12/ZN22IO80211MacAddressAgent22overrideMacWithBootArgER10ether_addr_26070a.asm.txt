@@ -1,0 +1,142 @@
+# 0xffffff800226070a __ZN22IO80211MacAddressAgent22overrideMacWithBootArgER10ether_addr
+ffffff800226070a: push     rbp
+ffffff800226070b: mov      rbp, rsp
+ffffff800226070e: push     r15
+ffffff8002260710: push     r14
+ffffff8002260712: push     r13
+ffffff8002260714: push     r12
+ffffff8002260716: push     rbx
+ffffff8002260717: sub      rsp, 0x38
+ffffff800226071b: mov      rbx, rsi
+ffffff800226071e: mov      r14, rdi
+ffffff8002260721: mov      rax, qword ptr [rip + 0x15b9f0]  ; 0xffffff80023bc118
+ffffff8002260728: mov      rax, qword ptr [rax]
+ffffff800226072b: mov      qword ptr [rbp - 0x30], rax
+ffffff800226072f: xor      eax, eax
+ffffff8002260731: mov      qword ptr [rbp - 0x48], rax
+ffffff8002260735: mov      qword ptr [rbp - 0x50], rax
+ffffff8002260739: mov      word ptr [rbp - 0x40], 0
+ffffff800226073f: mov      rax, qword ptr [rdi + 0x10]
+ffffff8002260743: mov      rax, qword ptr [rax]
+ffffff8002260746: mov      rax, qword ptr [rax + 0x110]
+ffffff800226074d: mov      eax, dword ptr [rax + 0x58]
+ffffff8002260750: dec      eax
+ffffff8002260752: cmp      eax, 9
+ffffff8002260755: ja       0xffffff8002260769
+ffffff8002260757: mov      eax, eax
+ffffff8002260759: lea      rcx, [rip + 0xbb07c]  ; 0xffffff800231b7dc
+ffffff8002260760: movsxd   r15, dword ptr [rcx + rax*4]
+ffffff8002260764: add      r15, rcx
+ffffff8002260767: jmp      0xffffff8002260770  ; __ZN22IO80211MacAddressAgent22overrideMacWithBootArgER10ether_addr+0x66
+ffffff8002260769: lea      r15, [rip + 0x11d7cc]  ; "invalid"
+ffffff8002260770: mov      word ptr [rbp - 0x5c], 0
+ffffff8002260776: mov      dword ptr [rbp - 0x60], 0
+ffffff800226077d: lea      r12, [rbp - 0x50]
+ffffff8002260781: mov      rdi, r15
+ffffff8002260784: mov      rsi, r12
+ffffff8002260787: mov      edx, 0x12
+ffffff800226078c: call     0xffffff8000b92970  ; _PE_parse_boot_argn
+ffffff8002260791: test     eax, eax
+ffffff8002260793: sete     al
+ffffff8002260796: mov      sil, byte ptr [r12]
+ffffff800226079a: test     sil, sil
+ffffff800226079d: sete     cl
+ffffff80022607a0: or       cl, al
+ffffff80022607a2: jne      0xffffff8002260818
+ffffff80022607a4: lea      rax, [rbp - 0x4d]
+ffffff80022607a8: xor      ecx, ecx
+ffffff80022607aa: mov      edx, 0xa9
+ffffff80022607af: mov      dil, byte ptr [rax - 2]
+ffffff80022607b3: test     dil, dil
+ffffff80022607b6: je       0xffffff8002260818
+ffffff80022607b8: mov      r8d, 9
+ffffff80022607be: cmp      sil, 0x41
+ffffff80022607c2: jge      0xffffff80022607ca
+ffffff80022607c4: mov      r8d, 0x40
+ffffff80022607ca: mov      r9d, 0xc9
+ffffff80022607d0: cmp      dil, 0x41
+ffffff80022607d4: jge      0xffffff80022607dc
+ffffff80022607d6: mov      r9d, 0xd0
+ffffff80022607dc: add      r8b, sil
+ffffff80022607df: shl      r8b, 4
+ffffff80022607e3: cmp      dil, 0x61
+ffffff80022607e7: cmovge   r9d, edx
+ffffff80022607eb: add      r8b, dil
+ffffff80022607ee: add      r8b, r9b
+ffffff80022607f1: mov      byte ptr [rbp + rcx - 0x60], r8b
+ffffff80022607f6: cmp      rcx, 5
+ffffff80022607fa: je       0xffffff800226083d
+ffffff80022607fc: movzx    esi, byte ptr [rax - 1]
+ffffff8002260800: cmp      esi, 0x3a
+ffffff8002260803: je       0xffffff8002260809
+ffffff8002260805: test     esi, esi
+ffffff8002260807: jne      0xffffff8002260818
+ffffff8002260809: inc      rcx
+ffffff800226080c: mov      sil, byte ptr [rax]
+ffffff800226080f: add      rax, 3
+ffffff8002260813: test     sil, sil
+ffffff8002260816: jne      0xffffff80022607af
+ffffff8002260818: xor      eax, eax
+ffffff800226081a: mov      rcx, qword ptr [rip + 0x15b8f7]  ; 0xffffff80023bc118
+ffffff8002260821: mov      rcx, qword ptr [rcx]
+ffffff8002260824: cmp      rcx, qword ptr [rbp - 0x30]
+ffffff8002260828: jne      0xffffff80022608ee
+ffffff800226082e: add      rsp, 0x38
+ffffff8002260832: pop      rbx
+ffffff8002260833: pop      r12
+ffffff8002260835: pop      r13
+ffffff8002260837: pop      r14
+ffffff8002260839: pop      r15
+ffffff800226083b: pop      rbp
+ffffff800226083c: ret      
+ffffff800226083d: lea      rdi, [rbp - 0x58]
+ffffff8002260841: mov      word ptr [rdi + 4], 0
+ffffff8002260847: mov      dword ptr [rdi], 0
+ffffff800226084d: lea      rsi, [rbp - 0x60]
+ffffff8002260851: mov      edx, 6
+ffffff8002260856: call     0xffffff8000104420  ; _memcmp
+ffffff800226085b: mov      ecx, eax
+ffffff800226085d: xor      eax, eax
+ffffff800226085f: test     ecx, ecx
+ffffff8002260861: je       0xffffff800226081a
+ffffff8002260863: mov      cl, byte ptr [rbp - 0x60]
+ffffff8002260866: and      cl, 1
+ffffff8002260869: jne      0xffffff800226081a
+ffffff800226086b: mov      rax, qword ptr [r14 + 0x10]
+ffffff800226086f: mov      rdi, qword ptr [rax + 0x18]
+ffffff8002260873: test     rdi, rdi
+ffffff8002260876: je       0xffffff8002260886
+ffffff8002260878: mov      esi, 1
+ffffff800226087d: call     0xffffff80031d421c  ; __ZN11CCLogStream9shouldLogE16CCStreamLogLevel
+ffffff8002260882: test     al, al
+ffffff8002260884: jne      0xffffff8002260897
+ffffff8002260886: movzx    eax, word ptr [rbp - 0x5c]
+ffffff800226088a: mov      word ptr [rbx + 4], ax
+ffffff800226088e: mov      eax, dword ptr [rbp - 0x60]
+ffffff8002260891: mov      dword ptr [rbx], eax
+ffffff8002260893: mov      al, 1
+ffffff8002260895: jmp      0xffffff800226081a  ; __ZN22IO80211MacAddressAgent22overrideMacWithBootArgER10ether_addr+0x110
+ffffff8002260897: mov      rax, qword ptr [r14 + 0x10]
+ffffff800226089b: mov      rdi, qword ptr [rax + 0x18]
+ffffff800226089f: movzx    r9d, byte ptr [rbp - 0x60]
+ffffff80022608a4: movzx    r10d, byte ptr [rbp - 0x5f]
+ffffff80022608a9: movzx    r11d, byte ptr [rbp - 0x5e]
+ffffff80022608ae: movzx    r14d, byte ptr [rbp - 0x5d]
+ffffff80022608b3: movzx    r12d, byte ptr [rbp - 0x5c]
+ffffff80022608b8: movzx    r13d, byte ptr [rbp - 0x5b]
+ffffff80022608bd: sub      rsp, 8
+ffffff80022608c1: lea      rsi, [rip + 0x11d4fc]  ; 0xffffff800237ddc4
+ffffff80022608c8: lea      rdx, [rip + 0x11d541]  ; "overrideMacWithBootArg"
+ffffff80022608cf: mov      ecx, 0x106
+ffffff80022608d4: mov      r8, r15
+ffffff80022608d7: xor      eax, eax
+ffffff80022608d9: push     r13
+ffffff80022608db: push     r12
+ffffff80022608dd: push     r14
+ffffff80022608df: push     r11
+ffffff80022608e1: push     r10
+ffffff80022608e3: call     0xffffff80031d252e  ; __ZN11CCLogStream8logAlertEPKcz
+ffffff80022608e8: add      rsp, 0x30
+ffffff80022608ec: jmp      0xffffff8002260886  ; __ZN22IO80211MacAddressAgent22overrideMacWithBootArgER10ether_addr+0x17c
+ffffff80022608ee: call     0xffffff8000383150  ; ___stack_chk_fail
+ffffff80022608f3: nop      

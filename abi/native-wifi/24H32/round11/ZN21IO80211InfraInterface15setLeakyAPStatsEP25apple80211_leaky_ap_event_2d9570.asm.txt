@@ -1,0 +1,352 @@
+# 0xffffff80022d9570 __ZN21IO80211InfraInterface15setLeakyAPStatsEP25apple80211_leaky_ap_event
+ffffff80022d9570: push     rbp
+ffffff80022d9571: mov      rbp, rsp
+ffffff80022d9574: push     r15
+ffffff80022d9576: push     r14
+ffffff80022d9578: push     r13
+ffffff80022d957a: push     r12
+ffffff80022d957c: push     rbx
+ffffff80022d957d: sub      rsp, 0x68
+ffffff80022d9581: mov      rbx, rsi
+ffffff80022d9584: mov      rax, qword ptr [rip + 0xe2b8d]  ; 0xffffff80023bc118
+ffffff80022d958b: mov      rax, qword ptr [rax]
+ffffff80022d958e: mov      qword ptr [rbp - 0x30], rax
+ffffff80022d9592: test     rsi, rsi
+ffffff80022d9595: je       0xffffff80022d99aa
+ffffff80022d959b: mov      r14, rdi
+ffffff80022d959e: mov      rax, qword ptr [rdi + 0x110]
+ffffff80022d95a5: mov      rax, qword ptr [rax + 0x40]
+ffffff80022d95a9: mov      rdi, qword ptr [rax + 0x10]
+ffffff80022d95ad: mov      r15d, dword ptr [rdi + 0x2c1c]
+ffffff80022d95b4: lea      rsi, [rbp - 0x58]
+ffffff80022d95b8: mov      word ptr [rsi + 4], 0
+ffffff80022d95be: mov      dword ptr [rsi], 0
+ffffff80022d95c4: add      rdi, 0x2c40
+ffffff80022d95cb: mov      edx, 6
+ffffff80022d95d0: call     0xffffff8000104420  ; _memcmp
+ffffff80022d95d5: test     eax, eax
+ffffff80022d95d7: je       0xffffff80022d99d0
+ffffff80022d95dd: test     r15d, r15d
+ffffff80022d95e0: je       0xffffff80022d99d0
+ffffff80022d95e6: cmp      dword ptr [rbx + 8], 0
+ffffff80022d95ea: jne      0xffffff80022d963a
+ffffff80022d95ec: mov      eax, dword ptr [rbx + 0x14]
+ffffff80022d95ef: cmp      eax, 4
+ffffff80022d95f2: jg       0xffffff80022d960a
+ffffff80022d95f4: mov      rcx, qword ptr [r14 + 0x110]
+ffffff80022d95fb: mov      rcx, qword ptr [rcx + 0x40]
+ffffff80022d95ff: mov      rcx, qword ptr [rcx + 0x10]
+ffffff80022d9603: inc      dword ptr [rcx + rax*4 + 0x2c04]
+ffffff80022d960a: mov      rax, qword ptr [r14]
+ffffff80022d960d: mov      rdi, r14
+ffffff80022d9610: call     qword ptr [rax + 0x38]
+ffffff80022d9613: mov      rdi, rax
+ffffff80022d9616: call     0xffffff8000a4a150  ; __ZNK11OSMetaClass12getClassNameEv
+ffffff80022d961b: mov      ecx, dword ptr [rbx + 4]
+ffffff80022d961e: mov      r8d, dword ptr [rbx + 0x14]
+ffffff80022d9622: lea      rdi, [rip + 0xc1124]  ; " %s::%s ERROR: Leaky AP: log sequence %u reason %u guard period start time is ze"
+ffffff80022d9629: lea      rdx, [rip + 0xc1088]  ; "setLeakyAPStats"
+ffffff80022d9630: mov      rsi, rax
+ffffff80022d9633: xor      eax, eax
+ffffff80022d9635: call     0xffffff8000ab6560  ; _IOLog
+ffffff80022d963a: cmp      dword ptr [rbx + 0x14], 5
+ffffff80022d963e: jl       0xffffff80022d9681
+ffffff80022d9640: mov      rax, qword ptr [r14 + 0x110]
+ffffff80022d9647: mov      rax, qword ptr [rax + 0x40]
+ffffff80022d964b: mov      rax, qword ptr [rax + 0x10]
+ffffff80022d964f: inc      dword ptr [rax + 0x2bc4]
+ffffff80022d9655: mov      rax, qword ptr [r14]
+ffffff80022d9658: mov      rdi, r14
+ffffff80022d965b: call     qword ptr [rax + 0x38]
+ffffff80022d965e: mov      rdi, rax
+ffffff80022d9661: call     0xffffff8000a4a150  ; __ZNK11OSMetaClass12getClassNameEv
+ffffff80022d9666: mov      ecx, dword ptr [rbx + 0x14]
+ffffff80022d9669: lea      rdi, [rip + 0xc1133]  ; 0xffffff800239a7a3
+ffffff80022d9670: lea      rdx, [rip + 0xc1041]  ; "setLeakyAPStats"
+ffffff80022d9677: mov      rsi, rax
+ffffff80022d967a: xor      eax, eax
+ffffff80022d967c: call     0xffffff8000ab6560  ; _IOLog
+ffffff80022d9681: movzx    eax, word ptr [rbx]
+ffffff80022d9684: cmp      ax, word ptr [rbx + 0x12]
+ffffff80022d9688: je       0xffffff80022d96eb
+ffffff80022d968a: mov      eax, dword ptr [rbx + 0x14]
+ffffff80022d968d: cmp      eax, 4
+ffffff80022d9690: jg       0xffffff80022d96a8
+ffffff80022d9692: mov      rcx, qword ptr [r14 + 0x110]
+ffffff80022d9699: mov      rcx, qword ptr [rcx + 0x40]
+ffffff80022d969d: mov      rcx, qword ptr [rcx + 0x10]
+ffffff80022d96a1: inc      dword ptr [rcx + rax*4 + 0x2bc8]
+ffffff80022d96a8: mov      rax, qword ptr [r14]
+ffffff80022d96ab: mov      rdi, r14
+ffffff80022d96ae: call     qword ptr [rax + 0x38]
+ffffff80022d96b1: mov      rdi, rax
+ffffff80022d96b4: call     0xffffff8000a4a150  ; __ZNK11OSMetaClass12getClassNameEv
+ffffff80022d96b9: mov      ecx, dword ptr [rbx + 4]
+ffffff80022d96bc: mov      r8d, dword ptr [rbx + 0x14]
+ffffff80022d96c0: movzx    r9d, word ptr [rbx]
+ffffff80022d96c4: movzx    r10d, word ptr [rbx + 0x12]
+ffffff80022d96c9: sub      rsp, 8
+ffffff80022d96cd: lea      rdi, [rip + 0xc1109]  ; " %s::%s ERROR: Leaky AP: Number of Packet  mismatch: gt sequence %d, reason 0x%0"
+ffffff80022d96d4: lea      rdx, [rip + 0xc0fdd]  ; "setLeakyAPStats"
+ffffff80022d96db: mov      rsi, rax
+ffffff80022d96de: xor      eax, eax
+ffffff80022d96e0: push     r10
+ffffff80022d96e2: call     0xffffff8000ab6560  ; _IOLog
+ffffff80022d96e7: add      rsp, 0x10
+ffffff80022d96eb: mov      rax, qword ptr [r14]
+ffffff80022d96ee: mov      rdi, r14
+ffffff80022d96f1: call     qword ptr [rax + 0x38]
+ffffff80022d96f4: mov      rdi, rax
+ffffff80022d96f7: call     0xffffff8000a4a150  ; __ZNK11OSMetaClass12getClassNameEv
+ffffff80022d96fc: mov      ecx, dword ptr [rbx + 4]
+ffffff80022d96ff: mov      r8d, dword ptr [rbx + 0x14]
+ffffff80022d9703: movzx    r9d, word ptr [rbx]
+ffffff80022d9707: movzx    r10d, word ptr [rbx + 0x12]
+ffffff80022d970c: sub      rsp, 8
+ffffff80022d9710: lea      rdi, [rip + 0xc113a]  ; " %s::%s(): Received leaky AP log sequence %u reason %u num of packets %d num PPD"
+ffffff80022d9717: lea      rdx, [rip + 0xc0f9a]  ; "setLeakyAPStats"
+ffffff80022d971e: mov      rsi, rax
+ffffff80022d9721: xor      eax, eax
+ffffff80022d9723: push     r10
+ffffff80022d9725: call     0xffffff8000ab6560  ; _IOLog
+ffffff80022d972a: add      rsp, 0x10
+ffffff80022d972e: mov      eax, dword ptr [rbx + 8]
+ffffff80022d9731: mov      ecx, dword ptr [rbx + 0xc]
+ffffff80022d9734: mov      r12d, 0xffffffff
+ffffff80022d973a: sub      ecx, eax
+ffffff80022d973c: jbe      0xffffff80022d9749
+ffffff80022d973e: imul     r12, rcx, 0x10624dd3
+ffffff80022d9745: shr      r12, 0x26
+ffffff80022d9749: movzx    ecx, word ptr [rbx]
+ffffff80022d974c: mov      edx, 0x100
+ffffff80022d9751: cmp      ecx, edx
+ffffff80022d9753: mov      dword ptr [rbp - 0x68], ecx
+ffffff80022d9756: cmovb    edx, ecx
+ffffff80022d9759: mov      dword ptr [rbp - 0x74], edx
+ffffff80022d975c: test     eax, eax
+ffffff80022d975e: je       0xffffff80022d98ff
+ffffff80022d9764: mov      esi, dword ptr [rbx + 0x14]
+ffffff80022d9767: cmp      esi, 4
+ffffff80022d976a: jg       0xffffff80022d98ff
+ffffff80022d9770: mov      r13, qword ptr [rbx + 0x20]
+ffffff80022d9774: mov      rax, qword ptr [r14 + 0x110]
+ffffff80022d977b: mov      rdi, qword ptr [rax + 0x40]
+ffffff80022d977f: mov      edx, r12d
+ffffff80022d9782: call     0xffffff80022e5c5c  ; __ZN23IO80211InterfaceMonitor18setLeakyApGtPeriodE26apple80211_leaky_ap_reasoni
+ffffff80022d9787: test     eax, eax
+ffffff80022d9789: je       0xffffff80022d97d8
+ffffff80022d978b: mov      rax, qword ptr [r14]
+ffffff80022d978e: mov      rdi, r14
+ffffff80022d9791: call     qword ptr [rax + 0x38]
+ffffff80022d9794: mov      rdi, rax
+ffffff80022d9797: call     0xffffff8000a4a150  ; __ZNK11OSMetaClass12getClassNameEv
+ffffff80022d979c: mov      r8d, dword ptr [rbx + 0x14]
+ffffff80022d97a0: movzx    r9d, word ptr [rbx]
+ffffff80022d97a4: movzx    r10d, word ptr [rbx + 0x10]
+ffffff80022d97a9: mov      ecx, dword ptr [rbx + 4]
+ffffff80022d97ac: mov      r11d, dword ptr [rbx + 8]
+ffffff80022d97b0: mov      r15d, dword ptr [rbx + 0xc]
+ffffff80022d97b4: lea      rdi, [rip + 0xc10ed]  ; " %s::%s ERROR: Leaky AP: INVALID Guard Time Params:  gt sequence %d, gt reason 0"
+ffffff80022d97bb: lea      rdx, [rip + 0xc0ef6]  ; "setLeakyAPStats"
+ffffff80022d97c2: mov      rsi, rax
+ffffff80022d97c5: xor      eax, eax
+ffffff80022d97c7: push     r12
+ffffff80022d97c9: push     r15
+ffffff80022d97cb: push     r11
+ffffff80022d97cd: push     r10
+ffffff80022d97cf: call     0xffffff8000ab6560  ; _IOLog
+ffffff80022d97d4: add      rsp, 0x20
+ffffff80022d97d8: cmp      word ptr [rbp - 0x68], 0
+ffffff80022d97dd: setne    al
+ffffff80022d97e0: test     r13, r13
+ffffff80022d97e3: setne    cl
+ffffff80022d97e6: and      cl, al
+ffffff80022d97e8: cmp      cl, 1
+ffffff80022d97eb: jne      0xffffff80022d98ff
+ffffff80022d97f1: mov      al, 1
+ffffff80022d97f3: mov      dword ptr [rbp - 0x64], eax
+ffffff80022d97f6: mov      r15d, 1
+ffffff80022d97fc: mov      qword ptr [rbp - 0x80], r14
+ffffff80022d9800: mov      eax, dword ptr [r13 + 4]
+ffffff80022d9804: sub      eax, dword ptr [rbx + 8]
+ffffff80022d9807: jbe      0xffffff80022d9833
+ffffff80022d9809: imul     rcx, rax, 0x10624dd3
+ffffff80022d9810: shr      rcx, 0x26
+ffffff80022d9814: mov      rax, qword ptr [r14 + 0x110]
+ffffff80022d981b: mov      rdi, qword ptr [rax + 0x40]
+ffffff80022d981f: mov      esi, dword ptr [rbx + 0x14]
+ffffff80022d9822: mov      edx, r12d
+ffffff80022d9825: call     0xffffff80022e5cda  ; __ZN23IO80211InterfaceMonitor17setLeakyApPckTimeE26apple80211_leaky_ap_reasonii
+ffffff80022d982a: test     eax, eax
+ffffff80022d982c: jne      0xffffff80022d9865
+ffffff80022d982e: jmp      0xffffff80022d98e9  ; __ZN21IO80211InfraInterface15setLeakyAPStatsEP25apple80211_leaky_ap_event+0x379
+ffffff80022d9833: mov      eax, dword ptr [rbx + 0x14]
+ffffff80022d9836: cmp      eax, 4
+ffffff80022d9839: jg       0xffffff80022d985e
+ffffff80022d983b: mov      rcx, qword ptr [r14 + 0x110]
+ffffff80022d9842: mov      rcx, qword ptr [rcx + 0x40]
+ffffff80022d9846: mov      rcx, qword ptr [rcx + 0x10]
+ffffff80022d984a: inc      dword ptr [rcx + rax*4 + 0x2bdc]
+ffffff80022d9851: test     byte ptr [rbp - 0x64], 1
+ffffff80022d9855: je       0xffffff80022d985e
+ffffff80022d9857: inc      dword ptr [rcx + rax*4 + 0x2bf0]
+ffffff80022d985e: mov      dword ptr [rbp - 0x64], 0
+ffffff80022d9865: lea      eax, [r15 - 1]
+ffffff80022d9869: mov      dword ptr [rbp - 0x70], eax
+ffffff80022d986c: mov      rax, qword ptr [r14]
+ffffff80022d986f: mov      rdi, r14
+ffffff80022d9872: call     qword ptr [rax + 0x38]
+ffffff80022d9875: mov      rdi, rax
+ffffff80022d9878: call     0xffffff8000a4a150  ; __ZNK11OSMetaClass12getClassNameEv
+ffffff80022d987d: mov      r8d, dword ptr [rbx + 0x14]
+ffffff80022d9881: mov      ecx, dword ptr [rbx + 4]
+ffffff80022d9884: mov      edx, dword ptr [rbx + 8]
+ffffff80022d9887: mov      qword ptr [rbp - 0x90], rdx
+ffffff80022d988e: mov      r11d, dword ptr [rbx + 0xc]
+ffffff80022d9892: mov      edx, dword ptr [r13 + 4]
+ffffff80022d9896: mov      qword ptr [rbp - 0x88], rdx
+ffffff80022d989d: mov      r10, rbx
+ffffff80022d98a0: mov      ebx, dword ptr [r13 + 8]
+ffffff80022d98a4: mov      r14, r12
+ffffff80022d98a7: movsx    r12d, byte ptr [r13 + 0xe]
+ffffff80022d98ac: lea      rdi, [rip + 0xc10be]  ; " %s::%s() ERROR: INVALID PACKET START TIME: gt sequence %u,  gt reason 0x%02X, p"
+ffffff80022d98b3: mov      rsi, rax
+ffffff80022d98b6: lea      rdx, [rip + 0xc0dfb]  ; "setLeakyAPStats"
+ffffff80022d98bd: mov      r9d, dword ptr [rbp - 0x70]
+ffffff80022d98c1: xor      eax, eax
+ffffff80022d98c3: push     r12
+ffffff80022d98c5: mov      r12, r14
+ffffff80022d98c8: push     rbx
+ffffff80022d98c9: mov      rbx, r10
+ffffff80022d98cc: push     r14
+ffffff80022d98ce: push     r11
+ffffff80022d98d0: push     qword ptr [rbp - 0x90]
+ffffff80022d98d6: push     qword ptr [rbp - 0x88]
+ffffff80022d98dc: mov      r14, qword ptr [rbp - 0x80]
+ffffff80022d98e0: call     0xffffff8000ab6560  ; _IOLog
+ffffff80022d98e5: add      rsp, 0x30
+ffffff80022d98e9: cmp      r15d, dword ptr [rbp - 0x74]
+ffffff80022d98ed: jae      0xffffff80022d98ff
+ffffff80022d98ef: mov      r13, qword ptr [r13 + 0x10]
+ffffff80022d98f3: inc      r15d
+ffffff80022d98f6: test     r13, r13
+ffffff80022d98f9: jne      0xffffff80022d9800
+ffffff80022d98ff: mov      r15, qword ptr [rbx + 0x20]
+ffffff80022d9903: cmp      word ptr [rbp - 0x68], 0
+ffffff80022d9908: setne    al
+ffffff80022d990b: test     r15, r15
+ffffff80022d990e: setne    cl
+ffffff80022d9911: and      cl, al
+ffffff80022d9913: cmp      cl, 1
+ffffff80022d9916: jne      0xffffff80022d9aaf
+ffffff80022d991c: mov      eax, dword ptr [r15 + 8]
+ffffff80022d9920: imul     r9, rax, 0x10624dd3
+ffffff80022d9927: shr      r9, 0x26
+ffffff80022d992b: mov      rax, qword ptr [r14 + 0x110]
+ffffff80022d9932: mov      rdi, qword ptr [rax + 0x40]
+ffffff80022d9936: mov      edx, dword ptr [rbx + 0x14]
+ffffff80022d9939: mov      esi, dword ptr [rbx + 4]
+ffffff80022d993c: mov      ecx, dword ptr [rbx + 0xc]
+ffffff80022d993f: movsx    r8d, byte ptr [r15 + 0xe]
+ffffff80022d9944: call     0xffffff80022e5eb8  ; __ZN23IO80211InterfaceMonitor18setLeakyApRateDropEj26apple80211_leaky_ap_reasonjaj
+ffffff80022d9949: test     eax, eax
+ffffff80022d994b: je       0xffffff80022d9aaf
+ffffff80022d9951: mov      rax, qword ptr [r14]
+ffffff80022d9954: mov      rdi, r14
+ffffff80022d9957: call     qword ptr [rax + 0x38]
+ffffff80022d995a: mov      rdi, rax
+ffffff80022d995d: call     0xffffff8000a4a150  ; __ZNK11OSMetaClass12getClassNameEv
+ffffff80022d9962: mov      r8d, dword ptr [rbx + 4]
+ffffff80022d9966: mov      r9d, dword ptr [rbx + 8]
+ffffff80022d996a: mov      r10d, dword ptr [rbx + 0xc]
+ffffff80022d996e: mov      r11d, dword ptr [r15 + 8]
+ffffff80022d9972: mov      rdi, r14
+ffffff80022d9975: mov      r14, rbx
+ffffff80022d9978: movsx    ebx, byte ptr [r15 + 0xe]
+ffffff80022d997d: sub      rsp, 8
+ffffff80022d9981: lea      rsi, [rip + 0xc1099]  ; " %s::%s() ERROR: Failed to update rx rate for guard time :  GT seq number %d, gt"
+ffffff80022d9988: lea      rcx, [rip + 0xc0d29]  ; "setLeakyAPStats"
+ffffff80022d998f: mov      rdx, rax
+ffffff80022d9992: xor      eax, eax
+ffffff80022d9994: push     rbx
+ffffff80022d9995: mov      rbx, r14
+ffffff80022d9998: push     r11
+ffffff80022d999a: push     r10
+ffffff80022d999c: call     0xffffff80022620d6  ; __ZN23IO80211SkywalkInterface8logDebugEPKcz
+ffffff80022d99a1: add      rsp, 0x20
+ffffff80022d99a5: jmp      0xffffff80022d9aaf  ; __ZN21IO80211InfraInterface15setLeakyAPStatsEP25apple80211_leaky_ap_event+0x53f
+ffffff80022d99aa: lea      rdi, [rip + 0xbfffd]  ; 0xffffff80023999ae
+ffffff80022d99b1: lea      rsi, [rip + 0xc0018]  ; "/AppleInternal/Library/BuildRoots/4~CW9mugA6gpmKPwyaAeCNWSZRmRlk6mvK_U3N5n0/Libr"
+ffffff80022d99b8: lea      rdx, [rip + 0xc0cf9]  ; "setLeakyAPStats"
+ffffff80022d99bf: mov      ecx, 0x8af
+ffffff80022d99c4: xor      eax, eax
+ffffff80022d99c6: call     0xffffff8000ab6560  ; _IOLog
+ffffff80022d99cb: jmp      0xffffff80022d9aaf  ; __ZN21IO80211InfraInterface15setLeakyAPStatsEP25apple80211_leaky_ap_event+0x53f
+ffffff80022d99d0: mov      eax, 0xaaaaaaaa
+ffffff80022d99d5: lea      r15, [rbp - 0x5e]
+ffffff80022d99d9: mov      dword ptr [r15], eax
+ffffff80022d99dc: mov      word ptr [r15 + 4], 0xaaaa
+ffffff80022d99e3: lea      r12, [rbp - 0x58]
+ffffff80022d99e7: mov      dword ptr [r12 + 0x20], eax
+ffffff80022d99ec: movabs   rax, 0xaaaaaaaaaaaaaaaa
+ffffff80022d99f6: mov      qword ptr [r12 + 0x18], rax
+ffffff80022d99fb: mov      qword ptr [r12 + 0x10], rax
+ffffff80022d9a00: mov      qword ptr [r12 + 8], rax
+ffffff80022d9a05: mov      qword ptr [r12], rax
+ffffff80022d9a09: mov      rax, qword ptr [r14 + 0x110]
+ffffff80022d9a10: mov      rdi, qword ptr [rax + 0x40]
+ffffff80022d9a14: mov      rsi, r15
+ffffff80022d9a17: call     0xffffff80022e583a  ; __ZN23IO80211InterfaceMonitor15getLeakyApBssidEP10ether_addr
+ffffff80022d9a1c: mov      rax, qword ptr [r14 + 0x110]
+ffffff80022d9a23: mov      rdi, qword ptr [rax + 0x40]
+ffffff80022d9a27: mov      rsi, r12
+ffffff80022d9a2a: call     0xffffff80022e57ee  ; __ZN23IO80211InterfaceMonitor14getLeakyApSsidEP15apple80211_ssid
+ffffff80022d9a2f: mov      rax, qword ptr [r14]
+ffffff80022d9a32: mov      rdi, r14
+ffffff80022d9a35: call     qword ptr [rax + 0x38]
+ffffff80022d9a38: mov      rdi, rax
+ffffff80022d9a3b: call     0xffffff8000a4a150  ; __ZNK11OSMetaClass12getClassNameEv
+ffffff80022d9a40: movzx    ecx, byte ptr [r15]
+ffffff80022d9a44: movzx    r8d, byte ptr [r15 + 1]
+ffffff80022d9a49: movzx    r9d, byte ptr [r15 + 2]
+ffffff80022d9a4e: movzx    edx, byte ptr [r15 + 3]
+ffffff80022d9a53: mov      qword ptr [rbp - 0x70], rdx
+ffffff80022d9a57: movzx    r11d, byte ptr [r15 + 4]
+ffffff80022d9a5c: movzx    r14d, byte ptr [r15 + 5]
+ffffff80022d9a61: mov      r15d, dword ptr [r12]
+ffffff80022d9a65: test     r15d, r15d
+ffffff80022d9a68: lea      rdx, [rbp - 0x54]
+ffffff80022d9a6c: lea      r12, [rip + 0xc0375]  ; 0xffffff8002399de8
+ffffff80022d9a73: cmovne   r12, rdx
+ffffff80022d9a77: mov      r13d, dword ptr [rbx + 4]
+ffffff80022d9a7b: movzx    r10d, word ptr [rbx + 0x12]
+ffffff80022d9a80: sub      rsp, 8
+ffffff80022d9a84: lea      rdi, [rip + 0xc0c3d]  ; "%s::%s ERROR: Leaky AP Network Invalid, BSSID: %02X:%02X:%02X:%02X:%02X:%02X SSI"
+ffffff80022d9a8b: lea      rdx, [rip + 0xc0c26]  ; "setLeakyAPStats"
+ffffff80022d9a92: mov      rsi, rax
+ffffff80022d9a95: xor      eax, eax
+ffffff80022d9a97: push     r10
+ffffff80022d9a99: push     r13
+ffffff80022d9a9b: push     r12
+ffffff80022d9a9d: push     r15
+ffffff80022d9a9f: push     r14
+ffffff80022d9aa1: push     r11
+ffffff80022d9aa3: push     qword ptr [rbp - 0x70]
+ffffff80022d9aa6: call     0xffffff8000ab6560  ; _IOLog
+ffffff80022d9aab: add      rsp, 0x40
+ffffff80022d9aaf: test     rbx, rbx
+ffffff80022d9ab2: setne    al
+ffffff80022d9ab5: mov      rcx, qword ptr [rip + 0xe265c]  ; 0xffffff80023bc118
+ffffff80022d9abc: mov      rcx, qword ptr [rcx]
+ffffff80022d9abf: cmp      rcx, qword ptr [rbp - 0x30]
+ffffff80022d9ac3: jne      0xffffff80022d9ad4
+ffffff80022d9ac5: add      rsp, 0x68
+ffffff80022d9ac9: pop      rbx
+ffffff80022d9aca: pop      r12
+ffffff80022d9acc: pop      r13
+ffffff80022d9ace: pop      r14
+ffffff80022d9ad0: pop      r15
+ffffff80022d9ad2: pop      rbp
+ffffff80022d9ad3: ret      
+ffffff80022d9ad4: call     0xffffff8000383150  ; ___stack_chk_fail
+ffffff80022d9ad9: nop      

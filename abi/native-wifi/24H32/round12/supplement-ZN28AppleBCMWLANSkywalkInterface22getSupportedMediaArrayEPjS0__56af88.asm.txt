@@ -1,0 +1,131 @@
+# 0xffffff800156af88 __ZN28AppleBCMWLANSkywalkInterface22getSupportedMediaArrayEPjS0_
+ffffff800156af88: push     rbp
+ffffff800156af89: mov      rbp, rsp
+ffffff800156af8c: push     r15
+ffffff800156af8e: push     r14
+ffffff800156af90: push     r13
+ffffff800156af92: push     r12
+ffffff800156af94: push     rbx
+ffffff800156af95: sub      rsp, 0x28
+ffffff800156af99: mov      r14, rdx
+ffffff800156af9c: mov      r12, rsi
+ffffff800156af9f: mov      rbx, rdi
+ffffff800156afa2: call     0xffffff80022625dc  ; __ZN23IO80211SkywalkInterface21validateDispatchQueueEv
+ffffff800156afa7: mov      eax, dword ptr [r14]
+ffffff800156afaa: mov      qword ptr [rbp - 0x48], rax
+ffffff800156afae: mov      rax, qword ptr [rbx + 0x128]
+ffffff800156afb5: mov      rdi, qword ptr [rax + 0x18]
+ffffff800156afb9: mov      rax, qword ptr [rdi]
+ffffff800156afbc: call     qword ptr [rax + 0x890]
+ffffff800156afc2: test     rax, rax
+ffffff800156afc5: je       0xffffff800156b077
+ffffff800156afcb: mov      r15, rax
+ffffff800156afce: mov      rdi, rax
+ffffff800156afd1: call     0xffffff8000a4efd0  ; __ZN20OSCollectionIterator14withCollectionEPK12OSCollection
+ffffff800156afd6: test     rax, rax
+ffffff800156afd9: je       0xffffff800156b0da
+ffffff800156afdf: mov      r13, rax
+ffffff800156afe2: mov      qword ptr [rbp - 0x30], r12
+ffffff800156afe6: mov      qword ptr [rbp - 0x38], r14
+ffffff800156afea: mov      qword ptr [rbp - 0x40], rbx
+ffffff800156afee: mov      rax, qword ptr [rip + 0x20015b]  ; 0xffffff800176b150
+ffffff800156aff5: mov      r12, qword ptr [rax]
+ffffff800156aff8: mov      rax, qword ptr [rip + 0x200041]  ; 0xffffff800176b040
+ffffff800156afff: mov      r14, qword ptr [rax]
+ffffff800156b002: xor      ebx, ebx
+ffffff800156b004: mov      rax, qword ptr [r13]
+ffffff800156b008: mov      rdi, r13
+ffffff800156b00b: call     qword ptr [rax + 0x128]
+ffffff800156b011: mov      rdi, rax
+ffffff800156b014: mov      rsi, r12
+ffffff800156b017: call     0xffffff8000a49ab0  ; __ZN15OSMetaClassBase12safeMetaCastEPKS_PK11OSMetaClass
+ffffff800156b01c: test     rax, rax
+ffffff800156b01f: je       0xffffff800156b05e
+ffffff800156b021: cmp      rbx, qword ptr [rbp - 0x48]
+ffffff800156b025: jae      0xffffff800156b05e
+ffffff800156b027: mov      rcx, qword ptr [r15]
+ffffff800156b02a: mov      rdi, r15
+ffffff800156b02d: mov      rsi, rax
+ffffff800156b030: call     qword ptr [rcx + 0x1f8]
+ffffff800156b036: mov      rdi, rax
+ffffff800156b039: mov      rsi, r14
+ffffff800156b03c: call     0xffffff8000a49ab0  ; __ZN15OSMetaClassBase12safeMetaCastEPKS_PK11OSMetaClass
+ffffff800156b041: test     rax, rax
+ffffff800156b044: je       0xffffff800156b004
+ffffff800156b046: mov      rcx, qword ptr [rax]
+ffffff800156b049: mov      rdi, rax
+ffffff800156b04c: call     qword ptr [rcx + 0x120]
+ffffff800156b052: mov      rcx, qword ptr [rbp - 0x30]
+ffffff800156b056: mov      dword ptr [rcx + rbx*4], eax
+ffffff800156b059: inc      rbx
+ffffff800156b05c: jmp      0xffffff800156b004  ; __ZN28AppleBCMWLANSkywalkInterface22getSupportedMediaArrayEPjS0_+0x7c
+ffffff800156b05e: mov      rax, qword ptr [rbp - 0x38]
+ffffff800156b062: mov      dword ptr [rax], ebx
+ffffff800156b064: mov      rax, qword ptr [r13]
+ffffff800156b068: mov      rdi, r13
+ffffff800156b06b: call     qword ptr [rax + 0x28]
+ffffff800156b06e: xor      r14d, r14d
+ffffff800156b071: mov      rbx, qword ptr [rbp - 0x40]
+ffffff800156b075: jmp      0xffffff800156b0e0  ; __ZN28AppleBCMWLANSkywalkInterface22getSupportedMediaArrayEPjS0_+0x158
+ffffff800156b077: mov      rax, qword ptr [rbx]
+ffffff800156b07a: mov      rdi, rbx
+ffffff800156b07d: call     qword ptr [rax + 0xd08]
+ffffff800156b083: mov      r14d, 0xe00002f0
+ffffff800156b089: test     rax, rax
+ffffff800156b08c: je       0xffffff800156b117
+ffffff800156b092: mov      rax, qword ptr [rbx]
+ffffff800156b095: mov      rdi, rbx
+ffffff800156b098: call     qword ptr [rax + 0xd08]
+ffffff800156b09e: mov      rdi, rax
+ffffff800156b0a1: mov      esi, 1
+ffffff800156b0a6: call     0xffffff80031d421c  ; __ZN11CCLogStream9shouldLogE16CCStreamLogLevel
+ffffff800156b0ab: test     al, al
+ffffff800156b0ad: je       0xffffff800156b117
+ffffff800156b0af: mov      rax, qword ptr [rbx]
+ffffff800156b0b2: mov      rdi, rbx
+ffffff800156b0b5: call     qword ptr [rax + 0xd08]
+ffffff800156b0bb: lea      rsi, [rip + 0x19565d]  ; 0xffffff800170071f
+ffffff800156b0c2: lea      rdx, [rip + 0x195677]  ; "getSupportedMediaArray"
+ffffff800156b0c9: mov      rdi, rax
+ffffff800156b0cc: mov      ecx, 0x21d
+ffffff800156b0d1: xor      eax, eax
+ffffff800156b0d3: call     0xffffff80031d252e  ; __ZN11CCLogStream8logAlertEPKcz
+ffffff800156b0d8: jmp      0xffffff800156b117  ; __ZN28AppleBCMWLANSkywalkInterface22getSupportedMediaArrayEPjS0_+0x18f
+ffffff800156b0da: mov      r14d, 0xe00002bd
+ffffff800156b0e0: mov      rax, qword ptr [r15]
+ffffff800156b0e3: mov      rdi, r15
+ffffff800156b0e6: call     qword ptr [rax + 0x28]
+ffffff800156b0e9: mov      rax, qword ptr [rbx]
+ffffff800156b0ec: mov      rdi, rbx
+ffffff800156b0ef: call     qword ptr [rax + 0xd08]
+ffffff800156b0f5: test     rax, rax
+ffffff800156b0f8: je       0xffffff800156b117
+ffffff800156b0fa: mov      rax, qword ptr [rbx]
+ffffff800156b0fd: mov      rdi, rbx
+ffffff800156b100: call     qword ptr [rax + 0xd08]
+ffffff800156b106: mov      rdi, rax
+ffffff800156b109: mov      esi, 5
+ffffff800156b10e: call     0xffffff80031d421c  ; __ZN11CCLogStream9shouldLogE16CCStreamLogLevel
+ffffff800156b113: test     al, al
+ffffff800156b115: jne      0xffffff800156b129
+ffffff800156b117: mov      eax, r14d
+ffffff800156b11a: add      rsp, 0x28
+ffffff800156b11e: pop      rbx
+ffffff800156b11f: pop      r12
+ffffff800156b121: pop      r13
+ffffff800156b123: pop      r14
+ffffff800156b125: pop      r15
+ffffff800156b127: pop      rbp
+ffffff800156b128: ret      
+ffffff800156b129: mov      rax, qword ptr [rbx]
+ffffff800156b12c: mov      rdi, rbx
+ffffff800156b12f: call     qword ptr [rax + 0xd08]
+ffffff800156b135: lea      rsi, [rip + 0x19561b]  ; 0xffffff8001700757
+ffffff800156b13c: lea      rdx, [rip + 0x1955fd]  ; "getSupportedMediaArray"
+ffffff800156b143: mov      rdi, rax
+ffffff800156b146: mov      ecx, 0x23f
+ffffff800156b14b: mov      r8d, r14d
+ffffff800156b14e: xor      eax, eax
+ffffff800156b150: call     0xffffff80031d2a6e  ; __ZN11CCLogStream7logInfoEPKcz
+ffffff800156b155: jmp      0xffffff800156b117  ; __ZN28AppleBCMWLANSkywalkInterface22getSupportedMediaArrayEPjS0_+0x18f
+ffffff800156b157: nop      

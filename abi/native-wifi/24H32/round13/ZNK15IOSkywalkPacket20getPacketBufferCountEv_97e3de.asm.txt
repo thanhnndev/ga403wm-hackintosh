@@ -1,0 +1,7 @@
+# 0xffffff800297e3de __ZNK15IOSkywalkPacket20getPacketBufferCountEv
+ffffff800297e3de: push     rbp
+ffffff800297e3df: mov      rbp, rsp
+ffffff800297e3e2: mov      eax, dword ptr [rdi + 0x64]
+ffffff800297e3e5: pop      rbp
+ffffff800297e3e6: ret      
+ffffff800297e3e7: nop      

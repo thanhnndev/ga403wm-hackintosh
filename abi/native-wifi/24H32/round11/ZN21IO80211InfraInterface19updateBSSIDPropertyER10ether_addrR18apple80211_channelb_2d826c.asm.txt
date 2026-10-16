@@ -1,0 +1,119 @@
+# 0xffffff80022d826c __ZN21IO80211InfraInterface19updateBSSIDPropertyER10ether_addrR18apple80211_channelb
+ffffff80022d826c: push     rbp
+ffffff80022d826d: mov      rbp, rsp
+ffffff80022d8270: push     r15
+ffffff80022d8272: push     r14
+ffffff80022d8274: push     r13
+ffffff80022d8276: push     r12
+ffffff80022d8278: push     rbx
+ffffff80022d8279: sub      rsp, 0x18
+ffffff80022d827d: mov      r14d, ecx
+ffffff80022d8280: mov      rbx, rdi
+ffffff80022d8283: mov      rax, qword ptr [rip + 0xe3e8e]  ; 0xffffff80023bc118
+ffffff80022d828a: mov      rax, qword ptr [rax]
+ffffff80022d828d: mov      qword ptr [rbp - 0x30], rax
+ffffff80022d8291: test     ecx, ecx
+ffffff80022d8293: je       0xffffff80022d82b3
+ffffff80022d8295: mov      r15, rdx
+ffffff80022d8298: mov      r12, rsi
+ffffff80022d829b: call     0xffffff800212d75a  ; __Z37IO80211_io80211isSensitiveInfoAllowedv
+ffffff80022d82a0: test     al, al
+ffffff80022d82a2: je       0xffffff80022d82c7
+ffffff80022d82a4: lea      rsi, [rip + 0xc1ab6]  ; "IO80211BSSID"
+ffffff80022d82ab: mov      rdi, rbx
+ffffff80022d82ae: mov      rdx, r12
+ffffff80022d82b1: jmp      0xffffff80022d82e1  ; __ZN21IO80211InfraInterface19updateBSSIDPropertyER10ether_addrR18apple80211_channelb+0x75
+ffffff80022d82b3: lea      rsi, [rip + 0xc1aa7]  ; "IO80211BSSID"
+ffffff80022d82ba: mov      rdi, rbx
+ffffff80022d82bd: call     0xffffff800227dbf3  ; __Z20removePropertyHelperP9IOServicePKc
+ffffff80022d82c2: jmp      0xffffff80022d83d0  ; __ZN21IO80211InfraInterface19updateBSSIDPropertyER10ether_addrR18apple80211_channelb+0x164
+ffffff80022d82c7: lea      rdx, [rbp - 0x38]
+ffffff80022d82cb: mov      word ptr [rdx + 4], 0
+ffffff80022d82d1: mov      dword ptr [rdx], 0
+ffffff80022d82d7: lea      rsi, [rip + 0xc1a83]  ; "IO80211BSSID"
+ffffff80022d82de: mov      rdi, rbx
+ffffff80022d82e1: mov      ecx, 6
+ffffff80022d82e6: call     0xffffff800227dba9  ; __Z17setPropertyHelperP9IOServicePKcPvj
+ffffff80022d82eb: mov      rax, qword ptr [rbx + 0x110]
+ffffff80022d82f2: cmp      qword ptr [rax + 0x40], 0
+ffffff80022d82f7: je       0xffffff80022d83d0
+ffffff80022d82fd: mov      rax, qword ptr [rbx]
+ffffff80022d8300: mov      rdi, rbx
+ffffff80022d8303: call     qword ptr [rax + 0xba8]
+ffffff80022d8309: test     rax, rax
+ffffff80022d830c: je       0xffffff80022d83d0
+ffffff80022d8312: mov      rax, qword ptr [rbx]
+ffffff80022d8315: mov      rdi, rbx
+ffffff80022d8318: call     qword ptr [rax + 0xba8]
+ffffff80022d831e: mov      rax, qword ptr [rax + 0x120]
+ffffff80022d8325: cmp      qword ptr [rax + 0x30], 0
+ffffff80022d832a: je       0xffffff80022d83d0
+ffffff80022d8330: movabs   r12, 0x800000000000000
+ffffff80022d833a: lea      r13, [rbp - 0x38]
+ffffff80022d833e: mov      qword ptr [r13], 0
+ffffff80022d8346: mov      rax, qword ptr [rbx]
+ffffff80022d8349: mov      rdi, rbx
+ffffff80022d834c: call     qword ptr [rax + 0xba8]
+ffffff80022d8352: mov      rax, qword ptr [rax + 0x120]
+ffffff80022d8359: mov      rdi, qword ptr [rax + 0x30]
+ffffff80022d835d: mov      rsi, qword ptr [r15]
+ffffff80022d8360: mov      edx, dword ptr [r15 + 8]
+ffffff80022d8364: mov      rcx, r13
+ffffff80022d8367: call     0xffffff800230bca6  ; __ZN24IO80211ControllerMonitor10getChanCCAE18apple80211_channelPx
+ffffff80022d836c: test     eax, eax
+ffffff80022d836e: sete     cl
+ffffff80022d8371: mov      r13, qword ptr [r13]
+ffffff80022d8375: cmp      r13, 0x65
+ffffff80022d8379: setb     dl
+ffffff80022d837c: and      dl, cl
+ffffff80022d837e: cmp      dl, 1
+ffffff80022d8381: jne      0xffffff80022d83b3
+ffffff80022d8383: mov      rax, qword ptr [rbx + 0x110]
+ffffff80022d838a: mov      rdi, qword ptr [rax + 0x40]
+ffffff80022d838e: mov      rsi, r13
+ffffff80022d8391: call     0xffffff80022e6244  ; __ZN23IO80211InterfaceMonitor22setInterfaceAverageCCAEy
+ffffff80022d8396: mov      r8d, dword ptr [r15 + 4]
+ffffff80022d839a: lea      rdx, [rip + 0xc19cd]  ; 0xffffff8002399d6e
+ffffff80022d83a1: mov      rdi, rbx
+ffffff80022d83a4: mov      rsi, r12
+ffffff80022d83a7: mov      rcx, r13
+ffffff80022d83aa: xor      eax, eax
+ffffff80022d83ac: call     0xffffff8002261f9e  ; __ZN23IO80211SkywalkInterface8logDebugEyPKcz
+ffffff80022d83b1: jmp      0xffffff80022d83d0  ; __ZN21IO80211InfraInterface19updateBSSIDPropertyER10ether_addrR18apple80211_channelb+0x164
+ffffff80022d83b3: mov      r8d, dword ptr [r15 + 4]
+ffffff80022d83b7: lea      rdx, [rip + 0xc19f2]  ; 0xffffff8002399db0
+ffffff80022d83be: mov      rdi, rbx
+ffffff80022d83c1: mov      rsi, r12
+ffffff80022d83c4: mov      ecx, eax
+ffffff80022d83c6: mov      r9, r13
+ffffff80022d83c9: xor      eax, eax
+ffffff80022d83cb: call     0xffffff8002261f9e  ; __ZN23IO80211SkywalkInterface8logDebugEyPKcz
+ffffff80022d83d0: mov      rax, qword ptr [rbx + 0x110]
+ffffff80022d83d7: mov      rax, qword ptr [rax + 0x28]
+ffffff80022d83db: mov      rax, qword ptr [rax + 0x18]
+ffffff80022d83df: mov      rsi, qword ptr [rax + 0x528]
+ffffff80022d83e6: movzx    edx, r14b
+ffffff80022d83ea: mov      rdi, rbx
+ffffff80022d83ed: call     0xffffff80022de7c2  ; __ZN16IO80211QueueCall20link_quality_monitorEP23IO80211SkywalkInterfaceP11IO80211Peerb
+ffffff80022d83f2: mov      rax, qword ptr [rbx]
+ffffff80022d83f5: mov      rdi, rbx
+ffffff80022d83f8: call     qword ptr [rax + 0xba8]
+ffffff80022d83fe: mov      rax, qword ptr [rax + 0x120]
+ffffff80022d8405: mov      rdi, qword ptr [rax + 0x30]
+ffffff80022d8409: test     rdi, rdi
+ffffff80022d840c: je       0xffffff80022d8413
+ffffff80022d840e: call     0xffffff800231321c  ; __ZN24IO80211ControllerMonitor27resetIO80211ReporterHistoryEv
+ffffff80022d8413: mov      rax, qword ptr [rip + 0xe3cfe]  ; 0xffffff80023bc118
+ffffff80022d841a: mov      rax, qword ptr [rax]
+ffffff80022d841d: cmp      rax, qword ptr [rbp - 0x30]
+ffffff80022d8421: jne      0xffffff80022d8432
+ffffff80022d8423: add      rsp, 0x18
+ffffff80022d8427: pop      rbx
+ffffff80022d8428: pop      r12
+ffffff80022d842a: pop      r13
+ffffff80022d842c: pop      r14
+ffffff80022d842e: pop      r15
+ffffff80022d8430: pop      rbp
+ffffff80022d8431: ret      
+ffffff80022d8432: call     0xffffff8000383150  ; ___stack_chk_fail
+ffffff80022d8437: nop      

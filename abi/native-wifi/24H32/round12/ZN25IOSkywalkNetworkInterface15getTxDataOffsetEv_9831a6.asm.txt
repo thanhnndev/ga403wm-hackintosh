@@ -1,0 +1,18 @@
+# 0xffffff80029831a6 __ZN25IOSkywalkNetworkInterface15getTxDataOffsetEv
+ffffff80029831a6: mov      rax, qword ptr [rdi + 0xb8]
+ffffff80029831ad: test     rax, rax
+ffffff80029831b0: je       0xffffff80029831c4
+ffffff80029831b2: push     rbp
+ffffff80029831b3: mov      rbp, rsp
+ffffff80029831b6: mov      rax, qword ptr [rax]
+ffffff80029831b9: test     rax, rax
+ffffff80029831bc: je       0xffffff80029831c8
+ffffff80029831be: movzx    eax, word ptr [rax + 0x3c]
+ffffff80029831c2: jmp      0xffffff80029831ca  ; __ZN25IOSkywalkNetworkInterface15getTxDataOffsetEv+0x24
+ffffff80029831c4: xor      eax, eax
+ffffff80029831c6: jmp      0xffffff80029831cb  ; __ZN25IOSkywalkNetworkInterface15getTxDataOffsetEv+0x25
+ffffff80029831c8: xor      eax, eax
+ffffff80029831ca: pop      rbp
+ffffff80029831cb: movzx    eax, ax
+ffffff80029831ce: ret      
+ffffff80029831cf: nop      

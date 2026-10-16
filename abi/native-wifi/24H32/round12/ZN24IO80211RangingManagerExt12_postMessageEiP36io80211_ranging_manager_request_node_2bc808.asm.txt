@@ -1,0 +1,41 @@
+# 0xffffff80022bc808 __ZN24IO80211RangingManagerExt12_postMessageEiP36io80211_ranging_manager_request_node
+ffffff80022bc808: push     rbp
+ffffff80022bc809: mov      rbp, rsp
+ffffff80022bc80c: push     rbx
+ffffff80022bc80d: sub      rsp, 0x18
+ffffff80022bc811: mov      rbx, rdi
+ffffff80022bc814: mov      rax, qword ptr [rip + 0xff8fd]  ; 0xffffff80023bc118
+ffffff80022bc81b: mov      rax, qword ptr [rax]
+ffffff80022bc81e: mov      qword ptr [rbp - 0x10], rax
+ffffff80022bc822: mov      qword ptr [rbp - 0x1c], 1
+ffffff80022bc82a: mov      dword ptr [rbp - 0x14], esi
+ffffff80022bc82d: test     rdx, rdx
+ffffff80022bc830: je       0xffffff80022bc839
+ffffff80022bc832: mov      dword ptr [rbp - 0x18], 1
+ffffff80022bc839: mov      rax, qword ptr [rbx + 0x10]
+ffffff80022bc83d: mov      rdi, qword ptr [rax]
+ffffff80022bc840: mov      rax, qword ptr [rdi]
+ffffff80022bc843: call     qword ptr [rax + 0xc80]
+ffffff80022bc849: test     rax, rax
+ffffff80022bc84c: je       0xffffff80022bc87f
+ffffff80022bc84e: mov      rax, qword ptr [rbx + 0x10]
+ffffff80022bc852: mov      rdi, qword ptr [rax]
+ffffff80022bc855: mov      rax, qword ptr [rdi]
+ffffff80022bc858: call     qword ptr [rax + 0xc80]
+ffffff80022bc85e: mov      r9, qword ptr [rax]
+ffffff80022bc861: lea      rdx, [rbp - 0x1c]
+ffffff80022bc865: mov      ecx, 0xc
+ffffff80022bc86a: mov      rdi, rax
+ffffff80022bc86d: mov      esi, 0x53
+ffffff80022bc872: mov      r8d, 1
+ffffff80022bc878: call     qword ptr [r9 + 0xb10]
+ffffff80022bc87f: mov      rax, qword ptr [rip + 0xff892]  ; 0xffffff80023bc118
+ffffff80022bc886: mov      rax, qword ptr [rax]
+ffffff80022bc889: cmp      rax, qword ptr [rbp - 0x10]
+ffffff80022bc88d: jne      0xffffff80022bc896
+ffffff80022bc88f: add      rsp, 0x18
+ffffff80022bc893: pop      rbx
+ffffff80022bc894: pop      rbp
+ffffff80022bc895: ret      
+ffffff80022bc896: call     0xffffff8000383150  ; ___stack_chk_fail
+ffffff80022bc89b: nop      

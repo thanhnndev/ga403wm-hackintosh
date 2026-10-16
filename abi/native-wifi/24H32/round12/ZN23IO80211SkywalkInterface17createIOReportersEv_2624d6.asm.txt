@@ -1,0 +1,74 @@
+# 0xffffff80022624d6 __ZN23IO80211SkywalkInterface17createIOReportersEv
+ffffff80022624d6: push     rbp
+ffffff80022624d7: mov      rbp, rsp
+ffffff80022624da: push     r15
+ffffff80022624dc: push     r14
+ffffff80022624de: push     r12
+ffffff80022624e0: push     rbx
+ffffff80022624e1: mov      rax, qword ptr [rdi + 0x110]
+ffffff80022624e8: mov      ebx, 0xe00002bc
+ffffff80022624ed: cmp      qword ptr [rax + 0x40], 0
+ffffff80022624f2: jne      0xffffff80022625b3
+ffffff80022624f8: mov      r14, rdi
+ffffff80022624fb: call     0xffffff800226205a  ; __ZN23IO80211SkywalkInterface10getBSDNameEv
+ffffff8002262500: test     rax, rax
+ffffff8002262503: je       0xffffff8002262512
+ffffff8002262505: mov      rdi, r14
+ffffff8002262508: call     0xffffff800226205a  ; __ZN23IO80211SkywalkInterface10getBSDNameEv
+ffffff800226250d: mov      rdi, rax
+ffffff8002262510: jmp      0xffffff8002262519  ; __ZN23IO80211SkywalkInterface17createIOReportersEv+0x43
+ffffff8002262512: lea      rdi, [rip + 0xd9b57]  ; 0xffffff800233c070
+ffffff8002262519: call     0xffffff80004ee8d0  ; _strlen
+ffffff800226251e: cmp      rax, 3
+ffffff8002262522: jb       0xffffff80022625bc
+ffffff8002262528: mov      rdi, r14
+ffffff800226252b: call     0xffffff8000b53f70  ; __ZNK9IOService11GetProviderEv
+ffffff8002262530: mov      rcx, qword ptr [r14 + 0x110]
+ffffff8002262537: xor      edx, edx
+ffffff8002262539: cmp      dword ptr [rcx + 0x58], 1
+ffffff800226253d: sete     dl
+ffffff8002262540: mov      rdi, rax
+ffffff8002262543: mov      rsi, r14
+ffffff8002262546: call     0xffffff80022e40d0  ; __ZN23IO80211InterfaceMonitor27withServiceAndInterfaceNameEP9IOServiceP23IO80211SkywalkInterfaceb
+ffffff800226254b: mov      rcx, qword ptr [r14 + 0x110]
+ffffff8002262552: mov      qword ptr [rcx + 0x40], rax
+ffffff8002262556: test     rax, rax
+ffffff8002262559: je       0xffffff80022625c5
+ffffff800226255b: lea      r15, [rip + 0x11c33f]  ; "IO80211SkywalkInterface::createIOReporters getPeerManager() doesn't exist"
+ffffff8002262562: cmp      qword ptr [rcx + 0x28], 0
+ffffff8002262567: je       0xffffff80022625d0
+ffffff8002262569: xor      ebx, ebx
+ffffff800226256b: cmp      dword ptr [rcx + 0x58], 2
+ffffff800226256f: je       0xffffff80022625a8
+ffffff8002262571: lea      rdi, [rip + 0x11c373]  ; 0xffffff800237e8eb
+ffffff8002262578: xor      ebx, ebx
+ffffff800226257a: xor      eax, eax
+ffffff800226257c: call     0xffffff8000ab6560  ; _IOLog
+ffffff8002262581: mov      rax, qword ptr [r14 + 0x110]
+ffffff8002262588: mov      r12, qword ptr [rax + 0x28]
+ffffff800226258c: mov      rdi, r14
+ffffff800226258f: call     0xffffff8000b53f70  ; __ZNK9IOService11GetProviderEv
+ffffff8002262594: mov      rcx, qword ptr [r12]
+ffffff8002262598: mov      rdi, r12
+ffffff800226259b: mov      rsi, rax
+ffffff800226259e: call     qword ptr [rcx + 0x178]
+ffffff80022625a4: test     eax, eax
+ffffff80022625a6: jne      0xffffff80022625ce
+ffffff80022625a8: mov      eax, ebx
+ffffff80022625aa: pop      rbx
+ffffff80022625ab: pop      r12
+ffffff80022625ad: pop      r14
+ffffff80022625af: pop      r15
+ffffff80022625b1: pop      rbp
+ffffff80022625b2: ret      
+ffffff80022625b3: lea      r15, [rip + 0x11c21f]  ; "IO80211SkywalkInterface::createIOReporters fInterfaceMonitor already exists"
+ffffff80022625ba: jmp      0xffffff80022625d0  ; __ZN23IO80211SkywalkInterface17createIOReportersEv+0xfa
+ffffff80022625bc: lea      r15, [rip + 0x11c262]  ; "IO80211SkywalkInterface::createIOReporters getBSDName()"
+ffffff80022625c3: jmp      0xffffff80022625d0  ; __ZN23IO80211SkywalkInterface17createIOReportersEv+0xfa
+ffffff80022625c5: lea      r15, [rip + 0x11c291]  ; "IO80211SkywalkInterface::createIOReporters fInterfaceMonitor failed"
+ffffff80022625cc: jmp      0xffffff80022625d0  ; __ZN23IO80211SkywalkInterface17createIOReportersEv+0xfa
+ffffff80022625ce: mov      ebx, eax
+ffffff80022625d0: mov      rdi, r15
+ffffff80022625d3: xor      eax, eax
+ffffff80022625d5: call     0xffffff8000ab6560  ; _IOLog
+ffffff80022625da: jmp      0xffffff80022625a8  ; __ZN23IO80211SkywalkInterface17createIOReportersEv+0xd2

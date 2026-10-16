@@ -44,7 +44,7 @@ public:
 
     // new virtuals, slots 334..353
     /* 334 */ virtual IOReturn getHardwareAddress(ether_addr* a1);   // ret: guess
-    /* 335 */ virtual void setHardwareAddress(ether_addr* a1);   // ret: guess from name
+    /* 335 */ virtual IOReturn setHardwareAddress(ether_addr* a1);   // ret: 24H32 Skywalk setter returns MacAddressAgent status; Ethernet base returns Unsupported
     /* 336 */ virtual void setLinkLayerAddress(ether_addr* a1);   // ret: guess from name
     /* 337 */ virtual IOReturn configureMulticastFilter(uint32_t a1, ether_addr const* a2, uint32_t a3);   // ret: guess
     /* 338 */ virtual void setMulticastAddresses(ether_addr const* a1, uint32_t a2);   // ret: guess from name

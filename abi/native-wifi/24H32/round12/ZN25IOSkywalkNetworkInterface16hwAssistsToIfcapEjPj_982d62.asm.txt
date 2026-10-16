@@ -1,0 +1,28 @@
+# 0xffffff8002982d62 __ZN25IOSkywalkNetworkInterface16hwAssistsToIfcapEjPj
+ffffff8002982d62: push     rbp
+ffffff8002982d63: mov      rbp, rsp
+ffffff8002982d66: mov      eax, esi
+ffffff8002982d68: shr      eax, 0xd
+ffffff8002982d6b: mov      ecx, esi
+ffffff8002982d6d: shr      ecx, 0xf
+ffffff8002982d70: and      ecx, 4
+ffffff8002982d73: and      eax, 0x1808
+ffffff8002982d78: or       eax, ecx
+ffffff8002982d7a: mov      ecx, esi
+ffffff8002982d7c: and      ecx, 0x70
+ffffff8002982d7f: lea      eax, [rax + rcx*2]
+ffffff8002982d82: mov      ecx, esi
+ffffff8002982d84: shl      ecx, 8
+ffffff8002982d87: and      ecx, 0x8000
+ffffff8002982d8d: lea      edi, [rax + rcx]
+ffffff8002982d90: test     sil, 7
+ffffff8002982d94: lea      eax, [rcx + rax + 2]
+ffffff8002982d98: cmove    eax, edi
+ffffff8002982d9b: shr      esi, 3
+ffffff8002982d9e: and      esi, 1
+ffffff8002982da1: or       esi, eax
+ffffff8002982da3: mov      dword ptr [rdx], esi
+ffffff8002982da5: xor      eax, eax
+ffffff8002982da7: pop      rbp
+ffffff8002982da8: ret      
+ffffff8002982da9: nop      

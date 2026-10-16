@@ -1,0 +1,67 @@
+# 0xffffff80022d5e80 __ZN21IO80211InfraInterface19cancelDebounceTimerEv
+ffffff80022d5e80: push     rbp
+ffffff80022d5e81: mov      rbp, rsp
+ffffff80022d5e84: push     rbx
+ffffff80022d5e85: push     rax
+ffffff80022d5e86: mov      rax, qword ptr [rdi + 0x118]
+ffffff80022d5e8d: cmp      byte ptr [rax + 0x158], 1
+ffffff80022d5e94: jne      0xffffff80022d5f57
+ffffff80022d5e9a: mov      rbx, rdi
+ffffff80022d5e9d: movabs   rsi, 0x800000000000000
+ffffff80022d5ea7: cmp      qword ptr [rax + 0x148], 0
+ffffff80022d5eaf: je       0xffffff80022d5f5e
+ffffff80022d5eb5: lea      rdx, [rip + 0xc3c7f]  ; "Host Processor going to sleep, Cancelling Debounce Timer. INFRA: Set LinkState D"
+ffffff80022d5ebc: mov      rdi, rbx
+ffffff80022d5ebf: xor      eax, eax
+ffffff80022d5ec1: call     0xffffff8002261f9e  ; __ZN23IO80211SkywalkInterface8logDebugEyPKcz
+ffffff80022d5ec6: mov      rax, qword ptr [rbx + 0x118]
+ffffff80022d5ecd: mov      byte ptr [rax + 0x158], 0
+ffffff80022d5ed4: mov      dword ptr [rax + 0x18], 1
+ffffff80022d5edb: mov      rdi, qword ptr [rax + 0x148]
+ffffff80022d5ee2: mov      rax, qword ptr [rdi]
+ffffff80022d5ee5: call     qword ptr [rax + 0x218]
+ffffff80022d5eeb: mov      rax, qword ptr [rbx]
+ffffff80022d5eee: mov      rdi, rbx
+ffffff80022d5ef1: call     qword ptr [rax + 0xba8]
+ffffff80022d5ef7: test     rax, rax
+ffffff80022d5efa: je       0xffffff80022d5f21
+ffffff80022d5efc: mov      rax, qword ptr [rbx]
+ffffff80022d5eff: mov      rdi, rbx
+ffffff80022d5f02: call     qword ptr [rax + 0xba8]
+ffffff80022d5f08: mov      r9, qword ptr [rax]
+ffffff80022d5f0b: mov      rdi, rax
+ffffff80022d5f0e: mov      esi, 1
+ffffff80022d5f13: xor      edx, edx
+ffffff80022d5f15: xor      ecx, ecx
+ffffff80022d5f17: xor      r8d, r8d
+ffffff80022d5f1a: call     qword ptr [r9 + 0x980]
+ffffff80022d5f21: mov      rdi, rbx
+ffffff80022d5f24: mov      esi, 1
+ffffff80022d5f29: mov      edx, 0x80
+ffffff80022d5f2e: call     0xffffff8002982c04  ; __ZN25IOSkywalkNetworkInterface16reportLinkStatusEjj
+ffffff80022d5f33: mov      rax, qword ptr [rbx]
+ffffff80022d5f36: mov      rax, qword ptr [rax + 0xb10]
+ffffff80022d5f3d: mov      rdi, rbx
+ffffff80022d5f40: mov      esi, 0xbf
+ffffff80022d5f45: xor      edx, edx
+ffffff80022d5f47: xor      ecx, ecx
+ffffff80022d5f49: mov      r8d, 1
+ffffff80022d5f4f: add      rsp, 8
+ffffff80022d5f53: pop      rbx
+ffffff80022d5f54: pop      rbp
+ffffff80022d5f55: jmp      rax
+ffffff80022d5f57: add      rsp, 8
+ffffff80022d5f5b: pop      rbx
+ffffff80022d5f5c: pop      rbp
+ffffff80022d5f5d: ret      
+ffffff80022d5f5e: lea      rdx, [rip + 0xc3a49]  ; 0xffffff80023999ae
+ffffff80022d5f65: lea      rcx, [rip + 0xc3a64]  ; "/AppleInternal/Library/BuildRoots/4~CW9mugA6gpmKPwyaAeCNWSZRmRlk6mvK_U3N5n0/Libr"
+ffffff80022d5f6c: lea      r8, [rip + 0xc3bb4]  ; "cancelDebounceTimer"
+ffffff80022d5f73: mov      rdi, rbx
+ffffff80022d5f76: mov      r9d, 0x2f6
+ffffff80022d5f7c: xor      eax, eax
+ffffff80022d5f7e: add      rsp, 8
+ffffff80022d5f82: pop      rbx
+ffffff80022d5f83: pop      rbp
+ffffff80022d5f84: jmp      0xffffff8002261f9e  ; __ZN23IO80211SkywalkInterface8logDebugEyPKcz
+ffffff80022d5f89: nop      

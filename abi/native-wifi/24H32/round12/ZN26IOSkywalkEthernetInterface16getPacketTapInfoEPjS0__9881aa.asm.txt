@@ -1,0 +1,8 @@
+# 0xffffff80029881aa __ZN26IOSkywalkEthernetInterface16getPacketTapInfoEPjS0_
+ffffff80029881aa: push     rbp
+ffffff80029881ab: mov      rbp, rsp
+ffffff80029881ae: mov      dword ptr [rsi], 1
+ffffff80029881b4: mov      dword ptr [rdx], 0xe
+ffffff80029881ba: xor      eax, eax
+ffffff80029881bc: pop      rbp
+ffffff80029881bd: ret      

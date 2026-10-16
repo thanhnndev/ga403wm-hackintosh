@@ -1,0 +1,58 @@
+# 0xffffff8002987180 __ZN22IOSkywalkMemorySegment12initWithPoolEP25IOSkywalkPacketBufferPoolP32IOSkywalkMemorySegmentDescriptorj
+ffffff8002987180: push     rbp
+ffffff8002987181: mov      rbp, rsp
+ffffff8002987184: push     r15
+ffffff8002987186: push     r14
+ffffff8002987188: push     rbx
+ffffff8002987189: push     rax
+ffffff800298718a: mov      r15, rdx
+ffffff800298718d: mov      rbx, rsi
+ffffff8002987190: mov      r14, rdi
+ffffff8002987193: lea      rax, [rip + 0x2601e]  ; 0xffffff80029ad1b8
+ffffff800298719a: mov      rsi, qword ptr [rax]
+ffffff800298719d: mov      rdi, rbx
+ffffff80029871a0: call     0xffffff8000a49ab0  ; __ZN15OSMetaClassBase12safeMetaCastEPKS_PK11OSMetaClass
+ffffff80029871a5: mov      rcx, rax
+ffffff80029871a8: xor      eax, eax
+ffffff80029871aa: test     r15, r15
+ffffff80029871ad: je       0xffffff800298721f
+ffffff80029871af: test     rcx, rcx
+ffffff80029871b2: je       0xffffff800298721f
+ffffff80029871b4: cmp      dword ptr [r15], 0
+ffffff80029871b8: je       0xffffff800298721d
+ffffff80029871ba: mov      rax, qword ptr [rip + 0x1ff3f]  ; 0xffffff80029a7100
+ffffff80029871c1: mov      rdi, r14
+ffffff80029871c4: call     qword ptr [rax + 0x98]
+ffffff80029871ca: test     al, al
+ffffff80029871cc: je       0xffffff800298721d
+ffffff80029871ce: mov      edi, dword ptr [r15]
+ffffff80029871d1: call     0xffffff8000a4d420  ; __ZN7OSArray12withCapacityEj
+ffffff80029871d6: mov      qword ptr [r14 + 0x40], rax
+ffffff80029871da: test     rax, rax
+ffffff80029871dd: je       0xffffff800298721d
+ffffff80029871df: mov      rax, qword ptr [r15 + 8]
+ffffff80029871e3: test     rax, rax
+ffffff80029871e6: je       0xffffff8002987215
+ffffff80029871e8: movzx    esi, byte ptr [rax + 8]
+ffffff80029871ec: mov      rdi, qword ptr [rax]
+ffffff80029871ef: mov      rdx, qword ptr [rax + 0x10]
+ffffff80029871f3: mov      ecx, dword ptr [rax + 0x18]
+ffffff80029871f6: mov      r8, qword ptr [rax + 0x20]
+ffffff80029871fa: mov      r9d, dword ptr [rax + 0x28]
+ffffff80029871fe: push     0
+ffffff8002987200: push     qword ptr [rax + 0x30]
+ffffff8002987203: call     0xffffff8000b05990  ; __ZN12IODMACommand17withSpecificationEPFbPS_NS_9Segment64EPvjEhyNS_14MappingOptionsEyjP8IOMapperS2_
+ffffff8002987208: add      rsp, 0x10
+ffffff800298720c: mov      qword ptr [r14 + 0x38], rax
+ffffff8002987210: test     rax, rax
+ffffff8002987213: je       0xffffff800298721d
+ffffff8002987215: mov      qword ptr [r14 + 0x18], rbx
+ffffff8002987219: mov      al, 1
+ffffff800298721b: jmp      0xffffff800298721f  ; __ZN22IOSkywalkMemorySegment12initWithPoolEP25IOSkywalkPacketBufferPoolP32IOSkywalkMemorySegmentDescriptorj+0x9f
+ffffff800298721d: xor      eax, eax
+ffffff800298721f: add      rsp, 8
+ffffff8002987223: pop      rbx
+ffffff8002987224: pop      r14
+ffffff8002987226: pop      r15
+ffffff8002987228: pop      rbp
+ffffff8002987229: ret      

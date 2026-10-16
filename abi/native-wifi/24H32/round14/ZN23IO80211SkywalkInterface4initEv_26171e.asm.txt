@@ -1,0 +1,28 @@
+# 0xffffff800226171e __ZN23IO80211SkywalkInterface4initEv
+ffffff800226171e: push     rbp
+ffffff800226171f: mov      rbp, rsp
+ffffff8002261722: push     rbx
+ffffff8002261723: push     rax
+ffffff8002261724: mov      rbx, rdi
+ffffff8002261727: lea      rdi, [rip - 0x15172e]
+ffffff800226172e: mov      rsi, qword ptr [rip + 0x15a9eb]  ; 0xffffff80023bc120
+ffffff8002261735: lea      rcx, [rip + 0x1546c4]  ; 0xffffff80023b5e00
+ffffff800226173c: xor      edx, edx
+ffffff800226173e: xor      eax, eax
+ffffff8002261740: call     0xffffff8000a85d00  ; __os_log_internal
+ffffff8002261745: mov      rax, qword ptr [rip + 0x15a9bc]  ; 0xffffff80023bc108
+ffffff800226174c: mov      rdi, rbx
+ffffff800226174f: xor      esi, esi
+ffffff8002261751: call     qword ptr [rax + 0x258]
+ffffff8002261757: test     al, al
+ffffff8002261759: je       0xffffff8002261769
+ffffff800226175b: mov      rdi, rbx
+ffffff800226175e: add      rsp, 8
+ffffff8002261762: pop      rbx
+ffffff8002261763: pop      rbp
+ffffff8002261764: jmp      0xffffff800226129c  ; __ZN23IO80211SkywalkInterface9initIvarsEv
+ffffff8002261769: xor      eax, eax
+ffffff800226176b: add      rsp, 8
+ffffff800226176f: pop      rbx
+ffffff8002261770: pop      rbp
+ffffff8002261771: ret      

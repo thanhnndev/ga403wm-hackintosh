@@ -1,0 +1,8 @@
+# 0xffffff80022da0a2 __ZN21IO80211InfraInterface26setUnicastInfraPeerAddressE34apple80211_infra_peer_address_data
+ffffff80022da0a2: push     rbp
+ffffff80022da0a3: mov      rbp, rsp
+ffffff80022da0a6: mov      rax, qword ptr [rdi + 0x110]
+ffffff80022da0ad: mov      rdi, qword ptr [rax + 0x28]
+ffffff80022da0b1: pop      rbp
+ffffff80022da0b2: jmp      0xffffff80021f372c  ; __ZN18IO80211PeerManager26setUnicastInfraPeerAddressE34apple80211_infra_peer_address_data
+ffffff80022da0b7: nop      

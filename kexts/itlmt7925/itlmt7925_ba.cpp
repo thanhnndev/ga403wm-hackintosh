@@ -79,6 +79,8 @@ void itlmt7925::baLog(const char *fmt, ...)
 void itlmt7925::ethDeliver(const uint8_t *frame, uint32_t len)
 {
     stRxEth++;
+    szDeliv[szClass(len)]++;
+    if (isBigEcho(frame, len, 0)) icmpRepDeliv++;
     m3Note("rx", frame, len);
     ethRx(frame, len);
 }

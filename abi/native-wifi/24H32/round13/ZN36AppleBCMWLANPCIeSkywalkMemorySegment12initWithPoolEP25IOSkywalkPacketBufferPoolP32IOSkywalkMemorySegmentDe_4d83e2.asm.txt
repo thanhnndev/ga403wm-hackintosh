@@ -1,0 +1,70 @@
+# 0xffffff80014d83e2 __ZN36AppleBCMWLANPCIeSkywalkMemorySegment12initWithPoolEP25IOSkywalkPacketBufferPoolP32IOSkywalkMemorySegmentDescriptorP11CCLogStreamP15CCFaultReporterj
+ffffff80014d83e2: push     rbp
+ffffff80014d83e3: mov      rbp, rsp
+ffffff80014d83e6: push     r15
+ffffff80014d83e8: push     r14
+ffffff80014d83ea: push     r13
+ffffff80014d83ec: push     r12
+ffffff80014d83ee: push     rbx
+ffffff80014d83ef: push     rax
+ffffff80014d83f0: mov      dword ptr [rbp - 0x2c], r9d
+ffffff80014d83f4: mov      r13, r8
+ffffff80014d83f7: mov      r14, rcx
+ffffff80014d83fa: mov      r15, rdx
+ffffff80014d83fd: mov      r12, rsi
+ffffff80014d8400: mov      rbx, rdi
+ffffff80014d8403: lea      rdi, [rip + 0x6f236]  ; 0xffffff8001547640
+ffffff80014d840a: call     0xffffff8000ab5930  ; _IOMallocTypeImpl
+ffffff80014d840f: mov      qword ptr [rbx + 0x78], rax
+ffffff80014d8413: test     rax, rax
+ffffff80014d8416: je       0xffffff80014d845c
+ffffff80014d8418: mov      qword ptr [rax], r14
+ffffff80014d841b: mov      qword ptr [rax + 8], r13
+ffffff80014d841f: mov      rax, qword ptr [rip + 0x64d32]  ; 0xffffff800153d158
+ffffff80014d8426: mov      rdi, rbx
+ffffff80014d8429: mov      rsi, r12
+ffffff80014d842c: mov      rdx, r15
+ffffff80014d842f: mov      ecx, dword ptr [rbp - 0x2c]
+ffffff80014d8432: call     qword ptr [rax + 0x128]
+ffffff80014d8438: test     al, al
+ffffff80014d843a: je       0xffffff80014d846f
+ffffff80014d843c: call     0xffffff8000ab70f0  ; _IORecursiveLockAlloc
+ffffff80014d8441: mov      rcx, qword ptr [rbx + 0x78]
+ffffff80014d8445: mov      qword ptr [rcx + 0x10], rax
+ffffff80014d8449: movabs   rax, 0x7fffffffffffffff
+ffffff80014d8453: mov      qword ptr [rcx + 0x20], rax
+ffffff80014d8457: mov      r14b, 1
+ffffff80014d845a: jmp      0xffffff80014d8489  ; __ZN36AppleBCMWLANPCIeSkywalkMemorySegment12initWithPoolEP25IOSkywalkPacketBufferPoolP32IOSkywalkMemorySegmentDescriptorP11CCLogStreamP15CCFaultReporterj+0xa7
+ffffff80014d845c: lea      rdi, [rip + 0x51162]  ; 0xffffff80015295c5
+ffffff80014d8463: xor      r14d, r14d
+ffffff80014d8466: xor      eax, eax
+ffffff80014d8468: call     0xffffff8000ab6560  ; _IOLog
+ffffff80014d846d: jmp      0xffffff80014d8489  ; __ZN36AppleBCMWLANPCIeSkywalkMemorySegment12initWithPoolEP25IOSkywalkPacketBufferPoolP32IOSkywalkMemorySegmentDescriptorP11CCLogStreamP15CCFaultReporterj+0xa7
+ffffff80014d846f: mov      rax, qword ptr [rbx + 0x78]
+ffffff80014d8473: mov      rdi, qword ptr [rax]
+ffffff80014d8476: xor      r14d, r14d
+ffffff80014d8479: test     rdi, rdi
+ffffff80014d847c: je       0xffffff80014d8489
+ffffff80014d847e: xor      esi, esi
+ffffff80014d8480: call     0xffffff80031d421c  ; __ZN11CCLogStream9shouldLogE16CCStreamLogLevel
+ffffff80014d8485: test     al, al
+ffffff80014d8487: jne      0xffffff80014d849b
+ffffff80014d8489: mov      eax, r14d
+ffffff80014d848c: add      rsp, 8
+ffffff80014d8490: pop      rbx
+ffffff80014d8491: pop      r12
+ffffff80014d8493: pop      r13
+ffffff80014d8495: pop      r14
+ffffff80014d8497: pop      r15
+ffffff80014d8499: pop      rbp
+ffffff80014d849a: ret      
+ffffff80014d849b: mov      rax, qword ptr [rbx + 0x78]
+ffffff80014d849f: mov      rdi, qword ptr [rax]
+ffffff80014d84a2: lea      rsi, [rip + 0x5113d]  ; "[ik] %s@%d:Skywalk Memory Segment init fail"
+ffffff80014d84a9: lea      rdx, [rip + 0x51162]  ; "initWithPool"
+ffffff80014d84b0: xor      r14d, r14d
+ffffff80014d84b3: mov      ecx, 0x15d
+ffffff80014d84b8: xor      eax, eax
+ffffff80014d84ba: call     0xffffff80031d1f6a  ; __ZN11CCLogStream12logEmergencyEPKcz
+ffffff80014d84bf: jmp      0xffffff80014d8489  ; __ZN36AppleBCMWLANPCIeSkywalkMemorySegment12initWithPoolEP25IOSkywalkPacketBufferPoolP32IOSkywalkMemorySegmentDescriptorP11CCLogStreamP15CCFaultReporterj+0xa7
+ffffff80014d84c1: nop      

@@ -1,0 +1,7 @@
+# 0xffffff80022dca38 __ZN21IO80211InfraInterface19getMagicPatternDataER29apple80211_magic_pattern_data
+ffffff80022dca38: push     rbp
+ffffff80022dca39: mov      rbp, rsp
+ffffff80022dca3c: mov      rax, qword ptr [rdi + 0x118]
+ffffff80022dca43: mov      rdi, qword ptr [rax + 0x198]
+ffffff80022dca4a: pop      rbp
+ffffff80022dca4b: jmp      0xffffff8002267b82  ; __ZN26IO80211DataPathInformAgent19getMagicPatternDataER29apple80211_magic_pattern_data

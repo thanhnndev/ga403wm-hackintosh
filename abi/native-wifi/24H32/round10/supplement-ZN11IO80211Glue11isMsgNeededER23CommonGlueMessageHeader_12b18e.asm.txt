@@ -1,0 +1,6 @@
+# 0xffffff800212b18e __ZN11IO80211Glue11isMsgNeededER23CommonGlueMessageHeader
+ffffff800212b18e: push     rbp
+ffffff800212b18f: mov      rbp, rsp
+ffffff800212b192: mov      al, 1
+ffffff800212b194: pop      rbp
+ffffff800212b195: ret      

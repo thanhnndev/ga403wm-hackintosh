@@ -1,0 +1,35 @@
+# 0xffffff8002984e32 __ZN26IOSkywalkTxSubmissionQueue16packetCompletionEP15IOSkywalkPacketP20IOSkywalkPacketQueuej
+ffffff8002984e32: push     rbp
+ffffff8002984e33: mov      rbp, rsp
+ffffff8002984e36: push     rbx
+ffffff8002984e37: push     rax
+ffffff8002984e38: mov      rbx, rdi
+ffffff8002984e3b: add      rdi, 0x134
+ffffff8002984e42: call     0xffffff8000a48bf0  ; _OSIncrementAtomic
+ffffff8002984e47: mov      esi, dword ptr [rbx + 0xac]
+ffffff8002984e4d: lea      rax, [rip + 0x318bc]  ; 0xffffff80029b6710
+ffffff8002984e54: mov      ecx, dword ptr [rax]
+ffffff8002984e56: mov      eax, esi
+ffffff8002984e58: shr      eax, cl
+ffffff8002984e5a: test     eax, eax
+ffffff8002984e5c: mov      eax, dword ptr [rbx + 0x134]
+ffffff8002984e62: mov      edx, 3
+ffffff8002984e67: cmovne   edx, ecx
+ffffff8002984e6a: mov      ecx, edx
+ffffff8002984e6c: shr      esi, cl
+ffffff8002984e6e: xor      edx, edx
+ffffff8002984e70: div      esi
+ffffff8002984e72: test     edx, edx
+ffffff8002984e74: je       0xffffff8002984e7d
+ffffff8002984e76: add      rsp, 8
+ffffff8002984e7a: pop      rbx
+ffffff8002984e7b: pop      rbp
+ffffff8002984e7c: ret      
+ffffff8002984e7d: mov      rax, qword ptr [rbx + 0x100]
+ffffff8002984e84: inc      qword ptr [rax + 0x38]
+ffffff8002984e88: inc      dword ptr [rbx + 0x148]
+ffffff8002984e8e: mov      rdi, rbx
+ffffff8002984e91: add      rsp, 8
+ffffff8002984e95: pop      rbx
+ffffff8002984e96: pop      rbp
+ffffff8002984e97: jmp      0xffffff8000afafb0  ; __ZN13IOEventSource19signalWorkAvailableEv

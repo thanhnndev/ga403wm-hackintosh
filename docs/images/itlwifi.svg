@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="420" height="560" viewBox="0 0 420 560" role="img" aria-label="Placeholder: ItlWiFi: menu">
+  <title>Placeholder: ItlWiFi: menu</title>
+  <rect width="420" height="560" fill="#f2f2f5"/>
+  <rect x="8" y="8" width="404" height="544" rx="14" fill="none" stroke="#9a9aa5" stroke-width="2" stroke-dasharray="10 8"/>
+  <g font-family="-apple-system, Helvetica, Arial, sans-serif" text-anchor="middle" fill="#55555f">
+    <text x="210.0" y="262.0" font-size="26" font-weight="600">ItlWiFi: menu</text>
+    <text x="210.0" y="294.0" font-size="14">scan list, join form, speed test</text>
+    <text x="210.0" y="326.0" font-size="12" fill="#8a8a95">screenshot placeholder, to be updated</text>
+  </g>
+</svg>

@@ -1,0 +1,11 @@
+# 0xffffff800297d82e __ZN25IOSkywalkPacketBufferPool14allocatePacketEPP15IOSkywalkPacketj
+ffffff800297d82e: push     rbp
+ffffff800297d82f: mov      rbp, rsp
+ffffff800297d832: mov      ecx, edx
+ffffff800297d834: mov      rdx, rsi
+ffffff800297d837: mov      rax, qword ptr [rdi]
+ffffff800297d83a: mov      rax, qword ptr [rax + 0x130]
+ffffff800297d841: mov      esi, 1
+ffffff800297d846: pop      rbp
+ffffff800297d847: jmp      rax
+ffffff800297d849: nop      

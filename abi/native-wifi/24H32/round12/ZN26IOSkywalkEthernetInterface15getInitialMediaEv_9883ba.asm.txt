@@ -1,0 +1,11 @@
+# 0xffffff80029883ba __ZN26IOSkywalkEthernetInterface15getInitialMediaEv
+ffffff80029883ba: push     rbp
+ffffff80029883bb: mov      rbp, rsp
+ffffff80029883be: lea      rax, [rip + 0x26eeb]  ; 0xffffff80029af2b0
+ffffff80029883c5: call     qword ptr [rax + 0x9b8]
+ffffff80029883cb: test     eax, eax
+ffffff80029883cd: mov      ecx, 0x20
+ffffff80029883d2: cmove    eax, ecx
+ffffff80029883d5: pop      rbp
+ffffff80029883d6: ret      
+ffffff80029883d7: nop      

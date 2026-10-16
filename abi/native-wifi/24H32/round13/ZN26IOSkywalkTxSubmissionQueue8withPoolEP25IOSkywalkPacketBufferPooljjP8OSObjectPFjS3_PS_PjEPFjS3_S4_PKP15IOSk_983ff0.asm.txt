@@ -1,0 +1,56 @@
+# 0xffffff8002983ff0 __ZN26IOSkywalkTxSubmissionQueue8withPoolEP25IOSkywalkPacketBufferPooljjP8OSObjectPFjS3_PS_PjEPFjS3_S4_PKP15IOSkywalkPacketjPvESC_jj
+ffffff8002983ff0: push     rbp
+ffffff8002983ff1: mov      rbp, rsp
+ffffff8002983ff4: push     r15
+ffffff8002983ff6: push     r14
+ffffff8002983ff8: push     r13
+ffffff8002983ffa: push     r12
+ffffff8002983ffc: push     rbx
+ffffff8002983ffd: sub      rsp, 0x18
+ffffff8002984001: mov      qword ptr [rbp - 0x38], r9
+ffffff8002984005: mov      qword ptr [rbp - 0x40], r8
+ffffff8002984009: mov      qword ptr [rbp - 0x30], rcx
+ffffff800298400d: mov      r13d, edx
+ffffff8002984010: mov      r14d, esi
+ffffff8002984013: mov      r15, rdi
+ffffff8002984016: lea      rdi, [rip + 0x33aa3]  ; 0xffffff80029b7ac0
+ffffff800298401d: mov      esi, 0x168
+ffffff8002984022: call     0xffffff8000a4be90  ; _OSObject_typed_operator_new
+ffffff8002984027: mov      rbx, rax
+ffffff800298402a: lea      r12, [rip + 0x32a87]  ; 0xffffff80029b6ab8
+ffffff8002984031: mov      rdi, rax
+ffffff8002984034: mov      rsi, r12
+ffffff8002984037: call     0xffffff80029807b6  ; __ZN20IOSkywalkPacketQueueC2EPK11OSMetaClass
+ffffff800298403c: lea      rax, [rip + 0x2c025]  ; 0xffffff80029b0068
+ffffff8002984043: mov      qword ptr [rbx], rax
+ffffff8002984046: mov      rdi, r12
+ffffff8002984049: call     0xffffff8000a4a700  ; __ZNK11OSMetaClass19instanceConstructedEv
+ffffff800298404e: mov      rax, qword ptr [rbx]
+ffffff8002984051: mov      rdi, rbx
+ffffff8002984054: mov      rsi, r15
+ffffff8002984057: mov      edx, dword ptr [rbp + 0x20]
+ffffff800298405a: mov      ecx, r14d
+ffffff800298405d: mov      r8d, r13d
+ffffff8002984060: mov      r9, qword ptr [rbp - 0x30]
+ffffff8002984064: mov      r10d, dword ptr [rbp + 0x18]
+ffffff8002984068: push     r10
+ffffff800298406a: push     qword ptr [rbp + 0x10]
+ffffff800298406d: push     qword ptr [rbp - 0x38]
+ffffff8002984070: push     qword ptr [rbp - 0x40]
+ffffff8002984073: call     qword ptr [rax + 0x2a8]
+ffffff8002984079: add      rsp, 0x20
+ffffff800298407d: test     al, al
+ffffff800298407f: jne      0xffffff800298408c
+ffffff8002984081: mov      rax, qword ptr [rbx]
+ffffff8002984084: mov      rdi, rbx
+ffffff8002984087: call     qword ptr [rax + 0x28]
+ffffff800298408a: xor      ebx, ebx
+ffffff800298408c: mov      rax, rbx
+ffffff800298408f: add      rsp, 0x18
+ffffff8002984093: pop      rbx
+ffffff8002984094: pop      r12
+ffffff8002984096: pop      r13
+ffffff8002984098: pop      r14
+ffffff800298409a: pop      r15
+ffffff800298409c: pop      rbp
+ffffff800298409d: ret      

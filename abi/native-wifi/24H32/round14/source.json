@@ -1,0 +1,226 @@
+{
+  "sha256": "cd013c14a7f21dbb8181fb06c44e079de8646b6a674abe21f6e47f42e8979af3",
+  "tool": "tools/dump_native_wifi_rx_root.py",
+  "functions": {
+    "_ifnet_set_offload": {
+      "address": "0xffffff800069d650",
+      "file": "ifnet_set_offload_69d650.asm.txt"
+    },
+    "_ifnet_set_lladdr": {
+      "address": "0xffffff800069f410",
+      "file": "ifnet_set_lladdr_69f410.asm.txt"
+    },
+    "_kern_netif_queue_rx_enqueue": {
+      "address": "0xffffff8000a1b930",
+      "file": "kern_netif_queue_rx_enqueue_a1b930.asm.txt"
+    },
+    "_kern_packet_finalize": {
+      "address": "0xffffff8000a35500",
+      "file": "kern_packet_finalize_a35500.asm.txt"
+    },
+    "__ZN33AppleBCMWLANPCIeSkywalkPacketPool14allocatePacketEPP15IOSkywalkPacketj": {
+      "address": "0xffffff80014d7ed2",
+      "file": "ZN33AppleBCMWLANPCIeSkywalkPacketPool14allocatePacketEPP15IOSkywalkPacketj_4d7ed2.asm.txt"
+    },
+    "__ZN28AppleBCMWLANSkywalkInterface29initWithProviderAndParametersEP16AppleBCMWLANCorej20SkywalkInterfaceRolebhP17apple80211_wme_acjP11CCLogStreamP15CCFaultReporter": {
+      "address": "0xffffff800156a04a",
+      "file": "ZN28AppleBCMWLANSkywalkInterface29initWithProviderAndParametersEP16AppleBCMWLANCorej20SkywalkInterfaceRolebhP1_56a04a.asm.txt"
+    },
+    "__ZN22IO80211MacAddressAgent15initWithOptionsEP23IO80211SkywalkInterfaceR10ether_addrP11CCLogStream": {
+      "address": "0xffffff800226047a",
+      "file": "ZN22IO80211MacAddressAgent15initWithOptionsEP23IO80211SkywalkInterfaceR10ether_addrP11CCLogStream_26047a.asm.txt"
+    },
+    "__ZN22IO80211MacAddressAgent16updateMacAddressER10ether_addrjb": {
+      "address": "0xffffff80022608f4",
+      "file": "ZN22IO80211MacAddressAgent16updateMacAddressER10ether_addrjb_2608f4.asm.txt"
+    },
+    "__ZN22IO80211MacAddressAgent13setMacAddressER10ether_addrjb": {
+      "address": "0xffffff8002260b10",
+      "file": "ZN22IO80211MacAddressAgent13setMacAddressER10ether_addrjb_260b10.asm.txt"
+    },
+    "__ZN23IO80211SkywalkInterface9initIvarsEv": {
+      "address": "0xffffff800226129c",
+      "file": "ZN23IO80211SkywalkInterface9initIvarsEv_26129c.asm.txt"
+    },
+    "__ZN23IO80211SkywalkInterface4initEv": {
+      "address": "0xffffff800226171e",
+      "file": "ZN23IO80211SkywalkInterface4initEv_26171e.asm.txt"
+    },
+    "__ZN23IO80211SkywalkInterface4initEP9IOServiceP10ether_addr": {
+      "address": "0xffffff8002261772",
+      "file": "ZN23IO80211SkywalkInterface4initEP9IOServiceP10ether_addr_261772.asm.txt"
+    },
+    "__ZN23IO80211SkywalkInterface5startEP9IOService": {
+      "address": "0xffffff8002261822",
+      "file": "ZN23IO80211SkywalkInterface5startEP9IOService_261822.asm.txt"
+    },
+    "__ZN23IO80211SkywalkInterface18getHardwareAddressEP10ether_addr": {
+      "address": "0xffffff800226442a",
+      "file": "ZN23IO80211SkywalkInterface18getHardwareAddressEP10ether_addr_26442a.asm.txt"
+    },
+    "__ZN23IO80211SkywalkInterface18setHardwareAddressEP10ether_addr": {
+      "address": "0xffffff80022644c2",
+      "file": "ZN23IO80211SkywalkInterface18setHardwareAddressEP10ether_addr_2644c2.asm.txt"
+    },
+    "__ZN21IO80211InfraInterface18updateMediumStatusEP10ifmediareq": {
+      "address": "0xffffff80022d519a",
+      "file": "ZN21IO80211InfraInterface18updateMediumStatusEP10ifmediareq_2d519a.asm.txt"
+    },
+    "__ZN21IO80211InfraInterface12setLinkStateE16IO80211LinkStatejbj": {
+      "address": "0xffffff80022d531c",
+      "file": "ZN21IO80211InfraInterface12setLinkStateE16IO80211LinkStatejbj_2d531c.asm.txt"
+    },
+    "__ZN21IO80211InfraInterface20setLinkStateInternalE16IO80211LinkStatejbj": {
+      "address": "0xffffff80022d532e",
+      "file": "ZN21IO80211InfraInterface20setLinkStateInternalE16IO80211LinkStatejbj_2d532e.asm.txt"
+    },
+    "__ZN21IO80211InfraInterface13handleKeyDoneEbb": {
+      "address": "0xffffff80022d590c",
+      "file": "ZN21IO80211InfraInterface13handleKeyDoneEbb_2d590c.asm.txt"
+    },
+    "__ZN21IO80211InfraInterface15updateLinkSpeedEv": {
+      "address": "0xffffff80022d5a10",
+      "file": "ZN21IO80211InfraInterface15updateLinkSpeedEv_2d5a10.asm.txt"
+    },
+    "__ZN21IO80211InfraInterface30registerInfraEthernetInterfaceEPN26IOSkywalkEthernetInterface16RegistrationInfoEPP20IOSkywalkPacketQueuejP25IOSkywalkPacketBufferPoolS7_": {
+      "address": "0xffffff80022dcfce",
+      "file": "ZN21IO80211InfraInterface30registerInfraEthernetInterfaceEPN26IOSkywalkEthernetInterface16RegistrationInfoEPP2_2dcfce.asm.txt"
+    },
+    "__ZN25IOSkywalkNetworkBSDClient17gatedPrepareNexusEP7__ifnet": {
+      "address": "0xffffff800297893e",
+      "file": "ZN25IOSkywalkNetworkBSDClient17gatedPrepareNexusEP7_ifnet_97893e.asm.txt"
+    },
+    "__ZN25IOSkywalkNetworkBSDClient15enableInterfaceEP25IOSkywalkNetworkInterface": {
+      "address": "0xffffff8002978a5a",
+      "file": "ZN25IOSkywalkNetworkBSDClient15enableInterfaceEP25IOSkywalkNetworkInterface_978a5a.asm.txt"
+    },
+    "__ZN25IOSkywalkPacketBufferPool9newPacketEP25IOSkywalkPacketDescriptorPP15IOSkywalkPacket": {
+      "address": "0xffffff800297d742",
+      "file": "ZN25IOSkywalkPacketBufferPool9newPacketEP25IOSkywalkPacketDescriptorPP15IOSkywalkPacket_97d742.asm.txt"
+    },
+    "__ZN25IOSkywalkPacketBufferPool14allocatePacketEPP15IOSkywalkPacketj": {
+      "address": "0xffffff800297d82e",
+      "file": "ZN25IOSkywalkPacketBufferPool14allocatePacketEPP15IOSkywalkPacketj_97d82e.asm.txt"
+    },
+    "__ZN25IOSkywalkPacketBufferPool22completePreparedPacketEP15IOSkywalkPacket": {
+      "address": "0xffffff800297d84a",
+      "file": "ZN25IOSkywalkPacketBufferPool22completePreparedPacketEP15IOSkywalkPacket_97d84a.asm.txt"
+    },
+    "__ZN15IOSkywalkPacket12initWithPoolEP25IOSkywalkPacketBufferPoolP25IOSkywalkPacketDescriptorj": {
+      "address": "0xffffff800297e2d8",
+      "file": "ZN15IOSkywalkPacket12initWithPoolEP25IOSkywalkPacketBufferPoolP25IOSkywalkPacketDescriptorj_97e2d8.asm.txt"
+    },
+    "__ZNK15IOSkywalkPacket20getPacketBufferCountEv": {
+      "address": "0xffffff800297e3de",
+      "file": "ZNK15IOSkywalkPacket20getPacketBufferCountEv_97e3de.asm.txt"
+    },
+    "__ZNK15IOSkywalkPacket21getDataVirtualAddressEv": {
+      "address": "0xffffff800297e430",
+      "file": "ZNK15IOSkywalkPacket21getDataVirtualAddressEv_97e430.asm.txt"
+    },
+    "__ZN15IOSkywalkPacket7prepareEP20IOSkywalkPacketQueueyj": {
+      "address": "0xffffff800297e4a2",
+      "file": "ZN15IOSkywalkPacket7prepareEP20IOSkywalkPacketQueueyj_97e4a2.asm.txt"
+    },
+    "__ZN15IOSkywalkPacket16prepareWithQueueEP20IOSkywalkPacketQueuejj": {
+      "address": "0xffffff800297e4ee",
+      "file": "ZN15IOSkywalkPacket16prepareWithQueueEP20IOSkywalkPacketQueuejj_97e4ee.asm.txt"
+    },
+    "__ZN15IOSkywalkPacket8completeEP20IOSkywalkPacketQueuej": {
+      "address": "0xffffff800297e5c6",
+      "file": "ZN15IOSkywalkPacket8completeEP20IOSkywalkPacketQueuej_97e5c6.asm.txt"
+    },
+    "__ZN15IOSkywalkPacket17completeWithQueueEP20IOSkywalkPacketQueuejj": {
+      "address": "0xffffff800297e612",
+      "file": "ZN15IOSkywalkPacket17completeWithQueueEP20IOSkywalkPacketQueuejj_97e612.asm.txt"
+    },
+    "__ZN15IOSkywalkPacket23acquireWithPacketHandleEyj": {
+      "address": "0xffffff800297e758",
+      "file": "ZN15IOSkywalkPacket23acquireWithPacketHandleEyj_97e758.asm.txt"
+    },
+    "__ZN21IOSkywalkPacketBuffer7prepareEj": {
+      "address": "0xffffff800297ec24",
+      "file": "ZN21IOSkywalkPacketBuffer7prepareEj_97ec24.asm.txt"
+    },
+    "__ZN21IOSkywalkPacketBuffer8completeEj": {
+      "address": "0xffffff800297ec2c",
+      "file": "ZN21IOSkywalkPacketBuffer8completeEj_97ec2c.asm.txt"
+    },
+    "__ZN22IOSkywalkNetworkPacket8withPoolEP25IOSkywalkPacketBufferPoolP25IOSkywalkPacketDescriptorj": {
+      "address": "0xffffff800297efea",
+      "file": "ZN22IOSkywalkNetworkPacket8withPoolEP25IOSkywalkPacketBufferPoolP25IOSkywalkPacketDescriptorj_97efea.asm.txt"
+    },
+    "__ZN22IOSkywalkNetworkPacket11setHeadroomEh": {
+      "address": "0xffffff800297f070",
+      "file": "ZN22IOSkywalkNetworkPacket11setHeadroomEh_97f070.asm.txt"
+    },
+    "__ZN22IOSkywalkNetworkPacket19setLinkHeaderLengthEh": {
+      "address": "0xffffff800297f098",
+      "file": "ZN22IOSkywalkNetworkPacket19setLinkHeaderLengthEh_97f098.asm.txt"
+    },
+    "__ZN22IOSkywalkNetworkPacket19setLinkHeaderOffsetEj": {
+      "address": "0xffffff800297f0c0",
+      "file": "ZN22IOSkywalkNetworkPacket19setLinkHeaderOffsetEj_97f0c0.asm.txt"
+    },
+    "__ZN22IOSkywalkNetworkPacket22setNetworkHeaderOffsetEj": {
+      "address": "0xffffff800297f118",
+      "file": "ZN22IOSkywalkNetworkPacket22setNetworkHeaderOffsetEj_97f118.asm.txt"
+    },
+    "__ZN22IOSkywalkNetworkPacket18setDataContainsFCSEb": {
+      "address": "0xffffff800297f1da",
+      "file": "ZN22IOSkywalkNetworkPacket18setDataContainsFCSEb_97f1da.asm.txt"
+    },
+    "__ZN22IOSkywalkNetworkPacket18setIsLinkBroadcastEb": {
+      "address": "0xffffff800297f262",
+      "file": "ZN22IOSkywalkNetworkPacket18setIsLinkBroadcastEb_97f262.asm.txt"
+    },
+    "__ZN22IOSkywalkNetworkPacket18setIsLinkMulticastEb": {
+      "address": "0xffffff800297f290",
+      "file": "ZN22IOSkywalkNetworkPacket18setIsLinkMulticastEb_97f290.asm.txt"
+    },
+    "__ZN22IOSkywalkNetworkPacket17setRxChecksumInfoEjt": {
+      "address": "0xffffff800297f510",
+      "file": "ZN22IOSkywalkNetworkPacket17setRxChecksumInfoEjt_97f510.asm.txt"
+    },
+    "__ZN26IOSkywalkRxCompletionQueue27enqueuePacketsForNetworkingEPKP15IOSkywalkPacketjj": {
+      "address": "0xffffff8002986918",
+      "file": "ZN26IOSkywalkRxCompletionQueue27enqueuePacketsForNetworkingEPKP15IOSkywalkPacketjj_986918.asm.txt"
+    },
+    "__ZN26IOSkywalkEthernetInterface20copyRegistrationInfoEPKNS_16RegistrationInfoE": {
+      "address": "0xffffff8002987fe4",
+      "file": "ZN26IOSkywalkEthernetInterface20copyRegistrationInfoEPKNS_16RegistrationInfoE_987fe4.asm.txt"
+    },
+    "__ZN26IOSkywalkEthernetInterface19prepareBSDInterfaceEP7__ifnetj": {
+      "address": "0xffffff8002988454",
+      "file": "ZN26IOSkywalkEthernetInterface19prepareBSDInterfaceEP7_ifnetj_988454.asm.txt"
+    },
+    "__ZN25IOSkywalkNetworkBSDClient15enableInterfaceEP25IOSkywalkNetworkInterface.cold.1": {
+      "address": "0xffffff80029a0f27",
+      "file": "ZN25IOSkywalkNetworkBSDClient15enableInterfaceEP25IOSkywalkNetworkInterface_cold_1_9a0f27.asm.txt"
+    },
+    "__ZN25IOSkywalkPacketBufferPool14allocatePacketEjPP15IOSkywalkPacketj": {
+      "address": "0xffffff80029a1e66",
+      "file": "ZN25IOSkywalkPacketBufferPool14allocatePacketEjPP15IOSkywalkPacketj_9a1e66.asm.txt"
+    },
+    "__ZN25IOSkywalkPacketBufferPool16deallocatePacketEP15IOSkywalkPacket": {
+      "address": "0xffffff80029a2072",
+      "file": "ZN25IOSkywalkPacketBufferPool16deallocatePacketEP15IOSkywalkPacket_9a2072.asm.txt"
+    },
+    "__ZN25IOSkywalkPacketBufferPool9newPacketEP25IOSkywalkPacketDescriptorPP15IOSkywalkPacket.cold.1": {
+      "address": "0xffffff80029a235f",
+      "file": "ZN25IOSkywalkPacketBufferPool9newPacketEP25IOSkywalkPacketDescriptorPP15IOSkywalkPacket_cold_1_9a235f.asm.txt"
+    },
+    "__ZN15IOSkywalkPacket22setDataOffsetAndLengthEtj": {
+      "address": "0xffffff80029a24d0",
+      "file": "ZN15IOSkywalkPacket22setDataOffsetAndLengthEtj_9a24d0.asm.txt"
+    },
+    "__ZN26IOSkywalkRxCompletionQueue14enqueuePacketsEPKP15IOSkywalkPacketjj": {
+      "address": "0xffffff80029a36b6",
+      "file": "ZN26IOSkywalkRxCompletionQueue14enqueuePacketsEPKP15IOSkywalkPacketjj_9a36b6.asm.txt"
+    },
+    "__ZN26IOSkywalkRxCompletionQueue14enqueuePacketsEP15IOSkywalkPacketjj": {
+      "address": "0xffffff80029a3760",
+      "file": "ZN26IOSkywalkRxCompletionQueue14enqueuePacketsEP15IOSkywalkPacketjj_9a3760.asm.txt"
+    }
+  }
+}

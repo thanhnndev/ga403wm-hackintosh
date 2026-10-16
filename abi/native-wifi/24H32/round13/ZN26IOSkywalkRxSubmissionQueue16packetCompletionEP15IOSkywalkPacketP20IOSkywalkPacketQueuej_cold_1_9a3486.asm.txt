@@ -1,0 +1,14 @@
+# 0xffffff80029a3486 __ZN26IOSkywalkRxSubmissionQueue16packetCompletionEP15IOSkywalkPacketP20IOSkywalkPacketQueuej.cold.1
+ffffff80029a3486: push     rbp
+ffffff80029a3487: mov      rbp, rsp
+ffffff80029a348a: and      edi, 0xfffffffd
+ffffff80029a348d: mov      dword ptr [rsi], edi
+ffffff80029a348f: mov      rax, qword ptr [rdx + 0xf8]
+ffffff80029a3496: inc      qword ptr [rax + 0x48]
+ffffff80029a349a: inc      dword ptr [rdx + 0x138]
+ffffff80029a34a0: mov      rdi, rdx
+ffffff80029a34a3: pop      rbp
+ffffff80029a34a4: jmp      0xffffff8000afafb0  ; __ZN13IOEventSource19signalWorkAvailableEv
+ffffff80029a34a9: nop      
+ffffff80029a34aa: nop      
+ffffff80029a34ab: nop      

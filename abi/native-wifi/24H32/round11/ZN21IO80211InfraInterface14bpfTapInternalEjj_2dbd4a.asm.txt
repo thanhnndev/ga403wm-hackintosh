@@ -1,0 +1,228 @@
+# 0xffffff80022dbd4a __ZN21IO80211InfraInterface14bpfTapInternalEjj
+ffffff80022dbd4a: push     rbp
+ffffff80022dbd4b: mov      rbp, rsp
+ffffff80022dbd4e: push     r15
+ffffff80022dbd50: push     r14
+ffffff80022dbd52: push     r13
+ffffff80022dbd54: push     r12
+ffffff80022dbd56: push     rbx
+ffffff80022dbd57: sub      rsp, 0xa8
+ffffff80022dbd5e: mov      rax, qword ptr [rip + 0xe03b3]  ; 0xffffff80023bc118
+ffffff80022dbd65: mov      rax, qword ptr [rax]
+ffffff80022dbd68: mov      qword ptr [rbp - 0x30], rax
+ffffff80022dbd6c: mov      rax, qword ptr [rdi + 0x118]
+ffffff80022dbd73: cmp      byte ptr [rax + 0x160], 0
+ffffff80022dbd7a: jne      0xffffff80022dc115
+ffffff80022dbd80: mov      r12d, esi
+ffffff80022dbd83: mov      rbx, rdi
+ffffff80022dbd86: mov      dword ptr [rbp - 0xb4], edx
+ffffff80022dbd8c: lea      rsi, [rip + 0x4957d]  ; "<unknown>"
+ffffff80022dbd93: lea      r14, [rbp - 0xb0]
+ffffff80022dbd9a: mov      ecx, 0x10
+ffffff80022dbd9f: mov      rdi, r14
+ffffff80022dbda2: rep movsq qword ptr [rdi], qword ptr [rsi]
+ffffff80022dbda5: call     0xffffff80008fe7b0  ; _proc_selfpid
+ffffff80022dbdaa: mov      r13d, eax
+ffffff80022dbdad: mov      rdi, r14
+ffffff80022dbdb0: mov      esi, 0x80
+ffffff80022dbdb5: call     0xffffff80008ff3f0  ; _proc_selfname
+ffffff80022dbdba: lea      eax, [r12 - 0x69]
+ffffff80022dbdbf: cmp      eax, 0x3a
+ffffff80022dbdc2: ja       0xffffff80022dbdd4
+ffffff80022dbdc4: movabs   rcx, 0x400000000400001
+ffffff80022dbdce: bt       rcx, rax
+ffffff80022dbdd2: jb       0xffffff80022dbde1
+ffffff80022dbdd4: cmp      r12d, 0xc0
+ffffff80022dbddb: jne      0xffffff80022dc115
+ffffff80022dbde1: mov      rax, qword ptr [rbx]
+ffffff80022dbde4: mov      rdi, rbx
+ffffff80022dbde7: call     qword ptr [rax + 0xba8]
+ffffff80022dbded: test     rax, rax
+ffffff80022dbdf0: je       0xffffff80022dbe50
+ffffff80022dbdf2: mov      rax, qword ptr [rbx]
+ffffff80022dbdf5: mov      rdi, rbx
+ffffff80022dbdf8: call     qword ptr [rax + 0xba8]
+ffffff80022dbdfe: mov      rax, qword ptr [rax + 0x120]
+ffffff80022dbe05: cmp      qword ptr [rax + 0x188], 0
+ffffff80022dbe0d: mov      r14d, dword ptr [rbp - 0xb4]
+ffffff80022dbe14: je       0xffffff80022dbe64
+ffffff80022dbe16: mov      rax, qword ptr [rbx]
+ffffff80022dbe19: mov      rdi, rbx
+ffffff80022dbe1c: call     qword ptr [rax + 0xba8]
+ffffff80022dbe22: mov      rax, qword ptr [rax + 0x120]
+ffffff80022dbe29: mov      rax, qword ptr [rax + 0x188]
+ffffff80022dbe30: mov      rax, qword ptr [rax + 0x110]
+ffffff80022dbe37: mov      rdi, qword ptr [rax + 0x28]
+ffffff80022dbe3b: lea      rsi, [rip + 0x11b19e]  ; 0xffffff80023f6fe0
+ffffff80022dbe42: call     0xffffff8000a49ab0  ; __ZN15OSMetaClassBase12safeMetaCastEPKS_PK11OSMetaClass
+ffffff80022dbe47: mov      qword ptr [rbp - 0xc0], rax
+ffffff80022dbe4e: jmp      0xffffff80022dbe6f  ; __ZN21IO80211InfraInterface14bpfTapInternalEjj+0x125
+ffffff80022dbe50: mov      qword ptr [rbp - 0xc0], 0
+ffffff80022dbe5b: mov      r14d, dword ptr [rbp - 0xb4]
+ffffff80022dbe62: jmp      0xffffff80022dbe6f  ; __ZN21IO80211InfraInterface14bpfTapInternalEjj+0x125
+ffffff80022dbe64: mov      qword ptr [rbp - 0xc0], 0
+ffffff80022dbe6f: mov      rax, qword ptr [rbx]
+ffffff80022dbe72: mov      rdi, rbx
+ffffff80022dbe75: call     qword ptr [rax + 0xba8]
+ffffff80022dbe7b: test     rax, rax
+ffffff80022dbe7e: mov      dword ptr [rbp - 0xc4], r13d
+ffffff80022dbe85: je       0xffffff80022dbeda
+ffffff80022dbe87: mov      rax, qword ptr [rbx]
+ffffff80022dbe8a: mov      rdi, rbx
+ffffff80022dbe8d: call     qword ptr [rax + 0xba8]
+ffffff80022dbe93: mov      rax, qword ptr [rax + 0x120]
+ffffff80022dbe9a: cmp      qword ptr [rax + 0x3a8], 0
+ffffff80022dbea2: je       0xffffff80022dbeda
+ffffff80022dbea4: mov      rax, qword ptr [rbx]
+ffffff80022dbea7: mov      rdi, rbx
+ffffff80022dbeaa: call     qword ptr [rax + 0xba8]
+ffffff80022dbeb0: mov      rax, qword ptr [rax + 0x120]
+ffffff80022dbeb7: mov      rax, qword ptr [rax + 0x3a8]
+ffffff80022dbebe: mov      rax, qword ptr [rax + 0x110]
+ffffff80022dbec5: mov      rdi, qword ptr [rax + 0x28]
+ffffff80022dbec9: lea      rsi, [rip + 0x11bcb8]  ; 0xffffff80023f7b88
+ffffff80022dbed0: call     0xffffff8000a49ab0  ; __ZN15OSMetaClassBase12safeMetaCastEPKS_PK11OSMetaClass
+ffffff80022dbed5: mov      r15, rax
+ffffff80022dbed8: jmp      0xffffff80022dbedd  ; __ZN21IO80211InfraInterface14bpfTapInternalEjj+0x193
+ffffff80022dbeda: xor      r15d, r15d
+ffffff80022dbedd: test     r14d, r14d
+ffffff80022dbee0: sete     r13b
+ffffff80022dbee4: mov      r14, qword ptr [rbp - 0xc0]
+ffffff80022dbeeb: test     r14, r14
+ffffff80022dbeee: sete     al
+ffffff80022dbef1: or       al, r13b
+ffffff80022dbef4: jne      0xffffff80022dbf49
+ffffff80022dbef6: mov      rax, qword ptr [r14 + 0x18]
+ffffff80022dbefa: mov      rdi, qword ptr [rax + 0x550]
+ffffff80022dbf01: mov      rax, qword ptr [rdi]
+ffffff80022dbf04: call     qword ptr [rax + 0xb88]
+ffffff80022dbf0a: cmp      eax, 2
+ffffff80022dbf0d: jne      0xffffff80022dbf49
+ffffff80022dbf0f: mov      rax, qword ptr [r14 + 0x18]
+ffffff80022dbf13: mov      rdi, qword ptr [rax + 0x550]
+ffffff80022dbf1a: mov      rax, qword ptr [rdi]
+ffffff80022dbf1d: mov      esi, 1
+ffffff80022dbf22: mov      edx, 1
+ffffff80022dbf27: call     qword ptr [rax + 0xe68]
+ffffff80022dbf2d: mov      rax, qword ptr [rbx + 0x118]
+ffffff80022dbf34: mov      byte ptr [rax + 0x182], 1
+ffffff80022dbf3b: lea      rdi, [rip + 0xbf0ba]  ; 0xffffff800239affc
+ffffff80022dbf42: xor      eax, eax
+ffffff80022dbf44: call     0xffffff8000ab6560  ; _IOLog
+ffffff80022dbf49: test     r15, r15
+ffffff80022dbf4c: sete     al
+ffffff80022dbf4f: or       al, r13b
+ffffff80022dbf52: jne      0xffffff80022dbfa7
+ffffff80022dbf54: mov      rax, qword ptr [r15 + 0x18]
+ffffff80022dbf58: mov      rdi, qword ptr [rax + 0x550]
+ffffff80022dbf5f: mov      rax, qword ptr [rdi]
+ffffff80022dbf62: call     qword ptr [rax + 0xb88]
+ffffff80022dbf68: cmp      eax, 2
+ffffff80022dbf6b: jne      0xffffff80022dbfa7
+ffffff80022dbf6d: mov      rax, qword ptr [r15 + 0x18]
+ffffff80022dbf71: mov      rdi, qword ptr [rax + 0x550]
+ffffff80022dbf78: mov      rax, qword ptr [rdi]
+ffffff80022dbf7b: mov      esi, 1
+ffffff80022dbf80: mov      edx, 1
+ffffff80022dbf85: call     qword ptr [rax + 0xe68]
+ffffff80022dbf8b: mov      rax, qword ptr [rbx + 0x118]
+ffffff80022dbf92: mov      byte ptr [rax + 0x183], 1
+ffffff80022dbf99: lea      rdi, [rip + 0xbf087]  ; 0xffffff800239b027
+ffffff80022dbfa0: xor      eax, eax
+ffffff80022dbfa2: call     0xffffff8000ab6560  ; _IOLog
+ffffff80022dbfa7: xor      r13d, r13d
+ffffff80022dbfaa: mov      r14d, dword ptr [rbp - 0xb4]
+ffffff80022dbfb1: test     r14d, r14d
+ffffff80022dbfb4: setne    r13b
+ffffff80022dbfb8: mov      rax, qword ptr [rbx]
+ffffff80022dbfbb: mov      rdi, rbx
+ffffff80022dbfbe: call     qword ptr [rax + 0xba8]
+ffffff80022dbfc4: mov      rcx, qword ptr [rax]
+ffffff80022dbfc7: mov      rdi, rax
+ffffff80022dbfca: mov      esi, r13d
+ffffff80022dbfcd: mov      edx, r12d
+ffffff80022dbfd0: call     qword ptr [rcx + 0xc90]
+ffffff80022dbfd6: test     eax, eax
+ffffff80022dbfd8: mov      r12d, dword ptr [rbp - 0xc4]
+ffffff80022dbfdf: jne      0xffffff80022dc0af
+ffffff80022dbfe5: test     r14d, r14d
+ffffff80022dbfe8: mov      rcx, qword ptr [rbp - 0xc0]
+ffffff80022dbfef: jne      0xffffff80022dc040
+ffffff80022dbff1: test     rcx, rcx
+ffffff80022dbff4: je       0xffffff80022dc040
+ffffff80022dbff6: mov      rax, qword ptr [rbx + 0x118]
+ffffff80022dbffd: cmp      byte ptr [rax + 0x182], 1
+ffffff80022dc004: jne      0xffffff80022dc040
+ffffff80022dc006: mov      rax, qword ptr [rcx + 0x18]
+ffffff80022dc00a: mov      rdi, qword ptr [rax + 0x550]
+ffffff80022dc011: mov      rax, qword ptr [rdi]
+ffffff80022dc014: mov      esi, 2
+ffffff80022dc019: mov      edx, 1
+ffffff80022dc01e: call     qword ptr [rax + 0xe68]
+ffffff80022dc024: mov      rax, qword ptr [rbx + 0x118]
+ffffff80022dc02b: mov      byte ptr [rax + 0x182], 0
+ffffff80022dc032: lea      rdi, [rip + 0xbf018]  ; 0xffffff800239b051
+ffffff80022dc039: xor      eax, eax
+ffffff80022dc03b: call     0xffffff8000ab6560  ; _IOLog
+ffffff80022dc040: test     r14d, r14d
+ffffff80022dc043: jne      0xffffff80022dc094
+ffffff80022dc045: test     r15, r15
+ffffff80022dc048: je       0xffffff80022dc094
+ffffff80022dc04a: mov      rax, qword ptr [rbx + 0x118]
+ffffff80022dc051: cmp      byte ptr [rax + 0x183], 1
+ffffff80022dc058: jne      0xffffff80022dc094
+ffffff80022dc05a: mov      rax, qword ptr [r15 + 0x18]
+ffffff80022dc05e: mov      rdi, qword ptr [rax + 0x550]
+ffffff80022dc065: mov      rax, qword ptr [rdi]
+ffffff80022dc068: mov      esi, 2
+ffffff80022dc06d: mov      edx, 1
+ffffff80022dc072: call     qword ptr [rax + 0xe68]
+ffffff80022dc078: mov      rax, qword ptr [rbx + 0x118]
+ffffff80022dc07f: mov      byte ptr [rax + 0x183], 0
+ffffff80022dc086: lea      rdi, [rip + 0xbefe9]  ; 0xffffff800239b076
+ffffff80022dc08d: xor      eax, eax
+ffffff80022dc08f: call     0xffffff8000ab6560  ; _IOLog
+ffffff80022dc094: mov      rax, qword ptr [rbx]
+ffffff80022dc097: mov      rdi, rbx
+ffffff80022dc09a: mov      esi, 8
+ffffff80022dc09f: xor      edx, edx
+ffffff80022dc0a1: xor      ecx, ecx
+ffffff80022dc0a3: mov      r8d, 1
+ffffff80022dc0a9: call     qword ptr [rax + 0xb10]
+ffffff80022dc0af: mov      eax, r14d
+ffffff80022dc0b2: xor      r14d, r14d
+ffffff80022dc0b5: test     eax, eax
+ffffff80022dc0b7: setne    r14b
+ffffff80022dc0bb: mov      rax, qword ptr [rbx + 0x118]
+ffffff80022dc0c2: setne    byte ptr [rax + 0x180]
+ffffff80022dc0c9: mov      rax, qword ptr [rbx]
+ffffff80022dc0cc: lea      rcx, [rip + 0x62885]  ; "enabled"
+ffffff80022dc0d3: lea      r15, [rip + 0x62886]  ; "disabled"
+ffffff80022dc0da: cmovne   r15, rcx
+ffffff80022dc0de: mov      rdi, rbx
+ffffff80022dc0e1: call     qword ptr [rax + 0x38]
+ffffff80022dc0e4: mov      rdi, rax
+ffffff80022dc0e7: call     0xffffff8000a4a150  ; __ZNK11OSMetaClass12getClassNameEv
+ffffff80022dc0ec: mov      dword ptr [rsp], r12d
+ffffff80022dc0f0: lea      rdi, [rip + 0xbefa3]  ; 0xffffff800239b09a
+ffffff80022dc0f7: lea      rdx, [rip + 0xbefcb]  ; "bpfTapInternal"
+ffffff80022dc0fe: lea      r9, [rbp - 0xb0]
+ffffff80022dc105: mov      rsi, rax
+ffffff80022dc108: mov      rcx, r15
+ffffff80022dc10b: mov      r8d, r14d
+ffffff80022dc10e: xor      eax, eax
+ffffff80022dc110: call     0xffffff8000ab6560  ; _IOLog
+ffffff80022dc115: mov      rax, qword ptr [rip + 0xdfffc]  ; 0xffffff80023bc118
+ffffff80022dc11c: mov      rax, qword ptr [rax]
+ffffff80022dc11f: cmp      rax, qword ptr [rbp - 0x30]
+ffffff80022dc123: jne      0xffffff80022dc139
+ffffff80022dc125: xor      eax, eax
+ffffff80022dc127: add      rsp, 0xa8
+ffffff80022dc12e: pop      rbx
+ffffff80022dc12f: pop      r12
+ffffff80022dc131: pop      r13
+ffffff80022dc133: pop      r14
+ffffff80022dc135: pop      r15
+ffffff80022dc137: pop      rbp
+ffffff80022dc138: ret      
+ffffff80022dc139: call     0xffffff8000383150  ; ___stack_chk_fail

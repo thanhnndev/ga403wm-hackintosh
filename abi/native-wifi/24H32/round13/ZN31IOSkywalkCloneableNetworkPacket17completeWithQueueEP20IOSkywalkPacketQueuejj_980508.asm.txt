@@ -1,0 +1,25 @@
+# 0xffffff8002980508 __ZN31IOSkywalkCloneableNetworkPacket17completeWithQueueEP20IOSkywalkPacketQueuejj
+ffffff8002980508: push     rbp
+ffffff8002980509: mov      rbp, rsp
+ffffff800298050c: push     r14
+ffffff800298050e: push     rbx
+ffffff800298050f: mov      rbx, rdi
+ffffff8002980512: cmp      edx, 2
+ffffff8002980515: jne      0xffffff800298053d
+ffffff8002980517: mov      r14, rsi
+ffffff800298051a: mov      rdi, qword ptr [rbx + 0x28]
+ffffff800298051e: call     0xffffff8000a35500  ; _kern_packet_finalize
+ffffff8002980523: mov      rdi, qword ptr [rbx + 0x38]
+ffffff8002980527: test     rdi, rdi
+ffffff800298052a: je       0xffffff800298053d
+ffffff800298052c: mov      rax, qword ptr [rdi]
+ffffff800298052f: mov      rsi, rbx
+ffffff8002980532: mov      rdx, r14
+ffffff8002980535: xor      ecx, ecx
+ffffff8002980537: call     qword ptr [rax + 0x220]
+ffffff800298053d: and      byte ptr [rbx + 0x58], 0xfd
+ffffff8002980541: xor      eax, eax
+ffffff8002980543: pop      rbx
+ffffff8002980544: pop      r14
+ffffff8002980546: pop      rbp
+ffffff8002980547: ret      

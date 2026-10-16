@@ -1,0 +1,22 @@
+# 0xffffff8002988334 __ZN26IOSkywalkEthernetInterface18getHardwareAddressEP10ether_addr
+ffffff8002988334: push     rbp
+ffffff8002988335: mov      rbp, rsp
+ffffff8002988338: mov      rax, qword ptr [rdi]
+ffffff800298833b: lea      rsi, [rip + 0x1cc9e]  ; "IOInterfaceUnit"
+ffffff8002988342: call     qword ptr [rax + 0x2b8]
+ffffff8002988348: mov      rcx, qword ptr [rip + 0x1ed39]  ; 0xffffff80029a7088
+ffffff800298834f: mov      rsi, qword ptr [rcx]
+ffffff8002988352: mov      rdi, rax
+ffffff8002988355: call     0xffffff8000a49ab0  ; __ZN15OSMetaClassBase12safeMetaCastEPKS_PK11OSMetaClass
+ffffff800298835a: test     rax, rax
+ffffff800298835d: je       0xffffff800298836b
+ffffff800298835f: mov      rcx, qword ptr [rax]
+ffffff8002988362: mov      rdi, rax
+ffffff8002988365: call     qword ptr [rcx + 0x138]
+ffffff800298836b: lea      rdi, [rip + 0x1dfef]  ; 0xffffff80029a6361
+ffffff8002988372: xor      eax, eax
+ffffff8002988374: call     0xffffff80003f45f0  ; _printf
+ffffff8002988379: xor      eax, eax
+ffffff800298837b: pop      rbp
+ffffff800298837c: ret      
+ffffff800298837d: nop      

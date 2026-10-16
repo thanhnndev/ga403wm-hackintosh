@@ -1,0 +1,23 @@
+# 0xffffff8002982e8a __ZN25IOSkywalkNetworkInterface17reportLinkQualityEj
+ffffff8002982e8a: push     rbp
+ffffff8002982e8b: mov      rbp, rsp
+ffffff8002982e8e: push     rbx
+ffffff8002982e8f: push     rax
+ffffff8002982e90: mov      ebx, esi
+ffffff8002982e92: mov      rax, qword ptr [rdi]
+ffffff8002982e95: call     qword ptr [rax + 0x8f8]
+ffffff8002982e9b: test     rax, rax
+ffffff8002982e9e: je       0xffffff8002982eb8
+ffffff8002982ea0: mov      rdi, rax
+ffffff8002982ea3: mov      esi, ebx
+ffffff8002982ea5: call     0xffffff800069d1f0  ; _ifnet_set_link_quality
+ffffff8002982eaa: mov      ecx, eax
+ffffff8002982eac: test     eax, eax
+ffffff8002982eae: mov      eax, 0xe00002c9
+ffffff8002982eb3: cmove    eax, ecx
+ffffff8002982eb6: jmp      0xffffff8002982ebd  ; __ZN25IOSkywalkNetworkInterface17reportLinkQualityEj+0x33
+ffffff8002982eb8: mov      eax, 0xe00002d8
+ffffff8002982ebd: add      rsp, 8
+ffffff8002982ec1: pop      rbx
+ffffff8002982ec2: pop      rbp
+ffffff8002982ec3: ret      

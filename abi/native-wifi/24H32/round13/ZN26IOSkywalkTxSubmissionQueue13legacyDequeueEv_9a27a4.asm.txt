@@ -1,0 +1,83 @@
+# 0xffffff80029a27a4 __ZN26IOSkywalkTxSubmissionQueue13legacyDequeueEv
+ffffff80029a27a4: push     rbp
+ffffff80029a27a5: mov      rbp, rsp
+ffffff80029a27a8: push     r15
+ffffff80029a27aa: push     r14
+ffffff80029a27ac: push     r13
+ffffff80029a27ae: push     r12
+ffffff80029a27b0: push     rbx
+ffffff80029a27b1: push     rax
+ffffff80029a27b2: cmp      byte ptr [rdi + 0x28], 1
+ffffff80029a27b6: jne      0xffffff80029a289f
+ffffff80029a27bc: mov      rbx, rdi
+ffffff80029a27bf: cmp      byte ptr [rdi + 0xcc], 1
+ffffff80029a27c6: jne      0xffffff80029a28ae
+ffffff80029a27cc: mov      r12, qword ptr [rbx + 0x20]
+ffffff80029a27d0: mov      rcx, qword ptr [rbx + 0xe8]
+ffffff80029a27d7: xor      r13d, r13d
+ffffff80029a27da: xor      r15d, r15d
+ffffff80029a27dd: mov      eax, dword ptr [rcx]
+ffffff80029a27df: cmp      eax, dword ptr [rcx + 0x80]
+ffffff80029a27e5: jae      0xffffff80029a27ed
+ffffff80029a27e7: mov      r14d, dword ptr [rcx + 4]
+ffffff80029a27eb: jmp      0xffffff80029a27f0  ; __ZN26IOSkywalkTxSubmissionQueue13legacyDequeueEv+0x4c
+ffffff80029a27ed: mov      r14d, dword ptr [rcx]
+ffffff80029a27f0: mov      eax, dword ptr [rcx + 0x80]
+ffffff80029a27f6: sub      r14d, eax
+ffffff80029a27f9: je       0xffffff80029a2898
+ffffff80029a27ff: mov      edx, dword ptr [rcx + 0x80]
+ffffff80029a2805: shl      rdx, 3
+ffffff80029a2809: add      rdx, qword ptr [rcx + 8]
+ffffff80029a280d: or       byte ptr [rbx + 0x13c], 1
+ffffff80029a2814: mov      rdi, qword ptr [rbx + 0x18]
+ffffff80029a2818: mov      r8, qword ptr [rbx + 0x58]
+ffffff80029a281c: mov      rsi, rbx
+ffffff80029a281f: mov      ecx, r14d
+ffffff80029a2822: call     r12
+ffffff80029a2825: mov      rcx, qword ptr [rbx + 0x100]
+ffffff80029a282c: inc      qword ptr [rcx + 0x60]
+ffffff80029a2830: mov      edx, dword ptr [rbx + 0x13c]
+ffffff80029a2836: and      edx, 0xfffffffe
+ffffff80029a2839: mov      dword ptr [rbx + 0x13c], edx
+ffffff80029a283f: test     eax, eax
+ffffff80029a2841: je       0xffffff80029a287b
+ffffff80029a2843: cmp      eax, r14d
+ffffff80029a2846: jae      0xffffff80029a284b
+ffffff80029a2848: inc      qword ptr [rcx]
+ffffff80029a284b: add      r15d, eax
+ffffff80029a284e: mov      rcx, qword ptr [rbx + 0xe8]
+ffffff80029a2855: mov      edx, dword ptr [rcx + 0x80]
+ffffff80029a285b: add      edx, eax
+ffffff80029a285d: mov      esi, dword ptr [rcx + 4]
+ffffff80029a2860: cmp      edx, esi
+ffffff80029a2862: cmovb    esi, r13d
+ffffff80029a2866: mov      edx, dword ptr [rcx + 0x80]
+ffffff80029a286c: add      edx, eax
+ffffff80029a286e: sub      edx, esi
+ffffff80029a2870: mov      dword ptr [rcx + 0x80], edx
+ffffff80029a2876: jmp      0xffffff80029a27dd  ; __ZN26IOSkywalkTxSubmissionQueue13legacyDequeueEv+0x39
+ffffff80029a287b: or       edx, 2
+ffffff80029a287e: mov      dword ptr [rbx + 0x13c], edx
+ffffff80029a2884: call     0xffffff8000536cc0  ; _mach_absolute_time
+ffffff80029a2889: mov      rcx, qword ptr [rbx + 0x100]
+ffffff80029a2890: mov      qword ptr [rcx + 0x78], rax
+ffffff80029a2894: inc      qword ptr [rcx + 8]
+ffffff80029a2898: add      dword ptr [rbx + 0x130], r15d
+ffffff80029a289f: add      rsp, 8
+ffffff80029a28a3: pop      rbx
+ffffff80029a28a4: pop      r12
+ffffff80029a28a6: pop      r13
+ffffff80029a28a8: pop      r14
+ffffff80029a28aa: pop      r15
+ffffff80029a28ac: pop      rbp
+ffffff80029a28ad: ret      
+ffffff80029a28ae: mov      rax, qword ptr [rbx]
+ffffff80029a28b1: mov      rdi, rbx
+ffffff80029a28b4: add      rsp, 8
+ffffff80029a28b8: pop      rbx
+ffffff80029a28b9: pop      r12
+ffffff80029a28bb: pop      r13
+ffffff80029a28bd: pop      r14
+ffffff80029a28bf: pop      r15
+ffffff80029a28c1: pop      rbp
+ffffff80029a28c2: jmp      qword ptr [rax + 0x2a0]

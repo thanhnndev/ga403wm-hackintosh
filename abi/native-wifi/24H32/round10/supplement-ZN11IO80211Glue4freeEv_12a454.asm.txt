@@ -1,0 +1,12 @@
+# 0xffffff800212a454 __ZN11IO80211Glue4freeEv
+ffffff800212a454: push     rbp
+ffffff800212a455: mov      rbp, rsp
+ffffff800212a458: push     rbx
+ffffff800212a459: push     rax
+ffffff800212a45a: mov      rbx, rdi
+ffffff800212a45d: call     0xffffff800212a274  ; __ZN11IO80211Glue13freeResourcesEv
+ffffff800212a462: mov      rdi, rbx
+ffffff800212a465: add      rsp, 8
+ffffff800212a469: pop      rbx
+ffffff800212a46a: pop      rbp
+ffffff800212a46b: jmp      0xffffff800211e772  ; __ZN10CommonGlue4freeEv

@@ -1,0 +1,9 @@
+# 0xffffff80029a39ae __ZN26IOSkywalkEthernetInterface8print_rrEmP18nicproxy_rr_info_s.cold.1
+ffffff80029a39ae: push     rbp
+ffffff80029a39af: mov      rbp, rsp
+ffffff80029a39b2: ud1      
+ffffff80029a39b5: cmp      dh, 0xbf
+ffffff80029a39b8: add      byte ptr [rax], al
+ffffff80029a39ba: ud2      
+ffffff80029a39bc: nop      
+ffffff80029a39bd: nop      

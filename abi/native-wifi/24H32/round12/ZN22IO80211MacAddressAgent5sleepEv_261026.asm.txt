@@ -1,0 +1,13 @@
+# 0xffffff8002261026 __ZN22IO80211MacAddressAgent5sleepEv
+ffffff8002261026: push     rbp
+ffffff8002261027: mov      rbp, rsp
+ffffff800226102a: mov      rax, qword ptr [rdi + 0x10]
+ffffff800226102e: mov      rdi, qword ptr [rax + 0x10]
+ffffff8002261032: test     rdi, rdi
+ffffff8002261035: je       0xffffff8002261041
+ffffff8002261037: mov      rax, qword ptr [rdi]
+ffffff800226103a: pop      rbp
+ffffff800226103b: jmp      qword ptr [rax + 0x218]
+ffffff8002261041: pop      rbp
+ffffff8002261042: ret      
+ffffff8002261043: nop      

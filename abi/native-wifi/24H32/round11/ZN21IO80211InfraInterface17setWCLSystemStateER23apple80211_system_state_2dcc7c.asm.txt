@@ -1,0 +1,137 @@
+# 0xffffff80022dcc7c __ZN21IO80211InfraInterface17setWCLSystemStateER23apple80211_system_state
+ffffff80022dcc7c: push     rbp
+ffffff80022dcc7d: mov      rbp, rsp
+ffffff80022dcc80: push     r15
+ffffff80022dcc82: push     r14
+ffffff80022dcc84: push     r12
+ffffff80022dcc86: push     rbx
+ffffff80022dcc87: sub      rsp, 0x10
+ffffff80022dcc8b: mov      r15, rsi
+ffffff80022dcc8e: mov      r14, rdi
+ffffff80022dcc91: mov      rax, qword ptr [rip + 0xdf480]  ; 0xffffff80023bc118
+ffffff80022dcc98: mov      rax, qword ptr [rax]
+ffffff80022dcc9b: mov      qword ptr [rbp - 0x28], rax
+ffffff80022dcc9f: mov      rax, qword ptr [rdi + 0x110]
+ffffff80022dcca6: mov      ebx, 0xe00002c7
+ffffff80022dccab: cmp      dword ptr [rax + 0x58], 1
+ffffff80022dccaf: jne      0xffffff80022dccf6
+ffffff80022dccb1: mov      rdi, qword ptr [rax + 0xd8]
+ffffff80022dccb8: test     rdi, rdi
+ffffff80022dccbb: je       0xffffff80022dccf1
+ffffff80022dccbd: lea      r12, [rbp - 0x29]
+ffffff80022dccc1: mov      byte ptr [r12], 0
+ffffff80022dccc6: mov      r8d, 8
+ffffff80022dcccc: mov      esi, 0x802869c8
+ffffff80022dccd1: mov      edx, 0x206
+ffffff80022dccd6: mov      rcx, r15
+ffffff80022dccd9: mov      r9, r12
+ffffff80022dccdc: call     0xffffff800212ad12  ; __ZN11IO80211Glue13sendIOUCToWclEjjPvmRb
+ffffff80022dcce1: cmp      byte ptr [r12], 1
+ffffff80022dcce6: jne      0xffffff80022dccf1
+ffffff80022dcce8: mov      ebx, eax
+ffffff80022dccea: cmp      eax, 0xe082280f
+ffffff80022dccef: jne      0xffffff80022dccf6
+ffffff80022dccf1: mov      ebx, 0xe082280e
+ffffff80022dccf6: cmp      dword ptr [r15], 2
+ffffff80022dccfa: mov      rax, qword ptr [r14 + 0x118]
+ffffff80022dcd01: jne      0xffffff80022dcdd1
+ffffff80022dcd07: mov      rdi, qword ptr [rax + 0x178]
+ffffff80022dcd0e: test     rdi, rdi
+ffffff80022dcd11: je       0xffffff80022dcd1f
+ffffff80022dcd13: call     0xffffff80022b1d7c  ; __ZN14IO80211LQMData17handleWakeupEventEv
+ffffff80022dcd18: mov      rax, qword ptr [r14 + 0x118]
+ffffff80022dcd1f: cmp      qword ptr [rax + 0x188], 0
+ffffff80022dcd27: je       0xffffff80022dcd5d
+ffffff80022dcd29: mov      rax, qword ptr [r14]
+ffffff80022dcd2c: mov      rdi, r14
+ffffff80022dcd2f: call     qword ptr [rax + 0xd58]
+ffffff80022dcd35: test     al, al
+ffffff80022dcd37: je       0xffffff80022dcd5d
+ffffff80022dcd39: mov      rax, qword ptr [r14 + 0x118]
+ffffff80022dcd40: mov      rax, qword ptr [rax + 0x188]
+ffffff80022dcd47: mov      rax, qword ptr [rax + 0x10]
+ffffff80022dcd4b: mov      rdi, qword ptr [rax + 0x10]
+ffffff80022dcd4f: test     rdi, rdi
+ffffff80022dcd52: je       0xffffff80022dcd5d
+ffffff80022dcd54: mov      rax, qword ptr [rdi]
+ffffff80022dcd57: call     qword ptr [rax + 0x150]
+ffffff80022dcd5d: mov      rax, qword ptr [r14]
+ffffff80022dcd60: mov      rdi, r14
+ffffff80022dcd63: call     qword ptr [rax + 0xba8]
+ffffff80022dcd69: test     rax, rax
+ffffff80022dcd6c: je       0xffffff80022dce8e
+ffffff80022dcd72: mov      rax, qword ptr [r14]
+ffffff80022dcd75: mov      rdi, r14
+ffffff80022dcd78: call     qword ptr [rax + 0xba8]
+ffffff80022dcd7e: mov      rax, qword ptr [rax + 0x120]
+ffffff80022dcd85: cmp      qword ptr [rax + 0xb18], 0
+ffffff80022dcd8d: je       0xffffff80022dce8e
+ffffff80022dcd93: mov      rax, qword ptr [r14]
+ffffff80022dcd96: mov      rdi, r14
+ffffff80022dcd99: call     qword ptr [rax + 0xba8]
+ffffff80022dcd9f: mov      rax, qword ptr [rax + 0x120]
+ffffff80022dcda6: mov      rdi, qword ptr [rax + 0xb18]
+ffffff80022dcdad: mov      rax, qword ptr [rdi + 0x10]
+ffffff80022dcdb1: cmp      byte ptr [rax + 0x10], 1
+ffffff80022dcdb5: jne      0xffffff80022dce8e
+ffffff80022dcdbb: lea      rsi, [rip + 0xa89f4]  ; "RNG_EVENT_WAKE"
+ffffff80022dcdc2: mov      edx, 2
+ffffff80022dcdc7: call     0xffffff800227bd0c  ; __ZN15IO80211RNGAgent15sendDrbgEntropyEPKcj
+ffffff80022dcdcc: jmp      0xffffff80022dce8e  ; __ZN21IO80211InfraInterface17setWCLSystemStateER23apple80211_system_state+0x212
+ffffff80022dcdd1: mov      r15, qword ptr [rax + 0x188]
+ffffff80022dcdd8: test     r15, r15
+ffffff80022dcddb: je       0xffffff80022dce0b
+ffffff80022dcddd: mov      rcx, qword ptr [r15 + 0x10]
+ffffff80022dcde1: mov      rdi, qword ptr [rcx + 0x10]
+ffffff80022dcde5: test     rdi, rdi
+ffffff80022dcde8: je       0xffffff80022dce0b
+ffffff80022dcdea: mov      rax, qword ptr [rdi]
+ffffff80022dcded: call     qword ptr [rax + 0x218]
+ffffff80022dcdf3: mov      rax, qword ptr [r15 + 0x10]
+ffffff80022dcdf7: mov      rdi, qword ptr [rax + 0x10]
+ffffff80022dcdfb: mov      rax, qword ptr [rdi]
+ffffff80022dcdfe: call     qword ptr [rax + 0x158]
+ffffff80022dce04: mov      rax, qword ptr [r14 + 0x118]
+ffffff80022dce0b: mov      rdi, qword ptr [rax + 0x178]
+ffffff80022dce12: test     rdi, rdi
+ffffff80022dce15: je       0xffffff80022dce23
+ffffff80022dce17: mov      esi, 5
+ffffff80022dce1c: xor      edx, edx
+ffffff80022dce1e: call     0xffffff800211e544  ; __ZN16CommonFsmManager12processEventEhPv
+ffffff80022dce23: mov      rax, qword ptr [r14]
+ffffff80022dce26: mov      rdi, r14
+ffffff80022dce29: call     qword ptr [rax + 0xba8]
+ffffff80022dce2f: test     rax, rax
+ffffff80022dce32: je       0xffffff80022dce86
+ffffff80022dce34: mov      rax, qword ptr [r14]
+ffffff80022dce37: mov      rdi, r14
+ffffff80022dce3a: call     qword ptr [rax + 0xba8]
+ffffff80022dce40: mov      rax, qword ptr [rax + 0x120]
+ffffff80022dce47: cmp      qword ptr [rax + 0xb18], 0
+ffffff80022dce4f: je       0xffffff80022dce86
+ffffff80022dce51: mov      rax, qword ptr [r14]
+ffffff80022dce54: mov      rdi, r14
+ffffff80022dce57: call     qword ptr [rax + 0xba8]
+ffffff80022dce5d: mov      rax, qword ptr [rax + 0x120]
+ffffff80022dce64: mov      rdi, qword ptr [rax + 0xb18]
+ffffff80022dce6b: mov      rax, qword ptr [rdi + 0x10]
+ffffff80022dce6f: cmp      byte ptr [rax + 0x10], 1
+ffffff80022dce73: jne      0xffffff80022dce86
+ffffff80022dce75: lea      rsi, [rip + 0xa892a]  ; "RNG_EVENT_SLEEP"
+ffffff80022dce7c: mov      edx, 1
+ffffff80022dce81: call     0xffffff800227bd0c  ; __ZN15IO80211RNGAgent15sendDrbgEntropyEPKcj
+ffffff80022dce86: mov      rdi, r14
+ffffff80022dce89: call     0xffffff80022d5e80  ; __ZN21IO80211InfraInterface19cancelDebounceTimerEv
+ffffff80022dce8e: mov      rax, qword ptr [rip + 0xdf283]  ; 0xffffff80023bc118
+ffffff80022dce95: mov      rax, qword ptr [rax]
+ffffff80022dce98: cmp      rax, qword ptr [rbp - 0x28]
+ffffff80022dce9c: jne      0xffffff80022dcead
+ffffff80022dce9e: mov      eax, ebx
+ffffff80022dcea0: add      rsp, 0x10
+ffffff80022dcea4: pop      rbx
+ffffff80022dcea5: pop      r12
+ffffff80022dcea7: pop      r14
+ffffff80022dcea9: pop      r15
+ffffff80022dceab: pop      rbp
+ffffff80022dceac: ret      
+ffffff80022dcead: call     0xffffff8000383150  ; ___stack_chk_fail

@@ -92,7 +92,7 @@ public:
     /* 312 */ virtual uint32_t getFeatureFlags() override;
     /* 320 */ virtual const char * classNameOverride() override;
     /* 334 */ virtual IOReturn getHardwareAddress(ether_addr* a1) override;
-    /* 335 */ virtual void setHardwareAddress(ether_addr* a1) override;
+    /* 335 */ virtual IOReturn setHardwareAddress(ether_addr* a1) override;
     /* 340 */ virtual void setPromiscuousModeEnable(bool a1, uint32_t a2) override;
 
     // new virtuals, slots 354..461
@@ -112,7 +112,7 @@ public:
     /* 367 */ virtual IOReturn packetSpace(uint8_t a1);   // ret: guess
     /* 368 */ virtual bool isChipInterfaceReady();   // ret: guess from name
     /* 369 */ virtual bool isDebounceOnGoing();   // ret: guess from name
-    /* 370 */ virtual IOReturn setLinkState(IO80211LinkState a1, uint32_t a2, bool a3, uint32_t a4);   // ret: guess
+    /* 370 */ virtual bool setLinkState(IO80211LinkState a1, uint32_t a2, bool a3, uint32_t a4);   // ret: 24H32 InfraInterface::setLinkStateInternal returns success flag in eax
     /* 371 */ virtual uint32_t linkState();   // ret: guess from name
     /* 372 */ virtual IOReturn setScanningState(uint32_t a1, bool a2, apple80211_scan_data* a3, int a4);   // ret: guess
     /* 373 */ virtual void setDataPathState(bool a1);   // ret: guess from name
@@ -156,7 +156,7 @@ public:
     /* 411 */ virtual IO80211Peer * findPeer(ether_addr& a1);   // ret: guess from name
     /* 412 */ virtual void setNotificationProperty(OSSymbol const* a1, OSObject const* a2);   // ret: guess from name
     /* 413 */ virtual OSDictionary * getWorkerMatchingDict(OSString* a1);   // ret: guess from name
-    /* 414 */ virtual IOReturn init(IOService* a1, ether_addr* a2);   // ret: guess
+    /* 414 */ virtual bool init(IOService* a1, ether_addr* a2);   // ret: 24H32 IO80211SkywalkInterface::init(provider,address) returns bool in eax
     /* 415 */ virtual bool isInterfaceEnabled();   // ret: guess from name
     /* 416 */ virtual ether_addr * getSelfMacAddr();   // ret: guess from name
     /* 417 */ virtual IOReturn setMacAddress(ether_addr& a1) = 0;   // ret: AppleBCMWLANSkywalkInterface::setMacAddress returns the result of AppleBCMWLANCore::setCurEtheraddr in eax

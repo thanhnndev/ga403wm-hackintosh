@@ -1,0 +1,44 @@
+# 0xffffff80022dacc6 __ZN21IO80211InfraInterface14setInterfaceNFE18apple80211_channelx
+ffffff80022dacc6: push     rbp
+ffffff80022dacc7: mov      rbp, rsp
+ffffff80022dacca: push     r15
+ffffff80022daccc: push     r14
+ffffff80022dacce: push     rbx
+ffffff80022daccf: push     rax
+ffffff80022dacd0: mov      rbx, rcx
+ffffff80022dacd3: mov      rax, qword ptr [rdi + 0x110]
+ffffff80022dacda: mov      rcx, qword ptr [rax + 0x28]
+ffffff80022dacde: test     rcx, rcx
+ffffff80022dace1: je       0xffffff80022dad10
+ffffff80022dace3: mov      rcx, qword ptr [rcx + 0x18]
+ffffff80022dace7: mov      rcx, qword ptr [rcx + 0x528]
+ffffff80022dacee: test     rcx, rcx
+ffffff80022dacf1: je       0xffffff80022dad10
+ffffff80022dacf3: mov      rcx, qword ptr [rcx + 0x18]
+ffffff80022dacf7: mov      rcx, qword ptr [rcx + 0x4c0]
+ffffff80022dacfe: test     rcx, rcx
+ffffff80022dad01: je       0xffffff80022dad10
+ffffff80022dad03: mov      rcx, qword ptr [rcx + 0x10]
+ffffff80022dad07: mov      r14, qword ptr [rcx + 0xa60]
+ffffff80022dad0e: jmp      0xffffff80022dad13  ; __ZN21IO80211InfraInterface14setInterfaceNFE18apple80211_channelx+0x4d
+ffffff80022dad10: xor      r14d, r14d
+ffffff80022dad13: mov      rdi, qword ptr [rax + 0x40]
+ffffff80022dad17: test     rdi, rdi
+ffffff80022dad1a: je       0xffffff80022dad29
+ffffff80022dad1c: mov      rsi, rbx
+ffffff80022dad1f: call     0xffffff80022eb4f2  ; __ZN23IO80211InterfaceMonitor14setInterfaceNFEx
+ffffff80022dad24: mov      r15d, eax
+ffffff80022dad27: jmp      0xffffff80022dad2c  ; __ZN21IO80211InfraInterface14setInterfaceNFE18apple80211_channelx+0x66
+ffffff80022dad29: xor      r15d, r15d
+ffffff80022dad2c: test     r14, r14
+ffffff80022dad2f: je       0xffffff80022dad3c
+ffffff80022dad31: mov      rdi, r14
+ffffff80022dad34: mov      rsi, rbx
+ffffff80022dad37: call     0xffffff8002235f86  ; __ZN21IO80211LQMCrashTracer11recordNoiseEx
+ffffff80022dad3c: mov      eax, r15d
+ffffff80022dad3f: add      rsp, 8
+ffffff80022dad43: pop      rbx
+ffffff80022dad44: pop      r14
+ffffff80022dad46: pop      r15
+ffffff80022dad48: pop      rbp
+ffffff80022dad49: ret      

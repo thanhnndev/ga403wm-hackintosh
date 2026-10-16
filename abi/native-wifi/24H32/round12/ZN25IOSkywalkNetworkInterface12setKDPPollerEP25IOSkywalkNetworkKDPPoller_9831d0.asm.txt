@@ -1,0 +1,52 @@
+# 0xffffff80029831d0 __ZN25IOSkywalkNetworkInterface12setKDPPollerEP25IOSkywalkNetworkKDPPoller
+ffffff80029831d0: push     rbp
+ffffff80029831d1: mov      rbp, rsp
+ffffff80029831d4: push     r15
+ffffff80029831d6: push     r14
+ffffff80029831d8: push     rbx
+ffffff80029831d9: push     rax
+ffffff80029831da: cmp      qword ptr [rdi + 0xb8], 0
+ffffff80029831e2: je       0xffffff800298323b
+ffffff80029831e4: mov      rbx, rsi
+ffffff80029831e7: mov      r14, rdi
+ffffff80029831ea: mov      rax, qword ptr [rdi]
+ffffff80029831ed: call     qword ptr [rax + 0x688]
+ffffff80029831f3: test     rax, rax
+ffffff80029831f6: je       0xffffff8002983243
+ffffff80029831f8: mov      rcx, qword ptr [rax]
+ffffff80029831fb: mov      rdi, rax
+ffffff80029831fe: call     qword ptr [rcx + 0x138]
+ffffff8002983204: mov      r15d, 0xe00002e6
+ffffff800298320a: test     al, al
+ffffff800298320c: je       0xffffff8002983249
+ffffff800298320e: mov      rax, qword ptr [r14 + 0xb8]
+ffffff8002983215: mov      rdi, qword ptr [rax + 0x20]
+ffffff8002983219: test     rbx, rbx
+ffffff800298321c: je       0xffffff8002983257
+ffffff800298321e: mov      r15d, 0xe00002c5
+ffffff8002983224: test     rdi, rdi
+ffffff8002983227: jne      0xffffff8002983249
+ffffff8002983229: mov      qword ptr [rax + 0x20], rbx
+ffffff800298322d: mov      rax, qword ptr [rbx]
+ffffff8002983230: mov      rdi, rbx
+ffffff8002983233: call     qword ptr [rax + 0x20]
+ffffff8002983236: xor      r15d, r15d
+ffffff8002983239: jmp      0xffffff8002983249  ; __ZN25IOSkywalkNetworkInterface12setKDPPollerEP25IOSkywalkNetworkKDPPoller+0x79
+ffffff800298323b: mov      r15d, 0xe00002d8
+ffffff8002983241: jmp      0xffffff8002983249  ; __ZN25IOSkywalkNetworkInterface12setKDPPollerEP25IOSkywalkNetworkKDPPoller+0x79
+ffffff8002983243: mov      r15d, 0xe00002be
+ffffff8002983249: mov      eax, r15d
+ffffff800298324c: add      rsp, 8
+ffffff8002983250: pop      rbx
+ffffff8002983251: pop      r14
+ffffff8002983253: pop      r15
+ffffff8002983255: pop      rbp
+ffffff8002983256: ret      
+ffffff8002983257: xor      r15d, r15d
+ffffff800298325a: test     rdi, rdi
+ffffff800298325d: je       0xffffff8002983249
+ffffff800298325f: mov      rax, qword ptr [rdi]
+ffffff8002983262: call     qword ptr [rax + 0x28]
+ffffff8002983265: mov      rax, qword ptr [r14 + 0xb8]
+ffffff800298326c: mov      qword ptr [rax + 0x20], 0
+ffffff8002983274: jmp      0xffffff8002983249  ; __ZN25IOSkywalkNetworkInterface12setKDPPollerEP25IOSkywalkNetworkKDPPoller+0x79

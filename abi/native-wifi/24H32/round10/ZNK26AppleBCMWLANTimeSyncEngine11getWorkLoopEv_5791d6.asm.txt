@@ -1,0 +1,6 @@
+# 0xffffff80015791d6 __ZNK26AppleBCMWLANTimeSyncEngine11getWorkLoopEv
+ffffff80015791d6: push     rbp
+ffffff80015791d7: mov      rbp, rsp
+ffffff80015791da: mov      rax, qword ptr [rdi]
+ffffff80015791dd: pop      rbp
+ffffff80015791de: jmp      qword ptr [rax + 0x850]

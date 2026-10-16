@@ -1,0 +1,65 @@
+# 0xffffff800297a46c __ZN36IOUserNetworkRxSubmissionQueueCompat12initWithPoolEP25IOSkywalkPacketBufferPoolP8OSObjectjjP25IODataQueueDispatchSource
+ffffff800297a46c: push     rbp
+ffffff800297a46d: mov      rbp, rsp
+ffffff800297a470: push     r15
+ffffff800297a472: push     r14
+ffffff800297a474: push     rbx
+ffffff800297a475: push     rax
+ffffff800297a476: mov      rax, r9
+ffffff800297a479: mov      r9d, r8d
+ffffff800297a47c: mov      r8d, ecx
+ffffff800297a47f: mov      r10, rdx
+ffffff800297a482: test     rsi, rsi
+ffffff800297a485: sete     cl
+ffffff800297a488: cmp      r8d, 2
+ffffff800297a48c: setb     dl
+ffffff800297a48f: or       dl, cl
+ffffff800297a491: je       0xffffff800297a49b
+ffffff800297a493: xor      r14d, r14d
+ffffff800297a496: jmp      0xffffff800297a535  ; __ZN36IOUserNetworkRxSubmissionQueueCompat12initWithPoolEP25IOSkywalkPacketBufferPoolP8OSObjectjjP25IODataQueueDispatchSource+0xc9
+ffffff800297a49b: mov      r15, rsi
+ffffff800297a49e: mov      rbx, rdi
+ffffff800297a4a1: lea      r11, [rip + 0x318f8]  ; 0xffffff80029abda0
+ffffff800297a4a8: xor      r14d, r14d
+ffffff800297a4ab: xor      edx, edx
+ffffff800297a4ad: mov      ecx, 2
+ffffff800297a4b2: push     r14
+ffffff800297a4b4: push     rax
+ffffff800297a4b5: push     r14
+ffffff800297a4b7: push     r10
+ffffff800297a4b9: call     qword ptr [r11 + 0x2a8]
+ffffff800297a4c0: add      rsp, 0x20
+ffffff800297a4c4: test     al, al
+ffffff800297a4c6: je       0xffffff800297a535
+ffffff800297a4c8: mov      rax, qword ptr [rbx]
+ffffff800297a4cb: xor      r14d, r14d
+ffffff800297a4ce: mov      rdi, rbx
+ffffff800297a4d1: xor      esi, esi
+ffffff800297a4d3: call     qword ptr [rax + 0x1b8]
+ffffff800297a4d9: test     eax, eax
+ffffff800297a4db: jne      0xffffff800297a535
+ffffff800297a4dd: mov      dword ptr [rbx + 0x110], r14d
+ffffff800297a4e4: mov      dword ptr [rbx + 0x114], r14d
+ffffff800297a4eb: cmp      dword ptr [r15 + 0x34], 1
+ffffff800297a4f0: jne      0xffffff800297a535
+ffffff800297a4f2: lea      rdi, [rip + 0x4b]  ; 0xffffff800297a544
+ffffff800297a4f9: mov      rsi, rbx
+ffffff800297a4fc: mov      edx, 1
+ffffff800297a501: mov      ecx, 1
+ffffff800297a506: call     0xffffff8000433c40  ; _thread_call_allocate_with_options
+ffffff800297a50b: mov      qword ptr [rbx + 0x120], rax
+ffffff800297a512: test     rax, rax
+ffffff800297a515: je       0xffffff800297a493
+ffffff800297a51b: lea      rdi, [rip + 0x3ce1e]  ; 0xffffff80029b7340
+ffffff800297a522: call     0xffffff8000ab5930  ; _IOMallocTypeImpl
+ffffff800297a527: mov      qword ptr [rbx + 0x108], rax
+ffffff800297a52e: test     rax, rax
+ffffff800297a531: setne    r14b
+ffffff800297a535: mov      eax, r14d
+ffffff800297a538: add      rsp, 8
+ffffff800297a53c: pop      rbx
+ffffff800297a53d: pop      r14
+ffffff800297a53f: pop      r15
+ffffff800297a541: pop      rbp
+ffffff800297a542: ret      
+ffffff800297a543: nop      

@@ -1,0 +1,66 @@
+# 0xffffff8002265a04 __ZN23IO80211SkywalkInterface18setInterfaceEnableEb
+ffffff8002265a04: push     rbp
+ffffff8002265a05: mov      rbp, rsp
+ffffff8002265a08: push     r15
+ffffff8002265a0a: push     r14
+ffffff8002265a0c: push     r12
+ffffff8002265a0e: push     rbx
+ffffff8002265a0f: mov      r12d, esi
+ffffff8002265a12: mov      rbx, rdi
+ffffff8002265a15: movabs   r14, 0x800000000000000
+ffffff8002265a1f: mov      rax, qword ptr [rdi + 0x110]
+ffffff8002265a26: mov      byte ptr [rax + 0x71], r12b
+ffffff8002265a2a: mov      rax, qword ptr [rdi]
+ffffff8002265a2d: call     qword ptr [rax + 0x38]
+ffffff8002265a30: mov      rdi, rax
+ffffff8002265a33: call     0xffffff8000a4a150  ; __ZNK11OSMetaClass12getClassNameEv
+ffffff8002265a38: lea      rdx, [rip + 0x119516]  ; 0xffffff800237ef55
+ffffff8002265a3f: xor      r15d, r15d
+ffffff8002265a42: mov      rdi, rbx
+ffffff8002265a45: mov      rsi, r14
+ffffff8002265a48: mov      rcx, rax
+ffffff8002265a4b: mov      r8d, r12d
+ffffff8002265a4e: xor      eax, eax
+ffffff8002265a50: call     0xffffff8002261f9e  ; __ZN23IO80211SkywalkInterface8logDebugEyPKcz
+ffffff8002265a55: mov      rax, qword ptr [rbx + 0x110]
+ffffff8002265a5c: mov      rdi, qword ptr [rax + 0x50]
+ffffff8002265a60: test     rdi, rdi
+ffffff8002265a63: je       0xffffff8002265a75
+ffffff8002265a65: movzx    esi, r12b
+ffffff8002265a69: call     0xffffff80022610f2  ; __ZN22IO80211MacAddressAgent18setInterfaceEnableEb
+ffffff8002265a6e: mov      rax, qword ptr [rbx + 0x110]
+ffffff8002265a75: cmp      qword ptr [rax + 0x40], 0
+ffffff8002265a7a: jne      0xffffff8002265aa7
+ffffff8002265a7c: lea      rsi, [rip + 0x118990]  ; "IOInterfaceName"
+ffffff8002265a83: lea      rcx, [rip + 0x1062d1]  ; "IOService"
+ffffff8002265a8a: mov      edx, 1
+ffffff8002265a8f: mov      rdi, rbx
+ffffff8002265a92: call     0xffffff800227d82b  ; __Z19checkPropertyExistsP9IOServicePKcyS2_
+ffffff8002265a97: test     al, al
+ffffff8002265a99: je       0xffffff8002265aa7
+ffffff8002265a9b: mov      rdi, rbx
+ffffff8002265a9e: call     0xffffff80022624d6  ; __ZN23IO80211SkywalkInterface17createIOReportersEv
+ffffff8002265aa3: test     eax, eax
+ffffff8002265aa5: jne      0xffffff8002265ab3
+ffffff8002265aa7: mov      eax, r15d
+ffffff8002265aaa: pop      rbx
+ffffff8002265aab: pop      r12
+ffffff8002265aad: pop      r14
+ffffff8002265aaf: pop      r15
+ffffff8002265ab1: pop      rbp
+ffffff8002265ab2: ret      
+ffffff8002265ab3: mov      r12d, eax
+ffffff8002265ab6: mov      rax, qword ptr [rbx]
+ffffff8002265ab9: mov      rdi, rbx
+ffffff8002265abc: call     qword ptr [rax + 0x38]
+ffffff8002265abf: mov      rdi, rax
+ffffff8002265ac2: call     0xffffff8000a4a150  ; __ZNK11OSMetaClass12getClassNameEv
+ffffff8002265ac7: lea      rdx, [rip + 0x1194c3]  ; 0xffffff800237ef91
+ffffff8002265ace: mov      rdi, rbx
+ffffff8002265ad1: mov      rsi, r14
+ffffff8002265ad4: mov      rcx, rax
+ffffff8002265ad7: xor      eax, eax
+ffffff8002265ad9: call     0xffffff8002261f9e  ; __ZN23IO80211SkywalkInterface8logDebugEyPKcz
+ffffff8002265ade: mov      r15d, r12d
+ffffff8002265ae1: jmp      0xffffff8002265aa7  ; __ZN23IO80211SkywalkInterface18setInterfaceEnableEb+0xa3
+ffffff8002265ae3: nop      

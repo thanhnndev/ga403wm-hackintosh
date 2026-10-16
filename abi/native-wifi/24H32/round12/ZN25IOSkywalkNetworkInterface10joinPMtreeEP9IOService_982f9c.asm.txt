@@ -1,0 +1,27 @@
+# 0xffffff8002982f9c __ZN25IOSkywalkNetworkInterface10joinPMtreeEP9IOService
+ffffff8002982f9c: push     rbp
+ffffff8002982f9d: mov      rbp, rsp
+ffffff8002982fa0: push     r14
+ffffff8002982fa2: push     rbx
+ffffff8002982fa3: test     rsi, rsi
+ffffff8002982fa6: je       0xffffff8002982fc5
+ffffff8002982fa8: mov      rbx, rsi
+ffffff8002982fab: mov      r14, rdi
+ffffff8002982fae: lea      rax, [rip + 0x257a3]  ; 0xffffff80029a8758
+ffffff8002982fb5: mov      rsi, qword ptr [rax]
+ffffff8002982fb8: mov      rdi, rbx
+ffffff8002982fbb: call     0xffffff8000a49ab0  ; __ZN15OSMetaClassBase12safeMetaCastEPKS_PK11OSMetaClass
+ffffff8002982fc0: test     rax, rax
+ffffff8002982fc3: je       0xffffff8002982fca
+ffffff8002982fc5: pop      rbx
+ffffff8002982fc6: pop      r14
+ffffff8002982fc8: pop      rbp
+ffffff8002982fc9: ret      
+ffffff8002982fca: lea      rax, [rip + 0x24db7]  ; 0xffffff80029a7d88
+ffffff8002982fd1: mov      rdi, r14
+ffffff8002982fd4: mov      rsi, rbx
+ffffff8002982fd7: pop      rbx
+ffffff8002982fd8: pop      r14
+ffffff8002982fda: pop      rbp
+ffffff8002982fdb: jmp      qword ptr [rax + 0x7b0]
+ffffff8002982fe1: nop      

@@ -1,0 +1,7 @@
+# 0xffffff8002982f16 __ZN25IOSkywalkNetworkInterface23interfaceAdvisoryEnableEb
+ffffff8002982f16: push     rbp
+ffffff8002982f17: mov      rbp, rsp
+ffffff8002982f1a: mov      eax, 0xe00002c7
+ffffff8002982f1f: pop      rbp
+ffffff8002982f20: ret      
+ffffff8002982f21: nop      

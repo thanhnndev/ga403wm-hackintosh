@@ -1,0 +1,1 @@
+boot-args	debug=0x100 keepsyms=1 -vi2c-force-polling nvfb=1 nvaccel=1 nvfbheads=4 -nvkmsnosmooth amfi_get_out_of_my_way=0x1 amfi=0x80 msgbuf=1048576 ipc_control_port_options=0 itlmt_m1=0 -nvrmnobootscreen nvrmacpibl=1 itlmt_native=1 itlmt_native_if=1

@@ -1,0 +1,6 @@
+# 0xffffff800297ec2c __ZN21IOSkywalkPacketBuffer8completeEj
+ffffff800297ec2c: push     rbp
+ffffff800297ec2d: mov      rbp, rsp
+ffffff800297ec30: xor      eax, eax
+ffffff800297ec32: pop      rbp
+ffffff800297ec33: ret      

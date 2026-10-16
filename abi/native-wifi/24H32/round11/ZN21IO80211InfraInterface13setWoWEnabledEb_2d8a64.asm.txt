@@ -1,0 +1,10 @@
+# 0xffffff80022d8a64 __ZN21IO80211InfraInterface13setWoWEnabledEb
+ffffff80022d8a64: push     rbp
+ffffff80022d8a65: mov      rbp, rsp
+ffffff80022d8a68: mov      rax, qword ptr [rdi + 0x118]
+ffffff80022d8a6f: cmp      byte ptr [rax + 0xa0], sil
+ffffff80022d8a76: je       0xffffff80022d8a7f
+ffffff80022d8a78: mov      byte ptr [rax + 0xa0], sil
+ffffff80022d8a7f: pop      rbp
+ffffff80022d8a80: ret      
+ffffff80022d8a81: nop      

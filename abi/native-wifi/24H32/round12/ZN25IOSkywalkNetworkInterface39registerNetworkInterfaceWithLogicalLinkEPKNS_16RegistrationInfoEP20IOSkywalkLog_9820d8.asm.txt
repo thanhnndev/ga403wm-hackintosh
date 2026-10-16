@@ -1,0 +1,5 @@
+# 0xffffff80029820d8 __ZN25IOSkywalkNetworkInterface39registerNetworkInterfaceWithLogicalLinkEPKNS_16RegistrationInfoEP20IOSkywalkLogicalLinkP25IOSkywalkPacketBufferPoolS6_j
+ffffff80029820d8: push     rbp
+ffffff80029820d9: mov      rbp, rsp
+ffffff80029820dc: pop      rbp
+ffffff80029820dd: jmp      0xffffff8002981eac  ; __ZN25IOSkywalkNetworkInterface24registerNetworkInterfaceEPKNS_16RegistrationInfoEP20IOSkywalkLogicalLinkP25IOSkywalkPacketBufferPoolS6_j

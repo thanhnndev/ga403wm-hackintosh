@@ -1,0 +1,26 @@
+# 0xffffff8002989ff6 __ZN26IOSkywalkTxCompletionQueue7disableEv
+ffffff8002989ff6: push     rbp
+ffffff8002989ff7: mov      rbp, rsp
+ffffff8002989ffa: push     rbx
+ffffff8002989ffb: push     rax
+ffffff8002989ffc: mov      rbx, rdi
+ffffff8002989fff: cmp      qword ptr [rdi + 0x30], 0
+ffffff800298a004: je       0xffffff800298a00e
+ffffff800298a006: mov      rdi, rbx
+ffffff800298a009: call     0xffffff8000afb010  ; __ZN13IOEventSource9closeGateEv
+ffffff800298a00e: lea      rax, [rip + 0x24c53]  ; 0xffffff80029aec68
+ffffff800298a015: mov      rdi, rbx
+ffffff800298a018: call     qword ptr [rax + 0x168]
+ffffff800298a01e: cmp      qword ptr [rbx + 0x30], 0
+ffffff800298a023: je       0xffffff800298a033
+ffffff800298a025: mov      rdi, rbx
+ffffff800298a028: add      rsp, 8
+ffffff800298a02c: pop      rbx
+ffffff800298a02d: pop      rbp
+ffffff800298a02e: jmp      0xffffff8000afafd0  ; __ZN13IOEventSource8openGateEv
+ffffff800298a033: add      rsp, 8
+ffffff800298a037: pop      rbx
+ffffff800298a038: pop      rbp
+ffffff800298a039: ret      
+ffffff800298a03a: nop      
+ffffff800298a03b: nop      

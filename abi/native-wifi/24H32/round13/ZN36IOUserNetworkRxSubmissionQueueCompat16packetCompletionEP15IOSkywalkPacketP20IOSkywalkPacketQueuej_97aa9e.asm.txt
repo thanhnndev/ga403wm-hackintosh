@@ -1,0 +1,23 @@
+# 0xffffff800297aa9e __ZN36IOUserNetworkRxSubmissionQueueCompat16packetCompletionEP15IOSkywalkPacketP20IOSkywalkPacketQueuej
+ffffff800297aa9e: push     rbp
+ffffff800297aa9f: mov      rbp, rsp
+ffffff800297aaa2: push     rbx
+ffffff800297aaa3: push     rax
+ffffff800297aaa4: mov      rbx, rdi
+ffffff800297aaa7: add      rdi, 0x114
+ffffff800297aaae: call     0xffffff8000a48bf0  ; _OSIncrementAtomic
+ffffff800297aab3: mov      eax, dword ptr [rbx + 0xac]
+ffffff800297aab9: mov      ecx, dword ptr [rbx + 0x114]
+ffffff800297aabf: shr      eax, 2
+ffffff800297aac2: cmp      ecx, eax
+ffffff800297aac4: jae      0xffffff800297aacd
+ffffff800297aac6: add      rsp, 8
+ffffff800297aaca: pop      rbx
+ffffff800297aacb: pop      rbp
+ffffff800297aacc: ret      
+ffffff800297aacd: mov      rdi, rbx
+ffffff800297aad0: add      rsp, 8
+ffffff800297aad4: pop      rbx
+ffffff800297aad5: pop      rbp
+ffffff800297aad6: jmp      0xffffff800297a668  ; __ZN36IOUserNetworkRxSubmissionQueueCompat15replenishQueuesEv
+ffffff800297aadb: nop      

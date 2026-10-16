@@ -1,0 +1,70 @@
+# 0xffffff800298868c __ZN26IOSkywalkEthernetInterface14ioctl_sifflagsEP7__ifnet
+ffffff800298868c: push     rbp
+ffffff800298868d: mov      rbp, rsp
+ffffff8002988690: push     r15
+ffffff8002988692: push     r14
+ffffff8002988694: push     r12
+ffffff8002988696: push     rbx
+ffffff8002988697: mov      r15, rsi
+ffffff800298869a: mov      r14, rdi
+ffffff800298869d: mov      rdi, rsi
+ffffff80029886a0: call     0xffffff800069cde0  ; _ifnet_flags
+ffffff80029886a5: mov      ebx, eax
+ffffff80029886a7: mov      rax, qword ptr [r14 + 0x108]
+ffffff80029886ae: movzx    ecx, word ptr [rax + 0x1c]
+ffffff80029886b2: xor      cx, bx
+ffffff80029886b5: xor      r12d, r12d
+ffffff80029886b8: bt       ecx, 8
+ffffff80029886bc: mov      eax, 0
+ffffff80029886c1: jae      0xffffff8002988702
+ffffff80029886c3: mov      esi, ebx
+ffffff80029886c5: shr      esi, 8
+ffffff80029886c8: and      esi, 1
+ffffff80029886cb: mov      rax, qword ptr [r14]
+ffffff80029886ce: mov      rdi, r14
+ffffff80029886d1: xor      edx, edx
+ffffff80029886d3: call     qword ptr [rax + 0xa90]
+ffffff80029886d9: mov      rcx, qword ptr [r14]
+ffffff80029886dc: mov      rdi, r14
+ffffff80029886df: mov      esi, eax
+ffffff80029886e1: call     qword ptr [rcx + 0x788]
+ffffff80029886e7: xor      r12d, r12d
+ffffff80029886ea: test     eax, eax
+ffffff80029886ec: setne    r12b
+ffffff80029886f0: shl      r12d, 8
+ffffff80029886f4: mov      rcx, qword ptr [r14 + 0x108]
+ffffff80029886fb: movzx    ecx, word ptr [rcx + 0x1c]
+ffffff80029886ff: xor      cx, bx
+ffffff8002988702: bt       ecx, 9
+ffffff8002988706: jae      0xffffff8002988725
+ffffff8002988708: mov      rdi, r14
+ffffff800298870b: mov      rsi, r15
+ffffff800298870e: mov      edx, 1
+ffffff8002988713: call     0xffffff8002988766  ; __ZN26IOSkywalkEthernetInterface15ioctl_multicastEP7__ifnetb
+ffffff8002988718: mov      ecx, eax
+ffffff800298871a: xor      eax, eax
+ffffff800298871c: test     ecx, ecx
+ffffff800298871e: je       0xffffff8002988725
+ffffff8002988720: cmp      ecx, 0x2d
+ffffff8002988723: jne      0xffffff8002988734
+ffffff8002988725: mov      rdx, qword ptr [r14 + 0x108]
+ffffff800298872c: test     r12w, r12w
+ffffff8002988730: jne      0xffffff8002988748
+ffffff8002988732: jmp      0xffffff8002988759  ; __ZN26IOSkywalkEthernetInterface14ioctl_sifflagsEP7__ifnet+0xcd
+ffffff8002988734: movzx    r12d, r12w
+ffffff8002988738: or       r12d, 0x200
+ffffff800298873f: mov      rdx, qword ptr [r14 + 0x108]
+ffffff8002988746: mov      eax, ecx
+ffffff8002988748: movzx    ecx, r12w
+ffffff800298874c: movzx    esi, word ptr [rdx + 0x1c]
+ffffff8002988750: xor      si, bx
+ffffff8002988753: and      esi, ecx
+ffffff8002988755: xor      esi, ebx
+ffffff8002988757: mov      ebx, esi
+ffffff8002988759: mov      word ptr [rdx + 0x1c], bx
+ffffff800298875d: pop      rbx
+ffffff800298875e: pop      r12
+ffffff8002988760: pop      r14
+ffffff8002988762: pop      r15
+ffffff8002988764: pop      rbp
+ffffff8002988765: ret      

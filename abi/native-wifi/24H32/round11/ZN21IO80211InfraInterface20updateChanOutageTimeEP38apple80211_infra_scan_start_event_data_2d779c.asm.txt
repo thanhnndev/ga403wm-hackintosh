@@ -1,0 +1,186 @@
+# 0xffffff80022d779c __ZN21IO80211InfraInterface20updateChanOutageTimeEP38apple80211_infra_scan_start_event_data
+ffffff80022d779c: push     rbp
+ffffff80022d779d: mov      rbp, rsp
+ffffff80022d77a0: push     r15
+ffffff80022d77a2: push     r14
+ffffff80022d77a4: push     r13
+ffffff80022d77a6: push     r12
+ffffff80022d77a8: push     rbx
+ffffff80022d77a9: sub      rsp, 0x38
+ffffff80022d77ad: mov      r14, rsi
+ffffff80022d77b0: mov      rbx, rdi
+ffffff80022d77b3: mov      rax, qword ptr [rdi]
+ffffff80022d77b6: call     qword ptr [rax + 0xba8]
+ffffff80022d77bc: mov      rax, qword ptr [rax + 0x120]
+ffffff80022d77c3: movzx    eax, byte ptr [rax + 0xb2b]
+ffffff80022d77ca: and      eax, 2
+ffffff80022d77cd: mov      qword ptr [rbp - 0x48], rax
+ffffff80022d77d1: mov      rax, qword ptr [rbx]
+ffffff80022d77d4: mov      qword ptr [rbp - 0x40], rbx
+ffffff80022d77d8: mov      rdi, rbx
+ffffff80022d77db: call     qword ptr [rax + 0xba8]
+ffffff80022d77e1: mov      rax, qword ptr [rax + 0x120]
+ffffff80022d77e8: mov      rbx, qword ptr [rax + 0x1b8]
+ffffff80022d77ef: mov      eax, dword ptr [rax + 0x1c0]
+ffffff80022d77f5: mov      r15d, eax
+ffffff80022d77f8: and      r15d, 0x10
+ffffff80022d77fc: shr      r15d, 3
+ffffff80022d7800: inc      r15d
+ffffff80022d7803: xor      ecx, ecx
+ffffff80022d7805: mov      dword ptr [rbp - 0x34], eax
+ffffff80022d7808: test     al, 8
+ffffff80022d780a: cmovne   r15d, ecx
+ffffff80022d780e: movzx    eax, byte ptr [r14 + 0x320]
+ffffff80022d7816: movzx    r12d, byte ptr [r14 + 0x321]
+ffffff80022d781e: mov      ecx, r12d
+ffffff80022d7821: or       ecx, eax
+ffffff80022d7823: mov      qword ptr [rbp - 0x60], rbx
+ffffff80022d7827: je       0xffffff80022d78ba
+ffffff80022d782d: shr      rbx, 0x20
+ffffff80022d7831: lea      rcx, [r12 + rax]
+ffffff80022d7835: cmp      rcx, 1
+ffffff80022d7839: adc      r12, rax
+ffffff80022d783c: xor      r13d, r13d
+ffffff80022d783f: mov      dword ptr [rbp - 0x2c], 0
+ffffff80022d7846: mov      dword ptr [rbp - 0x30], 0
+ffffff80022d784d: movzx    esi, word ptr [r14 + r13*2]
+ffffff80022d7852: movzx    eax, sil
+ffffff80022d7856: cmp      ebx, eax
+ffffff80022d7858: jne      0xffffff80022d7864
+ffffff80022d785a: mov      eax, esi
+ffffff80022d785c: shr      eax, 0xe
+ffffff80022d785f: cmp      r15d, eax
+ffffff80022d7862: je       0xffffff80022d78b0
+ffffff80022d7864: cmp      byte ptr [rbp - 0x48], 0
+ffffff80022d7868: je       0xffffff80022d7882
+ffffff80022d786a: test     byte ptr [rbp - 0x34], 8
+ffffff80022d786e: je       0xffffff80022d787a
+ffffff80022d7870: cmp      esi, 0x4000
+ffffff80022d7876: jb       0xffffff80022d7882
+ffffff80022d7878: jmp      0xffffff80022d78b0  ; __ZN21IO80211InfraInterface20updateChanOutageTimeEP38apple80211_infra_scan_start_event_data+0x114
+ffffff80022d787a: cmp      esi, 0x4000
+ffffff80022d7880: jb       0xffffff80022d78b0
+ffffff80022d7882: mov      rax, qword ptr [rbp - 0x40]
+ffffff80022d7886: mov      rdi, qword ptr [rax + 0x118]
+ffffff80022d788d: mov      eax, 0x268
+ffffff80022d7892: add      rdi, rax
+ffffff80022d7895: call     0xffffff8002135577  ; __Z21ChanSpecIsPassiveChanR24apple80211_channels_info18AppleChannelSpec_t
+ffffff80022d789a: test     al, al
+ffffff80022d789c: je       0xffffff80022d78a8
+ffffff80022d789e: mov      eax, dword ptr [rbp - 0x30]
+ffffff80022d78a1: inc      al
+ffffff80022d78a3: mov      dword ptr [rbp - 0x30], eax
+ffffff80022d78a6: jmp      0xffffff80022d78b0  ; __ZN21IO80211InfraInterface20updateChanOutageTimeEP38apple80211_infra_scan_start_event_data+0x114
+ffffff80022d78a8: mov      eax, dword ptr [rbp - 0x2c]
+ffffff80022d78ab: inc      al
+ffffff80022d78ad: mov      dword ptr [rbp - 0x2c], eax
+ffffff80022d78b0: inc      r13
+ffffff80022d78b3: cmp      r12, r13
+ffffff80022d78b6: jne      0xffffff80022d784d
+ffffff80022d78b8: jmp      0xffffff80022d78c8  ; __ZN21IO80211InfraInterface20updateChanOutageTimeEP38apple80211_infra_scan_start_event_data+0x12c
+ffffff80022d78ba: mov      dword ptr [rbp - 0x30], 0
+ffffff80022d78c1: mov      dword ptr [rbp - 0x2c], 0
+ffffff80022d78c8: mov      r12, qword ptr [rbp - 0x40]
+ffffff80022d78cc: mov      rax, qword ptr [r12]
+ffffff80022d78d0: mov      rdi, r12
+ffffff80022d78d3: call     qword ptr [rax + 0xd08]
+ffffff80022d78d9: test     rax, rax
+ffffff80022d78dc: mov      r13d, dword ptr [rbp - 0x30]
+ffffff80022d78e0: je       0xffffff80022d7904
+ffffff80022d78e2: mov      rax, qword ptr [r12]
+ffffff80022d78e6: mov      rdi, r12
+ffffff80022d78e9: call     qword ptr [rax + 0xd08]
+ffffff80022d78ef: mov      rdi, rax
+ffffff80022d78f2: mov      esi, 1
+ffffff80022d78f7: call     0xffffff80031d421c  ; __ZN11CCLogStream9shouldLogE16CCStreamLogLevel
+ffffff80022d78fc: test     al, al
+ffffff80022d78fe: jne      0xffffff80022d79d1
+ffffff80022d7904: mov      eax, dword ptr [rbp - 0x2c]
+ffffff80022d7907: or       al, r13b
+ffffff80022d790a: je       0xffffff80022d79c2
+ffffff80022d7910: mov      rax, qword ptr [r12]
+ffffff80022d7914: mov      rdi, r12
+ffffff80022d7917: call     qword ptr [rax + 0xba8]
+ffffff80022d791d: mov      rax, qword ptr [rax + 0x120]
+ffffff80022d7924: mov      rax, qword ptr [rax + 0x188]
+ffffff80022d792b: test     rax, rax
+ffffff80022d792e: je       0xffffff80022d795d
+ffffff80022d7930: mov      rax, qword ptr [rax + 0x110]
+ffffff80022d7937: mov      rdi, qword ptr [rax + 0x28]
+ffffff80022d793b: lea      rsi, [rip + 0x11f69e]  ; 0xffffff80023f6fe0
+ffffff80022d7942: call     0xffffff8000a49ab0  ; __ZN15OSMetaClassBase12safeMetaCastEPKS_PK11OSMetaClass
+ffffff80022d7947: test     rax, rax
+ffffff80022d794a: je       0xffffff80022d795d
+ffffff80022d794c: mov      rax, qword ptr [rax + 0x20]
+ffffff80022d7950: mov      bl, byte ptr [rax + 0x3ee8]
+ffffff80022d7956: and      bl, 2
+ffffff80022d7959: shr      bl, 1
+ffffff80022d795b: jmp      0xffffff80022d795f  ; __ZN21IO80211InfraInterface20updateChanOutageTimeEP38apple80211_infra_scan_start_event_data+0x1c3
+ffffff80022d795d: xor      ebx, ebx
+ffffff80022d795f: mov      r15d, dword ptr [rbp - 0x34]
+ffffff80022d7963: shr      r15b, 3
+ffffff80022d7967: mov      rax, qword ptr [r12]
+ffffff80022d796b: mov      rcx, qword ptr [r12 + 0x118]
+ffffff80022d7973: xor      r14d, r14d
+ffffff80022d7976: test     byte ptr [rcx + 0x264], 3
+ffffff80022d797d: setne    r14b
+ffffff80022d7981: mov      rdi, r12
+ffffff80022d7984: call     qword ptr [rax + 0xd58]
+ffffff80022d798a: and      al, r15b
+ffffff80022d798d: mov      rcx, qword ptr [r12 + 0x118]
+ffffff80022d7995: mov      rdi, qword ptr [rcx + 0x188]
+ffffff80022d799c: movzx    r9d, al
+ffffff80022d79a0: movzx    esi, byte ptr [rbp - 0x2c]
+ffffff80022d79a4: movzx    edx, r13b
+ffffff80022d79a8: movzx    r8d, bl
+ffffff80022d79ac: mov      ecx, r14d
+ffffff80022d79af: add      rsp, 0x38
+ffffff80022d79b3: pop      rbx
+ffffff80022d79b4: pop      r12
+ffffff80022d79b6: pop      r13
+ffffff80022d79b8: pop      r14
+ffffff80022d79ba: pop      r15
+ffffff80022d79bc: pop      rbp
+ffffff80022d79bd: jmp      0xffffff800211889a  ; __ZN18IO80211AVCAdvisory20updateChanOutageTimeEhhbbb
+ffffff80022d79c2: add      rsp, 0x38
+ffffff80022d79c6: pop      rbx
+ffffff80022d79c7: pop      r12
+ffffff80022d79c9: pop      r13
+ffffff80022d79cb: pop      r14
+ffffff80022d79cd: pop      r15
+ffffff80022d79cf: pop      rbp
+ffffff80022d79d0: ret      
+ffffff80022d79d1: mov      rax, qword ptr [r12]
+ffffff80022d79d5: mov      rdi, r12
+ffffff80022d79d8: call     qword ptr [rax + 0xd08]
+ffffff80022d79de: mov      qword ptr [rbp - 0x50], rax
+ffffff80022d79e2: movzx    eax, byte ptr [r14 + 0x320]
+ffffff80022d79ea: mov      dword ptr [rbp - 0x38], eax
+ffffff80022d79ed: movzx    r14d, byte ptr [r14 + 0x321]
+ffffff80022d79f5: movzx    eax, r13b
+ffffff80022d79f9: mov      qword ptr [rbp - 0x58], rax
+ffffff80022d79fd: movzx    r15d, byte ptr [rbp - 0x2c]
+ffffff80022d7a02: mov      rax, qword ptr [r12]
+ffffff80022d7a06: mov      rdi, r12
+ffffff80022d7a09: call     qword ptr [rax + 0xd58]
+ffffff80022d7a0f: movzx    r10d, al
+ffffff80022d7a13: mov      rbx, qword ptr [rbp - 0x60]
+ffffff80022d7a17: shr      rbx, 0x20
+ffffff80022d7a1b: mov      r11, qword ptr [rbp - 0x48]
+ffffff80022d7a1f: shr      r11d, 1
+ffffff80022d7a22: sub      rsp, 8
+ffffff80022d7a26: lea      rsi, [rip + 0xc3888]  ; 0xffffff800239b2b5
+ffffff80022d7a2d: lea      rdx, [rip + 0xc38c4]  ; "updateChanOutageTime"
+ffffff80022d7a34: mov      rdi, qword ptr [rbp - 0x50]
+ffffff80022d7a38: mov      ecx, 0x10b6
+ffffff80022d7a3d: mov      r8d, dword ptr [rbp - 0x38]
+ffffff80022d7a41: mov      r9d, r14d
+ffffff80022d7a44: xor      eax, eax
+ffffff80022d7a46: push     r11
+ffffff80022d7a48: push     rbx
+ffffff80022d7a49: push     r10
+ffffff80022d7a4b: push     r15
+ffffff80022d7a4d: push     qword ptr [rbp - 0x58]
+ffffff80022d7a50: call     0xffffff80031d252e  ; __ZN11CCLogStream8logAlertEPKcz
+ffffff80022d7a55: add      rsp, 0x30
+ffffff80022d7a59: jmp      0xffffff80022d7904  ; __ZN21IO80211InfraInterface20updateChanOutageTimeEP38apple80211_infra_scan_start_event_data+0x168

@@ -1,0 +1,53 @@
+# 0xffffff80022a5d18 __ZN23IO80211VirtualInterface11handleIoctlEP7__ifnetmPv
+ffffff80022a5d18: push     rbp
+ffffff80022a5d19: mov      rbp, rsp
+ffffff80022a5d1c: push     r15
+ffffff80022a5d1e: push     r14
+ffffff80022a5d20: push     rbx
+ffffff80022a5d21: push     rax
+ffffff80022a5d22: mov      rbx, rcx
+ffffff80022a5d25: mov      r14, rdx
+ffffff80022a5d28: mov      r15, rdi
+ffffff80022a5d2b: mov      eax, 0xc02069c8
+ffffff80022a5d30: cmp      rdx, rax
+ffffff80022a5d33: jg       0xffffff80022a5d46
+ffffff80022a5d35: mov      eax, 0x802069c8
+ffffff80022a5d3a: cmp      r14, rax
+ffffff80022a5d3d: je       0xffffff80022a5d5a
+ffffff80022a5d3f: mov      eax, 0x802869c8
+ffffff80022a5d44: jmp      0xffffff80022a5d55  ; __ZN23IO80211VirtualInterface11handleIoctlEP7__ifnetmPv+0x3d
+ffffff80022a5d46: mov      eax, 0xc02869c9
+ffffff80022a5d4b: cmp      r14, rax
+ffffff80022a5d4e: je       0xffffff80022a5d5a
+ffffff80022a5d50: mov      eax, 0xc02069c9
+ffffff80022a5d55: cmp      r14, rax
+ffffff80022a5d58: jne      0xffffff80022a5d98
+ffffff80022a5d5a: mov      rax, qword ptr [r15]
+ffffff80022a5d5d: mov      rdi, r15
+ffffff80022a5d60: call     qword ptr [rax + 0xba8]
+ffffff80022a5d66: mov      r10, qword ptr [rax]
+ffffff80022a5d69: xor      r11d, r11d
+ffffff80022a5d6c: lea      rdx, [rip + 0x3d]  ; 0xffffff80022a5db0
+ffffff80022a5d73: mov      rdi, rax
+ffffff80022a5d76: mov      rsi, r15
+ffffff80022a5d79: mov      rcx, r15
+ffffff80022a5d7c: mov      r8, r14
+ffffff80022a5d7f: mov      r9, rbx
+ffffff80022a5d82: push     r11
+ffffff80022a5d84: push     r11
+ffffff80022a5d86: call     qword ptr [r10 + 0x850]
+ffffff80022a5d8d: add      rsp, 0x18
+ffffff80022a5d91: pop      rbx
+ffffff80022a5d92: pop      r14
+ffffff80022a5d94: pop      r15
+ffffff80022a5d96: pop      rbp
+ffffff80022a5d97: ret      
+ffffff80022a5d98: mov      rdi, r15
+ffffff80022a5d9b: mov      edx, r14d
+ffffff80022a5d9e: mov      rcx, rbx
+ffffff80022a5da1: add      rsp, 8
+ffffff80022a5da5: pop      rbx
+ffffff80022a5da6: pop      r14
+ffffff80022a5da8: pop      r15
+ffffff80022a5daa: pop      rbp
+ffffff80022a5dab: jmp      0xffffff8002262eee  ; __ZN23IO80211SkywalkInterface17processBSDCommandEP7__ifnetjPv

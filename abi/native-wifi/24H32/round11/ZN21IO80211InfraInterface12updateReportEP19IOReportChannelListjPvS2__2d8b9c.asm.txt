@@ -1,0 +1,95 @@
+# 0xffffff80022d8b9c __ZN21IO80211InfraInterface12updateReportEP19IOReportChannelListjPvS2_
+ffffff80022d8b9c: push     rbp
+ffffff80022d8b9d: mov      rbp, rsp
+ffffff80022d8ba0: push     r15
+ffffff80022d8ba2: push     r14
+ffffff80022d8ba4: push     r13
+ffffff80022d8ba6: push     r12
+ffffff80022d8ba8: push     rbx
+ffffff80022d8ba9: push     rax
+ffffff80022d8baa: mov      rbx, r8
+ffffff80022d8bad: mov      r14, rcx
+ffffff80022d8bb0: mov      r15d, edx
+ffffff80022d8bb3: mov      r12, rsi
+ffffff80022d8bb6: mov      r13, rdi
+ffffff80022d8bb9: mov      rax, qword ptr [rdi + 0x110]
+ffffff80022d8bc0: mov      rax, qword ptr [rax + 0x40]
+ffffff80022d8bc4: test     rax, rax
+ffffff80022d8bc7: je       0xffffff80022d8be4
+ffffff80022d8bc9: mov      rax, qword ptr [rax + 0x10]
+ffffff80022d8bcd: mov      rdi, qword ptr [rax + 0x18]
+ffffff80022d8bd1: mov      rsi, r12
+ffffff80022d8bd4: mov      edx, r15d
+ffffff80022d8bd7: mov      rcx, r14
+ffffff80022d8bda: mov      r8, rbx
+ffffff80022d8bdd: call     0xffffff8000b47b00  ; __ZN10IOReporter16updateAllReportsEP5OSSetP19IOReportChannelListjPvS4_
+ffffff80022d8be2: jmp      0xffffff80022d8bf2  ; __ZN21IO80211InfraInterface12updateReportEP19IOReportChannelListjPvS2_+0x56
+ffffff80022d8be4: lea      rdi, [rip + 0xc13ed]  ; 0xffffff8002399fd8
+ffffff80022d8beb: xor      eax, eax
+ffffff80022d8bed: call     0xffffff8000ab6560  ; _IOLog
+ffffff80022d8bf2: mov      rax, qword ptr [r13 + 0x110]
+ffffff80022d8bf9: mov      rax, qword ptr [rax + 0x48]
+ffffff80022d8bfd: test     rax, rax
+ffffff80022d8c00: mov      qword ptr [rbp - 0x30], rbx
+ffffff80022d8c04: je       0xffffff80022d8c23
+ffffff80022d8c06: mov      rax, qword ptr [rax + 0x10]
+ffffff80022d8c0a: mov      rdi, qword ptr [rax + 0x30]
+ffffff80022d8c0e: mov      rsi, r12
+ffffff80022d8c11: mov      edx, r15d
+ffffff80022d8c14: mov      rcx, r14
+ffffff80022d8c17: mov      r8, rbx
+ffffff80022d8c1a: call     0xffffff8000b47b00  ; __ZN10IOReporter16updateAllReportsEP5OSSetP19IOReportChannelListjPvS4_
+ffffff80022d8c1f: mov      ebx, eax
+ffffff80022d8c21: jmp      0xffffff80022d8c36  ; __ZN21IO80211InfraInterface12updateReportEP19IOReportChannelListjPvS2_+0x9a
+ffffff80022d8c23: lea      rsi, [rip + 0xc13f4]  ; 0xffffff800239a01e
+ffffff80022d8c2a: xor      ebx, ebx
+ffffff80022d8c2c: mov      rdi, r13
+ffffff80022d8c2f: xor      eax, eax
+ffffff80022d8c31: call     0xffffff80022620d6  ; __ZN23IO80211SkywalkInterface8logDebugEPKcz
+ffffff80022d8c36: mov      rax, qword ptr [r13 + 0x118]
+ffffff80022d8c3d: mov      rax, qword ptr [rax]
+ffffff80022d8c40: test     rax, rax
+ffffff80022d8c43: je       0xffffff80022d8c63
+ffffff80022d8c45: mov      rax, qword ptr [rax + 0x10]
+ffffff80022d8c49: mov      rdi, qword ptr [rax + 0x50]
+ffffff80022d8c4d: mov      rsi, r12
+ffffff80022d8c50: mov      edx, r15d
+ffffff80022d8c53: mov      rcx, r14
+ffffff80022d8c56: mov      r8, qword ptr [rbp - 0x30]
+ffffff80022d8c5a: call     0xffffff8000b47b00  ; __ZN10IOReporter16updateAllReportsEP5OSSetP19IOReportChannelListjPvS4_
+ffffff80022d8c5f: mov      ebx, eax
+ffffff80022d8c61: jmp      0xffffff80022d8c71  ; __ZN21IO80211InfraInterface12updateReportEP19IOReportChannelListjPvS2_+0xd5
+ffffff80022d8c63: lea      rdi, [rip + 0xc13fc]  ; 0xffffff800239a066
+ffffff80022d8c6a: xor      eax, eax
+ffffff80022d8c6c: call     0xffffff8000ab6560  ; _IOLog
+ffffff80022d8c71: mov      rax, qword ptr [r13 + 0x110]
+ffffff80022d8c78: mov      rdi, qword ptr [rax + 0x28]
+ffffff80022d8c7c: test     rdi, rdi
+ffffff80022d8c7f: je       0xffffff80022d8ca8
+ffffff80022d8c81: mov      rax, qword ptr [rdi]
+ffffff80022d8c84: mov      rax, qword ptr [rax + 0x2d8]
+ffffff80022d8c8b: mov      rsi, r12
+ffffff80022d8c8e: mov      edx, r15d
+ffffff80022d8c91: mov      rcx, r14
+ffffff80022d8c94: mov      r8, qword ptr [rbp - 0x30]
+ffffff80022d8c98: add      rsp, 8
+ffffff80022d8c9c: pop      rbx
+ffffff80022d8c9d: pop      r12
+ffffff80022d8c9f: pop      r13
+ffffff80022d8ca1: pop      r14
+ffffff80022d8ca3: pop      r15
+ffffff80022d8ca5: pop      rbp
+ffffff80022d8ca6: jmp      rax
+ffffff80022d8ca8: lea      rdi, [rip + 0xc13f4]  ; 0xffffff800239a0a3
+ffffff80022d8caf: xor      eax, eax
+ffffff80022d8cb1: call     0xffffff8000ab6560  ; _IOLog
+ffffff80022d8cb6: mov      eax, ebx
+ffffff80022d8cb8: add      rsp, 8
+ffffff80022d8cbc: pop      rbx
+ffffff80022d8cbd: pop      r12
+ffffff80022d8cbf: pop      r13
+ffffff80022d8cc1: pop      r14
+ffffff80022d8cc3: pop      r15
+ffffff80022d8cc5: pop      rbp
+ffffff80022d8cc6: ret      
+ffffff80022d8cc7: nop      

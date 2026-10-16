@@ -1,0 +1,9 @@
+# 0xffffff800262ddda __ZN19IONetworkController14allocatePacketEj
+ffffff800262ddda: push     rbp
+ffffff800262dddb: mov      rbp, rsp
+ffffff800262ddde: mov      edx, dword ptr [rdi + 0xb8]
+ffffff800262dde4: mov      ecx, dword ptr [rdi + 0xbc]
+ffffff800262ddea: mov      edi, esi
+ffffff800262ddec: xor      esi, esi
+ffffff800262ddee: pop      rbp
+ffffff800262ddef: jmp      0xffffff800262ddf4  ; __ZL9getPacketjjjj

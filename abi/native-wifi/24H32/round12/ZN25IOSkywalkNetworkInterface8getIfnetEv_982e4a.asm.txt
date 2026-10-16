@@ -1,0 +1,8 @@
+# 0xffffff8002982e4a __ZN25IOSkywalkNetworkInterface8getIfnetEv
+ffffff8002982e4a: push     rbp
+ffffff8002982e4b: mov      rbp, rsp
+ffffff8002982e4e: mov      rax, qword ptr [rdi + 0xb8]
+ffffff8002982e55: mov      rax, qword ptr [rax + 8]
+ffffff8002982e59: pop      rbp
+ffffff8002982e5a: ret      
+ffffff8002982e5b: nop      

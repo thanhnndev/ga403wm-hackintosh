@@ -1,0 +1,46 @@
+# 0xffffff800297ea42 __ZN21IOSkywalkPacketBuffer8withPoolEP25IOSkywalkPacketBufferPoolP31IOSkywalkPacketBufferDescriptorj
+ffffff800297ea42: push     rbp
+ffffff800297ea43: mov      rbp, rsp
+ffffff800297ea46: push     r15
+ffffff800297ea48: push     r14
+ffffff800297ea4a: push     r13
+ffffff800297ea4c: push     r12
+ffffff800297ea4e: push     rbx
+ffffff800297ea4f: push     rax
+ffffff800297ea50: mov      r14d, edx
+ffffff800297ea53: mov      r15, rsi
+ffffff800297ea56: mov      r12, rdi
+ffffff800297ea59: lea      rdi, [rip + 0x38be0]  ; 0xffffff80029b7640
+ffffff800297ea60: mov      esi, 0x90
+ffffff800297ea65: call     0xffffff8000a4be90  ; _OSObject_typed_operator_new
+ffffff800297ea6a: mov      rbx, rax
+ffffff800297ea6d: lea      r13, [rip + 0x37f04]  ; 0xffffff80029b6978
+ffffff800297ea74: mov      rdi, rax
+ffffff800297ea77: mov      rsi, r13
+ffffff800297ea7a: call     0xffffff8000afd860  ; __ZN9IOCommandC2EPK11OSMetaClass
+ffffff800297ea7f: lea      rax, [rip + 0x2ed92]  ; 0xffffff80029ad818
+ffffff800297ea86: mov      qword ptr [rbx], rax
+ffffff800297ea89: mov      rdi, r13
+ffffff800297ea8c: call     0xffffff8000a4a700  ; __ZNK11OSMetaClass19instanceConstructedEv
+ffffff800297ea91: mov      rax, qword ptr [rbx]
+ffffff800297ea94: mov      rdi, rbx
+ffffff800297ea97: mov      rsi, r12
+ffffff800297ea9a: mov      rdx, r15
+ffffff800297ea9d: mov      ecx, r14d
+ffffff800297eaa0: call     qword ptr [rax + 0x118]
+ffffff800297eaa6: test     al, al
+ffffff800297eaa8: jne      0xffffff800297eab5
+ffffff800297eaaa: mov      rax, qword ptr [rbx]
+ffffff800297eaad: mov      rdi, rbx
+ffffff800297eab0: call     qword ptr [rax + 0x28]
+ffffff800297eab3: xor      ebx, ebx
+ffffff800297eab5: mov      rax, rbx
+ffffff800297eab8: add      rsp, 8
+ffffff800297eabc: pop      rbx
+ffffff800297eabd: pop      r12
+ffffff800297eabf: pop      r13
+ffffff800297eac1: pop      r14
+ffffff800297eac3: pop      r15
+ffffff800297eac5: pop      rbp
+ffffff800297eac6: ret      
+ffffff800297eac7: nop      

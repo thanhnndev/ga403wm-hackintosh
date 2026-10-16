@@ -1,0 +1,7 @@
+# 0xffffff80022da832 __ZN21IO80211InfraInterface10getLQMDataEv
+ffffff80022da832: push     rbp
+ffffff80022da833: mov      rbp, rsp
+ffffff80022da836: mov      rax, qword ptr [rdi + 0x118]
+ffffff80022da83d: mov      rax, qword ptr [rax + 0x178]
+ffffff80022da844: pop      rbp
+ffffff80022da845: ret      

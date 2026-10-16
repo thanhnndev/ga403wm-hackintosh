@@ -1,0 +1,39 @@
+# 0xffffff80029757c0 __ZN18IOSkywalkBSDClient15stopIOReportingEv
+ffffff80029757c0: push     rbp
+ffffff80029757c1: mov      rbp, rsp
+ffffff80029757c4: push     r14
+ffffff80029757c6: push     rbx
+ffffff80029757c7: mov      rbx, rdi
+ffffff80029757ca: mov      rdi, qword ptr [rdi + 0xb0]
+ffffff80029757d1: call     0xffffff800052f900  ; _lck_mtx_lock
+ffffff80029757d6: cmp      byte ptr [rbx + 0xe4], 1
+ffffff80029757dd: jne      0xffffff8002975848
+ffffff80029757df: mov      byte ptr [rbx + 0xe4], 0
+ffffff80029757e6: mov      rax, qword ptr [rbx]
+ffffff80029757e9: lea      rsi, [rip + 0x2f98f]  ; "IOReportLegend"
+ffffff80029757f0: mov      rdi, rbx
+ffffff80029757f3: call     qword ptr [rax + 0x2a0]
+ffffff80029757f9: mov      rax, qword ptr [rbx]
+ffffff80029757fc: lea      rsi, [rip + 0x2f98b]  ; "IOReportLegendPublic"
+ffffff8002975803: mov      rdi, rbx
+ffffff8002975806: call     qword ptr [rax + 0x2a0]
+ffffff800297580c: mov      rax, qword ptr [rbx + 0x88]
+ffffff8002975813: mov      rdi, qword ptr [rax + 0x98]
+ffffff800297581a: mov      rax, qword ptr [rax + 0xa0]
+ffffff8002975821: xor      r14d, r14d
+ffffff8002975824: cmp      rax, rdi
+ffffff8002975827: cmovne   r14, rax
+ffffff800297582b: test     rdi, rdi
+ffffff800297582e: je       0xffffff8002975838
+ffffff8002975830: mov      rsi, rbx
+ffffff8002975833: call     0xffffff800297dd18  ; __ZN25IOSkywalkPacketBufferPool24checkOutReportingServiceEPK9IOService
+ffffff8002975838: test     r14, r14
+ffffff800297583b: je       0xffffff8002975848
+ffffff800297583d: mov      rdi, r14
+ffffff8002975840: mov      rsi, rbx
+ffffff8002975843: call     0xffffff800297dd18  ; __ZN25IOSkywalkPacketBufferPool24checkOutReportingServiceEPK9IOService
+ffffff8002975848: mov      rdi, qword ptr [rbx + 0xb0]
+ffffff800297584f: pop      rbx
+ffffff8002975850: pop      r14
+ffffff8002975852: pop      rbp
+ffffff8002975853: jmp      0xffffff800052fc50  ; _lck_mtx_unlock

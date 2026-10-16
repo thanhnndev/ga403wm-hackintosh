@@ -1,0 +1,60 @@
+# 0xffffff800262dbb4 __ZN19IONetworkController15_broadcastEventEjPv
+ffffff800262dbb4: push     rbp
+ffffff800262dbb5: mov      rbp, rsp
+ffffff800262dbb8: push     r15
+ffffff800262dbba: push     r14
+ffffff800262dbbc: push     r13
+ffffff800262dbbe: push     r12
+ffffff800262dbc0: push     rbx
+ffffff800262dbc1: push     rax
+ffffff800262dbc2: mov      r14, rdx
+ffffff800262dbc5: mov      r15d, esi
+ffffff800262dbc8: mov      rbx, rdi
+ffffff800262dbcb: mov      rax, qword ptr [rdi]
+ffffff800262dbce: mov      esi, 1
+ffffff800262dbd3: call     qword ptr [rax + 0x610]
+ffffff800262dbd9: mov      rdi, qword ptr [rbx + 0xa0]
+ffffff800262dbe0: mov      rax, qword ptr [rdi]
+ffffff800262dbe3: call     qword ptr [rax + 0x130]
+ffffff800262dbe9: test     eax, eax
+ffffff800262dbeb: je       0xffffff800262dc5a
+ffffff800262dbed: mov      rdi, qword ptr [rbx + 0xa8]
+ffffff800262dbf4: mov      rax, qword ptr [rdi]
+ffffff800262dbf7: call     qword ptr [rax + 0x118]
+ffffff800262dbfd: mov      rdi, qword ptr [rbx + 0xa8]
+ffffff800262dc04: mov      rax, qword ptr [rdi]
+ffffff800262dc07: call     qword ptr [rax + 0x128]
+ffffff800262dc0d: test     rax, rax
+ffffff800262dc10: je       0xffffff800262dc5a
+ffffff800262dc12: mov      r13, rax
+ffffff800262dc15: lea      rax, [rip + 0x10eb4]  ; 0xffffff800263ead0
+ffffff800262dc1c: mov      r12, qword ptr [rax]
+ffffff800262dc1f: mov      rdi, r13
+ffffff800262dc22: mov      rsi, r12
+ffffff800262dc25: call     0xffffff8000a49ab0  ; __ZN15OSMetaClassBase12safeMetaCastEPKS_PK11OSMetaClass
+ffffff800262dc2a: test     rax, rax
+ffffff800262dc2d: je       0xffffff800262dc42
+ffffff800262dc2f: mov      rax, qword ptr [r13]
+ffffff800262dc33: mov      rdi, r13
+ffffff800262dc36: mov      esi, r15d
+ffffff800262dc39: mov      rdx, r14
+ffffff800262dc3c: call     qword ptr [rax + 0x890]
+ffffff800262dc42: mov      rdi, qword ptr [rbx + 0xa8]
+ffffff800262dc49: mov      rax, qword ptr [rdi]
+ffffff800262dc4c: call     qword ptr [rax + 0x128]
+ffffff800262dc52: mov      r13, rax
+ffffff800262dc55: test     rax, rax
+ffffff800262dc58: jne      0xffffff800262dc1f
+ffffff800262dc5a: mov      rax, qword ptr [rbx]
+ffffff800262dc5d: mov      rdi, rbx
+ffffff800262dc60: call     qword ptr [rax + 0x618]
+ffffff800262dc66: mov      al, 1
+ffffff800262dc68: add      rsp, 8
+ffffff800262dc6c: pop      rbx
+ffffff800262dc6d: pop      r12
+ffffff800262dc6f: pop      r13
+ffffff800262dc71: pop      r14
+ffffff800262dc73: pop      r15
+ffffff800262dc75: pop      rbp
+ffffff800262dc76: ret      
+ffffff800262dc77: nop      

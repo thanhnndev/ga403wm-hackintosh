@@ -1,0 +1,96 @@
+# 0xffffff80022d7bea __ZN21IO80211InfraInterface14resetInterfaceEPvm
+ffffff80022d7bea: push     rbp
+ffffff80022d7beb: mov      rbp, rsp
+ffffff80022d7bee: push     r15
+ffffff80022d7bf0: push     r14
+ffffff80022d7bf2: push     rbx
+ffffff80022d7bf3: push     rax
+ffffff80022d7bf4: cmp      rdx, 4
+ffffff80022d7bf8: jne      0xffffff80022d7cf5
+ffffff80022d7bfe: test     rsi, rsi
+ffffff80022d7c01: je       0xffffff80022d7cf5
+ffffff80022d7c07: mov      rbx, rdi
+ffffff80022d7c0a: mov      rax, qword ptr [rdi + 0x110]
+ffffff80022d7c11: cmp      dword ptr [rax + 0x58], 1
+ffffff80022d7c15: jne      0xffffff80022d7cf5
+ffffff80022d7c1b: cmp      dword ptr [rsi], 1
+ffffff80022d7c1e: jne      0xffffff80022d7cf5
+ffffff80022d7c24: mov      rax, qword ptr [rbx]
+ffffff80022d7c27: mov      rdi, rbx
+ffffff80022d7c2a: call     qword ptr [rax + 0xd08]
+ffffff80022d7c30: test     rax, rax
+ffffff80022d7c33: je       0xffffff80022d7c56
+ffffff80022d7c35: mov      rax, qword ptr [rbx]
+ffffff80022d7c38: mov      rdi, rbx
+ffffff80022d7c3b: call     qword ptr [rax + 0xd08]
+ffffff80022d7c41: mov      rdi, rax
+ffffff80022d7c44: mov      esi, 1
+ffffff80022d7c49: call     0xffffff80031d421c  ; __ZN11CCLogStream9shouldLogE16CCStreamLogLevel
+ffffff80022d7c4e: test     al, al
+ffffff80022d7c50: jne      0xffffff80022d7d00
+ffffff80022d7c56: mov      rax, qword ptr [rbx]
+ffffff80022d7c59: mov      rdi, rbx
+ffffff80022d7c5c: call     qword ptr [rax + 0xba8]
+ffffff80022d7c62: mov      rdi, rax
+ffffff80022d7c65: mov      rsi, rbx
+ffffff80022d7c68: call     0xffffff800222b594  ; __ZN17IO80211Controller20loadCardCapabilitiesEP23IO80211SkywalkInterface
+ffffff80022d7c6d: mov      rax, qword ptr [rbx + 0x110]
+ffffff80022d7c74: mov      rdi, qword ptr [rax + 0x50]
+ffffff80022d7c78: test     rdi, rdi
+ffffff80022d7c7b: je       0xffffff80022d7c82
+ffffff80022d7c7d: call     0xffffff8002260f58  ; __ZN22IO80211MacAddressAgent24forceUpdateMacAddrOnBootEv
+ffffff80022d7c82: mov      rdi, rbx
+ffffff80022d7c85: call     0xffffff80022d7a5e  ; __ZN21IO80211InfraInterface14loadHwChannelsEv
+ffffff80022d7c8a: mov      rdi, rbx
+ffffff80022d7c8d: call     0xffffff80022d7b24  ; __ZN21IO80211InfraInterface15loadChannelInfoEv
+ffffff80022d7c92: mov      rax, qword ptr [rbx]
+ffffff80022d7c95: mov      rdi, rbx
+ffffff80022d7c98: call     qword ptr [rax + 0xba8]
+ffffff80022d7c9e: test     rax, rax
+ffffff80022d7ca1: je       0xffffff80022d7cf5
+ffffff80022d7ca3: mov      rax, qword ptr [rbx]
+ffffff80022d7ca6: mov      rdi, rbx
+ffffff80022d7ca9: call     qword ptr [rax + 0xba8]
+ffffff80022d7caf: mov      rax, qword ptr [rax + 0x120]
+ffffff80022d7cb6: cmp      qword ptr [rax + 0xb18], 0
+ffffff80022d7cbe: je       0xffffff80022d7cf5
+ffffff80022d7cc0: mov      rax, qword ptr [rbx]
+ffffff80022d7cc3: mov      rdi, rbx
+ffffff80022d7cc6: call     qword ptr [rax + 0xba8]
+ffffff80022d7ccc: mov      rax, qword ptr [rax + 0x120]
+ffffff80022d7cd3: mov      rdi, qword ptr [rax + 0xb18]
+ffffff80022d7cda: lea      rsi, [rip + 0xadae4]  ; "RNG_EVENT_FW_BOOT"
+ffffff80022d7ce1: mov      edx, 4
+ffffff80022d7ce6: add      rsp, 8
+ffffff80022d7cea: pop      rbx
+ffffff80022d7ceb: pop      r14
+ffffff80022d7ced: pop      r15
+ffffff80022d7cef: pop      rbp
+ffffff80022d7cf0: jmp      0xffffff800227bd0c  ; __ZN15IO80211RNGAgent15sendDrbgEntropyEPKcj
+ffffff80022d7cf5: add      rsp, 8
+ffffff80022d7cf9: pop      rbx
+ffffff80022d7cfa: pop      r14
+ffffff80022d7cfc: pop      r15
+ffffff80022d7cfe: pop      rbp
+ffffff80022d7cff: ret      
+ffffff80022d7d00: mov      rax, qword ptr [rbx]
+ffffff80022d7d03: mov      rdi, rbx
+ffffff80022d7d06: call     qword ptr [rax + 0xd08]
+ffffff80022d7d0c: mov      r14, rax
+ffffff80022d7d0f: mov      rdi, rbx
+ffffff80022d7d12: call     0xffffff800048cb00  ; _vm_kernel_addrhash_external
+ffffff80022d7d17: mov      r15, rax
+ffffff80022d7d1a: mov      rax, qword ptr [rbx]
+ffffff80022d7d1d: mov      rdi, rbx
+ffffff80022d7d20: call     qword ptr [rax + 0xba8]
+ffffff80022d7d26: mov      rdi, rax
+ffffff80022d7d29: call     0xffffff800048cb00  ; _vm_kernel_addrhash_external
+ffffff80022d7d2e: lea      rsi, [rip + 0xc354c]  ; "[ik] %s@%d: infra[%p] controller[%p]"
+ffffff80022d7d35: lea      rdx, [rip + 0xc356a]  ; "resetInterface"
+ffffff80022d7d3c: mov      rdi, r14
+ffffff80022d7d3f: mov      ecx, 0x105e
+ffffff80022d7d44: mov      r8, r15
+ffffff80022d7d47: mov      r9, rax
+ffffff80022d7d4a: xor      eax, eax
+ffffff80022d7d4c: call     0xffffff80031d252e  ; __ZN11CCLogStream8logAlertEPKcz
+ffffff80022d7d51: jmp      0xffffff80022d7c56  ; __ZN21IO80211InfraInterface14resetInterfaceEPvm+0x6c

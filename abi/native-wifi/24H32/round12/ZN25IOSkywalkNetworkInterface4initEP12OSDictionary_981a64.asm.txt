@@ -1,0 +1,41 @@
+# 0xffffff8002981a64 __ZN25IOSkywalkNetworkInterface4initEP12OSDictionary
+ffffff8002981a64: push     rbp
+ffffff8002981a65: mov      rbp, rsp
+ffffff8002981a68: push     r14
+ffffff8002981a6a: push     rbx
+ffffff8002981a6b: mov      rbx, rdi
+ffffff8002981a6e: lea      rax, [rip + 0x26313]  ; 0xffffff80029a7d88
+ffffff8002981a75: call     qword ptr [rax + 0x258]
+ffffff8002981a7b: test     al, al
+ffffff8002981a7d: je       0xffffff8002981aec
+ffffff8002981a7f: lea      rdi, [rip + 0x35dfa]  ; 0xffffff80029b7880
+ffffff8002981a86: call     0xffffff8000ab5930  ; _IOMallocTypeImpl
+ffffff8002981a8b: mov      qword ptr [rbx + 0xb8], rax
+ffffff8002981a92: test     rax, rax
+ffffff8002981a95: je       0xffffff8002981aec
+ffffff8002981a97: call     0xffffff8000ab6e70  ; _IOLockAlloc
+ffffff8002981a9c: mov      rcx, qword ptr [rbx + 0xb8]
+ffffff8002981aa3: mov      qword ptr [rcx + 0x10], rax
+ffffff8002981aa7: call     0xffffff8000ab6e70  ; _IOLockAlloc
+ffffff8002981aac: mov      rcx, qword ptr [rbx + 0xb8]
+ffffff8002981ab3: mov      qword ptr [rcx + 0x18], rax
+ffffff8002981ab7: lea      rdi, [rip + 0x3a]  ; 0xffffff8002981af8
+ffffff8002981abe: xor      r14d, r14d
+ffffff8002981ac1: mov      rsi, rbx
+ffffff8002981ac4: mov      edx, 1
+ffffff8002981ac9: xor      ecx, ecx
+ffffff8002981acb: call     0xffffff8000433c40  ; _thread_call_allocate_with_options
+ffffff8002981ad0: mov      rcx, qword ptr [rbx + 0xb8]
+ffffff8002981ad7: mov      qword ptr [rcx + 0x28], rax
+ffffff8002981adb: test     rax, rax
+ffffff8002981ade: je       0xffffff8002981aef
+ffffff8002981ae0: mov      byte ptr [rbx + 0xc8], 0
+ffffff8002981ae7: mov      r14b, 1
+ffffff8002981aea: jmp      0xffffff8002981aef  ; __ZN25IOSkywalkNetworkInterface4initEP12OSDictionary+0x8b
+ffffff8002981aec: xor      r14d, r14d
+ffffff8002981aef: mov      eax, r14d
+ffffff8002981af2: pop      rbx
+ffffff8002981af3: pop      r14
+ffffff8002981af5: pop      rbp
+ffffff8002981af6: ret      
+ffffff8002981af7: nop      

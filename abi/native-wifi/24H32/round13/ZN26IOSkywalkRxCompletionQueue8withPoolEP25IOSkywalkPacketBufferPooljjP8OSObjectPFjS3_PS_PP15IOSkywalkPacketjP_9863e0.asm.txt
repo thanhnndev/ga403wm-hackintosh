@@ -1,0 +1,55 @@
+# 0xffffff80029863e0 __ZN26IOSkywalkRxCompletionQueue8withPoolEP25IOSkywalkPacketBufferPooljjP8OSObjectPFjS3_PS_PP15IOSkywalkPacketjPvES8_j
+ffffff80029863e0: push     rbp
+ffffff80029863e1: mov      rbp, rsp
+ffffff80029863e4: push     r15
+ffffff80029863e6: push     r14
+ffffff80029863e8: push     r13
+ffffff80029863ea: push     r12
+ffffff80029863ec: push     rbx
+ffffff80029863ed: sub      rsp, 0x18
+ffffff80029863f1: mov      qword ptr [rbp - 0x40], r9
+ffffff80029863f5: mov      qword ptr [rbp - 0x38], r8
+ffffff80029863f9: mov      qword ptr [rbp - 0x30], rcx
+ffffff80029863fd: mov      r13d, edx
+ffffff8002986400: mov      r14d, esi
+ffffff8002986403: mov      r15, rdi
+ffffff8002986406: lea      rdi, [rip + 0x31933]  ; 0xffffff80029b7d40
+ffffff800298640d: mov      esi, 0x138
+ffffff8002986412: call     0xffffff8000a4be90  ; _OSObject_typed_operator_new
+ffffff8002986417: mov      rbx, rax
+ffffff800298641a: lea      r12, [rip + 0x306e7]  ; 0xffffff80029b6b08
+ffffff8002986421: mov      rdi, rax
+ffffff8002986424: mov      rsi, r12
+ffffff8002986427: call     0xffffff80029807b6  ; __ZN20IOSkywalkPacketQueueC2EPK11OSMetaClass
+ffffff800298642c: lea      rax, [rip + 0x2a45d]  ; 0xffffff80029b0890
+ffffff8002986433: mov      qword ptr [rbx], rax
+ffffff8002986436: mov      rdi, r12
+ffffff8002986439: call     0xffffff8000a4a700  ; __ZNK11OSMetaClass19instanceConstructedEv
+ffffff800298643e: mov      rax, qword ptr [rbx]
+ffffff8002986441: mov      rdi, rbx
+ffffff8002986444: mov      rsi, r15
+ffffff8002986447: mov      edx, r14d
+ffffff800298644a: mov      ecx, r13d
+ffffff800298644d: mov      r8, qword ptr [rbp - 0x30]
+ffffff8002986451: mov      r9, qword ptr [rbp - 0x38]
+ffffff8002986455: mov      r10d, dword ptr [rbp + 0x10]
+ffffff8002986459: push     r10
+ffffff800298645b: push     qword ptr [rbp - 0x40]
+ffffff800298645e: call     qword ptr [rax + 0x2b0]
+ffffff8002986464: add      rsp, 0x10
+ffffff8002986468: test     al, al
+ffffff800298646a: jne      0xffffff8002986477
+ffffff800298646c: mov      rax, qword ptr [rbx]
+ffffff800298646f: mov      rdi, rbx
+ffffff8002986472: call     qword ptr [rax + 0x28]
+ffffff8002986475: xor      ebx, ebx
+ffffff8002986477: mov      rax, rbx
+ffffff800298647a: add      rsp, 0x18
+ffffff800298647e: pop      rbx
+ffffff800298647f: pop      r12
+ffffff8002986481: pop      r13
+ffffff8002986483: pop      r14
+ffffff8002986485: pop      r15
+ffffff8002986487: pop      rbp
+ffffff8002986488: ret      
+ffffff8002986489: nop      

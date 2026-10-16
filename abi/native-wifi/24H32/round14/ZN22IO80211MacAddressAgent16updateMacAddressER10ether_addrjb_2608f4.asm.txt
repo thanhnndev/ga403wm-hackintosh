@@ -1,0 +1,139 @@
+# 0xffffff80022608f4 __ZN22IO80211MacAddressAgent16updateMacAddressER10ether_addrjb
+ffffff80022608f4: push     rbp
+ffffff80022608f5: mov      rbp, rsp
+ffffff80022608f8: push     r15
+ffffff80022608fa: push     r14
+ffffff80022608fc: push     r13
+ffffff80022608fe: push     r12
+ffffff8002260900: push     rbx
+ffffff8002260901: sub      rsp, 0x68
+ffffff8002260905: mov      dword ptr [rbp - 0x30], ecx
+ffffff8002260908: mov      r15d, edx
+ffffff800226090b: mov      r14, rsi
+ffffff800226090e: mov      rbx, rdi
+ffffff8002260911: mov      rax, qword ptr [rdi + 0x10]
+ffffff8002260915: mov      rdi, qword ptr [rax]
+ffffff8002260918: mov      rax, qword ptr [rdi + 0x110]
+ffffff800226091f: mov      rax, qword ptr [rax + 0xb8]
+ffffff8002260926: test     rax, rax
+ffffff8002260929: je       0xffffff8002260944
+ffffff800226092b: mov      rcx, qword ptr [rax]
+ffffff800226092e: mov      rdi, rax
+ffffff8002260931: call     qword ptr [rcx + 0x148]
+ffffff8002260937: mov      qword ptr [rbp - 0x38], rax
+ffffff800226093b: mov      rax, qword ptr [rbx + 0x10]
+ffffff800226093f: mov      rdi, qword ptr [rax]
+ffffff8002260942: jmp      0xffffff800226094c  ; __ZN22IO80211MacAddressAgent16updateMacAddressER10ether_addrjb+0x58
+ffffff8002260944: mov      qword ptr [rbp - 0x38], 0
+ffffff800226094c: mov      rax, qword ptr [rdi]
+ffffff800226094f: call     qword ptr [rax + 0xce8]
+ffffff8002260955: mov      r12d, eax
+ffffff8002260958: cmp      r15d, 1
+ffffff800226095c: setne    r13b
+ffffff8002260960: and      r13b, al
+ffffff8002260963: mov      rcx, qword ptr [rbx + 0x10]
+ffffff8002260967: mov      rdi, qword ptr [rcx + 0x18]
+ffffff800226096b: test     rdi, rdi
+ffffff800226096e: je       0xffffff8002260986
+ffffff8002260970: mov      esi, 1
+ffffff8002260975: call     0xffffff80031d421c  ; __ZN11CCLogStream9shouldLogE16CCStreamLogLevel
+ffffff800226097a: mov      rcx, qword ptr [rbx + 0x10]
+ffffff800226097e: test     al, al
+ffffff8002260980: jne      0xffffff8002260a15
+ffffff8002260986: movzx    eax, word ptr [r14 + 4]
+ffffff800226098b: mov      word ptr [rcx + 0x24], ax
+ffffff800226098f: mov      eax, dword ptr [r14]
+ffffff8002260992: mov      dword ptr [rcx + 0x20], eax
+ffffff8002260995: mov      rax, qword ptr [rbx + 0x10]
+ffffff8002260999: mov      dword ptr [rax + 8], r15d
+ffffff800226099d: test     r13b, r13b
+ffffff80022609a0: je       0xffffff80022609b9
+ffffff80022609a2: mov      rdi, qword ptr [rax]
+ffffff80022609a5: mov      rax, qword ptr [rdi]
+ffffff80022609a8: mov      rsi, r14
+ffffff80022609ab: call     qword ptr [rax + 0xa70]
+ffffff80022609b1: mov      rax, qword ptr [rbx + 0x10]
+ffffff80022609b5: xor      ecx, ecx
+ffffff80022609b7: jmp      0xffffff80022609c1  ; __ZN22IO80211MacAddressAgent16updateMacAddressER10ether_addrjb+0xcd
+ffffff80022609b9: mov      cl, 1
+ffffff80022609bb: test     r12b, 1
+ffffff80022609bf: jne      0xffffff80022609c4
+ffffff80022609c1: mov      byte ptr [rax + 0x28], cl
+ffffff80022609c4: mov      rdi, qword ptr [rax]
+ffffff80022609c7: mov      rax, qword ptr [rdi]
+ffffff80022609ca: mov      ecx, 6
+ffffff80022609cf: mov      esi, 0x3b
+ffffff80022609d4: mov      rdx, r14
+ffffff80022609d7: mov      r8d, 1
+ffffff80022609dd: call     qword ptr [rax + 0xb10]
+ffffff80022609e3: mov      rax, qword ptr [rbx + 0x10]
+ffffff80022609e7: mov      rdi, qword ptr [rax]
+ffffff80022609ea: lea      rsi, [rip + 0x11d3c6]  ; "IOMACAddress"
+ffffff80022609f1: mov      rdx, r14
+ffffff80022609f4: mov      ecx, 6
+ffffff80022609f9: call     0xffffff800227dba9  ; __Z17setPropertyHelperP9IOServicePKcPvj
+ffffff80022609fe: mov      rax, qword ptr [rbx + 0x10]
+ffffff8002260a02: mov      byte ptr [rax + 0x29], 0
+ffffff8002260a06: add      rsp, 0x68
+ffffff8002260a0a: pop      rbx
+ffffff8002260a0b: pop      r12
+ffffff8002260a0d: pop      r13
+ffffff8002260a0f: pop      r14
+ffffff8002260a11: pop      r15
+ffffff8002260a13: pop      rbp
+ffffff8002260a14: ret      
+ffffff8002260a15: mov      rdi, qword ptr [rcx + 0x18]
+ffffff8002260a19: movzx    r9d, byte ptr [rbp - 0x30]
+ffffff8002260a1e: movzx    eax, r13b
+ffffff8002260a22: mov      qword ptr [rbp - 0x30], rax
+ffffff8002260a26: movzx    r11d, r12b
+ffffff8002260a2a: and      r11d, 1
+ffffff8002260a2e: movzx    eax, byte ptr [rcx + 0x20]
+ffffff8002260a32: mov      qword ptr [rbp - 0x90], rax
+ffffff8002260a39: movzx    eax, byte ptr [rcx + 0x21]
+ffffff8002260a3d: mov      qword ptr [rbp - 0x88], rax
+ffffff8002260a44: movzx    eax, byte ptr [rcx + 0x22]
+ffffff8002260a48: mov      qword ptr [rbp - 0x80], rax
+ffffff8002260a4c: movzx    eax, byte ptr [rcx + 0x23]
+ffffff8002260a50: mov      qword ptr [rbp - 0x78], rax
+ffffff8002260a54: movzx    eax, byte ptr [rcx + 0x24]
+ffffff8002260a58: mov      qword ptr [rbp - 0x70], rax
+ffffff8002260a5c: movzx    eax, byte ptr [rcx + 0x25]
+ffffff8002260a60: mov      qword ptr [rbp - 0x68], rax
+ffffff8002260a64: movzx    eax, byte ptr [r14]
+ffffff8002260a68: mov      qword ptr [rbp - 0x60], rax
+ffffff8002260a6c: movzx    eax, byte ptr [r14 + 1]
+ffffff8002260a71: mov      qword ptr [rbp - 0x58], rax
+ffffff8002260a75: movzx    eax, byte ptr [r14 + 2]
+ffffff8002260a7a: mov      qword ptr [rbp - 0x50], rax
+ffffff8002260a7e: movzx    eax, byte ptr [r14 + 3]
+ffffff8002260a83: mov      qword ptr [rbp - 0x48], rax
+ffffff8002260a87: movzx    eax, byte ptr [r14 + 4]
+ffffff8002260a8c: mov      qword ptr [rbp - 0x40], rax
+ffffff8002260a90: movzx    r10d, byte ptr [r14 + 5]
+ffffff8002260a95: sub      rsp, 8
+ffffff8002260a99: lea      rsi, [rip + 0x11d25d]  ; "[ik] %s@%d:role<%s> init<%d> informSkywalk=<%d> isInterfaceEnabled=<%d> client<%"
+ffffff8002260aa0: lea      rdx, [rip + 0x11d2ff]  ; "updateMacAddress"
+ffffff8002260aa7: mov      ecx, 0xd0
+ffffff8002260aac: mov      r8, qword ptr [rbp - 0x38]
+ffffff8002260ab0: xor      eax, eax
+ffffff8002260ab2: push     r10
+ffffff8002260ab4: push     qword ptr [rbp - 0x40]
+ffffff8002260ab7: push     qword ptr [rbp - 0x48]
+ffffff8002260aba: push     qword ptr [rbp - 0x50]
+ffffff8002260abd: push     qword ptr [rbp - 0x58]
+ffffff8002260ac0: push     qword ptr [rbp - 0x60]
+ffffff8002260ac3: push     qword ptr [rbp - 0x68]
+ffffff8002260ac6: push     qword ptr [rbp - 0x70]
+ffffff8002260ac9: push     qword ptr [rbp - 0x78]
+ffffff8002260acc: push     qword ptr [rbp - 0x80]
+ffffff8002260acf: push     qword ptr [rbp - 0x88]
+ffffff8002260ad5: push     qword ptr [rbp - 0x90]
+ffffff8002260adb: push     r15
+ffffff8002260add: push     r11
+ffffff8002260adf: push     qword ptr [rbp - 0x30]
+ffffff8002260ae2: call     0xffffff80031d252e  ; __ZN11CCLogStream8logAlertEPKcz
+ffffff8002260ae7: add      rsp, 0x80
+ffffff8002260aee: mov      rcx, qword ptr [rbx + 0x10]
+ffffff8002260af2: jmp      0xffffff8002260986  ; __ZN22IO80211MacAddressAgent16updateMacAddressER10ether_addrjb+0x92
+ffffff8002260af7: nop      

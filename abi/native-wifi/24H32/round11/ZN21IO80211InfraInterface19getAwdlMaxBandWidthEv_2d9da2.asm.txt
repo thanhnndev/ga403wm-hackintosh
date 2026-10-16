@@ -1,0 +1,38 @@
+# 0xffffff80022d9da2 __ZN21IO80211InfraInterface19getAwdlMaxBandWidthEv
+ffffff80022d9da2: push     rbp
+ffffff80022d9da3: mov      rbp, rsp
+ffffff80022d9da6: push     rbx
+ffffff80022d9da7: push     rax
+ffffff80022d9da8: mov      rbx, rdi
+ffffff80022d9dab: mov      rax, qword ptr [rdi]
+ffffff80022d9dae: call     qword ptr [rax + 0xba8]
+ffffff80022d9db4: test     rax, rax
+ffffff80022d9db7: je       0xffffff80022d9e1a
+ffffff80022d9db9: mov      rax, qword ptr [rbx]
+ffffff80022d9dbc: mov      rdi, rbx
+ffffff80022d9dbf: call     qword ptr [rax + 0xba8]
+ffffff80022d9dc5: mov      rax, qword ptr [rax + 0x120]
+ffffff80022d9dcc: cmp      qword ptr [rax + 0x188], 0
+ffffff80022d9dd4: je       0xffffff80022d9e1a
+ffffff80022d9dd6: mov      rax, qword ptr [rbx]
+ffffff80022d9dd9: mov      rdi, rbx
+ffffff80022d9ddc: call     qword ptr [rax + 0xba8]
+ffffff80022d9de2: mov      rax, qword ptr [rax + 0x120]
+ffffff80022d9de9: mov      rax, qword ptr [rax + 0x188]
+ffffff80022d9df0: mov      rax, qword ptr [rax + 0x110]
+ffffff80022d9df7: mov      rdi, qword ptr [rax + 0x28]
+ffffff80022d9dfb: lea      rsi, [rip + 0x11d1de]  ; 0xffffff80023f6fe0
+ffffff80022d9e02: call     0xffffff8000a49ab0  ; __ZN15OSMetaClassBase12safeMetaCastEPKS_PK11OSMetaClass
+ffffff80022d9e07: test     rax, rax
+ffffff80022d9e0a: je       0xffffff80022d9e1a
+ffffff80022d9e0c: mov      rdi, rax
+ffffff80022d9e0f: add      rsp, 8
+ffffff80022d9e13: pop      rbx
+ffffff80022d9e14: pop      rbp
+ffffff80022d9e15: jmp      0xffffff80021c7a72  ; __ZN22IO80211AWDLPeerManager19getAwdlMaxBandWidthEv
+ffffff80022d9e1a: xor      eax, eax
+ffffff80022d9e1c: add      rsp, 8
+ffffff80022d9e20: pop      rbx
+ffffff80022d9e21: pop      rbp
+ffffff80022d9e22: ret      
+ffffff80022d9e23: nop      

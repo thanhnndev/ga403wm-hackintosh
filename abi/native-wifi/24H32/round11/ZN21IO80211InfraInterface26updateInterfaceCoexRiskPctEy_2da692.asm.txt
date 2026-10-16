@@ -1,0 +1,25 @@
+# 0xffffff80022da692 __ZN21IO80211InfraInterface26updateInterfaceCoexRiskPctEy
+ffffff80022da692: push     rbp
+ffffff80022da693: mov      rbp, rsp
+ffffff80022da696: push     rbx
+ffffff80022da697: push     rax
+ffffff80022da698: mov      rbx, rsi
+ffffff80022da69b: cmp      rsi, 0x65
+ffffff80022da69f: jae      0xffffff80022da6b6
+ffffff80022da6a1: mov      rax, qword ptr [rdi + 0x118]
+ffffff80022da6a8: mov      qword ptr [rax + 0x120], rbx
+ffffff80022da6af: call     0xffffff80022da6e6  ; __ZN21IO80211InfraInterface23reportDataTransferRatesEv
+ffffff80022da6b4: jmp      0xffffff80022da6d7  ; __ZN21IO80211InfraInterface26updateInterfaceCoexRiskPctEy+0x45
+ffffff80022da6b6: lea      rdi, [rip + 0xbf2f1]  ; 0xffffff80023999ae
+ffffff80022da6bd: lea      rsi, [rip + 0xbf30c]  ; "/AppleInternal/Library/BuildRoots/4~CW9mugA6gpmKPwyaAeCNWSZRmRlk6mvK_U3N5n0/Libr"
+ffffff80022da6c4: lea      rdx, [rip + 0xc05d3]  ; "updateInterfaceCoexRiskPct"
+ffffff80022da6cb: mov      ecx, 0xa90
+ffffff80022da6d0: xor      eax, eax
+ffffff80022da6d2: call     0xffffff8000ab6560  ; _IOLog
+ffffff80022da6d7: cmp      rbx, 0x65
+ffffff80022da6db: setb     al
+ffffff80022da6de: add      rsp, 8
+ffffff80022da6e2: pop      rbx
+ffffff80022da6e3: pop      rbp
+ffffff80022da6e4: ret      
+ffffff80022da6e5: nop      

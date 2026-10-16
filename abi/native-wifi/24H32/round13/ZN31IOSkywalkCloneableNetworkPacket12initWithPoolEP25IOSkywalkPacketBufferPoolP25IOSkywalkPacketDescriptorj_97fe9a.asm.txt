@@ -1,0 +1,39 @@
+# 0xffffff800297fe9a __ZN31IOSkywalkCloneableNetworkPacket12initWithPoolEP25IOSkywalkPacketBufferPoolP25IOSkywalkPacketDescriptorj
+ffffff800297fe9a: push     rbp
+ffffff800297fe9b: mov      rbp, rsp
+ffffff800297fe9e: push     r15
+ffffff800297fea0: push     r14
+ffffff800297fea2: push     rbx
+ffffff800297fea3: push     rax
+ffffff800297fea4: mov      r14, rdx
+ffffff800297fea7: mov      r15, rsi
+ffffff800297feaa: mov      rbx, rdi
+ffffff800297fead: lea      rax, [rip + 0x2d304]  ; 0xffffff80029ad1b8
+ffffff800297feb4: mov      rsi, qword ptr [rax]
+ffffff800297feb7: mov      rdi, r15
+ffffff800297feba: call     0xffffff8000a49ab0  ; __ZN15OSMetaClassBase12safeMetaCastEPKS_PK11OSMetaClass
+ffffff800297febf: mov      rcx, rax
+ffffff800297fec2: xor      eax, eax
+ffffff800297fec4: test     r14, r14
+ffffff800297fec7: je       0xffffff800297fefa
+ffffff800297fec9: test     rcx, rcx
+ffffff800297fecc: je       0xffffff800297fefa
+ffffff800297fece: lea      rax, [rip + 0x2db93]  ; 0xffffff80029ada68
+ffffff800297fed5: mov      rdi, rbx
+ffffff800297fed8: call     qword ptr [rax + 0x98]
+ffffff800297fede: test     al, al
+ffffff800297fee0: je       0xffffff800297fef8
+ffffff800297fee2: mov      qword ptr [rbx + 0x40], r15
+ffffff800297fee6: mov      eax, dword ptr [r14]
+ffffff800297fee9: mov      dword ptr [rbx + 0x68], eax
+ffffff800297feec: mov      qword ptr [rbx + 0x48], 0
+ffffff800297fef4: mov      al, 1
+ffffff800297fef6: jmp      0xffffff800297fefa  ; __ZN31IOSkywalkCloneableNetworkPacket12initWithPoolEP25IOSkywalkPacketBufferPoolP25IOSkywalkPacketDescriptorj+0x60
+ffffff800297fef8: xor      eax, eax
+ffffff800297fefa: add      rsp, 8
+ffffff800297fefe: pop      rbx
+ffffff800297feff: pop      r14
+ffffff800297ff01: pop      r15
+ffffff800297ff03: pop      rbp
+ffffff800297ff04: ret      
+ffffff800297ff05: nop      

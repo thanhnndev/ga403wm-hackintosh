@@ -1,0 +1,11 @@
+# 0xffffff800297610e __ZN18IOSkywalkBSDClient7messageEjP9IOServicePv
+ffffff800297610e: cmp      esi, 0xe0061000
+ffffff8002976114: jne      0xffffff8002976123
+ffffff8002976116: push     rbp
+ffffff8002976117: mov      rbp, rsp
+ffffff800297611a: call     0xffffff800297604a  ; __ZN18IOSkywalkBSDClient16resetIOReportingEv
+ffffff800297611f: xor      eax, eax
+ffffff8002976121: pop      rbp
+ffffff8002976122: ret      
+ffffff8002976123: mov      rax, qword ptr [rip + 0x30fe6]  ; 0xffffff80029a7110
+ffffff800297612a: jmp      qword ptr [rax + 0x740]

@@ -1,0 +1,22 @@
+# 0xffffff800298338e __ZN25IOSkywalkNetworkInterface13getLocalPortsEjjPh
+ffffff800298338e: push     rbp
+ffffff800298338f: mov      rbp, rsp
+ffffff8002983392: test     esi, 0xfffffffd
+ffffff8002983398: setne    al
+ffffff800298339b: cmp      esi, 0x1e
+ffffff800298339e: setne    r8b
+ffffff80029833a2: and      r8b, al
+ffffff80029833a5: test     rcx, rcx
+ffffff80029833a8: sete     al
+ffffff80029833ab: or       al, r8b
+ffffff80029833ae: mov      eax, 0xe00002c2
+ffffff80029833b3: jne      0xffffff80029833d0
+ffffff80029833b5: mov      rax, qword ptr [rdi + 0xb8]
+ffffff80029833bc: mov      rdi, qword ptr [rax + 8]
+ffffff80029833c0: test     rdi, rdi
+ffffff80029833c3: je       0xffffff80029833cb
+ffffff80029833c5: pop      rbp
+ffffff80029833c6: jmp      0xffffff80006a0360  ; _ifnet_get_local_ports_extended
+ffffff80029833cb: mov      eax, 0xe00002cd
+ffffff80029833d0: pop      rbp
+ffffff80029833d1: ret      

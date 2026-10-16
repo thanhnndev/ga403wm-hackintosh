@@ -223,16 +223,16 @@ int itlmt7925::m3TxPower()
                 uint32_t freq = g2 ? (ch == 14 ? 2484u : 2407u + 5u * ch) : 5000u + 5u * ch;
                 uint8_t *e = msg + 52 + (unsigned)j * (1 + SKU_LEN);
                 e[0] = ch;
-                // The world domain supplies a conservative 20 dBm ceiling; CLC may lower it further.
+                // The world domain supplies a conservative ceiling (pwrCeil, 40 = 20 dBm); CLC may lower it further.
                 int8_t limit = sarFor(sarPwr, freq);
-                if (limit > 40) limit = 40;
+                if (limit > (int8_t)pwrCeil) limit = (int8_t)pwrCeil;
                 buildSku((int8_t *)e + 1, limit, g2);
             }
             rc = powerCmd(msg, len, "txpower_batch");
             cmds++;
         }
     }
-    m3log("txpower: %d commands, world ceiling 40, SAR 2g %d 5g %d (0.5 dBm) rc=%d",
-          cmds, sarFor(sarPwr, 2437), sarFor(sarPwr, 5200), rc);
+    m3log("txpower: %d commands, world ceiling %u, SAR 2g %d 5g %d (0.5 dBm) rc=%d",
+          cmds, (unsigned)pwrCeil, sarFor(sarPwr, 2437), sarFor(sarPwr, 5200), rc);
     return rc;
 }

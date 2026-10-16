@@ -1,0 +1,8 @@
+# 0xffffff8002980c1e __ZN20IOSkywalkPacketQueue16packetCompletionEP15IOSkywalkPacketPS_j
+ffffff8002980c1e: push     rbp
+ffffff8002980c1f: mov      rbp, rsp
+ffffff8002980c22: lea      rdi, [rip + 0x25083]  ; ""default packetCompletion()" @%s:%d"
+ffffff8002980c29: lea      rsi, [rip + 0x250a0]  ; "IOSkywalkPacketQueue.cpp"
+ffffff8002980c30: mov      edx, 0x13e
+ffffff8002980c35: xor      eax, eax
+ffffff8002980c37: call     0xffffff8000bd073c  ; _panic

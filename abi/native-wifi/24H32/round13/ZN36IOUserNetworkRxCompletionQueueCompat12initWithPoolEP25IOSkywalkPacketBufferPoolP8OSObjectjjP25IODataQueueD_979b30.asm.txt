@@ -1,0 +1,39 @@
+# 0xffffff8002979b30 __ZN36IOUserNetworkRxCompletionQueueCompat12initWithPoolEP25IOSkywalkPacketBufferPoolP8OSObjectjjP25IODataQueueDispatchSource
+ffffff8002979b30: push     rbp
+ffffff8002979b31: mov      rbp, rsp
+ffffff8002979b34: push     r14
+ffffff8002979b36: push     rbx
+ffffff8002979b37: mov      rax, r9
+ffffff8002979b3a: mov      r9d, r8d
+ffffff8002979b3d: mov      r8d, ecx
+ffffff8002979b40: mov      r10, rdx
+ffffff8002979b43: test     rsi, rsi
+ffffff8002979b46: sete     cl
+ffffff8002979b49: cmp      r8d, 2
+ffffff8002979b4d: setb     dl
+ffffff8002979b50: or       dl, cl
+ffffff8002979b52: je       0xffffff8002979b59
+ffffff8002979b54: xor      r14d, r14d
+ffffff8002979b57: jmp      0xffffff8002979b96  ; __ZN36IOUserNetworkRxCompletionQueueCompat12initWithPoolEP25IOSkywalkPacketBufferPoolP8OSObjectjjP25IODataQueueDispatchSource+0x66
+ffffff8002979b59: mov      rbx, rdi
+ffffff8002979b5c: lea      r11, [rip + 0x3223d]  ; 0xffffff80029abda0
+ffffff8002979b63: xor      r14d, r14d
+ffffff8002979b66: xor      edx, edx
+ffffff8002979b68: mov      ecx, 2
+ffffff8002979b6d: push     r14
+ffffff8002979b6f: push     rax
+ffffff8002979b70: push     r14
+ffffff8002979b72: push     r10
+ffffff8002979b74: call     qword ptr [r11 + 0x2a8]
+ffffff8002979b7b: add      rsp, 0x20
+ffffff8002979b7f: test     al, al
+ffffff8002979b81: je       0xffffff8002979b96
+ffffff8002979b83: call     0xffffff8000afa570  ; __ZN10IOWorkLoop8workLoopEv
+ffffff8002979b88: mov      qword ptr [rbx + 0x108], rax
+ffffff8002979b8f: test     rax, rax
+ffffff8002979b92: setne    r14b
+ffffff8002979b96: mov      eax, r14d
+ffffff8002979b99: pop      rbx
+ffffff8002979b9a: pop      r14
+ffffff8002979b9c: pop      rbp
+ffffff8002979b9d: ret      

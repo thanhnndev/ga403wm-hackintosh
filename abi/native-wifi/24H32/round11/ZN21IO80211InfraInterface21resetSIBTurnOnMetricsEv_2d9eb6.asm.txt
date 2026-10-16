@@ -1,0 +1,60 @@
+# 0xffffff80022d9eb6 __ZN21IO80211InfraInterface21resetSIBTurnOnMetricsEv
+ffffff80022d9eb6: push     rbp
+ffffff80022d9eb7: mov      rbp, rsp
+ffffff80022d9eba: push     r14
+ffffff80022d9ebc: push     rbx
+ffffff80022d9ebd: sub      rsp, 0x20
+ffffff80022d9ec1: mov      rbx, rdi
+ffffff80022d9ec4: mov      rax, qword ptr [rip + 0xe224d]  ; 0xffffff80023bc118
+ffffff80022d9ecb: mov      rax, qword ptr [rax]
+ffffff80022d9ece: mov      qword ptr [rbp - 0x18], rax
+ffffff80022d9ed2: mov      rax, qword ptr [rdi + 0x118]
+ffffff80022d9ed9: xor      r9d, r9d
+ffffff80022d9edc: mov      qword ptr [rax + 0xa8], r9
+ffffff80022d9ee3: mov      dword ptr [rax + 0xb8], r9d
+ffffff80022d9eea: mov      dword ptr [rax + 0xb0], r9d
+ffffff80022d9ef1: mov      dword ptr [rax + 0xc4], r9d
+ffffff80022d9ef8: mov      qword ptr [rax + 0xc8], r9
+ffffff80022d9eff: mov      qword ptr [rax + 0xd8], r9
+ffffff80022d9f06: mov      qword ptr [rax + 0xd0], r9
+ffffff80022d9f0d: mov      qword ptr [rax + 0xe0], r9
+ffffff80022d9f14: mov      qword ptr [rax + 0xe8], r9
+ffffff80022d9f1b: mov      qword ptr [rax + 0xf0], r9
+ffffff80022d9f22: mov      r8d, 0
+ffffff80022d9f28: cmp      dword ptr [rax + 0xbc], r9d
+ffffff80022d9f2f: je       0xffffff80022d9f8d
+ffffff80022d9f31: mov      dword ptr [rax + 0xc4], 1
+ffffff80022d9f3b: lea      r14, [rbp - 0x20]
+ffffff80022d9f3f: mov      qword ptr [r14], 0
+ffffff80022d9f46: call     0xffffff80003cbf20  ; _mach_continuous_time
+ffffff80022d9f4b: mov      rdi, rax
+ffffff80022d9f4e: mov      rsi, r14
+ffffff80022d9f51: call     0xffffff8000536d80  ; _absolutetime_to_nanoseconds
+ffffff80022d9f56: mov      rax, qword ptr [r14]
+ffffff80022d9f59: shr      rax, 9
+ffffff80022d9f5d: movabs   rcx, 0x44b82fa09b5a53
+ffffff80022d9f67: mul      rcx
+ffffff80022d9f6a: mov      r9, rdx
+ffffff80022d9f6d: shr      r9, 0xb
+ffffff80022d9f71: mov      rax, qword ptr [rbx + 0x118]
+ffffff80022d9f78: mov      qword ptr [rax + 0xe8], r9
+ffffff80022d9f7f: mov      qword ptr [rax + 0xe0], r9
+ffffff80022d9f86: mov      r8d, dword ptr [rax + 0xbc]
+ffffff80022d9f8d: mov      qword ptr [rsp], r9
+ffffff80022d9f91: lea      rdx, [rip + 0xc0c40]  ; "%s CoP Call Enable reset ULLA CoexMode:%d CoPULLAStart:%d UllaChangeOnCoP:%d"
+ffffff80022d9f98: lea      rcx, [rip + 0xc0c86]  ; "resetSIBTurnOnMetrics"
+ffffff80022d9f9f: movabs   rsi, 0x800000000000000
+ffffff80022d9fa9: mov      rdi, rbx
+ffffff80022d9fac: xor      eax, eax
+ffffff80022d9fae: call     0xffffff8002261f9e  ; __ZN23IO80211SkywalkInterface8logDebugEyPKcz
+ffffff80022d9fb3: mov      rax, qword ptr [rip + 0xe215e]  ; 0xffffff80023bc118
+ffffff80022d9fba: mov      rax, qword ptr [rax]
+ffffff80022d9fbd: cmp      rax, qword ptr [rbp - 0x18]
+ffffff80022d9fc1: jne      0xffffff80022d9fcc
+ffffff80022d9fc3: add      rsp, 0x20
+ffffff80022d9fc7: pop      rbx
+ffffff80022d9fc8: pop      r14
+ffffff80022d9fca: pop      rbp
+ffffff80022d9fcb: ret      
+ffffff80022d9fcc: call     0xffffff8000383150  ; ___stack_chk_fail
+ffffff80022d9fd1: nop      

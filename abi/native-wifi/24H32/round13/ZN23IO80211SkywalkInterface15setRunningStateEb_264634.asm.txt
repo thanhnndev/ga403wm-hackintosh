@@ -1,0 +1,11 @@
+# 0xffffff8002264634 __ZN23IO80211SkywalkInterface15setRunningStateEb
+ffffff8002264634: push     rbp
+ffffff8002264635: mov      rbp, rsp
+ffffff8002264638: mov      rax, qword ptr [rdi + 0x110]
+ffffff800226463f: mov      byte ptr [rax + 0x88], sil
+ffffff8002264646: lea      rdi, [rip + 0x11a44c]  ; 0xffffff800237ea99
+ffffff800226464d: xor      eax, eax
+ffffff800226464f: call     0xffffff8000ab6560  ; _IOLog
+ffffff8002264654: xor      eax, eax
+ffffff8002264656: pop      rbp
+ffffff8002264657: ret      

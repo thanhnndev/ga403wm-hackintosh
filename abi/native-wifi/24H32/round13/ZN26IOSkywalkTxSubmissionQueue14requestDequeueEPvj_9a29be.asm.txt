@@ -1,0 +1,42 @@
+# 0xffffff80029a29be __ZN26IOSkywalkTxSubmissionQueue14requestDequeueEPvj
+ffffff80029a29be: push     rbp
+ffffff80029a29bf: mov      rbp, rsp
+ffffff80029a29c2: push     r14
+ffffff80029a29c4: push     rbx
+ffffff80029a29c5: cmp      qword ptr [rdi + 0x30], 0
+ffffff80029a29ca: je       0xffffff80029a2a35
+ffffff80029a29cc: mov      rbx, rdi
+ffffff80029a29cf: test     dl, 1
+ffffff80029a29d2: jne      0xffffff80029a2a01
+ffffff80029a29d4: mov      rdi, rbx
+ffffff80029a29d7: call     0xffffff8000afb010  ; __ZN13IOEventSource9closeGateEv
+ffffff80029a29dc: cmp      qword ptr [rbx + 0x78], 0
+ffffff80029a29e1: je       0xffffff80029a2a1f
+ffffff80029a29e3: mov      rax, qword ptr [rbx + 0x100]
+ffffff80029a29ea: inc      qword ptr [rax + 0x28]
+ffffff80029a29ee: mov      rax, qword ptr [rbx]
+ffffff80029a29f1: mov      rdi, rbx
+ffffff80029a29f4: xor      esi, esi
+ffffff80029a29f6: call     qword ptr [rax + 0x1d8]
+ffffff80029a29fc: mov      r14d, eax
+ffffff80029a29ff: jmp      0xffffff80029a2a25  ; __ZN26IOSkywalkTxSubmissionQueue14requestDequeueEPvj+0x67
+ffffff80029a2a01: mov      rax, qword ptr [rbx + 0x100]
+ffffff80029a2a08: inc      qword ptr [rax + 0x30]
+ffffff80029a2a0c: inc      dword ptr [rbx + 0x148]
+ffffff80029a2a12: mov      rdi, rbx
+ffffff80029a2a15: call     0xffffff8000afafb0  ; __ZN13IOEventSource19signalWorkAvailableEv
+ffffff80029a2a1a: xor      r14d, r14d
+ffffff80029a2a1d: jmp      0xffffff80029a2a2d  ; __ZN26IOSkywalkTxSubmissionQueue14requestDequeueEPvj+0x6f
+ffffff80029a2a1f: mov      r14d, 0xe00002d8
+ffffff80029a2a25: mov      rdi, rbx
+ffffff80029a2a28: call     0xffffff8000afafd0  ; __ZN13IOEventSource8openGateEv
+ffffff80029a2a2d: mov      eax, r14d
+ffffff80029a2a30: pop      rbx
+ffffff80029a2a31: pop      r14
+ffffff80029a2a33: pop      rbp
+ffffff80029a2a34: ret      
+ffffff80029a2a35: mov      r14d, 0xe00002d8
+ffffff80029a2a3b: jmp      0xffffff80029a2a2d  ; __ZN26IOSkywalkTxSubmissionQueue14requestDequeueEPvj+0x6f
+ffffff80029a2a3d: nop      
+ffffff80029a2a3e: nop      
+ffffff80029a2a3f: nop      

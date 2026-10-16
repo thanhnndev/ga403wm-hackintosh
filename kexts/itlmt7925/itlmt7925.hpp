@@ -13,6 +13,7 @@
 
 #include "itl_caps.h"
 #include "itl_ba.h"
+#include "itl_native_bridge.h"
 
 class itlmt7925Eth;
 class IOUserClient;
@@ -52,6 +53,7 @@ public:
     bool start(IOService *provider) override;
     void stop(IOService *provider) override;
     void free() override;
+    IOReturn callPlatformFunction(const OSSymbol *, bool, void *, void *, void *, void *) override;
     // Ethernet interface glue (itlmt7925_eth.cpp): frames from the network stack / frames received from the AP
     // 0 sent, 1 no TX buffer free (the output queue keeps the frame until ethTxKick()), -1 dropped
     int  ethTx(const uint8_t *frame, uint32_t len);
@@ -70,6 +72,9 @@ public:
     IOReturn ucDisconnect();
 
 private:
+    bool nativeMode = false;
+    IOLock *nativeLock = nullptr;
+    ItlNativeSink nativeSink = {};
     IOPCIDevice *pci = nullptr;
     IOMemoryMap *bar0 = nullptr;
     volatile uint8_t *regs = nullptr;
@@ -128,7 +133,9 @@ private:
     uint32_t rxPkts = 0, rxBeacons = 0, rxOther = 0, rxDump = 0;
     uint32_t evCount = 0;
     // sec: ITL_SEC_* (itlmt7925_uc.cpp); rssi in dBm, 0 = not measured; seenMs = nowMs() of the last beacon / probe response
-    struct itl_ap { uint8_t bssid[6]; uint8_t ch; char ssid[33]; int8_t rssi; uint8_t sec; uint32_t seenMs; } aps[48];
+    // cap / bcnInt / ie / probe: the frame as heard (native Wi-Fi hands them to the Family as the scan result's beacon message)
+    struct itl_ap { uint8_t bssid[6]; uint8_t ch; char ssid[33]; int8_t rssi; uint8_t sec; uint32_t seenMs;
+                    uint8_t probe; uint16_t cap, bcnInt, ieLen; uint8_t ie[ITL_NATIVE_IE_MAX]; } aps[ITL_NATIVE_AP_MAX];
     int nAps = 0;
     uint8_t mcuSeq = 0;
     // M3 (boot-arg itlmt_m3=1, implies M2): associate to the configured network, WPA2-PSK, Ethernet interface
@@ -140,6 +147,7 @@ private:
     void m3Capture(const uint8_t *frame, uint32_t len, const char *ssid, uint8_t ch);
     int  m3Cmd(uint8_t cid, const void *payload, size_t plen, const char *name);
     int  m3HwPrep();
+    void ctlPoll();                          // link loop: take run-time control requests (setProperties)
     int  m3Bss(bool enable);
     int  m3Clc(const char *cc, uint8_t env);   // CLC power tables from the RAM firmware for country cc
     int  clcSend(const uint8_t *clc, const char *cc, uint8_t env, uint8_t idx);
@@ -180,8 +188,17 @@ private:
     // step 4: association complete -> 4-way handshake, keys, Ethernet interface, data path
     bool m3dataOn = false;                   // data frames from the AP are handled (set after association)
     bool m3wantEapol = false;
+    bool m3hsApLeave = false;
+    uint16_t m3hsApReason = 0;
     uint8_t m3eapol[420] = {0};
     uint32_t m3eapolLen = 0;
+    // RX polling may deliver several EAPOL packets before the handshake gets CPU time.
+    // Only the core worker produces/consumes this queue; no network-stack callback accesses it.
+    static const uint32_t kEapolQueue = 8;
+    struct EapolRx { uint32_t len; uint8_t data[420]; };
+    EapolRx m3eapolQueue[kEapolQueue] = {};
+    uint32_t m3eapolHead = 0, m3eapolTail = 0, m3eapolDrops = 0;
+    bool m3EapolNext();
     uint8_t m3ptk[48] = {0};                 // KCK(16) KEK(16) TK(16)
     bool m3sleepy = false;                   // m3Pump sleeps instead of spinning once the link is up
     volatile bool m3linkUp = false;
@@ -195,6 +212,17 @@ private:
     bool m3TxData(const uint8_t *da, uint16_t ethertype, const uint8_t *payload, uint32_t plen, bool protect,
                   bool *full = nullptr);
     void m3Note(const char *dir, const uint8_t *eth, uint32_t len);
+    // Post-mortem: the last Ethernet frames in either direction and one line of chip / ring / PCIe state, published as the
+    // properties "wifi-frames" and "wifi-postmortem" when the firmware stops answering. chipRecover() redoes M1 + M2.
+    struct FrameRec { uint32_t ms; uint16_t len, et, a, b; uint8_t dir, proto; };
+    static const int kFrRing = 24;
+    FrameRec frRing[kFrRing] = {};
+    uint32_t frHead = 0;
+    bool recoverWanted = false;
+    uint32_t recoverCnt = 0;
+    void frameNote(char dir, const uint8_t *eth, uint32_t len);
+    void m3Postmortem(const char *tag);
+    bool chipRecover();
     void m3Link();
     void nvramStat(const char *msg);
     bool m3Tx(const uint8_t *frame, uint32_t len, uint8_t type, uint8_t subtype, bool protect = false)
@@ -235,6 +263,9 @@ private:
     uint8_t fastLevel = 0;                   // requested by the boot-arg
     uint8_t lvl = 0;                         // level of the current attempt, 0 = legacy 6 Mb/s
     uint8_t lvlCap = 255;                    // highest level not given up on the current network (reset when the network changes)
+    char capSsid[33] = {0};                  // the network lvlCap belongs to: kept across disconnects and failed joins, so that a
+    uint32_t capMs = 0;                      // retry from the user starts at the level that worked, not at itlmt_fast again (10 min)
+    uint8_t capBand = 0;                     // band the cap was learned on (1 = 2.4 GHz, 2 = 5 GHz): another band starts over
     bool m3stepDown = false;                 // set when the attempt at `lvl` failed; m3Run() then retries one level lower
     bool m3stepRadio = false;                // ... because of radio conditions (tx failing), not because the AP rejects the level
     bool m3reachedAssoc = false;
@@ -268,6 +299,39 @@ private:
     // 100 ms; measured here: 1258 timeouts in 536 s at 100 ms = 23 % of the time with the receive path held, while a hole is
     // either filled by the AP's retry within a few ms or never. 30 ms keeps the retries and cuts the stalls.
     uint32_t reoMs = 30;
+    // Boot-arg itlmt_no160=1: never run a 160 MHz channel (level 5/6 stay 80 MHz; HE keeps working). A/B for 160 MHz links where
+    // the AP re-sends ~9 % of the frames already received (its Block Acks from us do not arrive) and holes never fill.
+    bool no160 = false;
+    // Boot-arg itlmt_nopwr=1: no CLC / SAR power tables at join (the firmware's own defaults, as the benchmarks before a45e8c1
+    // ran); the tables can then be sent at run time (ctlPwr) for a before/after comparison in one boot.
+    bool noPwr = false;
+    // A-MSDU receive stays off by default (levels 4..6 run without it): the round 26 matrix gave 5.6 MB/s at level 3 and 25-60 KB/s
+    // at every level with A-MSDU in the Block Ack agreement, same AP / radio / tables. Boot-arg itlmt_amsdu=1 or itl_amsdu=1
+    // (run time, with the next reconnect) turn it back on for the diagnosis.
+    bool noAmsdu = true;
+    uint32_t stAmsduAi[4] = {}, stAmsduN[5] = {}, stBundleOvf = 0;   // RXD4 payload format seen, subframes per packet (0..3, 4+), bundle full
+    uint8_t pwrCeil = 40;                   // per-rate ceiling of the SKU tables, 0.5 dBm (m3TxPower)
+    uint32_t statSecs = 0;                   // boot-arg itlmt_stat=<s>: stat-log period (default 5 s for 5 min, then 60 s)
+    // Run-time control (IORegistryEntrySetCFProperties, administrator only; tools/itlctl.c). Taken by the link loop, so an A/B
+    // does not need a reboot: itl_lvl = reconnect at that level, itl_no160, itl_reo = reorder timeout ms, itl_pwr = send the
+    // power tables now with that per-rate ceiling (0.5 dBm).
+    volatile uint32_t ctlLvl = 0, ctlPwr = 0;
+    uint8_t lvlForce = 0;                    // level the next reconnect uses (set from ctlLvl), 0 = the ladder's own choice
+    int  m3PowerSetup();                     // efuse hw type + CLC + SKU tables; best effort, 0 when the link may go on
+    IOReturn setProperties(OSObject *props) override;
+    // Where do the large frames go: classes of the Ethernet frame length (<128, <512, <1024, <1280, <1400, >=1400) at the RX ring,
+    // after A-MSDU / header parsing, and when handed to the stack; big ICMP echoes (>= 1000 B) at the same stages and on TX.
+    uint32_t szRing[6] = {}, szParsed[6] = {}, szDeliv[6] = {}, szOther[6] = {};
+    uint32_t icmpRepParsed = 0, icmpRepDeliv = 0, icmpReqTx = 0;
+    static uint8_t szClass(uint32_t n) { return n < 128 ? 0 : n < 512 ? 1 : n < 1024 ? 2 : n < 1280 ? 3 : n < 1400 ? 4 : 5; }
+    static bool isBigEcho(const uint8_t *e, uint32_t n, uint8_t type) {
+        return n >= 1000 && n >= 34 && e[12] == 0x08 && e[13] == 0x00 && e[23] == 1 && e[14 + ((e[14] & 15) * 4)] == type;
+    }
+    // one sample per second: [eth delivered, ring frames, tx, fw retries, tx no-slot stalls, reorder old, reorder timeouts]
+    static const uint32_t kTsN = 90;
+    uint32_t tsRing[kTsN][7] = {};
+    uint32_t tsHead = 0, tsLastMs = 0, tsPrev[7] = {};
+    void tsSample(uint32_t now);
     char rssiProbe[700] = {0};               // RXD layout samples of the first beacons with RX vector, for the signal decoder
     uint8_t rssiProbeN = 0;
     // A-MSDU receive (level 4): the hardware splits an A-MSDU into one RX packet per subframe (first / middle / last in RXD4),
@@ -276,6 +340,12 @@ private:
     AmsduAsm amsduAsm = {};
     uint32_t stAmsduPkt = 0, stAmsduSub = 0, stAmsduBad = 0, stRxBigDrop = 0;
     uint32_t amsduLogged = 0, amsduBadLogged = 0, rxdLogged = 0;
+    // 802.11 duplicate detection for unicast data outside a Block Ack reorder window: the AP resends an MPDU whose ACK it did not
+    // hear (Retry bit set, same sequence number), and nothing below this driver drops it. Index = TID, 8 = non-QoS.
+    uint16_t rxLastSn[9] = {};
+    uint16_t rxLastValid = 0;
+    uint32_t stRxDupL = 0;
+    uint32_t stRxRetry = 0, stRxPkt = 0;     // unicast QoS data MPDUs with the Retry bit / all unicast QoS data MPDUs (AP resends)
     uint32_t txfWinFree = 0, txfWinFail = 0, txfBad = 0;   // TX failure watchdog (level >= 3), 5 s windows
     volatile bool ethStalled = false;        // the Ethernet output queue is stalled on a full TX pool (under txLock)
     uint32_t ethStallMs = 0;
@@ -311,6 +381,8 @@ private:
     char m1buf[3072] = {0};
     size_t m1len = 0;
     bool m1Started = false;
+    bool regPending = false;              // native mode: registerService() waits until the firmware MAC is known (publishService)
+    void publishService();
     bool driverOwn();
     void dumpState();
     void holdLog();
@@ -322,7 +394,8 @@ private:
 
     // ---- runtime control: command mailbox, supervisor loop, status for the menu bar app (itlmt7925_uc.cpp) ----
     enum { CMD_SCAN = 1, CMD_JOIN = 2, CMD_DISCONNECT = 4 };
-    struct Net { char ssid[33]; char psk[72]; };
+    // hasPmk: `pmk` is the ready pairwise master key (native Wi-Fi: userland's supplicant derived it), psk is empty then
+    struct Net { char ssid[33]; char psk[72]; bool hasPmk; bool native; uint8_t pmk[32]; };
     IOLock *cmdLock = nullptr;
     volatile uint32_t cmdBits = 0;
     Net reqNet = {};                         // the network of the last join command (under cmdLock)
@@ -342,9 +415,16 @@ private:
     int8_t rxRssi(const uint8_t *p, uint32_t len, uint32_t hdrOff);
     char wstate[16] = {0};
     uint32_t scanGen = 0;
+    volatile uint32_t scanBusy = 0;          // a scan is queued (CMD_SCAN) or running (native Wi-Fi reads it through ITL_NATIVE_NETS)
+    // native Wi-Fi join bookkeeping, read by ITL_NATIVE_STATUS: njState is ITL_NATIVE_*, njSeq counts joins, njFail a stage code
+    volatile uint32_t njState = 0, njSeq = 0, njFail = 0;
+    IOReturn nativeScanReq(uint32_t *started);
+    IOReturn nativeJoin(const struct ItlNativeJoin *j);
+    void nativeStatus(struct ItlNativeStatus *s);
+    void nativeNets(struct ItlNativeNets *n);
     volatile bool m3lost = false;            // the AP sent deauthentication / disassociation, or went silent
     char m3lostWhy[48] = {0};
-    char evbuf[1500] = {0};                  // wifi-events: the last link events of this boot, one per line, oldest first
+    char evbuf[6000] = {0};                  // wifi-events: the last link events of this boot, one per line, oldest first
     size_t evlen = 0;
     void evLog(const char *fmt, ...) __attribute__((format(printf, 2, 3)));
     uint32_t tgtLastBcnMs = 0, lastRxDataMs = 0;

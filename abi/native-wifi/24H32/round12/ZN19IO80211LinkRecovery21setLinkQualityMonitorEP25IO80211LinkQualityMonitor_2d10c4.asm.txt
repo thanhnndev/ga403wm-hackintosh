@@ -1,0 +1,8 @@
+# 0xffffff80022d10c4 __ZN19IO80211LinkRecovery21setLinkQualityMonitorEP25IO80211LinkQualityMonitor
+ffffff80022d10c4: push     rbp
+ffffff80022d10c5: mov      rbp, rsp
+ffffff80022d10c8: mov      rax, qword ptr [rdi + 0x10]
+ffffff80022d10cc: mov      qword ptr [rax + 0x510], rsi
+ffffff80022d10d3: pop      rbp
+ffffff80022d10d4: ret      
+ffffff80022d10d5: nop      

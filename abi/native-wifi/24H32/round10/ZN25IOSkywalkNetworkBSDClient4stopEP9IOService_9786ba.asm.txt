@@ -1,0 +1,41 @@
+# 0xffffff80029786ba __ZN25IOSkywalkNetworkBSDClient4stopEP9IOService
+ffffff80029786ba: push     rbp
+ffffff80029786bb: mov      rbp, rsp
+ffffff80029786be: push     r14
+ffffff80029786c0: push     rbx
+ffffff80029786c1: mov      rbx, rsi
+ffffff80029786c4: mov      r14, rdi
+ffffff80029786c7: cmp      qword ptr [rdi + 0x120], 0
+ffffff80029786cf: je       0xffffff80029786e5
+ffffff80029786d1: call     0xffffff8000ad5ec0  ; __ZN9IOService15getPMRootDomainEv
+ffffff80029786d6: mov      rsi, qword ptr [r14 + 0x120]
+ffffff80029786dd: mov      rdi, rax
+ffffff80029786e0: call     0xffffff8000b8f6c0  ; __ZN14IOPMrootDomain18releasePMAssertionEy
+ffffff80029786e5: mov      al, byte ptr [r14 + 0x144]
+ffffff80029786ec: test     al, al
+ffffff80029786ee: jne      0xffffff800297870b
+ffffff80029786f0: mov      rdi, qword ptr [r14 + 0xe8]
+ffffff80029786f7: test     rdi, rdi
+ffffff80029786fa: je       0xffffff800297870b
+ffffff80029786fc: mov      rsi, r14
+ffffff80029786ff: call     0xffffff8000aeac00  ; __ZN9IOService26deRegisterInterestedDriverEPS_
+ffffff8002978704: mov      al, byte ptr [r14 + 0x144]
+ffffff800297870b: xor      ecx, ecx
+ffffff800297870d: mov      qword ptr [r14 + 0xe8], rcx
+ffffff8002978714: mov      qword ptr [r14 + 0xf8], rcx
+ffffff800297871b: mov      qword ptr [r14 + 0xf0], rcx
+ffffff8002978722: test     al, 1
+ffffff8002978724: je       0xffffff8002978732
+ffffff8002978726: mov      rax, qword ptr [r14]
+ffffff8002978729: mov      rdi, r14
+ffffff800297872c: call     qword ptr [rax + 0x798]
+ffffff8002978732: mov      rdi, r14
+ffffff8002978735: call     0xffffff80029757c0  ; __ZN18IOSkywalkBSDClient15stopIOReportingEv
+ffffff800297873a: lea      rax, [rip + 0x31937]  ; 0xffffff80029aa078
+ffffff8002978741: mov      rdi, r14
+ffffff8002978744: mov      rsi, rbx
+ffffff8002978747: pop      rbx
+ffffff8002978748: pop      r14
+ffffff800297874a: pop      rbp
+ffffff800297874b: jmp      qword ptr [rax + 0x5d8]
+ffffff8002978751: nop      

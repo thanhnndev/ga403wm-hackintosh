@@ -1,0 +1,25 @@
+# 0xffffff80029785b8 __ZN25IOSkywalkNetworkBSDClient8if_ioctlEP7__ifnetmPv
+ffffff80029785b8: push     rbp
+ffffff80029785b9: mov      rbp, rsp
+ffffff80029785bc: push     r15
+ffffff80029785be: push     r14
+ffffff80029785c0: push     rbx
+ffffff80029785c1: push     rax
+ffffff80029785c2: mov      rbx, rdx
+ffffff80029785c5: mov      r14, rsi
+ffffff80029785c8: mov      r15, rdi
+ffffff80029785cb: call     0xffffff800069cc00  ; _ifnet_softc
+ffffff80029785d0: mov      rdi, qword ptr [rax + 0x90]
+ffffff80029785d7: mov      rsi, qword ptr [rax + 0x108]
+ffffff80029785de: mov      rax, qword ptr [rdi]
+ffffff80029785e1: mov      rax, qword ptr [rax + 0x1c8]
+ffffff80029785e8: mov      rdx, r15
+ffffff80029785eb: mov      rcx, r14
+ffffff80029785ee: mov      r8, rbx
+ffffff80029785f1: xor      r9d, r9d
+ffffff80029785f4: add      rsp, 8
+ffffff80029785f8: pop      rbx
+ffffff80029785f9: pop      r14
+ffffff80029785fb: pop      r15
+ffffff80029785fd: pop      rbp
+ffffff80029785fe: jmp      rax

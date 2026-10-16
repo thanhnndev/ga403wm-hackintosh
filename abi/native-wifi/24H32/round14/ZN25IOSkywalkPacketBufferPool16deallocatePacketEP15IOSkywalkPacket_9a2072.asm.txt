@@ -1,0 +1,29 @@
+# 0xffffff80029a2072 __ZN25IOSkywalkPacketBufferPool16deallocatePacketEP15IOSkywalkPacket
+ffffff80029a2072: test     rsi, rsi
+ffffff80029a2075: je       0xffffff80029a20b3
+ffffff80029a2077: push     rbp
+ffffff80029a2078: mov      rbp, rsp
+ffffff80029a207b: push     r15
+ffffff80029a207d: push     r14
+ffffff80029a207f: push     rbx
+ffffff80029a2080: push     rax
+ffffff80029a2081: mov      r14, rsi
+ffffff80029a2084: mov      rbx, rdi
+ffffff80029a2087: mov      r15, qword ptr [rsi + 0x28]
+ffffff80029a208b: test     byte ptr [rsi + 0x58], 2
+ffffff80029a208f: jne      0xffffff80029a20b4
+ffffff80029a2091: mov      rax, qword ptr [r14]
+ffffff80029a2094: mov      rdi, r14
+ffffff80029a2097: call     qword ptr [rax + 0x1e0]
+ffffff80029a209d: mov      rdi, qword ptr [rbx + 0x18]
+ffffff80029a20a1: mov      rsi, r15
+ffffff80029a20a4: add      rsp, 8
+ffffff80029a20a8: pop      rbx
+ffffff80029a20a9: pop      r14
+ffffff80029a20ab: pop      r15
+ffffff80029a20ad: pop      rbp
+ffffff80029a20ae: jmp      0xffffff8000a3c960  ; _kern_pbufpool_free
+ffffff80029a20b3: ret      
+ffffff80029a20b4: mov      rsi, r14
+ffffff80029a20b7: call     0xffffff800297d84a  ; __ZN25IOSkywalkPacketBufferPool22completePreparedPacketEP15IOSkywalkPacket
+ffffff80029a20bc: jmp      0xffffff80029a2091  ; __ZN25IOSkywalkPacketBufferPool16deallocatePacketEP15IOSkywalkPacket+0x1f

@@ -1,0 +1,6 @@
+# 0xffffff80022d47c8 __ZN21IO80211InfraInterface13createLQMDataEv
+ffffff80022d47c8: push     rbp
+ffffff80022d47c9: mov      rbp, rsp
+ffffff80022d47cc: xor      eax, eax
+ffffff80022d47ce: pop      rbp
+ffffff80022d47cf: ret      

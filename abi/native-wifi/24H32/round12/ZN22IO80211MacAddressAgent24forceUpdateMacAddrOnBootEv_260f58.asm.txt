@@ -1,0 +1,59 @@
+# 0xffffff8002260f58 __ZN22IO80211MacAddressAgent24forceUpdateMacAddrOnBootEv
+ffffff8002260f58: push     rbp
+ffffff8002260f59: mov      rbp, rsp
+ffffff8002260f5c: push     r15
+ffffff8002260f5e: push     r14
+ffffff8002260f60: push     rbx
+ffffff8002260f61: push     rax
+ffffff8002260f62: mov      rbx, rdi
+ffffff8002260f65: mov      rsi, qword ptr [rdi + 0x10]
+ffffff8002260f69: mov      rax, qword ptr [rsi]
+ffffff8002260f6c: mov      rax, qword ptr [rax + 0x110]
+ffffff8002260f73: mov      rdi, qword ptr [rax + 0xb8]
+ffffff8002260f7a: test     rdi, rdi
+ffffff8002260f7d: je       0xffffff8002260f91
+ffffff8002260f7f: mov      rax, qword ptr [rdi]
+ffffff8002260f82: call     qword ptr [rax + 0x148]
+ffffff8002260f88: mov      r14, rax
+ffffff8002260f8b: mov      rsi, qword ptr [rbx + 0x10]
+ffffff8002260f8f: jmp      0xffffff8002260f94  ; __ZN22IO80211MacAddressAgent24forceUpdateMacAddrOnBootEv+0x3c
+ffffff8002260f91: xor      r14d, r14d
+ffffff8002260f94: mov      edx, dword ptr [rsi + 8]
+ffffff8002260f97: cmp      edx, 2
+ffffff8002260f9a: jl       0xffffff8002260fad
+ffffff8002260f9c: mov      dword ptr [rsi + 8], 5
+ffffff8002260fa3: mov      rdi, rbx
+ffffff8002260fa6: call     0xffffff8002260ed0  ; __ZN22IO80211MacAddressAgent27generateAndSetRandomMacAddrEv
+ffffff8002260fab: jmp      0xffffff8002260fbe  ; __ZN22IO80211MacAddressAgent24forceUpdateMacAddrOnBootEv+0x66
+ffffff8002260fad: add      rsi, 0x20
+ffffff8002260fb1: mov      rdi, rbx
+ffffff8002260fb4: mov      ecx, 1
+ffffff8002260fb9: call     0xffffff8002260b10  ; __ZN22IO80211MacAddressAgent13setMacAddressER10ether_addrjb
+ffffff8002260fbe: mov      r15d, eax
+ffffff8002260fc1: mov      rcx, qword ptr [rbx + 0x10]
+ffffff8002260fc5: mov      rdi, qword ptr [rcx + 0x18]
+ffffff8002260fc9: test     rdi, rdi
+ffffff8002260fcc: je       0xffffff8002260fe0
+ffffff8002260fce: mov      esi, 1
+ffffff8002260fd3: call     0xffffff80031d421c  ; __ZN11CCLogStream9shouldLogE16CCStreamLogLevel
+ffffff8002260fd8: mov      rcx, qword ptr [rbx + 0x10]
+ffffff8002260fdc: test     al, al
+ffffff8002260fde: jne      0xffffff8002260ff2
+ffffff8002260fe0: test     r15d, r15d
+ffffff8002260fe3: setne    byte ptr [rcx + 0x29]
+ffffff8002260fe7: add      rsp, 8
+ffffff8002260feb: pop      rbx
+ffffff8002260fec: pop      r14
+ffffff8002260fee: pop      r15
+ffffff8002260ff0: pop      rbp
+ffffff8002260ff1: ret      
+ffffff8002260ff2: mov      rdi, qword ptr [rcx + 0x18]
+ffffff8002260ff6: lea      rsi, [rip + 0x11ce2a]  ; 0xffffff800237de27
+ffffff8002260ffd: lea      rdx, [rip + 0x11ce4c]  ; "forceUpdateMacAddrOnBoot"
+ffffff8002261004: mov      ecx, 0x11e
+ffffff8002261009: mov      r8, r14
+ffffff800226100c: mov      r9d, r15d
+ffffff800226100f: xor      eax, eax
+ffffff8002261011: call     0xffffff80031d252e  ; __ZN11CCLogStream8logAlertEPKcz
+ffffff8002261016: mov      rcx, qword ptr [rbx + 0x10]
+ffffff800226101a: jmp      0xffffff8002260fe0  ; __ZN22IO80211MacAddressAgent24forceUpdateMacAddrOnBootEv+0x88

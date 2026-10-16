@@ -1,0 +1,94 @@
+# 0xffffff80022d47da __ZN21IO80211InfraInterface19prepareBSDInterfaceEP7__ifnetj
+ffffff80022d47da: push     rbp
+ffffff80022d47db: mov      rbp, rsp
+ffffff80022d47de: push     r15
+ffffff80022d47e0: push     r14
+ffffff80022d47e2: push     r12
+ffffff80022d47e4: push     rbx
+ffffff80022d47e5: sub      rsp, 0x20
+ffffff80022d47e9: mov      r15, rsi
+ffffff80022d47ec: mov      r14, rdi
+ffffff80022d47ef: mov      rax, qword ptr [rip + 0xe7922]  ; 0xffffff80023bc118
+ffffff80022d47f6: mov      rax, qword ptr [rax]
+ffffff80022d47f9: mov      qword ptr [rbp - 0x28], rax
+ffffff80022d47fd: call     0xffffff8002262446  ; __ZN23IO80211SkywalkInterface19prepareBSDInterfaceEP7__ifnetj
+ffffff80022d4802: mov      ebx, eax
+ffffff80022d4804: mov      rax, qword ptr [r14 + 0x110]
+ffffff80022d480b: cmp      dword ptr [rax + 0x58], 1
+ffffff80022d480f: jne      0xffffff80022d4900
+ffffff80022d4815: cmp      qword ptr [rax + 0x48], 0
+ffffff80022d481a: jne      0xffffff80022d48a4
+ffffff80022d4820: mov      rax, qword ptr [r14]
+ffffff80022d4823: mov      rdi, r14
+ffffff80022d4826: call     qword ptr [rax + 0xba8]
+ffffff80022d482c: lea      r12, [rbp - 0x38]
+ffffff80022d4830: mov      qword ptr [r12], rax
+ffffff80022d4834: mov      rax, qword ptr [r14 + 0x110]
+ffffff80022d483b: mov      rax, qword ptr [rax + 0x28]
+ffffff80022d483f: mov      qword ptr [r12 + 8], rax
+ffffff80022d4844: mov      rdi, r14
+ffffff80022d4847: call     0xffffff8000b53f70  ; __ZNK9IOService11GetProviderEv
+ffffff80022d484c: mov      rdi, rax
+ffffff80022d484f: mov      rsi, r14
+ffffff80022d4852: mov      rdx, r12
+ffffff80022d4855: call     0xffffff80022b506c  ; __ZN30IO80211AssociationJoinSnapshot23withInterfaceAndOptionsEP9IOServiceP23IO80211SkywalkInterfaceP38apple80211_joinSnapshotInitOptionsType
+ffffff80022d485a: test     rax, rax
+ffffff80022d485d: je       0xffffff80022d491f
+ffffff80022d4863: mov      r12, rax
+ffffff80022d4866: mov      rax, qword ptr [r14 + 0x110]
+ffffff80022d486d: mov      qword ptr [rax + 0x48], r12
+ffffff80022d4871: mov      rax, qword ptr [r12]
+ffffff80022d4875: mov      rdi, r12
+ffffff80022d4878: call     qword ptr [rax + 0x20]
+ffffff80022d487b: mov      rax, qword ptr [r12]
+ffffff80022d487f: mov      rdi, r12
+ffffff80022d4882: call     qword ptr [rax + 0x28]
+ffffff80022d4885: mov      rax, qword ptr [r14 + 0x110]
+ffffff80022d488c: cmp      qword ptr [rax + 0x48], 0
+ffffff80022d4891: jne      0xffffff80022d48a4
+ffffff80022d4893: lea      rsi, [rip + 0xc4fe6]  ; 0xffffff8002399880
+ffffff80022d489a: mov      rdi, r14
+ffffff80022d489d: xor      eax, eax
+ffffff80022d489f: call     0xffffff80022620d6  ; __ZN23IO80211SkywalkInterface8logDebugEPKcz
+ffffff80022d48a4: mov      rax, qword ptr [r14]
+ffffff80022d48a7: mov      rdi, r14
+ffffff80022d48aa: call     qword ptr [rax + 0xba8]
+ffffff80022d48b0: mov      rax, qword ptr [rax + 0x120]
+ffffff80022d48b7: test     byte ptr [rax + 0xb27], 1
+ffffff80022d48be: je       0xffffff80022d48eb
+ffffff80022d48c0: mov      rdi, r14
+ffffff80022d48c3: mov      esi, 0xc
+ffffff80022d48c8: mov      edx, 0x48
+ffffff80022d48cd: call     0xffffff8002983276  ; __ZN25IOSkywalkNetworkInterface9bpfAttachEjj
+ffffff80022d48d2: test     eax, eax
+ffffff80022d48d4: je       0xffffff80022d48eb
+ffffff80022d48d6: lea      rdi, [rip + 0xc4fd2]  ; 0xffffff80023998af
+ffffff80022d48dd: mov      esi, 0xc
+ffffff80022d48e2: mov      edx, eax
+ffffff80022d48e4: xor      eax, eax
+ffffff80022d48e6: call     0xffffff8000ab6560  ; _IOLog
+ffffff80022d48eb: mov      rdi, r14
+ffffff80022d48ee: call     0xffffff80022d4946  ; __ZN21IO80211InfraInterface22updateStaticPropertiesEv
+ffffff80022d48f3: mov      rdi, r15
+ffffff80022d48f6: mov      esi, 0x5dc
+ffffff80022d48fb: call     0xffffff800069dc30  ; _ifnet_set_mtu
+ffffff80022d4900: mov      rax, qword ptr [rip + 0xe7811]  ; 0xffffff80023bc118
+ffffff80022d4907: mov      rax, qword ptr [rax]
+ffffff80022d490a: cmp      rax, qword ptr [rbp - 0x28]
+ffffff80022d490e: jne      0xffffff80022d4941
+ffffff80022d4910: mov      eax, ebx
+ffffff80022d4912: add      rsp, 0x20
+ffffff80022d4916: pop      rbx
+ffffff80022d4917: pop      r12
+ffffff80022d4919: pop      r14
+ffffff80022d491b: pop      r15
+ffffff80022d491d: pop      rbp
+ffffff80022d491e: ret      
+ffffff80022d491f: lea      rdx, [rip + 0xc4f00]  ; "IO80211InfraInterface::setInterfaceEnable Failed to alloc IO80211AssociationJoin"
+ffffff80022d4926: movabs   rsi, 0x800000000000000
+ffffff80022d4930: mov      rdi, r14
+ffffff80022d4933: xor      eax, eax
+ffffff80022d4935: call     0xffffff8002261f9e  ; __ZN23IO80211SkywalkInterface8logDebugEyPKcz
+ffffff80022d493a: mov      ebx, 0xe00002bc
+ffffff80022d493f: jmp      0xffffff80022d4900  ; __ZN21IO80211InfraInterface19prepareBSDInterfaceEP7__ifnetj+0x126
+ffffff80022d4941: call     0xffffff8000383150  ; ___stack_chk_fail

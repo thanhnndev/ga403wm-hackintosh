@@ -1,0 +1,131 @@
+# 0xffffff8002982758 __ZN25IOSkywalkNetworkInterface14ioctl_sifmediaEP7__ifnetPv
+ffffff8002982758: push     rbp
+ffffff8002982759: mov      rbp, rsp
+ffffff800298275c: push     r15
+ffffff800298275e: push     r14
+ffffff8002982760: push     r13
+ffffff8002982762: push     r12
+ffffff8002982764: push     rbx
+ffffff8002982765: sub      rsp, 0x18
+ffffff8002982769: mov      rax, qword ptr [rdi + 0xb8]
+ffffff8002982770: mov      rax, qword ptr [rax]
+ffffff8002982773: mov      r14d, 0x16
+ffffff8002982779: test     rax, rax
+ffffff800298277c: je       0xffffff80029828f2
+ffffff8002982782: mov      r13, rdx
+ffffff8002982785: test     rdx, rdx
+ffffff8002982788: je       0xffffff80029828f2
+ffffff800298278e: mov      r15d, dword ptr [rax + 0x14]
+ffffff8002982792: test     r15d, r15d
+ffffff8002982795: je       0xffffff80029828f2
+ffffff800298279b: mov      rbx, rdi
+ffffff800298279e: lea      rdi, [r15*4]
+ffffff80029827a6: mov      qword ptr [rbp - 0x30], rdi
+ffffff80029827aa: call     0xffffff8000ab6220  ; _IOMallocZeroData_external
+ffffff80029827af: test     rax, rax
+ffffff80029827b2: je       0xffffff80029827f3
+ffffff80029827b4: mov      r12, rax
+ffffff80029827b7: lea      rdx, [rbp - 0x34]
+ffffff80029827bb: mov      dword ptr [rdx], r15d
+ffffff80029827be: mov      rax, qword ptr [rbx]
+ffffff80029827c1: mov      rdi, rbx
+ffffff80029827c4: mov      rsi, r12
+ffffff80029827c7: call     qword ptr [rax + 0x940]
+ffffff80029827cd: test     eax, eax
+ffffff80029827cf: jne      0xffffff80029827fe
+ffffff80029827d1: mov      eax, dword ptr [rbp - 0x34]
+ffffff80029827d4: test     eax, eax
+ffffff80029827d6: je       0xffffff80029827fe
+ffffff80029827d8: cmp      eax, r15d
+ffffff80029827db: ja       0xffffff80029827fe
+ffffff80029827dd: mov      ecx, dword ptr [r13 + 0x10]
+ffffff80029827e1: xor      edx, edx
+ffffff80029827e3: cmp      ecx, dword ptr [r12 + rdx*4]
+ffffff80029827e7: je       0xffffff8002982815
+ffffff80029827e9: inc      rdx
+ffffff80029827ec: cmp      rax, rdx
+ffffff80029827ef: jne      0xffffff80029827e3
+ffffff80029827f1: jmp      0xffffff800298281e  ; __ZN25IOSkywalkNetworkInterface14ioctl_sifmediaEP7__ifnetPv+0xc6
+ffffff80029827f3: mov      r14d, 0xc
+ffffff80029827f9: jmp      0xffffff80029828f2  ; __ZN25IOSkywalkNetworkInterface14ioctl_sifmediaEP7__ifnetPv+0x19a
+ffffff80029827fe: mov      rdi, r12
+ffffff8002982801: mov      rsi, qword ptr [rbp - 0x30]
+ffffff8002982805: call     0xffffff8000ab6290  ; _IOFreeData
+ffffff800298280a: mov      r14d, 5
+ffffff8002982810: jmp      0xffffff80029828f2  ; __ZN25IOSkywalkNetworkInterface14ioctl_sifmediaEP7__ifnetPv+0x19a
+ffffff8002982815: test     ecx, ecx
+ffffff8002982817: je       0xffffff800298281e
+ffffff8002982819: mov      r13d, ecx
+ffffff800298281c: jmp      0xffffff800298285f  ; __ZN25IOSkywalkNetworkInterface14ioctl_sifmediaEP7__ifnetPv+0x107
+ffffff800298281e: mov      rdx, qword ptr [rbx + 0xb8]
+ffffff8002982825: mov      edx, dword ptr [rdx + 0x34]
+ffffff8002982828: test     edx, edx
+ffffff800298282a: sete     sil
+ffffff800298282e: cmp      edx, ecx
+ffffff8002982830: sete     dil
+ffffff8002982834: or       dil, sil
+ffffff8002982837: jne      0xffffff800298286d
+ffffff8002982839: xor      edx, ecx
+ffffff800298283b: or       edx, 0xf00ff
+ffffff8002982841: xor      esi, esi
+ffffff8002982843: mov      r13d, dword ptr [r12 + rsi*4]
+ffffff8002982847: mov      edi, r13d
+ffffff800298284a: xor      edi, ecx
+ffffff800298284c: test     edi, edx
+ffffff800298284e: je       0xffffff800298285a
+ffffff8002982850: inc      rsi
+ffffff8002982853: cmp      rax, rsi
+ffffff8002982856: jne      0xffffff8002982843
+ffffff8002982858: jmp      0xffffff800298286d  ; __ZN25IOSkywalkNetworkInterface14ioctl_sifmediaEP7__ifnetPv+0x115
+ffffff800298285a: test     r13d, r13d
+ffffff800298285d: je       0xffffff800298286d
+ffffff800298285f: mov      rdi, r12
+ffffff8002982862: mov      rsi, qword ptr [rbp - 0x30]
+ffffff8002982866: call     0xffffff8000ab6290  ; _IOFreeData
+ffffff800298286b: jmp      0xffffff80029828a7  ; __ZN25IOSkywalkNetworkInterface14ioctl_sifmediaEP7__ifnetPv+0x14f
+ffffff800298286d: xor      edx, edx
+ffffff800298286f: mov      r13d, dword ptr [r12 + rdx*4]
+ffffff8002982873: mov      esi, r13d
+ffffff8002982876: xor      esi, ecx
+ffffff8002982878: test     esi, 0xf00ff
+ffffff800298287e: je       0xffffff8002982896
+ffffff8002982880: inc      rdx
+ffffff8002982883: cmp      rax, rdx
+ffffff8002982886: jne      0xffffff800298286f
+ffffff8002982888: mov      rdi, r12
+ffffff800298288b: mov      rsi, qword ptr [rbp - 0x30]
+ffffff800298288f: call     0xffffff8000ab6290  ; _IOFreeData
+ffffff8002982894: jmp      0xffffff80029828f2  ; __ZN25IOSkywalkNetworkInterface14ioctl_sifmediaEP7__ifnetPv+0x19a
+ffffff8002982896: mov      rdi, r12
+ffffff8002982899: mov      rsi, qword ptr [rbp - 0x30]
+ffffff800298289d: call     0xffffff8000ab6290  ; _IOFreeData
+ffffff80029828a2: test     r13d, r13d
+ffffff80029828a5: je       0xffffff80029828f2
+ffffff80029828a7: mov      rax, qword ptr [rbx]
+ffffff80029828aa: mov      rdi, rbx
+ffffff80029828ad: mov      esi, r13d
+ffffff80029828b0: call     qword ptr [rax + 0x938]
+ffffff80029828b6: mov      rcx, qword ptr [rbx]
+ffffff80029828b9: mov      rdi, rbx
+ffffff80029828bc: mov      esi, eax
+ffffff80029828be: call     qword ptr [rcx + 0x788]
+ffffff80029828c4: mov      r14d, eax
+ffffff80029828c7: test     eax, eax
+ffffff80029828c9: jne      0xffffff80029828f2
+ffffff80029828cb: mov      rax, qword ptr [rbx + 0xb8]
+ffffff80029828d2: mov      rdi, qword ptr [rax + 0x10]
+ffffff80029828d6: call     0xffffff800052f900  ; _lck_mtx_lock
+ffffff80029828db: mov      rax, qword ptr [rbx + 0xb8]
+ffffff80029828e2: mov      dword ptr [rax + 0x34], r13d
+ffffff80029828e6: mov      rdi, qword ptr [rax + 0x10]
+ffffff80029828ea: call     0xffffff800052fc50  ; _lck_mtx_unlock
+ffffff80029828ef: xor      r14d, r14d
+ffffff80029828f2: mov      eax, r14d
+ffffff80029828f5: add      rsp, 0x18
+ffffff80029828f9: pop      rbx
+ffffff80029828fa: pop      r12
+ffffff80029828fc: pop      r13
+ffffff80029828fe: pop      r14
+ffffff8002982900: pop      r15
+ffffff8002982902: pop      rbp
+ffffff8002982903: ret      

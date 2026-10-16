@@ -1,0 +1,48 @@
+# 0xffffff80029897c4 __ZN26IOSkywalkEthernetInterface13setPowerStateEmP9IOService
+ffffff80029897c4: push     rbp
+ffffff80029897c5: mov      rbp, rsp
+ffffff80029897c8: push     r15
+ffffff80029897ca: push     r14
+ffffff80029897cc: push     rbx
+ffffff80029897cd: push     rax
+ffffff80029897ce: xor      r14d, r14d
+ffffff80029897d1: test     rsi, rsi
+ffffff80029897d4: je       0xffffff80029897e4
+ffffff80029897d6: mov      eax, r14d
+ffffff80029897d9: add      rsp, 8
+ffffff80029897dd: pop      rbx
+ffffff80029897de: pop      r14
+ffffff80029897e0: pop      r15
+ffffff80029897e2: pop      rbp
+ffffff80029897e3: ret      
+ffffff80029897e4: mov      rbx, rdi
+ffffff80029897e7: mov      rdi, qword ptr [rdi + 0xf8]
+ffffff80029897ee: test     rdi, rdi
+ffffff80029897f1: je       0xffffff80029897d6
+ffffff80029897f3: mov      rax, qword ptr [rdi]
+ffffff80029897f6: call     qword ptr [rax + 0x2e0]
+ffffff80029897fc: mov      r15, rax
+ffffff80029897ff: cmp      qword ptr [rbx + 0xf0], 0
+ffffff8002989807: je       0xffffff8002989829
+ffffff8002989809: mov      rdi, rbx
+ffffff800298980c: call     0xffffff8002988ec2  ; __ZN26IOSkywalkEthernetInterface15updateKeepAliveEv
+ffffff8002989811: mov      rsi, qword ptr [rbx + 0xf0]
+ffffff8002989818: mov      rdi, rbx
+ffffff800298981b: call     0xffffff8002989078  ; __ZN26IOSkywalkEthernetInterface25mdns_handoff_to_nic_proxyEP11mDNSHandoff
+ffffff8002989820: mov      r14d, eax
+ffffff8002989823: test     eax, eax
+ffffff8002989825: jne      0xffffff8002989842
+ffffff8002989827: jmp      0xffffff8002989830  ; __ZN26IOSkywalkEthernetInterface13setPowerStateEmP9IOService+0x6c
+ffffff8002989829: mov      dword ptr [r15], 0x50
+ffffff8002989830: mov      rax, qword ptr [rbx]
+ffffff8002989833: mov      rdi, rbx
+ffffff8002989836: mov      rsi, r15
+ffffff8002989839: call     qword ptr [rax + 0xaa0]
+ffffff800298983f: xor      r14d, r14d
+ffffff8002989842: mov      rdi, qword ptr [rbx + 0xf0]
+ffffff8002989849: test     rdi, rdi
+ffffff800298984c: je       0xffffff80029897d6
+ffffff800298984e: mov      rax, qword ptr [rdi]
+ffffff8002989851: call     qword ptr [rax + 0x28]
+ffffff8002989854: mov      qword ptr [rbx + 0xf0], 0
+ffffff800298985f: jmp      0xffffff80029897d6  ; __ZN26IOSkywalkEthernetInterface13setPowerStateEmP9IOService+0x12

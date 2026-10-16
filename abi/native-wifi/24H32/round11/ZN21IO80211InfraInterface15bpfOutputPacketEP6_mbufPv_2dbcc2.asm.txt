@@ -1,0 +1,28 @@
+# 0xffffff80022dbcc2 __ZN21IO80211InfraInterface15bpfOutputPacketEP6__mbufPv
+ffffff80022dbcc2: push     rbp
+ffffff80022dbcc3: mov      rbp, rsp
+ffffff80022dbcc6: push     r15
+ffffff80022dbcc8: push     r14
+ffffff80022dbcca: push     rbx
+ffffff80022dbccb: push     rax
+ffffff80022dbccc: mov      rbx, rsi
+ffffff80022dbccf: mov      r14, rdi
+ffffff80022dbcd2: mov      rdi, rsi
+ffffff80022dbcd5: call     0xffffff800092daa0  ; _mbuf_pkthdr_rcvif
+ffffff80022dbcda: mov      r15, rax
+ffffff80022dbcdd: mov      rax, qword ptr [r14]
+ffffff80022dbce0: mov      rdi, r14
+ffffff80022dbce3: call     qword ptr [rax + 0xba8]
+ffffff80022dbce9: mov      edx, dword ptr [r15 + 0x10]
+ffffff80022dbced: mov      rcx, qword ptr [rax]
+ffffff80022dbcf0: mov      r8, qword ptr [rcx + 0xc88]
+ffffff80022dbcf7: mov      rdi, rax
+ffffff80022dbcfa: mov      rsi, r14
+ffffff80022dbcfd: mov      rcx, rbx
+ffffff80022dbd00: add      rsp, 8
+ffffff80022dbd04: pop      rbx
+ffffff80022dbd05: pop      r14
+ffffff80022dbd07: pop      r15
+ffffff80022dbd09: pop      rbp
+ffffff80022dbd0a: jmp      r8
+ffffff80022dbd0d: nop      

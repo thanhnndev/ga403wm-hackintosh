@@ -1,0 +1,7 @@
+# 0xffffff80022d7788 __ZN21IO80211InfraInterface14getAVCAdvisoryEv
+ffffff80022d7788: push     rbp
+ffffff80022d7789: mov      rbp, rsp
+ffffff80022d778c: mov      rax, qword ptr [rdi + 0x118]
+ffffff80022d7793: mov      rax, qword ptr [rax + 0x188]
+ffffff80022d779a: pop      rbp
+ffffff80022d779b: ret      

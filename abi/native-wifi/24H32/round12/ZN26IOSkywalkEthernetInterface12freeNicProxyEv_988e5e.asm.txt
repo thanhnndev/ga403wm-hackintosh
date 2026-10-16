@@ -1,0 +1,29 @@
+# 0xffffff8002988e5e __ZN26IOSkywalkEthernetInterface12freeNicProxyEv
+ffffff8002988e5e: push     rbp
+ffffff8002988e5f: mov      rbp, rsp
+ffffff8002988e62: push     rbx
+ffffff8002988e63: push     rax
+ffffff8002988e64: mov      rbx, rdi
+ffffff8002988e67: mov      rdi, qword ptr [rdi + 0xf0]
+ffffff8002988e6e: test     rdi, rdi
+ffffff8002988e71: je       0xffffff8002988e84
+ffffff8002988e73: mov      rax, qword ptr [rdi]
+ffffff8002988e76: call     qword ptr [rax + 0x28]
+ffffff8002988e79: mov      qword ptr [rbx + 0xf0], 0
+ffffff8002988e84: cmp      qword ptr [rbx + 0xf8], 0
+ffffff8002988e8c: je       0xffffff8002988eba
+ffffff8002988e8e: mov      rdi, rbx
+ffffff8002988e91: mov      esi, 1
+ffffff8002988e96: xor      edx, edx
+ffffff8002988e98: call     0xffffff800288007c  ; __ZN21mDNSOffloadUserClient16PublishForDaemonEP15IORegistryEntrybb
+ffffff8002988e9d: mov      rdi, qword ptr [rbx + 0xf8]
+ffffff8002988ea4: test     rdi, rdi
+ffffff8002988ea7: je       0xffffff8002988eaf
+ffffff8002988ea9: mov      rax, qword ptr [rdi]
+ffffff8002988eac: call     qword ptr [rax + 0x28]
+ffffff8002988eaf: mov      qword ptr [rbx + 0xf8], 0
+ffffff8002988eba: add      rsp, 8
+ffffff8002988ebe: pop      rbx
+ffffff8002988ebf: pop      rbp
+ffffff8002988ec0: ret      
+ffffff8002988ec1: nop      

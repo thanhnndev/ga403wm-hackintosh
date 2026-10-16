@@ -1,0 +1,59 @@
+# 0xffffff80022d87e6 __ZN21IO80211InfraInterface20updateLocalePropertyEv
+ffffff80022d87e6: push     rbp
+ffffff80022d87e7: mov      rbp, rsp
+ffffff80022d87ea: push     r14
+ffffff80022d87ec: push     rbx
+ffffff80022d87ed: sub      rsp, 0x20
+ffffff80022d87f1: mov      rbx, rdi
+ffffff80022d87f4: mov      rax, qword ptr [rip + 0xe391d]  ; 0xffffff80023bc118
+ffffff80022d87fb: mov      rax, qword ptr [rax]
+ffffff80022d87fe: mov      qword ptr [rbp - 0x18], rax
+ffffff80022d8802: mov      qword ptr [rbp - 0x28], 0
+ffffff80022d880a: mov      rax, qword ptr [rdi + 0x110]
+ffffff80022d8811: mov      rdi, qword ptr [rax + 0xd8]
+ffffff80022d8818: test     rdi, rdi
+ffffff80022d881b: je       0xffffff80022d884e
+ffffff80022d881d: lea      r14, [rbp - 0x19]
+ffffff80022d8821: mov      byte ptr [r14], 0
+ffffff80022d8825: lea      rcx, [rbp - 0x28]
+ffffff80022d8829: mov      r8d, 8
+ffffff80022d882f: mov      esi, 0xc02869c9
+ffffff80022d8834: mov      edx, 0x1c
+ffffff80022d8839: mov      r9, r14
+ffffff80022d883c: call     0xffffff800212ad12  ; __ZN11IO80211Glue13sendIOUCToWclEjjPvmRb
+ffffff80022d8841: cmp      byte ptr [r14], 1
+ffffff80022d8845: jne      0xffffff80022d884e
+ffffff80022d8847: cmp      eax, 0xe082280f
+ffffff80022d884c: jne      0xffffff80022d885a
+ffffff80022d884e: lea      rsi, [rbp - 0x28]
+ffffff80022d8852: mov      rdi, rbx
+ffffff80022d8855: call     0xffffff80021f6c75  ; __Z19apple80211getLOCALEP23IO80211SkywalkInterfaceP22apple80211_locale_data
+ffffff80022d885a: test     eax, eax
+ffffff80022d885c: je       0xffffff80022d886f
+ffffff80022d885e: lea      rsi, [rip + 0xc16bc]  ; "IO80211Locale"
+ffffff80022d8865: mov      rdi, rbx
+ffffff80022d8868: call     0xffffff800227dbf3  ; __Z20removePropertyHelperP9IOServicePKc
+ffffff80022d886d: jmp      0xffffff80022d88a1  ; __ZN21IO80211InfraInterface20updateLocalePropertyEv+0xbb
+ffffff80022d886f: mov      eax, dword ptr [rbp - 0x24]
+ffffff80022d8872: dec      eax
+ffffff80022d8874: cmp      eax, 6
+ffffff80022d8877: ja       0xffffff80022d888b
+ffffff80022d8879: mov      eax, eax
+ffffff80022d887b: lea      rcx, [rip + 0x4cdbe]  ; 0xffffff8002325640
+ffffff80022d8882: movsxd   rdx, dword ptr [rcx + rax*4]
+ffffff80022d8886: add      rdx, rcx
+ffffff80022d8889: jmp      0xffffff80022d8892  ; __ZN21IO80211InfraInterface20updateLocalePropertyEv+0xac
+ffffff80022d888b: lea      rdx, [rip + 0x640d8]  ; "Unknown"
+ffffff80022d8892: lea      rsi, [rip + 0xc1688]  ; "IO80211Locale"
+ffffff80022d8899: mov      rdi, rbx
+ffffff80022d889c: call     0xffffff800227da77  ; __Z17setPropertyHelperP9IOServicePKcS2_
+ffffff80022d88a1: mov      rax, qword ptr [rip + 0xe3870]  ; 0xffffff80023bc118
+ffffff80022d88a8: mov      rax, qword ptr [rax]
+ffffff80022d88ab: cmp      rax, qword ptr [rbp - 0x18]
+ffffff80022d88af: jne      0xffffff80022d88ba
+ffffff80022d88b1: add      rsp, 0x20
+ffffff80022d88b5: pop      rbx
+ffffff80022d88b6: pop      r14
+ffffff80022d88b8: pop      rbp
+ffffff80022d88b9: ret      
+ffffff80022d88ba: call     0xffffff8000383150  ; ___stack_chk_fail

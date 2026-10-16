@@ -1,0 +1,58 @@
+# 0xffffff8002988d8e __ZN26IOSkywalkEthernetInterface12initNicProxyEm
+ffffff8002988d8e: push     rbp
+ffffff8002988d8f: mov      rbp, rsp
+ffffff8002988d92: push     r15
+ffffff8002988d94: push     r14
+ffffff8002988d96: push     rbx
+ffffff8002988d97: push     rax
+ffffff8002988d98: xor      r15d, r15d
+ffffff8002988d9b: cmp      qword ptr [rdi + 0xf8], 0
+ffffff8002988da3: je       0xffffff8002988db3
+ffffff8002988da5: mov      eax, r15d
+ffffff8002988da8: add      rsp, 8
+ffffff8002988dac: pop      rbx
+ffffff8002988dad: pop      r14
+ffffff8002988daf: pop      r15
+ffffff8002988db1: pop      rbp
+ffffff8002988db2: ret      
+ffffff8002988db3: mov      r14, rsi
+ffffff8002988db6: mov      rbx, rdi
+ffffff8002988db9: cmp      qword ptr [rdi + 0xe8], rsi
+ffffff8002988dc0: jae      0xffffff8002988dc9
+ffffff8002988dc2: mov      qword ptr [rbx + 0xe8], r14
+ffffff8002988dc9: mov      edi, r14d
+ffffff8002988dcc: mov      esi, 3
+ffffff8002988dd1: mov      edx, 1
+ffffff8002988dd6: call     0xffffff8000b02990  ; __ZN24IOBufferMemoryDescriptor12withCapacityEmjb
+ffffff8002988ddb: mov      r15, rax
+ffffff8002988dde: mov      rdi, qword ptr [rbx + 0xf8]
+ffffff8002988de5: test     rdi, rdi
+ffffff8002988de8: je       0xffffff8002988df0
+ffffff8002988dea: mov      rax, qword ptr [rdi]
+ffffff8002988ded: call     qword ptr [rax + 0x28]
+ffffff8002988df0: mov      qword ptr [rbx + 0xf8], r15
+ffffff8002988df7: test     r15, r15
+ffffff8002988dfa: je       0xffffff8002988e53
+ffffff8002988dfc: mov      rax, qword ptr [r15]
+ffffff8002988dff: mov      rdi, r15
+ffffff8002988e02: call     qword ptr [rax + 0x2e0]
+ffffff8002988e08: xor      r15d, r15d
+ffffff8002988e0b: mov      qword ptr [rax], r15
+ffffff8002988e0e: mov      qword ptr [rax + 8], r15
+ffffff8002988e12: mov      qword ptr [rax + 0x10], r15
+ffffff8002988e16: mov      qword ptr [rax + 0x18], r15
+ffffff8002988e1a: mov      qword ptr [rax + 0x20], r15
+ffffff8002988e1e: mov      qword ptr [rax + 0x28], r15
+ffffff8002988e22: mov      qword ptr [rax + 0x30], r15
+ffffff8002988e26: mov      qword ptr [rax + 0x38], r15
+ffffff8002988e2a: mov      qword ptr [rax + 0x40], r15
+ffffff8002988e2e: mov      qword ptr [rax + 0x48], r15
+ffffff8002988e32: cmp      r14, 0x51
+ffffff8002988e36: jb       0xffffff8002988da5
+ffffff8002988e3c: mov      rdi, rbx
+ffffff8002988e3f: mov      esi, 1
+ffffff8002988e44: mov      edx, 1
+ffffff8002988e49: call     0xffffff800288007c  ; __ZN21mDNSOffloadUserClient16PublishForDaemonEP15IORegistryEntrybb
+ffffff8002988e4e: jmp      0xffffff8002988da5  ; __ZN26IOSkywalkEthernetInterface12initNicProxyEm+0x17
+ffffff8002988e53: mov      r15d, 0xe00002bd
+ffffff8002988e59: jmp      0xffffff8002988da5  ; __ZN26IOSkywalkEthernetInterface12initNicProxyEm+0x17

@@ -1,0 +1,30 @@
+# 0xffffff80029832e0 __ZN25IOSkywalkNetworkInterface17bpfTapInputPacketEjP15IOSkywalkPacketPvm
+ffffff80029832e0: push     rbp
+ffffff80029832e1: mov      rbp, rsp
+ffffff80029832e4: push     r15
+ffffff80029832e6: push     r14
+ffffff80029832e8: push     r13
+ffffff80029832ea: push     r12
+ffffff80029832ec: push     rbx
+ffffff80029832ed: push     rax
+ffffff80029832ee: mov      rbx, r8
+ffffff80029832f1: mov      r14, rcx
+ffffff80029832f4: mov      r15, rdx
+ffffff80029832f7: mov      r12d, esi
+ffffff80029832fa: mov      r13, rdi
+ffffff80029832fd: mov      rdi, rdx
+ffffff8002983300: call     0xffffff800297e6aa  ; __ZN15IOSkywalkPacket8finalizeEv
+ffffff8002983305: mov      rax, qword ptr [r13 + 0xb8]
+ffffff800298330c: mov      rdi, qword ptr [rax + 8]
+ffffff8002983310: mov      rdx, qword ptr [r15 + 0x28]
+ffffff8002983314: mov      esi, r12d
+ffffff8002983317: mov      rcx, r14
+ffffff800298331a: mov      r8, rbx
+ffffff800298331d: add      rsp, 8
+ffffff8002983321: pop      rbx
+ffffff8002983322: pop      r12
+ffffff8002983324: pop      r13
+ffffff8002983326: pop      r14
+ffffff8002983328: pop      r15
+ffffff800298332a: pop      rbp
+ffffff800298332b: jmp      0xffffff80006228f0  ; _bpf_tap_packet_in

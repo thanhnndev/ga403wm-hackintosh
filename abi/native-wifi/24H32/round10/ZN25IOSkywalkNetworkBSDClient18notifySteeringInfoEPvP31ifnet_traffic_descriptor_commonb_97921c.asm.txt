@@ -1,0 +1,13 @@
+# 0xffffff800297921c __ZN25IOSkywalkNetworkBSDClient18notifySteeringInfoEPvP31ifnet_traffic_descriptor_commonb
+ffffff800297921c: push     rbp
+ffffff800297921d: mov      rbp, rsp
+ffffff8002979220: mov      rdi, rsi
+ffffff8002979223: xor      cl, 1
+ffffff8002979226: movzx    esi, cl
+ffffff8002979229: mov      rax, qword ptr [rdi]
+ffffff800297922c: call     qword ptr [rax + 0x130]
+ffffff8002979232: test     eax, eax
+ffffff8002979234: mov      ecx, 0x16
+ffffff8002979239: cmovne   eax, ecx
+ffffff800297923c: pop      rbp
+ffffff800297923d: ret      

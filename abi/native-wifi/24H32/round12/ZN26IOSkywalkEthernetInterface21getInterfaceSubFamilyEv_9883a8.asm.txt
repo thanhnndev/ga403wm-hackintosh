@@ -1,0 +1,6 @@
+# 0xffffff80029883a8 __ZN26IOSkywalkEthernetInterface21getInterfaceSubFamilyEv
+ffffff80029883a8: push     rbp
+ffffff80029883a9: mov      rbp, rsp
+ffffff80029883ac: lea      rax, [rip + 0x26efd]  ; 0xffffff80029af2b0
+ffffff80029883b3: pop      rbp
+ffffff80029883b4: jmp      qword ptr [rax + 0x9b0]

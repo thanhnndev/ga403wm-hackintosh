@@ -1,0 +1,6 @@
+# 0xffffff8002982cbc __ZN25IOSkywalkNetworkInterface18setInterfaceEnableEb
+ffffff8002982cbc: push     rbp
+ffffff8002982cbd: mov      rbp, rsp
+ffffff8002982cc0: xor      eax, eax
+ffffff8002982cc2: pop      rbp
+ffffff8002982cc3: ret      

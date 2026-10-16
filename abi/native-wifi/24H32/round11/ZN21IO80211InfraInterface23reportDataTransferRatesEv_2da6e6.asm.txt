@@ -1,0 +1,46 @@
+# 0xffffff80022da6e6 __ZN21IO80211InfraInterface23reportDataTransferRatesEv
+ffffff80022da6e6: push     rbp
+ffffff80022da6e7: mov      rbp, rsp
+ffffff80022da6ea: push     rbx
+ffffff80022da6eb: push     rax
+ffffff80022da6ec: mov      rbx, rdi
+ffffff80022da6ef: mov      rax, qword ptr [rdi + 0x110]
+ffffff80022da6f6: mov      rdi, qword ptr [rax + 0x38]
+ffffff80022da6fa: mov      rax, qword ptr [rdi]
+ffffff80022da6fd: call     qword ptr [rax + 0x130]
+ffffff80022da703: test     al, al
+ffffff80022da705: je       0xffffff80022da729
+ffffff80022da707: mov      rax, qword ptr [rbx + 0x118]
+ffffff80022da70e: mov      rdi, qword ptr [rax + 0x150]
+ffffff80022da715: mov      rax, qword ptr [rdi]
+ffffff80022da718: mov      rax, qword ptr [rax + 0x1d0]
+ffffff80022da71f: xor      esi, esi
+ffffff80022da721: add      rsp, 8
+ffffff80022da725: pop      rbx
+ffffff80022da726: pop      rbp
+ffffff80022da727: jmp      rax
+ffffff80022da729: mov      rax, qword ptr [rbx + 0x110]
+ffffff80022da730: mov      rdi, qword ptr [rax + 0x38]
+ffffff80022da734: mov      rax, qword ptr [rdi]
+ffffff80022da737: call     qword ptr [rax + 0x138]
+ffffff80022da73d: test     al, al
+ffffff80022da73f: je       0xffffff80022da74f
+ffffff80022da741: mov      rdi, rbx
+ffffff80022da744: add      rsp, 8
+ffffff80022da748: pop      rbx
+ffffff80022da749: pop      rbp
+ffffff80022da74a: jmp      0xffffff80022d406a  ; __ZN21IO80211InfraInterface28reportDataTransferRatesTimerEP18IO80211TimerSource
+ffffff80022da74f: mov      rax, qword ptr [rbx + 0x110]
+ffffff80022da756: mov      rdi, qword ptr [rax + 0x38]
+ffffff80022da75a: mov      rax, qword ptr [rdi]
+ffffff80022da75d: mov      qword ptr [rsp], 0
+ffffff80022da765: lea      rsi, [rip + 0x8c]  ; 0xffffff80022da7f8
+ffffff80022da76c: mov      rdx, rbx
+ffffff80022da76f: xor      ecx, ecx
+ffffff80022da771: xor      r8d, r8d
+ffffff80022da774: xor      r9d, r9d
+ffffff80022da777: call     qword ptr [rax + 0x1a0]
+ffffff80022da77d: add      rsp, 8
+ffffff80022da781: pop      rbx
+ffffff80022da782: pop      rbp
+ffffff80022da783: ret      

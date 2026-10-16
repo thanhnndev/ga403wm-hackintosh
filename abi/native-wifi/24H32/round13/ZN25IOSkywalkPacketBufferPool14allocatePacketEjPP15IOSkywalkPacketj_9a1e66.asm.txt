@@ -1,0 +1,56 @@
+# 0xffffff80029a1e66 __ZN25IOSkywalkPacketBufferPool14allocatePacketEjPP15IOSkywalkPacketj
+ffffff80029a1e66: push     rbp
+ffffff80029a1e67: mov      rbp, rsp
+ffffff80029a1e6a: push     r15
+ffffff80029a1e6c: push     r14
+ffffff80029a1e6e: push     r12
+ffffff80029a1e70: push     rbx
+ffffff80029a1e71: sub      rsp, 0x10
+ffffff80029a1e75: xor      r14d, r14d
+ffffff80029a1e78: test     esi, esi
+ffffff80029a1e7a: sete     r12b
+ffffff80029a1e7e: mov      eax, 0xe00002c2
+ffffff80029a1e83: test     rdx, rdx
+ffffff80029a1e86: je       0xffffff80029a1ef1
+ffffff80029a1e88: mov      rbx, rdx
+ffffff80029a1e8b: mov      r15, rdi
+ffffff80029a1e8e: movabs   rax, 0xaaaaaaaaaaaaaaaa
+ffffff80029a1e98: mov      qword ptr [rbp - 0x28], rax
+ffffff80029a1e9c: mov      rdi, qword ptr [rdi + 0x18]
+ffffff80029a1ea0: lea      rdx, [rbp - 0x28]
+ffffff80029a1ea4: test     cl, 1
+ffffff80029a1ea7: jne      0xffffff80029a1eb0
+ffffff80029a1ea9: call     0xffffff8000a3c740  ; _kern_pbufpool_alloc
+ffffff80029a1eae: jmp      0xffffff80029a1eb5  ; __ZN25IOSkywalkPacketBufferPool14allocatePacketEjPP15IOSkywalkPacketj+0x4f
+ffffff80029a1eb0: call     0xffffff8000a3c7a0  ; _kern_pbufpool_alloc_nosleep
+ffffff80029a1eb5: mov      ecx, eax
+ffffff80029a1eb7: test     eax, eax
+ffffff80029a1eb9: jne      0xffffff80029a1efe
+ffffff80029a1ebb: mov      r14b, r12b
+ffffff80029a1ebe: mov      rdi, qword ptr [rbp - 0x28]
+ffffff80029a1ec2: call     0xffffff8000a35730  ; _kern_packet_get_object_index
+ffffff80029a1ec7: mov      rdi, qword ptr [r15 + 0x60]
+ffffff80029a1ecb: mov      rcx, qword ptr [rdi]
+ffffff80029a1ece: mov      esi, eax
+ffffff80029a1ed0: call     qword ptr [rcx + 0x1e8]
+ffffff80029a1ed6: mov      r15, rax
+ffffff80029a1ed9: mov      rsi, qword ptr [rbp - 0x28]
+ffffff80029a1edd: mov      rax, qword ptr [rax]
+ffffff80029a1ee0: mov      rdi, r15
+ffffff80029a1ee3: mov      edx, r14d
+ffffff80029a1ee6: call     qword ptr [rax + 0x1d8]
+ffffff80029a1eec: mov      qword ptr [rbx], r15
+ffffff80029a1eef: xor      eax, eax
+ffffff80029a1ef1: add      rsp, 0x10
+ffffff80029a1ef5: pop      rbx
+ffffff80029a1ef6: pop      r12
+ffffff80029a1ef8: pop      r14
+ffffff80029a1efa: pop      r15
+ffffff80029a1efc: pop      rbp
+ffffff80029a1efd: ret      
+ffffff80029a1efe: mov      eax, 0xe00002be
+ffffff80029a1f03: cmp      ecx, 0xc
+ffffff80029a1f06: je       0xffffff80029a1ef1
+ffffff80029a1f08: mov      eax, 0xe00002c2
+ffffff80029a1f0d: jmp      0xffffff80029a1ef1  ; __ZN25IOSkywalkPacketBufferPool14allocatePacketEjPP15IOSkywalkPacketj+0x8b
+ffffff80029a1f0f: nop      

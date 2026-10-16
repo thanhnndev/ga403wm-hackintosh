@@ -1,0 +1,47 @@
+/Library/Extensions/NVAccel.kext | com.nullmoth.NVAccel | 0.1 | 1b71a38454763aad
+/Library/Extensions/NVRM.kext | com.nullmoth.NVRM | 0.1 | 81c6ba3a5a1beb45
+/Library/Extensions/NVRMAGDC.kext | com.nullmoth.NVRMAGDC | 0.1 | 223a327f0b94ecd9
+/Library/Extensions/NVRMEdpBL.kext | com.nullmoth.NVRMEdpBL | 0.1 | 433dfcbfc71b90d9
+/Library/Extensions/NVRMFB.kext | com.nullmoth.NVRMFB | 0.1 | 5e2d35d91b0dfc79
+/Library/Extensions/StrixAccel.kext | com.itlmt7925.strixaccel | 0.1.15 | 0ae72c09ef488553
+/Library/Extensions/StrixGOP.kext | com.itlmt7925.strixgop | 0.1.11 | 8552afc98a406f2b
+/Volumes/ESP/EFI/OC/Kexts/AMFIPass.kext | com.dhinakg.AMFIPass | 1.4.1 | 4c35bc196d35c69b
+/Volumes/ESP/EFI/OC/Kexts/AmdCppc.kext | com.itlmt7925.amdcppc | 0.2.1 | bffb514f6e9863eb
+/Volumes/ESP/EFI/OC/Kexts/AppleALC.kext | as.vit9696.AppleALC | 1.9.9 | 2c7e065f76245fde
+/Volumes/ESP/EFI/OC/Kexts/AppleMCEReporterDisabler.kext | org.xlnc.disabler.MCEReporter |  | no-exec
+/Volumes/ESP/EFI/OC/Kexts/AsusWmi.kext | com.itlmt7925.asuswmi | 0.1.0 | 4ba92bb345d22896
+/Volumes/ESP/EFI/OC/Kexts/BlueToolFixup.kext | as.acidanthera.BlueToolFixup | 2.7.2 | f3244382a4386613
+/Volumes/ESP/EFI/OC/Kexts/BrightnessKeys.kext | as.acidanthera.BrightnessKeys |  | f47210181030a600
+/Volumes/ESP/EFI/OC/Kexts/BtLeDlFix.kext | com.itlmt7925.btledlfix | 1.0.0 | 472ae64e25ad0c3c
+/Volumes/ESP/EFI/OC/Kexts/ForgedInvariant.kext | org.ChefKiss.ForgedInvariant | 1.5.0 | 328beb1265f1fc0c
+/Volumes/ESP/EFI/OC/Kexts/HoRNDIS.kext | com.joshuawise.kexts.HoRNDIS |  | d7ec97a3a6c26a96
+/Volumes/ESP/EFI/OC/Kexts/ItlDiag.kext | com.itlmt7925.diag | 0.1.0 | 3da8052617a377dd
+/Volumes/ESP/EFI/OC/Kexts/ItlXhciKick.kext | com.itlmt7925.xhcikick | 0.0.1 | 5f4caa68cfc4418d
+/Volumes/ESP/EFI/OC/Kexts/Lilu.kext | as.vit9696.Lilu | 1.7.3 | e3f00df5aca98c70
+/Volumes/ESP/EFI/OC/Kexts/MtkBtFw.kext | com.itlmt7925.mtkbtfw | 0.1.0 | fbabbcfc285b524e
+/Volumes/ESP/EFI/OC/Kexts/NVAccel.kext | com.nullmoth.NVAccel | 0.1 | 63eba4a8f3ff069d
+/Volumes/ESP/EFI/OC/Kexts/NVMeFix.kext | org.acidanthera.NVMeFix | 1.1.4 | d32c743220011f16
+/Volumes/ESP/EFI/OC/Kexts/NVRM.kext | com.nullmoth.NVRM | 0.1 | e15a281a07959557
+/Volumes/ESP/EFI/OC/Kexts/NVRMAGDC.kext | com.nullmoth.NVRMAGDC | 0.1 | 270f9ef9ac9d2482
+/Volumes/ESP/EFI/OC/Kexts/NVRMEdpBL.kext | com.nullmoth.NVRMEdpBL | 0.1 | 433dfcbfc71b90d9
+/Volumes/ESP/EFI/OC/Kexts/NVRMFB.kext | com.nullmoth.NVRMFB | 0.1 | b90401044c286775
+/Volumes/ESP/EFI/OC/Kexts/NullEthernet.kext | org.rehabman.driver.NullEthernet | 1.0.6 | 86bf2fede46b6bbd
+/Volumes/ESP/EFI/OC/Kexts/RestrictEvents.kext | as.vit9696.RestrictEvents | 1.1.7 | 8a244c696234c4ae
+/Volumes/ESP/EFI/OC/Kexts/SMCBatteryManager.kext | ru.usrsse2.SMCBatteryManager | 1.3.9 | 791d81018a5374dd
+/Volumes/ESP/EFI/OC/Kexts/SMCLightSensor.kext | ru.usrsse2.SMCLightSensor | 1.3.9 | b3aca78cd5aca2fb
+/Volumes/ESP/EFI/OC/Kexts/Sinetek-rtsx.kext | com.sinet3k.Sinetek-rtsx | 9.0.0 | 909d7f7bcb504781
+/Volumes/ESP/EFI/OC/Kexts/StrixAccel.kext | com.itlmt7925.strixaccel | 0.1.15 | 0ae72c09ef488553
+/Volumes/ESP/EFI/OC/Kexts/StrixAmp.kext | com.itlmt7925.strixamp | 0.2.0 | 5c27f1bcb43b257d
+/Volumes/ESP/EFI/OC/Kexts/StrixGOP.kext | com.itlmt7925.strixgop | 0.1.10 | b64e1bdebaa4f459
+/Volumes/ESP/EFI/OC/Kexts/StrixHeadroom.kext | com.itlmt7925.strixheadroom | 0.1.0 | 0065938643b23593
+/Volumes/ESP/EFI/OC/Kexts/StrixMetalGate.kext | com.itlmt7925.strixmetalgate | 0.1.1 | d1ee77ace62f5073
+/Volumes/ESP/EFI/OC/Kexts/StrixProbe.kext | com.itlmt7925.strixprobe | 0.1.2 | 34bd38a97b727908
+/Volumes/ESP/EFI/OC/Kexts/USBToolBox.kext | com.dhinakg.USBToolBox.kext |  | c5c8dc205a079ee3
+/Volumes/ESP/EFI/OC/Kexts/UTBDefault.kext | com.dhinakg.USBToolBox.injector | 1.0 | no-exec
+/Volumes/ESP/EFI/OC/Kexts/UTBMap.kext | com.nullmoth.UTBMap | 1.0 | no-exec
+/Volumes/ESP/EFI/OC/Kexts/VirtualSMC.kext | as.vit9696.VirtualSMC | 1.3.9 | bf91e9542b86c20a
+/Volumes/ESP/EFI/OC/Kexts/VoodooI2C.kext | com.alexandred.VoodooI2C | 2.9.1 | dbb7865eec4eeb0e
+/Volumes/ESP/EFI/OC/Kexts/VoodooI2CHID.kext | com.alexandred.VoodooI2CHID | 1.0 | 1ba930b05d5c786b
+/Volumes/ESP/EFI/OC/Kexts/WhateverGreen.kext | as.vit9696.WhateverGreen | 1.7.2 | 059967ba94fba6cb
+/Volumes/ESP/EFI/OC/Kexts/itlmt7925.kext | com.itlmt7925.kext | 0.1.0 | 322f7c94545fbebf
+/Volumes/ESP/EFI/OC/Kexts/itlmt7925Native.kext | com.itlmt7925.native | 0.1.0 | 6d0e43dfb7ca479c

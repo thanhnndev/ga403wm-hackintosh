@@ -1,0 +1,51 @@
+# 0xffffff8002261772 __ZN23IO80211SkywalkInterface4initEP9IOServiceP10ether_addr
+ffffff8002261772: push     rbp
+ffffff8002261773: mov      rbp, rsp
+ffffff8002261776: push     r15
+ffffff8002261778: push     r14
+ffffff800226177a: push     rbx
+ffffff800226177b: push     rax
+ffffff800226177c: mov      rbx, rdx
+ffffff800226177f: mov      r14, rdi
+ffffff8002261782: lea      rdi, [rip - 0x151789]
+ffffff8002261789: mov      rsi, qword ptr [rip + 0x15a990]  ; 0xffffff80023bc120
+ffffff8002261790: lea      rcx, [rip + 0x154699]  ; 0xffffff80023b5e30
+ffffff8002261797: xor      edx, edx
+ffffff8002261799: xor      eax, eax
+ffffff800226179b: call     0xffffff8000a85d00  ; __os_log_internal
+ffffff80022617a0: cmp      qword ptr [r14 + 0x110], 0
+ffffff80022617a8: jne      0xffffff80022617c3
+ffffff80022617aa: mov      rax, qword ptr [rip + 0x15a957]  ; 0xffffff80023bc108
+ffffff80022617b1: xor      r15d, r15d
+ffffff80022617b4: mov      rdi, r14
+ffffff80022617b7: xor      esi, esi
+ffffff80022617b9: call     qword ptr [rax + 0x258]
+ffffff80022617bf: test     al, al
+ffffff80022617c1: je       0xffffff8002261814
+ffffff80022617c3: mov      rdi, r14
+ffffff80022617c6: call     0xffffff800226129c  ; __ZN23IO80211SkywalkInterface9initIvarsEv
+ffffff80022617cb: test     al, al
+ffffff80022617cd: je       0xffffff8002261811
+ffffff80022617cf: test     rbx, rbx
+ffffff80022617d2: je       0xffffff80022617ee
+ffffff80022617d4: mov      rax, qword ptr [r14 + 0x110]
+ffffff80022617db: movzx    ecx, word ptr [rbx + 4]
+ffffff80022617df: mov      word ptr [rax + 0xe8], cx
+ffffff80022617e6: mov      ecx, dword ptr [rbx]
+ffffff80022617e8: mov      dword ptr [rax + 0xe4], ecx
+ffffff80022617ee: lea      rdi, [rip - 0x1517f5]
+ffffff80022617f5: mov      rsi, qword ptr [rip + 0x15a924]  ; 0xffffff80023bc120
+ffffff80022617fc: lea      rcx, [rip + 0x15466d]  ; 0xffffff80023b5e70
+ffffff8002261803: xor      edx, edx
+ffffff8002261805: xor      eax, eax
+ffffff8002261807: call     0xffffff8000a85d00  ; __os_log_internal
+ffffff800226180c: mov      r15b, 1
+ffffff800226180f: jmp      0xffffff8002261814  ; __ZN23IO80211SkywalkInterface4initEP9IOServiceP10ether_addr+0xa2
+ffffff8002261811: xor      r15d, r15d
+ffffff8002261814: mov      eax, r15d
+ffffff8002261817: add      rsp, 8
+ffffff800226181b: pop      rbx
+ffffff800226181c: pop      r14
+ffffff800226181e: pop      r15
+ffffff8002261820: pop      rbp
+ffffff8002261821: ret      

@@ -1,0 +1,6 @@
+# 0xffffff80029830be __ZN25IOSkywalkNetworkInterface6setMTUEj
+ffffff80029830be: push     rbp
+ffffff80029830bf: mov      rbp, rsp
+ffffff80029830c2: xor      eax, eax
+ffffff80029830c4: pop      rbp
+ffffff80029830c5: ret      

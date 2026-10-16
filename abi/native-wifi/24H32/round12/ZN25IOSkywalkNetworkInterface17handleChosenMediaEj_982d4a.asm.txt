@@ -1,0 +1,7 @@
+# 0xffffff8002982d4a __ZN25IOSkywalkNetworkInterface17handleChosenMediaEj
+ffffff8002982d4a: push     rbp
+ffffff8002982d4b: mov      rbp, rsp
+ffffff8002982d4e: mov      eax, 0xe00002c7
+ffffff8002982d53: pop      rbp
+ffffff8002982d54: ret      
+ffffff8002982d55: nop      

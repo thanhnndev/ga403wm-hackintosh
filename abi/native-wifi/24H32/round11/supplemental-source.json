@@ -1,0 +1,16 @@
+{
+  "functions": {
+    "__ZN23IO80211SkywalkInterface19isCommandProhibitedEi": {
+      "address": "0xffffff8002265c04",
+      "file": "supplement-ZN23IO80211SkywalkInterface19isCommandProhibitedEi_265c04.asm.txt"
+    },
+    "__ZN25IOSkywalkNetworkInterface20finalizeBSDInterfaceEP7__ifnetj": {
+      "address": "0xffffff80029822fc",
+      "file": "supplement-ZN25IOSkywalkNetworkInterface20finalizeBSDInterfaceEP7_ifnetj_9822fc.asm.txt"
+    },
+    "____ZN11IO80211Glue13sendIOUCToWclEjjPvmRb_block_invoke": {
+      "address": "0xffffff800212b06c",
+      "file": "supplement-ZN11IO80211Glue13sendIOUCToWclEjjPvmRb_block_invoke_12b06c.asm.txt"
+    }
+  }
+}

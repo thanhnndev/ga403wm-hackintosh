@@ -1,0 +1,5 @@
+# 0xffffff800298214e __ZN25IOSkywalkNetworkInterface21deregisterLogicalLinkEv
+ffffff800298214e: push     rbp
+ffffff800298214f: mov      rbp, rsp
+ffffff8002982152: pop      rbp
+ffffff8002982153: jmp      0xffffff8002981b54  ; __ZN25IOSkywalkNetworkInterface26deregisterNetworkInterfaceEj

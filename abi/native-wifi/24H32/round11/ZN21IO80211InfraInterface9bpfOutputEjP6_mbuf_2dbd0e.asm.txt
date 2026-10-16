@@ -1,0 +1,8 @@
+# 0xffffff80022dbd0e __ZN21IO80211InfraInterface9bpfOutputEjP6__mbuf
+ffffff80022dbd0e: push     rbp
+ffffff80022dbd0f: mov      rbp, rsp
+ffffff80022dbd12: mov      rdi, rdx
+ffffff80022dbd15: call     0xffffff800092d3e0  ; _mbuf_free
+ffffff80022dbd1a: xor      eax, eax
+ffffff80022dbd1c: pop      rbp
+ffffff80022dbd1d: ret      

@@ -1,0 +1,43 @@
+# 0xffffff8002988af8 __ZN26IOSkywalkEthernetInterface6enableEj
+ffffff8002988af8: push     rbp
+ffffff8002988af9: mov      rbp, rsp
+ffffff8002988afc: push     r15
+ffffff8002988afe: push     r14
+ffffff8002988b00: push     rbx
+ffffff8002988b01: push     rax
+ffffff8002988b02: mov      rbx, rdi
+ffffff8002988b05: mov      rax, qword ptr [rdi]
+ffffff8002988b08: call     qword ptr [rax + 0x8f8]
+ffffff8002988b0e: test     rax, rax
+ffffff8002988b11: je       0xffffff8002988b6a
+ffffff8002988b13: mov      r15, rax
+ffffff8002988b16: lea      rax, [rip + 0x26793]  ; 0xffffff80029af2b0
+ffffff8002988b1d: mov      rdi, rbx
+ffffff8002988b20: mov      esi, 1
+ffffff8002988b25: call     qword ptr [rax + 0x860]
+ffffff8002988b2b: mov      r14d, eax
+ffffff8002988b2e: test     eax, eax
+ffffff8002988b30: jne      0xffffff8002988b70
+ffffff8002988b32: mov      rdi, rbx
+ffffff8002988b35: mov      rsi, r15
+ffffff8002988b38: mov      edx, 1
+ffffff8002988b3d: call     0xffffff8002988766  ; __ZN26IOSkywalkEthernetInterface15ioctl_multicastEP7__ifnetb
+ffffff8002988b42: mov      rax, qword ptr [rbx + 0x108]
+ffffff8002988b49: xor      r14d, r14d
+ffffff8002988b4c: test     byte ptr [rax + 0x1d], 1
+ffffff8002988b50: je       0xffffff8002988b70
+ffffff8002988b52: mov      rax, qword ptr [rbx]
+ffffff8002988b55: xor      r14d, r14d
+ffffff8002988b58: mov      rdi, rbx
+ffffff8002988b5b: mov      esi, 1
+ffffff8002988b60: xor      edx, edx
+ffffff8002988b62: call     qword ptr [rax + 0xa90]
+ffffff8002988b68: jmp      0xffffff8002988b70  ; __ZN26IOSkywalkEthernetInterface6enableEj+0x78
+ffffff8002988b6a: mov      r14d, 0xe00002d8
+ffffff8002988b70: mov      eax, r14d
+ffffff8002988b73: add      rsp, 8
+ffffff8002988b77: pop      rbx
+ffffff8002988b78: pop      r14
+ffffff8002988b7a: pop      r15
+ffffff8002988b7c: pop      rbp
+ffffff8002988b7d: ret      

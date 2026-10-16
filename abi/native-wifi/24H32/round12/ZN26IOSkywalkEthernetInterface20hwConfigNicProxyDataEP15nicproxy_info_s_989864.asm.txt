@@ -1,0 +1,5 @@
+# 0xffffff8002989864 __ZN26IOSkywalkEthernetInterface20hwConfigNicProxyDataEP15nicproxy_info_s
+ffffff8002989864: push     rbp
+ffffff8002989865: mov      rbp, rsp
+ffffff8002989868: pop      rbp
+ffffff8002989869: ret      

@@ -1,0 +1,22 @@
+# 0xffffff800297f510 __ZN22IOSkywalkNetworkPacket17setRxChecksumInfoEjt
+ffffff800297f510: push     rbp
+ffffff800297f511: mov      rbp, rsp
+ffffff800297f514: mov      ecx, edx
+ffffff800297f516: mov      rdi, qword ptr [rdi + 0x28]
+ffffff800297f51a: xor      edx, edx
+ffffff800297f51c: xor      r8d, r8d
+ffffff800297f51f: call     0xffffff8000a35200  ; _kern_packet_set_inet_checksum
+ffffff800297f524: test     eax, eax
+ffffff800297f526: je       0xffffff800297f545
+ffffff800297f528: cmp      eax, 0x16
+ffffff800297f52b: je       0xffffff800297f539
+ffffff800297f52d: cmp      eax, 2
+ffffff800297f530: jne      0xffffff800297f540
+ffffff800297f532: mov      eax, 0xe00002f0
+ffffff800297f537: jmp      0xffffff800297f545  ; __ZN22IOSkywalkNetworkPacket17setRxChecksumInfoEjt+0x35
+ffffff800297f539: mov      eax, 0xe00002c2
+ffffff800297f53e: jmp      0xffffff800297f545  ; __ZN22IOSkywalkNetworkPacket17setRxChecksumInfoEjt+0x35
+ffffff800297f540: mov      eax, 0xe00002bc
+ffffff800297f545: pop      rbp
+ffffff800297f546: ret      
+ffffff800297f547: nop      

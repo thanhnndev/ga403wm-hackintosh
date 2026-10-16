@@ -1,0 +1,9 @@
+# 0xffffff80029a475d __ZN26IOUserNetworkMemorySegment8withPoolEP25IOSkywalkPacketBufferPoolPNS_17SegmentDescriptorEj.cold.1
+ffffff80029a475d: push     rbp
+ffffff80029a475e: mov      rbp, rsp
+ffffff80029a4761: mov      rax, qword ptr [rdi]
+ffffff80029a4764: call     qword ptr [rax + 0x28]
+ffffff80029a4767: ud2      
+ffffff80029a4769: nop      
+ffffff80029a476a: nop      
+ffffff80029a476b: nop      

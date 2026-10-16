@@ -1,0 +1,24 @@
+# 0xffffff800297866e __ZN25IOSkywalkNetworkBSDClient14closeInterfaceEP25IOSkywalkNetworkInterface
+ffffff800297866e: push     rbp
+ffffff800297866f: mov      rbp, rsp
+ffffff8002978672: push     r14
+ffffff8002978674: push     rbx
+ffffff8002978675: mov      r14, rsi
+ffffff8002978678: mov      rbx, rdi
+ffffff800297867b: cmp      dword ptr [rdi + 0x12c], 0
+ffffff8002978682: je       0xffffff80029786a1
+ffffff8002978684: call     0xffffff8000ad5ec0  ; __ZN9IOService15getPMRootDomainEv
+ffffff8002978689: mov      esi, dword ptr [rbx + 0x12c]
+ffffff800297868f: mov      rdi, rax
+ffffff8002978692: call     0xffffff8000b83b00  ; __ZN14IOPMrootDomain22removePublishedFeatureEj
+ffffff8002978697: mov      dword ptr [rbx + 0x12c], 0
+ffffff80029786a1: mov      rax, qword ptr [r14]
+ffffff80029786a4: mov      rax, qword ptr [rax + 0x5d8]
+ffffff80029786ab: mov      rdi, r14
+ffffff80029786ae: mov      rsi, rbx
+ffffff80029786b1: xor      edx, edx
+ffffff80029786b3: pop      rbx
+ffffff80029786b4: pop      r14
+ffffff80029786b6: pop      rbp
+ffffff80029786b7: jmp      rax
+ffffff80029786b9: nop      

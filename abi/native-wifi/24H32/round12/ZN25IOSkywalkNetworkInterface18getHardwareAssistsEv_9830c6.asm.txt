@@ -1,0 +1,9 @@
+# 0xffffff80029830c6 __ZN25IOSkywalkNetworkInterface18getHardwareAssistsEv
+ffffff80029830c6: push     rbp
+ffffff80029830c7: mov      rbp, rsp
+ffffff80029830ca: mov      rax, qword ptr [rdi + 0xb8]
+ffffff80029830d1: mov      rax, qword ptr [rax]
+ffffff80029830d4: mov      eax, dword ptr [rax + 0x20]
+ffffff80029830d7: pop      rbp
+ffffff80029830d8: ret      
+ffffff80029830d9: nop      

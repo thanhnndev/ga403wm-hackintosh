@@ -1,0 +1,7 @@
+# 0xffffff800297ebce __ZNK21IOSkywalkPacketBuffer13getDataLengthEv
+ffffff800297ebce: push     rbp
+ffffff800297ebcf: mov      rbp, rsp
+ffffff800297ebd2: mov      eax, dword ptr [rdi + 0x7c]
+ffffff800297ebd5: pop      rbp
+ffffff800297ebd6: ret      
+ffffff800297ebd7: nop      

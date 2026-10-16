@@ -1,0 +1,119 @@
+# 0xffffff8002262732 __ZN23IO80211SkywalkInterface15postMessageIOUCEPKcjPvm
+ffffff8002262732: push     rbp
+ffffff8002262733: mov      rbp, rsp
+ffffff8002262736: push     r15
+ffffff8002262738: push     r14
+ffffff800226273a: push     r13
+ffffff800226273c: push     r12
+ffffff800226273e: push     rbx
+ffffff800226273f: sub      rsp, 0x48
+ffffff8002262743: mov      qword ptr [rbp - 0x50], r8
+ffffff8002262747: mov      qword ptr [rbp - 0x70], rcx
+ffffff800226274b: mov      qword ptr [rbp - 0x40], rdx
+ffffff800226274f: mov      qword ptr [rbp - 0x68], rsi
+ffffff8002262753: mov      r13, rdi
+ffffff8002262756: mov      rax, qword ptr [rip + 0x1599bb]  ; 0xffffff80023bc118
+ffffff800226275d: mov      rax, qword ptr [rax]
+ffffff8002262760: mov      qword ptr [rbp - 0x30], rax
+ffffff8002262764: mov      rax, qword ptr [rdi + 0x110]
+ffffff800226276b: mov      rdi, qword ptr [rax + 0xa8]
+ffffff8002262772: mov      rax, qword ptr [rdi]
+ffffff8002262775: call     qword ptr [rax + 0x130]
+ffffff800226277b: test     eax, eax
+ffffff800226277d: je       0xffffff80022628dd
+ffffff8002262783: mov      rax, qword ptr [r13 + 0x110]
+ffffff800226278a: mov      rdi, qword ptr [rax + 0xa8]
+ffffff8002262791: mov      rax, qword ptr [rdi]
+ffffff8002262794: call     qword ptr [rax + 0x130]
+ffffff800226279a: test     eax, eax
+ffffff800226279c: je       0xffffff80022628e5
+ffffff80022627a2: mov      rax, qword ptr [rbp - 0x40]
+ffffff80022627a6: lea      ecx, [rax - 0xf2]
+ffffff80022627ac: mov      dword ptr [rbp - 0x44], ecx
+ffffff80022627af: mov      eax, eax
+ffffff80022627b1: mov      qword ptr [rbp - 0x58], rax
+ffffff80022627b5: mov      r12d, 0xe0000001
+ffffff80022627bb: xor      r14d, r14d
+ffffff80022627be: mov      rax, qword ptr [r13 + 0x110]
+ffffff80022627c5: mov      rdi, qword ptr [rax + 0xa8]
+ffffff80022627cc: mov      rax, qword ptr [rdi]
+ffffff80022627cf: mov      esi, r14d
+ffffff80022627d2: call     qword ptr [rax + 0x1e8]
+ffffff80022627d8: mov      rdi, rax
+ffffff80022627db: lea      rsi, [rip + 0x195356]  ; 0xffffff80023f7b38
+ffffff80022627e2: call     0xffffff8000a49ab0  ; __ZN15OSMetaClassBase12safeMetaCastEPKS_PK11OSMetaClass
+ffffff80022627e7: test     rax, rax
+ffffff80022627ea: je       0xffffff80022628b8
+ffffff80022627f0: mov      r15, rax
+ffffff80022627f3: mov      dword ptr [rbp - 0x34], 0
+ffffff80022627fa: mov      rdi, rax
+ffffff80022627fd: mov      rsi, qword ptr [rbp - 0x68]
+ffffff8002262801: mov      rdx, qword ptr [rbp - 0x40]
+ffffff8002262805: mov      rcx, qword ptr [rbp - 0x70]
+ffffff8002262809: mov      r8, qword ptr [rbp - 0x50]
+ffffff800226280d: lea      r9, [rbp - 0x34]
+ffffff8002262811: call     0xffffff8002237ba8  ; __ZN20IO80211IOUCEventPipe9writePipeEPKcjPhmRi
+ffffff8002262816: xor      r12d, r12d
+ffffff8002262819: cmp      eax, 0xe00002d8
+ffffff800226281e: je       0xffffff80022628b8
+ffffff8002262824: mov      ebx, eax
+ffffff8002262826: test     eax, eax
+ffffff8002262828: je       0xffffff80022628b8
+ffffff800226282e: mov      rdi, r15
+ffffff8002262831: call     0xffffff800048cb00  ; _vm_kernel_addrhash_external
+ffffff8002262836: mov      qword ptr [rbp - 0x60], rax
+ffffff800226283a: lea      r11, [rip + 0x140b66]  ; "unknown APPLE80211_M_"
+ffffff8002262841: cmp      dword ptr [rbp - 0x44], 0xffffff0f
+ffffff8002262848: jb       0xffffff8002262859
+ffffff800226284a: mov      rax, qword ptr [rbp - 0x58]
+ffffff800226284e: lea      rcx, [rip + 0x18bb0b]  ; 0xffffff80023ee360
+ffffff8002262855: mov      r11, qword ptr [rcx + rax*8]
+ffffff8002262859: mov      rax, qword ptr [r15 + 0x10]
+ffffff800226285d: mov      rax, qword ptr [rax + 0x10]
+ffffff8002262861: mov      r15, qword ptr [rax + 0xd8]
+ffffff8002262868: mov      r12d, dword ptr [r15 + 0x120]
+ffffff800226286f: add      r15, 0x20
+ffffff8002262873: mov      r10d, dword ptr [rbp - 0x34]
+ffffff8002262877: lea      rdi, [rip - 0x15287e]
+ffffff800226287e: mov      rsi, qword ptr [rip + 0x15989b]  ; 0xffffff80023bc120
+ffffff8002262885: xor      edx, edx
+ffffff8002262887: lea      rcx, [rip + 0x153722]  ; "%s: failed to write to pipe[%d][%p]: %d for client %s[%d], detailReason[0x%08x] "
+ffffff800226288e: lea      r8, [rip + 0x11bb93]  ; "postMessageIOUC"
+ffffff8002262895: mov      r9d, r14d
+ffffff8002262898: xor      eax, eax
+ffffff800226289a: push     r11
+ffffff800226289c: push     qword ptr [rbp - 0x40]
+ffffff800226289f: push     qword ptr [rbp - 0x50]
+ffffff80022628a2: push     r10
+ffffff80022628a4: push     r12
+ffffff80022628a6: push     r15
+ffffff80022628a8: push     rbx
+ffffff80022628a9: push     qword ptr [rbp - 0x60]
+ffffff80022628ac: call     0xffffff8000a85d00  ; __os_log_internal
+ffffff80022628b1: add      rsp, 0x40
+ffffff80022628b5: mov      r12d, ebx
+ffffff80022628b8: inc      r14d
+ffffff80022628bb: mov      rax, qword ptr [r13 + 0x110]
+ffffff80022628c2: mov      rdi, qword ptr [rax + 0xa8]
+ffffff80022628c9: mov      rax, qword ptr [rdi]
+ffffff80022628cc: call     qword ptr [rax + 0x130]
+ffffff80022628d2: cmp      r14d, eax
+ffffff80022628d5: jb       0xffffff80022627be
+ffffff80022628db: jmp      0xffffff80022628eb  ; __ZN23IO80211SkywalkInterface15postMessageIOUCEPKcjPvm+0x1b9
+ffffff80022628dd: mov      r12d, 0xe00002c7
+ffffff80022628e3: jmp      0xffffff80022628eb  ; __ZN23IO80211SkywalkInterface15postMessageIOUCEPKcjPvm+0x1b9
+ffffff80022628e5: mov      r12d, 0xe0000001
+ffffff80022628eb: mov      rax, qword ptr [rip + 0x159826]  ; 0xffffff80023bc118
+ffffff80022628f2: mov      rax, qword ptr [rax]
+ffffff80022628f5: cmp      rax, qword ptr [rbp - 0x30]
+ffffff80022628f9: jne      0xffffff800226290d
+ffffff80022628fb: mov      eax, r12d
+ffffff80022628fe: add      rsp, 0x48
+ffffff8002262902: pop      rbx
+ffffff8002262903: pop      r12
+ffffff8002262905: pop      r13
+ffffff8002262907: pop      r14
+ffffff8002262909: pop      r15
+ffffff800226290b: pop      rbp
+ffffff800226290c: ret      
+ffffff800226290d: call     0xffffff8000383150  ; ___stack_chk_fail

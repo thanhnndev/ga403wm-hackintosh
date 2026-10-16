@@ -1,0 +1,80 @@
+# 0xffffff80022dd28e __ZN21IO80211InfraInterface9getLOCALEEP22apple80211_locale_data
+ffffff80022dd28e: push     rbp
+ffffff80022dd28f: mov      rbp, rsp
+ffffff80022dd292: push     r15
+ffffff80022dd294: push     r14
+ffffff80022dd296: push     r13
+ffffff80022dd298: push     r12
+ffffff80022dd29a: push     rbx
+ffffff80022dd29b: sub      rsp, 0x28
+ffffff80022dd29f: mov      rbx, rsi
+ffffff80022dd2a2: mov      r15, rdi
+ffffff80022dd2a5: mov      rax, qword ptr [rip + 0xdee6c]  ; 0xffffff80023bc118
+ffffff80022dd2ac: mov      rax, qword ptr [rax]
+ffffff80022dd2af: mov      qword ptr [rbp - 0x30], rax
+ffffff80022dd2b3: mov      qword ptr [rbp - 0x38], 1
+ffffff80022dd2bb: mov      rax, qword ptr [rdi + 0x110]
+ffffff80022dd2c2: mov      rdi, qword ptr [rax + 0xd8]
+ffffff80022dd2c9: test     rdi, rdi
+ffffff80022dd2cc: je       0xffffff80022dd304
+ffffff80022dd2ce: lea      r12, [rbp - 0x39]
+ffffff80022dd2d2: mov      byte ptr [r12], 0
+ffffff80022dd2d7: lea      rcx, [rbp - 0x38]
+ffffff80022dd2db: mov      r8d, 8
+ffffff80022dd2e1: mov      esi, 0xc02869c9
+ffffff80022dd2e6: mov      edx, 0x33
+ffffff80022dd2eb: mov      r9, r12
+ffffff80022dd2ee: call     0xffffff800212ad12  ; __ZN11IO80211Glue13sendIOUCToWclEjjPvmRb
+ffffff80022dd2f3: cmp      byte ptr [r12], 1
+ffffff80022dd2f8: jne      0xffffff80022dd304
+ffffff80022dd2fa: mov      r14d, eax
+ffffff80022dd2fd: cmp      eax, 0xe082280f
+ffffff80022dd302: jne      0xffffff80022dd313
+ffffff80022dd304: lea      rsi, [rbp - 0x38]
+ffffff80022dd308: mov      rdi, r15
+ffffff80022dd30b: call     0xffffff80021f70b0  ; __Z25apple80211getCOUNTRY_CODEP23IO80211SkywalkInterfaceP28apple80211_country_code_data
+ffffff80022dd310: mov      r14d, eax
+ffffff80022dd313: test     r14d, r14d
+ffffff80022dd316: jne      0xffffff80022dd37e
+ffffff80022dd318: lea      r15, [rbp - 0x34]
+ffffff80022dd31c: lea      rsi, [rip + 0xbe14a]  ; 0xffffff800239b46d
+ffffff80022dd323: mov      rdi, r15
+ffffff80022dd326: call     0xffffff80004ee930  ; _strcmp
+ffffff80022dd32b: test     eax, eax
+ffffff80022dd32d: je       0xffffff80022dd369
+ffffff80022dd32f: mov      qword ptr [rbp - 0x48], rbx
+ffffff80022dd333: xor      r12d, r12d
+ffffff80022dd336: lea      r13, [rip + 0x109b03]  ; 0xffffff80023e6e40
+ffffff80022dd33d: xor      ecx, ecx
+ffffff80022dd33f: lea      rbx, [rcx + 0x10]
+ffffff80022dd343: cmp      rbx, 0xd0
+ffffff80022dd34a: je       0xffffff80022dd376
+ffffff80022dd34c: mov      rsi, qword ptr [rcx + r13 + 0x10]
+ffffff80022dd351: mov      rdi, r15
+ffffff80022dd354: call     0xffffff80004ee930  ; _strcmp
+ffffff80022dd359: mov      rcx, rbx
+ffffff80022dd35c: test     eax, eax
+ffffff80022dd35e: jne      0xffffff80022dd33f
+ffffff80022dd360: add      r13, rbx
+ffffff80022dd363: mov      rbx, qword ptr [rbp - 0x48]
+ffffff80022dd367: jmp      0xffffff80022dd370  ; __ZN21IO80211InfraInterface9getLOCALEEP22apple80211_locale_data+0xe2
+ffffff80022dd369: lea      r13, [rip + 0x109ad0]  ; 0xffffff80023e6e40
+ffffff80022dd370: mov      r12d, dword ptr [r13 + 8]
+ffffff80022dd374: jmp      0xffffff80022dd37a  ; __ZN21IO80211InfraInterface9getLOCALEEP22apple80211_locale_data+0xec
+ffffff80022dd376: mov      rbx, qword ptr [rbp - 0x48]
+ffffff80022dd37a: mov      dword ptr [rbx + 4], r12d
+ffffff80022dd37e: mov      rax, qword ptr [rip + 0xded93]  ; 0xffffff80023bc118
+ffffff80022dd385: mov      rax, qword ptr [rax]
+ffffff80022dd388: cmp      rax, qword ptr [rbp - 0x30]
+ffffff80022dd38c: jne      0xffffff80022dd3a0
+ffffff80022dd38e: mov      eax, r14d
+ffffff80022dd391: add      rsp, 0x28
+ffffff80022dd395: pop      rbx
+ffffff80022dd396: pop      r12
+ffffff80022dd398: pop      r13
+ffffff80022dd39a: pop      r14
+ffffff80022dd39c: pop      r15
+ffffff80022dd39e: pop      rbp
+ffffff80022dd39f: ret      
+ffffff80022dd3a0: call     0xffffff8000383150  ; ___stack_chk_fail
+ffffff80022dd3a5: nop      

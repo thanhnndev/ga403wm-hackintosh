@@ -1,0 +1,9 @@
+# 0xffffff8002265624 __ZN23IO80211SkywalkInterface16updateLinkStatusEv
+ffffff8002265624: push     rbp
+ffffff8002265625: mov      rbp, rsp
+ffffff8002265628: lea      rdi, [rip + 0x11977c]  ; 0xffffff800237edab
+ffffff800226562f: xor      eax, eax
+ffffff8002265631: call     0xffffff8000ab6560  ; _IOLog
+ffffff8002265636: xor      eax, eax
+ffffff8002265638: pop      rbp
+ffffff8002265639: ret      

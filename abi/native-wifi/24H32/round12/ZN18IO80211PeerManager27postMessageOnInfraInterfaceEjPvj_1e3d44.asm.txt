@@ -1,0 +1,56 @@
+# 0xffffff80021e3d44 __ZN18IO80211PeerManager27postMessageOnInfraInterfaceEjPvj
+ffffff80021e3d44: push     rbp
+ffffff80021e3d45: mov      rbp, rsp
+ffffff80021e3d48: push     r15
+ffffff80021e3d4a: push     r14
+ffffff80021e3d4c: push     r13
+ffffff80021e3d4e: push     r12
+ffffff80021e3d50: push     rbx
+ffffff80021e3d51: push     rax
+ffffff80021e3d52: mov      r15d, ecx
+ffffff80021e3d55: mov      r12, rdx
+ffffff80021e3d58: mov      r14d, esi
+ffffff80021e3d5b: mov      r13, rdi
+ffffff80021e3d5e: mov      rax, qword ptr [rdi + 0x18]
+ffffff80021e3d62: mov      rdi, qword ptr [rax + 0x518]
+ffffff80021e3d69: mov      rax, qword ptr [rdi]
+ffffff80021e3d6c: call     qword ptr [rax + 0xc80]
+ffffff80021e3d72: test     rax, rax
+ffffff80021e3d75: je       0xffffff80021e3dc5
+ffffff80021e3d77: mov      rbx, rax
+ffffff80021e3d7a: lea      rdx, [rip + 0x17f10a]  ; 0xffffff8002362e8b
+ffffff80021e3d81: lea      rcx, [rip + 0x17f136]  ; "postMessageOnInfraInterface"
+ffffff80021e3d88: mov      qword ptr [rbp - 0x30], r12
+ffffff80021e3d8c: xor      r12d, r12d
+ffffff80021e3d8f: mov      esi, 0x10
+ffffff80021e3d94: mov      rdi, r13
+ffffff80021e3d97: mov      r8d, 0xd56
+ffffff80021e3d9d: mov      r9d, r14d
+ffffff80021e3da0: xor      eax, eax
+ffffff80021e3da2: call     0xffffff80021da96e  ; __ZN18IO80211PeerManager8logDebugEyPKcz
+ffffff80021e3da7: mov      ecx, r15d
+ffffff80021e3daa: mov      rax, qword ptr [rbx]
+ffffff80021e3dad: mov      rdi, rbx
+ffffff80021e3db0: mov      esi, r14d
+ffffff80021e3db3: mov      rdx, qword ptr [rbp - 0x30]
+ffffff80021e3db7: mov      r8d, 1
+ffffff80021e3dbd: call     qword ptr [rax + 0xb10]
+ffffff80021e3dc3: jmp      0xffffff80021e3df3  ; __ZN18IO80211PeerManager27postMessageOnInfraInterfaceEjPvj+0xaf
+ffffff80021e3dc5: lea      rdx, [rip + 0x17f10e]  ; "%s:%d! Critical Error : None of the  primary interface references[non-skywalk, s"
+ffffff80021e3dcc: lea      rcx, [rip + 0x17f0eb]  ; "postMessageOnInfraInterface"
+ffffff80021e3dd3: movabs   rsi, 0x800000000000000
+ffffff80021e3ddd: mov      rdi, r13
+ffffff80021e3de0: mov      r8d, 0xd5d
+ffffff80021e3de6: xor      eax, eax
+ffffff80021e3de8: call     0xffffff80021da96e  ; __ZN18IO80211PeerManager8logDebugEyPKcz
+ffffff80021e3ded: mov      r12d, 0xe00002bc
+ffffff80021e3df3: mov      eax, r12d
+ffffff80021e3df6: add      rsp, 8
+ffffff80021e3dfa: pop      rbx
+ffffff80021e3dfb: pop      r12
+ffffff80021e3dfd: pop      r13
+ffffff80021e3dff: pop      r14
+ffffff80021e3e01: pop      r15
+ffffff80021e3e03: pop      rbp
+ffffff80021e3e04: ret      
+ffffff80021e3e05: nop      

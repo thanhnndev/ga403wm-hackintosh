@@ -1,0 +1,16 @@
+# 0xffffff8002982e5c __ZN25IOSkywalkNetworkInterface26setInterfaceAdvisoryNoticeEPvPFiS0_PK24ifnet_interface_advisoryE
+ffffff8002982e5c: test     rsi, rsi
+ffffff8002982e5f: sete     cl
+ffffff8002982e62: test     rdx, rdx
+ffffff8002982e65: sete     r8b
+ffffff8002982e69: mov      eax, 0xe0000001
+ffffff8002982e6e: or       r8b, cl
+ffffff8002982e71: jne      0xffffff8002982e89
+ffffff8002982e73: push     rbp
+ffffff8002982e74: mov      rbp, rsp
+ffffff8002982e77: mov      rax, qword ptr [rdi + 0xb8]
+ffffff8002982e7e: mov      qword ptr [rax + 0x58], rsi
+ffffff8002982e82: mov      qword ptr [rax + 0x60], rdx
+ffffff8002982e86: xor      eax, eax
+ffffff8002982e88: pop      rbp
+ffffff8002982e89: ret      

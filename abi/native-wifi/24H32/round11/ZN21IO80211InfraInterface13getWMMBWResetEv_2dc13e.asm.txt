@@ -1,0 +1,8 @@
+# 0xffffff80022dc13e __ZN21IO80211InfraInterface13getWMMBWResetEv
+ffffff80022dc13e: push     rbp
+ffffff80022dc13f: mov      rbp, rsp
+ffffff80022dc142: mov      rax, qword ptr [rdi + 0x118]
+ffffff80022dc149: mov      al, byte ptr [rax + 0x181]
+ffffff80022dc14f: pop      rbp
+ffffff80022dc150: ret      
+ffffff80022dc151: nop      

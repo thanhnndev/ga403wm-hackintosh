@@ -1,0 +1,40 @@
+# 0xffffff800212a938 __ZN11IO80211Glue9sendEventEjPvmRb
+ffffff800212a938: push     rbp
+ffffff800212a939: mov      rbp, rsp
+ffffff800212a93c: push     r14
+ffffff800212a93e: push     rbx
+ffffff800212a93f: sub      rsp, 0x40
+ffffff800212a943: mov      rbx, r8
+ffffff800212a946: mov      rax, qword ptr [rip + 0x2917cb]  ; 0xffffff80023bc118
+ffffff800212a94d: mov      rax, qword ptr [rax]
+ffffff800212a950: mov      qword ptr [rbp - 0x18], rax
+ffffff800212a954: movabs   rax, 0xaaaaaaaaaaaaaaaa
+ffffff800212a95e: lea      r14, [rbp - 0x48]
+ffffff800212a962: mov      qword ptr [r14], rax
+ffffff800212a965: mov      qword ptr [r14 + 0x28], rax
+ffffff800212a969: mov      dword ptr [r14], esi
+ffffff800212a96c: mov      word ptr [r14 + 4], 0
+ffffff800212a973: xor      eax, eax
+ffffff800212a975: mov      byte ptr [r14 + 6], al
+ffffff800212a979: mov      qword ptr [r14 + 8], rcx
+ffffff800212a97d: test     rcx, rcx
+ffffff800212a980: cmove    rdx, rcx
+ffffff800212a984: mov      qword ptr [r14 + 0x10], rdx
+ffffff800212a988: mov      qword ptr [r14 + 0x18], rax
+ffffff800212a98c: mov      qword ptr [r14 + 0x20], rax
+ffffff800212a990: mov      byte ptr [r14 + 0x28], al
+ffffff800212a994: mov      rax, qword ptr [rdi]
+ffffff800212a997: mov      rsi, r14
+ffffff800212a99a: call     qword ptr [rax + 0x120]
+ffffff800212a9a0: mov      cl, byte ptr [r14 + 0x28]
+ffffff800212a9a4: mov      byte ptr [rbx], cl
+ffffff800212a9a6: mov      rcx, qword ptr [rip + 0x29176b]  ; 0xffffff80023bc118
+ffffff800212a9ad: mov      rcx, qword ptr [rcx]
+ffffff800212a9b0: cmp      rcx, qword ptr [rbp - 0x18]
+ffffff800212a9b4: jne      0xffffff800212a9bf
+ffffff800212a9b6: add      rsp, 0x40
+ffffff800212a9ba: pop      rbx
+ffffff800212a9bb: pop      r14
+ffffff800212a9bd: pop      rbp
+ffffff800212a9be: ret      
+ffffff800212a9bf: call     0xffffff8000383150  ; ___stack_chk_fail

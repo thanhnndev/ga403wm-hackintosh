@@ -1,0 +1,8 @@
+# 0xffffff80022dc192 __ZN21IO80211InfraInterface10wowEnabledEv
+ffffff80022dc192: push     rbp
+ffffff80022dc193: mov      rbp, rsp
+ffffff80022dc196: mov      rax, qword ptr [rdi + 0x118]
+ffffff80022dc19d: mov      al, byte ptr [rax + 0xa0]
+ffffff80022dc1a3: pop      rbp
+ffffff80022dc1a4: ret      
+ffffff80022dc1a5: nop      

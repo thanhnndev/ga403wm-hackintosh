@@ -1,0 +1,20 @@
+# 0xffffff800297e430 __ZNK15IOSkywalkPacket21getDataVirtualAddressEv
+ffffff800297e430: push     rbp
+ffffff800297e431: mov      rbp, rsp
+ffffff800297e434: push     r14
+ffffff800297e436: push     rbx
+ffffff800297e437: mov      rax, qword ptr [rdi + 0x30]
+ffffff800297e43b: mov      rbx, qword ptr [rax]
+ffffff800297e43e: mov      rdi, rbx
+ffffff800297e441: call     0xffffff800297ebf2  ; __ZNK21IOSkywalkPacketBuffer16getMemorySegmentEv
+ffffff800297e446: mov      rdi, rax
+ffffff800297e449: call     0xffffff800298732e  ; __ZNK22IOSkywalkMemorySegment17getVirtualAddressEv
+ffffff800297e44e: mov      r14, rax
+ffffff800297e451: mov      rdi, rbx
+ffffff800297e454: call     0xffffff800297ebfc  ; __ZNK21IOSkywalkPacketBuffer22getMemorySegmentOffsetEv
+ffffff800297e459: add      rax, r14
+ffffff800297e45c: pop      rbx
+ffffff800297e45d: pop      r14
+ffffff800297e45f: pop      rbp
+ffffff800297e460: ret      
+ffffff800297e461: nop      

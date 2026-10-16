@@ -1,0 +1,117 @@
+# 0xffffff800262e62e __ZN19IONetworkController13setLinkStatusEjPK15IONetworkMediumyP6OSData
+ffffff800262e62e: push     rbp
+ffffff800262e62f: mov      rbp, rsp
+ffffff800262e632: push     r15
+ffffff800262e634: push     r14
+ffffff800262e636: push     r13
+ffffff800262e638: push     r12
+ffffff800262e63a: push     rbx
+ffffff800262e63b: sub      rsp, 0x18
+ffffff800262e63f: mov      r13, r8
+ffffff800262e642: mov      r12, rcx
+ffffff800262e645: mov      r14, rdx
+ffffff800262e648: mov      dword ptr [rbp - 0x2c], esi
+ffffff800262e64b: mov      rbx, rdi
+ffffff800262e64e: test     r8, r8
+ffffff800262e651: jne      0xffffff800262e65a
+ffffff800262e653: mov      r13, qword ptr [rip + 0x1423e]  ; 0xffffff8002642898
+ffffff800262e65a: mov      r15, qword ptr [rip + 0x14227]  ; 0xffffff8002642888
+ffffff800262e661: xor      eax, eax
+ffffff800262e663: mov      qword ptr [rbp - 0x40], rax
+ffffff800262e667: mov      qword ptr [rbp - 0x38], rax
+ffffff800262e66b: test     r14, r14
+ffffff800262e66e: je       0xffffff800262e6a2
+ffffff800262e670: mov      rax, qword ptr [r14]
+ffffff800262e673: mov      rdi, r14
+ffffff800262e676: call     qword ptr [rax + 0x140]
+ffffff800262e67c: mov      r15, rax
+ffffff800262e67f: mov      rax, qword ptr [r14]
+ffffff800262e682: mov      rdi, r14
+ffffff800262e685: call     qword ptr [rax + 0x120]
+ffffff800262e68b: mov      dword ptr [rbp - 0x34], eax
+ffffff800262e68e: test     r12, r12
+ffffff800262e691: jne      0xffffff800262e6a2
+ffffff800262e693: mov      rax, qword ptr [r14]
+ffffff800262e696: mov      rdi, r14
+ffffff800262e699: call     qword ptr [rax + 0x128]
+ffffff800262e69f: mov      r12, rax
+ffffff800262e6a2: mov      rdi, qword ptr [rbx + 0xc8]
+ffffff800262e6a9: call     0xffffff800052f900  ; _lck_mtx_lock
+ffffff800262e6ae: cmp      r15, qword ptr [rbx + 0xf0]
+ffffff800262e6b5: mov      r14d, dword ptr [rbp - 0x2c]
+ffffff800262e6b9: je       0xffffff800262e6dc
+ffffff800262e6bb: mov      rsi, qword ptr [rip + 0x141ae]  ; 0xffffff8002642870
+ffffff800262e6c2: mov      rax, qword ptr [rbx]
+ffffff800262e6c5: mov      rdi, rbx
+ffffff800262e6c8: mov      rdx, r15
+ffffff800262e6cb: call     qword ptr [rax + 0x258]
+ffffff800262e6d1: test     al, al
+ffffff800262e6d3: je       0xffffff800262e6e1
+ffffff800262e6d5: mov      qword ptr [rbx + 0xf0], r15
+ffffff800262e6dc: mov      r15b, 1
+ffffff800262e6df: jmp      0xffffff800262e6e4  ; __ZN19IONetworkController13setLinkStatusEjPK15IONetworkMediumyP6OSData+0xb6
+ffffff800262e6e1: xor      r15d, r15d
+ffffff800262e6e4: cmp      r13, qword ptr [rbx + 0xe8]
+ffffff800262e6eb: je       0xffffff800262e713
+ffffff800262e6ed: mov      rsi, qword ptr [rip + 0x1419c]  ; 0xffffff8002642890
+ffffff800262e6f4: mov      rax, qword ptr [rbx]
+ffffff800262e6f7: mov      rdi, rbx
+ffffff800262e6fa: mov      rdx, r13
+ffffff800262e6fd: call     qword ptr [rax + 0x258]
+ffffff800262e703: test     al, al
+ffffff800262e705: je       0xffffff800262e710
+ffffff800262e707: mov      qword ptr [rbx + 0xe8], r13
+ffffff800262e70e: jmp      0xffffff800262e713  ; __ZN19IONetworkController13setLinkStatusEjPK15IONetworkMediumyP6OSData+0xe5
+ffffff800262e710: xor      r15d, r15d
+ffffff800262e713: mov      rdi, qword ptr [rbx + 0xe0]
+ffffff800262e71a: mov      rax, qword ptr [rdi]
+ffffff800262e71d: call     qword ptr [rax + 0x150]
+ffffff800262e723: xor      r13d, r13d
+ffffff800262e726: cmp      r12, rax
+ffffff800262e729: je       0xffffff800262e748
+ffffff800262e72b: mov      rdi, qword ptr [rbx + 0xe0]
+ffffff800262e732: mov      rax, qword ptr [rdi]
+ffffff800262e735: mov      rsi, r12
+ffffff800262e738: call     qword ptr [rax + 0x160]
+ffffff800262e73e: mov      qword ptr [rbp - 0x40], r12
+ffffff800262e742: mov      r13d, 0xff000005
+ffffff800262e748: mov      rdi, qword ptr [rbx + 0xd8]
+ffffff800262e74f: mov      rax, qword ptr [rdi]
+ffffff800262e752: call     qword ptr [rax + 0x148]
+ffffff800262e758: cmp      eax, r14d
+ffffff800262e75b: je       0xffffff800262e7a6
+ffffff800262e75d: xor      eax, r14d
+ffffff800262e760: test     al, 7
+ffffff800262e762: je       0xffffff800262e793
+ffffff800262e764: mov      eax, r14d
+ffffff800262e767: and      eax, 3
+ffffff800262e76a: xor      r13d, r13d
+ffffff800262e76d: cmp      eax, 1
+ffffff800262e770: sete     r13b
+ffffff800262e774: or       r13d, 0xff000002
+ffffff800262e77b: mov      dword ptr [rbp - 0x38], r14d
+ffffff800262e77f: mov      rdi, qword ptr [rbx + 0xe0]
+ffffff800262e786: mov      rax, qword ptr [rdi]
+ffffff800262e789: call     qword ptr [rax + 0x150]
+ffffff800262e78f: mov      qword ptr [rbp - 0x40], rax
+ffffff800262e793: mov      rdi, qword ptr [rbx + 0xd8]
+ffffff800262e79a: mov      esi, r14d
+ffffff800262e79d: mov      rax, qword ptr [rdi]
+ffffff800262e7a0: call     qword ptr [rax + 0x160]
+ffffff800262e7a6: mov      rdi, qword ptr [rbx + 0xc8]
+ffffff800262e7ad: call     0xffffff800052fc50  ; _lck_mtx_unlock
+ffffff800262e7b2: test     r13d, r13d
+ffffff800262e7b5: je       0xffffff800262e7c6
+ffffff800262e7b7: lea      rdx, [rbp - 0x40]
+ffffff800262e7bb: mov      rdi, rbx
+ffffff800262e7be: mov      esi, r13d
+ffffff800262e7c1: call     0xffffff800262dbb4  ; __ZN19IONetworkController15_broadcastEventEjPv
+ffffff800262e7c6: mov      eax, r15d
+ffffff800262e7c9: add      rsp, 0x18
+ffffff800262e7cd: pop      rbx
+ffffff800262e7ce: pop      r12
+ffffff800262e7d0: pop      r13
+ffffff800262e7d2: pop      r14
+ffffff800262e7d4: pop      r15
+ffffff800262e7d6: pop      rbp
+ffffff800262e7d7: ret      

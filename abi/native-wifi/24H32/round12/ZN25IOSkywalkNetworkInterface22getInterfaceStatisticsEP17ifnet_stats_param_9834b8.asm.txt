@@ -1,0 +1,17 @@
+# 0xffffff80029834b8 __ZN25IOSkywalkNetworkInterface22getInterfaceStatisticsEP17ifnet_stats_param
+ffffff80029834b8: test     rsi, rsi
+ffffff80029834bb: je       0xffffff80029834da
+ffffff80029834bd: mov      rax, qword ptr [rdi + 0xb8]
+ffffff80029834c4: mov      rdi, qword ptr [rax + 8]
+ffffff80029834c8: test     rdi, rdi
+ffffff80029834cb: je       0xffffff80029834e0
+ffffff80029834cd: push     rbp
+ffffff80029834ce: mov      rbp, rsp
+ffffff80029834d1: call     0xffffff800069e850  ; _ifnet_stat
+ffffff80029834d6: xor      eax, eax
+ffffff80029834d8: pop      rbp
+ffffff80029834d9: ret      
+ffffff80029834da: mov      eax, 0xe00002c2
+ffffff80029834df: ret      
+ffffff80029834e0: mov      eax, 0xe00002cd
+ffffff80029834e5: ret      

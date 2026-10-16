@@ -1,0 +1,30 @@
+# 0xffffff800212a79e __ZN11IO80211Glue23processPendingIoucQueueEP16IO80211WorkQueue
+ffffff800212a79e: push     rbp
+ffffff800212a79f: mov      rbp, rsp
+ffffff800212a7a2: sub      rsp, 0x30
+ffffff800212a7a6: mov      rax, qword ptr [rip + 0x29196b]  ; 0xffffff80023bc118
+ffffff800212a7ad: mov      rax, qword ptr [rax]
+ffffff800212a7b0: mov      qword ptr [rbp - 8], rax
+ffffff800212a7b4: mov      rax, qword ptr [rdi + 0x18]
+ffffff800212a7b8: mov      rax, qword ptr [rax + 0x38]
+ffffff800212a7bc: mov      rcx, qword ptr [rip + 0x29183d]  ; 0xffffff80023bc000
+ffffff800212a7c3: lea      rsi, [rbp - 0x30]
+ffffff800212a7c7: mov      qword ptr [rsi], rcx
+ffffff800212a7ca: mov      qword ptr [rsi + 8], 0x40000000
+ffffff800212a7d2: lea      rcx, [rip + 0x9bd]  ; 0xffffff800212b196
+ffffff800212a7d9: mov      qword ptr [rsi + 0x10], rcx
+ffffff800212a7dd: lea      rcx, [rip + 0x2987f4]  ; 0xffffff80023c2fd8
+ffffff800212a7e4: mov      qword ptr [rsi + 0x18], rcx
+ffffff800212a7e8: mov      qword ptr [rsi + 0x20], rdi
+ffffff800212a7ec: mov      rdi, rax
+ffffff800212a7ef: call     0xffffff8000afa760  ; __ZN10IOWorkLoop14runActionBlockEU13block_pointerFivE
+ffffff800212a7f4: mov      rax, qword ptr [rip + 0x29191d]  ; 0xffffff80023bc118
+ffffff800212a7fb: mov      rax, qword ptr [rax]
+ffffff800212a7fe: cmp      rax, qword ptr [rbp - 8]
+ffffff800212a802: jne      0xffffff800212a80c
+ffffff800212a804: xor      eax, eax
+ffffff800212a806: add      rsp, 0x30
+ffffff800212a80a: pop      rbp
+ffffff800212a80b: ret      
+ffffff800212a80c: call     0xffffff8000383150  ; ___stack_chk_fail
+ffffff800212a811: nop      

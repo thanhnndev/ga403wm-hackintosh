@@ -1,0 +1,16 @@
+# 0xffffff80029a0e5d __ZN18IOSkywalkBSDClient16inspectInterfaceEP18IOSkywalkInterfaceP8RingVars.cold.1
+ffffff80029a0e5d: push     rbp
+ffffff80029a0e5e: mov      rbp, rsp
+ffffff80029a0e61: push     rbx
+ffffff80029a0e62: push     rax
+ffffff80029a0e63: mov      rbx, rsi
+ffffff80029a0e66: mov      rax, qword ptr [rdi]
+ffffff80029a0e69: xor      esi, esi
+ffffff80029a0e6b: call     qword ptr [rax + 0x388]
+ffffff80029a0e71: mov      edx, dword ptr [rbx]
+ffffff80029a0e73: lea      rdi, [rip + 0x42cb]  ; ""%s: unknown queue type %d" @%s:%d"
+ffffff80029a0e7a: lea      rcx, [rip + 0x42e7]  ; "IOSkywalkBSDClient.cpp"
+ffffff80029a0e81: mov      rsi, rax
+ffffff80029a0e84: mov      r8d, 0x1ad
+ffffff80029a0e8a: xor      eax, eax
+ffffff80029a0e8c: call     0xffffff8000bd073c  ; _panic

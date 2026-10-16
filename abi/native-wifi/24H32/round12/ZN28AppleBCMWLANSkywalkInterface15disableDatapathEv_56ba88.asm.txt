@@ -1,0 +1,253 @@
+# 0xffffff800156ba88 __ZN28AppleBCMWLANSkywalkInterface15disableDatapathEv
+ffffff800156ba88: push     rbp
+ffffff800156ba89: mov      rbp, rsp
+ffffff800156ba8c: push     r15
+ffffff800156ba8e: push     r14
+ffffff800156ba90: push     rbx
+ffffff800156ba91: sub      rsp, 0x18
+ffffff800156ba95: mov      rbx, rdi
+ffffff800156ba98: mov      rax, qword ptr [rip + 0x1ff789]  ; 0xffffff800176b228
+ffffff800156ba9f: mov      rax, qword ptr [rax]
+ffffff800156baa2: mov      qword ptr [rbp - 0x20], rax
+ffffff800156baa6: mov      qword ptr [rbp - 0x28], 0
+ffffff800156baae: mov      rax, qword ptr [rdi]
+ffffff800156bab1: call     qword ptr [rax + 0xd08]
+ffffff800156bab7: test     rax, rax
+ffffff800156baba: je       0xffffff800156badd
+ffffff800156babc: mov      rax, qword ptr [rbx]
+ffffff800156babf: mov      rdi, rbx
+ffffff800156bac2: call     qword ptr [rax + 0xd08]
+ffffff800156bac8: mov      rdi, rax
+ffffff800156bacb: mov      esi, 5
+ffffff800156bad0: call     0xffffff80031d421c  ; __ZN11CCLogStream9shouldLogE16CCStreamLogLevel
+ffffff800156bad5: test     al, al
+ffffff800156bad7: jne      0xffffff800156bd74
+ffffff800156badd: lea      rsi, [rbp - 0x28]
+ffffff800156bae1: mov      rdi, rbx
+ffffff800156bae4: call     0xffffff800156b5dd  ; __Z15acquirePropertyI8OSStringEbP9IOServicePKcPPT_yS4_
+ffffff800156bae9: test     al, al
+ffffff800156baeb: je       0xffffff800156bb1f
+ffffff800156baed: mov      rax, qword ptr [rbx]
+ffffff800156baf0: mov      rdi, rbx
+ffffff800156baf3: call     qword ptr [rax + 0xd08]
+ffffff800156baf9: test     rax, rax
+ffffff800156bafc: je       0xffffff800156bb1f
+ffffff800156bafe: mov      rax, qword ptr [rbx]
+ffffff800156bb01: mov      rdi, rbx
+ffffff800156bb04: call     qword ptr [rax + 0xd08]
+ffffff800156bb0a: mov      rdi, rax
+ffffff800156bb0d: mov      esi, 5
+ffffff800156bb12: call     0xffffff80031d421c  ; __ZN11CCLogStream9shouldLogE16CCStreamLogLevel
+ffffff800156bb17: test     al, al
+ffffff800156bb19: jne      0xffffff800156bdd2
+ffffff800156bb1f: mov      rax, qword ptr [rbx + 0x128]
+ffffff800156bb26: cmp      byte ptr [rax + 0x2a], 0
+ffffff800156bb2a: je       0xffffff800156bb59
+ffffff800156bb2c: xor      r14d, r14d
+ffffff800156bb2f: mov      rdi, qword ptr [rax + r14*8 + 0x78]
+ffffff800156bb34: test     rdi, rdi
+ffffff800156bb37: je       0xffffff800156bc22
+ffffff800156bb3d: mov      rax, qword ptr [rdi]
+ffffff800156bb40: call     qword ptr [rax + 0x158]
+ffffff800156bb46: inc      r14
+ffffff800156bb49: mov      rax, qword ptr [rbx + 0x128]
+ffffff800156bb50: movzx    ecx, byte ptr [rax + 0x2a]
+ffffff800156bb54: cmp      r14, rcx
+ffffff800156bb57: jb       0xffffff800156bb2f
+ffffff800156bb59: mov      rdi, qword ptr [rax + 0x98]
+ffffff800156bb60: test     rdi, rdi
+ffffff800156bb63: je       0xffffff800156bb75
+ffffff800156bb65: mov      rax, qword ptr [rdi]
+ffffff800156bb68: call     qword ptr [rax + 0x158]
+ffffff800156bb6e: mov      rax, qword ptr [rbx + 0x128]
+ffffff800156bb75: mov      rdi, qword ptr [rax + 0x68]
+ffffff800156bb79: test     rdi, rdi
+ffffff800156bb7c: je       0xffffff800156bcba
+ffffff800156bb82: mov      rax, qword ptr [rdi]
+ffffff800156bb85: call     qword ptr [rax + 0x330]
+ffffff800156bb8b: mov      rax, qword ptr [rbx + 0x128]
+ffffff800156bb92: mov      rdi, qword ptr [rax + 0x68]
+ffffff800156bb96: mov      rax, qword ptr [rdi]
+ffffff800156bb99: call     qword ptr [rax + 0x158]
+ffffff800156bb9f: mov      rax, qword ptr [rbx + 0x128]
+ffffff800156bba6: mov      rdi, qword ptr [rax + 0x60]
+ffffff800156bbaa: test     rdi, rdi
+ffffff800156bbad: je       0xffffff800156bd10
+ffffff800156bbb3: mov      rax, qword ptr [rdi]
+ffffff800156bbb6: call     qword ptr [rax + 0x158]
+ffffff800156bbbc: mov      rax, qword ptr [rbx]
+ffffff800156bbbf: mov      rdi, rbx
+ffffff800156bbc2: call     qword ptr [rax + 0xd08]
+ffffff800156bbc8: test     rax, rax
+ffffff800156bbcb: je       0xffffff800156bbee
+ffffff800156bbcd: mov      rax, qword ptr [rbx]
+ffffff800156bbd0: mov      rdi, rbx
+ffffff800156bbd3: call     qword ptr [rax + 0xd08]
+ffffff800156bbd9: mov      rdi, rax
+ffffff800156bbdc: mov      esi, 5
+ffffff800156bbe1: call     0xffffff80031d421c  ; __ZN11CCLogStream9shouldLogE16CCStreamLogLevel
+ffffff800156bbe6: test     al, al
+ffffff800156bbe8: jne      0xffffff800156bda2
+ffffff800156bbee: mov      rdi, qword ptr [rbp - 0x28]
+ffffff800156bbf2: xor      r14d, r14d
+ffffff800156bbf5: test     rdi, rdi
+ffffff800156bbf8: je       0xffffff800156bc00
+ffffff800156bbfa: mov      rax, qword ptr [rdi]
+ffffff800156bbfd: call     qword ptr [rax + 0x28]
+ffffff800156bc00: mov      rax, qword ptr [rip + 0x1ff621]  ; 0xffffff800176b228
+ffffff800156bc07: mov      rax, qword ptr [rax]
+ffffff800156bc0a: cmp      rax, qword ptr [rbp - 0x20]
+ffffff800156bc0e: jne      0xffffff800156be7e
+ffffff800156bc14: mov      eax, r14d
+ffffff800156bc17: add      rsp, 0x18
+ffffff800156bc1b: pop      rbx
+ffffff800156bc1c: pop      r14
+ffffff800156bc1e: pop      r15
+ffffff800156bc20: pop      rbp
+ffffff800156bc21: ret      
+ffffff800156bc22: mov      rax, qword ptr [rbx]
+ffffff800156bc25: mov      rdi, rbx
+ffffff800156bc28: call     qword ptr [rax + 0xd08]
+ffffff800156bc2e: test     rax, rax
+ffffff800156bc31: je       0xffffff800156bc54
+ffffff800156bc33: mov      rax, qword ptr [rbx]
+ffffff800156bc36: mov      rdi, rbx
+ffffff800156bc39: call     qword ptr [rax + 0xd08]
+ffffff800156bc3f: mov      rdi, rax
+ffffff800156bc42: mov      esi, 2
+ffffff800156bc47: call     0xffffff80031d421c  ; __ZN11CCLogStream9shouldLogE16CCStreamLogLevel
+ffffff800156bc4c: test     al, al
+ffffff800156bc4e: jne      0xffffff800156be4d
+ffffff800156bc54: mov      rax, qword ptr [rbx]
+ffffff800156bc57: mov      rdi, rbx
+ffffff800156bc5a: call     qword ptr [rax + 0xd08]
+ffffff800156bc60: mov      r14d, 0xe00002bc
+ffffff800156bc66: test     rax, rax
+ffffff800156bc69: je       0xffffff800156bc00
+ffffff800156bc6b: mov      rax, qword ptr [rbx]
+ffffff800156bc6e: mov      rdi, rbx
+ffffff800156bc71: call     qword ptr [rax + 0xd08]
+ffffff800156bc77: mov      rdi, rax
+ffffff800156bc7a: mov      esi, 2
+ffffff800156bc7f: call     0xffffff80031d421c  ; __ZN11CCLogStream9shouldLogE16CCStreamLogLevel
+ffffff800156bc84: test     al, al
+ffffff800156bc86: je       0xffffff800156bc00
+ffffff800156bc8c: mov      rax, qword ptr [rbx]
+ffffff800156bc8f: mov      rdi, rbx
+ffffff800156bc92: call     qword ptr [rax + 0xd08]
+ffffff800156bc98: lea      rsi, [rip + 0x194e0d]  ; 0xffffff8001700aac
+ffffff800156bc9f: lea      rdx, [rip + 0x194d4d]  ; "disableDatapath"
+ffffff800156bca6: mov      rdi, rax
+ffffff800156bca9: mov      ecx, 0x2d2
+ffffff800156bcae: xor      eax, eax
+ffffff800156bcb0: call     0xffffff80031d267e  ; __ZN11CCLogStream7logCritEPKcz
+ffffff800156bcb5: jmp      0xffffff800156bc00  ; __ZN28AppleBCMWLANSkywalkInterface15disableDatapathEv+0x178
+ffffff800156bcba: mov      rax, qword ptr [rbx]
+ffffff800156bcbd: mov      rdi, rbx
+ffffff800156bcc0: call     qword ptr [rax + 0xd08]
+ffffff800156bcc6: test     rax, rax
+ffffff800156bcc9: je       0xffffff800156bc54
+ffffff800156bccb: mov      rax, qword ptr [rbx]
+ffffff800156bcce: mov      rdi, rbx
+ffffff800156bcd1: call     qword ptr [rax + 0xd08]
+ffffff800156bcd7: mov      rdi, rax
+ffffff800156bcda: mov      esi, 2
+ffffff800156bcdf: call     0xffffff80031d421c  ; __ZN11CCLogStream9shouldLogE16CCStreamLogLevel
+ffffff800156bce4: test     al, al
+ffffff800156bce6: je       0xffffff800156bc54
+ffffff800156bcec: mov      rax, qword ptr [rbx]
+ffffff800156bcef: mov      rdi, rbx
+ffffff800156bcf2: call     qword ptr [rax + 0xd08]
+ffffff800156bcf8: lea      rsi, [rip + 0x194b7a]  ; 0xffffff8001700879
+ffffff800156bcff: lea      rdx, [rip + 0x194ced]  ; "disableDatapath"
+ffffff800156bd06: mov      rdi, rax
+ffffff800156bd09: mov      ecx, 0x2c5
+ffffff800156bd0e: jmp      0xffffff800156bd68  ; __ZN28AppleBCMWLANSkywalkInterface15disableDatapathEv+0x2e0
+ffffff800156bd10: mov      rax, qword ptr [rbx]
+ffffff800156bd13: mov      rdi, rbx
+ffffff800156bd16: call     qword ptr [rax + 0xd08]
+ffffff800156bd1c: test     rax, rax
+ffffff800156bd1f: je       0xffffff800156bc54
+ffffff800156bd25: mov      rax, qword ptr [rbx]
+ffffff800156bd28: mov      rdi, rbx
+ffffff800156bd2b: call     qword ptr [rax + 0xd08]
+ffffff800156bd31: mov      rdi, rax
+ffffff800156bd34: mov      esi, 2
+ffffff800156bd39: call     0xffffff80031d421c  ; __ZN11CCLogStream9shouldLogE16CCStreamLogLevel
+ffffff800156bd3e: test     al, al
+ffffff800156bd40: je       0xffffff800156bc54
+ffffff800156bd46: mov      rax, qword ptr [rbx]
+ffffff800156bd49: mov      rdi, rbx
+ffffff800156bd4c: call     qword ptr [rax + 0xd08]
+ffffff800156bd52: lea      rsi, [rip + 0x194af6]  ; 0xffffff800170084f
+ffffff800156bd59: lea      rdx, [rip + 0x194c93]  ; "disableDatapath"
+ffffff800156bd60: mov      rdi, rax
+ffffff800156bd63: mov      ecx, 0x2c9
+ffffff800156bd68: xor      eax, eax
+ffffff800156bd6a: call     0xffffff80031d267e  ; __ZN11CCLogStream7logCritEPKcz
+ffffff800156bd6f: jmp      0xffffff800156bc54  ; __ZN28AppleBCMWLANSkywalkInterface15disableDatapathEv+0x1cc
+ffffff800156bd74: mov      rax, qword ptr [rbx]
+ffffff800156bd77: mov      rdi, rbx
+ffffff800156bd7a: call     qword ptr [rax + 0xd08]
+ffffff800156bd80: lea      rsi, [rip + 0x19449b]  ; "[ik] %s@%d:Enter"
+ffffff800156bd87: lea      rdx, [rip + 0x194c65]  ; "disableDatapath"
+ffffff800156bd8e: mov      rdi, rax
+ffffff800156bd91: mov      ecx, 0x2b6
+ffffff800156bd96: xor      eax, eax
+ffffff800156bd98: call     0xffffff80031d2a6e  ; __ZN11CCLogStream7logInfoEPKcz
+ffffff800156bd9d: jmp      0xffffff800156badd  ; __ZN28AppleBCMWLANSkywalkInterface15disableDatapathEv+0x55
+ffffff800156bda2: mov      rax, qword ptr [rbx]
+ffffff800156bda5: mov      rdi, rbx
+ffffff800156bda8: call     qword ptr [rax + 0xd08]
+ffffff800156bdae: mov      r14, rax
+ffffff800156bdb1: mov      rdi, rbx
+ffffff800156bdb4: call     0xffffff800226204a  ; __ZN23IO80211SkywalkInterface14getInterfaceIdEv
+ffffff800156bdb9: mov      ebx, eax
+ffffff800156bdbb: mov      rdi, qword ptr [rbp - 0x28]
+ffffff800156bdbf: test     rdi, rdi
+ffffff800156bdc2: je       0xffffff800156be21
+ffffff800156bdc4: mov      rax, qword ptr [rdi]
+ffffff800156bdc7: call     qword ptr [rax + 0x148]
+ffffff800156bdcd: mov      r9, rax
+ffffff800156bdd0: jmp      0xffffff800156be28  ; __ZN28AppleBCMWLANSkywalkInterface15disableDatapathEv+0x3a0
+ffffff800156bdd2: mov      rax, qword ptr [rbx]
+ffffff800156bdd5: mov      rdi, rbx
+ffffff800156bdd8: call     qword ptr [rax + 0xd08]
+ffffff800156bdde: mov      r14, rax
+ffffff800156bde1: mov      rdi, rbx
+ffffff800156bde4: call     0xffffff800226204a  ; __ZN23IO80211SkywalkInterface14getInterfaceIdEv
+ffffff800156bde9: mov      r15d, eax
+ffffff800156bdec: mov      rdi, qword ptr [rbp - 0x28]
+ffffff800156bdf0: mov      rax, qword ptr [rdi]
+ffffff800156bdf3: call     qword ptr [rax + 0x148]
+ffffff800156bdf9: lea      rsi, [rip + 0x194c03]  ; 0xffffff8001700a03
+ffffff800156be00: lea      rdx, [rip + 0x194bec]  ; "disableDatapath"
+ffffff800156be07: mov      rdi, r14
+ffffff800156be0a: mov      ecx, 0x2b9
+ffffff800156be0f: mov      r8d, r15d
+ffffff800156be12: mov      r9, rax
+ffffff800156be15: xor      eax, eax
+ffffff800156be17: call     0xffffff80031d2a6e  ; __ZN11CCLogStream7logInfoEPKcz
+ffffff800156be1c: jmp      0xffffff800156bb1f  ; __ZN28AppleBCMWLANSkywalkInterface15disableDatapathEv+0x97
+ffffff800156be21: lea      r9, [rip + 0x194c7c]  ; "Unknown"
+ffffff800156be28: lea      rsi, [rip + 0x194c3a]  ; 0xffffff8001700a69
+ffffff800156be2f: lea      rdx, [rip + 0x194bbd]  ; "disableDatapath"
+ffffff800156be36: mov      rdi, r14
+ffffff800156be39: mov      ecx, 0x2cc
+ffffff800156be3e: mov      r8d, ebx
+ffffff800156be41: xor      eax, eax
+ffffff800156be43: call     0xffffff80031d2a6e  ; __ZN11CCLogStream7logInfoEPKcz
+ffffff800156be48: jmp      0xffffff800156bbee  ; __ZN28AppleBCMWLANSkywalkInterface15disableDatapathEv+0x166
+ffffff800156be4d: mov      rax, qword ptr [rbx]
+ffffff800156be50: mov      rdi, rbx
+ffffff800156be53: call     qword ptr [rax + 0xd08]
+ffffff800156be59: lea      rsi, [rip + 0x194bd9]  ; 0xffffff8001700a39
+ffffff800156be60: lea      rdx, [rip + 0x194b8c]  ; "disableDatapath"
+ffffff800156be67: mov      rdi, rax
+ffffff800156be6a: mov      ecx, 0x2bd
+ffffff800156be6f: mov      r8d, r14d
+ffffff800156be72: xor      eax, eax
+ffffff800156be74: call     0xffffff80031d267e  ; __ZN11CCLogStream7logCritEPKcz
+ffffff800156be79: jmp      0xffffff800156bc54  ; __ZN28AppleBCMWLANSkywalkInterface15disableDatapathEv+0x1cc
+ffffff800156be7e: call     0xffffff8000383150  ; ___stack_chk_fail
+ffffff800156be83: nop      

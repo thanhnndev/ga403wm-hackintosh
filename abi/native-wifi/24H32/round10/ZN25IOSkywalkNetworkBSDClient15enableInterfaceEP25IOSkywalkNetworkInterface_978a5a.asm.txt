@@ -1,0 +1,43 @@
+# 0xffffff8002978a5a __ZN25IOSkywalkNetworkBSDClient15enableInterfaceEP25IOSkywalkNetworkInterface
+ffffff8002978a5a: push     rbp
+ffffff8002978a5b: mov      rbp, rsp
+ffffff8002978a5e: push     r14
+ffffff8002978a60: push     rbx
+ffffff8002978a61: mov      r14, rsi
+ffffff8002978a64: mov      rbx, rdi
+ffffff8002978a67: mov      rdi, qword ptr [rdi + 0x90]
+ffffff8002978a6e: test     rdi, rdi
+ffffff8002978a71: je       0xffffff8002978a91
+ffffff8002978a73: mov      rax, qword ptr [rdi]
+ffffff8002978a76: call     qword ptr [rax + 0x168]
+ffffff8002978a7c: test     rax, rax
+ffffff8002978a7f: je       0xffffff8002978a91
+ffffff8002978a81: mov      rcx, qword ptr [rax]
+ffffff8002978a84: mov      rdi, rax
+ffffff8002978a87: call     qword ptr [rcx + 0x138]
+ffffff8002978a8d: test     al, al
+ffffff8002978a8f: je       0xffffff8002978ade
+ffffff8002978a91: mov      rax, qword ptr [r14]
+ffffff8002978a94: mov      rdi, r14
+ffffff8002978a97: xor      esi, esi
+ffffff8002978a99: call     qword ptr [rax + 0x850]
+ffffff8002978a9f: mov      r14d, eax
+ffffff8002978aa2: test     eax, eax
+ffffff8002978aa4: jne      0xffffff8002978ad6
+ffffff8002978aa6: mov      byte ptr [rbx + 0x140], 1
+ffffff8002978aad: mov      rdi, rbx
+ffffff8002978ab0: call     0xffffff8002978410  ; __ZN25IOSkywalkNetworkBSDClient24reportInterfaceWakeFlagsEv
+ffffff8002978ab5: mov      rax, qword ptr [rbx + 0xe8]
+ffffff8002978abc: mov      rax, qword ptr [rax + 0xb8]
+ffffff8002978ac3: mov      rdi, qword ptr [rax + 0x20]
+ffffff8002978ac7: test     rdi, rdi
+ffffff8002978aca: je       0xffffff8002978ad6
+ffffff8002978acc: mov      esi, 1
+ffffff8002978ad1: call     0xffffff8002987a0e  ; __ZN25IOSkywalkNetworkKDPPoller13handleRequestENS_11RequestTypeE
+ffffff8002978ad6: mov      eax, r14d
+ffffff8002978ad9: pop      rbx
+ffffff8002978ada: pop      r14
+ffffff8002978adc: pop      rbp
+ffffff8002978add: ret      
+ffffff8002978ade: call     0xffffff80029a0f27  ; __ZN25IOSkywalkNetworkBSDClient15enableInterfaceEP25IOSkywalkNetworkInterface.cold.1
+ffffff8002978ae3: nop      

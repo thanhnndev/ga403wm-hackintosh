@@ -1,0 +1,21 @@
+# 0xffffff8002987e14 __ZN26IOSkywalkEthernetInterface4initEP12OSDictionary
+ffffff8002987e14: push     rbp
+ffffff8002987e15: mov      rbp, rsp
+ffffff8002987e18: push     rbx
+ffffff8002987e19: push     rax
+ffffff8002987e1a: mov      rbx, rdi
+ffffff8002987e1d: lea      rax, [rip + 0x2748c]  ; 0xffffff80029af2b0
+ffffff8002987e24: call     qword ptr [rax + 0x258]
+ffffff8002987e2a: test     al, al
+ffffff8002987e2c: je       0xffffff8002987e49
+ffffff8002987e2e: lea      rdi, [rip + 0x300cb]  ; 0xffffff80029b7f00
+ffffff8002987e35: call     0xffffff8000ab5930  ; _IOMallocTypeImpl
+ffffff8002987e3a: mov      qword ptr [rbx + 0x108], rax
+ffffff8002987e41: test     rax, rax
+ffffff8002987e44: setne    al
+ffffff8002987e47: jmp      0xffffff8002987e4b  ; __ZN26IOSkywalkEthernetInterface4initEP12OSDictionary+0x37
+ffffff8002987e49: xor      eax, eax
+ffffff8002987e4b: add      rsp, 8
+ffffff8002987e4f: pop      rbx
+ffffff8002987e50: pop      rbp
+ffffff8002987e51: ret      

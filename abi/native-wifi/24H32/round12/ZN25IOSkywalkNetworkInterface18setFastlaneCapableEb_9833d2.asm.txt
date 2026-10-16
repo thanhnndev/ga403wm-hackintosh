@@ -1,0 +1,12 @@
+# 0xffffff80029833d2 __ZN25IOSkywalkNetworkInterface18setFastlaneCapableEb
+ffffff80029833d2: push     rbp
+ffffff80029833d3: mov      rbp, rsp
+ffffff80029833d6: mov      rax, qword ptr [rdi + 0xb8]
+ffffff80029833dd: mov      rdi, qword ptr [rax + 8]
+ffffff80029833e1: test     rdi, rdi
+ffffff80029833e4: je       0xffffff80029833f0
+ffffff80029833e6: movzx    esi, sil
+ffffff80029833ea: pop      rbp
+ffffff80029833eb: jmp      0xffffff80006a16f0  ; _ifnet_set_fastlane_capable
+ffffff80029833f0: pop      rbp
+ffffff80029833f1: ret      

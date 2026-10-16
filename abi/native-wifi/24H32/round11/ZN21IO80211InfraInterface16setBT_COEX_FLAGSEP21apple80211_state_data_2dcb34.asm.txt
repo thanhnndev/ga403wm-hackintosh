@@ -1,0 +1,14 @@
+# 0xffffff80022dcb34 __ZN21IO80211InfraInterface16setBT_COEX_FLAGSEP21apple80211_state_data
+ffffff80022dcb34: test     rsi, rsi
+ffffff80022dcb37: je       0xffffff80022dcb51
+ffffff80022dcb39: push     rbp
+ffffff80022dcb3a: mov      rbp, rsp
+ffffff80022dcb3d: mov      eax, dword ptr [rsi + 4]
+ffffff80022dcb40: mov      rcx, qword ptr [rdi + 0x118]
+ffffff80022dcb47: mov      dword ptr [rcx + 0x264], eax
+ffffff80022dcb4d: xor      eax, eax
+ffffff80022dcb4f: pop      rbp
+ffffff80022dcb50: ret      
+ffffff80022dcb51: mov      eax, 0xe00002bc
+ffffff80022dcb56: ret      
+ffffff80022dcb57: nop      

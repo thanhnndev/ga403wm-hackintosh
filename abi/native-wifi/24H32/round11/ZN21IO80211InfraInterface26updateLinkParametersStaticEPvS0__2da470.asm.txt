@@ -1,0 +1,24 @@
+# 0xffffff80022da470 __ZN21IO80211InfraInterface26updateLinkParametersStaticEPvS0_
+ffffff80022da470: push     rbp
+ffffff80022da471: mov      rbp, rsp
+ffffff80022da474: test     rdi, rdi
+ffffff80022da477: je       0xffffff80022da484
+ffffff80022da479: test     rsi, rsi
+ffffff80022da47c: je       0xffffff80022da4a0
+ffffff80022da47e: pop      rbp
+ffffff80022da47f: jmp      0xffffff80022da4c6  ; __ZN21IO80211InfraInterface25updateLinkParametersGatedEP33apple80211_interface_availability
+ffffff80022da484: lea      rdi, [rip + 0xbf523]  ; 0xffffff80023999ae
+ffffff80022da48b: lea      rsi, [rip + 0xbf53e]  ; "/AppleInternal/Library/BuildRoots/4~CW9mugA6gpmKPwyaAeCNWSZRmRlk6mvK_U3N5n0/Libr"
+ffffff80022da492: lea      rdx, [rip + 0xc07d0]  ; "updateLinkParametersStatic"
+ffffff80022da499: mov      ecx, 0xa54
+ffffff80022da49e: jmp      0xffffff80022da4ba  ; __ZN21IO80211InfraInterface26updateLinkParametersStaticEPvS0_+0x4a
+ffffff80022da4a0: lea      rdi, [rip + 0xbf507]  ; 0xffffff80023999ae
+ffffff80022da4a7: lea      rsi, [rip + 0xbf522]  ; "/AppleInternal/Library/BuildRoots/4~CW9mugA6gpmKPwyaAeCNWSZRmRlk6mvK_U3N5n0/Libr"
+ffffff80022da4ae: lea      rdx, [rip + 0xc07b4]  ; "updateLinkParametersStatic"
+ffffff80022da4b5: mov      ecx, 0xa59
+ffffff80022da4ba: xor      eax, eax
+ffffff80022da4bc: call     0xffffff8000ab6560  ; _IOLog
+ffffff80022da4c1: xor      eax, eax
+ffffff80022da4c3: pop      rbp
+ffffff80022da4c4: ret      
+ffffff80022da4c5: nop      

@@ -1,0 +1,30 @@
+# 0xffffff80022dc5c6 __ZN21IO80211InfraInterface15onDispatchQueueEv
+ffffff80022dc5c6: push     rbp
+ffffff80022dc5c7: mov      rbp, rsp
+ffffff80022dc5ca: push     rbx
+ffffff80022dc5cb: push     rax
+ffffff80022dc5cc: mov      rbx, rdi
+ffffff80022dc5cf: mov      rax, qword ptr [rdi]
+ffffff80022dc5d2: call     qword ptr [rax + 0xba8]
+ffffff80022dc5d8: test     rax, rax
+ffffff80022dc5db: je       0xffffff80022dc60c
+ffffff80022dc5dd: mov      rax, qword ptr [rbx]
+ffffff80022dc5e0: mov      rdi, rbx
+ffffff80022dc5e3: call     qword ptr [rax + 0xba8]
+ffffff80022dc5e9: mov      rcx, qword ptr [rax]
+ffffff80022dc5ec: mov      rdi, rax
+ffffff80022dc5ef: call     qword ptr [rcx + 0xc68]
+ffffff80022dc5f5: test     rax, rax
+ffffff80022dc5f8: je       0xffffff80022dc60c
+ffffff80022dc5fa: mov      rcx, qword ptr [rax]
+ffffff80022dc5fd: mov      rdi, rax
+ffffff80022dc600: add      rsp, 8
+ffffff80022dc604: pop      rbx
+ffffff80022dc605: pop      rbp
+ffffff80022dc606: jmp      qword ptr [rcx + 0x138]
+ffffff80022dc60c: xor      eax, eax
+ffffff80022dc60e: add      rsp, 8
+ffffff80022dc612: pop      rbx
+ffffff80022dc613: pop      rbp
+ffffff80022dc614: ret      
+ffffff80022dc615: nop      

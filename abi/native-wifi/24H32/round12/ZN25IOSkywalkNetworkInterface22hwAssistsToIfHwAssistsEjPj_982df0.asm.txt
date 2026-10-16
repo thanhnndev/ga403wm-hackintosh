@@ -1,0 +1,35 @@
+# 0xffffff8002982df0 __ZN25IOSkywalkNetworkInterface22hwAssistsToIfHwAssistsEjPj
+ffffff8002982df0: push     rbp
+ffffff8002982df1: mov      rbp, rsp
+ffffff8002982df4: mov      eax, esi
+ffffff8002982df6: and      eax, 0x3030000
+ffffff8002982dfb: mov      ecx, esi
+ffffff8002982dfd: and      ecx, 0x30
+ffffff8002982e00: shl      ecx, 0x11
+ffffff8002982e03: or       ecx, eax
+ffffff8002982e05: mov      eax, esi
+ffffff8002982e07: and      eax, 0x40
+ffffff8002982e0a: shl      eax, 0x16
+ffffff8002982e0d: or       eax, ecx
+ffffff8002982e0f: mov      ecx, esi
+ffffff8002982e11: shl      ecx, 0x17
+ffffff8002982e14: and      ecx, 0x40000000
+ffffff8002982e1a: or       ecx, eax
+ffffff8002982e1c: mov      eax, esi
+ffffff8002982e1e: and      eax, 1
+ffffff8002982e21: lea      edi, [rcx + rax]
+ffffff8002982e24: test     sil, 2
+ffffff8002982e28: lea      eax, [rax + rcx + 0x22]
+ffffff8002982e2c: cmove    eax, edi
+ffffff8002982e2f: mov      ecx, eax
+ffffff8002982e31: or       ecx, 0x44
+ffffff8002982e34: test     sil, 4
+ffffff8002982e38: cmove    ecx, eax
+ffffff8002982e3b: and      esi, 8
+ffffff8002982e3e: shl      esi, 0x1a
+ffffff8002982e41: or       esi, ecx
+ffffff8002982e43: mov      dword ptr [rdx], esi
+ffffff8002982e45: xor      eax, eax
+ffffff8002982e47: pop      rbp
+ffffff8002982e48: ret      
+ffffff8002982e49: nop      

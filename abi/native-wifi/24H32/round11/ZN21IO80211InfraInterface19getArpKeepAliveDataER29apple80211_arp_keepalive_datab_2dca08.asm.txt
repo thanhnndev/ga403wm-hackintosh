@@ -1,0 +1,7 @@
+# 0xffffff80022dca08 __ZN21IO80211InfraInterface19getArpKeepAliveDataER29apple80211_arp_keepalive_datab
+ffffff80022dca08: push     rbp
+ffffff80022dca09: mov      rbp, rsp
+ffffff80022dca0c: mov      rax, qword ptr [rdi + 0x118]
+ffffff80022dca13: mov      rdi, qword ptr [rax + 0x198]
+ffffff80022dca1a: pop      rbp
+ffffff80022dca1b: jmp      0xffffff800226771c  ; __ZN26IO80211DataPathInformAgent19getArpKeepAliveDataER29apple80211_arp_keepalive_datab

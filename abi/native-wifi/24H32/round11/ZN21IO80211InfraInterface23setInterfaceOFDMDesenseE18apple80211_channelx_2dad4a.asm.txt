@@ -1,0 +1,14 @@
+# 0xffffff80022dad4a __ZN21IO80211InfraInterface23setInterfaceOFDMDesenseE18apple80211_channelx
+ffffff80022dad4a: push     rbp
+ffffff80022dad4b: mov      rbp, rsp
+ffffff80022dad4e: mov      rax, qword ptr [rdi + 0x110]
+ffffff80022dad55: mov      rdi, qword ptr [rax + 0x40]
+ffffff80022dad59: test     rdi, rdi
+ffffff80022dad5c: je       0xffffff80022dad67
+ffffff80022dad5e: mov      rsi, rcx
+ffffff80022dad61: pop      rbp
+ffffff80022dad62: jmp      0xffffff80022eb7be  ; __ZN23IO80211InterfaceMonitor23setInterfaceOFDMDesenseEx
+ffffff80022dad67: xor      eax, eax
+ffffff80022dad69: pop      rbp
+ffffff80022dad6a: ret      
+ffffff80022dad6b: nop      

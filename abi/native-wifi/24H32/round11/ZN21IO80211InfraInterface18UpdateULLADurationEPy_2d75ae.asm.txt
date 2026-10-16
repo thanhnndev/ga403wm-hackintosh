@@ -1,0 +1,41 @@
+# 0xffffff80022d75ae __ZN21IO80211InfraInterface18UpdateULLADurationEPy
+ffffff80022d75ae: push     rbp
+ffffff80022d75af: mov      rbp, rsp
+ffffff80022d75b2: push     r15
+ffffff80022d75b4: push     r14
+ffffff80022d75b6: push     rbx
+ffffff80022d75b7: sub      rsp, 0x18
+ffffff80022d75bb: mov      rbx, rsi
+ffffff80022d75be: mov      r14, rdi
+ffffff80022d75c1: mov      rax, qword ptr [rip + 0xe4b50]  ; 0xffffff80023bc118
+ffffff80022d75c8: mov      rax, qword ptr [rax]
+ffffff80022d75cb: mov      qword ptr [rbp - 0x20], rax
+ffffff80022d75cf: lea      r15, [rbp - 0x28]
+ffffff80022d75d3: mov      qword ptr [r15], 0
+ffffff80022d75da: call     0xffffff80003cbf20  ; _mach_continuous_time
+ffffff80022d75df: mov      rdi, rax
+ffffff80022d75e2: mov      rsi, r15
+ffffff80022d75e5: call     0xffffff8000536d80  ; _absolutetime_to_nanoseconds
+ffffff80022d75ea: mov      rax, qword ptr [r15]
+ffffff80022d75ed: shr      rax, 9
+ffffff80022d75f1: movabs   rcx, 0x44b82fa09b5a53
+ffffff80022d75fb: mul      rcx
+ffffff80022d75fe: shr      rdx, 0xb
+ffffff80022d7602: mov      rax, qword ptr [r14 + 0x118]
+ffffff80022d7609: test     rbx, rbx
+ffffff80022d760c: je       0xffffff80022d761b
+ffffff80022d760e: mov      rcx, rdx
+ffffff80022d7611: sub      rcx, qword ptr [rax + 0xe0]
+ffffff80022d7618: add      qword ptr [rbx], rcx
+ffffff80022d761b: mov      qword ptr [rax + 0xe0], rdx
+ffffff80022d7622: mov      rax, qword ptr [rip + 0xe4aef]  ; 0xffffff80023bc118
+ffffff80022d7629: mov      rax, qword ptr [rax]
+ffffff80022d762c: cmp      rax, qword ptr [rbp - 0x20]
+ffffff80022d7630: jne      0xffffff80022d763d
+ffffff80022d7632: add      rsp, 0x18
+ffffff80022d7636: pop      rbx
+ffffff80022d7637: pop      r14
+ffffff80022d7639: pop      r15
+ffffff80022d763b: pop      rbp
+ffffff80022d763c: ret      
+ffffff80022d763d: call     0xffffff8000383150  ; ___stack_chk_fail

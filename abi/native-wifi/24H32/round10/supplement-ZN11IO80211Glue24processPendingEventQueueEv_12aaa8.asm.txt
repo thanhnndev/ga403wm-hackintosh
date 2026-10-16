@@ -1,0 +1,52 @@
+# 0xffffff800212aaa8 __ZN11IO80211Glue24processPendingEventQueueEv
+ffffff800212aaa8: push     rbp
+ffffff800212aaa9: mov      rbp, rsp
+ffffff800212aaac: push     r15
+ffffff800212aaae: push     r14
+ffffff800212aab0: push     rbx
+ffffff800212aab1: push     rax
+ffffff800212aab2: mov      rcx, qword ptr [rdi + 0x18]
+ffffff800212aab6: lea      rax, [rcx + 0x20]
+ffffff800212aaba: mov      r14, qword ptr [rcx + 0x20]
+ffffff800212aabe: cmp      rax, r14
+ffffff800212aac1: je       0xffffff800212ab22
+ffffff800212aac3: mov      rbx, rdi
+ffffff800212aac6: xor      r15d, r15d
+ffffff800212aac9: mov      rdx, qword ptr [r14]
+ffffff800212aacc: add      rcx, 0x28
+ffffff800212aad0: lea      rsi, [rdx + 8]
+ffffff800212aad4: cmp      rdx, rax
+ffffff800212aad7: cmove    rsi, rcx
+ffffff800212aadb: cmp      qword ptr [rsi], r14
+ffffff800212aade: jne      0xffffff800212ab31
+ffffff800212aae0: mov      rcx, qword ptr [r14 + 8]
+ffffff800212aae4: cmp      qword ptr [rcx], r14
+ffffff800212aae7: jne      0xffffff800212ab31
+ffffff800212aae9: mov      qword ptr [rsi], rcx
+ffffff800212aaec: mov      qword ptr [rcx], rdx
+ffffff800212aaef: mov      qword ptr [r14], r15
+ffffff800212aaf2: mov      qword ptr [r14 + 8], r15
+ffffff800212aaf6: mov      rdi, rbx
+ffffff800212aaf9: mov      rsi, r14
+ffffff800212aafc: call     0xffffff800212a812  ; __ZN11IO80211Glue18sendEventAndFilterEP21postMessageQueueEntry
+ffffff800212ab01: mov      esi, dword ptr [r14 + 0x14]
+ffffff800212ab05: add      rsi, 0x20
+ffffff800212ab09: mov      rdi, r14
+ffffff800212ab0c: call     0xffffff8000ab6290  ; _IOFreeData
+ffffff800212ab11: mov      rcx, qword ptr [rbx + 0x18]
+ffffff800212ab15: lea      rax, [rcx + 0x20]
+ffffff800212ab19: mov      r14, qword ptr [rcx + 0x20]
+ffffff800212ab1d: cmp      rax, r14
+ffffff800212ab20: jne      0xffffff800212aac9
+ffffff800212ab22: mov      byte ptr [rcx + 0x30], 0
+ffffff800212ab26: add      rsp, 8
+ffffff800212ab2a: pop      rbx
+ffffff800212ab2b: pop      r14
+ffffff800212ab2d: pop      r15
+ffffff800212ab2f: pop      rbp
+ffffff800212ab30: ret      
+ffffff800212ab31: ud1      
+ffffff800212ab34: cmp      ch, 0xbf
+ffffff800212ab37: add      byte ptr [rax], al
+ffffff800212ab39: ud2      
+ffffff800212ab3b: nop      

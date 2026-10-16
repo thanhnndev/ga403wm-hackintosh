@@ -1,0 +1,79 @@
+# 0xffffff80029889ea __ZN26IOSkywalkEthernetInterface12ioctl_lladdrEP7__ifnetPv
+ffffff80029889ea: push     rbp
+ffffff80029889eb: mov      rbp, rsp
+ffffff80029889ee: push     r15
+ffffff80029889f0: push     r14
+ffffff80029889f2: push     r13
+ffffff80029889f4: push     r12
+ffffff80029889f6: push     rbx
+ffffff80029889f7: push     rax
+ffffff80029889f8: mov      r12d, 0x16
+ffffff80029889fe: cmp      byte ptr [rdx + 0x10], 6
+ffffff8002988a02: jne      0xffffff8002988ae5
+ffffff8002988a08: mov      r14, rdx
+ffffff8002988a0b: mov      r15, rsi
+ffffff8002988a0e: mov      rbx, rdi
+ffffff8002988a11: mov      rdi, rsi
+ffffff8002988a14: call     0xffffff800069cde0  ; _ifnet_flags
+ffffff8002988a19: mov      r12d, 0x32
+ffffff8002988a1f: test     al, 0x40
+ffffff8002988a21: je       0xffffff8002988ae5
+ffffff8002988a27: mov      rax, qword ptr [rbx]
+ffffff8002988a2a: lea      rsi, [rip + 0x1c5f2]  ; "IOMACAddress"
+ffffff8002988a31: mov      rdi, rbx
+ffffff8002988a34: call     qword ptr [rax + 0x2b8]
+ffffff8002988a3a: mov      rcx, qword ptr [rip + 0x1e637]  ; 0xffffff80029a7078
+ffffff8002988a41: mov      rsi, qword ptr [rcx]
+ffffff8002988a44: mov      rdi, rax
+ffffff8002988a47: call     0xffffff8000a49ab0  ; __ZN15OSMetaClassBase12safeMetaCastEPKS_PK11OSMetaClass
+ffffff8002988a4c: mov      r12d, 0x31
+ffffff8002988a52: test     rax, rax
+ffffff8002988a55: je       0xffffff8002988ae5
+ffffff8002988a5b: mov      r13, rax
+ffffff8002988a5e: mov      rax, qword ptr [rax]
+ffffff8002988a61: mov      rdi, r13
+ffffff8002988a64: call     qword ptr [rax + 0x140]
+ffffff8002988a6a: cmp      eax, 6
+ffffff8002988a6d: jne      0xffffff8002988ae5
+ffffff8002988a6f: add      r14, 0x12
+ffffff8002988a73: mov      rax, qword ptr [r13]
+ffffff8002988a77: mov      rdi, r13
+ffffff8002988a7a: call     qword ptr [rax + 0x178]
+ffffff8002988a80: movzx    ecx, word ptr [rax + 4]
+ffffff8002988a84: mov      eax, dword ptr [rax]
+ffffff8002988a86: mov      dword ptr [rbp - 0x30], eax
+ffffff8002988a89: mov      word ptr [rbp - 0x2c], cx
+ffffff8002988a8d: mov      rax, qword ptr [rbx]
+ffffff8002988a90: mov      rdi, rbx
+ffffff8002988a93: mov      rsi, r14
+ffffff8002988a96: call     qword ptr [rax + 0xa68]
+ffffff8002988a9c: test     eax, eax
+ffffff8002988a9e: jne      0xffffff8002988ae5
+ffffff8002988aa0: mov      edx, 6
+ffffff8002988aa5: mov      rdi, r15
+ffffff8002988aa8: mov      rsi, r14
+ffffff8002988aab: call     0xffffff800069f410  ; _ifnet_set_lladdr
+ffffff8002988ab0: mov      r12d, eax
+ffffff8002988ab3: mov      rax, qword ptr [rbx]
+ffffff8002988ab6: test     r12d, r12d
+ffffff8002988ab9: je       0xffffff8002988aca
+ffffff8002988abb: lea      rsi, [rbp - 0x30]
+ffffff8002988abf: mov      rdi, rbx
+ffffff8002988ac2: call     qword ptr [rax + 0xa68]
+ffffff8002988ac8: jmp      0xffffff8002988ae5  ; __ZN26IOSkywalkEthernetInterface12ioctl_lladdrEP7__ifnetPv+0xfb
+ffffff8002988aca: lea      rsi, [rip + 0x1c552]  ; "IOMACAddress"
+ffffff8002988ad1: mov      rdi, rbx
+ffffff8002988ad4: mov      rdx, r14
+ffffff8002988ad7: mov      ecx, 6
+ffffff8002988adc: call     qword ptr [rax + 0x288]
+ffffff8002988ae2: xor      r12d, r12d
+ffffff8002988ae5: mov      eax, r12d
+ffffff8002988ae8: add      rsp, 8
+ffffff8002988aec: pop      rbx
+ffffff8002988aed: pop      r12
+ffffff8002988aef: pop      r13
+ffffff8002988af1: pop      r14
+ffffff8002988af3: pop      r15
+ffffff8002988af5: pop      rbp
+ffffff8002988af6: ret      
+ffffff8002988af7: nop      

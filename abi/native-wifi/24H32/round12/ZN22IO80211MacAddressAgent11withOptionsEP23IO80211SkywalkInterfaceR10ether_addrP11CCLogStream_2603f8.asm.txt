@@ -1,0 +1,45 @@
+# 0xffffff80022603f8 __ZN22IO80211MacAddressAgent11withOptionsEP23IO80211SkywalkInterfaceR10ether_addrP11CCLogStream
+ffffff80022603f8: push     rbp
+ffffff80022603f9: mov      rbp, rsp
+ffffff80022603fc: push     r15
+ffffff80022603fe: push     r14
+ffffff8002260400: push     r13
+ffffff8002260402: push     r12
+ffffff8002260404: push     rbx
+ffffff8002260405: push     rax
+ffffff8002260406: mov      r14, rdx
+ffffff8002260409: mov      r15, rsi
+ffffff800226040c: mov      r12, rdi
+ffffff800226040f: lea      rdi, [rip + 0x1a086a]  ; 0xffffff8002400c80
+ffffff8002260416: mov      esi, 0x18
+ffffff800226041b: call     0xffffff8000a4be90  ; _OSObject_typed_operator_new
+ffffff8002260420: mov      rbx, rax
+ffffff8002260423: lea      r13, [rip + 0x197e4e]  ; 0xffffff80023f8278
+ffffff800226042a: mov      rdi, rax
+ffffff800226042d: mov      rsi, r13
+ffffff8002260430: call     0xffffff8000a4c000  ; __ZN8OSObjectC2EPK11OSMetaClass
+ffffff8002260435: lea      rax, [rip + 0x174a5c]  ; 0xffffff80023d4e98
+ffffff800226043c: mov      qword ptr [rbx], rax
+ffffff800226043f: mov      rdi, r13
+ffffff8002260442: call     0xffffff8000a4a700  ; __ZNK11OSMetaClass19instanceConstructedEv
+ffffff8002260447: mov      rdi, rbx
+ffffff800226044a: mov      rsi, r12
+ffffff800226044d: mov      rdx, r15
+ffffff8002260450: mov      rcx, r14
+ffffff8002260453: call     0xffffff800226047a  ; __ZN22IO80211MacAddressAgent15initWithOptionsEP23IO80211SkywalkInterfaceR10ether_addrP11CCLogStream
+ffffff8002260458: test     al, al
+ffffff800226045a: jne      0xffffff8002260467
+ffffff800226045c: mov      rax, qword ptr [rbx]
+ffffff800226045f: mov      rdi, rbx
+ffffff8002260462: call     qword ptr [rax + 0x28]
+ffffff8002260465: xor      ebx, ebx
+ffffff8002260467: mov      rax, rbx
+ffffff800226046a: add      rsp, 8
+ffffff800226046e: pop      rbx
+ffffff800226046f: pop      r12
+ffffff8002260471: pop      r13
+ffffff8002260473: pop      r14
+ffffff8002260475: pop      r15
+ffffff8002260477: pop      rbp
+ffffff8002260478: ret      
+ffffff8002260479: nop      

@@ -1,0 +1,8 @@
+# 0xffffff80022d9fd2 __ZN21IO80211InfraInterface24getCoPSIBCoexTurnOnCountEv
+ffffff80022d9fd2: push     rbp
+ffffff80022d9fd3: mov      rbp, rsp
+ffffff80022d9fd6: mov      rax, qword ptr [rdi + 0x118]
+ffffff80022d9fdd: mov      eax, dword ptr [rax + 0xc4]
+ffffff80022d9fe3: pop      rbp
+ffffff80022d9fe4: ret      
+ffffff80022d9fe5: nop      

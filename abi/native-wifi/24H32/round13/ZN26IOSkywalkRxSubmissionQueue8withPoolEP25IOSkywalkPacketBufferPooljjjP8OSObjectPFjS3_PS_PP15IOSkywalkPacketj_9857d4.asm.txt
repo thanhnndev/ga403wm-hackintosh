@@ -1,0 +1,12 @@
+# 0xffffff80029857d4 __ZN26IOSkywalkRxSubmissionQueue8withPoolEP25IOSkywalkPacketBufferPooljjjP8OSObjectPFjS3_PS_PP15IOSkywalkPacketjPvES8_j
+ffffff80029857d4: push     rbp
+ffffff80029857d5: mov      rbp, rsp
+ffffff80029857d8: mov      eax, dword ptr [rbp + 0x18]
+ffffff80029857db: or       eax, 2
+ffffff80029857de: push     rax
+ffffff80029857df: push     qword ptr [rbp + 0x10]
+ffffff80029857e2: call     0xffffff8002985724  ; __ZN26IOSkywalkRxSubmissionQueue8withPoolEP25IOSkywalkPacketBufferPooljjjP8OSObjectPFjS3_PS_PKP15IOSkywalkPacketjPvES9_j
+ffffff80029857e7: add      rsp, 0x10
+ffffff80029857eb: pop      rbp
+ffffff80029857ec: ret      
+ffffff80029857ed: nop      

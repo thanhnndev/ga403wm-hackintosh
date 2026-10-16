@@ -1,0 +1,6 @@
+# 0xffffff800298b462 __ZN21IOSkywalkPacketPoller6enableEv
+ffffff800298b462: push     rbp
+ffffff800298b463: mov      rbp, rsp
+ffffff800298b466: mov      rax, qword ptr [rip + 0x1bc7b]  ; 0xffffff80029a70e8
+ffffff800298b46d: pop      rbp
+ffffff800298b46e: jmp      qword ptr [rax + 0x160]

@@ -1,0 +1,10 @@
+# 0xffffff8002147260 __ZN18IO80211CommandGate13commandWakeupEPv
+ffffff8002147260: push     rbp
+ffffff8002147261: mov      rbp, rsp
+ffffff8002147264: mov      rax, qword ptr [rdi + 0x10]
+ffffff8002147268: mov      rdi, qword ptr [rax + 8]
+ffffff800214726c: mov      rax, qword ptr [rdi]
+ffffff800214726f: mov      rax, qword ptr [rax + 0x200]
+ffffff8002147276: pop      rbp
+ffffff8002147277: jmp      rax
+ffffff8002147279: nop      

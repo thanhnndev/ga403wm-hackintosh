@@ -1,0 +1,7 @@
+# 0xffffff8002988b7e __ZN26IOSkywalkEthernetInterface24setPromiscuousModeEnableEbj
+ffffff8002988b7e: push     rbp
+ffffff8002988b7f: mov      rbp, rsp
+ffffff8002988b82: mov      eax, 0xe00002c7
+ffffff8002988b87: pop      rbp
+ffffff8002988b88: ret      
+ffffff8002988b89: nop      

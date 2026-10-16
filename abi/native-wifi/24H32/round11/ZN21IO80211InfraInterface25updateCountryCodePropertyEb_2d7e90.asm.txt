@@ -1,0 +1,162 @@
+# 0xffffff80022d7e90 __ZN21IO80211InfraInterface25updateCountryCodePropertyEb
+ffffff80022d7e90: push     rbp
+ffffff80022d7e91: mov      rbp, rsp
+ffffff80022d7e94: push     r15
+ffffff80022d7e96: push     r14
+ffffff80022d7e98: push     r13
+ffffff80022d7e9a: push     r12
+ffffff80022d7e9c: push     rbx
+ffffff80022d7e9d: sub      rsp, 0x18
+ffffff80022d7ea1: mov      r14d, esi
+ffffff80022d7ea4: mov      rbx, rdi
+ffffff80022d7ea7: mov      rax, qword ptr [rip + 0xe426a]  ; 0xffffff80023bc118
+ffffff80022d7eae: mov      rax, qword ptr [rax]
+ffffff80022d7eb1: mov      qword ptr [rbp - 0x30], rax
+ffffff80022d7eb5: mov      qword ptr [rbp - 0x38], 1
+ffffff80022d7ebd: mov      rax, qword ptr [rdi + 0x110]
+ffffff80022d7ec4: mov      rdi, qword ptr [rax + 0xd8]
+ffffff80022d7ecb: test     rdi, rdi
+ffffff80022d7ece: je       0xffffff80022d7f01
+ffffff80022d7ed0: lea      r15, [rbp - 0x3c]
+ffffff80022d7ed4: mov      byte ptr [r15], 0
+ffffff80022d7ed8: lea      rcx, [rbp - 0x38]
+ffffff80022d7edc: mov      r8d, 8
+ffffff80022d7ee2: mov      esi, 0xc02869c9
+ffffff80022d7ee7: mov      edx, 0x33
+ffffff80022d7eec: mov      r9, r15
+ffffff80022d7eef: call     0xffffff800212ad12  ; __ZN11IO80211Glue13sendIOUCToWclEjjPvmRb
+ffffff80022d7ef4: cmp      byte ptr [r15], 1
+ffffff80022d7ef8: jne      0xffffff80022d7f01
+ffffff80022d7efa: cmp      eax, 0xe082280f
+ffffff80022d7eff: jne      0xffffff80022d7f0d
+ffffff80022d7f01: lea      rsi, [rbp - 0x38]
+ffffff80022d7f05: mov      rdi, rbx
+ffffff80022d7f08: call     0xffffff80021f70b0  ; __Z25apple80211getCOUNTRY_CODEP23IO80211SkywalkInterfaceP28apple80211_country_code_data
+ffffff80022d7f0d: test     eax, eax
+ffffff80022d7f0f: je       0xffffff80022d7f25
+ffffff80022d7f11: lea      rsi, [rip + 0xc2017]  ; "IO80211CountryCode"
+ffffff80022d7f18: mov      rdi, rbx
+ffffff80022d7f1b: call     0xffffff800227dbf3  ; __Z20removePropertyHelperP9IOServicePKc
+ffffff80022d7f20: jmp      0xffffff80022d80df  ; __ZN21IO80211InfraInterface25updateCountryCodePropertyEb+0x24f
+ffffff80022d7f25: lea      rax, [rbp - 0x34]
+ffffff80022d7f29: lea      rdx, [rbp - 0x3c]
+ffffff80022d7f2d: mov      dword ptr [rdx], 0
+ffffff80022d7f33: mov      cl, byte ptr [rax + 2]
+ffffff80022d7f36: mov      byte ptr [rdx + 2], cl
+ffffff80022d7f39: movzx    eax, word ptr [rax]
+ffffff80022d7f3c: mov      word ptr [rdx], ax
+ffffff80022d7f3f: lea      rsi, [rip + 0xc1fe9]  ; "IO80211CountryCode"
+ffffff80022d7f46: mov      rdi, rbx
+ffffff80022d7f49: call     0xffffff800227da77  ; __Z17setPropertyHelperP9IOServicePKcS2_
+ffffff80022d7f4e: test     r14b, r14b
+ffffff80022d7f51: je       0xffffff80022d80df
+ffffff80022d7f57: mov      rdi, rbx
+ffffff80022d7f5a: call     0xffffff800226205a  ; __ZN23IO80211SkywalkInterface10getBSDNameEv
+ffffff80022d7f5f: lea      rdi, [rip + 0xc1fdc]  ; 0xffffff8002399f42
+ffffff80022d7f66: xor      r15d, r15d
+ffffff80022d7f69: lea      rdx, [rbp - 0x3c]
+ffffff80022d7f6d: mov      rsi, rax
+ffffff80022d7f70: xor      eax, eax
+ffffff80022d7f72: call     0xffffff8000ab6560  ; _IOLog
+ffffff80022d7f77: mov      edi, 0x12d8
+ffffff80022d7f7c: call     0xffffff8000ab6220  ; _IOMallocZeroData_external
+ffffff80022d7f81: mov      r14, rax
+ffffff80022d7f84: test     rax, rax
+ffffff80022d7f87: je       0xffffff80022d80d4
+ffffff80022d7f8d: mov      rax, qword ptr [rbx + 0x110]
+ffffff80022d7f94: mov      rdi, qword ptr [rax + 0xd8]
+ffffff80022d7f9b: test     rdi, rdi
+ffffff80022d7f9e: je       0xffffff80022d7fd0
+ffffff80022d7fa0: lea      r15, [rbp - 0x3d]
+ffffff80022d7fa4: mov      byte ptr [r15], 0
+ffffff80022d7fa8: mov      r8d, 0x12d8
+ffffff80022d7fae: mov      esi, 0xc02869c9
+ffffff80022d7fb3: mov      edx, 0x1b
+ffffff80022d7fb8: mov      rcx, r14
+ffffff80022d7fbb: mov      r9, r15
+ffffff80022d7fbe: call     0xffffff800212ad12  ; __ZN11IO80211Glue13sendIOUCToWclEjjPvmRb
+ffffff80022d7fc3: cmp      byte ptr [r15], 1
+ffffff80022d7fc7: jne      0xffffff80022d7fd0
+ffffff80022d7fc9: cmp      eax, 0xe082280f
+ffffff80022d7fce: jne      0xffffff80022d7fdb
+ffffff80022d7fd0: mov      rdi, rbx
+ffffff80022d7fd3: mov      rsi, r14
+ffffff80022d7fd6: call     0xffffff80021f6c20  ; __Z31apple80211getSUPPORTED_CHANNELSP23IO80211SkywalkInterfaceP27apple80211_sup_channel_data
+ffffff80022d7fdb: mov      r15d, 0x12d8
+ffffff80022d7fe1: test     eax, eax
+ffffff80022d7fe3: jne      0xffffff80022d80d4
+ffffff80022d7fe9: mov      dword ptr [r14], 1
+ffffff80022d7ff0: lea      rdi, [rip + 0xc1f72]  ; "yyy "
+ffffff80022d7ff7: call     0xffffff80004ee8d0  ; _strlen
+ffffff80022d7ffc: imul     r12, rax, 0x190
+ffffff80022d8003: mov      rdi, r12
+ffffff80022d8006: call     0xffffff8000ab6220  ; _IOMallocZeroData_external
+ffffff80022d800b: mov      r13, rax
+ffffff80022d800e: test     rax, rax
+ffffff80022d8011: je       0xffffff80022d80a9
+ffffff80022d8017: mov      rdi, r13
+ffffff80022d801a: mov      rsi, r12
+ffffff80022d801d: call     0xffffff8000101100  ; _bzero
+ffffff80022d8022: mov      rdi, rbx
+ffffff80022d8025: call     0xffffff800226205a  ; __ZN23IO80211SkywalkInterface10getBSDNameEv
+ffffff80022d802a: lea      rsi, [rip + 0xc1f8c]  ; "( 2 GHz)"
+ffffff80022d8031: mov      rdi, rax
+ffffff80022d8034: mov      edx, 8
+ffffff80022d8039: mov      rcx, r14
+ffffff80022d803c: mov      r8, r13
+ffffff80022d803f: mov      r9, r12
+ffffff80022d8042: call     0xffffff80022d88bf  ; __ZL24logBandSupportedChannelsPKcS0_jPK27apple80211_sup_channel_dataPcm
+ffffff80022d8047: mov      rdi, r13
+ffffff80022d804a: mov      rsi, r12
+ffffff80022d804d: call     0xffffff8000101100  ; _bzero
+ffffff80022d8052: mov      rdi, rbx
+ffffff80022d8055: call     0xffffff800226205a  ; __ZN23IO80211SkywalkInterface10getBSDNameEv
+ffffff80022d805a: lea      rsi, [rip + 0xc1f65]  ; "( 5 GHz)"
+ffffff80022d8061: mov      rdi, rax
+ffffff80022d8064: mov      edx, 0x10
+ffffff80022d8069: mov      rcx, r14
+ffffff80022d806c: mov      r8, r13
+ffffff80022d806f: mov      r9, r12
+ffffff80022d8072: call     0xffffff80022d88bf  ; __ZL24logBandSupportedChannelsPKcS0_jPK27apple80211_sup_channel_dataPcm
+ffffff80022d8077: mov      rdi, r13
+ffffff80022d807a: mov      rsi, r12
+ffffff80022d807d: call     0xffffff8000101100  ; _bzero
+ffffff80022d8082: mov      rdi, rbx
+ffffff80022d8085: call     0xffffff800226205a  ; __ZN23IO80211SkywalkInterface10getBSDNameEv
+ffffff80022d808a: lea      rsi, [rip + 0xc1f3e]  ; "( 6 GHz)"
+ffffff80022d8091: mov      rdi, rax
+ffffff80022d8094: mov      edx, 0x2000
+ffffff80022d8099: mov      rcx, r14
+ffffff80022d809c: mov      r8, r13
+ffffff80022d809f: mov      r9, r12
+ffffff80022d80a2: call     0xffffff80022d88bf  ; __ZL24logBandSupportedChannelsPKcS0_jPK27apple80211_sup_channel_dataPcm
+ffffff80022d80a7: jmp      0xffffff80022d80c9  ; __ZN21IO80211InfraInterface25updateCountryCodePropertyEb+0x239
+ffffff80022d80a9: lea      rdi, [rip + 0xc1ebe]  ; 0xffffff8002399f6e
+ffffff80022d80b0: lea      rsi, [rip + 0xc1eec]  ; "updateCountryCodeProperty"
+ffffff80022d80b7: mov      edx, 0x729
+ffffff80022d80bc: mov      rcx, r12
+ffffff80022d80bf: xor      eax, eax
+ffffff80022d80c1: call     0xffffff8000ab6560  ; _IOLog
+ffffff80022d80c6: xor      r12d, r12d
+ffffff80022d80c9: mov      rdi, r13
+ffffff80022d80cc: mov      rsi, r12
+ffffff80022d80cf: call     0xffffff8000ab6290  ; _IOFreeData
+ffffff80022d80d4: mov      rdi, r14
+ffffff80022d80d7: mov      rsi, r15
+ffffff80022d80da: call     0xffffff8000ab6290  ; _IOFreeData
+ffffff80022d80df: mov      rdi, rbx
+ffffff80022d80e2: call     0xffffff80022d87e6  ; __ZN21IO80211InfraInterface20updateLocalePropertyEv
+ffffff80022d80e7: mov      rax, qword ptr [rip + 0xe402a]  ; 0xffffff80023bc118
+ffffff80022d80ee: mov      rax, qword ptr [rax]
+ffffff80022d80f1: cmp      rax, qword ptr [rbp - 0x30]
+ffffff80022d80f5: jne      0xffffff80022d8106
+ffffff80022d80f7: add      rsp, 0x18
+ffffff80022d80fb: pop      rbx
+ffffff80022d80fc: pop      r12
+ffffff80022d80fe: pop      r13
+ffffff80022d8100: pop      r14
+ffffff80022d8102: pop      r15
+ffffff80022d8104: pop      rbp
+ffffff80022d8105: ret      
+ffffff80022d8106: call     0xffffff8000383150  ; ___stack_chk_fail
+ffffff80022d810b: nop      

@@ -1,0 +1,12 @@
+# 0xffffff80022dae42 __ZN21IO80211InfraInterface24setInterfaceChipCountersEP22apple80211_stat_reportP27apple80211_chip_counters_txP33apple80211_chip_error_counters_txP27apple80211_chip_counters_rx
+ffffff80022dae42: push     rbp
+ffffff80022dae43: mov      rbp, rsp
+ffffff80022dae46: mov      rax, qword ptr [rdi + 0x110]
+ffffff80022dae4d: mov      rdi, qword ptr [rax + 0x40]
+ffffff80022dae51: test     rdi, rdi
+ffffff80022dae54: je       0xffffff80022dae5c
+ffffff80022dae56: pop      rbp
+ffffff80022dae57: jmp      0xffffff80022e71f6  ; __ZN23IO80211InterfaceMonitor24setInterfaceChipCountersEP22apple80211_stat_reportP27apple80211_chip_counters_txP33apple80211_chip_error_counters_txP27apple80211_chip_counters_rx
+ffffff80022dae5c: mov      al, 1
+ffffff80022dae5e: pop      rbp
+ffffff80022dae5f: ret      

@@ -1,0 +1,7 @@
+# 0xffffff80022d9fe6 __ZN21IO80211InfraInterface27getCoPSIBCoexTurnOnDurationEv
+ffffff80022d9fe6: push     rbp
+ffffff80022d9fe7: mov      rbp, rsp
+ffffff80022d9fea: mov      rax, qword ptr [rdi + 0x118]
+ffffff80022d9ff1: mov      rax, qword ptr [rax + 0xc8]
+ffffff80022d9ff8: pop      rbp
+ffffff80022d9ff9: ret      

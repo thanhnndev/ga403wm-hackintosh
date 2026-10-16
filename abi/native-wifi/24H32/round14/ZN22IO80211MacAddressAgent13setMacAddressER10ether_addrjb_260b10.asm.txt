@@ -1,0 +1,176 @@
+# 0xffffff8002260b10 __ZN22IO80211MacAddressAgent13setMacAddressER10ether_addrjb
+ffffff8002260b10: push     rbp
+ffffff8002260b11: mov      rbp, rsp
+ffffff8002260b14: push     r15
+ffffff8002260b16: push     r14
+ffffff8002260b18: push     r13
+ffffff8002260b1a: push     r12
+ffffff8002260b1c: push     rbx
+ffffff8002260b1d: sub      rsp, 0x28
+ffffff8002260b21: mov      r15d, ecx
+ffffff8002260b24: mov      r14d, edx
+ffffff8002260b27: mov      r13, rsi
+ffffff8002260b2a: mov      r12, rdi
+ffffff8002260b2d: mov      rax, qword ptr [rip + 0x15b5e4]  ; 0xffffff80023bc118
+ffffff8002260b34: mov      rax, qword ptr [rax]
+ffffff8002260b37: mov      qword ptr [rbp - 0x30], rax
+ffffff8002260b3b: mov      rdi, qword ptr [rdi + 0x10]
+ffffff8002260b3f: mov      rax, qword ptr [rdi]
+ffffff8002260b42: mov      rax, qword ptr [rax + 0x110]
+ffffff8002260b49: mov      rax, qword ptr [rax + 0xb8]
+ffffff8002260b50: test     rax, rax
+ffffff8002260b53: je       0xffffff8002260b6b
+ffffff8002260b55: mov      rcx, qword ptr [rax]
+ffffff8002260b58: mov      rdi, rax
+ffffff8002260b5b: call     qword ptr [rcx + 0x148]
+ffffff8002260b61: mov      rbx, rax
+ffffff8002260b64: mov      rdi, qword ptr [r12 + 0x10]
+ffffff8002260b69: jmp      0xffffff8002260b6d  ; __ZN22IO80211MacAddressAgent13setMacAddressER10ether_addrjb+0x5d
+ffffff8002260b6b: xor      ebx, ebx
+ffffff8002260b6d: movzx    eax, word ptr [r13 + 4]
+ffffff8002260b72: mov      word ptr [rbp - 0x3c], ax
+ffffff8002260b76: mov      eax, dword ptr [r13]
+ffffff8002260b7a: mov      dword ptr [rbp - 0x40], eax
+ffffff8002260b7d: cmp      dword ptr [rdi + 8], r14d
+ffffff8002260b81: jb       0xffffff8002260c2f
+ffffff8002260b87: or       r15b, byte ptr [rdi + 0x29]
+ffffff8002260b8b: jne      0xffffff8002260ba7
+ffffff8002260b8d: add      rdi, 0x20
+ffffff8002260b91: lea      rsi, [rbp - 0x40]
+ffffff8002260b95: mov      edx, 6
+ffffff8002260b9a: call     0xffffff8000104420  ; _memcmp
+ffffff8002260b9f: test     eax, eax
+ffffff8002260ba1: je       0xffffff8002260d67
+ffffff8002260ba7: lea      rdi, [rbp - 0x38]
+ffffff8002260bab: mov      word ptr [rdi + 4], 0
+ffffff8002260bb1: mov      dword ptr [rdi], 0
+ffffff8002260bb7: lea      rsi, [rbp - 0x40]
+ffffff8002260bbb: mov      edx, 6
+ffffff8002260bc0: call     0xffffff8000104420  ; _memcmp
+ffffff8002260bc5: mov      rcx, qword ptr [r12 + 0x10]
+ffffff8002260bca: test     eax, eax
+ffffff8002260bcc: je       0xffffff8002260c7f
+ffffff8002260bd2: mov      al, byte ptr [rbp - 0x40]
+ffffff8002260bd5: and      al, 1
+ffffff8002260bd7: jne      0xffffff8002260c7f
+ffffff8002260bdd: mov      rdi, qword ptr [rcx]
+ffffff8002260be0: mov      rax, qword ptr [rdi]
+ffffff8002260be3: lea      rsi, [rbp - 0x40]
+ffffff8002260be7: call     qword ptr [rax + 0xcf8]
+ffffff8002260bed: test     eax, eax
+ffffff8002260bef: jne      0xffffff8002260d08
+ffffff8002260bf5: lea      rsi, [rbp - 0x40]
+ffffff8002260bf9: xor      r15d, r15d
+ffffff8002260bfc: mov      rdi, r12
+ffffff8002260bff: mov      edx, r14d
+ffffff8002260c02: xor      ecx, ecx
+ffffff8002260c04: call     0xffffff80022608f4  ; __ZN22IO80211MacAddressAgent16updateMacAddressER10ether_addrjb
+ffffff8002260c09: mov      rax, qword ptr [rip + 0x15b508]  ; 0xffffff80023bc118
+ffffff8002260c10: mov      rax, qword ptr [rax]
+ffffff8002260c13: cmp      rax, qword ptr [rbp - 0x30]
+ffffff8002260c17: jne      0xffffff8002260dbc
+ffffff8002260c1d: mov      eax, r15d
+ffffff8002260c20: add      rsp, 0x28
+ffffff8002260c24: pop      rbx
+ffffff8002260c25: pop      r12
+ffffff8002260c27: pop      r13
+ffffff8002260c29: pop      r14
+ffffff8002260c2b: pop      r15
+ffffff8002260c2d: pop      rbp
+ffffff8002260c2e: ret      
+ffffff8002260c2f: mov      rdi, qword ptr [rdi + 0x18]
+ffffff8002260c33: mov      r15d, 0xe00002e2
+ffffff8002260c39: test     rdi, rdi
+ffffff8002260c3c: je       0xffffff8002260c09
+ffffff8002260c3e: mov      esi, 1
+ffffff8002260c43: call     0xffffff80031d421c  ; __ZN11CCLogStream9shouldLogE16CCStreamLogLevel
+ffffff8002260c48: test     al, al
+ffffff8002260c4a: je       0xffffff8002260c09
+ffffff8002260c4c: mov      rax, qword ptr [r12 + 0x10]
+ffffff8002260c51: mov      rdi, qword ptr [rax + 0x18]
+ffffff8002260c55: mov      r10d, dword ptr [rax + 8]
+ffffff8002260c59: sub      rsp, 8
+ffffff8002260c5d: lea      rsi, [rip + 0x11cf79]  ; 0xffffff800237dbdd
+ffffff8002260c64: lea      rdx, [rip + 0x11cfb4]  ; "setMacAddress"
+ffffff8002260c6b: mov      ecx, 0xb0
+ffffff8002260c70: mov      r8, rbx
+ffffff8002260c73: mov      r9d, r14d
+ffffff8002260c76: xor      eax, eax
+ffffff8002260c78: push     r10
+ffffff8002260c7a: jmp      0xffffff8002260d59  ; __ZN22IO80211MacAddressAgent13setMacAddressER10ether_addrjb+0x249
+ffffff8002260c7f: mov      rdi, qword ptr [rcx + 0x18]
+ffffff8002260c83: mov      r15d, 0xe00002c2
+ffffff8002260c89: test     rdi, rdi
+ffffff8002260c8c: je       0xffffff8002260c09
+ffffff8002260c92: mov      esi, 1
+ffffff8002260c97: call     0xffffff80031d421c  ; __ZN11CCLogStream9shouldLogE16CCStreamLogLevel
+ffffff8002260c9c: test     al, al
+ffffff8002260c9e: je       0xffffff8002260c09
+ffffff8002260ca4: mov      rax, qword ptr [r12 + 0x10]
+ffffff8002260ca9: mov      rdi, qword ptr [rax + 0x18]
+ffffff8002260cad: movzx    eax, byte ptr [rbp - 0x40]
+ffffff8002260cb1: mov      qword ptr [rbp - 0x50], rax
+ffffff8002260cb5: movzx    eax, byte ptr [rbp - 0x3f]
+ffffff8002260cb9: mov      qword ptr [rbp - 0x48], rax
+ffffff8002260cbd: movzx    r12d, byte ptr [rbp - 0x3e]
+ffffff8002260cc2: movzx    r13d, byte ptr [rbp - 0x3d]
+ffffff8002260cc7: movzx    r10d, byte ptr [rbp - 0x3c]
+ffffff8002260ccc: movzx    r11d, byte ptr [rbp - 0x3b]
+ffffff8002260cd1: lea      rsi, [rip + 0x11cf93]  ; "[ik] %s@%d:role<%s> client=<%d> Invalid MAC Address  =<%02X:%02X:%02X:%02X:%02X:"
+ffffff8002260cd8: lea      rdx, [rip + 0x11cf40]  ; "setMacAddress"
+ffffff8002260cdf: mov      ecx, 0xb6
+ffffff8002260ce4: mov      r8, rbx
+ffffff8002260ce7: mov      r9d, r14d
+ffffff8002260cea: xor      eax, eax
+ffffff8002260cec: push     r11
+ffffff8002260cee: push     r10
+ffffff8002260cf0: push     r13
+ffffff8002260cf2: push     r12
+ffffff8002260cf4: push     qword ptr [rbp - 0x48]
+ffffff8002260cf7: push     qword ptr [rbp - 0x50]
+ffffff8002260cfa: call     0xffffff80031d252e  ; __ZN11CCLogStream8logAlertEPKcz
+ffffff8002260cff: add      rsp, 0x30
+ffffff8002260d03: jmp      0xffffff8002260c09  ; __ZN22IO80211MacAddressAgent13setMacAddressER10ether_addrjb+0xf9
+ffffff8002260d08: mov      r15d, eax
+ffffff8002260d0b: mov      rax, qword ptr [r12 + 0x10]
+ffffff8002260d10: mov      rdi, qword ptr [rax + 0x18]
+ffffff8002260d14: test     rdi, rdi
+ffffff8002260d17: je       0xffffff8002260c09
+ffffff8002260d1d: mov      esi, 1
+ffffff8002260d22: call     0xffffff80031d421c  ; __ZN11CCLogStream9shouldLogE16CCStreamLogLevel
+ffffff8002260d27: test     al, al
+ffffff8002260d29: je       0xffffff8002260c09
+ffffff8002260d2f: mov      rax, qword ptr [r12 + 0x10]
+ffffff8002260d34: mov      rdi, qword ptr [rax + 0x18]
+ffffff8002260d38: sub      rsp, 8
+ffffff8002260d3c: lea      rsi, [rip + 0x11cf80]  ; 0xffffff800237dcc3
+ffffff8002260d43: lea      rdx, [rip + 0x11ced5]  ; "setMacAddress"
+ffffff8002260d4a: mov      ecx, 0xc1
+ffffff8002260d4f: mov      r8, rbx
+ffffff8002260d52: mov      r9d, r14d
+ffffff8002260d55: xor      eax, eax
+ffffff8002260d57: push     r15
+ffffff8002260d59: call     0xffffff80031d252e  ; __ZN11CCLogStream8logAlertEPKcz
+ffffff8002260d5e: add      rsp, 0x10
+ffffff8002260d62: jmp      0xffffff8002260c09  ; __ZN22IO80211MacAddressAgent13setMacAddressER10ether_addrjb+0xf9
+ffffff8002260d67: mov      rax, qword ptr [r12 + 0x10]
+ffffff8002260d6c: mov      rdi, qword ptr [rax + 0x18]
+ffffff8002260d70: xor      r15d, r15d
+ffffff8002260d73: test     rdi, rdi
+ffffff8002260d76: je       0xffffff8002260c09
+ffffff8002260d7c: mov      esi, 1
+ffffff8002260d81: call     0xffffff80031d421c  ; __ZN11CCLogStream9shouldLogE16CCStreamLogLevel
+ffffff8002260d86: test     al, al
+ffffff8002260d88: je       0xffffff8002260c09
+ffffff8002260d8e: mov      rax, qword ptr [r12 + 0x10]
+ffffff8002260d93: mov      rdi, qword ptr [rax + 0x18]
+ffffff8002260d97: lea      rsi, [rip + 0x11ce8f]  ; 0xffffff800237dc2d
+ffffff8002260d9e: lea      rdx, [rip + 0x11ce7a]  ; "setMacAddress"
+ffffff8002260da5: xor      r15d, r15d
+ffffff8002260da8: mov      ecx, 0xb3
+ffffff8002260dad: mov      r8, rbx
+ffffff8002260db0: xor      eax, eax
+ffffff8002260db2: call     0xffffff80031d252e  ; __ZN11CCLogStream8logAlertEPKcz
+ffffff8002260db7: jmp      0xffffff8002260c09  ; __ZN22IO80211MacAddressAgent13setMacAddressER10ether_addrjb+0xf9
+ffffff8002260dbc: call     0xffffff8000383150  ; ___stack_chk_fail
+ffffff8002260dc1: nop      

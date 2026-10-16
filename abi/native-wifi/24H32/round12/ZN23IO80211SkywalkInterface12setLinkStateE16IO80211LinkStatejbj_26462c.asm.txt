@@ -1,0 +1,6 @@
+# 0xffffff800226462c __ZN23IO80211SkywalkInterface12setLinkStateE16IO80211LinkStatejbj
+ffffff800226462c: push     rbp
+ffffff800226462d: mov      rbp, rsp
+ffffff8002264630: mov      al, 1
+ffffff8002264632: pop      rbp
+ffffff8002264633: ret      

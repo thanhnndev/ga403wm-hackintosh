@@ -1,0 +1,13 @@
+# 0xffffff800298315c __ZN25IOSkywalkNetworkInterface16getBSDUnitNumberEv
+ffffff800298315c: mov      rcx, qword ptr [rdi + 0xb8]
+ffffff8002983163: mov      eax, 0xffffffff
+ffffff8002983168: test     rcx, rcx
+ffffff800298316b: je       0xffffff800298317d
+ffffff800298316d: push     rbp
+ffffff800298316e: mov      rbp, rsp
+ffffff8002983171: mov      rcx, qword ptr [rcx]
+ffffff8002983174: test     rcx, rcx
+ffffff8002983177: je       0xffffff800298317c
+ffffff8002983179: mov      eax, dword ptr [rcx + 0x38]
+ffffff800298317c: pop      rbp
+ffffff800298317d: ret      

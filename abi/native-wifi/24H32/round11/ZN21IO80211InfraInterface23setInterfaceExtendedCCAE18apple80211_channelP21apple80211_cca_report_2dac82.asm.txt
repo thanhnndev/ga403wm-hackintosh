@@ -1,0 +1,14 @@
+# 0xffffff80022dac82 __ZN21IO80211InfraInterface23setInterfaceExtendedCCAE18apple80211_channelP21apple80211_cca_report
+ffffff80022dac82: push     rbp
+ffffff80022dac83: mov      rbp, rsp
+ffffff80022dac86: mov      rax, qword ptr [rdi + 0x110]
+ffffff80022dac8d: mov      rdi, qword ptr [rax + 0x40]
+ffffff80022dac91: test     rdi, rdi
+ffffff80022dac94: je       0xffffff80022dac9f
+ffffff80022dac96: mov      rsi, rcx
+ffffff80022dac99: pop      rbp
+ffffff80022dac9a: jmp      0xffffff80022e6698  ; __ZN23IO80211InterfaceMonitor30setInterfaceAverageExtendedCCAEP21apple80211_cca_report
+ffffff80022dac9f: xor      eax, eax
+ffffff80022daca1: pop      rbp
+ffffff80022daca2: ret      
+ffffff80022daca3: nop      

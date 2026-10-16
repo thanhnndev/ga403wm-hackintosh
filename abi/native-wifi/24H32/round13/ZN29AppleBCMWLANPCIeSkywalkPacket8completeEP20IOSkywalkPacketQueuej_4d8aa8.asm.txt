@@ -1,0 +1,17 @@
+# 0xffffff80014d8aa8 __ZN29AppleBCMWLANPCIeSkywalkPacket8completeEP20IOSkywalkPacketQueuej
+ffffff80014d8aa8: push     rbp
+ffffff80014d8aa9: mov      rbp, rsp
+ffffff80014d8aac: push     rbx
+ffffff80014d8aad: push     rax
+ffffff80014d8aae: mov      rbx, rdi
+ffffff80014d8ab1: mov      rax, qword ptr [rip + 0x64690]  ; 0xffffff800153d148
+ffffff80014d8ab8: call     qword ptr [rax + 0x1b0]
+ffffff80014d8abe: mov      rcx, qword ptr [rbx + 0x78]
+ffffff80014d8ac2: xor      edx, edx
+ffffff80014d8ac4: mov      qword ptr [rcx + 0x50], rdx
+ffffff80014d8ac8: mov      qword ptr [rcx + 0x48], rdx
+ffffff80014d8acc: add      rsp, 8
+ffffff80014d8ad0: pop      rbx
+ffffff80014d8ad1: pop      rbp
+ffffff80014d8ad2: ret      
+ffffff80014d8ad3: nop      

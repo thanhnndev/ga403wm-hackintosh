@@ -1,0 +1,46 @@
+# 0xffffff800297fe14 __ZN31IOSkywalkCloneableNetworkPacket8withPoolEP25IOSkywalkPacketBufferPoolP25IOSkywalkPacketDescriptorj
+ffffff800297fe14: push     rbp
+ffffff800297fe15: mov      rbp, rsp
+ffffff800297fe18: push     r15
+ffffff800297fe1a: push     r14
+ffffff800297fe1c: push     r13
+ffffff800297fe1e: push     r12
+ffffff800297fe20: push     rbx
+ffffff800297fe21: push     rax
+ffffff800297fe22: mov      r14d, edx
+ffffff800297fe25: mov      r15, rsi
+ffffff800297fe28: mov      r12, rdi
+ffffff800297fe2b: lea      rdi, [rip + 0x378ce]  ; 0xffffff80029b7700
+ffffff800297fe32: mov      esi, 0x90
+ffffff800297fe37: call     0xffffff8000a4be90  ; _OSObject_typed_operator_new
+ffffff800297fe3c: mov      rbx, rax
+ffffff800297fe3f: lea      r13, [rip + 0x36baa]  ; 0xffffff80029b69f0
+ffffff800297fe46: mov      rdi, rax
+ffffff800297fe49: mov      rsi, r13
+ffffff800297fe4c: call     0xffffff800297ee5a  ; __ZN22IOSkywalkNetworkPacketC2EPK11OSMetaClass
+ffffff800297fe51: lea      rax, [rip + 0x2eb28]  ; 0xffffff80029ae980
+ffffff800297fe58: mov      qword ptr [rbx], rax
+ffffff800297fe5b: mov      rdi, r13
+ffffff800297fe5e: call     0xffffff8000a4a700  ; __ZNK11OSMetaClass19instanceConstructedEv
+ffffff800297fe63: mov      rax, qword ptr [rbx]
+ffffff800297fe66: mov      rdi, rbx
+ffffff800297fe69: mov      rsi, r12
+ffffff800297fe6c: mov      rdx, r15
+ffffff800297fe6f: mov      ecx, r14d
+ffffff800297fe72: call     qword ptr [rax + 0x118]
+ffffff800297fe78: test     al, al
+ffffff800297fe7a: jne      0xffffff800297fe87
+ffffff800297fe7c: mov      rax, qword ptr [rbx]
+ffffff800297fe7f: mov      rdi, rbx
+ffffff800297fe82: call     qword ptr [rax + 0x28]
+ffffff800297fe85: xor      ebx, ebx
+ffffff800297fe87: mov      rax, rbx
+ffffff800297fe8a: add      rsp, 8
+ffffff800297fe8e: pop      rbx
+ffffff800297fe8f: pop      r12
+ffffff800297fe91: pop      r13
+ffffff800297fe93: pop      r14
+ffffff800297fe95: pop      r15
+ffffff800297fe97: pop      rbp
+ffffff800297fe98: ret      
+ffffff800297fe99: nop      

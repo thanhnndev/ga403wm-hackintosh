@@ -1,0 +1,52 @@
+# 0xffffff80014d78a4 __ZN29AppleBCMWLANPCIeSkywalkPacket8withPoolEP33AppleBCMWLANPCIeSkywalkPacketPoolP25IOSkywalkPacketDescriptormP11CCLogStreamP15CCFaultReporterj
+ffffff80014d78a4: push     rbp
+ffffff80014d78a5: mov      rbp, rsp
+ffffff80014d78a8: push     r15
+ffffff80014d78aa: push     r14
+ffffff80014d78ac: push     r13
+ffffff80014d78ae: push     r12
+ffffff80014d78b0: push     rbx
+ffffff80014d78b1: sub      rsp, 0x28
+ffffff80014d78b5: mov      r13d, r9d
+ffffff80014d78b8: mov      qword ptr [rbp - 0x40], r8
+ffffff80014d78bc: mov      qword ptr [rbp - 0x38], rcx
+ffffff80014d78c0: mov      qword ptr [rbp - 0x30], rdx
+ffffff80014d78c4: mov      r14, rsi
+ffffff80014d78c7: mov      r15, rdi
+ffffff80014d78ca: lea      rdi, [rip + 0x6fdef]  ; 0xffffff80015476c0
+ffffff80014d78d1: mov      esi, 0x80
+ffffff80014d78d6: call     0xffffff8000a4be90  ; _OSObject_typed_operator_new
+ffffff80014d78db: mov      rbx, rax
+ffffff80014d78de: lea      r12, [rip + 0x6ea6b]  ; 0xffffff8001546350
+ffffff80014d78e5: mov      rdi, rax
+ffffff80014d78e8: mov      rsi, r12
+ffffff80014d78eb: call     0xffffff80022c57d0  ; __ZN20IO80211NetworkPacketC2EPK11OSMetaClass
+ffffff80014d78f0: lea      rax, [rip + 0x67c71]  ; 0xffffff800153f568
+ffffff80014d78f7: mov      qword ptr [rbx], rax
+ffffff80014d78fa: mov      rdi, r12
+ffffff80014d78fd: call     0xffffff8000a4a700  ; __ZNK11OSMetaClass19instanceConstructedEv
+ffffff80014d7902: mov      rax, qword ptr [rbx]
+ffffff80014d7905: mov      dword ptr [rsp], r13d
+ffffff80014d7909: mov      rdi, rbx
+ffffff80014d790c: mov      rsi, r15
+ffffff80014d790f: mov      rdx, r14
+ffffff80014d7912: mov      rcx, qword ptr [rbp - 0x30]
+ffffff80014d7916: mov      r8, qword ptr [rbp - 0x38]
+ffffff80014d791a: mov      r9, qword ptr [rbp - 0x40]
+ffffff80014d791e: call     qword ptr [rax + 0x250]
+ffffff80014d7924: test     al, al
+ffffff80014d7926: jne      0xffffff80014d7933
+ffffff80014d7928: mov      rax, qword ptr [rbx]
+ffffff80014d792b: mov      rdi, rbx
+ffffff80014d792e: call     qword ptr [rax + 0x28]
+ffffff80014d7931: xor      ebx, ebx
+ffffff80014d7933: mov      rax, rbx
+ffffff80014d7936: add      rsp, 0x28
+ffffff80014d793a: pop      rbx
+ffffff80014d793b: pop      r12
+ffffff80014d793d: pop      r13
+ffffff80014d793f: pop      r14
+ffffff80014d7941: pop      r15
+ffffff80014d7943: pop      rbp
+ffffff80014d7944: ret      
+ffffff80014d7945: nop      

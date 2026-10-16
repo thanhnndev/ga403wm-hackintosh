@@ -1,0 +1,9 @@
+# 0xffffff80022dc616 __ZN21IO80211InfraInterface21setWCL_ADVISORTY_INFOEP28apple80211_wcl_advisory_info
+ffffff80022dc616: push     rbp
+ffffff80022dc617: mov      rbp, rsp
+ffffff80022dc61a: mov      rax, qword ptr [rdi + 0x118]
+ffffff80022dc621: mov      rdi, qword ptr [rax + 0x188]
+ffffff80022dc628: call     0xffffff8002118510  ; __ZN18IO80211AVCAdvisory19sendAVCAdvisoryInfoEP28apple80211_wcl_advisory_info
+ffffff80022dc62d: movzx    eax, al
+ffffff80022dc630: pop      rbp
+ffffff80022dc631: ret      

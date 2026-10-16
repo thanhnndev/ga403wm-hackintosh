@@ -1,0 +1,75 @@
+# 0xffffff80022d8abc __ZN21IO80211InfraInterface15configureReportEP19IOReportChannelListjPvS2_
+ffffff80022d8abc: push     rbp
+ffffff80022d8abd: mov      rbp, rsp
+ffffff80022d8ac0: push     r15
+ffffff80022d8ac2: push     r14
+ffffff80022d8ac4: push     r13
+ffffff80022d8ac6: push     r12
+ffffff80022d8ac8: push     rbx
+ffffff80022d8ac9: push     rax
+ffffff80022d8aca: mov      rbx, r8
+ffffff80022d8acd: mov      r14, rcx
+ffffff80022d8ad0: mov      r15d, edx
+ffffff80022d8ad3: mov      r12, rsi
+ffffff80022d8ad6: mov      r13, rdi
+ffffff80022d8ad9: mov      rcx, qword ptr [rdi + 0x110]
+ffffff80022d8ae0: mov      rax, qword ptr [rcx + 0x40]
+ffffff80022d8ae4: test     rax, rax
+ffffff80022d8ae7: je       0xffffff80022d8b0b
+ffffff80022d8ae9: mov      rax, qword ptr [rax + 0x10]
+ffffff80022d8aed: mov      rdi, qword ptr [rax + 0x18]
+ffffff80022d8af1: mov      rsi, r12
+ffffff80022d8af4: mov      edx, r15d
+ffffff80022d8af7: mov      rcx, r14
+ffffff80022d8afa: mov      r8, rbx
+ffffff80022d8afd: call     0xffffff8000b47940  ; __ZN10IOReporter19configureAllReportsEP5OSSetP19IOReportChannelListjPvS4_
+ffffff80022d8b02: mov      rcx, qword ptr [r13 + 0x110]
+ffffff80022d8b09: jmp      0xffffff80022d8b0d  ; __ZN21IO80211InfraInterface15configureReportEP19IOReportChannelListjPvS2_+0x51
+ffffff80022d8b0b: xor      eax, eax
+ffffff80022d8b0d: mov      rcx, qword ptr [rcx + 0x48]
+ffffff80022d8b11: test     rcx, rcx
+ffffff80022d8b14: je       0xffffff80022d8b2f
+ffffff80022d8b16: mov      rax, qword ptr [rcx + 0x10]
+ffffff80022d8b1a: mov      rdi, qword ptr [rax + 0x30]
+ffffff80022d8b1e: mov      rsi, r12
+ffffff80022d8b21: mov      edx, r15d
+ffffff80022d8b24: mov      rcx, r14
+ffffff80022d8b27: mov      r8, rbx
+ffffff80022d8b2a: call     0xffffff8000b47940  ; __ZN10IOReporter19configureAllReportsEP5OSSetP19IOReportChannelListjPvS4_
+ffffff80022d8b2f: mov      rcx, qword ptr [r13 + 0x118]
+ffffff80022d8b36: mov      rcx, qword ptr [rcx]
+ffffff80022d8b39: test     rcx, rcx
+ffffff80022d8b3c: je       0xffffff80022d8b57
+ffffff80022d8b3e: mov      rax, qword ptr [rcx + 0x10]
+ffffff80022d8b42: mov      rdi, qword ptr [rax + 0x50]
+ffffff80022d8b46: mov      rsi, r12
+ffffff80022d8b49: mov      edx, r15d
+ffffff80022d8b4c: mov      rcx, r14
+ffffff80022d8b4f: mov      r8, rbx
+ffffff80022d8b52: call     0xffffff8000b47940  ; __ZN10IOReporter19configureAllReportsEP5OSSetP19IOReportChannelListjPvS4_
+ffffff80022d8b57: mov      rcx, qword ptr [r13 + 0x110]
+ffffff80022d8b5e: mov      rdi, qword ptr [rcx + 0x28]
+ffffff80022d8b62: test     rdi, rdi
+ffffff80022d8b65: je       0xffffff80022d8b8d
+ffffff80022d8b67: mov      rax, qword ptr [rdi]
+ffffff80022d8b6a: mov      rax, qword ptr [rax + 0x2d0]
+ffffff80022d8b71: mov      rsi, r12
+ffffff80022d8b74: mov      edx, r15d
+ffffff80022d8b77: mov      rcx, r14
+ffffff80022d8b7a: mov      r8, rbx
+ffffff80022d8b7d: add      rsp, 8
+ffffff80022d8b81: pop      rbx
+ffffff80022d8b82: pop      r12
+ffffff80022d8b84: pop      r13
+ffffff80022d8b86: pop      r14
+ffffff80022d8b88: pop      r15
+ffffff80022d8b8a: pop      rbp
+ffffff80022d8b8b: jmp      rax
+ffffff80022d8b8d: add      rsp, 8
+ffffff80022d8b91: pop      rbx
+ffffff80022d8b92: pop      r12
+ffffff80022d8b94: pop      r13
+ffffff80022d8b96: pop      r14
+ffffff80022d8b98: pop      r15
+ffffff80022d8b9a: pop      rbp
+ffffff80022d8b9b: ret      

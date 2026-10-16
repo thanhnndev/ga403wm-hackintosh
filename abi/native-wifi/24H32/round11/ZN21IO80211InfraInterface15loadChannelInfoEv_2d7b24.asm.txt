@@ -1,0 +1,55 @@
+# 0xffffff80022d7b24 __ZN21IO80211InfraInterface15loadChannelInfoEv
+ffffff80022d7b24: push     rbp
+ffffff80022d7b25: mov      rbp, rsp
+ffffff80022d7b28: push     r14
+ffffff80022d7b2a: push     rbx
+ffffff80022d7b2b: sub      rsp, 0x10
+ffffff80022d7b2f: mov      rbx, rdi
+ffffff80022d7b32: mov      rax, qword ptr [rip + 0xe45df]  ; 0xffffff80023bc118
+ffffff80022d7b39: mov      rax, qword ptr [rax]
+ffffff80022d7b3c: mov      qword ptr [rbp - 0x18], rax
+ffffff80022d7b40: mov      rax, qword ptr [rdi + 0x110]
+ffffff80022d7b47: mov      rdi, qword ptr [rax + 0xd8]
+ffffff80022d7b4e: test     rdi, rdi
+ffffff80022d7b51: je       0xffffff80022d7b8c
+ffffff80022d7b53: mov      ecx, 0x268
+ffffff80022d7b58: add      rcx, qword ptr [rbx + 0x118]
+ffffff80022d7b5f: lea      r14, [rbp - 0x19]
+ffffff80022d7b63: mov      byte ptr [r14], 0
+ffffff80022d7b67: mov      r8d, 0x2720
+ffffff80022d7b6d: mov      esi, 0xc02869c9
+ffffff80022d7b72: mov      edx, 0xcf
+ffffff80022d7b77: mov      r9, r14
+ffffff80022d7b7a: call     0xffffff800212ad12  ; __ZN11IO80211Glue13sendIOUCToWclEjjPvmRb
+ffffff80022d7b7f: cmp      byte ptr [r14], 1
+ffffff80022d7b83: jne      0xffffff80022d7b8c
+ffffff80022d7b85: cmp      eax, 0xe082280f
+ffffff80022d7b8a: jne      0xffffff80022d7ba0
+ffffff80022d7b8c: mov      esi, 0x268
+ffffff80022d7b91: add      rsi, qword ptr [rbx + 0x118]
+ffffff80022d7b98: mov      rdi, rbx
+ffffff80022d7b9b: call     0xffffff80021f8161  ; __Z26apple80211getCHANNELS_INFOP23IO80211SkywalkInterfaceP24apple80211_channels_info
+ffffff80022d7ba0: test     eax, eax
+ffffff80022d7ba2: je       0xffffff80022d7bcc
+ffffff80022d7ba4: mov      rcx, qword ptr [rip + 0xe456d]  ; 0xffffff80023bc118
+ffffff80022d7bab: mov      rcx, qword ptr [rcx]
+ffffff80022d7bae: cmp      rcx, qword ptr [rbp - 0x18]
+ffffff80022d7bb2: jne      0xffffff80022d7be5
+ffffff80022d7bb4: lea      rdi, [rip + 0xc3752]  ; 0xffffff800239b30d
+ffffff80022d7bbb: mov      esi, eax
+ffffff80022d7bbd: xor      eax, eax
+ffffff80022d7bbf: add      rsp, 0x10
+ffffff80022d7bc3: pop      rbx
+ffffff80022d7bc4: pop      r14
+ffffff80022d7bc6: pop      rbp
+ffffff80022d7bc7: jmp      0xffffff8000ab6560  ; _IOLog
+ffffff80022d7bcc: mov      rax, qword ptr [rip + 0xe4545]  ; 0xffffff80023bc118
+ffffff80022d7bd3: mov      rax, qword ptr [rax]
+ffffff80022d7bd6: cmp      rax, qword ptr [rbp - 0x18]
+ffffff80022d7bda: jne      0xffffff80022d7be5
+ffffff80022d7bdc: add      rsp, 0x10
+ffffff80022d7be0: pop      rbx
+ffffff80022d7be1: pop      r14
+ffffff80022d7be3: pop      rbp
+ffffff80022d7be4: ret      
+ffffff80022d7be5: call     0xffffff8000383150  ; ___stack_chk_fail

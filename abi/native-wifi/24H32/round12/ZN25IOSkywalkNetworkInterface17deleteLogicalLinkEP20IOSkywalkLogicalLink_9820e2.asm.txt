@@ -1,0 +1,37 @@
+# 0xffffff80029820e2 __ZN25IOSkywalkNetworkInterface17deleteLogicalLinkEP20IOSkywalkLogicalLink
+ffffff80029820e2: push     rbp
+ffffff80029820e3: mov      rbp, rsp
+ffffff80029820e6: push     r15
+ffffff80029820e8: push     r14
+ffffff80029820ea: push     rbx
+ffffff80029820eb: push     rax
+ffffff80029820ec: test     rsi, rsi
+ffffff80029820ef: je       0xffffff8002982139
+ffffff80029820f1: mov      rbx, rsi
+ffffff80029820f4: mov      r14, rdi
+ffffff80029820f7: mov      rdi, qword ptr [rdi + 0xc0]
+ffffff80029820fe: mov      rax, qword ptr [rdi]
+ffffff8002982101: call     qword ptr [rax + 0x1c8]
+ffffff8002982107: mov      r15d, 0xe0000001
+ffffff800298210d: test     al, al
+ffffff800298210f: je       0xffffff800298213f
+ffffff8002982111: mov      rax, qword ptr [r14]
+ffffff8002982114: mov      ecx, 8
+ffffff8002982119: mov      rdi, r14
+ffffff800298211c: mov      esi, 0xe0060106
+ffffff8002982121: mov      rdx, rbx
+ffffff8002982124: call     qword ptr [rax + 0x740]
+ffffff800298212a: xor      r15d, r15d
+ffffff800298212d: mov      rdi, rbx
+ffffff8002982130: xor      esi, esi
+ffffff8002982132: call     0xffffff8002983d14  ; __ZN20IOSkywalkLogicalLink12setInterfaceEP18IOSkywalkInterface
+ffffff8002982137: jmp      0xffffff800298213f  ; __ZN25IOSkywalkNetworkInterface17deleteLogicalLinkEP20IOSkywalkLogicalLink+0x5d
+ffffff8002982139: mov      r15d, 0xe00002c2
+ffffff800298213f: mov      eax, r15d
+ffffff8002982142: add      rsp, 8
+ffffff8002982146: pop      rbx
+ffffff8002982147: pop      r14
+ffffff8002982149: pop      r15
+ffffff800298214b: pop      rbp
+ffffff800298214c: ret      
+ffffff800298214d: nop      

@@ -1,0 +1,3 @@
+# 0xffffff80029b1158 __ZN26IOSkywalkEthernetInterface9metaClassE
+ffffff80029b1158: sub      byte ptr [rbx - 0x75], 2
+ffffff80029b115c: add      byte ptr [rax], al

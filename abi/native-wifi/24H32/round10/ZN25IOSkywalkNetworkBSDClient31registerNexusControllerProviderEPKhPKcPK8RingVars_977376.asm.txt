@@ -1,0 +1,49 @@
+# 0xffffff8002977376 __ZN25IOSkywalkNetworkBSDClient31registerNexusControllerProviderEPKhPKcPK8RingVars
+ffffff8002977376: push     rbp
+ffffff8002977377: mov      rbp, rsp
+ffffff800297737a: sub      rsp, 0x90
+ffffff8002977381: mov      rax, qword ptr [rip + 0x2fd90]  ; 0xffffff80029a7118
+ffffff8002977388: mov      rax, qword ptr [rax]
+ffffff800297738b: mov      qword ptr [rbp - 8], rax
+ffffff800297738f: lea      rax, [rbp - 0x24]
+ffffff8002977393: mov      dword ptr [rax], 1
+ffffff8002977399: movabs   r9, 0xaaaaaaaa00000006
+ffffff80029773a3: lea      r8, [rbp - 0x20]
+ffffff80029773a7: mov      qword ptr [r8], r9
+ffffff80029773aa: mov      qword ptr [r8 + 8], rax
+ffffff80029773ae: lea      rax, [rbp - 0x88]
+ffffff80029773b5: mov      dword ptr [rax], 2
+ffffff80029773bb: mov      r9d, dword ptr [rcx + 0x20]
+ffffff80029773bf: mov      dword ptr [rax + 4], r9d
+ffffff80029773c3: xor      r9d, r9d
+ffffff80029773c6: mov      qword ptr [rax + 8], r9
+ffffff80029773ca: mov      qword ptr [rax + 0x10], r9
+ffffff80029773ce: mov      qword ptr [rax + 0x18], r9
+ffffff80029773d2: mov      qword ptr [rax + 0x20], r9
+ffffff80029773d6: lea      r9, [rip + 0x76]  ; 0xffffff8002977453
+ffffff80029773dd: mov      qword ptr [rax + 0x28], r9
+ffffff80029773e1: lea      r9, [rip + 0x11e]  ; 0xffffff8002977506
+ffffff80029773e8: mov      qword ptr [rax + 0x30], r9
+ffffff80029773ec: lea      r9, [rip + 0x13f]  ; 0xffffff8002977532
+ffffff80029773f3: mov      qword ptr [rax + 0x38], r9
+ffffff80029773f7: lea      r9, [rip + 0x223]  ; 0xffffff8002977621
+ffffff80029773fe: mov      qword ptr [rax + 0x40], r9
+ffffff8002977402: lea      r9, [rip + 0x246]  ; 0xffffff800297764f
+ffffff8002977409: mov      qword ptr [rax + 0x48], r9
+ffffff800297740d: lea      r9, [rip + 0x2ca]  ; 0xffffff80029776de
+ffffff8002977414: mov      qword ptr [rax + 0x50], r9
+ffffff8002977418: lea      r9, [rip + 0x31f]  ; 0xffffff800297773e
+ffffff800297741f: mov      qword ptr [rax + 0x58], r9
+ffffff8002977423: mov      r9d, 1
+ffffff8002977429: push     0x60
+ffffff800297742b: push     rax
+ffffff800297742c: call     0xffffff8002975a7e  ; __ZN18IOSkywalkBSDClient31registerNexusControllerProviderEPKhPKcPK8RingVarsPK9AttrEntrymP24kern_nexus_provider_initm
+ffffff8002977431: add      rsp, 0x10
+ffffff8002977435: mov      rcx, qword ptr [rip + 0x2fcdc]  ; 0xffffff80029a7118
+ffffff800297743c: mov      rcx, qword ptr [rcx]
+ffffff800297743f: cmp      rcx, qword ptr [rbp - 8]
+ffffff8002977443: jne      0xffffff800297744e
+ffffff8002977445: add      rsp, 0x90
+ffffff800297744c: pop      rbp
+ffffff800297744d: ret      
+ffffff800297744e: call     0xffffff8000383150  ; ___stack_chk_fail

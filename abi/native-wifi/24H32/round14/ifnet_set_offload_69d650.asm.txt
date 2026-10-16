@@ -1,0 +1,86 @@
+# 0xffffff800069d650 _ifnet_set_offload
+ffffff800069d650: push     rbp
+ffffff800069d651: mov      rbp, rsp
+ffffff800069d654: mov      edx, 1
+ffffff800069d659: pop      rbp
+ffffff800069d65a: jmp      0xffffff800069d660  ; _ifnet_set_offload+0x10
+ffffff800069d65f: nop      
+ffffff800069d660: push     rbp
+ffffff800069d661: mov      rbp, rsp
+ffffff800069d664: push     r15
+ffffff800069d666: push     r14
+ffffff800069d668: push     r12
+ffffff800069d66a: push     rbx
+ffffff800069d66b: test     rdi, rdi
+ffffff800069d66e: je       0xffffff800069d76d
+ffffff800069d674: mov      r14d, edx
+ffffff800069d677: mov      r15d, esi
+ffffff800069d67a: mov      rbx, rdi
+ffffff800069d67d: call     0xffffff80003e9920  ; _lck_rw_lock_exclusive
+ffffff800069d682: mov      ecx, r15d
+ffffff800069d685: and      ecx, 0x53f330ff
+ffffff800069d68b: mov      dword ptr [rbx + 0x1f8], ecx
+ffffff800069d691: mov      r12d, 0x400
+ffffff800069d697: and      r12d, dword ptr [rbx + 0xc8]
+ffffff800069d69e: cmp      dword ptr [rip + 0xc653db], 0  ; 0xffffff8001302a80
+ffffff800069d6a5: je       0xffffff800069d6b9
+ffffff800069d6a7: mov      rdx, qword ptr [rbx + 0x20]
+ffffff800069d6ab: lea      rsi, [rip + 0x5b9695]  ; 0xffffff8000c56d47
+ffffff800069d6b2: xor      eax, eax
+ffffff800069d6b4: call     0xffffff80003d3450  ; _log
+ffffff800069d6b9: mov      rdi, rbx
+ffffff800069d6bc: call     0xffffff80003eaa80  ; _lck_rw_done
+ffffff800069d6c1: mov      eax, r12d
+ffffff800069d6c4: or       eax, 3
+ffffff800069d6c7: test     r15d, 0x306f
+ffffff800069d6ce: cmove    eax, r12d
+ffffff800069d6d2: mov      ecx, r15d
+ffffff800069d6d5: shr      ecx, 0x10
+ffffff800069d6d8: mov      edx, r15d
+ffffff800069d6db: shr      edx, 0x15
+ffffff800069d6de: and      edx, 0x80
+ffffff800069d6e4: mov      esi, r15d
+ffffff800069d6e7: shr      esi, 0xf
+ffffff800069d6ea: mov      edi, r15d
+ffffff800069d6ed: shr      edi, 0xd
+ffffff800069d6f0: mov      r8d, edi
+ffffff800069d6f3: and      r8d, 8
+ffffff800069d6f7: mov      r9d, r15d
+ffffff800069d6fa: shr      r9d, 0xe
+ffffff800069d6fe: and      r9d, 0x200
+ffffff800069d705: and      ecx, 0x60
+ffffff800069d708: or       ecx, edx
+ffffff800069d70a: and      esi, 0x8004
+ffffff800069d710: or       esi, ecx
+ffffff800069d712: or       esi, r8d
+ffffff800069d715: or       esi, r9d
+ffffff800069d718: and      edi, 0x1800
+ffffff800069d71e: or       edi, esi
+ffffff800069d720: and      r15d, 0x3000
+ffffff800069d727: lea      r12d, [rdi + r15*2]
+ffffff800069d72b: xor      r15d, r15d
+ffffff800069d72e: or       r12d, eax
+ffffff800069d731: je       0xffffff800069d773
+ffffff800069d733: test     r14d, r14d
+ffffff800069d736: je       0xffffff800069d75b
+ffffff800069d738: mov      rdi, rbx
+ffffff800069d73b: call     0xffffff80003e9920  ; _lck_rw_lock_exclusive
+ffffff800069d740: cmp      dword ptr [rbx + 0xc8], 0xffff
+ffffff800069d74a: ja       0xffffff800069d753
+ffffff800069d74c: mov      dword ptr [rbx + 0xc8], r12d
+ffffff800069d753: mov      rdi, rbx
+ffffff800069d756: call     0xffffff80003eaa80  ; _lck_rw_done
+ffffff800069d75b: mov      rdi, rbx
+ffffff800069d75e: mov      esi, r12d
+ffffff800069d761: mov      edx, 0xffff
+ffffff800069d766: call     0xffffff800069d470  ; _ifnet_set_capabilities_enabled
+ffffff800069d76b: jmp      0xffffff800069d773  ; _ifnet_set_offload+0x123
+ffffff800069d76d: mov      r15d, 0x16
+ffffff800069d773: mov      eax, r15d
+ffffff800069d776: pop      rbx
+ffffff800069d777: pop      r12
+ffffff800069d779: pop      r14
+ffffff800069d77b: pop      r15
+ffffff800069d77d: pop      rbp
+ffffff800069d77e: ret      
+ffffff800069d77f: nop      

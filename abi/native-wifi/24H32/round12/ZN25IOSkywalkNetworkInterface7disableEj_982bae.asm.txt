@@ -1,0 +1,26 @@
+# 0xffffff8002982bae __ZN25IOSkywalkNetworkInterface7disableEj
+ffffff8002982bae: xor      ecx, ecx
+ffffff8002982bb0: mov      al, 1
+ffffff8002982bb2: lock cmpxchg byte ptr [rdi + 0xc8], cl
+ffffff8002982bba: jne      0xffffff8002982c03
+ffffff8002982bbc: push     rbp
+ffffff8002982bbd: mov      rbp, rsp
+ffffff8002982bc0: push     rbx
+ffffff8002982bc1: push     rax
+ffffff8002982bc2: mov      rbx, rdi
+ffffff8002982bc5: mov      rax, qword ptr [rdi]
+ffffff8002982bc8: xor      esi, esi
+ffffff8002982bca: call     qword ptr [rax + 0x928]
+ffffff8002982bd0: mov      rax, qword ptr [rbx + 0xb8]
+ffffff8002982bd7: test     byte ptr [rax + 0x3c], 1
+ffffff8002982bdb: jne      0xffffff8002982bfd
+ffffff8002982bdd: mov      rdi, rbx
+ffffff8002982be0: mov      esi, 1
+ffffff8002982be5: mov      edx, 2
+ffffff8002982bea: call     0xffffff8002982c04  ; __ZN25IOSkywalkNetworkInterface16reportLinkStatusEjj
+ffffff8002982bef: mov      rax, qword ptr [rbx + 0xb8]
+ffffff8002982bf6: mov      dword ptr [rax + 0x3c], 0
+ffffff8002982bfd: add      rsp, 8
+ffffff8002982c01: pop      rbx
+ffffff8002982c02: pop      rbp
+ffffff8002982c03: ret      

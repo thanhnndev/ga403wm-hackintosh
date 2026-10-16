@@ -1,0 +1,85 @@
+# 0xffffff800298a03c __ZN26IOSkywalkTxCompletionQueue15completePacketsEPP15IOSkywalkPacketj
+ffffff800298a03c: push     rbp
+ffffff800298a03d: mov      rbp, rsp
+ffffff800298a040: push     r15
+ffffff800298a042: push     r14
+ffffff800298a044: push     r13
+ffffff800298a046: push     r12
+ffffff800298a048: push     rbx
+ffffff800298a049: sub      rsp, 0x28
+ffffff800298a04d: mov      qword ptr [rbp - 0x38], rsi
+ffffff800298a051: mov      qword ptr [rbp - 0x40], rdi
+ffffff800298a055: mov      r14d, edx
+ffffff800298a058: mov      dword ptr [rbp - 0x2c], edx
+ffffff800298a05b: test     edx, edx
+ffffff800298a05d: je       0xffffff800298a0dd
+ffffff800298a05f: xor      r12d, r12d
+ffffff800298a062: xor      r15d, r15d
+ffffff800298a065: mov      qword ptr [rbp - 0x48], r14
+ffffff800298a069: mov      rbx, qword ptr [rbp - 0x40]
+ffffff800298a06d: mov      rax, qword ptr [rbp - 0x38]
+ffffff800298a071: mov      r14, qword ptr [rax + r12*8]
+ffffff800298a075: mov      rax, qword ptr [r14]
+ffffff800298a078: mov      rdi, r14
+ffffff800298a07b: call     qword ptr [rax + 0x140]
+ffffff800298a081: mov      r13d, eax
+ffffff800298a084: mov      rdi, r14
+ffffff800298a087: call     0xffffff800297e498  ; __ZNK15IOSkywalkPacket14getSourceQueueEv
+ffffff800298a08c: test     rax, rax
+ffffff800298a08f: je       0xffffff800298a0a1
+ffffff800298a091: mov      rdi, rbx
+ffffff800298a094: xor      esi, esi
+ffffff800298a096: mov      rdx, rax
+ffffff800298a099: mov      ecx, r13d
+ffffff800298a09c: call     0xffffff8002980ec2  ; __ZN20IOSkywalkPacketQueue14notifySrcQueueEbPS_j
+ffffff800298a0a1: mov      rax, qword ptr [r14]
+ffffff800298a0a4: mov      rdi, r14
+ffffff800298a0a7: mov      rsi, rbx
+ffffff800298a0aa: mov      edx, 1
+ffffff800298a0af: xor      ecx, ecx
+ffffff800298a0b1: call     qword ptr [rax + 0x198]
+ffffff800298a0b7: mov      rsi, qword ptr [rbx + 0xe8]
+ffffff800298a0be: test     rsi, rsi
+ffffff800298a0c1: je       0xffffff800298a0cc
+ffffff800298a0c3: mov      rdi, qword ptr [r14 + 0x28]
+ffffff800298a0c7: call     0xffffff8000a35800  ; _kern_packet_tx_completion
+ffffff800298a0cc: add      r15d, r13d
+ffffff800298a0cf: inc      r12
+ffffff800298a0d2: mov      r14, qword ptr [rbp - 0x48]
+ffffff800298a0d6: cmp      r14, r12
+ffffff800298a0d9: jne      0xffffff800298a06d
+ffffff800298a0db: jmp      0xffffff800298a0e0  ; __ZN26IOSkywalkTxCompletionQueue15completePacketsEPP15IOSkywalkPacketj+0xa4
+ffffff800298a0dd: xor      r15d, r15d
+ffffff800298a0e0: mov      rbx, qword ptr [rbp - 0x40]
+ffffff800298a0e4: mov      rdi, qword ptr [rbx + 0x50]
+ffffff800298a0e8: mov      rax, qword ptr [rdi]
+ffffff800298a0eb: mov      rsi, qword ptr [rbp - 0x38]
+ffffff800298a0ef: mov      r12d, dword ptr [rbp - 0x2c]
+ffffff800298a0f3: mov      edx, r12d
+ffffff800298a0f6: call     qword ptr [rax + 0x148]
+ffffff800298a0fc: mov      rdi, rbx
+ffffff800298a0ff: mov      esi, 1
+ffffff800298a104: xor      edx, edx
+ffffff800298a106: xor      ecx, ecx
+ffffff800298a108: call     0xffffff8002980ec2  ; __ZN20IOSkywalkPacketQueue14notifySrcQueueEbPS_j
+ffffff800298a10d: mov      rdi, qword ptr [rbx + 0xf0]
+ffffff800298a114: test     rdi, rdi
+ffffff800298a117: je       0xffffff800298a128
+ffffff800298a119: mov      rax, qword ptr [rdi]
+ffffff800298a11c: mov      esi, r12d
+ffffff800298a11f: mov      edx, r15d
+ffffff800298a122: call     qword ptr [rax + 0x268]
+ffffff800298a128: mov      rax, qword ptr [rbx + 0xf8]
+ffffff800298a12f: add      qword ptr [rax + 0x10], r14
+ffffff800298a133: cmp      qword ptr [rax + 0x18], r14
+ffffff800298a137: jb       0xffffff800298a148
+ffffff800298a139: add      rsp, 0x28
+ffffff800298a13d: pop      rbx
+ffffff800298a13e: pop      r12
+ffffff800298a140: pop      r13
+ffffff800298a142: pop      r14
+ffffff800298a144: pop      r15
+ffffff800298a146: pop      rbp
+ffffff800298a147: ret      
+ffffff800298a148: mov      qword ptr [rax + 0x18], r14
+ffffff800298a14c: jmp      0xffffff800298a139  ; __ZN26IOSkywalkTxCompletionQueue15completePacketsEPP15IOSkywalkPacketj+0xfd

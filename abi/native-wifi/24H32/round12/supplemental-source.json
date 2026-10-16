@@ -1,0 +1,52 @@
+{
+  "functions": {
+    "__ZN28AppleBCMWLANSkywalkInterface22getSupportedMediaArrayEPjS0_": {
+      "address": "0xffffff800156af88",
+      "file": "supplement-ZN28AppleBCMWLANSkywalkInterface22getSupportedMediaArrayEPjS0__56af88.asm.txt"
+    },
+    "__ZN28AppleBCMWLANSkywalkInterface17handleChosenMediaEj": {
+      "address": "0xffffff800156b158",
+      "file": "supplement-ZN28AppleBCMWLANSkywalkInterface17handleChosenMediaEj_56b158.asm.txt"
+    },
+    "__ZN33AppleBCMWLANIO80211APSTAInterface14enableDatapathEv": {
+      "address": "0xffffff80016a09ee",
+      "file": "supplement-ZN33AppleBCMWLANIO80211APSTAInterface14enableDatapathEv_6a09ee.asm.txt"
+    },
+    "__ZN33AppleBCMWLANIO80211APSTAInterface15disableDatapathEv": {
+      "address": "0xffffff80016a0cec",
+      "file": "supplement-ZN33AppleBCMWLANIO80211APSTAInterface15disableDatapathEv_6a0cec.asm.txt"
+    },
+    "__ZN30AppleBCMWLANProximityInterface14enableDatapathEv": {
+      "address": "0xffffff80016ba118",
+      "file": "supplement-ZN30AppleBCMWLANProximityInterface14enableDatapathEv_6ba118.asm.txt"
+    },
+    "__ZN30AppleBCMWLANProximityInterface15disableDatapathEv": {
+      "address": "0xffffff80016ba4e2",
+      "file": "supplement-ZN30AppleBCMWLANProximityInterface15disableDatapathEv_6ba4e2.asm.txt"
+    },
+    "__ZN24AppleBCMWLANNANInterface14enableDatapathEv": {
+      "address": "0xffffff80016d29d4",
+      "file": "supplement-ZN24AppleBCMWLANNANInterface14enableDatapathEv_6d29d4.asm.txt"
+    },
+    "__ZN24AppleBCMWLANNANInterface15disableDatapathEv": {
+      "address": "0xffffff80016d30e2",
+      "file": "supplement-ZN24AppleBCMWLANNANInterface15disableDatapathEv_6d30e2.asm.txt"
+    },
+    "__ZN28AppleBCMWLANNANDataInterface14enableDatapathEv": {
+      "address": "0xffffff80016d5dd6",
+      "file": "supplement-ZN28AppleBCMWLANNANDataInterface14enableDatapathEv_6d5dd6.asm.txt"
+    },
+    "__ZN28AppleBCMWLANNANDataInterface15disableDatapathEv": {
+      "address": "0xffffff80016d63c8",
+      "file": "supplement-ZN28AppleBCMWLANNANDataInterface15disableDatapathEv_6d63c8.asm.txt"
+    },
+    "__ZN23IO80211SkywalkInterface22getSupportedMediaArrayEPjS0_": {
+      "address": "0xffffff8002264eb4",
+      "file": "supplement-ZN23IO80211SkywalkInterface22getSupportedMediaArrayEPjS0__264eb4.asm.txt"
+    },
+    "__ZN23IO80211SkywalkInterface17handleChosenMediaEj": {
+      "address": "0xffffff8002264fb2",
+      "file": "supplement-ZN23IO80211SkywalkInterface17handleChosenMediaEj_264fb2.asm.txt"
+    }
+  }
+}

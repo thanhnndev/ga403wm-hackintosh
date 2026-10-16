@@ -1,0 +1,8 @@
+# 0xffffff8002978cb6 __ZN25IOSkywalkNetworkBSDClient19preDisconnectActionEP25IOSkywalkNetworkInterfacePvS2_S2_
+ffffff8002978cb6: push     rbp
+ffffff8002978cb7: mov      rbp, rsp
+ffffff8002978cba: mov      byte ptr [rdi + 0x13f], 0
+ffffff8002978cc1: call     0xffffff80029789c0  ; __ZN25IOSkywalkNetworkBSDClient21adjustInterfaceEnableEv
+ffffff8002978cc6: xor      eax, eax
+ffffff8002978cc8: pop      rbp
+ffffff8002978cc9: ret      

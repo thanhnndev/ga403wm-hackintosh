@@ -1,0 +1,7 @@
+# 0xffffff8002980b50 __ZN20IOSkywalkPacketQueue16packetSubmissionEPyPjS1_
+ffffff8002980b50: push     rbp
+ffffff8002980b51: mov      rbp, rsp
+ffffff8002980b54: mov      eax, 0xe00002c7
+ffffff8002980b59: pop      rbp
+ffffff8002980b5a: ret      
+ffffff8002980b5b: nop      

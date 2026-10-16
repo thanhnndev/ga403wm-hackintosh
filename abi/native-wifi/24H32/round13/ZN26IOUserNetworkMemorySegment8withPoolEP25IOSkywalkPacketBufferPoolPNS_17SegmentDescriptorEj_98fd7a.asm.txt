@@ -1,0 +1,47 @@
+# 0xffffff800298fd7a __ZN26IOUserNetworkMemorySegment8withPoolEP25IOSkywalkPacketBufferPoolPNS_17SegmentDescriptorEj
+ffffff800298fd7a: push     rbp
+ffffff800298fd7b: mov      rbp, rsp
+ffffff800298fd7e: push     r15
+ffffff800298fd80: push     r14
+ffffff800298fd82: push     r13
+ffffff800298fd84: push     r12
+ffffff800298fd86: push     rbx
+ffffff800298fd87: push     rax
+ffffff800298fd88: mov      r15d, edx
+ffffff800298fd8b: mov      rbx, rsi
+ffffff800298fd8e: mov      r12, rdi
+ffffff800298fd91: lea      rdi, [rip + 0x28868]  ; 0xffffff80029b8600
+ffffff800298fd98: mov      esi, 0x90
+ffffff800298fd9d: call     0xffffff8000a4be90  ; _OSObject_typed_operator_new
+ffffff800298fda2: mov      r14, rax
+ffffff800298fda5: lea      r13, [rip + 0x26fb4]  ; 0xffffff80029b6d60
+ffffff800298fdac: mov      rdi, rax
+ffffff800298fdaf: mov      rsi, r13
+ffffff800298fdb2: call     0xffffff8002986f6a  ; __ZN22IOSkywalkMemorySegmentC2EPK11OSMetaClass
+ffffff800298fdb7: lea      rax, [rip + 0x25142]  ; 0xffffff80029b4f00
+ffffff800298fdbe: mov      qword ptr [r14], rax
+ffffff800298fdc1: mov      rdi, r13
+ffffff800298fdc4: call     0xffffff8000a4a700  ; __ZNK11OSMetaClass19instanceConstructedEv
+ffffff800298fdc9: mov      rax, qword ptr [r14]
+ffffff800298fdcc: mov      rdi, r14
+ffffff800298fdcf: mov      rsi, r12
+ffffff800298fdd2: mov      rdx, rbx
+ffffff800298fdd5: mov      ecx, r15d
+ffffff800298fdd8: call     qword ptr [rax + 0x118]
+ffffff800298fdde: test     al, al
+ffffff800298fde0: je       0xffffff800298fe02
+ffffff800298fde2: mov      eax, dword ptr [rbx + 0x10]
+ffffff800298fde5: mov      dword ptr [r14 + 0x7c], eax
+ffffff800298fde9: mov      al, byte ptr [rbx + 0x14]
+ffffff800298fdec: mov      byte ptr [r14 + 0x78], al
+ffffff800298fdf0: mov      rax, r14
+ffffff800298fdf3: add      rsp, 8
+ffffff800298fdf7: pop      rbx
+ffffff800298fdf8: pop      r12
+ffffff800298fdfa: pop      r13
+ffffff800298fdfc: pop      r14
+ffffff800298fdfe: pop      r15
+ffffff800298fe00: pop      rbp
+ffffff800298fe01: ret      
+ffffff800298fe02: mov      rdi, r14
+ffffff800298fe05: call     0xffffff80029a475d  ; __ZN26IOUserNetworkMemorySegment8withPoolEP25IOSkywalkPacketBufferPoolPNS_17SegmentDescriptorEj.cold.1

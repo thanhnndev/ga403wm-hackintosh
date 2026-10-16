@@ -1,0 +1,16 @@
+# 0xffffff8002265c04 __ZN23IO80211SkywalkInterface19isCommandProhibitedEi
+ffffff8002265c04: push     rbp
+ffffff8002265c05: mov      rbp, rsp
+ffffff8002265c08: push     rbx
+ffffff8002265c09: push     rax
+ffffff8002265c0a: mov      ebx, esi
+ffffff8002265c0c: mov      rax, qword ptr [rdi]
+ffffff8002265c0f: call     qword ptr [rax + 0xba8]
+ffffff8002265c15: mov      rcx, qword ptr [rax]
+ffffff8002265c18: mov      rcx, qword ptr [rcx + 0xc50]
+ffffff8002265c1f: mov      rdi, rax
+ffffff8002265c22: mov      esi, ebx
+ffffff8002265c24: add      rsp, 8
+ffffff8002265c28: pop      rbx
+ffffff8002265c29: pop      rbp
+ffffff8002265c2a: jmp      rcx

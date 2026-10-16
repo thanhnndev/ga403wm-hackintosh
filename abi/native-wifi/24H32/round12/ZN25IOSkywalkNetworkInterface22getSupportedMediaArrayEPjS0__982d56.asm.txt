@@ -1,0 +1,7 @@
+# 0xffffff8002982d56 __ZN25IOSkywalkNetworkInterface22getSupportedMediaArrayEPjS0_
+ffffff8002982d56: push     rbp
+ffffff8002982d57: mov      rbp, rsp
+ffffff8002982d5a: mov      eax, 0xe00002c7
+ffffff8002982d5f: pop      rbp
+ffffff8002982d60: ret      
+ffffff8002982d61: nop      

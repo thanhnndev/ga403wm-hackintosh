@@ -1,0 +1,12 @@
+# 0xffffff80022dae60 __ZN21IO80211InfraInterface20setInterfaceMIBdot11EP22apple80211_stat_reportP50apple80211_ManagementInformationBasedot11_counters
+ffffff80022dae60: push     rbp
+ffffff80022dae61: mov      rbp, rsp
+ffffff80022dae64: mov      rax, qword ptr [rdi + 0x110]
+ffffff80022dae6b: mov      rdi, qword ptr [rax + 0x40]
+ffffff80022dae6f: test     rdi, rdi
+ffffff80022dae72: je       0xffffff80022dae7a
+ffffff80022dae74: pop      rbp
+ffffff80022dae75: jmp      0xffffff80022e7ac4  ; __ZN23IO80211InterfaceMonitor20setInterfaceMIBdot11EP22apple80211_stat_reportP50apple80211_ManagementInformationBasedot11_counters
+ffffff80022dae7a: mov      al, 1
+ffffff80022dae7c: pop      rbp
+ffffff80022dae7d: ret      

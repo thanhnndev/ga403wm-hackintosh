@@ -1,0 +1,7 @@
+# 0xffffff8002976130 __ZN18IOSkywalkBSDClient16configCapabilityE18kern_nexus_capab_tPvPj
+ffffff8002976130: push     rbp
+ffffff8002976131: mov      rbp, rsp
+ffffff8002976134: mov      eax, 0xe00002c7
+ffffff8002976139: pop      rbp
+ffffff800297613a: ret      
+ffffff800297613b: nop      

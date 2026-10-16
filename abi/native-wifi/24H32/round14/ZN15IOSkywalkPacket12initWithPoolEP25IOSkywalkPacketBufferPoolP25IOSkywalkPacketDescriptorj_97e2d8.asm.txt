@@ -1,0 +1,53 @@
+# 0xffffff800297e2d8 __ZN15IOSkywalkPacket12initWithPoolEP25IOSkywalkPacketBufferPoolP25IOSkywalkPacketDescriptorj
+ffffff800297e2d8: push     rbp
+ffffff800297e2d9: mov      rbp, rsp
+ffffff800297e2dc: push     r15
+ffffff800297e2de: push     r14
+ffffff800297e2e0: push     r12
+ffffff800297e2e2: push     rbx
+ffffff800297e2e3: mov      r15d, ecx
+ffffff800297e2e6: mov      rbx, rdx
+ffffff800297e2e9: mov      r12, rsi
+ffffff800297e2ec: mov      r14, rdi
+ffffff800297e2ef: lea      rax, [rip + 0x2eec2]  ; 0xffffff80029ad1b8
+ffffff800297e2f6: mov      rsi, qword ptr [rax]
+ffffff800297e2f9: mov      rdi, r12
+ffffff800297e2fc: call     0xffffff8000a49ab0  ; __ZN15OSMetaClassBase12safeMetaCastEPKS_PK11OSMetaClass
+ffffff800297e301: mov      rcx, rax
+ffffff800297e304: xor      eax, eax
+ffffff800297e306: test     rbx, rbx
+ffffff800297e309: je       0xffffff800297e36d
+ffffff800297e30b: test     rcx, rcx
+ffffff800297e30e: je       0xffffff800297e36d
+ffffff800297e310: mov      rax, qword ptr [rip + 0x28df1]  ; 0xffffff80029a7108
+ffffff800297e317: mov      rdi, r14
+ffffff800297e31a: call     qword ptr [rax + 0x98]
+ffffff800297e320: test     al, al
+ffffff800297e322: je       0xffffff800297e36b
+ffffff800297e324: mov      qword ptr [r14 + 0x40], r12
+ffffff800297e328: mov      eax, dword ptr [rbx]
+ffffff800297e32a: mov      dword ptr [r14 + 0x68], eax
+ffffff800297e32e: mov      esi, dword ptr [r12 + 0x34]
+ffffff800297e333: cmp      rsi, 8
+ffffff800297e337: ja       0xffffff800297e36b
+ffffff800297e339: mov      dword ptr [r14 + 0x60], esi
+ffffff800297e33d: shl      rsi, 3
+ffffff800297e341: lea      rdi, [rip + 0x3a5d8]  ; 0xffffff80029b8920
+ffffff800297e348: call     0xffffff8000ab6300  ; _IOMallocTypeVarImpl
+ffffff800297e34d: mov      qword ptr [r14 + 0x30], rax
+ffffff800297e351: test     rax, rax
+ffffff800297e354: je       0xffffff800297e36b
+ffffff800297e356: mov      al, 1
+ffffff800297e358: test     r15b, 1
+ffffff800297e35c: je       0xffffff800297e36d
+ffffff800297e35e: cmp      dword ptr [r14 + 0x60], 1
+ffffff800297e363: jne      0xffffff800297e36d
+ffffff800297e365: mov      byte ptr [rbx + 4], 1
+ffffff800297e369: jmp      0xffffff800297e36d  ; __ZN15IOSkywalkPacket12initWithPoolEP25IOSkywalkPacketBufferPoolP25IOSkywalkPacketDescriptorj+0x95
+ffffff800297e36b: xor      eax, eax
+ffffff800297e36d: pop      rbx
+ffffff800297e36e: pop      r12
+ffffff800297e370: pop      r14
+ffffff800297e372: pop      r15
+ffffff800297e374: pop      rbp
+ffffff800297e375: ret      

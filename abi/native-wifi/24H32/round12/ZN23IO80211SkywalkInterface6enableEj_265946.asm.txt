@@ -1,0 +1,9 @@
+# 0xffffff8002265946 __ZN23IO80211SkywalkInterface6enableEj
+ffffff8002265946: push     rbp
+ffffff8002265947: mov      rbp, rsp
+ffffff800226594a: mov      rax, qword ptr [rip + 0x1567b7]  ; 0xffffff80023bc108
+ffffff8002265951: call     qword ptr [rax + 0x860]
+ffffff8002265957: xor      eax, eax
+ffffff8002265959: pop      rbp
+ffffff800226595a: ret      
+ffffff800226595b: nop      

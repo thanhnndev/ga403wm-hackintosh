@@ -8,6 +8,11 @@ on:
       commit:
         description: OpenCorePkg commit to build
         default: 963025f1382eca619412d527ad82b6d19bee70d9
+  workflow_call:        # called by build.yml on a release tag, which attaches the result to the release
+    inputs:
+      commit:
+        type: string
+        default: 963025f1382eca619412d527ad82b6d19bee70d9
 
 env:
   PROJECT_TYPE: UEFI
@@ -28,7 +33,7 @@ jobs:
         run: |
           git clone https://github.com/acidanthera/OpenCorePkg oc-src
           cd oc-src
-          git checkout "${{ github.event.inputs.commit }}"
+          git checkout "${{ inputs.commit }}"
           git apply --directory=Library/OcCpuLib --check ../patches/opencore/fix-zen5-fsb.diff
           git apply --directory=Library/OcCpuLib ../patches/opencore/fix-zen5-fsb.diff
           git diff --stat

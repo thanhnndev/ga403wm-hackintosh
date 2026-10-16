@@ -1,0 +1,8 @@
+# 0xffffff800298308c __ZN25IOSkywalkNetworkInterface18setMaxTransferUnitEj
+ffffff800298308c: push     rbp
+ffffff800298308d: mov      rbp, rsp
+ffffff8002983090: mov      rax, qword ptr [rdi]
+ffffff8002983093: mov      rax, qword ptr [rax + 0x9d0]
+ffffff800298309a: pop      rbp
+ffffff800298309b: jmp      rax
+ffffff800298309d: nop      

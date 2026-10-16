@@ -1,0 +1,4 @@
+# 0xffffff80029ab3e0 __ZN25IOSkywalkNetworkBSDClient10superClassE
+ffffff80029ab3e0: fsub     dword ptr [rdi - 0x75]
+ffffff80029ab3e3: add      al, byte ptr [rax]
+ffffff80029ab3e5: add      al, al

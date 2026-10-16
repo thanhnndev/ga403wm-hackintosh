@@ -1,0 +1,17 @@
+# 0xffffff8002981af8 __ZN25IOSkywalkNetworkInterface21handleLinkStatusEventEPv
+ffffff8002981af8: push     rbp
+ffffff8002981af9: mov      rbp, rsp
+ffffff8002981afc: push     rbx
+ffffff8002981afd: push     rax
+ffffff8002981afe: mov      rbx, rdi
+ffffff8002981b01: mov      rax, qword ptr [rdi]
+ffffff8002981b04: xor      edx, edx
+ffffff8002981b06: xor      ecx, ecx
+ffffff8002981b08: call     qword ptr [rax + 0x740]
+ffffff8002981b0e: mov      rax, qword ptr [rbx]
+ffffff8002981b11: mov      rdi, rbx
+ffffff8002981b14: add      rsp, 8
+ffffff8002981b18: pop      rbx
+ffffff8002981b19: pop      rbp
+ffffff8002981b1a: jmp      qword ptr [rax + 0x28]
+ffffff8002981b1d: nop      

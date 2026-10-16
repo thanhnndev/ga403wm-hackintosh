@@ -1,0 +1,17 @@
+# 0xffffff8002264662 __ZN23IO80211SkywalkInterface19postMessageInternalEjPvmb
+ffffff8002264662: xor      r8b, 1
+ffffff8002264666: mov      rax, qword ptr [rdi + 0x110]
+ffffff800226466d: mov      rax, qword ptr [rax + 0xd8]
+ffffff8002264674: test     rax, rax
+ffffff8002264677: sete     r9b
+ffffff800226467b: or       r9b, r8b
+ffffff800226467e: jne      0xffffff8002264688
+ffffff8002264680: mov      rdi, rax
+ffffff8002264683: jmp      0xffffff800212ac5a  ; __ZN11IO80211Glue15routeEventToWclEjPvm
+ffffff8002264688: push     rbp
+ffffff8002264689: mov      rbp, rsp
+ffffff800226468c: call     0xffffff8002264b16  ; __ZN23IO80211SkywalkInterface15postMessageSyncEjPvm
+ffffff8002264691: xor      eax, eax
+ffffff8002264693: pop      rbp
+ffffff8002264694: ret      
+ffffff8002264695: nop      

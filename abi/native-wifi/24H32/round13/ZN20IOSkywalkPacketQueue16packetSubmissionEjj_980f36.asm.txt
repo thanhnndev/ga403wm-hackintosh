@@ -1,0 +1,33 @@
+# 0xffffff8002980f36 __ZN20IOSkywalkPacketQueue16packetSubmissionEjj
+ffffff8002980f36: push     rbp
+ffffff8002980f37: mov      rbp, rsp
+ffffff8002980f3a: push     r15
+ffffff8002980f3c: push     r14
+ffffff8002980f3e: push     rbx
+ffffff8002980f3f: push     rax
+ffffff8002980f40: mov      r14d, edx
+ffffff8002980f43: mov      r15, rdi
+ffffff8002980f46: mov      ebx, edx
+ffffff8002980f48: mov      rsi, qword ptr [rdi + 0x68]
+ffffff8002980f4c: add      rsi, 0x14
+ffffff8002980f50: mov      rdi, rbx
+ffffff8002980f53: call     0xffffff8000a48bd0  ; _OSAddAtomic64
+ffffff8002980f58: mov      rsi, qword ptr [r15 + 0x68]
+ffffff8002980f5c: cmp      byte ptr [rsi + 0x3d], 0
+ffffff8002980f60: je       0xffffff8002980f6d
+ffffff8002980f62: add      rsp, 8
+ffffff8002980f66: pop      rbx
+ffffff8002980f67: pop      r14
+ffffff8002980f69: pop      r15
+ffffff8002980f6b: pop      rbp
+ffffff8002980f6c: ret      
+ffffff8002980f6d: mov      dword ptr [rsi + 0x10], r14d
+ffffff8002980f71: add      rsi, 0x18
+ffffff8002980f75: mov      rdi, rbx
+ffffff8002980f78: add      rsp, 8
+ffffff8002980f7c: pop      rbx
+ffffff8002980f7d: pop      r14
+ffffff8002980f7f: pop      r15
+ffffff8002980f81: pop      rbp
+ffffff8002980f82: jmp      0xffffff8000a48bd0  ; _OSAddAtomic64
+ffffff8002980f87: nop      

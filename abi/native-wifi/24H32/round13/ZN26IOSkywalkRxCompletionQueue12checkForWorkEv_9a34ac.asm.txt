@@ -1,0 +1,17 @@
+# 0xffffff80029a34ac __ZN26IOSkywalkRxCompletionQueue12checkForWorkEv
+ffffff80029a34ac: mov      eax, dword ptr [rdi + 0x124]
+ffffff80029a34b2: cmp      eax, dword ptr [rdi + 0x120]
+ffffff80029a34b8: je       0xffffff80029a34e3
+ffffff80029a34ba: mov      eax, dword ptr [rdi + 0x120]
+ffffff80029a34c0: mov      dword ptr [rdi + 0x124], eax
+ffffff80029a34c6: cmp      byte ptr [rdi + 0x28], 1
+ffffff80029a34ca: jne      0xffffff80029a34e3
+ffffff80029a34cc: cmp      byte ptr [rdi + 0xcc], 1
+ffffff80029a34d3: jne      0xffffff80029a34e3
+ffffff80029a34d5: push     rbp
+ffffff80029a34d6: mov      rbp, rsp
+ffffff80029a34d9: mov      rsi, qword ptr [rdi + 0x58]
+ffffff80029a34dd: call     0xffffff80029a34e6  ; __ZN26IOSkywalkRxCompletionQueue12gatedEnqueueEPv
+ffffff80029a34e2: pop      rbp
+ffffff80029a34e3: xor      eax, eax
+ffffff80029a34e5: ret      

@@ -1,0 +1,52 @@
+# 0xffffff80014d897e __ZN29AppleBCMWLANPCIeSkywalkPacket12initWithPoolEP33AppleBCMWLANPCIeSkywalkPacketPoolP25IOSkywalkPacketDescriptormP11CCLogStreamP15CCFaultReporterj
+ffffff80014d897e: push     rbp
+ffffff80014d897f: mov      rbp, rsp
+ffffff80014d8982: push     r15
+ffffff80014d8984: push     r14
+ffffff80014d8986: push     r12
+ffffff80014d8988: push     rbx
+ffffff80014d8989: mov      r14, rcx
+ffffff80014d898c: mov      r15, rdx
+ffffff80014d898f: mov      r12, rsi
+ffffff80014d8992: mov      rbx, rdi
+ffffff80014d8995: lea      rdi, [rip + 0x6ed64]  ; 0xffffff8001547700
+ffffff80014d899c: call     0xffffff8000ab5930  ; _IOMallocTypeImpl
+ffffff80014d89a1: mov      qword ptr [rbx + 0x78], rax
+ffffff80014d89a5: test     rax, rax
+ffffff80014d89a8: je       0xffffff80014d8a0f
+ffffff80014d89aa: mov      ecx, dword ptr [rbp + 0x10]
+ffffff80014d89ad: mov      rax, qword ptr [rip + 0x64794]  ; 0xffffff800153d148
+ffffff80014d89b4: mov      rdi, rbx
+ffffff80014d89b7: mov      rsi, r12
+ffffff80014d89ba: mov      rdx, r15
+ffffff80014d89bd: call     qword ptr [rax + 0x128]
+ffffff80014d89c3: test     al, al
+ffffff80014d89c5: je       0xffffff80014d8a18
+ffffff80014d89c7: mov      rax, qword ptr [rbx + 0x78]
+ffffff80014d89cb: and      byte ptr [rax + 0x90], 0xef
+ffffff80014d89d2: mov      rax, qword ptr [rbx + 0x78]
+ffffff80014d89d6: mov      byte ptr [rax + 0x8e], 0
+ffffff80014d89dd: mov      qword ptr [rax + 0x40], rbx
+ffffff80014d89e1: mov      qword ptr [rax + 0x78], r14
+ffffff80014d89e5: and      byte ptr [rax + 0x90], 0xbf
+ffffff80014d89ec: mov      rax, qword ptr [rbx + 0x78]
+ffffff80014d89f0: mov      word ptr [rax + 0x8c], 0
+ffffff80014d89f9: and      byte ptr [rax + 0x90], 0x7f
+ffffff80014d8a00: mov      rax, qword ptr [rbx + 0x78]
+ffffff80014d8a04: mov      dword ptr [rax + 0x74], 0
+ffffff80014d8a0b: mov      bl, 1
+ffffff80014d8a0d: jmp      0xffffff80014d8a28  ; __ZN29AppleBCMWLANPCIeSkywalkPacket12initWithPoolEP33AppleBCMWLANPCIeSkywalkPacketPoolP25IOSkywalkPacketDescriptormP11CCLogStreamP15CCFaultReporterj+0xaa
+ffffff80014d8a0f: lea      rdi, [rip + 0x50dcc]  ; 0xffffff80015297e2
+ffffff80014d8a16: jmp      0xffffff80014d8a1f  ; __ZN29AppleBCMWLANPCIeSkywalkPacket12initWithPoolEP33AppleBCMWLANPCIeSkywalkPacketPoolP25IOSkywalkPacketDescriptormP11CCLogStreamP15CCFaultReporterj+0xa1
+ffffff80014d8a18: lea      rdi, [rip + 0x50ddc]  ; 0xffffff80015297fb
+ffffff80014d8a1f: xor      ebx, ebx
+ffffff80014d8a21: xor      eax, eax
+ffffff80014d8a23: call     0xffffff8000ab6560  ; _IOLog
+ffffff80014d8a28: mov      eax, ebx
+ffffff80014d8a2a: pop      rbx
+ffffff80014d8a2b: pop      r12
+ffffff80014d8a2d: pop      r14
+ffffff80014d8a2f: pop      r15
+ffffff80014d8a31: pop      rbp
+ffffff80014d8a32: ret      
+ffffff80014d8a33: nop      

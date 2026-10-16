@@ -1,0 +1,35 @@
+# 0xffffff80021f70b0 __Z25apple80211getCOUNTRY_CODEP23IO80211SkywalkInterfaceP28apple80211_country_code_data
+ffffff80021f70b0: push     rbp
+ffffff80021f70b1: mov      rbp, rsp
+ffffff80021f70b4: push     r14
+ffffff80021f70b6: push     rbx
+ffffff80021f70b7: mov      rbx, rsi
+ffffff80021f70ba: mov      r14, rdi
+ffffff80021f70bd: mov      rax, qword ptr [rdi]
+ffffff80021f70c0: mov      esi, 0x33
+ffffff80021f70c5: call     qword ptr [rax + 0xcc0]
+ffffff80021f70cb: test     eax, eax
+ffffff80021f70cd: je       0xffffff80021f70d4
+ffffff80021f70cf: pop      rbx
+ffffff80021f70d0: pop      r14
+ffffff80021f70d2: pop      rbp
+ffffff80021f70d3: ret      
+ffffff80021f70d4: lea      rsi, [rip + 0x2011f5]  ; 0xffffff80023f82d0
+ffffff80021f70db: mov      rdi, r14
+ffffff80021f70de: call     0xffffff8000a49ab0  ; __ZN15OSMetaClassBase12safeMetaCastEPKS_PK11OSMetaClass
+ffffff80021f70e3: test     rax, rax
+ffffff80021f70e6: je       0xffffff80021f710d
+ffffff80021f70e8: mov      rax, qword ptr [r14]
+ffffff80021f70eb: mov      rdi, r14
+ffffff80021f70ee: call     qword ptr [rax + 0xba8]
+ffffff80021f70f4: mov      rcx, qword ptr [rax]
+ffffff80021f70f7: mov      rcx, qword ptr [rcx + 0xce8]
+ffffff80021f70fe: mov      rdi, rax
+ffffff80021f7101: mov      rsi, r14
+ffffff80021f7104: mov      rdx, rbx
+ffffff80021f7107: pop      rbx
+ffffff80021f7108: pop      r14
+ffffff80021f710a: pop      rbp
+ffffff80021f710b: jmp      rcx
+ffffff80021f710d: mov      eax, 0xe082280e
+ffffff80021f7112: jmp      0xffffff80021f70cf  ; __Z25apple80211getCOUNTRY_CODEP23IO80211SkywalkInterfaceP28apple80211_country_code_data+0x1f

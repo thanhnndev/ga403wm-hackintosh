@@ -1,0 +1,14 @@
+# 0xffffff80029a2558 __ZN15IOSkywalkPacket13setDataOffsetEt
+ffffff80029a2558: push     rbp
+ffffff80029a2559: mov      rbp, rsp
+ffffff80029a255c: cmp      dword ptr [rdi + 0x64], 0
+ffffff80029a2560: je       0xffffff80029a2572
+ffffff80029a2562: mov      rax, qword ptr [rdi + 0x30]
+ffffff80029a2566: mov      rdi, qword ptr [rax]
+ffffff80029a2569: movzx    esi, si
+ffffff80029a256c: pop      rbp
+ffffff80029a256d: jmp      0xffffff80029a25e2  ; __ZN21IOSkywalkPacketBuffer10setDataOffEx
+ffffff80029a2572: mov      eax, 0xe00002f0
+ffffff80029a2577: pop      rbp
+ffffff80029a2578: ret      
+ffffff80029a2579: nop      

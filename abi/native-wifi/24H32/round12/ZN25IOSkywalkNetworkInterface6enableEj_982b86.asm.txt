@@ -1,0 +1,16 @@
+# 0xffffff8002982b86 __ZN25IOSkywalkNetworkInterface6enableEj
+ffffff8002982b86: push     rbp
+ffffff8002982b87: mov      rbp, rsp
+ffffff8002982b8a: push     rbx
+ffffff8002982b8b: push     rax
+ffffff8002982b8c: mov      rbx, rdi
+ffffff8002982b8f: mov      rax, qword ptr [rdi]
+ffffff8002982b92: mov      esi, 1
+ffffff8002982b97: call     qword ptr [rax + 0x928]
+ffffff8002982b9d: test     eax, eax
+ffffff8002982b9f: sete     byte ptr [rbx + 0xc8]
+ffffff8002982ba6: add      rsp, 8
+ffffff8002982baa: pop      rbx
+ffffff8002982bab: pop      rbp
+ffffff8002982bac: ret      
+ffffff8002982bad: nop      

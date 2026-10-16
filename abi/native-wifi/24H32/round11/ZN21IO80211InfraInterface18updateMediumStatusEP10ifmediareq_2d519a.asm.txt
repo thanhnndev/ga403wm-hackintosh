@@ -1,0 +1,103 @@
+# 0xffffff80022d519a __ZN21IO80211InfraInterface18updateMediumStatusEP10ifmediareq
+ffffff80022d519a: push     rbp
+ffffff80022d519b: mov      rbp, rsp
+ffffff80022d519e: push     r15
+ffffff80022d51a0: push     r14
+ffffff80022d51a2: push     r12
+ffffff80022d51a4: push     rbx
+ffffff80022d51a5: sub      rsp, 0x10
+ffffff80022d51a9: mov      r14, rsi
+ffffff80022d51ac: mov      r15, rdi
+ffffff80022d51af: mov      rax, qword ptr [rip + 0xe6f62]  ; 0xffffff80023bc118
+ffffff80022d51b6: mov      rax, qword ptr [rax]
+ffffff80022d51b9: mov      qword ptr [rbp - 0x28], rax
+ffffff80022d51bd: mov      rax, qword ptr [rdi]
+ffffff80022d51c0: call     qword ptr [rax + 0xba8]
+ffffff80022d51c6: mov      rcx, qword ptr [rax]
+ffffff80022d51c9: mov      rdi, rax
+ffffff80022d51cc: call     qword ptr [rcx + 0x890]
+ffffff80022d51d2: mov      rbx, rax
+ffffff80022d51d5: lea      r12, [rbp - 0x30]
+ffffff80022d51d9: mov      qword ptr [r12], 0
+ffffff80022d51e1: mov      rax, qword ptr [r15]
+ffffff80022d51e4: mov      rdi, r15
+ffffff80022d51e7: call     qword ptr [rax + 0xba8]
+ffffff80022d51ed: mov      rdi, rax
+ffffff80022d51f0: mov      rsi, r12
+ffffff80022d51f3: xor      edx, edx
+ffffff80022d51f5: call     0xffffff8000a9c570  ; __ZN9IOService14CopyPropertiesEPP12OSDictionaryPFiP15OSMetaClassBase5IORPCE
+ffffff80022d51fa: test     eax, eax
+ffffff80022d51fc: sete     al
+ffffff80022d51ff: mov      rdi, qword ptr [r12]
+ffffff80022d5203: test     rdi, rdi
+ffffff80022d5206: setne    cl
+ffffff80022d5209: and      cl, al
+ffffff80022d520b: cmp      cl, 1
+ffffff80022d520e: jne      0xffffff80022d52d8
+ffffff80022d5214: mov      rax, qword ptr [r15 + 0x118]
+ffffff80022d521b: xor      ecx, ecx
+ffffff80022d521d: cmp      dword ptr [rax + 0x18], 2
+ffffff80022d5221: sete     cl
+ffffff80022d5224: lea      eax, [rcx*2 + 1]
+ffffff80022d522b: mov      dword ptr [r14 + 0x18], eax
+ffffff80022d522f: test     rbx, rbx
+ffffff80022d5232: je       0xffffff80022d52ce
+ffffff80022d5238: mov      rax, qword ptr [rdi]
+ffffff80022d523b: lea      rsi, [rip + 0xc46bc]  ; "IOSelectedMedium"
+ffffff80022d5242: call     qword ptr [rax + 0x208]
+ffffff80022d5248: mov      rcx, qword ptr [rip + 0xe6e59]  ; 0xffffff80023bc0a8
+ffffff80022d524f: mov      r15, qword ptr [rcx]
+ffffff80022d5252: mov      rdi, rax
+ffffff80022d5255: mov      rsi, r15
+ffffff80022d5258: call     0xffffff8000a49ab0  ; __ZN15OSMetaClassBase12safeMetaCastEPKS_PK11OSMetaClass
+ffffff80022d525d: test     rax, rax
+ffffff80022d5260: je       0xffffff80022d5286
+ffffff80022d5262: mov      rcx, qword ptr [rbx]
+ffffff80022d5265: mov      rdi, rbx
+ffffff80022d5268: mov      rsi, rax
+ffffff80022d526b: call     qword ptr [rcx + 0x1f8]
+ffffff80022d5271: test     rax, rax
+ffffff80022d5274: je       0xffffff80022d5286
+ffffff80022d5276: mov      rcx, qword ptr [rax]
+ffffff80022d5279: mov      rdi, rax
+ffffff80022d527c: call     qword ptr [rcx + 0x120]
+ffffff80022d5282: mov      dword ptr [r14 + 0x10], eax
+ffffff80022d5286: mov      rdi, qword ptr [rbp - 0x30]
+ffffff80022d528a: mov      rax, qword ptr [rdi]
+ffffff80022d528d: lea      rsi, [rip + 0xc467b]  ; "IOActiveMedium"
+ffffff80022d5294: call     qword ptr [rax + 0x208]
+ffffff80022d529a: mov      rdi, rax
+ffffff80022d529d: mov      rsi, r15
+ffffff80022d52a0: call     0xffffff8000a49ab0  ; __ZN15OSMetaClassBase12safeMetaCastEPKS_PK11OSMetaClass
+ffffff80022d52a5: test     rax, rax
+ffffff80022d52a8: je       0xffffff80022d52ce
+ffffff80022d52aa: mov      rcx, qword ptr [rbx]
+ffffff80022d52ad: mov      rdi, rbx
+ffffff80022d52b0: mov      rsi, rax
+ffffff80022d52b3: call     qword ptr [rcx + 0x1f8]
+ffffff80022d52b9: test     rax, rax
+ffffff80022d52bc: je       0xffffff80022d52ce
+ffffff80022d52be: mov      rcx, qword ptr [rax]
+ffffff80022d52c1: mov      rdi, rax
+ffffff80022d52c4: call     qword ptr [rcx + 0x120]
+ffffff80022d52ca: mov      dword ptr [r14 + 0x1c], eax
+ffffff80022d52ce: mov      rdi, qword ptr [rbp - 0x30]
+ffffff80022d52d2: mov      rax, qword ptr [rdi]
+ffffff80022d52d5: call     qword ptr [rax + 0x28]
+ffffff80022d52d8: test     rbx, rbx
+ffffff80022d52db: je       0xffffff80022d52e6
+ffffff80022d52dd: mov      rax, qword ptr [rbx]
+ffffff80022d52e0: mov      rdi, rbx
+ffffff80022d52e3: call     qword ptr [rax + 0x28]
+ffffff80022d52e6: mov      rax, qword ptr [rip + 0xe6e2b]  ; 0xffffff80023bc118
+ffffff80022d52ed: mov      rax, qword ptr [rax]
+ffffff80022d52f0: cmp      rax, qword ptr [rbp - 0x28]
+ffffff80022d52f4: jne      0xffffff80022d5303
+ffffff80022d52f6: add      rsp, 0x10
+ffffff80022d52fa: pop      rbx
+ffffff80022d52fb: pop      r12
+ffffff80022d52fd: pop      r14
+ffffff80022d52ff: pop      r15
+ffffff80022d5301: pop      rbp
+ffffff80022d5302: ret      
+ffffff80022d5303: call     0xffffff8000383150  ; ___stack_chk_fail

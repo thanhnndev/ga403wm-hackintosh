@@ -1,0 +1,43 @@
+# 0xffffff80029883d8 __ZN26IOSkywalkEthernetInterface19setLinkLayerAddressEP10ether_addr
+ffffff80029883d8: push     rbp
+ffffff80029883d9: mov      rbp, rsp
+ffffff80029883dc: push     r15
+ffffff80029883de: push     r14
+ffffff80029883e0: push     rbx
+ffffff80029883e1: push     rax
+ffffff80029883e2: mov      rbx, rsi
+ffffff80029883e5: mov      r15, rdi
+ffffff80029883e8: mov      rax, qword ptr [rdi]
+ffffff80029883eb: call     qword ptr [rax + 0x8f8]
+ffffff80029883f1: test     rax, rax
+ffffff80029883f4: je       0xffffff800298843d
+ffffff80029883f6: mov      r14, rax
+ffffff80029883f9: mov      rax, qword ptr [r15]
+ffffff80029883fc: lea      rsi, [rip + 0x1cc20]  ; "IOMACAddress"
+ffffff8002988403: mov      rdi, r15
+ffffff8002988406: mov      rdx, rbx
+ffffff8002988409: mov      ecx, 6
+ffffff800298840e: call     qword ptr [rax + 0x288]
+ffffff8002988414: test     al, al
+ffffff8002988416: je       0xffffff800298843d
+ffffff8002988418: mov      edx, 6
+ffffff800298841d: mov      rdi, r14
+ffffff8002988420: mov      rsi, rbx
+ffffff8002988423: call     0xffffff800069f410  ; _ifnet_set_lladdr
+ffffff8002988428: test     eax, eax
+ffffff800298842a: je       0xffffff8002988442
+ffffff800298842c: cmp      eax, 0x16
+ffffff800298842f: je       0xffffff800298844d
+ffffff8002988431: cmp      eax, 2
+ffffff8002988434: jne      0xffffff800298843d
+ffffff8002988436: mov      eax, 0xe00002f0
+ffffff800298843b: jmp      0xffffff8002988442  ; __ZN26IOSkywalkEthernetInterface19setLinkLayerAddressEP10ether_addr+0x6a
+ffffff800298843d: mov      eax, 0xe00002bc
+ffffff8002988442: add      rsp, 8
+ffffff8002988446: pop      rbx
+ffffff8002988447: pop      r14
+ffffff8002988449: pop      r15
+ffffff800298844b: pop      rbp
+ffffff800298844c: ret      
+ffffff800298844d: mov      eax, 0xe00002c2
+ffffff8002988452: jmp      0xffffff8002988442  ; __ZN26IOSkywalkEthernetInterface19setLinkLayerAddressEP10ether_addr+0x6a

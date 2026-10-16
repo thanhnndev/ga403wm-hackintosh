@@ -1,0 +1,15 @@
+# 0xffffff80022dc902 __ZN21IO80211InfraInterface13setIPv6ParamsEP22apple80211_ipv6_params
+ffffff80022dc902: test     rsi, rsi
+ffffff80022dc905: je       0xffffff80022dc928
+ffffff80022dc907: push     rbp
+ffffff80022dc908: mov      rbp, rsp
+ffffff80022dc90b: mov      eax, 0x1c0
+ffffff80022dc910: add      rax, qword ptr [rdi + 0x118]
+ffffff80022dc917: mov      edx, 0xa4
+ffffff80022dc91c: mov      rdi, rax
+ffffff80022dc91f: call     0xffffff8000101080  ; _memmove
+ffffff80022dc924: xor      eax, eax
+ffffff80022dc926: pop      rbp
+ffffff80022dc927: ret      
+ffffff80022dc928: mov      eax, 0xe00002bc
+ffffff80022dc92d: ret      

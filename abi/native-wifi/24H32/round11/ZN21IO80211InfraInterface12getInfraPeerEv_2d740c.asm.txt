@@ -1,0 +1,14 @@
+# 0xffffff80022d740c __ZN21IO80211InfraInterface12getInfraPeerEv
+ffffff80022d740c: push     rbp
+ffffff80022d740d: mov      rbp, rsp
+ffffff80022d7410: mov      rax, qword ptr [rdi + 0x110]
+ffffff80022d7417: mov      rax, qword ptr [rax + 0x28]
+ffffff80022d741b: test     rax, rax
+ffffff80022d741e: je       0xffffff80022d742d
+ffffff80022d7420: mov      rax, qword ptr [rax + 0x18]
+ffffff80022d7424: mov      rax, qword ptr [rax + 0x528]
+ffffff80022d742b: jmp      0xffffff80022d742f  ; __ZN21IO80211InfraInterface12getInfraPeerEv+0x23
+ffffff80022d742d: xor      eax, eax
+ffffff80022d742f: pop      rbp
+ffffff80022d7430: ret      
+ffffff80022d7431: nop      

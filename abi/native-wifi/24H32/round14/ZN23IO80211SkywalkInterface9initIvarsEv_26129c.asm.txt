@@ -1,0 +1,41 @@
+# 0xffffff800226129c __ZN23IO80211SkywalkInterface9initIvarsEv
+ffffff800226129c: push     rbp
+ffffff800226129d: mov      rbp, rsp
+ffffff80022612a0: push     rbx
+ffffff80022612a1: push     rax
+ffffff80022612a2: mov      rbx, rdi
+ffffff80022612a5: cmp      qword ptr [rdi + 0x110], 0
+ffffff80022612ad: je       0xffffff80022612f5
+ffffff80022612af: lea      rdi, [rip - 0x1512b6]
+ffffff80022612b6: mov      rsi, qword ptr [rip + 0x15ae63]  ; 0xffffff80023bc120
+ffffff80022612bd: lea      rcx, [rip + 0x15496c]  ; 0xffffff80023b5c30
+ffffff80022612c4: lea      r8, [rip + 0x11cd0d]  ; "initIvars"
+ffffff80022612cb: xor      edx, edx
+ffffff80022612cd: xor      eax, eax
+ffffff80022612cf: call     0xffffff8000a85d00  ; __os_log_internal
+ffffff80022612d4: mov      rdi, qword ptr [rbx + 0x110]
+ffffff80022612db: mov      esi, 0xf0
+ffffff80022612e0: mov      ecx, 0xf0
+ffffff80022612e5: xor      edx, edx
+ffffff80022612e7: call     0xffffff8000454290  ; _memset_s
+ffffff80022612ec: mov      rax, qword ptr [rbx + 0x110]
+ffffff80022612f3: jmp      0xffffff800226130d  ; __ZN23IO80211SkywalkInterface9initIvarsEv+0x71
+ffffff80022612f5: lea      rdi, [rip + 0x19fa84]  ; 0xffffff8002400d80
+ffffff80022612fc: call     0xffffff8000ab5930  ; _IOMallocTypeImpl
+ffffff8002261301: mov      qword ptr [rbx + 0x110], rax
+ffffff8002261308: test     rax, rax
+ffffff800226130b: je       0xffffff800226133e
+ffffff800226130d: mov      dword ptr [rax + 0xb0], 1
+ffffff8002261317: lea      rdi, [rip - 0x15131e]
+ffffff800226131e: mov      rsi, qword ptr [rip + 0x15adfb]  ; 0xffffff80023bc120
+ffffff8002261325: lea      rcx, [rip + 0x154934]  ; 0xffffff80023b5c60
+ffffff800226132c: xor      edx, edx
+ffffff800226132e: xor      eax, eax
+ffffff8002261330: call     0xffffff8000a85d00  ; __os_log_internal
+ffffff8002261335: mov      al, 1
+ffffff8002261337: add      rsp, 8
+ffffff800226133b: pop      rbx
+ffffff800226133c: pop      rbp
+ffffff800226133d: ret      
+ffffff800226133e: xor      eax, eax
+ffffff8002261340: jmp      0xffffff8002261337  ; __ZN23IO80211SkywalkInterface9initIvarsEv+0x9b

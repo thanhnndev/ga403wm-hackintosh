@@ -1,0 +1,390 @@
+# 0xffffff8002989078 __ZN26IOSkywalkEthernetInterface25mdns_handoff_to_nic_proxyEP11mDNSHandoff
+ffffff8002989078: movzx    ecx, byte ptr [rsi + 0x3a]
+ffffff800298907c: mov      eax, 0xe00002db
+ffffff8002989081: cmp      byte ptr [rdi + 0xd8], cl
+ffffff8002989087: jb       0xffffff800298961a
+ffffff800298908d: push     rbp
+ffffff800298908e: mov      rbp, rsp
+ffffff8002989091: push     r15
+ffffff8002989093: push     r14
+ffffff8002989095: push     r13
+ffffff8002989097: push     r12
+ffffff8002989099: push     rbx
+ffffff800298909a: sub      rsp, 0x38
+ffffff800298909e: mov      rbx, rsi
+ffffff80029890a1: movzx    edx, byte ptr [rsi + 0x3b]
+ffffff80029890a5: cmp      byte ptr [rdi + 0xd9], dl
+ffffff80029890ab: jb       0xffffff800298960c
+ffffff80029890b1: movzx    r8d, word ptr [rbx + 0xc]
+ffffff80029890b6: cmp      word ptr [rdi + 0xde], r8w
+ffffff80029890be: jb       0xffffff800298960c
+ffffff80029890c4: movzx    esi, word ptr [rbx + 0xe]
+ffffff80029890c8: cmp      word ptr [rdi + 0xe0], si
+ffffff80029890cf: jb       0xffffff800298960c
+ffffff80029890d5: movzx    r9d, word ptr [rbx + 0x68]
+ffffff80029890da: cmp      word ptr [rdi + 0xda], r9w
+ffffff80029890e2: jb       0xffffff800298960c
+ffffff80029890e8: movzx    r14d, word ptr [rbx + 0x78]
+ffffff80029890ed: cmp      word ptr [rdi + 0xdc], r14w
+ffffff80029890f5: jb       0xffffff800298960c
+ffffff80029890fb: movzx    r10d, word ptr [rbx + 0x10]
+ffffff8002989100: cmp      word ptr [rdi + 0xe2], r10w
+ffffff8002989108: jb       0xffffff800298960c
+ffffff800298910e: movzx    r15d, word ptr [rdi + 0xe6]
+ffffff8002989116: mov      r11d, dword ptr [rbx + 0x14]
+ffffff800298911a: cmp      r11d, r15d
+ffffff800298911d: ja       0xffffff800298960c
+ffffff8002989123: shl      edx, 4
+ffffff8002989126: shl      r9d, 5
+ffffff800298912a: imul     r14, r14, 0x38
+ffffff800298912e: add      esi, r8d
+ffffff8002989131: add      r10d, ecx
+ffffff8002989134: lea      rcx, [rdx + rsi*2]
+ffffff8002989138: add      rcx, r9
+ffffff800298913b: add      rcx, r14
+ffffff800298913e: lea      rcx, [rcx + r10*4]
+ffffff8002989142: add      rcx, r11
+ffffff8002989145: add      rcx, 0x50
+ffffff8002989149: cmp      rcx, qword ptr [rdi + 0xe8]
+ffffff8002989150: ja       0xffffff800298960c
+ffffff8002989156: mov      rdi, qword ptr [rdi + 0xf8]
+ffffff800298915d: mov      rax, qword ptr [rdi]
+ffffff8002989160: call     qword ptr [rax + 0x2e0]
+ffffff8002989166: mov      r11, rax
+ffffff8002989169: lea      rsi, [rax + 0xc]
+ffffff800298916d: mov      al, byte ptr [rbx + 0x38]
+ffffff8002989170: mov      byte ptr [r11 + 0xc], al
+ffffff8002989174: movzx    r15d, byte ptr [rbx + 0x3a]
+ffffff8002989179: mov      byte ptr [r11 + 0xd], r15b
+ffffff800298917d: mov      al, byte ptr [rbx + 0x39]
+ffffff8002989180: mov      byte ptr [r11 + 0xe], al
+ffffff8002989184: movzx    r12d, byte ptr [rbx + 0x3b]
+ffffff8002989189: lea      rdx, [r11 + r15*4]
+ffffff800298918d: add      rdx, 0x50
+ffffff8002989191: mov      edi, edx
+ffffff8002989193: sub      edi, esi
+ffffff8002989195: lea      rcx, [rdx + r15]
+ffffff8002989199: mov      r8d, ecx
+ffffff800298919c: sub      r8d, esi
+ffffff800298919f: mov      eax, r12d
+ffffff80029891a2: shl      eax, 4
+ffffff80029891a5: add      rax, rcx
+ffffff80029891a8: mov      r9d, eax
+ffffff80029891ab: sub      r9d, esi
+ffffff80029891ae: mov      byte ptr [r11 + 0xf], r12b
+ffffff80029891b2: mov      dword ptr [r11 + 0x10], 0x44
+ffffff80029891ba: mov      dword ptr [r11 + 0x14], edi
+ffffff80029891be: mov      dword ptr [r11 + 0x18], r8d
+ffffff80029891c2: mov      dword ptr [r11 + 0x1c], r9d
+ffffff80029891c6: mov      esi, r12d
+ffffff80029891c9: test     r15d, r15d
+ffffff80029891cc: mov      qword ptr [rbp - 0x30], r11
+ffffff80029891d0: je       0xffffff8002989251
+ffffff80029891d2: lea      rsi, [r11 + 0x50]
+ffffff80029891d6: xor      edi, edi
+ffffff80029891d8: xor      r8d, r8d
+ffffff80029891db: mov      r9, qword ptr [rbx + 0x40]
+ffffff80029891df: mov      r9d, dword ptr [r9 + r8*4]
+ffffff80029891e3: mov      dword ptr [rsi + r8*4], r9d
+ffffff80029891e7: mov      r10, qword ptr [rbx + 0x48]
+ffffff80029891eb: add      r10, rdi
+ffffff80029891ee: xor      r9d, r9d
+ffffff80029891f1: mov      r11b, byte ptr [r10 + r9]
+ffffff80029891f5: cmp      r11b, 0xff
+ffffff80029891f9: jne      0xffffff800298920c
+ffffff80029891fb: inc      r9
+ffffff80029891fe: cmp      r9d, 4
+ffffff8002989202: jne      0xffffff80029891f1
+ffffff8002989204: mov      r9d, 4
+ffffff800298920a: jmp      0xffffff8002989211  ; __ZN26IOSkywalkEthernetInterface25mdns_handoff_to_nic_proxyEP11mDNSHandoff+0x199
+ffffff800298920c: test     r11b, r11b
+ffffff800298920f: js       0xffffff8002989232
+ffffff8002989211: xor      r10d, r10d
+ffffff8002989214: shl      r9b, 3
+ffffff8002989218: add      r9b, r10b
+ffffff800298921b: mov      byte ptr [rdx + r8], r9b
+ffffff800298921f: inc      r8
+ffffff8002989222: movzx    r9d, byte ptr [rbx + 0x3a]
+ffffff8002989227: add      rdi, 4
+ffffff800298922b: cmp      r8, r9
+ffffff800298922e: jb       0xffffff80029891db
+ffffff8002989230: jmp      0xffffff8002989249  ; __ZN26IOSkywalkEthernetInterface25mdns_handoff_to_nic_proxyEP11mDNSHandoff+0x1d1
+ffffff8002989232: xor      r10d, r10d
+ffffff8002989235: mov      r14d, r10d
+ffffff8002989238: lea      r10d, [r14 + 1]
+ffffff800298923c: cmp      r14d, 6
+ffffff8002989240: ja       0xffffff8002989214
+ffffff8002989242: add      r11b, r11b
+ffffff8002989245: js       0xffffff8002989235
+ffffff8002989247: jmp      0xffffff8002989214  ; __ZN26IOSkywalkEthernetInterface25mdns_handoff_to_nic_proxyEP11mDNSHandoff+0x19c
+ffffff8002989249: mov      sil, byte ptr [rbx + 0x3b]
+ffffff800298924d: mov      r11, qword ptr [rbp - 0x30]
+ffffff8002989251: test     sil, sil
+ffffff8002989254: je       0xffffff80029892da
+ffffff800298925a: xor      edx, edx
+ffffff800298925c: xor      esi, esi
+ffffff800298925e: mov      rdi, qword ptr [rbx + 0x50]
+ffffff8002989262: mov      r8, rsi
+ffffff8002989265: shl      r8, 4
+ffffff8002989269: mov      r9, qword ptr [rdi + r8]
+ffffff800298926d: mov      rdi, qword ptr [rdi + r8 + 8]
+ffffff8002989272: mov      qword ptr [rcx + r8 + 8], rdi
+ffffff8002989277: mov      qword ptr [rcx + r8], r9
+ffffff800298927b: mov      r8, qword ptr [rbx + 0x58]
+ffffff800298927f: add      r8, rdx
+ffffff8002989282: xor      edi, edi
+ffffff8002989284: mov      r9b, byte ptr [r8 + rdi]
+ffffff8002989288: cmp      r9b, 0xff
+ffffff800298928c: jne      0xffffff800298929d
+ffffff800298928e: inc      rdi
+ffffff8002989291: cmp      edi, 0x10
+ffffff8002989294: jne      0xffffff8002989284
+ffffff8002989296: mov      edi, 0x10
+ffffff800298929b: jmp      0xffffff80029892a2  ; __ZN26IOSkywalkEthernetInterface25mdns_handoff_to_nic_proxyEP11mDNSHandoff+0x22a
+ffffff800298929d: test     r9b, r9b
+ffffff80029892a0: js       0xffffff80029892c3
+ffffff80029892a2: xor      r8d, r8d
+ffffff80029892a5: shl      dil, 3
+ffffff80029892a9: add      dil, r8b
+ffffff80029892ac: mov      byte ptr [rax + rsi], dil
+ffffff80029892b0: inc      rsi
+ffffff80029892b3: movzx    r13d, byte ptr [rbx + 0x3b]
+ffffff80029892b8: add      rdx, 0x10
+ffffff80029892bc: cmp      rsi, r13
+ffffff80029892bf: jb       0xffffff800298925e
+ffffff80029892c1: jmp      0xffffff80029892dd  ; __ZN26IOSkywalkEthernetInterface25mdns_handoff_to_nic_proxyEP11mDNSHandoff+0x265
+ffffff80029892c3: xor      r8d, r8d
+ffffff80029892c6: mov      r10d, r8d
+ffffff80029892c9: lea      r8d, [r10 + 1]
+ffffff80029892cd: cmp      r10d, 6
+ffffff80029892d1: ja       0xffffff80029892a5
+ffffff80029892d3: add      r9b, r9b
+ffffff80029892d6: js       0xffffff80029892c6
+ffffff80029892d8: jmp      0xffffff80029892a5  ; __ZN26IOSkywalkEthernetInterface25mdns_handoff_to_nic_proxyEP11mDNSHandoff+0x22d
+ffffff80029892da: xor      r13d, r13d
+ffffff80029892dd: lea      rdx, [r11 + 0x20]
+ffffff80029892e1: movzx    r9d, word ptr [rbx + 0xc]
+ffffff80029892e6: add      rax, r13
+ffffff80029892e9: mov      esi, eax
+ffffff80029892eb: sub      esi, edx
+ffffff80029892ed: lea      rcx, [rax + r9*2]
+ffffff80029892f1: mov      edi, ecx
+ffffff80029892f3: sub      edi, edx
+ffffff80029892f5: mov      word ptr [r11 + 0x20], r9w
+ffffff80029892fa: movzx    edx, word ptr [rbx + 0xe]
+ffffff80029892fe: mov      word ptr [r11 + 0x22], dx
+ffffff8002989303: mov      dword ptr [r11 + 0x24], esi
+ffffff8002989307: mov      dword ptr [r11 + 0x28], edi
+ffffff800298930b: test     r9d, r9d
+ffffff800298930e: je       0xffffff800298932e
+ffffff8002989310: mov      rdx, qword ptr [rbx + 0x18]
+ffffff8002989314: xor      esi, esi
+ffffff8002989316: movzx    edi, word ptr [rdx + rsi*2]
+ffffff800298931a: mov      word ptr [rax + rsi*2], di
+ffffff800298931e: inc      rsi
+ffffff8002989321: movzx    edi, word ptr [rbx + 0xc]
+ffffff8002989325: cmp      rsi, rdi
+ffffff8002989328: jb       0xffffff8002989316
+ffffff800298932a: movzx    edx, word ptr [rbx + 0xe]
+ffffff800298932e: test     dx, dx
+ffffff8002989331: je       0xffffff8002989350
+ffffff8002989333: mov      rax, qword ptr [rbx + 0x20]
+ffffff8002989337: xor      edx, edx
+ffffff8002989339: movzx    esi, word ptr [rax + rdx*2]
+ffffff800298933d: mov      word ptr [rcx + rdx*2], si
+ffffff8002989341: inc      rdx
+ffffff8002989344: movzx    r14d, word ptr [rbx + 0xe]
+ffffff8002989349: cmp      rdx, r14
+ffffff800298934c: jb       0xffffff8002989339
+ffffff800298934e: jmp      0xffffff8002989353  ; __ZN26IOSkywalkEthernetInterface25mdns_handoff_to_nic_proxyEP11mDNSHandoff+0x2db
+ffffff8002989350: xor      r14d, r14d
+ffffff8002989353: lea      rdx, [r11 + 0x2c]
+ffffff8002989357: movzx    eax, word ptr [rbx + 0x60]
+ffffff800298935b: mov      dword ptr [r11 + 0x30], eax
+ffffff800298935f: mov      eax, dword ptr [rbx + 0x64]
+ffffff8002989362: mov      dword ptr [r11 + 0x34], eax
+ffffff8002989366: movzx    r10d, word ptr [rbx + 0x68]
+ffffff800298936b: lea      rcx, [rcx + r14*2]
+ffffff800298936f: mov      eax, r10d
+ffffff8002989372: shl      eax, 5
+ffffff8002989375: add      rax, rcx
+ffffff8002989378: mov      esi, ecx
+ffffff800298937a: sub      esi, edx
+ffffff800298937c: mov      edi, eax
+ffffff800298937e: sub      edi, edx
+ffffff8002989380: mov      word ptr [r11 + 0x2c], r10w
+ffffff8002989385: movzx    ecx, word ptr [rbx + 0x78]
+ffffff8002989389: mov      word ptr [r11 + 0x2e], cx
+ffffff800298938e: mov      dword ptr [r11 + 0x38], esi
+ffffff8002989392: mov      dword ptr [r11 + 0x3c], edi
+ffffff8002989396: test     r10d, r10d
+ffffff8002989399: je       0xffffff8002989441
+ffffff800298939f: mov      rcx, qword ptr [rbx + 0x70]
+ffffff80029893a3: mov      edx, r12d
+ffffff80029893a6: shl      edx, 4
+ffffff80029893a9: add      rdx, r13
+ffffff80029893ac: lea      rsi, [r15 + r15*4]
+ffffff80029893b0: add      rsi, rdx
+ffffff80029893b3: lea      rdx, [rsi + r14*2]
+ffffff80029893b7: lea      rdx, [rdx + r9*2]
+ffffff80029893bb: add      rdx, r11
+ffffff80029893be: add      rdx, 0x6c
+ffffff80029893c2: xor      esi, esi
+ffffff80029893c4: xor      edi, edi
+ffffff80029893c6: mov      r8d, dword ptr [rcx + rsi]
+ffffff80029893ca: mov      dword ptr [rdx - 0x1c], r8d
+ffffff80029893ce: movzx    r8d, word ptr [rcx + rsi + 8]
+ffffff80029893d4: mov      word ptr [rdx - 0x18], r8w
+ffffff80029893d9: movzx    r8d, word ptr [rcx + rsi + 0x10]
+ffffff80029893df: mov      word ptr [rdx - 0x16], r8w
+ffffff80029893e4: mov      r8d, dword ptr [rcx + rsi + 0x1e]
+ffffff80029893e9: mov      dword ptr [rdx - 0x14], r8d
+ffffff80029893ed: movzx    ecx, word ptr [rcx + rsi + 0x22]
+ffffff80029893f2: mov      word ptr [rdx - 0x10], cx
+ffffff80029893f6: mov      rcx, qword ptr [rbx + 0x70]
+ffffff80029893fa: movzx    r8d, word ptr [rcx + rsi + 0x1c]
+ffffff8002989400: mov      word ptr [rdx - 0xe], r8w
+ffffff8002989405: mov      r8d, dword ptr [rcx + rsi + 0x14]
+ffffff800298940a: mov      dword ptr [rdx - 0xc], r8d
+ffffff800298940e: mov      r8d, dword ptr [rcx + rsi + 0x18]
+ffffff8002989413: mov      dword ptr [rdx - 8], r8d
+ffffff8002989417: mov      r8d, dword ptr [rcx + rsi + 4]
+ffffff800298941c: mov      dword ptr [rdx - 4], r8d
+ffffff8002989420: mov      r8d, dword ptr [rcx + rsi + 0xc]
+ffffff8002989425: mov      dword ptr [rdx], r8d
+ffffff8002989428: inc      rdi
+ffffff800298942b: movzx    r8d, word ptr [rbx + 0x68]
+ffffff8002989430: add      rdx, 0x20
+ffffff8002989434: add      rsi, 0x24
+ffffff8002989438: cmp      rdi, r8
+ffffff800298943b: jb       0xffffff80029893c6
+ffffff800298943d: movzx    ecx, word ptr [rbx + 0x78]
+ffffff8002989441: test     cx, cx
+ffffff8002989444: mov      qword ptr [rbp - 0x58], r15
+ffffff8002989448: mov      qword ptr [rbp - 0x50], r12
+ffffff800298944c: je       0xffffff800298951d
+ffffff8002989452: mov      ecx, r10d
+ffffff8002989455: shl      ecx, 5
+ffffff8002989458: mov      edx, r12d
+ffffff800298945b: shl      edx, 4
+ffffff800298945e: add      rdx, r13
+ffffff8002989461: lea      rsi, [r15 + r15*4]
+ffffff8002989465: add      rsi, rdx
+ffffff8002989468: add      rsi, rcx
+ffffff800298946b: lea      rcx, [rsi + r14*2]
+ffffff800298946f: lea      rcx, [rcx + r9*2]
+ffffff8002989473: add      rcx, r11
+ffffff8002989476: add      rcx, 0x50
+ffffff800298947a: xor      edx, edx
+ffffff800298947c: xor      esi, esi
+ffffff800298947e: mov      rdi, qword ptr [rbx + 0x80]
+ffffff8002989485: mov      r8d, dword ptr [rdi + rdx]
+ffffff8002989489: mov      dword ptr [rcx], r8d
+ffffff800298948c: movzx    r8d, word ptr [rdi + rdx + 0x14]
+ffffff8002989492: mov      word ptr [rcx + 4], r8w
+ffffff8002989497: movzx    r8d, word ptr [rdi + rdx + 0x28]
+ffffff800298949d: mov      word ptr [rcx + 6], r8w
+ffffff80029894a2: mov      r8d, dword ptr [rdi + rdx + 0x36]
+ffffff80029894a7: mov      dword ptr [rcx + 8], r8d
+ffffff80029894ab: movzx    edi, word ptr [rdi + rdx + 0x3a]
+ffffff80029894b0: mov      word ptr [rcx + 0xc], di
+ffffff80029894b4: mov      rdi, qword ptr [rbx + 0x80]
+ffffff80029894bb: movzx    r8d, word ptr [rdi + rdx + 0x34]
+ffffff80029894c1: mov      word ptr [rcx + 0xe], r8w
+ffffff80029894c6: mov      r8d, dword ptr [rdi + rdx + 0x2c]
+ffffff80029894cb: mov      dword ptr [rcx + 0x10], r8d
+ffffff80029894cf: mov      r8d, dword ptr [rdi + rdx + 0x30]
+ffffff80029894d4: mov      dword ptr [rcx + 0x14], r8d
+ffffff80029894d8: mov      r8, qword ptr [rdi + rdx + 4]
+ffffff80029894dd: mov      rdi, qword ptr [rdi + rdx + 0xc]
+ffffff80029894e2: mov      qword ptr [rcx + 0x18], r8
+ffffff80029894e6: mov      qword ptr [rcx + 0x20], rdi
+ffffff80029894ea: mov      rdi, qword ptr [rbx + 0x80]
+ffffff80029894f1: mov      r8, qword ptr [rdi + rdx + 0x18]
+ffffff80029894f6: mov      rdi, qword ptr [rdi + rdx + 0x20]
+ffffff80029894fb: mov      qword ptr [rcx + 0x30], rdi
+ffffff80029894ff: mov      qword ptr [rcx + 0x28], r8
+ffffff8002989503: inc      rsi
+ffffff8002989506: movzx    edi, word ptr [rbx + 0x78]
+ffffff800298950a: add      rcx, 0x38
+ffffff800298950e: add      rdx, 0x3c
+ffffff8002989512: cmp      rsi, rdi
+ffffff8002989515: jb       0xffffff800298947e
+ffffff800298951b: jmp      0xffffff800298951f  ; __ZN26IOSkywalkEthernetInterface25mdns_handoff_to_nic_proxyEP11mDNSHandoff+0x4a7
+ffffff800298951d: xor      edi, edi
+ffffff800298951f: lea      r12, [r11 + 0x40]
+ffffff8002989523: movzx    ecx, word ptr [rbx + 0x10]
+ffffff8002989527: imul     rsi, rdi, 0x38
+ffffff800298952b: add      rax, rsi
+ffffff800298952e: mov      edx, eax
+ffffff8002989530: sub      edx, r12d
+ffffff8002989533: lea      r15, [rax + rcx*4]
+ffffff8002989537: mov      eax, r15d
+ffffff800298953a: sub      eax, r12d
+ffffff800298953d: mov      dword ptr [r11 + 0x40], ecx
+ffffff8002989541: mov      dword ptr [r11 + 0x48], edx
+ffffff8002989545: mov      dword ptr [r11 + 0x4c], eax
+ffffff8002989549: test     ecx, ecx
+ffffff800298954b: je       0xffffff80029895f3
+ffffff8002989551: mov      qword ptr [rbp - 0x38], rsi
+ffffff8002989555: mov      qword ptr [rbp - 0x40], r10
+ffffff8002989559: mov      qword ptr [rbp - 0x48], r9
+ffffff800298955d: mov      edx, dword ptr [rbx + 0x14]
+ffffff8002989560: mov      rax, qword ptr [rbx + 0x30]
+ffffff8002989564: mov      rsi, qword ptr [rax]
+ffffff8002989567: mov      rax, rsi
+ffffff800298956a: sub      rax, qword ptr [rbx + 0x28]
+ffffff800298956e: add      r15, rax
+ffffff8002989571: mov      rdi, r15
+ffffff8002989574: call     0xffffff8000101080  ; _memmove
+ffffff8002989579: mov      r11, qword ptr [rbp - 0x30]
+ffffff800298957d: mov      eax, dword ptr [rbx + 0x14]
+ffffff8002989580: mov      dword ptr [r11 + 0x44], eax
+ffffff8002989584: add      r15, rax
+ffffff8002989587: cmp      word ptr [rbx + 0x10], 0
+ffffff800298958c: je       0xffffff80029895f3
+ffffff800298958e: mov      rax, qword ptr [rbp - 0x40]
+ffffff8002989592: shl      eax, 5
+ffffff8002989595: add      r13, rax
+ffffff8002989598: mov      rcx, qword ptr [rbp - 0x50]
+ffffff800298959c: shl      ecx, 4
+ffffff800298959f: add      rcx, r13
+ffffff80029895a2: mov      rax, qword ptr [rbp - 0x58]
+ffffff80029895a6: lea      rax, [rax + rax*4]
+ffffff80029895aa: add      rax, rcx
+ffffff80029895ad: add      rax, qword ptr [rbp - 0x38]
+ffffff80029895b1: lea      rax, [rax + r14*2]
+ffffff80029895b5: mov      rcx, qword ptr [rbp - 0x48]
+ffffff80029895b9: lea      rax, [rax + rcx*2]
+ffffff80029895bd: lea      r14, [r11 + rax]
+ffffff80029895c1: add      r14, 0x50
+ffffff80029895c5: xor      r13d, r13d
+ffffff80029895c8: mov      rax, qword ptr [rbx + 0x30]
+ffffff80029895cc: mov      esi, dword ptr [rax + r13*8]
+ffffff80029895d0: sub      esi, dword ptr [rbx + 0x28]
+ffffff80029895d3: add      esi, dword ptr [r11 + 0x4c]
+ffffff80029895d7: mov      dword ptr [r14 + r13*4], esi
+ffffff80029895db: mov      rdx, r12
+ffffff80029895de: call     0xffffff8002989668  ; __ZN26IOSkywalkEthernetInterface8print_rrEmP18nicproxy_rr_info_s
+ffffff80029895e3: mov      r11, qword ptr [rbp - 0x30]
+ffffff80029895e7: inc      r13
+ffffff80029895ea: movzx    eax, word ptr [rbx + 0x10]
+ffffff80029895ee: cmp      r13, rax
+ffffff80029895f1: jb       0xffffff80029895c8
+ffffff80029895f3: sub      r15, r11
+ffffff80029895f6: mov      dword ptr [r11], r15d
+ffffff80029895f9: xor      eax, eax
+ffffff80029895fb: test     r15b, 3
+ffffff80029895ff: je       0xffffff800298960c
+ffffff8002989601: and      r15d, 0xfffffffc
+ffffff8002989605: add      r15d, 4
+ffffff8002989609: mov      dword ptr [r11], r15d
+ffffff800298960c: add      rsp, 0x38
+ffffff8002989610: pop      rbx
+ffffff8002989611: pop      r12
+ffffff8002989613: pop      r13
+ffffff8002989615: pop      r14
+ffffff8002989617: pop      r15
+ffffff8002989619: pop      rbp
+ffffff800298961a: ret      
+ffffff800298961b: nop      

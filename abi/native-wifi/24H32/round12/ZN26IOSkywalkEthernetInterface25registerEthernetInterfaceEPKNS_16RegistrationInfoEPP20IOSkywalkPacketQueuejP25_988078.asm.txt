@@ -1,0 +1,41 @@
+# 0xffffff8002988078 __ZN26IOSkywalkEthernetInterface25registerEthernetInterfaceEPKNS_16RegistrationInfoEPP20IOSkywalkPacketQueuejP25IOSkywalkPacketBufferPoolS7_j
+ffffff8002988078: push     rbp
+ffffff8002988079: mov      rbp, rsp
+ffffff800298807c: push     r15
+ffffff800298807e: push     r14
+ffffff8002988080: push     r13
+ffffff8002988082: push     r12
+ffffff8002988084: push     rbx
+ffffff8002988085: sub      rsp, 0x18
+ffffff8002988089: mov      qword ptr [rbp - 0x30], r9
+ffffff800298808d: mov      r14, r8
+ffffff8002988090: mov      r15d, ecx
+ffffff8002988093: mov      r12, rdx
+ffffff8002988096: mov      r13, rdi
+ffffff8002988099: call     0xffffff8002987fe4  ; __ZN26IOSkywalkEthernetInterface20copyRegistrationInfoEPKNS_16RegistrationInfoE
+ffffff800298809e: test     eax, eax
+ffffff80029880a0: je       0xffffff80029880b2
+ffffff80029880a2: mov      ebx, eax
+ffffff80029880a4: mov      rdi, r13
+ffffff80029880a7: xor      esi, esi
+ffffff80029880a9: call     0xffffff80029880e8  ; __ZN26IOSkywalkEthernetInterface27deregisterEthernetInterfaceEj
+ffffff80029880ae: mov      eax, ebx
+ffffff80029880b0: jmp      0xffffff80029880d8  ; __ZN26IOSkywalkEthernetInterface25registerEthernetInterfaceEPKNS_16RegistrationInfoEPP20IOSkywalkPacketQueuejP25IOSkywalkPacketBufferPoolS7_j+0x60
+ffffff80029880b2: mov      rax, qword ptr [r13 + 0x108]
+ffffff80029880b9: mov      rsi, qword ptr [rax]
+ffffff80029880bc: mov      dword ptr [rsp], 0
+ffffff80029880c3: mov      rdi, r13
+ffffff80029880c6: mov      rdx, r12
+ffffff80029880c9: mov      ecx, r15d
+ffffff80029880cc: mov      r8, r14
+ffffff80029880cf: mov      r9, qword ptr [rbp - 0x30]
+ffffff80029880d3: call     0xffffff8002981d7e  ; __ZN25IOSkywalkNetworkInterface24registerNetworkInterfaceEPKNS_16RegistrationInfoEPP20IOSkywalkPacketQueuejP25IOSkywalkPacketBufferPoolS7_j
+ffffff80029880d8: add      rsp, 0x18
+ffffff80029880dc: pop      rbx
+ffffff80029880dd: pop      r12
+ffffff80029880df: pop      r13
+ffffff80029880e1: pop      r14
+ffffff80029880e3: pop      r15
+ffffff80029880e5: pop      rbp
+ffffff80029880e6: ret      
+ffffff80029880e7: nop      

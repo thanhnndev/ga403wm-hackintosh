@@ -2,8 +2,8 @@
 # SPDX-License-Identifier: BSD-3-Clause-Clear
 # Copyright (c) 2026 thanhnndev and contributors
 # Builds the RogControl menu bar app (ROG Control Center for macOS) into build/RogControl.app (Xcode command line tools, no Xcode project). Ad-hoc signed.
-#   scripts/build-itlwifi.sh            build
-#   scripts/build-itlwifi.sh --install  build, copy to /Applications, start it at every login (user LaunchAgent), start it now
+#   scripts/build-rogcontrol.sh            build
+#   scripts/build-rogcontrol.sh --install  build, copy to /Applications, start it at every login (user LaunchAgent), start it now
 #                                       (no sudo: /Applications is writable for admins). Turn the login start off in its menu.
 set -euo pipefail
 cd "$(dirname "$0")/.."
@@ -21,7 +21,7 @@ if [ "${1:-}" = "--install" ]; then
   mkdir -p "$(dirname "$LA")"
   /usr/bin/python3 -I - "$LA" <<'PY'
 import plistlib, sys
-plistlib.dump({"Label": "com.itlmt7925.RogControl", "ProgramArguments": ["/Applications/RogControl.app/Contents/MacOS/RogControl"],
+plistlib.dump({"Label": "com.itlmt7925.RogControl", "ProgramArguments": ["/Applications/RogControl.app/Contents/MacOS/RogControl", "--background"],
                "RunAtLoad": True, "ProcessType": "Interactive", "LimitLoadToSessionType": "Aqua"}, open(sys.argv[1], "wb"))
 PY
   plutil -lint "$LA" >/dev/null

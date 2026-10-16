@@ -1,0 +1,6 @@
+en9: flags=8822<BROADCAST,SMART,SIMPLEX,MULTICAST> mtu 1500
+	options=400<CHANNEL_IO>
+	ether <MAC removed>
+ifconfig: SIOCGIFXMEDIA: Input/output error
+
+exit=1

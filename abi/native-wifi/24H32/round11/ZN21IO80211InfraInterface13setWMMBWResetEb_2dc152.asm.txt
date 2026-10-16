@@ -1,0 +1,20 @@
+# 0xffffff80022dc152 __ZN21IO80211InfraInterface13setWMMBWResetEb
+ffffff80022dc152: push     rbp
+ffffff80022dc153: mov      rbp, rsp
+ffffff80022dc156: push     r14
+ffffff80022dc158: push     rbx
+ffffff80022dc159: mov      ebx, esi
+ffffff80022dc15b: mov      r14, rdi
+ffffff80022dc15e: lea      rax, [rip + 0x627f3]  ; "enabled"
+ffffff80022dc165: lea      rsi, [rip + 0x627f4]  ; "disabled"
+ffffff80022dc16c: test     ebx, ebx
+ffffff80022dc16e: cmovne   rsi, rax
+ffffff80022dc172: lea      rdi, [rip + 0xbef5f]  ; 0xffffff800239b0d8
+ffffff80022dc179: xor      eax, eax
+ffffff80022dc17b: call     0xffffff8000ab6560  ; _IOLog
+ffffff80022dc180: mov      rax, qword ptr [r14 + 0x118]
+ffffff80022dc187: mov      byte ptr [rax + 0x181], bl
+ffffff80022dc18d: pop      rbx
+ffffff80022dc18e: pop      r14
+ffffff80022dc190: pop      rbp
+ffffff80022dc191: ret      

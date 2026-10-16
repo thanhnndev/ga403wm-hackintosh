@@ -1,0 +1,89 @@
+# 0xffffff80022da30c __ZN21IO80211InfraInterface11inputPacketEP20IO80211NetworkPacketP15packet_info_tagP12ether_headerPbb
+ffffff80022da30c: push     rbp
+ffffff80022da30d: mov      rbp, rsp
+ffffff80022da310: push     r15
+ffffff80022da312: push     r14
+ffffff80022da314: push     r13
+ffffff80022da316: push     r12
+ffffff80022da318: push     rbx
+ffffff80022da319: sub      rsp, 0x18
+ffffff80022da31d: mov      rbx, r8
+ffffff80022da320: mov      r8, rcx
+ffffff80022da323: mov      r15, rdx
+ffffff80022da326: mov      r12, rsi
+ffffff80022da329: mov      r13, rdi
+ffffff80022da32c: mov      rax, qword ptr [rdi + 0x110]
+ffffff80022da333: mov      rdi, qword ptr [rax + 0x40]
+ffffff80022da337: test     rdi, rdi
+ffffff80022da33a: je       0xffffff80022da354
+ffffff80022da33c: mov      rsi, r12
+ffffff80022da33f: mov      rdx, r15
+ffffff80022da342: mov      r14, r8
+ffffff80022da345: call     0xffffff80022ec03e  ; __ZN23IO80211InterfaceMonitor21logRxCompletionPacketEP20IO80211NetworkPacketP15packet_info_tag
+ffffff80022da34a: mov      r8, r14
+ffffff80022da34d: mov      rax, qword ptr [r13 + 0x110]
+ffffff80022da354: mov      rdi, qword ptr [rax + 0x28]
+ffffff80022da358: test     rdi, rdi
+ffffff80022da35b: je       0xffffff80022da425
+ffffff80022da361: mov      r14d, dword ptr [rax + 0x58]
+ffffff80022da365: cmp      r14d, 2
+ffffff80022da369: mov      qword ptr [rbp - 0x40], rbx
+ffffff80022da36d: jne      0xffffff80022da3c5
+ffffff80022da36f: mov      qword ptr [rbp - 0x38], r8
+ffffff80022da373: lea      rsi, [r8 + 6]
+ffffff80022da377: mov      rax, qword ptr [rdi]
+ffffff80022da37a: call     qword ptr [rax + 0x120]
+ffffff80022da380: mov      rbx, rax
+ffffff80022da383: test     r12, r12
+ffffff80022da386: sete     al
+ffffff80022da389: test     r15, r15
+ffffff80022da38c: sete     cl
+ffffff80022da38f: or       cl, al
+ffffff80022da391: jne      0xffffff80022da3bd
+ffffff80022da393: mov      rdi, r12
+ffffff80022da396: call     0xffffff800297f08a  ; __ZNK22IOSkywalkNetworkPacket11getHeadroomEv
+ffffff80022da39b: mov      byte ptr [rbp - 0x29], al
+ffffff80022da39e: mov      rax, qword ptr [r12]
+ffffff80022da3a2: mov      rdi, r12
+ffffff80022da3a5: call     qword ptr [rax + 0x1f0]
+ffffff80022da3ab: movzx    ecx, byte ptr [rbp - 0x29]
+ffffff80022da3af: movzx    eax, word ptr [rax + rcx + 0x40]
+ffffff80022da3b4: rol      ax, 8
+ffffff80022da3b8: mov      word ptr [r15 + 0x22], ax
+ffffff80022da3bd: xor      eax, eax
+ffffff80022da3bf: mov      r8, qword ptr [rbp - 0x38]
+ffffff80022da3c3: jmp      0xffffff80022da3e3  ; __ZN21IO80211InfraInterface11inputPacketEP20IO80211NetworkPacketP15packet_info_tagP12ether_headerPbb+0xd7
+ffffff80022da3c5: test     byte ptr [r8], 1
+ffffff80022da3c9: mov      rax, qword ptr [rdi + 0x18]
+ffffff80022da3cd: jne      0xffffff80022da3da
+ffffff80022da3cf: mov      rbx, qword ptr [rax + 0x528]
+ffffff80022da3d6: xor      eax, eax
+ffffff80022da3d8: jmp      0xffffff80022da3e3  ; __ZN21IO80211InfraInterface11inputPacketEP20IO80211NetworkPacketP15packet_info_tagP12ether_headerPbb+0xd7
+ffffff80022da3da: mov      rbx, qword ptr [rax + 0x520]
+ffffff80022da3e1: mov      al, 1
+ffffff80022da3e3: xor      r10d, r10d
+ffffff80022da3e6: cmp      r14d, 2
+ffffff80022da3ea: sete     r10b
+ffffff80022da3ee: mov      rcx, qword ptr [r13 + 0x110]
+ffffff80022da3f5: mov      rdi, qword ptr [rcx + 0x28]
+ffffff80022da3f9: sub      rsp, 8
+ffffff80022da3fd: movzx    r9d, al
+ffffff80022da401: mov      rsi, r12
+ffffff80022da404: mov      rdx, rbx
+ffffff80022da407: mov      rcx, r15
+ffffff80022da40a: push     0
+ffffff80022da40c: push     qword ptr [rbp - 0x40]
+ffffff80022da40f: push     r10
+ffffff80022da411: call     0xffffff80021f178e  ; __ZN18IO80211PeerManager18skywalkInputPacketEP20IO80211NetworkPacketP11IO80211PeerP15packet_info_tagP12ether_headerbbPbb
+ffffff80022da416: add      rsp, 0x38
+ffffff80022da41a: pop      rbx
+ffffff80022da41b: pop      r12
+ffffff80022da41d: pop      r13
+ffffff80022da41f: pop      r14
+ffffff80022da421: pop      r15
+ffffff80022da423: pop      rbp
+ffffff80022da424: ret      
+ffffff80022da425: mov      al, 1
+ffffff80022da427: add      rsp, 0x18
+ffffff80022da42b: jmp      0xffffff80022da41a  ; __ZN21IO80211InfraInterface11inputPacketEP20IO80211NetworkPacketP15packet_info_tagP12ether_headerPbb+0x10e
+ffffff80022da42d: nop      

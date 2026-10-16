@@ -5,6 +5,11 @@ interface (`itlmt7925Eth`), the same trick the itlwm project uses for Intel card
 
 ## Status
 
+> **Update 2026-10-12 (owner-confirmed):** the driver now reaches the **full link speed** (HE, 160 MHz) with the `itlmt_fast` ladder; the
+> throughput numbers and "slow" statements below (6 Mb/s, ~8 Mb/s, ~5 MB/s) are the history of getting there. The owner measured the
+> final speed at the maximum and will supply the numbers (`iperf3` both directions, band, channel, width, AP model, distance) for
+> comparison; they are **not recorded here yet** and were not measured by the agent. The **native front end** (`itlmt7925Native`, `IO80211Controller`) sits on top of this driver, works and is opt-in with boot-args: it gives a real Wi-Fi interface and 28-36 MB/s on the reference unit ([which mode, how to enable, how to go back](WIFI-DRIVERS.md)). **A-MSDU receive is off by default** in every level since round 26d (with it on, TCP collapses to ~50 KB/s; cause chưa xác định); `itlmt_amsdu=1` turns it back on for debugging.
+
 Verified on the reference machine (GA403WM, macOS 15.6.1 Recovery booted from a USB stick):
 
 * firmware download and start (patch + RAM image), NIC capabilities read, MAC address read from the firmware
@@ -18,7 +23,7 @@ Not done, in rough order of importance:
 | Gap | Consequence |
 |---|---|
 | fixed transmit rate: legacy OFDM 6 Mb/s, no HT/VHT/HE, no aggregation, no QoS | low throughput. No benchmark has been run; do not expect more than a few Mb/s |
-| no IO80211 integration | shows up as Ethernet in System Settings; the [ItlWiFi menu bar app](#runtime-control-itlwifi-menu-bar-app) gives the scan list, join and disconnect (untested on hardware yet) |
+| no IO80211 integration in legacy mode (native mode: see [WIFI-DRIVERS.md](WIFI-DRIVERS.md)) | shows up as Ethernet in System Settings; the [ItlWiFi menu bar app](#runtime-control-itlwifi-menu-bar-app) gives the scan list, join and disconnect (untested on hardware yet) |
 | no group re-key, no power save | battery use is not optimised (reconnect after a drop: implemented with the runtime control, untested) |
 | WPA2-PSK/CCMP only | no open networks, no WPA3/SAE, no enterprise, no 6 GHz scan |
 | regulatory domain is a fixed world domain (`00`: 2.4 GHz ch 1-11, 5 GHz ch 36-165); MAC address is the one stored in the card | |
@@ -213,9 +218,13 @@ loop that owns the connection after the first scan. **Not yet run on hardware.**
 * Scanning while connected uses the firmware scan with split dwell; the radio leaves the AP's channel briefly.
 
 The app (`macos/ItlWiFi/`, Swift, no Xcode project): Wi-Fi icon in the menu bar (bars from the signal), network list
-(strongest BSS per SSID, security, channel), password prompt, "Remember" stores the passphrase in the login keychain
-(service `com.itlmt7925.wifi`), auto-join of saved networks when not connected, Disconnect, Forget, Open at Login
-(a user LaunchAgent).
+(strongest BSS per SSID, security, channel), a join form that replaces the list while it is open (what was typed is kept),
+"Remember" stores the passphrase in `~/Library/Application Support/ItlWiFi/networks.json` (mode 0600; the keychain was used
+first and prompted on every rebuilt, ad-hoc signed app), right-click menu on every network (Connect, Connect with a different
+password, Forget, Copy name), auto-join of saved networks when not connected, Disconnect, Open at Login (a user LaunchAgent).
+The list keeps its order between scans (new networks are inserted by saved / signal band, a full re-sort happens when the popover
+opens or after the Scan button), so a click lands on the row that was under the pointer. A failed attempt is explained from
+`wifi-events` (`hw-prep-fail`, `auth-fail`, `hs-fail` ...).
 
 ```bash
 bash scripts/build.sh itlmt7925 && bash scripts/macos-install-kext.sh itlmt7925   # ESP; keeps your plist credentials
@@ -243,6 +252,15 @@ The driver logs to the verbose console, to properties on its registry entry (`m1
 firmware NVRAM, which survives a hang or panic and can be read from Windows or Linux. See `docs/DEBUGGING.md`. A successful run
 ends with `RESULT rc=0 link up;ethernet interface created` in `itlk0..itlk7` and a line like
 `up=145s rxd=5905 eapol=2 eth=5903 drop=0 tx=4698 fail=0` in `itls0`.
+
+## Power tables are best effort (2026-10-12)
+
+The first build with SAR / CLC / rate power limits (`itlmt7925_pwr.cpp`) made them mandatory: the efuse read of the hardware
+type (0xa71) was rejected by the driver's own response checks and every join ended in `hw-prep-fail`
+(`efuse hw type failed rc=-5` in `m3-log`). Linux (`mt7925_mcu_read_eeprom`) takes `data[off % 16]` of the 124-byte event and
+checks no header field; the driver now does the same, keeps the first bytes of the event in `m3-log` when `tag`/`addr`/`valid`
+are not what was asked, and a failure of any power-table step no longer stops the join (two tries per boot, then the firmware's
+defaults, which is what the earlier measurements ran on).
 
 ## Hardware notes learned on the way
 

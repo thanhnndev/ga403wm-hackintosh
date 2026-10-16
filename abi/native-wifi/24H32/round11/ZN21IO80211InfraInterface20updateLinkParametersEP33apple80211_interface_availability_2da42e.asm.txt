@@ -1,0 +1,19 @@
+# 0xffffff80022da42e __ZN21IO80211InfraInterface20updateLinkParametersEP33apple80211_interface_availability
+ffffff80022da42e: push     rbp
+ffffff80022da42f: mov      rbp, rsp
+ffffff80022da432: sub      rsp, 0x10
+ffffff80022da436: mov      rcx, rsi
+ffffff80022da439: mov      rdx, rdi
+ffffff80022da43c: mov      rax, qword ptr [rdi + 0x110]
+ffffff80022da443: mov      rdi, qword ptr [rax + 0x38]
+ffffff80022da447: mov      rax, qword ptr [rdi]
+ffffff80022da44a: mov      qword ptr [rsp], 0
+ffffff80022da452: lea      rsi, [rip + 0x17]  ; 0xffffff80022da470
+ffffff80022da459: xor      r8d, r8d
+ffffff80022da45c: xor      r9d, r9d
+ffffff80022da45f: call     qword ptr [rax + 0x1a0]
+ffffff80022da465: test     eax, eax
+ffffff80022da467: setne    al
+ffffff80022da46a: add      rsp, 0x10
+ffffff80022da46e: pop      rbp
+ffffff80022da46f: ret      

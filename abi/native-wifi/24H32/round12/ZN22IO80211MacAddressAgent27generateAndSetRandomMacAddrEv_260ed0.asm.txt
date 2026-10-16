@@ -1,0 +1,39 @@
+# 0xffffff8002260ed0 __ZN22IO80211MacAddressAgent27generateAndSetRandomMacAddrEv
+ffffff8002260ed0: push     rbp
+ffffff8002260ed1: mov      rbp, rsp
+ffffff8002260ed4: push     r14
+ffffff8002260ed6: push     rbx
+ffffff8002260ed7: sub      rsp, 0x10
+ffffff8002260edb: mov      rbx, rdi
+ffffff8002260ede: mov      rax, qword ptr [rip + 0x15b233]  ; 0xffffff80023bc118
+ffffff8002260ee5: mov      rax, qword ptr [rax]
+ffffff8002260ee8: mov      qword ptr [rbp - 0x18], rax
+ffffff8002260eec: lea      r14, [rbp - 0x20]
+ffffff8002260ef0: mov      word ptr [r14 + 4], 0
+ffffff8002260ef7: mov      dword ptr [r14], 0
+ffffff8002260efe: mov      rdi, r14
+ffffff8002260f01: mov      esi, 6
+ffffff8002260f06: call     0xffffff800050aa10  ; _read_random
+ffffff8002260f0b: mov      al, byte ptr [r14]
+ffffff8002260f0e: and      al, 0xfc
+ffffff8002260f10: or       al, 2
+ffffff8002260f12: mov      byte ptr [r14], al
+ffffff8002260f15: mov      eax, dword ptr [r14]
+ffffff8002260f18: mov      ecx, dword ptr [r14 + 4]
+ffffff8002260f1c: mov      word ptr [r14 + 4], cx
+ffffff8002260f21: mov      dword ptr [r14], eax
+ffffff8002260f24: lea      rsi, [rbp - 0x20]
+ffffff8002260f28: mov      rdi, rbx
+ffffff8002260f2b: mov      edx, 4
+ffffff8002260f30: mov      ecx, 1
+ffffff8002260f35: call     0xffffff8002260b10  ; __ZN22IO80211MacAddressAgent13setMacAddressER10ether_addrjb
+ffffff8002260f3a: mov      rcx, qword ptr [rip + 0x15b1d7]  ; 0xffffff80023bc118
+ffffff8002260f41: mov      rcx, qword ptr [rcx]
+ffffff8002260f44: cmp      rcx, qword ptr [rbp - 0x18]
+ffffff8002260f48: jne      0xffffff8002260f53
+ffffff8002260f4a: add      rsp, 0x10
+ffffff8002260f4e: pop      rbx
+ffffff8002260f4f: pop      r14
+ffffff8002260f51: pop      rbp
+ffffff8002260f52: ret      
+ffffff8002260f53: call     0xffffff8000383150  ; ___stack_chk_fail

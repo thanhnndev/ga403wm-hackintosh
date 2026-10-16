@@ -1,0 +1,43 @@
+# 0xffffff8002264fb2 __ZN23IO80211SkywalkInterface17handleChosenMediaEj
+ffffff8002264fb2: push     rbp
+ffffff8002264fb3: mov      rbp, rsp
+ffffff8002264fb6: push     r15
+ffffff8002264fb8: push     r14
+ffffff8002264fba: push     rbx
+ffffff8002264fbb: push     rax
+ffffff8002264fbc: mov      r15d, esi
+ffffff8002264fbf: mov      r14, rdi
+ffffff8002264fc2: mov      rax, qword ptr [rdi + 0x110]
+ffffff8002264fc9: mov      rdi, qword ptr [rax + 0x30]
+ffffff8002264fcd: mov      rax, qword ptr [rdi]
+ffffff8002264fd0: call     qword ptr [rax + 0x890]
+ffffff8002264fd6: test     rax, rax
+ffffff8002264fd9: je       0xffffff800226500c
+ffffff8002264fdb: mov      rbx, rax
+ffffff8002264fde: mov      rdi, rax
+ffffff8002264fe1: mov      esi, r15d
+ffffff8002264fe4: xor      edx, edx
+ffffff8002264fe6: call     0xffffff80026341dc  ; __ZN15IONetworkMedium17getMediumWithTypeEPK12OSDictionaryjj
+ffffff8002264feb: test     rax, rax
+ffffff8002264fee: je       0xffffff8002265014
+ffffff8002264ff0: mov      rcx, qword ptr [r14 + 0x110]
+ffffff8002264ff7: mov      rdi, qword ptr [rcx + 0x30]
+ffffff8002264ffb: mov      rcx, qword ptr [rdi]
+ffffff8002264ffe: mov      rsi, rax
+ffffff8002265001: call     qword ptr [rcx + 0x8f0]
+ffffff8002265007: mov      r14d, eax
+ffffff800226500a: jmp      0xffffff800226501a  ; __ZN23IO80211SkywalkInterface17handleChosenMediaEj+0x68
+ffffff800226500c: mov      r14d, 0xe00002f0
+ffffff8002265012: jmp      0xffffff8002265023  ; __ZN23IO80211SkywalkInterface17handleChosenMediaEj+0x71
+ffffff8002265014: mov      r14d, 0xe00002f0
+ffffff800226501a: mov      rax, qword ptr [rbx]
+ffffff800226501d: mov      rdi, rbx
+ffffff8002265020: call     qword ptr [rax + 0x28]
+ffffff8002265023: mov      eax, r14d
+ffffff8002265026: add      rsp, 8
+ffffff800226502a: pop      rbx
+ffffff800226502b: pop      r14
+ffffff800226502d: pop      r15
+ffffff800226502f: pop      rbp
+ffffff8002265030: ret      
+ffffff8002265031: nop      

@@ -1,0 +1,41 @@
+# 0xffffff8002982904 __ZN25IOSkywalkNetworkInterface15ioctl_gifdevmtuEP7__ifnetPv
+ffffff8002982904: test     rdx, rdx
+ffffff8002982907: je       0xffffff800298296c
+ffffff8002982909: push     rbp
+ffffff800298290a: mov      rbp, rsp
+ffffff800298290d: push     r15
+ffffff800298290f: push     r14
+ffffff8002982911: push     r12
+ffffff8002982913: push     rbx
+ffffff8002982914: mov      rbx, rdx
+ffffff8002982917: mov      r12, rdi
+ffffff800298291a: mov      rdi, rsi
+ffffff800298291d: call     0xffffff800069dc50  ; _ifnet_mtu
+ffffff8002982922: mov      r14d, eax
+ffffff8002982925: mov      rax, qword ptr [r12]
+ffffff8002982929: mov      rdi, r12
+ffffff800298292c: call     qword ptr [rax + 0x980]
+ffffff8002982932: mov      r15d, eax
+ffffff8002982935: mov      rax, qword ptr [r12]
+ffffff8002982939: mov      rdi, r12
+ffffff800298293c: call     qword ptr [rax + 0x970]
+ffffff8002982942: mov      ecx, eax
+ffffff8002982944: test     eax, eax
+ffffff8002982946: setne    al
+ffffff8002982949: test     r15d, r15d
+ffffff800298294c: setne    dl
+ffffff800298294f: and      dl, al
+ffffff8002982951: xor      eax, eax
+ffffff8002982953: cmp      dl, 1
+ffffff8002982956: jne      0xffffff8002982963
+ffffff8002982958: mov      dword ptr [rbx + 0x10], r14d
+ffffff800298295c: mov      dword ptr [rbx + 0x18], ecx
+ffffff800298295f: mov      dword ptr [rbx + 0x14], r15d
+ffffff8002982963: pop      rbx
+ffffff8002982964: pop      r12
+ffffff8002982966: pop      r14
+ffffff8002982968: pop      r15
+ffffff800298296a: pop      rbp
+ffffff800298296b: ret      
+ffffff800298296c: mov      eax, 0x16
+ffffff8002982971: ret      

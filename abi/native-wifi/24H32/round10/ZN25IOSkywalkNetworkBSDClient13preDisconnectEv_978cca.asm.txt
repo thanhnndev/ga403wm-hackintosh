@@ -1,0 +1,14 @@
+# 0xffffff8002978cca __ZN25IOSkywalkNetworkBSDClient13preDisconnectEv
+ffffff8002978cca: push     rbp
+ffffff8002978ccb: mov      rbp, rsp
+ffffff8002978cce: mov      rax, qword ptr [rdi + 0x90]
+ffffff8002978cd5: mov      rdx, qword ptr [rdi + 0xe8]
+ffffff8002978cdc: mov      rcx, qword ptr [rax]
+ffffff8002978cdf: mov      r11, qword ptr [rcx + 0x1c8]
+ffffff8002978ce6: lea      rsi, [rip - 0x37]
+ffffff8002978ced: mov      rdi, rax
+ffffff8002978cf0: xor      ecx, ecx
+ffffff8002978cf2: xor      r8d, r8d
+ffffff8002978cf5: xor      r9d, r9d
+ffffff8002978cf8: pop      rbp
+ffffff8002978cf9: jmp      r11

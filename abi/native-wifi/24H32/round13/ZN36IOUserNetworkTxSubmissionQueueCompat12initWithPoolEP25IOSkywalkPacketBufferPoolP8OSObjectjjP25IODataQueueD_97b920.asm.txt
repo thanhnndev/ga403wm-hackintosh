@@ -1,0 +1,86 @@
+# 0xffffff800297b920 __ZN36IOUserNetworkTxSubmissionQueueCompat12initWithPoolEP25IOSkywalkPacketBufferPoolP8OSObjectjjP25IODataQueueDispatchSource
+ffffff800297b920: push     rbp
+ffffff800297b921: mov      rbp, rsp
+ffffff800297b924: push     r15
+ffffff800297b926: push     r14
+ffffff800297b928: push     r12
+ffffff800297b92a: push     rbx
+ffffff800297b92b: mov      r15d, ecx
+ffffff800297b92e: mov      r10, rdx
+ffffff800297b931: test     rsi, rsi
+ffffff800297b934: sete     cl
+ffffff800297b937: cmp      r15d, 2
+ffffff800297b93b: setb     dl
+ffffff800297b93e: or       dl, cl
+ffffff800297b940: je       0xffffff800297b94a
+ffffff800297b942: xor      r14d, r14d
+ffffff800297b945: jmp      0xffffff800297ba5f  ; __ZN36IOUserNetworkTxSubmissionQueueCompat12initWithPoolEP25IOSkywalkPacketBufferPoolP8OSObjectjjP25IODataQueueDispatchSource+0x13f
+ffffff800297b94a: mov      rax, r9
+ffffff800297b94d: mov      r9d, r8d
+ffffff800297b950: mov      rbx, rdi
+ffffff800297b953: lea      r11, [rip + 0x30446]  ; 0xffffff80029abda0
+ffffff800297b95a: xor      r14d, r14d
+ffffff800297b95d: mov      r12d, 1
+ffffff800297b963: xor      edx, edx
+ffffff800297b965: mov      ecx, 1
+ffffff800297b96a: mov      r8d, r15d
+ffffff800297b96d: push     r14
+ffffff800297b96f: push     rax
+ffffff800297b970: push     r14
+ffffff800297b972: push     r10
+ffffff800297b974: call     qword ptr [r11 + 0x2a8]
+ffffff800297b97b: add      rsp, 0x20
+ffffff800297b97f: test     al, al
+ffffff800297b981: je       0xffffff800297ba5f
+ffffff800297b987: mov      dword ptr [rbx + 0xb8], 0xffffffff
+ffffff800297b991: mov      dword ptr [rbx + 0x128], r14d
+ffffff800297b998: mov      dword ptr [rbx + 0x12c], r14d
+ffffff800297b99f: lea      rax, [rip + 0x3ad76]  ; 0xffffff80029b671c
+ffffff800297b9a6: mov      eax, dword ptr [rax]
+ffffff800297b9a8: dec      r15d
+ffffff800297b9ab: cmp      eax, r15d
+ffffff800297b9ae: cmovb    r12d, eax
+ffffff800297b9b2: mov      dword ptr [rbx + 0x148], r12d
+ffffff800297b9b9: lea      rax, [rip + 0x3ad60]  ; 0xffffff80029b6720
+ffffff800297b9c0: mov      eax, dword ptr [rax]
+ffffff800297b9c2: test     eax, eax
+ffffff800297b9c4: mov      edi, 0x1f4
+ffffff800297b9c9: cmovne   edi, eax
+ffffff800297b9cc: mov      dword ptr [rbx + 0x14c], edi
+ffffff800297b9d2: lea      rdx, [rbx + 0x150]
+ffffff800297b9d9: mov      esi, 0x3e8
+ffffff800297b9de: call     0xffffff8000536d00  ; _clock_interval_to_absolutetime_interval
+ffffff800297b9e3: call     0xffffff8000536cc0  ; _mach_absolute_time
+ffffff800297b9e8: mov      qword ptr [rbx + 0x160], rax
+ffffff800297b9ef: lea      rdi, [rip + 0x3ba4a]  ; 0xffffff80029b7440
+ffffff800297b9f6: call     0xffffff8000ab5930  ; _IOMallocTypeImpl
+ffffff800297b9fb: mov      qword ptr [rbx + 0x120], rax
+ffffff800297ba02: test     rax, rax
+ffffff800297ba05: je       0xffffff800297ba5f
+ffffff800297ba07: call     0xffffff8000afa570  ; __ZN10IOWorkLoop8workLoopEv
+ffffff800297ba0c: mov      qword ptr [rbx + 0x108], rax
+ffffff800297ba13: test     rax, rax
+ffffff800297ba16: je       0xffffff800297b942
+ffffff800297ba1c: lea      rax, [rip + 0x3ade9]  ; 0xffffff80029b680c
+ffffff800297ba23: cmp      dword ptr [rax], 0
+ffffff800297ba26: je       0xffffff800297ba49
+ffffff800297ba28: lea      rdi, [rip + 0x3ba51]  ; 0xffffff80029b7480
+ffffff800297ba2f: call     0xffffff8000ab5930  ; _IOMallocTypeImpl
+ffffff800297ba34: mov      qword ptr [rbx + 0x68], rax
+ffffff800297ba38: test     rax, rax
+ffffff800297ba3b: je       0xffffff800297b942
+ffffff800297ba41: mov      rdi, rbx
+ffffff800297ba44: call     0xffffff8002980e54  ; __ZN20IOSkywalkPacketQueue8initABFSEv
+ffffff800297ba49: mov      rdi, rbx
+ffffff800297ba4c: call     0xffffff800297ba6c  ; __ZN36IOUserNetworkTxSubmissionQueueCompat27createSharedQueuePurgeTimerEv
+ffffff800297ba51: mov      qword ptr [rbx + 0x140], rax
+ffffff800297ba58: test     rax, rax
+ffffff800297ba5b: setne    r14b
+ffffff800297ba5f: mov      eax, r14d
+ffffff800297ba62: pop      rbx
+ffffff800297ba63: pop      r12
+ffffff800297ba65: pop      r14
+ffffff800297ba67: pop      r15
+ffffff800297ba69: pop      rbp
+ffffff800297ba6a: ret      
+ffffff800297ba6b: nop      

@@ -1,0 +1,14 @@
+# 0xffffff80022610d0 __ZN22IO80211MacAddressAgent11bringLinkupEv
+ffffff80022610d0: push     rbp
+ffffff80022610d1: mov      rbp, rsp
+ffffff80022610d4: push     rbx
+ffffff80022610d5: push     rax
+ffffff80022610d6: mov      rbx, rdi
+ffffff80022610d9: call     0xffffff8002260ed0  ; __ZN22IO80211MacAddressAgent27generateAndSetRandomMacAddrEv
+ffffff80022610de: mov      rdi, rbx
+ffffff80022610e1: mov      esi, 1
+ffffff80022610e6: add      rsp, 8
+ffffff80022610ea: pop      rbx
+ffffff80022610eb: pop      rbp
+ffffff80022610ec: jmp      0xffffff80022610f2  ; __ZN22IO80211MacAddressAgent18setInterfaceEnableEb
+ffffff80022610f1: nop      

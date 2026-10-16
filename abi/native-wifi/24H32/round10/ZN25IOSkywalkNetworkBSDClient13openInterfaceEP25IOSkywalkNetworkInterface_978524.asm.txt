@@ -1,0 +1,42 @@
+# 0xffffff8002978524 __ZN25IOSkywalkNetworkBSDClient13openInterfaceEP25IOSkywalkNetworkInterface
+ffffff8002978524: push     rbp
+ffffff8002978525: mov      rbp, rsp
+ffffff8002978528: push     r15
+ffffff800297852a: push     r14
+ffffff800297852c: push     rbx
+ffffff800297852d: push     rax
+ffffff800297852e: mov      r15, rsi
+ffffff8002978531: mov      rbx, rdi
+ffffff8002978534: mov      rax, qword ptr [rsi]
+ffffff8002978537: mov      rdi, rsi
+ffffff800297853a: mov      rsi, rbx
+ffffff800297853d: xor      edx, edx
+ffffff800297853f: xor      ecx, ecx
+ffffff8002978541: call     qword ptr [rax + 0x5d0]
+ffffff8002978547: mov      r14d, eax
+ffffff800297854a: test     al, al
+ffffff800297854c: je       0xffffff8002978591
+ffffff800297854e: lea      rsi, [rbp - 0x1c]
+ffffff8002978552: mov      dword ptr [rsi], 0
+ffffff8002978558: mov      rax, qword ptr [r15]
+ffffff800297855b: mov      rdi, r15
+ffffff800297855e: call     qword ptr [rax + 0x958]
+ffffff8002978564: test     eax, eax
+ffffff8002978566: jne      0xffffff8002978591
+ffffff8002978568: test     byte ptr [rbp - 0x1c], 1
+ffffff800297856c: je       0xffffff8002978591
+ffffff800297856e: call     0xffffff8000ad5ec0  ; __ZN9IOService15getPMRootDomainEv
+ffffff8002978573: add      rbx, 0x12c
+ffffff800297857a: lea      rsi, [rip + 0x2ce87]  ; "WakeOnMagicPacket"
+ffffff8002978581: mov      rdi, rax
+ffffff8002978584: mov      edx, 7
+ffffff8002978589: mov      rcx, rbx
+ffffff800297858c: call     0xffffff8000b7c450  ; __ZN14IOPMrootDomain14publishFeatureEPKcjPj
+ffffff8002978591: mov      eax, r14d
+ffffff8002978594: add      rsp, 8
+ffffff8002978598: pop      rbx
+ffffff8002978599: pop      r14
+ffffff800297859b: pop      r15
+ffffff800297859d: pop      rbp
+ffffff800297859e: ret      
+ffffff800297859f: nop      

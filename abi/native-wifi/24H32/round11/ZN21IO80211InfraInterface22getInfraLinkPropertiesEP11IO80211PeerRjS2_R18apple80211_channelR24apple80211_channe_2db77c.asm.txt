@@ -1,0 +1,311 @@
+# 0xffffff80022db77c __ZN21IO80211InfraInterface22getInfraLinkPropertiesEP11IO80211PeerRjS2_R18apple80211_channelR24apple80211_channel_widthR18apple80211_phymodeR23apple80211_channel_band
+ffffff80022db77c: push     rbp
+ffffff80022db77d: mov      rbp, rsp
+ffffff80022db780: push     r15
+ffffff80022db782: push     r14
+ffffff80022db784: push     r13
+ffffff80022db786: push     r12
+ffffff80022db788: push     rbx
+ffffff80022db789: sub      rsp, 0x48
+ffffff80022db78d: mov      r13, r9
+ffffff80022db790: mov      r12, r8
+ffffff80022db793: mov      rbx, rcx
+ffffff80022db796: mov      r15, rdx
+ffffff80022db799: mov      r14, rdi
+ffffff80022db79c: mov      rax, qword ptr [rip + 0xe0975]  ; 0xffffff80023bc118
+ffffff80022db7a3: mov      rax, qword ptr [rax]
+ffffff80022db7a6: mov      qword ptr [rbp - 0x30], rax
+ffffff80022db7aa: mov      rax, qword ptr [rdi]
+ffffff80022db7ad: call     qword ptr [rax + 0xba8]
+ffffff80022db7b3: mov      rax, qword ptr [rax + 0x120]
+ffffff80022db7ba: mov      rcx, qword ptr [rax + 0x1b8]
+ffffff80022db7c1: mov      eax, dword ptr [rax + 0x1c0]
+ffffff80022db7c7: mov      qword ptr [rbp - 0x50], rcx
+ffffff80022db7cb: mov      dword ptr [rbp - 0x48], eax
+ffffff80022db7ce: mov      ecx, 1
+ffffff80022db7d3: mov      qword ptr [rbp - 0x5c], rcx
+ffffff80022db7d7: xor      edx, edx
+ffffff80022db7d9: mov      dword ptr [rbp - 0x54], edx
+ffffff80022db7dc: mov      dword ptr [rbp - 0x40], 1
+ffffff80022db7e3: mov      dword ptr [rbp - 0x34], edx
+ffffff80022db7e6: mov      qword ptr [rbp - 0x3c], 0
+ffffff80022db7ee: mov      qword ptr [rbp - 0x64], rcx
+ffffff80022db7f2: mov      dword ptr [rbp - 0x68], edx
+ffffff80022db7f5: mov      qword ptr [rbp - 0x70], rcx
+ffffff80022db7f9: mov      ecx, 0x14
+ffffff80022db7fe: test     al, 2
+ffffff80022db800: jne      0xffffff80022db824
+ffffff80022db802: mov      ecx, 0x28
+ffffff80022db807: test     al, 4
+ffffff80022db809: jne      0xffffff80022db824
+ffffff80022db80b: mov      ecx, 0x50
+ffffff80022db810: bt       eax, 0xa
+ffffff80022db814: jb       0xffffff80022db824
+ffffff80022db816: mov      ecx, eax
+ffffff80022db818: shl      ecx, 0x14
+ffffff80022db81b: sar      ecx, 0x1f
+ffffff80022db81e: and      ecx, 0xa0
+ffffff80022db824: mov      dword ptr [r13], ecx
+ffffff80022db828: mov      ecx, 1
+ffffff80022db82d: test     al, 8
+ffffff80022db82f: jne      0xffffff80022db845
+ffffff80022db831: mov      ecx, 2
+ffffff80022db836: test     al, 0x10
+ffffff80022db838: jne      0xffffff80022db845
+ffffff80022db83a: mov      ecx, 3
+ffffff80022db83f: bt       eax, 0xd
+ffffff80022db843: jae      0xffffff80022db84b
+ffffff80022db845: mov      rax, qword ptr [rbp + 0x18]
+ffffff80022db849: mov      dword ptr [rax], ecx
+ffffff80022db84b: mov      eax, dword ptr [rbp - 0x48]
+ffffff80022db84e: mov      dword ptr [r12 + 8], eax
+ffffff80022db853: mov      rax, qword ptr [rbp - 0x50]
+ffffff80022db857: mov      qword ptr [r12], rax
+ffffff80022db85b: mov      rax, qword ptr [r14 + 0x110]
+ffffff80022db862: mov      rdi, qword ptr [rax + 0xd8]
+ffffff80022db869: test     rdi, rdi
+ffffff80022db86c: je       0xffffff80022db8a1
+ffffff80022db86e: lea      r12, [rbp - 0x41]
+ffffff80022db872: mov      byte ptr [r12], 0
+ffffff80022db877: lea      rcx, [rbp - 0x5c]
+ffffff80022db87b: mov      r8d, 0xc
+ffffff80022db881: mov      esi, 0xc02869c9
+ffffff80022db886: mov      edx, 0xe
+ffffff80022db88b: mov      r9, r12
+ffffff80022db88e: call     0xffffff800212ad12  ; __ZN11IO80211Glue13sendIOUCToWclEjjPvmRb
+ffffff80022db893: cmp      byte ptr [r12], 1
+ffffff80022db898: jne      0xffffff80022db8a1
+ffffff80022db89a: cmp      eax, 0xe082280f
+ffffff80022db89f: jne      0xffffff80022db8ad
+ffffff80022db8a1: lea      rsi, [rbp - 0x5c]
+ffffff80022db8a5: mov      rdi, r14
+ffffff80022db8a8: call     0xffffff80021f69f5  ; __Z21apple80211getPHY_MODEP23IO80211SkywalkInterfaceP23apple80211_phymode_data
+ffffff80022db8ad: test     eax, eax
+ffffff80022db8af: jne      0xffffff80022dbb94
+ffffff80022db8b5: mov      rax, qword ptr [rbp + 0x10]
+ffffff80022db8b9: mov      esi, dword ptr [rbp - 0x54]
+ffffff80022db8bc: mov      dword ptr [rax], esi
+ffffff80022db8be: mov      rax, qword ptr [r14 + 0x110]
+ffffff80022db8c5: mov      rdi, qword ptr [rax + 0x28]
+ffffff80022db8c9: lea      rdx, [rbp - 0x50]
+ffffff80022db8cd: call     0xffffff80021ec33c  ; __ZN18IO80211PeerManager10setPhyModeEyR18apple80211_channel
+ffffff80022db8d2: mov      rax, qword ptr [r14 + 0x110]
+ffffff80022db8d9: mov      rdi, qword ptr [rax + 0xd8]
+ffffff80022db8e0: test     rdi, rdi
+ffffff80022db8e3: je       0xffffff80022db918
+ffffff80022db8e5: lea      r12, [rbp - 0x41]
+ffffff80022db8e9: mov      byte ptr [r12], 0
+ffffff80022db8ee: lea      rcx, [rbp - 0x68]
+ffffff80022db8f2: mov      r8d, 4
+ffffff80022db8f8: mov      esi, 0xc02869c9
+ffffff80022db8fd: mov      edx, 0x176
+ffffff80022db902: mov      r9, r12
+ffffff80022db905: call     0xffffff800212ad12  ; __ZN11IO80211Glue13sendIOUCToWclEjjPvmRb
+ffffff80022db90a: cmp      byte ptr [r12], 1
+ffffff80022db90f: jne      0xffffff80022db918
+ffffff80022db911: cmp      eax, 0xe082280f
+ffffff80022db916: jne      0xffffff80022db924
+ffffff80022db918: lea      rsi, [rbp - 0x68]
+ffffff80022db91c: mov      rdi, r14
+ffffff80022db91f: call     0xffffff80021fa052  ; __Z28apple80211getTXRX_CHAIN_INFOP23IO80211SkywalkInterfaceP26apple80211_txrx_chain_info
+ffffff80022db924: test     eax, eax
+ffffff80022db926: jne      0xffffff80022dbb9d
+ffffff80022db92c: movzx    ecx, byte ptr [rbp - 0x67]
+ffffff80022db930: xor      eax, eax
+ffffff80022db932: mov      edx, 0
+ffffff80022db937: test     ecx, ecx
+ffffff80022db939: je       0xffffff80022db94a
+ffffff80022db93b: xor      edx, edx
+ffffff80022db93d: mov      esi, ecx
+ffffff80022db93f: lea      edi, [rsi - 1]
+ffffff80022db942: inc      edx
+ffffff80022db944: and      edi, esi
+ffffff80022db946: mov      esi, edi
+ffffff80022db948: jne      0xffffff80022db93f
+ffffff80022db94a: movzx    esi, byte ptr [rbp - 0x66]
+ffffff80022db94e: test     esi, esi
+ffffff80022db950: je       0xffffff80022db988
+ffffff80022db952: xor      eax, eax
+ffffff80022db954: mov      edi, esi
+ffffff80022db956: lea      r8d, [rdi - 1]
+ffffff80022db95a: inc      eax
+ffffff80022db95c: and      r8d, edi
+ffffff80022db95f: mov      edi, r8d
+ffffff80022db962: jne      0xffffff80022db956
+ffffff80022db964: cmp      edx, eax
+ffffff80022db966: jae      0xffffff80022db97b
+ffffff80022db968: xor      eax, eax
+ffffff80022db96a: test     ecx, ecx
+ffffff80022db96c: je       0xffffff80022db988
+ffffff80022db96e: lea      edx, [rcx - 1]
+ffffff80022db971: inc      eax
+ffffff80022db973: and      edx, ecx
+ffffff80022db975: mov      ecx, edx
+ffffff80022db977: jne      0xffffff80022db96e
+ffffff80022db979: jmp      0xffffff80022db988  ; __ZN21IO80211InfraInterface22getInfraLinkPropertiesEP11IO80211PeerRjS2_R18apple80211_channelR24apple80211_channel_widthR18apple80211_phymodeR23apple80211_channel_band+0x20c
+ffffff80022db97b: xor      eax, eax
+ffffff80022db97d: lea      ecx, [rsi - 1]
+ffffff80022db980: inc      eax
+ffffff80022db982: and      ecx, esi
+ffffff80022db984: mov      esi, ecx
+ffffff80022db986: jne      0xffffff80022db97d
+ffffff80022db988: mov      dword ptr [r15], eax
+ffffff80022db98b: mov      rcx, qword ptr [r14 + 0x110]
+ffffff80022db992: mov      rdi, qword ptr [rcx + 0x28]
+ffffff80022db996: mov      esi, eax
+ffffff80022db998: call     0xffffff80021ebff8  ; __ZN18IO80211PeerManager9setMaxNSSEy
+ffffff80022db99d: mov      eax, dword ptr [rbp - 0x54]
+ffffff80022db9a0: cmp      eax, 0x10
+ffffff80022db9a3: je       0xffffff80022dbaf6
+ffffff80022db9a9: cmp      eax, 0x80
+ffffff80022db9ae: je       0xffffff80022dba5c
+ffffff80022db9b4: cmp      eax, 0x100
+ffffff80022db9b9: jne      0xffffff80022dbb6b
+ffffff80022db9bf: mov      rax, qword ptr [r14 + 0x110]
+ffffff80022db9c6: mov      rdi, qword ptr [rax + 0xd8]
+ffffff80022db9cd: test     rdi, rdi
+ffffff80022db9d0: je       0xffffff80022dba03
+ffffff80022db9d2: lea      r15, [rbp - 0x41]
+ffffff80022db9d6: mov      byte ptr [r15], 0
+ffffff80022db9da: lea      rcx, [rbp - 0x70]
+ffffff80022db9de: mov      r8d, 8
+ffffff80022db9e4: mov      esi, 0xc02869c9
+ffffff80022db9e9: mov      edx, 0x169
+ffffff80022db9ee: mov      r9, r15
+ffffff80022db9f1: call     0xffffff800212ad12  ; __ZN11IO80211Glue13sendIOUCToWclEjjPvmRb
+ffffff80022db9f6: cmp      byte ptr [r15], 1
+ffffff80022db9fa: jne      0xffffff80022dba03
+ffffff80022db9fc: cmp      eax, 0xe082280f
+ffffff80022dba01: jne      0xffffff80022dba0f
+ffffff80022dba03: lea      rsi, [rbp - 0x70]
+ffffff80022dba07: mov      rdi, r14
+ffffff80022dba0a: call     0xffffff80021f9e51  ; __Z29apple80211getHE_MCS_INDEX_SETP23IO80211SkywalkInterfaceP32apple80211_he_mcs_index_set_data
+ffffff80022dba0f: test     eax, eax
+ffffff80022dba11: jne      0xffffff80022dbbce
+ffffff80022dba17: movzx    eax, word ptr [rbp - 0x6c]
+ffffff80022dba1b: mov      dword ptr [rbx], 0
+ffffff80022dba21: xor      ecx, ecx
+ffffff80022dba23: lea      rdx, [rip + 0x1c2]  ; 0xffffff80022dbbec
+ffffff80022dba2a: mov      esi, eax
+ffffff80022dba2c: shr      esi, cl
+ffffff80022dba2e: and      esi, 3
+ffffff80022dba31: movsxd   rsi, dword ptr [rdx + rsi*4]
+ffffff80022dba35: add      rsi, rdx
+ffffff80022dba38: jmp      rsi
+ffffff80022dba3a: mov      esi, 9
+ffffff80022dba3f: jmp      0xffffff80022dba4d  ; __ZN21IO80211InfraInterface22getInfraLinkPropertiesEP11IO80211PeerRjS2_R18apple80211_channelR24apple80211_channel_widthR18apple80211_phymodeR23apple80211_channel_band+0x2d1
+ffffff80022dba41: mov      esi, 0xa
+ffffff80022dba46: jmp      0xffffff80022dba4d  ; __ZN21IO80211InfraInterface22getInfraLinkPropertiesEP11IO80211PeerRjS2_R18apple80211_channelR24apple80211_channel_widthR18apple80211_phymodeR23apple80211_channel_band+0x2d1
+ffffff80022dba48: mov      esi, 0xb
+ffffff80022dba4d: mov      dword ptr [rbx], esi
+ffffff80022dba4f: add      ecx, 2
+ffffff80022dba52: cmp      ecx, 0x10
+ffffff80022dba55: jne      0xffffff80022dba2a
+ffffff80022dba57: jmp      0xffffff80022dbb71  ; __ZN21IO80211InfraInterface22getInfraLinkPropertiesEP11IO80211PeerRjS2_R18apple80211_channelR24apple80211_channel_widthR18apple80211_phymodeR23apple80211_channel_band+0x3f5
+ffffff80022dba5c: mov      rax, qword ptr [r14 + 0x110]
+ffffff80022dba63: mov      rdi, qword ptr [rax + 0xd8]
+ffffff80022dba6a: test     rdi, rdi
+ffffff80022dba6d: je       0xffffff80022dbaa0
+ffffff80022dba6f: lea      r15, [rbp - 0x41]
+ffffff80022dba73: mov      byte ptr [r15], 0
+ffffff80022dba77: lea      rcx, [rbp - 0x64]
+ffffff80022dba7b: mov      r8d, 8
+ffffff80022dba81: mov      esi, 0xc02869c9
+ffffff80022dba86: mov      edx, 0xb5
+ffffff80022dba8b: mov      r9, r15
+ffffff80022dba8e: call     0xffffff800212ad12  ; __ZN11IO80211Glue13sendIOUCToWclEjjPvmRb
+ffffff80022dba93: cmp      byte ptr [r15], 1
+ffffff80022dba97: jne      0xffffff80022dbaa0
+ffffff80022dba99: cmp      eax, 0xe082280f
+ffffff80022dba9e: jne      0xffffff80022dbaac
+ffffff80022dbaa0: lea      rsi, [rbp - 0x64]
+ffffff80022dbaa4: mov      rdi, r14
+ffffff80022dbaa7: call     0xffffff80021f7f1b  ; __Z30apple80211getVHT_MCS_INDEX_SETP23IO80211SkywalkInterfaceP33apple80211_vht_mcs_index_set_data
+ffffff80022dbaac: test     eax, eax
+ffffff80022dbaae: jne      0xffffff80022dbbbc
+ffffff80022dbab4: movzx    eax, word ptr [rbp - 0x60]
+ffffff80022dbab8: mov      dword ptr [rbx], 0
+ffffff80022dbabe: xor      ecx, ecx
+ffffff80022dbac0: lea      rdx, [rip + 0x115]  ; 0xffffff80022dbbdc
+ffffff80022dbac7: mov      esi, eax
+ffffff80022dbac9: shr      esi, cl
+ffffff80022dbacb: and      esi, 3
+ffffff80022dbace: movsxd   rsi, dword ptr [rdx + rsi*4]
+ffffff80022dbad2: add      rsi, rdx
+ffffff80022dbad5: jmp      rsi
+ffffff80022dbad7: mov      esi, 7
+ffffff80022dbadc: jmp      0xffffff80022dbaea  ; __ZN21IO80211InfraInterface22getInfraLinkPropertiesEP11IO80211PeerRjS2_R18apple80211_channelR24apple80211_channel_widthR18apple80211_phymodeR23apple80211_channel_band+0x36e
+ffffff80022dbade: mov      esi, 8
+ffffff80022dbae3: jmp      0xffffff80022dbaea  ; __ZN21IO80211InfraInterface22getInfraLinkPropertiesEP11IO80211PeerRjS2_R18apple80211_channelR24apple80211_channel_widthR18apple80211_phymodeR23apple80211_channel_band+0x36e
+ffffff80022dbae5: mov      esi, 9
+ffffff80022dbaea: mov      dword ptr [rbx], esi
+ffffff80022dbaec: add      ecx, 2
+ffffff80022dbaef: cmp      ecx, 0x10
+ffffff80022dbaf2: jne      0xffffff80022dbac7
+ffffff80022dbaf4: jmp      0xffffff80022dbb71  ; __ZN21IO80211InfraInterface22getInfraLinkPropertiesEP11IO80211PeerRjS2_R18apple80211_channelR24apple80211_channel_widthR18apple80211_phymodeR23apple80211_channel_band+0x3f5
+ffffff80022dbaf6: mov      rax, qword ptr [r14 + 0x110]
+ffffff80022dbafd: mov      rdi, qword ptr [rax + 0xd8]
+ffffff80022dbb04: test     rdi, rdi
+ffffff80022dbb07: je       0xffffff80022dbb3a
+ffffff80022dbb09: lea      r15, [rbp - 0x41]
+ffffff80022dbb0d: mov      byte ptr [r15], 0
+ffffff80022dbb11: lea      rcx, [rbp - 0x40]
+ffffff80022dbb15: mov      r8d, 0x10
+ffffff80022dbb1b: mov      esi, 0xc02869c9
+ffffff80022dbb20: mov      edx, 0x42
+ffffff80022dbb25: mov      r9, r15
+ffffff80022dbb28: call     0xffffff800212ad12  ; __ZN11IO80211Glue13sendIOUCToWclEjjPvmRb
+ffffff80022dbb2d: cmp      byte ptr [r15], 1
+ffffff80022dbb31: jne      0xffffff80022dbb3a
+ffffff80022dbb33: cmp      eax, 0xe082280f
+ffffff80022dbb38: jne      0xffffff80022dbb46
+ffffff80022dbb3a: lea      rsi, [rbp - 0x40]
+ffffff80022dbb3e: mov      rdi, r14
+ffffff80022dbb41: call     0xffffff80021f7242  ; __Z26apple80211getMCS_INDEX_SETP23IO80211SkywalkInterfaceP29apple80211_mcs_index_set_data
+ffffff80022dbb46: test     eax, eax
+ffffff80022dbb48: jne      0xffffff80022dbbc5
+ffffff80022dbb4a: xor      eax, eax
+ffffff80022dbb4c: mov      ecx, eax
+ffffff80022dbb4e: shr      ecx, 3
+ffffff80022dbb51: movzx    ecx, byte ptr [rbp + rcx - 0x3c]
+ffffff80022dbb56: mov      edx, eax
+ffffff80022dbb58: and      edx, 7
+ffffff80022dbb5b: bt       ecx, edx
+ffffff80022dbb5e: jae      0xffffff80022dbb62
+ffffff80022dbb60: mov      dword ptr [rbx], eax
+ffffff80022dbb62: inc      eax
+ffffff80022dbb64: cmp      eax, 0x4d
+ffffff80022dbb67: jne      0xffffff80022dbb4c
+ffffff80022dbb69: jmp      0xffffff80022dbb71  ; __ZN21IO80211InfraInterface22getInfraLinkPropertiesEP11IO80211PeerRjS2_R18apple80211_channelR24apple80211_channel_widthR18apple80211_phymodeR23apple80211_channel_band+0x3f5
+ffffff80022dbb6b: mov      dword ptr [rbx], 0
+ffffff80022dbb71: mov      bl, 1
+ffffff80022dbb73: mov      rax, qword ptr [rip + 0xe059e]  ; 0xffffff80023bc118
+ffffff80022dbb7a: mov      rax, qword ptr [rax]
+ffffff80022dbb7d: cmp      rax, qword ptr [rbp - 0x30]
+ffffff80022dbb81: jne      0xffffff80022dbbd7
+ffffff80022dbb83: mov      eax, ebx
+ffffff80022dbb85: add      rsp, 0x48
+ffffff80022dbb89: pop      rbx
+ffffff80022dbb8a: pop      r12
+ffffff80022dbb8c: pop      r13
+ffffff80022dbb8e: pop      r14
+ffffff80022dbb90: pop      r15
+ffffff80022dbb92: pop      rbp
+ffffff80022dbb93: ret      
+ffffff80022dbb94: lea      rdx, [rip + 0xbf331]  ; "Failed to get phy mode data"
+ffffff80022dbb9b: jmp      0xffffff80022dbba4  ; __ZN21IO80211InfraInterface22getInfraLinkPropertiesEP11IO80211PeerRjS2_R18apple80211_channelR24apple80211_channel_widthR18apple80211_phymodeR23apple80211_channel_band+0x428
+ffffff80022dbb9d: lea      rdx, [rip + 0xbf344]  ; "Failed to get txrx chain info"
+ffffff80022dbba4: xor      ebx, ebx
+ffffff80022dbba6: movabs   rsi, 0x800000000000000
+ffffff80022dbbb0: mov      rdi, r14
+ffffff80022dbbb3: xor      eax, eax
+ffffff80022dbbb5: call     0xffffff8002261f9e  ; __ZN23IO80211SkywalkInterface8logDebugEyPKcz
+ffffff80022dbbba: jmp      0xffffff80022dbb73  ; __ZN21IO80211InfraInterface22getInfraLinkPropertiesEP11IO80211PeerRjS2_R18apple80211_channelR24apple80211_channel_widthR18apple80211_phymodeR23apple80211_channel_band+0x3f7
+ffffff80022dbbbc: lea      rdx, [rip + 0xbf35d]  ; "Failed to get VHT MCS data"
+ffffff80022dbbc3: jmp      0xffffff80022dbba4  ; __ZN21IO80211InfraInterface22getInfraLinkPropertiesEP11IO80211PeerRjS2_R18apple80211_channelR24apple80211_channel_widthR18apple80211_phymodeR23apple80211_channel_band+0x428
+ffffff80022dbbc5: lea      rdx, [rip + 0xbf36f]  ; "Failed to get HT MCS data"
+ffffff80022dbbcc: jmp      0xffffff80022dbba4  ; __ZN21IO80211InfraInterface22getInfraLinkPropertiesEP11IO80211PeerRjS2_R18apple80211_channelR24apple80211_channel_widthR18apple80211_phymodeR23apple80211_channel_band+0x428
+ffffff80022dbbce: lea      rdx, [rip + 0xbf331]  ; "Failed to get HE MCS data"
+ffffff80022dbbd5: jmp      0xffffff80022dbba4  ; __ZN21IO80211InfraInterface22getInfraLinkPropertiesEP11IO80211PeerRjS2_R18apple80211_channelR24apple80211_channel_widthR18apple80211_phymodeR23apple80211_channel_band+0x428
+ffffff80022dbbd7: call     0xffffff8000383150  ; ___stack_chk_fail
+ffffff80022dbbdc: sti      

@@ -3,15 +3,22 @@
 Reports and patches are welcome, especially: results on other Zephyrus G14 / Strix Point laptops (`ItlXhciKick`, the EFI),
 other MT7925 machines (the Wi-Fi driver), and the open items in [docs/ROADMAP.md](docs/ROADMAP.md).
 
+> This project is vibe-coded (written mostly by an AI, tested on one laptop). Pull requests written with AI help are fine;
+> say so, and say what you tested on real hardware.
+
 ## Branches: where development happens
 
 | Branch | State |
 |---|---|
-| **`main`** | **The only active branch.** Everything is developed here (directly or through a short-lived feature branch + pull request). Every push builds the kexts in CI. |
-| `ccr-fc111298-ip8jp5` | Fast-mode Wi-Fi work (HT/VHT, Block Ack, A-MSDU, 160 MHz, HE). Merged into `main` by PR #2 (`4bd83f1`). Retired, kept for history only. |
-| `diag-esp-log` | ItlDiag writes `ITLLOG.BIN` to the ESP. Merged by PR #2. Retired. |
+| **`main`** | **The only long-lived branch.** Always buildable; every push builds the kexts in CI. |
+| `track/<nn>-<name>` | Short-lived topic branch for one roadmap workstream (for example `track/04-wifi-throughput`, numbers from [docs/ROADMAP.md](docs/ROADMAP.md)). Open a pull request into `main`; delete the branch after merging. |
+| `v0.<n>` (tags) | Releases cut from `main`. |
 
-Start new work from `main`: `git switch main && git pull && git switch -c <topic>`.
+Driver work on NullMoth's NVIDIA driver is done in a fork and sent upstream first; this repository only carries the machine
+patch until it is merged.
+
+Start new work from `main`: `git switch main && git pull && git switch -c track/<nn>-<name>`. If you take a roadmap item, update
+its row (state, "Doing now") in the same pull request.
 
 Current state, open issues and how to collect data: [docs/HANDOFF.md](docs/HANDOFF.md).
 
@@ -46,3 +53,12 @@ environment (Recovery or installed) you tested on, and attach the redacted `itlk
   the MediaTek copyright notice.
 * No patching of Apple binaries, no raw writes to registers the Linux driver does not touch, without a written reason.
 * Keep the files under the Clear BSD License (`SPDX-License-Identifier: BSD-3-Clause-Clear` on top); `efi/` is the exception, see `NOTICE.md`.
+
+## Releasing (maintainers)
+
+1. Run the `build-kexts` workflow by hand (Actions → Run workflow) on `main` and check that kexts, apps and `AmdCppcPolicy` build.
+   Run `opencore` too if the patch changed.
+2. Update [.github/release-body.md](.github/release-body.md) (known problems, what changed).
+3. `git tag v1 && git push origin v1`: the `build-kexts` workflow rebuilds everything, builds the patched OpenCore, adds the
+   sanitized `EFI-reference.zip` and `SHA256SUMS.txt`, and publishes the GitHub release. Kexts in a release always carry
+   **empty** Wi-Fi credentials.

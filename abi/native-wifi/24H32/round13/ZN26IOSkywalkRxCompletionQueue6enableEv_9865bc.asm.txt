@@ -1,0 +1,31 @@
+# 0xffffff80029865bc __ZN26IOSkywalkRxCompletionQueue6enableEv
+ffffff80029865bc: push     rbp
+ffffff80029865bd: mov      rbp, rsp
+ffffff80029865c0: push     rbx
+ffffff80029865c1: push     rax
+ffffff80029865c2: mov      rbx, rdi
+ffffff80029865c5: call     0xffffff8000afb010  ; __ZN13IOEventSource9closeGateEv
+ffffff80029865ca: cmp      byte ptr [rbx + 0x28], 0
+ffffff80029865ce: jne      0xffffff80029865e7
+ffffff80029865d0: lea      rax, [rip + 0x28691]  ; 0xffffff80029aec68
+ffffff80029865d7: mov      rdi, rbx
+ffffff80029865da: call     qword ptr [rax + 0x160]
+ffffff80029865e0: cmp      qword ptr [rbx + 0x78], 0
+ffffff80029865e5: je       0xffffff80029865f5
+ffffff80029865e7: mov      rdi, rbx
+ffffff80029865ea: add      rsp, 8
+ffffff80029865ee: pop      rbx
+ffffff80029865ef: pop      rbp
+ffffff80029865f0: jmp      0xffffff8000afafd0  ; __ZN13IOEventSource8openGateEv
+ffffff80029865f5: mov      rax, qword ptr [rbx + 0xe8]
+ffffff80029865fc: test     rax, rax
+ffffff80029865ff: je       0xffffff80029865e7
+ffffff8002986601: mov      ecx, dword ptr [rax]
+ffffff8002986603: cmp      ecx, dword ptr [rax + 0x80]
+ffffff8002986609: je       0xffffff80029865e7
+ffffff800298660b: mov      rax, qword ptr [rbx]
+ffffff800298660e: mov      rdi, rbx
+ffffff8002986611: xor      esi, esi
+ffffff8002986613: call     qword ptr [rax + 0x1e0]
+ffffff8002986619: jmp      0xffffff80029865e7  ; __ZN26IOSkywalkRxCompletionQueue6enableEv+0x2b
+ffffff800298661b: nop      

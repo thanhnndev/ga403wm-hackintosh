@@ -1,0 +1,6 @@
+SC: bsd=en0 type=Ethernet
+SC: bsd=en1 type=Ethernet
+IOKit: match=itlmt7925WifiInterface IONetworkInterface=0 IOSkywalkNetworkInterface=1
+IOKit: match=IOSkywalkNetworkBSDClient IONetworkInterface=0 IOSkywalkNetworkInterface=0
+IOKit: match=IONetworkInterface IONetworkInterface=1 IOSkywalkNetworkInterface=0
+IOKit: match=IONetworkInterface IONetworkInterface=1 IOSkywalkNetworkInterface=0

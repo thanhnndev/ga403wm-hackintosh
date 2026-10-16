@@ -1,0 +1,39 @@
+# 0xffffff8002982436 __ZN25IOSkywalkNetworkInterface20reportDataBandwidthsEyyyy
+ffffff8002982436: push     rbp
+ffffff8002982437: mov      rbp, rsp
+ffffff800298243a: push     r15
+ffffff800298243c: push     r14
+ffffff800298243e: push     r12
+ffffff8002982440: push     rbx
+ffffff8002982441: sub      rsp, 0x20
+ffffff8002982445: mov      rbx, r8
+ffffff8002982448: mov      r15, rcx
+ffffff800298244b: mov      r14, rdx
+ffffff800298244e: mov      r12, rsi
+ffffff8002982451: mov      rax, qword ptr [rdi]
+ffffff8002982454: call     qword ptr [rax + 0x8f8]
+ffffff800298245a: test     rax, rax
+ffffff800298245d: je       0xffffff800298248f
+ffffff800298245f: test     r15, r15
+ffffff8002982462: cmove    r15, r12
+ffffff8002982466: test     rbx, rbx
+ffffff8002982469: cmove    rbx, r14
+ffffff800298246d: lea      rdx, [rbp - 0x30]
+ffffff8002982471: mov      qword ptr [rdx + 8], r12
+ffffff8002982475: mov      qword ptr [rdx], r15
+ffffff8002982478: lea      rsi, [rbp - 0x40]
+ffffff800298247c: mov      qword ptr [rsi + 8], r14
+ffffff8002982480: mov      qword ptr [rsi], rbx
+ffffff8002982483: mov      rdi, rax
+ffffff8002982486: call     0xffffff800069ddc0  ; _ifnet_set_bandwidths
+ffffff800298248b: xor      eax, eax
+ffffff800298248d: jmp      0xffffff8002982494  ; __ZN25IOSkywalkNetworkInterface20reportDataBandwidthsEyyyy+0x5e
+ffffff800298248f: mov      eax, 0xe00002d8
+ffffff8002982494: add      rsp, 0x20
+ffffff8002982498: pop      rbx
+ffffff8002982499: pop      r12
+ffffff800298249b: pop      r14
+ffffff800298249d: pop      r15
+ffffff800298249f: pop      rbp
+ffffff80029824a0: ret      
+ffffff80029824a1: nop      

@@ -1,0 +1,55 @@
+# 0xffffff800297561e __ZN18IOSkywalkBSDClient5startEP9IOService
+ffffff800297561e: push     rbp
+ffffff800297561f: mov      rbp, rsp
+ffffff8002975622: push     r15
+ffffff8002975624: push     r14
+ffffff8002975626: push     rbx
+ffffff8002975627: push     rax
+ffffff8002975628: mov      r14, rsi
+ffffff800297562b: mov      rbx, rdi
+ffffff800297562e: mov      rax, qword ptr [rip + 0x31adb]  ; 0xffffff80029a7110
+ffffff8002975635: call     qword ptr [rax + 0x5d0]
+ffffff800297563b: test     al, al
+ffffff800297563d: je       0xffffff80029756bb
+ffffff800297563f: lea      rax, [rip + 0x32732]  ; 0xffffff80029a7d78
+ffffff8002975646: mov      rsi, qword ptr [rax]
+ffffff8002975649: mov      rdi, r14
+ffffff800297564c: call     0xffffff8000a49ab0  ; __ZN15OSMetaClassBase12safeMetaCastEPKS_PK11OSMetaClass
+ffffff8002975651: mov      qword ptr [rbx + 0x88], rax
+ffffff8002975658: test     rax, rax
+ffffff800297565b: je       0xffffff80029756bb
+ffffff800297565d: mov      rcx, qword ptr [rax]
+ffffff8002975660: mov      rdi, rax
+ffffff8002975663: call     qword ptr [rcx + 0x20]
+ffffff8002975666: call     0xffffff8000ab6e70  ; _IOLockAlloc
+ffffff800297566b: mov      qword ptr [rbx + 0xb0], rax
+ffffff8002975672: test     rax, rax
+ffffff8002975675: je       0xffffff80029756bb
+ffffff8002975677: mov      rax, qword ptr [rbx]
+ffffff800297567a: mov      rdi, rbx
+ffffff800297567d: call     qword ptr [rax + 0x688]
+ffffff8002975683: test     rax, rax
+ffffff8002975686: je       0xffffff80029756bb
+ffffff8002975688: mov      r15, rax
+ffffff800297568b: xor      r14d, r14d
+ffffff800297568e: mov      rdi, rbx
+ffffff8002975691: xor      esi, esi
+ffffff8002975693: call     0xffffff8000afd440  ; __ZN13IOCommandGate11commandGateEP8OSObjectPFiS1_PvS2_S2_S2_E
+ffffff8002975698: mov      qword ptr [rbx + 0x90], rax
+ffffff800297569f: test     rax, rax
+ffffff80029756a2: je       0xffffff80029756be
+ffffff80029756a4: mov      rcx, qword ptr [r15]
+ffffff80029756a7: mov      rdi, r15
+ffffff80029756aa: mov      rsi, rax
+ffffff80029756ad: call     qword ptr [rcx + 0x140]
+ffffff80029756b3: test     eax, eax
+ffffff80029756b5: sete     r14b
+ffffff80029756b9: jmp      0xffffff80029756be  ; __ZN18IOSkywalkBSDClient5startEP9IOService+0xa0
+ffffff80029756bb: xor      r14d, r14d
+ffffff80029756be: mov      eax, r14d
+ffffff80029756c1: add      rsp, 8
+ffffff80029756c5: pop      rbx
+ffffff80029756c6: pop      r14
+ffffff80029756c8: pop      r15
+ffffff80029756ca: pop      rbp
+ffffff80029756cb: ret      

@@ -1,0 +1,12 @@
+# 0xffffff80022dcfaa __ZN21IO80211InfraInterface13getHwChannelsER27apple80211_sup_channel_data
+ffffff80022dcfaa: push     rbp
+ffffff80022dcfab: mov      rbp, rsp
+ffffff80022dcfae: mov      rax, rsi
+ffffff80022dcfb1: mov      esi, 0x2988
+ffffff80022dcfb6: add      rsi, qword ptr [rdi + 0x118]
+ffffff80022dcfbd: mov      edx, 0x12d8
+ffffff80022dcfc2: mov      rdi, rax
+ffffff80022dcfc5: call     0xffffff8000101050  ; _real_mode_bootstrap_end
+ffffff80022dcfca: xor      eax, eax
+ffffff80022dcfcc: pop      rbp
+ffffff80022dcfcd: ret      

@@ -1,0 +1,30 @@
+# 0xffffff8002260686 __ZN22IO80211MacAddressAgent13freeResourcesEv
+ffffff8002260686: push     rbp
+ffffff8002260687: mov      rbp, rsp
+ffffff800226068a: push     rbx
+ffffff800226068b: push     rax
+ffffff800226068c: mov      rbx, rdi
+ffffff800226068f: mov      rax, qword ptr [rdi + 0x10]
+ffffff8002260693: mov      rdi, qword ptr [rax + 0x18]
+ffffff8002260697: test     rdi, rdi
+ffffff800226069a: je       0xffffff80022606a6
+ffffff800226069c: mov      rax, qword ptr [rdi]
+ffffff800226069f: call     qword ptr [rax + 0x28]
+ffffff80022606a2: mov      rax, qword ptr [rbx + 0x10]
+ffffff80022606a6: mov      qword ptr [rax + 0x18], 0
+ffffff80022606ae: mov      rdi, qword ptr [rax + 0x10]
+ffffff80022606b2: test     rdi, rdi
+ffffff80022606b5: je       0xffffff80022606da
+ffffff80022606b7: mov      rax, qword ptr [rdi]
+ffffff80022606ba: call     qword ptr [rax + 0x158]
+ffffff80022606c0: mov      rax, qword ptr [rbx + 0x10]
+ffffff80022606c4: mov      rdi, qword ptr [rax + 0x10]
+ffffff80022606c8: mov      rax, qword ptr [rdi]
+ffffff80022606cb: call     qword ptr [rax + 0x28]
+ffffff80022606ce: mov      rax, qword ptr [rbx + 0x10]
+ffffff80022606d2: mov      qword ptr [rax + 0x10], 0
+ffffff80022606da: add      rsp, 8
+ffffff80022606de: pop      rbx
+ffffff80022606df: pop      rbp
+ffffff80022606e0: ret      
+ffffff80022606e1: nop      

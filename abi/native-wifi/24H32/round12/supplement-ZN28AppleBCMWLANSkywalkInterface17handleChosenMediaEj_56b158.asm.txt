@@ -1,0 +1,42 @@
+# 0xffffff800156b158 __ZN28AppleBCMWLANSkywalkInterface17handleChosenMediaEj
+ffffff800156b158: push     rbp
+ffffff800156b159: mov      rbp, rsp
+ffffff800156b15c: push     r15
+ffffff800156b15e: push     r14
+ffffff800156b160: push     r12
+ffffff800156b162: push     rbx
+ffffff800156b163: mov      r12d, esi
+ffffff800156b166: mov      r14, rdi
+ffffff800156b169: call     0xffffff80022625dc  ; __ZN23IO80211SkywalkInterface21validateDispatchQueueEv
+ffffff800156b16e: mov      rax, qword ptr [r14 + 0x128]
+ffffff800156b175: mov      rdi, qword ptr [rax + 0x18]
+ffffff800156b179: mov      rax, qword ptr [rdi]
+ffffff800156b17c: call     qword ptr [rax + 0x890]
+ffffff800156b182: test     rax, rax
+ffffff800156b185: je       0xffffff800156b1c4
+ffffff800156b187: mov      rbx, rax
+ffffff800156b18a: xor      r15d, r15d
+ffffff800156b18d: mov      rdi, rax
+ffffff800156b190: mov      esi, r12d
+ffffff800156b193: xor      edx, edx
+ffffff800156b195: call     0xffffff80026341dc  ; __ZN15IONetworkMedium17getMediumWithTypeEPK12OSDictionaryjj
+ffffff800156b19a: test     rax, rax
+ffffff800156b19d: je       0xffffff800156b1b9
+ffffff800156b19f: mov      rcx, qword ptr [r14 + 0x128]
+ffffff800156b1a6: mov      rdi, qword ptr [rcx + 0x18]
+ffffff800156b1aa: mov      rcx, qword ptr [rdi]
+ffffff800156b1ad: mov      rsi, rax
+ffffff800156b1b0: call     qword ptr [rcx + 0x8f0]
+ffffff800156b1b6: mov      r15d, eax
+ffffff800156b1b9: mov      rax, qword ptr [rbx]
+ffffff800156b1bc: mov      rdi, rbx
+ffffff800156b1bf: call     qword ptr [rax + 0x28]
+ffffff800156b1c2: jmp      0xffffff800156b1ca  ; __ZN28AppleBCMWLANSkywalkInterface17handleChosenMediaEj+0x72
+ffffff800156b1c4: mov      r15d, 0xe00002f0
+ffffff800156b1ca: mov      eax, r15d
+ffffff800156b1cd: pop      rbx
+ffffff800156b1ce: pop      r12
+ffffff800156b1d0: pop      r14
+ffffff800156b1d2: pop      r15
+ffffff800156b1d4: pop      rbp
+ffffff800156b1d5: ret      

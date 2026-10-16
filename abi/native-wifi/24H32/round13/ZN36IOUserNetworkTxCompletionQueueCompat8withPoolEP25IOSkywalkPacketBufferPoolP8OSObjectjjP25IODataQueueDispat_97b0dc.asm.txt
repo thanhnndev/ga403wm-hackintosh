@@ -1,0 +1,50 @@
+# 0xffffff800297b0dc __ZN36IOUserNetworkTxCompletionQueueCompat8withPoolEP25IOSkywalkPacketBufferPoolP8OSObjectjjP25IODataQueueDispatchSource
+ffffff800297b0dc: push     rbp
+ffffff800297b0dd: mov      rbp, rsp
+ffffff800297b0e0: push     r15
+ffffff800297b0e2: push     r14
+ffffff800297b0e4: push     r13
+ffffff800297b0e6: push     r12
+ffffff800297b0e8: push     rbx
+ffffff800297b0e9: sub      rsp, 0x18
+ffffff800297b0ed: mov      qword ptr [rbp - 0x38], r8
+ffffff800297b0f1: mov      dword ptr [rbp - 0x2c], ecx
+ffffff800297b0f4: mov      r12d, edx
+ffffff800297b0f7: mov      r13, rsi
+ffffff800297b0fa: mov      r14, rdi
+ffffff800297b0fd: lea      rdi, [rip + 0x3c2bc]  ; 0xffffff80029b73c0
+ffffff800297b104: mov      esi, 0x120
+ffffff800297b109: call     0xffffff8000a4be90  ; _OSObject_typed_operator_new
+ffffff800297b10e: mov      rbx, rax
+ffffff800297b111: lea      r15, [rip + 0x3b7c0]  ; 0xffffff80029b68d8
+ffffff800297b118: mov      rdi, rax
+ffffff800297b11b: mov      rsi, r15
+ffffff800297b11e: call     0xffffff800297951a  ; __ZN30IOUserNetworkPacketQueueCompatC2EPK11OSMetaClass
+ffffff800297b123: lea      rax, [rip + 0x31866]  ; 0xffffff80029ac990
+ffffff800297b12a: mov      qword ptr [rbx], rax
+ffffff800297b12d: mov      rdi, r15
+ffffff800297b130: call     0xffffff8000a4a700  ; __ZNK11OSMetaClass19instanceConstructedEv
+ffffff800297b135: mov      rax, qword ptr [rbx]
+ffffff800297b138: mov      rdi, rbx
+ffffff800297b13b: mov      rsi, r14
+ffffff800297b13e: mov      rdx, r13
+ffffff800297b141: mov      ecx, r12d
+ffffff800297b144: mov      r8d, dword ptr [rbp - 0x2c]
+ffffff800297b148: mov      r9, qword ptr [rbp - 0x38]
+ffffff800297b14c: call     qword ptr [rax + 0x2c0]
+ffffff800297b152: test     al, al
+ffffff800297b154: jne      0xffffff800297b161
+ffffff800297b156: mov      rax, qword ptr [rbx]
+ffffff800297b159: mov      rdi, rbx
+ffffff800297b15c: call     qword ptr [rax + 0x28]
+ffffff800297b15f: xor      ebx, ebx
+ffffff800297b161: mov      rax, rbx
+ffffff800297b164: add      rsp, 0x18
+ffffff800297b168: pop      rbx
+ffffff800297b169: pop      r12
+ffffff800297b16b: pop      r13
+ffffff800297b16d: pop      r14
+ffffff800297b16f: pop      r15
+ffffff800297b171: pop      rbp
+ffffff800297b172: ret      
+ffffff800297b173: nop      

@@ -1,0 +1,243 @@
+# 0xffffff80022d8438 __ZN21IO80211InfraInterface21updateChannelPropertyER18apple80211_channel
+ffffff80022d8438: push     rbp
+ffffff80022d8439: mov      rbp, rsp
+ffffff80022d843c: push     r15
+ffffff80022d843e: push     r14
+ffffff80022d8440: push     r13
+ffffff80022d8442: push     r12
+ffffff80022d8444: push     rbx
+ffffff80022d8445: sub      rsp, 0x18
+ffffff80022d8449: mov      r14, rsi
+ffffff80022d844c: mov      rbx, rdi
+ffffff80022d844f: mov      rax, qword ptr [rdi + 0x110]
+ffffff80022d8456: mov      rdi, qword ptr [rax + 0x38]
+ffffff80022d845a: mov      rax, qword ptr [rdi]
+ffffff80022d845d: call     qword ptr [rax + 0x138]
+ffffff80022d8463: test     al, al
+ffffff80022d8465: je       0xffffff80022d84a4
+ffffff80022d8467: mov      rax, qword ptr [rbx + 0x110]
+ffffff80022d846e: mov      rax, qword ptr [rax + 0x28]
+ffffff80022d8472: test     rax, rax
+ffffff80022d8475: je       0xffffff80022d84d3
+ffffff80022d8477: mov      rax, qword ptr [rax + 0x18]
+ffffff80022d847b: mov      rax, qword ptr [rax + 0x528]
+ffffff80022d8482: test     rax, rax
+ffffff80022d8485: je       0xffffff80022d84d3
+ffffff80022d8487: mov      rax, qword ptr [rax + 0x18]
+ffffff80022d848b: mov      rax, qword ptr [rax + 0x4c0]
+ffffff80022d8492: test     rax, rax
+ffffff80022d8495: je       0xffffff80022d84d3
+ffffff80022d8497: mov      rax, qword ptr [rax + 0x10]
+ffffff80022d849b: mov      rcx, qword ptr [rax + 0xa60]
+ffffff80022d84a2: jmp      0xffffff80022d84d5  ; __ZN21IO80211InfraInterface21updateChannelPropertyER18apple80211_channel+0x9d
+ffffff80022d84a4: lea      rdi, [rip + 0xc1503]  ; 0xffffff80023999ae
+ffffff80022d84ab: lea      rsi, [rip + 0xc151e]  ; "/AppleInternal/Library/BuildRoots/4~CW9mugA6gpmKPwyaAeCNWSZRmRlk6mvK_U3N5n0/Libr"
+ffffff80022d84b2: lea      rdx, [rip + 0xc1919]  ; "updateChannelProperty"
+ffffff80022d84b9: mov      ecx, 0x61f
+ffffff80022d84be: xor      eax, eax
+ffffff80022d84c0: add      rsp, 0x18
+ffffff80022d84c4: pop      rbx
+ffffff80022d84c5: pop      r12
+ffffff80022d84c7: pop      r13
+ffffff80022d84c9: pop      r14
+ffffff80022d84cb: pop      r15
+ffffff80022d84cd: pop      rbp
+ffffff80022d84ce: jmp      0xffffff8000ab6560  ; _IOLog
+ffffff80022d84d3: xor      ecx, ecx
+ffffff80022d84d5: mov      edx, dword ptr [r14 + 4]
+ffffff80022d84d9: test     rdx, rdx
+ffffff80022d84dc: je       0xffffff80022d8506
+ffffff80022d84de: mov      eax, dword ptr [r14 + 8]
+ffffff80022d84e2: test     al, 8
+ffffff80022d84e4: mov      qword ptr [rbp - 0x38], rcx
+ffffff80022d84e8: jne      0xffffff80022d855f
+ffffff80022d84ea: test     al, 0x10
+ffffff80022d84ec: jne      0xffffff80022d8568
+ffffff80022d84ee: bt       eax, 0xd
+ffffff80022d84f2: lea      rax, [rip + 0x5ed6b]  ; "UNKNOWN"
+ffffff80022d84f9: lea      r15, [rip + 0xc30af]  ; "6 GHz"
+ffffff80022d8500: cmovae   r15, rax
+ffffff80022d8504: jmp      0xffffff80022d856f  ; __ZN21IO80211InfraInterface21updateChannelPropertyER18apple80211_channel+0x137
+ffffff80022d8506: lea      rsi, [rip + 0x575f0]  ; "IO80211Channel"
+ffffff80022d850d: mov      rdi, rbx
+ffffff80022d8510: call     0xffffff800227dbf3  ; __Z20removePropertyHelperP9IOServicePKc
+ffffff80022d8515: lea      rsi, [rip + 0x575f0]  ; "IO80211Band"
+ffffff80022d851c: mov      rdi, rbx
+ffffff80022d851f: call     0xffffff800227dbf3  ; __Z20removePropertyHelperP9IOServicePKc
+ffffff80022d8524: lea      rsi, [rip + 0xc18ca]  ; "IO80211ExtensionChannel"
+ffffff80022d852b: mov      rdi, rbx
+ffffff80022d852e: call     0xffffff800227dbf3  ; __Z20removePropertyHelperP9IOServicePKc
+ffffff80022d8533: lea      rsi, [rip + 0xc1957]  ; "IO80211ChannelFrequency"
+ffffff80022d853a: mov      rdi, rbx
+ffffff80022d853d: call     0xffffff800227dbf3  ; __Z20removePropertyHelperP9IOServicePKc
+ffffff80022d8542: lea      rsi, [rip + 0xc1960]  ; "IO80211ChannelBandwidth"
+ffffff80022d8549: mov      rdi, rbx
+ffffff80022d854c: add      rsp, 0x18
+ffffff80022d8550: pop      rbx
+ffffff80022d8551: pop      r12
+ffffff80022d8553: pop      r13
+ffffff80022d8555: pop      r14
+ffffff80022d8557: pop      r15
+ffffff80022d8559: pop      rbp
+ffffff80022d855a: jmp      0xffffff800227dbf3  ; __Z20removePropertyHelperP9IOServicePKc
+ffffff80022d855f: lea      r15, [rip + 0xc1883]  ; "2.4 GHz"
+ffffff80022d8566: jmp      0xffffff80022d856f  ; __ZN21IO80211InfraInterface21updateChannelPropertyER18apple80211_channel+0x137
+ffffff80022d8568: lea      r15, [rip + 0xc303a]  ; "5 GHz"
+ffffff80022d856f: lea      rsi, [rip + 0x57587]  ; "IO80211Channel"
+ffffff80022d8576: mov      rdi, rbx
+ffffff80022d8579: mov      ecx, 0x20
+ffffff80022d857e: call     0xffffff800227db5f  ; __Z17setPropertyHelperP9IOServicePKcyj
+ffffff80022d8583: lea      rsi, [rip + 0x57582]  ; "IO80211Band"
+ffffff80022d858a: mov      rdi, rbx
+ffffff80022d858d: mov      rdx, r15
+ffffff80022d8590: call     0xffffff800227da77  ; __Z17setPropertyHelperP9IOServicePKcS2_
+ffffff80022d8595: lea      rsi, [rip + 0xc184d]  ; "2.4 GHz"
+ffffff80022d859c: mov      edx, 8
+ffffff80022d85a1: mov      rdi, r15
+ffffff80022d85a4: call     0xffffff80004ee960  ; _strncmp
+ffffff80022d85a9: cmp      eax, 1
+ffffff80022d85ac: mov      eax, 2
+ffffff80022d85b1: sbb      eax, 0
+ffffff80022d85b4: mov      rcx, qword ptr [rbx + 0x118]
+ffffff80022d85bb: mov      dword ptr [rcx + 0x70], eax
+ffffff80022d85be: mov      rax, qword ptr [rbx + 0x118]
+ffffff80022d85c5: or       dword ptr [rax + 0x30], 0x8000
+ffffff80022d85cc: mov      rax, qword ptr [rbx]
+ffffff80022d85cf: mov      rdi, rbx
+ffffff80022d85d2: call     qword ptr [rax + 0xbc8]
+ffffff80022d85d8: mov      eax, dword ptr [r14 + 8]
+ffffff80022d85dc: test     al, 4
+ffffff80022d85de: jne      0xffffff80022d85f8
+ffffff80022d85e0: lea      rsi, [rip + 0xc180e]  ; "IO80211ExtensionChannel"
+ffffff80022d85e7: mov      rdi, rbx
+ffffff80022d85ea: call     0xffffff800227dbf3  ; __Z20removePropertyHelperP9IOServicePKc
+ffffff80022d85ef: lea      rax, [rip + 0xc17f2]  ; 0xffffff8002399de8
+ffffff80022d85f6: jmp      0xffffff80022d8640  ; __ZN21IO80211InfraInterface21updateChannelPropertyER18apple80211_channel+0x208
+ffffff80022d85f8: bt       eax, 9
+ffffff80022d85fc: mov      edx, dword ptr [r14 + 4]
+ffffff80022d8600: jb       0xffffff80022d8622
+ffffff80022d8602: add      edx, -4
+ffffff80022d8605: lea      rsi, [rip + 0xc17e9]  ; "IO80211ExtensionChannel"
+ffffff80022d860c: mov      rdi, rbx
+ffffff80022d860f: mov      ecx, 0x20
+ffffff80022d8614: call     0xffffff800227db5f  ; __Z17setPropertyHelperP9IOServicePKcyj
+ffffff80022d8619: lea      rax, [rip + 0x78c39]  ; 0xffffff8002351259
+ffffff80022d8620: jmp      0xffffff80022d8640  ; __ZN21IO80211InfraInterface21updateChannelPropertyER18apple80211_channel+0x208
+ffffff80022d8622: add      edx, 4
+ffffff80022d8625: lea      rsi, [rip + 0xc17c9]  ; "IO80211ExtensionChannel"
+ffffff80022d862c: mov      rdi, rbx
+ffffff80022d862f: mov      ecx, 0x20
+ffffff80022d8634: call     0xffffff800227db5f  ; __Z17setPropertyHelperP9IOServicePKcyj
+ffffff80022d8639: lea      rax, [rip + 0xc17b1]  ; 0xffffff8002399df1
+ffffff80022d8640: mov      edi, dword ptr [r14 + 4]
+ffffff80022d8644: mov      r12d, dword ptr [r14 + 8]
+ffffff80022d8648: bt       r12d, 0xa
+ffffff80022d864d: lea      rcx, [rip + 0xc17b9]  ; 0xffffff8002399e0d
+ffffff80022d8654: cmovae   rcx, rax
+ffffff80022d8658: bt       r12d, 0xb
+ffffff80022d865d: lea      r15, [rip + 0xc17ad]  ; ",160"
+ffffff80022d8664: cmovae   r15, rcx
+ffffff80022d8668: mov      esi, r12d
+ffffff80022d866b: call     0xffffff800222c472  ; __Z18channelToFrequencyjj
+ffffff80022d8670: mov      dword ptr [rbp - 0x2c], eax
+ffffff80022d8673: mov      r13d, 0x14
+ffffff80022d8679: test     r12b, 2
+ffffff80022d867d: jne      0xffffff80022d86aa
+ffffff80022d867f: mov      r13d, 0x28
+ffffff80022d8685: test     r12b, 4
+ffffff80022d8689: jne      0xffffff80022d86aa
+ffffff80022d868b: xor      eax, eax
+ffffff80022d868d: bt       r12d, 0xb
+ffffff80022d8692: mov      ecx, 0xa0
+ffffff80022d8697: cmovae   rcx, rax
+ffffff80022d869b: bt       r12d, 0xa
+ffffff80022d86a0: mov      r13d, 0x50
+ffffff80022d86a6: cmovae   r13, rcx
+ffffff80022d86aa: mov      rdi, rbx
+ffffff80022d86ad: call     0xffffff800226205a  ; __ZN23IO80211SkywalkInterface10getBSDNameEv
+ffffff80022d86b2: lea      r12, [rip + 0x5ebab]  ; "UNKNOWN"
+ffffff80022d86b9: mov      rsi, r12
+ffffff80022d86bc: test     rax, rax
+ffffff80022d86bf: je       0xffffff80022d86cc
+ffffff80022d86c1: mov      rdi, rbx
+ffffff80022d86c4: call     0xffffff800226205a  ; __ZN23IO80211SkywalkInterface10getBSDNameEv
+ffffff80022d86c9: mov      rsi, rax
+ffffff80022d86cc: mov      edx, dword ptr [r14 + 4]
+ffffff80022d86d0: lea      rdi, [rip + 0xc173f]  ; 0xffffff8002399e16
+ffffff80022d86d7: mov      rcx, r15
+ffffff80022d86da: xor      eax, eax
+ffffff80022d86dc: call     0xffffff8000ab6560  ; _IOLog
+ffffff80022d86e1: mov      rdi, rbx
+ffffff80022d86e4: call     0xffffff800226205a  ; __ZN23IO80211SkywalkInterface10getBSDNameEv
+ffffff80022d86e9: test     rax, rax
+ffffff80022d86ec: je       0xffffff80022d86f9
+ffffff80022d86ee: mov      rdi, rbx
+ffffff80022d86f1: call     0xffffff800226205a  ; __ZN23IO80211SkywalkInterface10getBSDNameEv
+ffffff80022d86f6: mov      r12, rax
+ffffff80022d86f9: mov      eax, dword ptr [r14 + 8]
+ffffff80022d86fd: test     al, 8
+ffffff80022d86ff: lea      rcx, [rip + 0xc16e3]  ; "2.4 GHz"
+ffffff80022d8706: jne      0xffffff80022d872b
+ffffff80022d8708: test     al, 0x10
+ffffff80022d870a: jne      0xffffff80022d8724
+ffffff80022d870c: bt       eax, 0xd
+ffffff80022d8710: lea      rdx, [rip + 0x5eb4d]  ; "UNKNOWN"
+ffffff80022d8717: lea      rcx, [rip + 0xc2e91]  ; "6 GHz"
+ffffff80022d871e: cmovae   rcx, rdx
+ffffff80022d8722: jmp      0xffffff80022d872b  ; __ZN21IO80211InfraInterface21updateChannelPropertyER18apple80211_channel+0x2f3
+ffffff80022d8724: lea      rcx, [rip + 0xc2e7e]  ; "5 GHz"
+ffffff80022d872b: mov      edx, dword ptr [r14 + 4]
+ffffff80022d872f: test     al, 2
+ffffff80022d8731: jne      0xffffff80022d8755
+ffffff80022d8733: test     al, 4
+ffffff80022d8735: jne      0xffffff80022d875e
+ffffff80022d8737: bt       eax, 0xa
+ffffff80022d873b: jb       0xffffff80022d8767
+ffffff80022d873d: bt       eax, 0xb
+ffffff80022d8741: lea      rsi, [rip + 0x5eb1c]  ; "UNKNOWN"
+ffffff80022d8748: lea      r9, [rip + 0xc2e66]  ; 0xffffff800239b5b5
+ffffff80022d874f: cmovae   r9, rsi
+ffffff80022d8753: jmp      0xffffff80022d876e  ; __ZN21IO80211InfraInterface21updateChannelPropertyER18apple80211_channel+0x336
+ffffff80022d8755: lea      r9, [rip + 0x87aaa]  ; 0xffffff8002360206
+ffffff80022d875c: jmp      0xffffff80022d876e  ; __ZN21IO80211InfraInterface21updateChannelPropertyER18apple80211_channel+0x336
+ffffff80022d875e: lea      r9, [rip + 0x87a9e]  ; 0xffffff8002360203
+ffffff80022d8765: jmp      0xffffff80022d876e  ; __ZN21IO80211InfraInterface21updateChannelPropertyER18apple80211_channel+0x336
+ffffff80022d8767: lea      r9, [rip + 0x87aee]  ; 0xffffff800236025c
+ffffff80022d876e: mov      dword ptr [rsp], eax
+ffffff80022d8771: lea      rdi, [rip + 0xc16bb]  ; "%s: Extended channel change info: channel[%d] band['%s'] freq[%u MHz] bw['%s'] f"
+ffffff80022d8778: mov      rsi, r12
+ffffff80022d877b: mov      r15d, dword ptr [rbp - 0x2c]
+ffffff80022d877f: mov      r8d, r15d
+ffffff80022d8782: xor      eax, eax
+ffffff80022d8784: call     0xffffff8000ab6560  ; _IOLog
+ffffff80022d8789: mov      edx, r15d
+ffffff80022d878c: lea      rsi, [rip + 0xc16fe]  ; "IO80211ChannelFrequency"
+ffffff80022d8793: mov      rdi, rbx
+ffffff80022d8796: mov      ecx, 0x20
+ffffff80022d879b: call     0xffffff800227db5f  ; __Z17setPropertyHelperP9IOServicePKcyj
+ffffff80022d87a0: lea      rsi, [rip + 0xc1702]  ; "IO80211ChannelBandwidth"
+ffffff80022d87a7: mov      rdi, rbx
+ffffff80022d87aa: mov      rdx, r13
+ffffff80022d87ad: mov      ecx, 0x20
+ffffff80022d87b2: call     0xffffff800227db5f  ; __Z17setPropertyHelperP9IOServicePKcyj
+ffffff80022d87b7: mov      rdi, qword ptr [rbp - 0x38]
+ffffff80022d87bb: test     rdi, rdi
+ffffff80022d87be: je       0xffffff80022d87d6
+ffffff80022d87c0: mov      rsi, r14
+ffffff80022d87c3: add      rsp, 0x18
+ffffff80022d87c7: pop      rbx
+ffffff80022d87c8: pop      r12
+ffffff80022d87ca: pop      r13
+ffffff80022d87cc: pop      r14
+ffffff80022d87ce: pop      r15
+ffffff80022d87d0: pop      rbp
+ffffff80022d87d1: jmp      0xffffff80022363bc  ; __ZN21IO80211LQMCrashTracer19recordInfraChanInfoEP18apple80211_channel
+ffffff80022d87d6: add      rsp, 0x18
+ffffff80022d87da: pop      rbx
+ffffff80022d87db: pop      r12
+ffffff80022d87dd: pop      r13
+ffffff80022d87df: pop      r14
+ffffff80022d87e1: pop      r15
+ffffff80022d87e3: pop      rbp
+ffffff80022d87e4: ret      
+ffffff80022d87e5: nop      

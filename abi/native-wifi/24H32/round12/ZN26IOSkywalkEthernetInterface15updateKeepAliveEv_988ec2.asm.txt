@@ -1,0 +1,117 @@
+# 0xffffff8002988ec2 __ZN26IOSkywalkEthernetInterface15updateKeepAliveEv
+ffffff8002988ec2: push     rbp
+ffffff8002988ec3: mov      rbp, rsp
+ffffff8002988ec6: push     r15
+ffffff8002988ec8: push     r14
+ffffff8002988eca: push     r13
+ffffff8002988ecc: push     r12
+ffffff8002988ece: push     rbx
+ffffff8002988ecf: sub      rsp, 0x58
+ffffff8002988ed3: mov      word ptr [rbp - 0x54], 0xaaaa
+ffffff8002988ed9: movabs   rax, 0xaaaaaaaaaaaaaaaa
+ffffff8002988ee3: mov      qword ptr [rbp - 0x4c], rax
+ffffff8002988ee7: mov      qword ptr [rbp - 0x44], rax
+ffffff8002988eeb: mov      qword ptr [rbp - 0x68], rax
+ffffff8002988eef: mov      qword ptr [rbp - 0x60], rax
+ffffff8002988ef3: mov      dword ptr [rbp - 0x2c], 0xaaaaaaaa
+ffffff8002988efa: mov      qword ptr [rbp - 0x38], rdi
+ffffff8002988efe: mov      rax, qword ptr [rdi + 0xf0]
+ffffff8002988f05: cmp      word ptr [rax + 0x68], 0
+ffffff8002988f0a: je       0xffffff8002988f87
+ffffff8002988f0c: mov      r14, qword ptr [rax + 0x70]
+ffffff8002988f10: add      r14, 0x14
+ffffff8002988f14: xor      ebx, ebx
+ffffff8002988f16: lea      r15, [rbp - 0x2c]
+ffffff8002988f1a: xor      r12d, r12d
+ffffff8002988f1d: mov      edi, dword ptr [r14 - 0x10]
+ffffff8002988f21: bswap    edi
+ffffff8002988f23: movzx    eax, word ptr [r14 - 0xc]
+ffffff8002988f28: rol      ax, 8
+ffffff8002988f2c: mov      edx, dword ptr [r14 - 8]
+ffffff8002988f30: bswap    edx
+ffffff8002988f32: movzx    ecx, word ptr [r14 - 4]
+ffffff8002988f37: rol      cx, 8
+ffffff8002988f3b: lea      r9, [r14 + 4]
+ffffff8002988f3f: mov      qword ptr [rsp], r15
+ffffff8002988f43: movzx    esi, ax
+ffffff8002988f46: movzx    ecx, cx
+ffffff8002988f49: mov      r8, r14
+ffffff8002988f4c: call     0xffffff8002880136  ; __ZN21mDNSOffloadUserClient16GetKeepaliveDataEjtjtPjS0_S0_
+ffffff8002988f51: mov      r13d, 0xe00002bc
+ffffff8002988f57: test     al, al
+ffffff8002988f59: je       0xffffff8002988f67
+ffffff8002988f5b: movzx    eax, word ptr [rbp - 0x2c]
+ffffff8002988f5f: mov      word ptr [r14 + 8], ax
+ffffff8002988f64: mov      r13d, r12d
+ffffff8002988f67: inc      rbx
+ffffff8002988f6a: mov      rax, qword ptr [rbp - 0x38]
+ffffff8002988f6e: mov      rax, qword ptr [rax + 0xf0]
+ffffff8002988f75: movzx    ecx, word ptr [rax + 0x68]
+ffffff8002988f79: add      r14, 0x24
+ffffff8002988f7d: mov      r12d, r13d
+ffffff8002988f80: cmp      rbx, rcx
+ffffff8002988f83: jb       0xffffff8002988f1d
+ffffff8002988f85: jmp      0xffffff8002988f8a  ; __ZN26IOSkywalkEthernetInterface15updateKeepAliveEv+0xc8
+ffffff8002988f87: xor      r13d, r13d
+ffffff8002988f8a: cmp      word ptr [rax + 0x78], 0
+ffffff8002988f8f: je       0xffffff8002989066
+ffffff8002988f95: mov      r14, qword ptr [rax + 0x80]
+ffffff8002988f9c: lea      r15, [r14 + 0x18]
+ffffff8002988fa0: xor      edx, edx
+ffffff8002988fa2: xor      ebx, ebx
+ffffff8002988fa4: mov      ax, 0x1e1c
+ffffff8002988fa8: mov      word ptr [rbp - 0x54], ax
+ffffff8002988fac: mov      word ptr [rbp - 0x70], ax
+ffffff8002988fb0: imul     rax, rbx, 0x3c
+ffffff8002988fb4: lea      r12, [r14 + rax]
+ffffff8002988fb8: movzx    ecx, word ptr [r14 + rax + 0x14]
+ffffff8002988fbe: rol      cx, 8
+ffffff8002988fc2: mov      word ptr [rbp - 0x52], cx
+ffffff8002988fc6: movzx    eax, word ptr [r14 + rax + 0x28]
+ffffff8002988fcc: rol      ax, 8
+ffffff8002988fd0: mov      word ptr [rbp - 0x6e], ax
+ffffff8002988fd4: mov      dword ptr [rbp - 0x50], edx
+ffffff8002988fd7: mov      dword ptr [rbp - 0x6c], edx
+ffffff8002988fda: mov      rax, 0xfffffffffffffff8
+ffffff8002988fe1: movzx    ecx, word ptr [r15 + rax*2 - 4]
+ffffff8002988fe7: rol      cx, 8
+ffffff8002988feb: mov      word ptr [rbp + rax*2 - 0x3c], cx
+ffffff8002988ff0: movzx    ecx, word ptr [r15 + rax*2 + 0x10]
+ffffff8002988ff6: rol      cx, 8
+ffffff8002988ffa: mov      word ptr [rbp + rax*2 - 0x58], cx
+ffffff8002988fff: inc      rax
+ffffff8002989002: jne      0xffffff8002988fe1
+ffffff8002989004: mov      dword ptr [rbp - 0x3c], edx
+ffffff8002989007: mov      dword ptr [rbp - 0x58], edx
+ffffff800298900a: lea      rdx, [r12 + 0x2c]
+ffffff800298900f: lea      rcx, [r12 + 0x30]
+ffffff8002989014: lea      rdi, [rbp - 0x54]
+ffffff8002989018: lea      rsi, [rbp - 0x70]
+ffffff800298901c: lea      r8, [rbp - 0x2c]
+ffffff8002989020: call     0xffffff8002880384  ; __ZN21mDNSOffloadUserClient16GetKeepaliveDataEP12sockaddr_in6S1_PjS2_S2_
+ffffff8002989025: mov      ecx, eax
+ffffff8002989027: mov      eax, 0xe00002bc
+ffffff800298902c: test     cl, cl
+ffffff800298902e: je       0xffffff800298903d
+ffffff8002989030: movzx    eax, word ptr [rbp - 0x2c]
+ffffff8002989034: mov      word ptr [r12 + 0x34], ax
+ffffff800298903a: mov      eax, r13d
+ffffff800298903d: inc      rbx
+ffffff8002989040: mov      rcx, qword ptr [rbp - 0x38]
+ffffff8002989044: mov      rcx, qword ptr [rcx + 0xf0]
+ffffff800298904b: movzx    ecx, word ptr [rcx + 0x78]
+ffffff800298904f: add      r15, 0x3c
+ffffff8002989053: mov      r13d, eax
+ffffff8002989056: cmp      rbx, rcx
+ffffff8002989059: mov      edx, 0
+ffffff800298905e: jb       0xffffff8002988fa4
+ffffff8002989064: jmp      0xffffff8002989069  ; __ZN26IOSkywalkEthernetInterface15updateKeepAliveEv+0x1a7
+ffffff8002989066: mov      eax, r13d
+ffffff8002989069: add      rsp, 0x58
+ffffff800298906d: pop      rbx
+ffffff800298906e: pop      r12
+ffffff8002989070: pop      r13
+ffffff8002989072: pop      r14
+ffffff8002989074: pop      r15
+ffffff8002989076: pop      rbp
+ffffff8002989077: ret      

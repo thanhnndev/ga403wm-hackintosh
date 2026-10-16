@@ -1,0 +1,45 @@
+# 0xffffff800212b06c ____ZN11IO80211Glue13sendIOUCToWclEjjPvmRb_block_invoke
+ffffff800212b06c: push     rbp
+ffffff800212b06d: mov      rbp, rsp
+ffffff800212b070: push     r15
+ffffff800212b072: push     r14
+ffffff800212b074: push     rbx
+ffffff800212b075: sub      rsp, 0x18
+ffffff800212b079: mov      rbx, rdi
+ffffff800212b07c: mov      rax, qword ptr [rip + 0x291095]  ; 0xffffff80023bc118
+ffffff800212b083: mov      rax, qword ptr [rax]
+ffffff800212b086: mov      qword ptr [rbp - 0x20], rax
+ffffff800212b08a: mov      r14, qword ptr [rdi + 0x38]
+ffffff800212b08e: lea      r15, [rbp - 0x28]
+ffffff800212b092: mov      qword ptr [r15], 0
+ffffff800212b099: call     0xffffff80003cbf20  ; _mach_continuous_time
+ffffff800212b09e: mov      rdi, rax
+ffffff800212b0a1: mov      rsi, r15
+ffffff800212b0a4: call     0xffffff8000536d80  ; _absolutetime_to_nanoseconds
+ffffff800212b0a9: movabs   rax, 0x431bde82d7b634db
+ffffff800212b0b3: mul      qword ptr [r15]
+ffffff800212b0b6: shr      rdx, 0x12
+ffffff800212b0ba: mov      rax, qword ptr [rbx + 0x20]
+ffffff800212b0be: mov      rax, qword ptr [rax + 8]
+ffffff800212b0c2: mov      qword ptr [rax + 0x18], rdx
+ffffff800212b0c6: mov      rax, qword ptr [rbx + 0x30]
+ffffff800212b0ca: mov      rsi, qword ptr [rax + 8]
+ffffff800212b0ce: add      rsi, 0x28
+ffffff800212b0d2: mov      rax, qword ptr [r14]
+ffffff800212b0d5: mov      rdi, r14
+ffffff800212b0d8: call     qword ptr [rax + 0x120]
+ffffff800212b0de: mov      rcx, qword ptr [rbx + 0x28]
+ffffff800212b0e2: mov      rcx, qword ptr [rcx + 8]
+ffffff800212b0e6: mov      dword ptr [rcx + 0x18], eax
+ffffff800212b0e9: mov      rax, qword ptr [rip + 0x291028]  ; 0xffffff80023bc118
+ffffff800212b0f0: mov      rax, qword ptr [rax]
+ffffff800212b0f3: cmp      rax, qword ptr [rbp - 0x20]
+ffffff800212b0f7: jne      0xffffff800212b106
+ffffff800212b0f9: xor      eax, eax
+ffffff800212b0fb: add      rsp, 0x18
+ffffff800212b0ff: pop      rbx
+ffffff800212b100: pop      r14
+ffffff800212b102: pop      r15
+ffffff800212b104: pop      rbp
+ffffff800212b105: ret      
+ffffff800212b106: call     0xffffff8000383150  ; ___stack_chk_fail

@@ -1,0 +1,10 @@
+# 0xffffff8002147246 __ZN18IO80211CommandGate12commandSleepEPvy
+ffffff8002147246: push     rbp
+ffffff8002147247: mov      rbp, rsp
+ffffff800214724a: mov      rax, qword ptr [rdi + 0x10]
+ffffff800214724e: mov      rdi, qword ptr [rax + 8]
+ffffff8002147252: mov      rax, qword ptr [rdi]
+ffffff8002147255: mov      rax, qword ptr [rax + 0x1f8]
+ffffff800214725c: pop      rbp
+ffffff800214725d: jmp      rax
+ffffff800214725f: nop      

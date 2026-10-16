@@ -1,0 +1,16 @@
+# 0xffffff80029a235f __ZN25IOSkywalkPacketBufferPool9newPacketEP25IOSkywalkPacketDescriptorPP15IOSkywalkPacket.cold.1
+ffffff80029a235f: push     rbp
+ffffff80029a2360: mov      rbp, rsp
+ffffff80029a2363: push     rbx
+ffffff80029a2364: push     rax
+ffffff80029a2365: mov      rbx, rsi
+ffffff80029a2368: mov      rdi, qword ptr [rdi + 0x90]
+ffffff80029a236f: mov      rax, qword ptr [rdi]
+ffffff80029a2372: call     qword ptr [rax + 0x148]
+ffffff80029a2378: mov      edx, dword ptr [rbx]
+ffffff80029a237a: lea      rdi, [rip + 0x3625]  ; ""%s: unknown packet type %d" @%s:%d"
+ffffff80029a2381: lea      rcx, [rip + 0x35db]  ; "IOSkywalkPacketBufferPool.cpp"
+ffffff80029a2388: mov      rsi, rax
+ffffff80029a238b: mov      r8d, 0x2cf
+ffffff80029a2391: xor      eax, eax
+ffffff80029a2393: call     0xffffff8000bd073c  ; _panic

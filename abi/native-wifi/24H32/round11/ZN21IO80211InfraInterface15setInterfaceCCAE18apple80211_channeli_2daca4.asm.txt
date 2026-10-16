@@ -1,0 +1,14 @@
+# 0xffffff80022daca4 __ZN21IO80211InfraInterface15setInterfaceCCAE18apple80211_channeli
+ffffff80022daca4: push     rbp
+ffffff80022daca5: mov      rbp, rsp
+ffffff80022daca8: mov      rax, qword ptr [rdi + 0x110]
+ffffff80022dacaf: mov      rdi, qword ptr [rax + 0x40]
+ffffff80022dacb3: test     rdi, rdi
+ffffff80022dacb6: je       0xffffff80022dacc1
+ffffff80022dacb8: movsxd   rsi, ecx
+ffffff80022dacbb: pop      rbp
+ffffff80022dacbc: jmp      0xffffff80022e6244  ; __ZN23IO80211InterfaceMonitor22setInterfaceAverageCCAEy
+ffffff80022dacc1: xor      eax, eax
+ffffff80022dacc3: pop      rbp
+ffffff80022dacc4: ret      
+ffffff80022dacc5: nop      

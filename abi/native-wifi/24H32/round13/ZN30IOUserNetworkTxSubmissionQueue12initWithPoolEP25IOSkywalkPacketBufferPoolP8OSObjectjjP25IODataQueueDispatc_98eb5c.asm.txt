@@ -1,0 +1,86 @@
+# 0xffffff800298eb5c __ZN30IOUserNetworkTxSubmissionQueue12initWithPoolEP25IOSkywalkPacketBufferPoolP8OSObjectjjP25IODataQueueDispatchSource
+ffffff800298eb5c: push     rbp
+ffffff800298eb5d: mov      rbp, rsp
+ffffff800298eb60: push     r15
+ffffff800298eb62: push     r14
+ffffff800298eb64: push     r12
+ffffff800298eb66: push     rbx
+ffffff800298eb67: mov      r15d, ecx
+ffffff800298eb6a: mov      r10, rdx
+ffffff800298eb6d: test     rsi, rsi
+ffffff800298eb70: sete     cl
+ffffff800298eb73: cmp      r15d, 2
+ffffff800298eb77: setb     dl
+ffffff800298eb7a: or       dl, cl
+ffffff800298eb7c: je       0xffffff800298eb86
+ffffff800298eb7e: xor      r14d, r14d
+ffffff800298eb81: jmp      0xffffff800298ec9b  ; __ZN30IOUserNetworkTxSubmissionQueue12initWithPoolEP25IOSkywalkPacketBufferPoolP8OSObjectjjP25IODataQueueDispatchSource+0x13f
+ffffff800298eb86: mov      rax, r9
+ffffff800298eb89: mov      r9d, r8d
+ffffff800298eb8c: mov      rbx, rdi
+ffffff800298eb8f: lea      r11, [rip + 0x25b4a]  ; 0xffffff80029b46e0
+ffffff800298eb96: xor      r14d, r14d
+ffffff800298eb99: mov      r12d, 1
+ffffff800298eb9f: xor      edx, edx
+ffffff800298eba1: mov      ecx, 1
+ffffff800298eba6: mov      r8d, r15d
+ffffff800298eba9: push     r14
+ffffff800298ebab: push     rax
+ffffff800298ebac: push     r14
+ffffff800298ebae: push     r10
+ffffff800298ebb0: call     qword ptr [r11 + 0x2a8]
+ffffff800298ebb7: add      rsp, 0x20
+ffffff800298ebbb: test     al, al
+ffffff800298ebbd: je       0xffffff800298ec9b
+ffffff800298ebc3: mov      dword ptr [rbx + 0xb8], 0xffffffff
+ffffff800298ebcd: mov      dword ptr [rbx + 0x128], r14d
+ffffff800298ebd4: mov      dword ptr [rbx + 0x12c], r14d
+ffffff800298ebdb: lea      rax, [rip + 0x27b3a]  ; 0xffffff80029b671c
+ffffff800298ebe2: mov      eax, dword ptr [rax]
+ffffff800298ebe4: dec      r15d
+ffffff800298ebe7: cmp      eax, r15d
+ffffff800298ebea: cmovb    r12d, eax
+ffffff800298ebee: mov      dword ptr [rbx + 0x148], r12d
+ffffff800298ebf5: lea      rax, [rip + 0x27b24]  ; 0xffffff80029b6720
+ffffff800298ebfc: mov      eax, dword ptr [rax]
+ffffff800298ebfe: test     eax, eax
+ffffff800298ec00: mov      edi, 0x1f4
+ffffff800298ec05: cmovne   edi, eax
+ffffff800298ec08: mov      dword ptr [rbx + 0x14c], edi
+ffffff800298ec0e: lea      rdx, [rbx + 0x150]
+ffffff800298ec15: mov      esi, 0x3e8
+ffffff800298ec1a: call     0xffffff8000536d00  ; _clock_interval_to_absolutetime_interval
+ffffff800298ec1f: call     0xffffff8000536cc0  ; _mach_absolute_time
+ffffff800298ec24: mov      qword ptr [rbx + 0x160], rax
+ffffff800298ec2b: lea      rdi, [rip + 0x298ce]  ; 0xffffff80029b8500
+ffffff800298ec32: call     0xffffff8000ab5930  ; _IOMallocTypeImpl
+ffffff800298ec37: mov      qword ptr [rbx + 0x120], rax
+ffffff800298ec3e: test     rax, rax
+ffffff800298ec41: je       0xffffff800298ec9b
+ffffff800298ec43: call     0xffffff8000afa570  ; __ZN10IOWorkLoop8workLoopEv
+ffffff800298ec48: mov      qword ptr [rbx + 0x108], rax
+ffffff800298ec4f: test     rax, rax
+ffffff800298ec52: je       0xffffff800298eb7e
+ffffff800298ec58: lea      rax, [rip + 0x27bad]  ; 0xffffff80029b680c
+ffffff800298ec5f: cmp      dword ptr [rax], 0
+ffffff800298ec62: je       0xffffff800298ec85
+ffffff800298ec64: lea      rdi, [rip + 0x298d5]  ; 0xffffff80029b8540
+ffffff800298ec6b: call     0xffffff8000ab5930  ; _IOMallocTypeImpl
+ffffff800298ec70: mov      qword ptr [rbx + 0x68], rax
+ffffff800298ec74: test     rax, rax
+ffffff800298ec77: je       0xffffff800298eb7e
+ffffff800298ec7d: mov      rdi, rbx
+ffffff800298ec80: call     0xffffff8002980e54  ; __ZN20IOSkywalkPacketQueue8initABFSEv
+ffffff800298ec85: mov      rdi, rbx
+ffffff800298ec88: call     0xffffff800298eca8  ; __ZN30IOUserNetworkTxSubmissionQueue27createSharedQueuePurgeTimerEv
+ffffff800298ec8d: mov      qword ptr [rbx + 0x140], rax
+ffffff800298ec94: test     rax, rax
+ffffff800298ec97: setne    r14b
+ffffff800298ec9b: mov      eax, r14d
+ffffff800298ec9e: pop      rbx
+ffffff800298ec9f: pop      r12
+ffffff800298eca1: pop      r14
+ffffff800298eca3: pop      r15
+ffffff800298eca5: pop      rbp
+ffffff800298eca6: ret      
+ffffff800298eca7: nop      

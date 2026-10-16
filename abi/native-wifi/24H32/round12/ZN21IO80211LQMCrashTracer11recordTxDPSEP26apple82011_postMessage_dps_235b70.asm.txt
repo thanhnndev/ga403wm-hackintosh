@@ -1,0 +1,85 @@
+# 0xffffff8002235b70 __ZN21IO80211LQMCrashTracer11recordTxDPSEP26apple82011_postMessage_dps
+ffffff8002235b70: push     rbp
+ffffff8002235b71: mov      rbp, rsp
+ffffff8002235b74: push     r14
+ffffff8002235b76: push     rbx
+ffffff8002235b77: sub      rsp, 0x10
+ffffff8002235b7b: mov      rax, qword ptr [rip + 0x186596]  ; 0xffffff80023bc118
+ffffff8002235b82: mov      rax, qword ptr [rax]
+ffffff8002235b85: mov      qword ptr [rbp - 0x18], rax
+ffffff8002235b89: mov      rax, qword ptr [rdi + 0x10]
+ffffff8002235b8d: mov      eax, dword ptr [rax + 0x10]
+ffffff8002235b90: test     rsi, rsi
+ffffff8002235b93: je       0xffffff8002235c1a
+ffffff8002235b99: mov      r14, rsi
+ffffff8002235b9c: mov      rbx, rdi
+ffffff8002235b9f: mov      r8d, dword ptr [rsi]
+ffffff8002235ba2: test     eax, eax
+ffffff8002235ba4: je       0xffffff8002235bb9
+ffffff8002235ba6: lea      rdi, [rip + 0x13aa89]  ; 0xffffff8002370636
+ffffff8002235bad: mov      esi, r8d
+ffffff8002235bb0: xor      eax, eax
+ffffff8002235bb2: call     0xffffff8000ab6560  ; _IOLog
+ffffff8002235bb7: jmp      0xffffff8002235bd7  ; __ZN21IO80211LQMCrashTracer11recordTxDPSEP26apple82011_postMessage_dps+0x67
+ffffff8002235bb9: lea      rdi, [rip - 0x125bc0]
+ffffff8002235bc0: mov      rsi, qword ptr [rip + 0x186559]  ; 0xffffff80023bc120
+ffffff8002235bc7: lea      rcx, [rip + 0x17f2d2]  ; 0xffffff80023b4ea0
+ffffff8002235bce: xor      edx, edx
+ffffff8002235bd0: xor      eax, eax
+ffffff8002235bd2: call     0xffffff8000a85d00  ; __os_log_internal
+ffffff8002235bd7: lea      rsi, [rbp - 0x20]
+ffffff8002235bdb: mov      dword ptr [rsi], 0
+ffffff8002235be1: mov      eax, dword ptr [r14]
+ffffff8002235be4: mov      dword ptr [rsi + 4], eax
+ffffff8002235be7: mov      rdi, rbx
+ffffff8002235bea: mov      edx, 8
+ffffff8002235bef: mov      ecx, 5
+ffffff8002235bf4: call     0xffffff80022346c6  ; __ZN21IO80211LQMCrashTracer20writeLogToRingBufferEPhjj
+ffffff8002235bf9: test     al, al
+ffffff8002235bfb: je       0xffffff8002235c37
+ffffff8002235bfd: mov      rax, qword ptr [rip + 0x186514]  ; 0xffffff80023bc118
+ffffff8002235c04: mov      rax, qword ptr [rax]
+ffffff8002235c07: cmp      rax, qword ptr [rbp - 0x18]
+ffffff8002235c0b: jne      0xffffff8002235cad
+ffffff8002235c11: add      rsp, 0x10
+ffffff8002235c15: pop      rbx
+ffffff8002235c16: pop      r14
+ffffff8002235c18: pop      rbp
+ffffff8002235c19: ret      
+ffffff8002235c1a: test     eax, eax
+ffffff8002235c1c: je       0xffffff8002235c67
+ffffff8002235c1e: mov      rax, qword ptr [rip + 0x1864f3]  ; 0xffffff80023bc118
+ffffff8002235c25: mov      rax, qword ptr [rax]
+ffffff8002235c28: cmp      rax, qword ptr [rbp - 0x18]
+ffffff8002235c2c: jne      0xffffff8002235cad
+ffffff8002235c2e: lea      rdi, [rip + 0x13a9eb]  ; "LQM-WIFI-CT: null dps"
+ffffff8002235c35: jmp      0xffffff8002235c58  ; __ZN21IO80211LQMCrashTracer11recordTxDPSEP26apple82011_postMessage_dps+0xe8
+ffffff8002235c37: mov      rax, qword ptr [rbx + 0x10]
+ffffff8002235c3b: cmp      dword ptr [rax + 0x10], 0
+ffffff8002235c3f: je       0xffffff8002235c8a
+ffffff8002235c41: mov      rax, qword ptr [rip + 0x1864d0]  ; 0xffffff80023bc118
+ffffff8002235c48: mov      rax, qword ptr [rax]
+ffffff8002235c4b: cmp      rax, qword ptr [rbp - 0x18]
+ffffff8002235c4f: jne      0xffffff8002235cad
+ffffff8002235c51: lea      rdi, [rip + 0x13a9fc]  ; "LQM-WIFI-CT: Fail to recordTxDPS"
+ffffff8002235c58: xor      eax, eax
+ffffff8002235c5a: add      rsp, 0x10
+ffffff8002235c5e: pop      rbx
+ffffff8002235c5f: pop      r14
+ffffff8002235c61: pop      rbp
+ffffff8002235c62: jmp      0xffffff8000ab6560  ; _IOLog
+ffffff8002235c67: lea      rdi, [rip - 0x125c6e]
+ffffff8002235c6e: mov      rsi, qword ptr [rip + 0x1864ab]  ; 0xffffff80023bc120
+ffffff8002235c75: lea      rcx, [rip + 0x17f204]  ; "LQM-WIFI-CT: null dps"
+ffffff8002235c7c: xor      edx, edx
+ffffff8002235c7e: xor      eax, eax
+ffffff8002235c80: call     0xffffff8000a85d00  ; __os_log_internal
+ffffff8002235c85: jmp      0xffffff8002235bfd  ; __ZN21IO80211LQMCrashTracer11recordTxDPSEP26apple82011_postMessage_dps+0x8d
+ffffff8002235c8a: lea      rdi, [rip - 0x125c91]
+ffffff8002235c91: mov      rsi, qword ptr [rip + 0x186488]  ; 0xffffff80023bc120
+ffffff8002235c98: lea      rcx, [rip + 0x17f221]  ; "LQM-WIFI-CT: Fail to recordTxDPS"
+ffffff8002235c9f: xor      edx, edx
+ffffff8002235ca1: xor      eax, eax
+ffffff8002235ca3: call     0xffffff8000a85d00  ; __os_log_internal
+ffffff8002235ca8: jmp      0xffffff8002235bfd  ; __ZN21IO80211LQMCrashTracer11recordTxDPSEP26apple82011_postMessage_dps+0x8d
+ffffff8002235cad: call     0xffffff8000383150  ; ___stack_chk_fail

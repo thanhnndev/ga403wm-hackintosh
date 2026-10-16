@@ -1,0 +1,100 @@
+# 0xffffff80022d9c52 __ZN21IO80211InfraInterface11logTxPacketEP20IO80211NetworkPacketP20PacketSkywalkScratch17apple80211_wme_acb
+ffffff80022d9c52: push     rbp
+ffffff80022d9c53: mov      rbp, rsp
+ffffff80022d9c56: push     r15
+ffffff80022d9c58: push     r14
+ffffff80022d9c5a: push     r13
+ffffff80022d9c5c: push     r12
+ffffff80022d9c5e: push     rbx
+ffffff80022d9c5f: push     rax
+ffffff80022d9c60: mov      r12, rdx
+ffffff80022d9c63: mov      rbx, rsi
+ffffff80022d9c66: mov      r14, rdi
+ffffff80022d9c69: mov      rdx, qword ptr [rdi + 0x110]
+ffffff80022d9c70: mov      rax, qword ptr [rdx + 0x28]
+ffffff80022d9c74: test     rax, rax
+ffffff80022d9c77: je       0xffffff80022d9d69
+ffffff80022d9c7d: mov      r9d, r8d
+ffffff80022d9c80: cmp      dword ptr [rdx + 0x58], 2
+ffffff80022d9c84: jne      0xffffff80022d9d2d
+ffffff80022d9c8a: mov      dword ptr [rbp - 0x2c], r9d
+ffffff80022d9c8e: mov      dword ptr [rbp - 0x30], ecx
+ffffff80022d9c91: mov      rax, qword ptr [rbx]
+ffffff80022d9c94: mov      rdi, rbx
+ffffff80022d9c97: call     qword ptr [rax + 0x1f0]
+ffffff80022d9c9d: mov      r13, rax
+ffffff80022d9ca0: mov      rdi, rbx
+ffffff80022d9ca3: call     0xffffff800297f08a  ; __ZNK22IOSkywalkNetworkPacket11getHeadroomEv
+ffffff80022d9ca8: movzx    r15d, al
+ffffff80022d9cac: add      r15, r13
+ffffff80022d9caf: mov      rax, qword ptr [r14 + 0x110]
+ffffff80022d9cb6: mov      rdi, qword ptr [rax + 0x28]
+ffffff80022d9cba: mov      rax, qword ptr [rdi]
+ffffff80022d9cbd: mov      rsi, r15
+ffffff80022d9cc0: call     qword ptr [rax + 0x120]
+ffffff80022d9cc6: mov      r8, rax
+ffffff80022d9cc9: test     r12, r12
+ffffff80022d9ccc: je       0xffffff80022d9d48
+ffffff80022d9cce: mov      byte ptr [r12 + 0x28], 0
+ffffff80022d9cd4: movzx    eax, word ptr [r15 + 0x3e]
+ffffff80022d9cd9: shr      eax, 0xc
+ffffff80022d9cdc: and      al, 8
+ffffff80022d9cde: mov      byte ptr [r12 + 0x28], al
+ffffff80022d9ce3: movzx    ecx, word ptr [r15 + 0x40]
+ffffff80022d9ce8: rol      cx, 8
+ffffff80022d9cec: movzx    ecx, cx
+ffffff80022d9cef: mov      dword ptr [r12 + 0x1c], ecx
+ffffff80022d9cf4: movzx    esi, word ptr [r15 + 0x3e]
+ffffff80022d9cf9: test     si, si
+ffffff80022d9cfc: mov      ecx, dword ptr [rbp - 0x30]
+ffffff80022d9cff: jns      0xffffff80022d9d4b
+ffffff80022d9d01: mov      edx, esi
+ffffff80022d9d03: and      edx, 0x7e00
+ffffff80022d9d09: cmp      edx, 0x4000
+ffffff80022d9d0f: mov      r9d, dword ptr [rbp - 0x2c]
+ffffff80022d9d13: je       0xffffff80022d9d24
+ffffff80022d9d15: shr      esi, 8
+ffffff80022d9d18: and      esi, 0x7f
+ffffff80022d9d1b: add      esi, -0x48
+ffffff80022d9d1e: cmp      si, 4
+ffffff80022d9d22: ja       0xffffff80022d9d4f
+ffffff80022d9d24: or       al, 0x10
+ffffff80022d9d26: mov      byte ptr [r12 + 0x28], al
+ffffff80022d9d2b: jmp      0xffffff80022d9d4f  ; __ZN21IO80211InfraInterface11logTxPacketEP20IO80211NetworkPacketP20PacketSkywalkScratch17apple80211_wme_acb+0xfd
+ffffff80022d9d2d: mov      rax, qword ptr [rax + 0x18]
+ffffff80022d9d31: test     r9b, r9b
+ffffff80022d9d34: je       0xffffff80022d9d3f
+ffffff80022d9d36: mov      r8, qword ptr [rax + 0x528]
+ffffff80022d9d3d: jmp      0xffffff80022d9d4f  ; __ZN21IO80211InfraInterface11logTxPacketEP20IO80211NetworkPacketP20PacketSkywalkScratch17apple80211_wme_acb+0xfd
+ffffff80022d9d3f: mov      r8, qword ptr [rax + 0x520]
+ffffff80022d9d46: jmp      0xffffff80022d9d4f  ; __ZN21IO80211InfraInterface11logTxPacketEP20IO80211NetworkPacketP20PacketSkywalkScratch17apple80211_wme_acb+0xfd
+ffffff80022d9d48: mov      ecx, dword ptr [rbp - 0x30]
+ffffff80022d9d4b: mov      r9d, dword ptr [rbp - 0x2c]
+ffffff80022d9d4f: mov      rax, qword ptr [r14 + 0x110]
+ffffff80022d9d56: mov      rdi, qword ptr [rax + 0x28]
+ffffff80022d9d5a: movzx    r9d, r9b
+ffffff80022d9d5e: mov      rsi, rbx
+ffffff80022d9d61: mov      rdx, r12
+ffffff80022d9d64: call     0xffffff80021efd20  ; __ZN18IO80211PeerManager18skywalkLogTxPacketEP20IO80211NetworkPacketP20PacketSkywalkScratch17apple80211_wme_acP11IO80211Peerb
+ffffff80022d9d69: mov      rax, qword ptr [r14 + 0x118]
+ffffff80022d9d70: mov      rdi, qword ptr [rax + 0x168]
+ffffff80022d9d77: test     rdi, rdi
+ffffff80022d9d7a: je       0xffffff80022d9d92
+ffffff80022d9d7c: mov      rsi, rbx
+ffffff80022d9d7f: add      rsp, 8
+ffffff80022d9d83: pop      rbx
+ffffff80022d9d84: pop      r12
+ffffff80022d9d86: pop      r13
+ffffff80022d9d88: pop      r14
+ffffff80022d9d8a: pop      r15
+ffffff80022d9d8c: pop      rbp
+ffffff80022d9d8d: jmp      0xffffff800215e58e  ; __ZN21IO80211TrafficMonitor14reportTxPacketEP20IO80211NetworkPacket
+ffffff80022d9d92: add      rsp, 8
+ffffff80022d9d96: pop      rbx
+ffffff80022d9d97: pop      r12
+ffffff80022d9d99: pop      r13
+ffffff80022d9d9b: pop      r14
+ffffff80022d9d9d: pop      r15
+ffffff80022d9d9f: pop      rbp
+ffffff80022d9da0: ret      
+ffffff80022d9da1: nop      

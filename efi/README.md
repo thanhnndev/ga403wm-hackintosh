@@ -1,7 +1,8 @@
 # Reference EFI: ASUS ROG Zephyrus G14 (GA403WM), Ryzen AI 9 HX 370
 
-The OpenCore configuration this project was developed and tested with. It boots the **macOS 15.6.1 (24G90) Recovery** image
-from a USB stick with OpenCore 1.0.9. A full macOS install on the internal disk has not been tried with it.
+The OpenCore configuration this project was developed and tested with. On the reference machine it boots **macOS 15.8.1 (24H32)**
+from the internal disk (OpenCore 1.0.9 on the internal ESP; it was first brought up on the 15.6.1 Recovery image from a USB
+stick). macOS 26 is not supported. Install steps: [../docs/INSTALL.md](../docs/INSTALL.md).
 
 | | |
 |---|---|
@@ -51,25 +52,30 @@ projects; the versions are listed in `KEXTS.md`, the OpenCore patch is built by 
   `ProvideCustomSlide`, `AvoidRuntimeDefrag`, `AllowRelocationBlock`.
 * **Security.** `SecureBootModel = Disabled`, `Vault = Optional`, `DmgLoading = Signed`, `ScanPolicy = 0` (everything is
   shown by the picker). Test configuration, not a hardened one.
-* **Debug.** `Misc > Debug` is verbose (`Target 67`, `AppleDebug`, `SysReport`). Switch it off for daily use.
+* **Debug.** `Misc > Debug` is off in the released reference (`Target 0`, `AppleDebug`, `ApplePanic`, `SysReport` false); `ItlDiag.kext` is disabled.
 
 ### boot-args (reference machine)
 
 ```
--v debug=0x100 keepsyms=1 -vi2c-force-polling nvfb=1 nvaccel=1 nvfbheads=4 -nvkmsnosmooth
-amfi_get_out_of_my_way=0x1 amfi=0x80 ipc_control_port_options=0 itldiag=90 itlxr=2 itlmt_m1=75 itlmt_m2=1 itlmt_m3=1 msgbuf=1048576
+-vi2c-force-polling nvfb=1 nvaccel=1 nvfbheads=4 -nvkmsnosmooth
+amfi_get_out_of_my_way=0x1 amfi=0x80 ipc_control_port_options=0 -nvrmnobootscreen nvrmacpibl=1
+itlmt_m1=0 itlmt_m2=1 itlmt_m3=1 itlmt_fast=6
 ```
+
+Bring-up extras (not in the config): `-v debug=0x100 keepsyms=1 msgbuf=1048576`, `itldiag=90 itlxr=2`.
 
 | Argument | Meaning |
 |---|---|
-| `-v`, `debug=0x100`, `keepsyms=1` | verbose boot; keep panic text on screen; keep kernel symbols in panic logs |
+| `-v`, `debug=0x100`, `keepsyms=1` | (bring-up only) verbose boot; keep panic text on screen; keep kernel symbols in panic logs |
 | `-vi2c-force-polling` | VoodooI2C polls the trackpad instead of using GPIO interrupts |
 | `nvfb=1 nvaccel=1 nvfbheads=4 -nvkmsnosmooth` | NullMoth NVIDIA driver: framebuffer, accelerator, 4 display heads (see below) |
 | `amfi_get_out_of_my_way=0x1 amfi=0x80` | disables AMFI so WindowServer can load the NVIDIA driver bundle (NullMoth driver requirement; AMFIPass.kext must also be on) |
 | `ipc_control_port_options=0` | with AMFI relaxed, hardened apps such as Firefox crash at launch on their task control port; NullMoth setup 1.11 adds it |
-| `itlmt_m1=75 itlmt_m2=1 itlmt_m3=1` | itlmt7925: start after 75 s, scan, connect (`docs/WIFI.md`) |
-| `itldiag=90 itlxr=2` | ItlDiag diagnostics and xHCI event-ring sampler (`docs/DEBUGGING.md`); not needed for normal use |
-| `msgbuf=1048576` | larger kernel message buffer, so the kext logs are not truncated |
+| `-nvrmnobootscreen` | NullMoth driver: skip the 15-19 s boot-screen copy (`docs/NULLMOTH.md`) |
+| `nvrmacpibl=1` | NullMoth driver: use the ACPI/NBCI backlight tables (opt-in since 1.14.1) |
+| `itlmt_m1=0 itlmt_m2=1 itlmt_m3=1 itlmt_fast=6` | legacy `itlmt7925.kext`: start at once, scan, connect, fast path (`docs/WIFI.md`) |
+| `itldiag=90 itlxr=2` | (bring-up only) ItlDiag diagnostics and xHCI event-ring sampler (`docs/DEBUGGING.md`) |
+| `msgbuf=1048576` | (bring-up only) larger kernel message buffer, so the kext logs are not truncated |
 | `itlkick=<us>` (not set) | ItlXhciKick period; default 1000 µs, `0` disables (`docs/USB-XHCI-LAG.md`) |
 
 ### Display resolution
@@ -105,8 +111,10 @@ only carries what that driver asks of OpenCore:
 
 The two BAR values and the missing `Block` entry are the driver's *installer-phase* settings; its Mac app switches them when it
 installs the driver. The 890M is hidden with `disable-gpu`, WhateverGreen is disabled, and BIOS needs Above 4G Decoding ON and
-CSM OFF. Whether the driver works on this laptop has **not** been verified in this repository; only Recovery was exercised. Read the driver's own README and licence before
-relying on it.
+CSM OFF. On the reference machine it works (RTX 5060 + the OLED at 2880x1800 @ 120 Hz; upstream 1.14.2 plus two local patches,
+[docs/NULLMOTH.md](../docs/NULLMOTH.md); install the driver from [our fork](https://github.com/thanhnndev/nvidia-macos-driver/tree/ga403wm), [docs/INSTALL.md §7](../docs/INSTALL.md#7-nvidia-driver-rtx-5060--the-oled)). Read the driver's own README and licence before relying on it. The configuration in this
+folder is in the **installer-safe** state (the "Value here" column; the driver's installer switches the BAR values and the `Block`
+entry and adds its own "1401: ..." tool entries), so do not paste BAR values from another board.
 
 ## The OpenCore patch (`patches/opencore/fix-zen5-fsb.diff`)
 
@@ -119,11 +127,10 @@ builds OpenCore from the exact upstream commit with the patch applied (manual tr
 
 ## Open items
 
-* **USB port mapping is not done.** `USBToolBox.kext` + `UTBDefault.kext` are present but there is no per-port map for this
-  laptop yet; `XhciPortLimit` is off. Map the ports with the USBToolBox tool and replace `UTBDefault.kext`. The
-  internal keyboard (`0b05:19b6`) must stay mapped as an internal port.
-* Only the Recovery environment has been exercised. Installed-system behaviour (sleep, audio, GPU, battery) is outside the
-  scope of what was verified here.
+* **USB port map:** `OC/Kexts/UTBMap.kext` (release `EFI-reference.zip`) is the author's map for this laptop and is enabled;
+  `UTBDefault.kext` is disabled; `XhciPortLimit` is off. It only fits the same model: elsewhere map your ports with the
+  USBToolBox tool. The internal keyboard (`0b05:19b6`) must stay mapped as an internal port.
+* Status of sleep/wake, audio, SD reader and battery readout: see the README status table and `docs/ROADMAP.md`.
 
 ## Provenance
 

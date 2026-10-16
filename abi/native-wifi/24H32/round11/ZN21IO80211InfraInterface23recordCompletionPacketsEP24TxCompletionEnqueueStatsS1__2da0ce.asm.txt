@@ -1,0 +1,40 @@
+# 0xffffff80022da0ce __ZN21IO80211InfraInterface23recordCompletionPacketsEP24TxCompletionEnqueueStatsS1_
+ffffff80022da0ce: push     rbp
+ffffff80022da0cf: mov      rbp, rsp
+ffffff80022da0d2: push     r15
+ffffff80022da0d4: push     r14
+ffffff80022da0d6: push     rbx
+ffffff80022da0d7: push     rax
+ffffff80022da0d8: mov      rax, qword ptr [rdi + 0x110]
+ffffff80022da0df: mov      r14, qword ptr [rax + 0x28]
+ffffff80022da0e3: test     r14, r14
+ffffff80022da0e6: je       0xffffff80022da13b
+ffffff80022da0e8: mov      rbx, rdx
+ffffff80022da0eb: mov      rdx, rsi
+ffffff80022da0ee: mov      r15, rdi
+ffffff80022da0f1: cmp      byte ptr [rsi + 8], 1
+ffffff80022da0f5: jne      0xffffff80022da10a
+ffffff80022da0f7: mov      rax, qword ptr [r14 + 0x18]
+ffffff80022da0fb: mov      rsi, qword ptr [rax + 0x520]
+ffffff80022da102: mov      rdi, r14
+ffffff80022da105: call     0xffffff80021f07fe  ; __ZN18IO80211PeerManager20updateTXEnqueueStatsEP11IO80211PeerP24TxCompletionEnqueueStats
+ffffff80022da10a: cmp      byte ptr [rbx + 8], 1
+ffffff80022da10e: jne      0xffffff80022da13b
+ffffff80022da110: mov      rax, qword ptr [r15 + 0x110]
+ffffff80022da117: mov      rax, qword ptr [rax + 0x28]
+ffffff80022da11b: mov      rax, qword ptr [rax + 0x18]
+ffffff80022da11f: mov      rsi, qword ptr [rax + 0x528]
+ffffff80022da126: mov      rdi, r14
+ffffff80022da129: mov      rdx, rbx
+ffffff80022da12c: add      rsp, 8
+ffffff80022da130: pop      rbx
+ffffff80022da131: pop      r14
+ffffff80022da133: pop      r15
+ffffff80022da135: pop      rbp
+ffffff80022da136: jmp      0xffffff80021f07fe  ; __ZN18IO80211PeerManager20updateTXEnqueueStatsEP11IO80211PeerP24TxCompletionEnqueueStats
+ffffff80022da13b: add      rsp, 8
+ffffff80022da13f: pop      rbx
+ffffff80022da140: pop      r14
+ffffff80022da142: pop      r15
+ffffff80022da144: pop      rbp
+ffffff80022da145: ret      

@@ -1,0 +1,7 @@
+# 0xffffff80022dc8f0 __ZN21IO80211InfraInterface13getIPv4ParamsEv
+ffffff80022dc8f0: push     rbp
+ffffff80022dc8f1: mov      rbp, rsp
+ffffff80022dc8f4: mov      eax, 0x1b0
+ffffff80022dc8f9: add      rax, qword ptr [rdi + 0x118]
+ffffff80022dc900: pop      rbp
+ffffff80022dc901: ret      

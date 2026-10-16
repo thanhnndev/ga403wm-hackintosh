@@ -1,0 +1,22 @@
+# 0xffffff80029a4012 __ZN21IOSkywalkPacketPoller7disableEv.cold.1
+ffffff80029a4012: push     rbp
+ffffff80029a4013: mov      rbp, rsp
+ffffff80029a4016: lea      rdi, [rip + 0x2538]  ; ""poller disabled from callback" @%s:%d"
+ffffff80029a401d: lea      rsi, [rip + 0x2558]  ; "IOSkywalkPacketPoller.cpp"
+ffffff80029a4024: mov      edx, 0x98
+ffffff80029a4029: xor      eax, eax
+ffffff80029a402b: call     0xffffff8000bd073c  ; _panic
+ffffff80029a4030: nop      
+ffffff80029a4031: nop      
+ffffff80029a4032: nop      
+ffffff80029a4033: nop      
+ffffff80029a4034: nop      
+ffffff80029a4035: nop      
+ffffff80029a4036: nop      
+ffffff80029a4037: nop      
+ffffff80029a4038: nop      
+ffffff80029a4039: nop      
+ffffff80029a403a: nop      
+ffffff80029a403b: nop      
+ffffff80029a403c: nop      
+ffffff80029a403d: nop      

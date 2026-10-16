@@ -1,0 +1,79 @@
+# 0xffffff8002264eb4 __ZN23IO80211SkywalkInterface22getSupportedMediaArrayEPjS0_
+ffffff8002264eb4: push     rbp
+ffffff8002264eb5: mov      rbp, rsp
+ffffff8002264eb8: push     r15
+ffffff8002264eba: push     r14
+ffffff8002264ebc: push     r13
+ffffff8002264ebe: push     r12
+ffffff8002264ec0: push     rbx
+ffffff8002264ec1: push     rax
+ffffff8002264ec2: mov      r14, rdx
+ffffff8002264ec5: mov      r15, rsi
+ffffff8002264ec8: mov      r13d, dword ptr [rdx]
+ffffff8002264ecb: mov      rax, qword ptr [rdi + 0x110]
+ffffff8002264ed2: mov      rdi, qword ptr [rax + 0x30]
+ffffff8002264ed6: mov      rax, qword ptr [rdi]
+ffffff8002264ed9: call     qword ptr [rax + 0x890]
+ffffff8002264edf: test     rax, rax
+ffffff8002264ee2: je       0xffffff8002264f7a
+ffffff8002264ee8: mov      rbx, rax
+ffffff8002264eeb: mov      rdi, rax
+ffffff8002264eee: call     0xffffff8000a4efd0  ; __ZN20OSCollectionIterator14withCollectionEPK12OSCollection
+ffffff8002264ef3: test     rax, rax
+ffffff8002264ef6: je       0xffffff8002264f90
+ffffff8002264efc: mov      r12, rax
+ffffff8002264eff: mov      qword ptr [rbp - 0x30], r14
+ffffff8002264f03: mov      rax, qword ptr [rax]
+ffffff8002264f06: mov      rdi, r12
+ffffff8002264f09: call     qword ptr [rax + 0x128]
+ffffff8002264f0f: test     rax, rax
+ffffff8002264f12: setne    cl
+ffffff8002264f15: test     r13d, r13d
+ffffff8002264f18: setne    dl
+ffffff8002264f1b: and      dl, cl
+ffffff8002264f1d: mov      r14d, 0
+ffffff8002264f23: cmp      dl, 1
+ffffff8002264f26: jne      0xffffff8002264f64
+ffffff8002264f28: xor      r14d, r14d
+ffffff8002264f2b: mov      rcx, qword ptr [rbx]
+ffffff8002264f2e: mov      rdi, rbx
+ffffff8002264f31: mov      rsi, rax
+ffffff8002264f34: call     qword ptr [rcx + 0x1f8]
+ffffff8002264f3a: mov      rcx, qword ptr [rax]
+ffffff8002264f3d: mov      rdi, rax
+ffffff8002264f40: call     qword ptr [rcx + 0x120]
+ffffff8002264f46: mov      dword ptr [r15 + r14*4], eax
+ffffff8002264f4a: inc      r14
+ffffff8002264f4d: mov      rax, qword ptr [r12]
+ffffff8002264f51: mov      rdi, r12
+ffffff8002264f54: call     qword ptr [rax + 0x128]
+ffffff8002264f5a: test     rax, rax
+ffffff8002264f5d: je       0xffffff8002264f64
+ffffff8002264f5f: cmp      r14, r13
+ffffff8002264f62: jb       0xffffff8002264f2b
+ffffff8002264f64: mov      rax, qword ptr [rbp - 0x30]
+ffffff8002264f68: mov      dword ptr [rax], r14d
+ffffff8002264f6b: mov      rax, qword ptr [r12]
+ffffff8002264f6f: mov      rdi, r12
+ffffff8002264f72: call     qword ptr [rax + 0x28]
+ffffff8002264f75: xor      r14d, r14d
+ffffff8002264f78: jmp      0xffffff8002264f96  ; __ZN23IO80211SkywalkInterface22getSupportedMediaArrayEPjS0_+0xe2
+ffffff8002264f7a: lea      rdi, [rip + 0x119c9c]  ; 0xffffff800237ec1d
+ffffff8002264f81: xor      eax, eax
+ffffff8002264f83: call     0xffffff8000ab6560  ; _IOLog
+ffffff8002264f88: mov      r14d, 0xe00002f0
+ffffff8002264f8e: jmp      0xffffff8002264f9f  ; __ZN23IO80211SkywalkInterface22getSupportedMediaArrayEPjS0_+0xeb
+ffffff8002264f90: mov      r14d, 0xe00002bd
+ffffff8002264f96: mov      rax, qword ptr [rbx]
+ffffff8002264f99: mov      rdi, rbx
+ffffff8002264f9c: call     qword ptr [rax + 0x28]
+ffffff8002264f9f: mov      eax, r14d
+ffffff8002264fa2: add      rsp, 8
+ffffff8002264fa6: pop      rbx
+ffffff8002264fa7: pop      r12
+ffffff8002264fa9: pop      r13
+ffffff8002264fab: pop      r14
+ffffff8002264fad: pop      r15
+ffffff8002264faf: pop      rbp
+ffffff8002264fb0: ret      
+ffffff8002264fb1: nop      

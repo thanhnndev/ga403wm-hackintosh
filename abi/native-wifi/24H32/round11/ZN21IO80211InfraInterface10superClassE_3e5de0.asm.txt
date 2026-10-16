@@ -1,0 +1,2 @@
+# 0xffffff80023e5de0 __ZN21IO80211InfraInterface10superClassE
+ffffff80023e5de0: rol      byte ptr [rdx + 0x22f], 1

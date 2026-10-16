@@ -1,0 +1,23 @@
+# 0xffffff80022dafa6 __ZN21IO80211InfraInterface22resetTxPathHealthCheckEv
+ffffff80022dafa6: push     rbp
+ffffff80022dafa7: mov      rbp, rsp
+ffffff80022dafaa: mov      rax, qword ptr [rdi + 0x110]
+ffffff80022dafb1: mov      rax, qword ptr [rax + 0x28]
+ffffff80022dafb5: test     rax, rax
+ffffff80022dafb8: je       0xffffff80022db00e
+ffffff80022dafba: mov      rax, qword ptr [rax + 0x18]
+ffffff80022dafbe: mov      rcx, 0xfffffffffffffffc
+ffffff80022dafc5: xor      edx, edx
+ffffff80022dafc7: mov      qword ptr [rax + rcx*8 + 0xad0], rdx
+ffffff80022dafcf: mov      dword ptr [rax + rcx*4 + 0x9d0], edx
+ffffff80022dafd6: mov      dword ptr [rax + rcx*4 + 0xa00], edx
+ffffff80022dafdd: mov      dword ptr [rax + rcx*4 + 0xa30], edx
+ffffff80022dafe4: mov      dword ptr [rax + rcx*4 + 0xb10], edx
+ffffff80022dafeb: mov      byte ptr [rax + rcx + 0xb14], 0
+ffffff80022daff3: mov      dword ptr [rax + rcx*4 + 0xaf0], edx
+ffffff80022daffa: mov      dword ptr [rax + rcx*4 + 0xb00], edx
+ffffff80022db001: mov      qword ptr [rax + rcx*8 + 0xa90], rdx
+ffffff80022db009: inc      rcx
+ffffff80022db00c: jne      0xffffff80022dafc7
+ffffff80022db00e: pop      rbp
+ffffff80022db00f: ret      

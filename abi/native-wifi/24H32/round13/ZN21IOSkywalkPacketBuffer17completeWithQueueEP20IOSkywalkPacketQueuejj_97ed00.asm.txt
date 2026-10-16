@@ -1,0 +1,28 @@
+# 0xffffff800297ed00 __ZN21IOSkywalkPacketBuffer17completeWithQueueEP20IOSkywalkPacketQueuejj
+ffffff800297ed00: push     rbp
+ffffff800297ed01: mov      rbp, rsp
+ffffff800297ed04: push     r14
+ffffff800297ed06: push     rbx
+ffffff800297ed07: mov      rbx, rsi
+ffffff800297ed0a: mov      r14, rdi
+ffffff800297ed0d: cmp      edx, 2
+ffffff800297ed10: jne      0xffffff800297ed21
+ffffff800297ed12: cmp      qword ptr [r14 + 0x30], 0
+ffffff800297ed17: je       0xffffff800297ed21
+ffffff800297ed19: mov      rdi, r14
+ffffff800297ed1c: call     0xffffff800297ed48  ; __ZN21IOSkywalkPacketBuffer8finalizeEv
+ffffff800297ed21: and      byte ptr [r14 + 0x78], 0xfd
+ffffff800297ed26: mov      rdi, qword ptr [r14 + 0x48]
+ffffff800297ed2a: test     rdi, rdi
+ffffff800297ed2d: je       0xffffff800297ed40
+ffffff800297ed2f: mov      rax, qword ptr [rdi]
+ffffff800297ed32: mov      rsi, r14
+ffffff800297ed35: mov      rdx, rbx
+ffffff800297ed38: xor      ecx, ecx
+ffffff800297ed3a: call     qword ptr [rax + 0x228]
+ffffff800297ed40: xor      eax, eax
+ffffff800297ed42: pop      rbx
+ffffff800297ed43: pop      r14
+ffffff800297ed45: pop      rbp
+ffffff800297ed46: ret      
+ffffff800297ed47: nop      

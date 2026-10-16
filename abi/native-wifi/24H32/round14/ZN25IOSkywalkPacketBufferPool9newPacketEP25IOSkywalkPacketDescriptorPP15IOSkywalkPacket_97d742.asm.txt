@@ -1,0 +1,29 @@
+# 0xffffff800297d742 __ZN25IOSkywalkPacketBufferPool9newPacketEP25IOSkywalkPacketDescriptorPP15IOSkywalkPacket
+ffffff800297d742: push     rbp
+ffffff800297d743: mov      rbp, rsp
+ffffff800297d746: push     rbx
+ffffff800297d747: push     rax
+ffffff800297d748: mov      rbx, rdx
+ffffff800297d74b: mov      eax, dword ptr [rdi + 0x3c]
+ffffff800297d74e: cmp      eax, 2
+ffffff800297d751: je       0xffffff800297d765
+ffffff800297d753: cmp      eax, 1
+ffffff800297d756: je       0xffffff800297d75c
+ffffff800297d758: test     eax, eax
+ffffff800297d75a: jne      0xffffff800297d783
+ffffff800297d75c: xor      edx, edx
+ffffff800297d75e: call     0xffffff800297efea  ; __ZN22IOSkywalkNetworkPacket8withPoolEP25IOSkywalkPacketBufferPoolP25IOSkywalkPacketDescriptorj
+ffffff800297d763: jmp      0xffffff800297d76c  ; __ZN25IOSkywalkPacketBufferPool9newPacketEP25IOSkywalkPacketDescriptorPP15IOSkywalkPacket+0x2a
+ffffff800297d765: xor      edx, edx
+ffffff800297d767: call     0xffffff800297fe14  ; __ZN31IOSkywalkCloneableNetworkPacket8withPoolEP25IOSkywalkPacketBufferPoolP25IOSkywalkPacketDescriptorj
+ffffff800297d76c: mov      qword ptr [rbx], rax
+ffffff800297d76f: xor      ecx, ecx
+ffffff800297d771: test     rax, rax
+ffffff800297d774: mov      eax, 0xe00002bd
+ffffff800297d779: cmovne   eax, ecx
+ffffff800297d77c: add      rsp, 8
+ffffff800297d780: pop      rbx
+ffffff800297d781: pop      rbp
+ffffff800297d782: ret      
+ffffff800297d783: lea      rsi, [rdi + 0x3c]
+ffffff800297d787: call     0xffffff80029a235f  ; __ZN25IOSkywalkPacketBufferPool9newPacketEP25IOSkywalkPacketDescriptorPP15IOSkywalkPacket.cold.1

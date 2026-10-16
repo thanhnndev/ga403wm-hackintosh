@@ -1,0 +1,8 @@
+# 0xffffff80029a0eeb __ZN25IOSkywalkNetworkBSDClient12didTerminateEP9IOServicejPb.cold.1
+ffffff80029a0eeb: push     rbp
+ffffff80029a0eec: mov      rbp, rsp
+ffffff80029a0eef: lea      rdi, [rip + 0x44bf]  ; ""IOSkywalkNetworkBSDClient: not on work loop" @%s:%d"
+ffffff80029a0ef6: lea      rsi, [rip + 0x44ed]  ; "IOSkywalkNetworkBSDClient.cpp"
+ffffff80029a0efd: mov      edx, 0x290
+ffffff80029a0f02: xor      eax, eax
+ffffff80029a0f04: call     0xffffff8000bd073c  ; _panic

@@ -1,0 +1,32 @@
+# 0xffffff8002983458 __ZN25IOSkywalkNetworkInterface14deferBSDAttachEb
+ffffff8002983458: push     rbp
+ffffff8002983459: mov      rbp, rsp
+ffffff800298345c: push     r14
+ffffff800298345e: push     rbx
+ffffff800298345f: mov      rbx, rdi
+ffffff8002983462: mov      rax, qword ptr [rdi]
+ffffff8002983465: test     esi, esi
+ffffff8002983467: je       0xffffff800298348e
+ffffff8002983469: lea      rsi, [rip + 0x21eef]  ; "IODeferBSDAttach"
+ffffff8002983470: mov      rdi, rbx
+ffffff8002983473: mov      edx, 1
+ffffff8002983478: call     qword ptr [rax + 0x278]
+ffffff800298347e: xor      ecx, ecx
+ffffff8002983480: test     al, al
+ffffff8002983482: mov      r14d, 0xe00002bd
+ffffff8002983488: cmovne   r14d, ecx
+ffffff800298348c: jmp      0xffffff80029834af  ; __ZN25IOSkywalkNetworkInterface14deferBSDAttachEb+0x57
+ffffff800298348e: lea      rsi, [rip + 0x21eca]  ; "IODeferBSDAttach"
+ffffff8002983495: mov      rdi, rbx
+ffffff8002983498: call     qword ptr [rax + 0x2a0]
+ffffff800298349e: mov      rax, qword ptr [rbx]
+ffffff80029834a1: xor      r14d, r14d
+ffffff80029834a4: mov      rdi, rbx
+ffffff80029834a7: xor      esi, esi
+ffffff80029834a9: call     qword ptr [rax + 0x5b0]
+ffffff80029834af: mov      eax, r14d
+ffffff80029834b2: pop      rbx
+ffffff80029834b3: pop      r14
+ffffff80029834b5: pop      rbp
+ffffff80029834b6: ret      
+ffffff80029834b7: nop      

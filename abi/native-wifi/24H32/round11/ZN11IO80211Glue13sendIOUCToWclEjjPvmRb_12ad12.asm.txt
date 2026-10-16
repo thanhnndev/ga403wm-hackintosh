@@ -1,0 +1,188 @@
+# 0xffffff800212ad12 __ZN11IO80211Glue13sendIOUCToWclEjjPvmRb
+ffffff800212ad12: push     rbp
+ffffff800212ad13: mov      rbp, rsp
+ffffff800212ad16: push     r15
+ffffff800212ad18: push     r14
+ffffff800212ad1a: push     r13
+ffffff800212ad1c: push     r12
+ffffff800212ad1e: push     rbx
+ffffff800212ad1f: sub      rsp, 0x108
+ffffff800212ad26: mov      qword ptr [rbp - 0x120], r9
+ffffff800212ad2d: mov      r12, r8
+ffffff800212ad30: mov      r15, rcx
+ffffff800212ad33: mov      r14d, edx
+ffffff800212ad36: mov      dword ptr [rbp - 0x110], esi
+ffffff800212ad3c: mov      qword ptr [rbp - 0x128], rdi
+ffffff800212ad43: mov      rax, qword ptr [rip + 0x2913ce]  ; 0xffffff80023bc118
+ffffff800212ad4a: mov      rax, qword ptr [rax]
+ffffff800212ad4d: mov      qword ptr [rbp - 0x30], rax
+ffffff800212ad51: xor      ebx, ebx
+ffffff800212ad53: lea      r13, [rbp - 0xc8]
+ffffff800212ad5a: mov      qword ptr [r13], rbx
+ffffff800212ad5e: call     0xffffff80003cbf20  ; _mach_continuous_time
+ffffff800212ad63: mov      rdi, rax
+ffffff800212ad66: mov      rsi, r13
+ffffff800212ad69: call     0xffffff8000536d80  ; _absolutetime_to_nanoseconds
+ffffff800212ad6e: mov      rax, qword ptr [r13]
+ffffff800212ad72: mov      qword ptr [rbp - 0x118], rax
+ffffff800212ad79: lea      rdx, [rbp - 0x50]
+ffffff800212ad7d: mov      qword ptr [rdx], rbx
+ffffff800212ad80: mov      qword ptr [rdx + 8], rdx
+ffffff800212ad84: movabs   rax, 0x2000000000
+ffffff800212ad8e: mov      qword ptr [rdx + 0x10], rax
+ffffff800212ad92: movabs   rcx, 0xaaaaaaaaaaaaaaaa
+ffffff800212ad9c: mov      qword ptr [rdx + 0x18], rcx
+ffffff800212ada0: lea      rdx, [rbp - 0x70]
+ffffff800212ada4: mov      qword ptr [rdx], rbx
+ffffff800212ada7: mov      qword ptr [rdx + 8], rdx
+ffffff800212adab: mov      qword ptr [rdx + 0x10], rax
+ffffff800212adaf: mov      qword ptr [r13], rbx
+ffffff800212adb3: mov      qword ptr [r13 + 8], r13
+ffffff800212adb7: movabs   rax, 0x5802000000
+ffffff800212adc1: mov      qword ptr [r13 + 0x10], rax
+ffffff800212adc5: lea      rax, [rip + 0x264]  ; 0xffffff800212b030
+ffffff800212adcc: mov      qword ptr [r13 + 0x18], rax
+ffffff800212add0: lea      rax, [rip + 0x28f]  ; 0xffffff800212b066
+ffffff800212add7: mov      qword ptr [r13 + 0x20], rax
+ffffff800212addb: mov      qword ptr [r13 + 0x28], rcx
+ffffff800212addf: mov      qword ptr [r13 + 0x50], rcx
+ffffff800212ade3: mov      dword ptr [rbp - 0x10c], r14d
+ffffff800212adea: mov      dword ptr [r13 + 0x28], r14d
+ffffff800212adee: mov      r14, rdx
+ffffff800212adf1: mov      byte ptr [r13 + 0x2c], 1
+ffffff800212adf6: cmp      dword ptr [rbp - 0x110], 0xc02869c9
+ffffff800212ae00: sete     byte ptr [r13 + 0x2d]
+ffffff800212ae05: mov      dword ptr [rdx + 0x18], 0
+ffffff800212ae0c: mov      rax, r12
+ffffff800212ae0f: cmove    rax, rbx
+ffffff800212ae13: mov      byte ptr [r13 + 0x2e], bl
+ffffff800212ae17: mov      rcx, r15
+ffffff800212ae1a: cmove    rcx, rbx
+ffffff800212ae1e: mov      qword ptr [r13 + 0x30], rax
+ffffff800212ae22: mov      qword ptr [r13 + 0x38], rcx
+ffffff800212ae26: cmovne   r12, rbx
+ffffff800212ae2a: mov      qword ptr [r13 + 0x40], r12
+ffffff800212ae2e: cmovne   r15, rbx
+ffffff800212ae32: mov      qword ptr [r13 + 0x48], r15
+ffffff800212ae36: mov      byte ptr [r13 + 0x50], bl
+ffffff800212ae3a: mov      rbx, qword ptr [rbp - 0x128]
+ffffff800212ae41: mov      rax, qword ptr [rbx + 0x18]
+ffffff800212ae45: mov      rdi, qword ptr [rax + 0x38]
+ffffff800212ae49: mov      rax, qword ptr [rdi]
+ffffff800212ae4c: call     qword ptr [rax + 0x138]
+ffffff800212ae52: test     al, al
+ffffff800212ae54: je       0xffffff800212af97
+ffffff800212ae5a: mov      rax, qword ptr [rbx + 0x18]
+ffffff800212ae5e: mov      rdi, qword ptr [rax + 0x38]
+ffffff800212ae62: mov      rax, qword ptr [rdi]
+ffffff800212ae65: call     qword ptr [rax + 0x130]
+ffffff800212ae6b: test     al, al
+ffffff800212ae6d: jne      0xffffff800212af97
+ffffff800212ae73: mov      rax, qword ptr [rip + 0x291186]  ; 0xffffff80023bc000
+ffffff800212ae7a: lea      rdx, [rbp - 0x108]
+ffffff800212ae81: mov      qword ptr [rdx], rax
+ffffff800212ae84: mov      qword ptr [rdx + 8], 0x42000000
+ffffff800212ae8c: lea      rax, [rip + 0x1d9]  ; 0xffffff800212b06c
+ffffff800212ae93: mov      qword ptr [rdx + 0x10], rax
+ffffff800212ae97: lea      rax, [rip + 0x29810a]  ; 0xffffff80023c2fa8
+ffffff800212ae9e: mov      qword ptr [rdx + 0x18], rax
+ffffff800212aea2: mov      qword ptr [rdx + 0x38], rbx
+ffffff800212aea6: lea      rax, [rbp - 0x50]
+ffffff800212aeaa: mov      qword ptr [rdx + 0x20], rax
+ffffff800212aeae: mov      qword ptr [rdx + 0x28], r14
+ffffff800212aeb2: mov      qword ptr [rdx + 0x30], r13
+ffffff800212aeb6: mov      rdi, rbx
+ffffff800212aeb9: xor      esi, esi
+ffffff800212aebb: call     0xffffff800212a51c  ; __ZN11IO80211Glue22runActionBlockOnSerialEbU13block_pointerFivE
+ffffff800212aec0: mov      eax, dword ptr [rbp - 0x10c]
+ffffff800212aec6: cmp      eax, 0x231
+ffffff800212aecb: jg       0xffffff800212aef1
+ffffff800212aecd: cmp      eax, -1
+ffffff800212aed0: je       0xffffff800212aefa
+ffffff800212aed2: test     eax, eax
+ffffff800212aed4: js       0xffffff800212aee8
+ffffff800212aed6: mov      eax, eax
+ffffff800212aed8: lea      rcx, [rip + 0x2c22f1]  ; 0xffffff80023ed1d0
+ffffff800212aedf: mov      rsi, qword ptr [rcx + rax*8]
+ffffff800212aee3: test     rsi, rsi
+ffffff800212aee6: jne      0xffffff800212af01
+ffffff800212aee8: lea      rsi, [rip + 0x2784a0]  ; "unknown Apple80211_IOC_"
+ffffff800212aeef: jmp      0xffffff800212af01  ; __ZN11IO80211Glue13sendIOUCToWclEjjPvmRb+0x1ef
+ffffff800212aef1: lea      rsi, [rip + 0x278466]  ; "Error Invalid ioctl"
+ffffff800212aef8: jmp      0xffffff800212af01  ; __ZN11IO80211Glue13sendIOUCToWclEjjPvmRb+0x1ef
+ffffff800212aefa: lea      rsi, [rip + 0x278471]  ; "APPLE80211_IOC_CARD_SPECIFIC"
+ffffff800212af01: movabs   rcx, 0x431bde82d7b634db
+ffffff800212af0b: mov      rax, qword ptr [rbp - 0x118]
+ffffff800212af12: mul      rcx
+ffffff800212af15: shr      rdx, 0x12
+ffffff800212af19: lea      r14, [rbp - 0x50]
+ffffff800212af1d: mov      rax, qword ptr [r14 + 8]
+ffffff800212af21: mov      rcx, qword ptr [rax + 0x18]
+ffffff800212af25: mov      rdi, rbx
+ffffff800212af28: call     0xffffff800212a9c4  ; __ZN11IO80211Glue13printTaskInfoEPKcyy
+ffffff800212af2d: lea      rdi, [rbp - 0xc8]
+ffffff800212af34: mov      rax, qword ptr [rdi + 8]
+ffffff800212af38: mov      al, byte ptr [rax + 0x50]
+ffffff800212af3b: mov      rcx, qword ptr [rbp - 0x120]
+ffffff800212af42: mov      byte ptr [rcx], al
+ffffff800212af44: lea      r15, [rbp - 0x70]
+ffffff800212af48: mov      rax, qword ptr [r15 + 8]
+ffffff800212af4c: mov      ebx, dword ptr [rax + 0x18]
+ffffff800212af4f: mov      esi, 8
+ffffff800212af54: call     0xffffff8000a96f50  ; __Block_object_dispose
+ffffff800212af59: mov      rdi, r15
+ffffff800212af5c: mov      esi, 8
+ffffff800212af61: call     0xffffff8000a96f50  ; __Block_object_dispose
+ffffff800212af66: mov      rdi, r14
+ffffff800212af69: mov      esi, 8
+ffffff800212af6e: call     0xffffff8000a96f50  ; __Block_object_dispose
+ffffff800212af73: mov      rax, qword ptr [rip + 0x29119e]  ; 0xffffff80023bc118
+ffffff800212af7a: mov      rax, qword ptr [rax]
+ffffff800212af7d: cmp      rax, qword ptr [rbp - 0x30]
+ffffff800212af81: jne      0xffffff800212afcf
+ffffff800212af83: mov      eax, ebx
+ffffff800212af85: add      rsp, 0x108
+ffffff800212af8c: pop      rbx
+ffffff800212af8d: pop      r12
+ffffff800212af8f: pop      r13
+ffffff800212af91: pop      r14
+ffffff800212af93: pop      r15
+ffffff800212af95: pop      rbp
+ffffff800212af96: ret      
+ffffff800212af97: mov      rax, qword ptr [rbx + 0x18]
+ffffff800212af9b: mov      rdi, qword ptr [rax + 0x50]
+ffffff800212af9f: test     rdi, rdi
+ffffff800212afa2: je       0xffffff800212afb5
+ffffff800212afa4: mov      r14, rbx
+ffffff800212afa7: mov      esi, 1
+ffffff800212afac: call     0xffffff80031d421c  ; __ZN11CCLogStream9shouldLogE16CCStreamLogLevel
+ffffff800212afb1: test     al, al
+ffffff800212afb3: jne      0xffffff800212afd4
+ffffff800212afb5: lea      rdi, [rip + 0x2023bb]  ; ""trying to send on thread panic \n" @%s:%d"
+ffffff800212afbc: lea      rsi, [rip + 0x202344]  ; "IO80211Glue.cpp"
+ffffff800212afc3: mov      edx, 0x1a1
+ffffff800212afc8: xor      eax, eax
+ffffff800212afca: call     0xffffff8000bd073c  ; _panic
+ffffff800212afcf: call     0xffffff8000383150  ; ___stack_chk_fail
+ffffff800212afd4: mov      rbx, r14
+ffffff800212afd7: mov      rax, qword ptr [r14 + 0x18]
+ffffff800212afdb: mov      rdi, qword ptr [rax + 0x38]
+ffffff800212afdf: mov      r14, qword ptr [rax + 0x50]
+ffffff800212afe3: mov      rax, qword ptr [rdi]
+ffffff800212afe6: call     qword ptr [rax + 0x130]
+ffffff800212afec: movzx    r15d, al
+ffffff800212aff0: mov      rax, qword ptr [rbx + 0x18]
+ffffff800212aff4: mov      rdi, qword ptr [rax + 0x38]
+ffffff800212aff8: mov      rax, qword ptr [rdi]
+ffffff800212affb: call     qword ptr [rax + 0x138]
+ffffff800212b001: movzx    eax, al
+ffffff800212b004: mov      dword ptr [rsp], eax
+ffffff800212b007: lea      rsi, [rip + 0x202309]  ; "[wcl] %s@%d:Trying to send iouc msg<%d> on thread=<%d> inGate=<%d> return error "
+ffffff800212b00e: lea      rdx, [rip + 0x202354]  ; "sendIOUCToWcl"
+ffffff800212b015: mov      rdi, r14
+ffffff800212b018: mov      ecx, 0x1a0
+ffffff800212b01d: mov      r8d, dword ptr [rbp - 0x10c]
+ffffff800212b024: mov      r9d, r15d
+ffffff800212b027: xor      eax, eax
+ffffff800212b029: call     0xffffff80031d252e  ; __ZN11CCLogStream8logAlertEPKcz
+ffffff800212b02e: jmp      0xffffff800212afb5  ; __ZN11IO80211Glue13sendIOUCToWclEjjPvmRb+0x2a3

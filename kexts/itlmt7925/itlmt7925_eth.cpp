@@ -221,11 +221,31 @@ bool itlmt7925::ethCreate()
 
 void itlmt7925::ethRx(const uint8_t *frame, uint32_t len)
 {
+    if (nativeMode && nativeLock) {
+        IOLockLock(nativeLock);
+        if (nativeSink.owner && nativeSink.receive) nativeSink.receive(nativeSink.owner, frame, len);
+        IOLockUnlock(nativeLock);
+        return;
+    }
     if (eth) eth->rxPacket(frame, len);
 }
 
 void itlmt7925::ethLink(bool up)
 {
+    if (nativeMode && nativeLock) {
+        IOLockLock(nativeLock);
+        ItlNativeSink sink = nativeSink;
+        if (sink.owner && sink.lifetime && sink.link) { sink.owner->retain(); sink.lifetime->retain(); }
+        else sink.owner = nullptr;
+        IOLockUnlock(nativeLock);
+        // Family link updates can sleep on the native gate. Never hold bridge
+        // lock while entering it: gated stop/unbind acquires that lock.
+        if (sink.owner) {
+            sink.link(sink.owner, up, up ? linkSpeedBps() : 0);
+            sink.owner->release(); sink.lifetime->release();
+        }
+        return;
+    }
     if (!eth) return;
     eth->setLink(up);
     eth->txKick();                                                         // a stalled queue drains (link down: drops) or resumes
@@ -239,4 +259,73 @@ void itlmt7925::ethFlush()
 void itlmt7925::ethTxKick()
 {
     if (eth) eth->txKick();
+}
+
+IOReturn itlmt7925::callPlatformFunction(const OSSymbol *name, bool wait, void *p1, void *p2, void *p3, void *p4)
+{
+    if (!name) return kIOReturnBadArgument;
+    if (name->isEqualTo(ITL_NATIVE_MAC)) {
+        if (!p1) return kIOReturnBadArgument;
+        memcpy(p1, mac, 6);
+        return kIOReturnSuccess;
+    }
+    if (name->isEqualTo(ITL_NATIVE_TX)) {
+        if (!nativeMode || !p1) return kIOReturnNotReady;
+        ItlNativeTx *tx = (ItlNativeTx *)p1;
+        if (!tx->bytes || tx->length < 14 || tx->length > 1600) return kIOReturnBadArgument;
+        tx->result = ethTx(tx->bytes, tx->length); // hardware copies into its own staging buffer
+        return kIOReturnSuccess;
+    }
+    // scan / join control: the interface's handlers run on the Family's queue; each of these only touches the mailbox / snapshots
+    if (name->isEqualTo(ITL_NATIVE_SCAN)) {
+        ItlNativeScan *s = (ItlNativeScan *)p1;
+        if (!nativeMode || !s || s->version != 1) return kIOReturnBadArgument;
+        return nativeScanReq(&s->started);
+    }
+    if (name->isEqualTo(ITL_NATIVE_NETS)) {
+        ItlNativeNets *n = (ItlNativeNets *)p1;
+        if (!nativeMode || !n || n->version != 1 || !n->aps || !n->max) return kIOReturnBadArgument;
+        nativeNets(n);
+        return kIOReturnSuccess;
+    }
+    if (name->isEqualTo(ITL_NATIVE_STATUS)) {
+        ItlNativeStatus *s = (ItlNativeStatus *)p1;
+        if (!nativeMode || !s) return kIOReturnBadArgument;
+        nativeStatus(s);
+        return kIOReturnSuccess;
+    }
+    if (name->isEqualTo(ITL_NATIVE_JOIN)) {
+        if (!nativeMode) return kIOReturnNotReady;
+        return nativeJoin((const ItlNativeJoin *)p1);
+    }
+    if (name->isEqualTo(ITL_NATIVE_LEAVE)) {
+        if (!nativeMode) return kIOReturnNotReady;
+        IOReturn r = ucDisconnect();
+        if (r == kIOReturnSuccess) njState = ITL_NATIVE_IDLE;
+        return r;
+    }
+    if (name->isEqualTo(ITL_NATIVE_BIND)) {
+        ItlNativeSink *sink = (ItlNativeSink *)p1;
+        if (!nativeMode || !nativeLock) return kIOReturnNotReady;
+        if (!sink || sink->version != 2 || !sink->lifetime || !sink->owner || !sink->receive || !sink->link)
+            return kIOReturnBadArgument;
+        IOLockLock(nativeLock);
+        if (nativeSink.owner) { IOLockUnlock(nativeLock); return kIOReturnBusy; }
+        nativeSink = *sink;
+        nativeSink.link(nativeSink.owner, m3linkUp, m3linkUp ? linkSpeedBps() : 0);
+        // RX callbacks remain under nativeLock. Link snapshots retain owner/controller and gated actions recheck bound.
+        IOLockUnlock(nativeLock);
+        IOLog("itlmt7925 native: sink bound\n");
+        return kIOReturnSuccess;
+    }
+    if (name->isEqualTo(ITL_NATIVE_UNBIND)) {
+        if (!nativeLock) return kIOReturnNotReady;
+        IOLockLock(nativeLock);
+        if (nativeSink.owner != p1) { IOLockUnlock(nativeLock); return kIOReturnNotAttached; }
+        bzero(&nativeSink, sizeof(nativeSink));
+        IOLockUnlock(nativeLock);
+        IOLog("itlmt7925 native: sink unbound\n");
+        return kIOReturnSuccess;
+    }
+    return IOService::callPlatformFunction(name, wait, p1, p2, p3, p4);
 }

@@ -1,0 +1,40 @@
+# 0xffffff80022dc1da __ZN21IO80211InfraInterface13getLQMSummaryEP22apple80211_lqm_summary
+ffffff80022dc1da: push     rbp
+ffffff80022dc1db: mov      rbp, rsp
+ffffff80022dc1de: push     rbx
+ffffff80022dc1df: push     rax
+ffffff80022dc1e0: mov      rbx, rsi
+ffffff80022dc1e3: mov      rax, qword ptr [rdi + 0x110]
+ffffff80022dc1ea: mov      rax, qword ptr [rax + 0x28]
+ffffff80022dc1ee: test     rax, rax
+ffffff80022dc1f1: je       0xffffff80022dc22b
+ffffff80022dc1f3: mov      rax, qword ptr [rax + 0x18]
+ffffff80022dc1f7: mov      rax, qword ptr [rax + 0x528]
+ffffff80022dc1fe: test     rax, rax
+ffffff80022dc201: je       0xffffff80022dc22b
+ffffff80022dc203: mov      rax, qword ptr [rax + 0x18]
+ffffff80022dc207: mov      rax, qword ptr [rax + 0x4c0]
+ffffff80022dc20e: test     rax, rax
+ffffff80022dc211: je       0xffffff80022dc22b
+ffffff80022dc213: mov      rax, qword ptr [rax + 0x10]
+ffffff80022dc217: mov      rdi, qword ptr [rax + 0xa30]
+ffffff80022dc21e: test     rdi, rdi
+ffffff80022dc221: je       0xffffff80022dc22b
+ffffff80022dc223: mov      rsi, rbx
+ffffff80022dc226: call     0xffffff8002303a7e  ; __ZN25IO80211LinkQualityMonitor10getSummaryEP22apple80211_lqm_summary
+ffffff80022dc22b: xor      eax, eax
+ffffff80022dc22d: mov      byte ptr [rbx + rax + 0xa0], 0
+ffffff80022dc235: add      rax, 0x100
+ffffff80022dc23b: cmp      rax, 0x1000
+ffffff80022dc241: jne      0xffffff80022dc22d
+ffffff80022dc243: mov      eax, 0xa0
+ffffff80022dc248: mov      byte ptr [rbx + rax], 0
+ffffff80022dc24c: add      rax, 0x100
+ffffff80022dc252: cmp      rax, 0x5a0
+ffffff80022dc258: jne      0xffffff80022dc248
+ffffff80022dc25a: xor      eax, eax
+ffffff80022dc25c: add      rsp, 8
+ffffff80022dc260: pop      rbx
+ffffff80022dc261: pop      rbp
+ffffff80022dc262: ret      
+ffffff80022dc263: nop      

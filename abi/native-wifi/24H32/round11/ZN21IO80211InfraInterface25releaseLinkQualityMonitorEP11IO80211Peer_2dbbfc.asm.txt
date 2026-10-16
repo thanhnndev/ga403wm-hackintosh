@@ -1,0 +1,31 @@
+# 0xffffff80022dbbfc __ZN21IO80211InfraInterface25releaseLinkQualityMonitorEP11IO80211Peer
+ffffff80022dbbfc: push     rbp
+ffffff80022dbbfd: mov      rbp, rsp
+ffffff80022dbc00: push     rbx
+ffffff80022dbc01: push     rax
+ffffff80022dbc02: test     rsi, rsi
+ffffff80022dbc05: je       0xffffff80022dbc43
+ffffff80022dbc07: mov      rax, qword ptr [rsi + 0x18]
+ffffff80022dbc0b: mov      rbx, qword ptr [rax + 0x4c0]
+ffffff80022dbc12: test     rbx, rbx
+ffffff80022dbc15: je       0xffffff80022dbc43
+ffffff80022dbc17: mov      rax, qword ptr [rbx + 0x10]
+ffffff80022dbc1b: mov      rdi, qword ptr [rax + 0xa30]
+ffffff80022dbc22: test     rdi, rdi
+ffffff80022dbc25: je       0xffffff80022dbc31
+ffffff80022dbc27: mov      rax, qword ptr [rdi]
+ffffff80022dbc2a: call     qword ptr [rax + 0x28]
+ffffff80022dbc2d: mov      rax, qword ptr [rbx + 0x10]
+ffffff80022dbc31: mov      qword ptr [rax + 0xa30], 0
+ffffff80022dbc3c: add      rsp, 8
+ffffff80022dbc40: pop      rbx
+ffffff80022dbc41: pop      rbp
+ffffff80022dbc42: ret      
+ffffff80022dbc43: lea      rdx, [rip + 0xbf25f]  ; "No peerMonitor to remove, skipping"
+ffffff80022dbc4a: movabs   rsi, 0x800000000000000
+ffffff80022dbc54: xor      eax, eax
+ffffff80022dbc56: add      rsp, 8
+ffffff80022dbc5a: pop      rbx
+ffffff80022dbc5b: pop      rbp
+ffffff80022dbc5c: jmp      0xffffff8002261f9e  ; __ZN23IO80211SkywalkInterface8logDebugEyPKcz
+ffffff80022dbc61: nop      

@@ -1,0 +1,14 @@
+# 0xffffff80029a257a __ZNK15IOSkywalkPacket13getDataOffsetEv
+ffffff80029a257a: cmp      dword ptr [rdi + 0x64], 0
+ffffff80029a257e: je       0xffffff80029a2595
+ffffff80029a2580: push     rbp
+ffffff80029a2581: mov      rbp, rsp
+ffffff80029a2584: mov      rax, qword ptr [rdi + 0x30]
+ffffff80029a2588: mov      rdi, qword ptr [rax]
+ffffff80029a258b: call     0xffffff800297ebe6  ; __ZNK21IOSkywalkPacketBuffer10getDataOffEv
+ffffff80029a2590: pop      rbp
+ffffff80029a2591: movzx    eax, ax
+ffffff80029a2594: ret      
+ffffff80029a2595: xor      eax, eax
+ffffff80029a2597: jmp      0xffffff80029a2591  ; __ZNK15IOSkywalkPacket13getDataOffsetEv+0x17
+ffffff80029a2599: nop      

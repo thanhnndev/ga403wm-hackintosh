@@ -193,6 +193,13 @@ def parse_method(dem):
 
 
 def ret_for(name, params, const, cls=None):
+    # Verified in round14: overloads have distinct return conventions.
+    if name == 'init' and len(params) == 2 and 'ether_addr' in params[1]:
+        return 'bool', '24H32 IO80211SkywalkInterface::init(provider,address) returns bool in eax'
+    if name in ('setLinkState', 'setLinkStateInternal') and len(params) == 4:
+        return 'bool', '24H32 InfraInterface::setLinkStateInternal returns success flag in eax'
+    if name == 'setHardwareAddress':
+        return 'IOReturn', '24H32 Skywalk setter returns MacAddressAgent status; Ethernet base returns Unsupported'
     if name in RET:
         return RET[name][0], RET[name][1]
     if cls == 'IO80211InfraProtocol' and PROTOCOL_HANDLER.match(name):

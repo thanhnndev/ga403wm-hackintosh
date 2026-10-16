@@ -1,0 +1,13 @@
+# 0xffffff80022dc9a2 __ZN21IO80211InfraInterface25getTcpKeepAliveConfigDataEv
+ffffff80022dc9a2: push     rbp
+ffffff80022dc9a3: mov      rbp, rsp
+ffffff80022dc9a6: mov      rax, qword ptr [rdi + 0x118]
+ffffff80022dc9ad: mov      rax, qword ptr [rax + 0x198]
+ffffff80022dc9b4: mov      rax, qword ptr [rax + 0x10]
+ffffff80022dc9b8: cmp      word ptr [rax + 0x32e], 5
+ffffff80022dc9c0: jb       0xffffff80022dc9cb
+ffffff80022dc9c2: mov      word ptr [rax + 0x32e], 4
+ffffff80022dc9cb: add      rax, 0x212
+ffffff80022dc9d1: pop      rbp
+ffffff80022dc9d2: ret      
+ffffff80022dc9d3: nop      

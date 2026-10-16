@@ -1,0 +1,17 @@
+# 0xffffff8002983136 __ZN25IOSkywalkNetworkInterface16getBSDNamePrefixEv
+ffffff8002983136: mov      rax, qword ptr [rdi + 0xb8]
+ffffff800298313d: test     rax, rax
+ffffff8002983140: je       0xffffff8002983154
+ffffff8002983142: push     rbp
+ffffff8002983143: mov      rbp, rsp
+ffffff8002983146: mov      rax, qword ptr [rax]
+ffffff8002983149: test     rax, rax
+ffffff800298314c: je       0xffffff8002983157
+ffffff800298314e: mov      rax, qword ptr [rax + 0x30]
+ffffff8002983152: jmp      0xffffff8002983159  ; __ZN25IOSkywalkNetworkInterface16getBSDNamePrefixEv+0x23
+ffffff8002983154: xor      eax, eax
+ffffff8002983156: ret      
+ffffff8002983157: xor      eax, eax
+ffffff8002983159: pop      rbp
+ffffff800298315a: ret      
+ffffff800298315b: nop      

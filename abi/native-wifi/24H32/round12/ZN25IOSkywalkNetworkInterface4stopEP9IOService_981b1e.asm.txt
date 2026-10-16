@@ -1,0 +1,18 @@
+# 0xffffff8002981b1e __ZN25IOSkywalkNetworkInterface4stopEP9IOService
+ffffff8002981b1e: push     rbp
+ffffff8002981b1f: mov      rbp, rsp
+ffffff8002981b22: push     r14
+ffffff8002981b24: push     rbx
+ffffff8002981b25: mov      rbx, rsi
+ffffff8002981b28: mov      r14, rdi
+ffffff8002981b2b: cmp      qword ptr [rdi + 0xb8], 0
+ffffff8002981b33: je       0xffffff8002981b3d
+ffffff8002981b35: mov      rdi, r14
+ffffff8002981b38: call     0xffffff8002981b54  ; __ZN25IOSkywalkNetworkInterface26deregisterNetworkInterfaceEj
+ffffff8002981b3d: lea      rax, [rip + 0x26244]  ; 0xffffff80029a7d88
+ffffff8002981b44: mov      rdi, r14
+ffffff8002981b47: mov      rsi, rbx
+ffffff8002981b4a: pop      rbx
+ffffff8002981b4b: pop      r14
+ffffff8002981b4d: pop      rbp
+ffffff8002981b4e: jmp      qword ptr [rax + 0x5d8]

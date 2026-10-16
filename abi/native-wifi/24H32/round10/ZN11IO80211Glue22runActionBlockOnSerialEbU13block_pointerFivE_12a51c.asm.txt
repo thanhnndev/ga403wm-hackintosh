@@ -1,0 +1,131 @@
+# 0xffffff800212a51c __ZN11IO80211Glue22runActionBlockOnSerialEbU13block_pointerFivE
+ffffff800212a51c: push     rbp
+ffffff800212a51d: mov      rbp, rsp
+ffffff800212a520: push     r15
+ffffff800212a522: push     r14
+ffffff800212a524: push     r12
+ffffff800212a526: push     rbx
+ffffff800212a527: sub      rsp, 0x40
+ffffff800212a52b: mov      rax, qword ptr [rip + 0x291be6]  ; 0xffffff80023bc118
+ffffff800212a532: mov      rax, qword ptr [rax]
+ffffff800212a535: mov      qword ptr [rbp - 0x28], rax
+ffffff800212a539: mov      rax, qword ptr [rdi + 0x18]
+ffffff800212a53d: cmp      dword ptr [rax + 0x48], 2
+ffffff800212a541: jne      0xffffff800212a55d
+ffffff800212a543: mov      rbx, rdi
+ffffff800212a546: mov      rdi, qword ptr [rax + 0x58]
+ffffff800212a54a: mov      rax, qword ptr [rdi]
+ffffff800212a54d: mov      r14, rdx
+ffffff800212a550: call     qword ptr [rax + 0x138]
+ffffff800212a556: mov      rdx, r14
+ffffff800212a559: test     al, al
+ffffff800212a55b: je       0xffffff800212a583
+ffffff800212a55d: mov      rax, qword ptr [rip + 0x291bb4]  ; 0xffffff80023bc118
+ffffff800212a564: mov      rax, qword ptr [rax]
+ffffff800212a567: cmp      rax, qword ptr [rbp - 0x28]
+ffffff800212a56b: jne      0xffffff800212a64f
+ffffff800212a571: mov      rdi, rdx
+ffffff800212a574: add      rsp, 0x40
+ffffff800212a578: pop      rbx
+ffffff800212a579: pop      r12
+ffffff800212a57b: pop      r14
+ffffff800212a57d: pop      r15
+ffffff800212a57f: pop      rbp
+ffffff800212a580: jmp      qword ptr [rdx + 0x10]
+ffffff800212a583: mov      qword ptr [rbp - 0x30], rdx
+ffffff800212a587: mov      rcx, qword ptr [rbx + 0x18]
+ffffff800212a58b: lea      rax, [rcx + 0x78]
+ffffff800212a58f: mov      rdx, qword ptr [rcx + 0x80]
+ffffff800212a596: cmp      qword ptr [rdx], rax
+ffffff800212a599: jne      0xffffff800212a6f8
+ffffff800212a59f: lea      r14, [rbp - 0x40]
+ffffff800212a5a3: mov      qword ptr [r14 + 8], rdx
+ffffff800212a5a7: mov      qword ptr [r14], rax
+ffffff800212a5aa: mov      qword ptr [rdx], r14
+ffffff800212a5ad: mov      qword ptr [rcx + 0x80], r14
+ffffff800212a5b4: mov      rax, qword ptr [rbx + 0x18]
+ffffff800212a5b8: mov      r15, qword ptr [rax + 0x68]
+ffffff800212a5bc: mov      rsi, qword ptr [r15 + 0x48]
+ffffff800212a5c0: add      rsi, 0x10
+ffffff800212a5c4: mov      edi, 1
+ffffff800212a5c9: call     0xffffff8000a48c30  ; _OSBitOrAtomic
+ffffff800212a5ce: mov      rdi, r15
+ffffff800212a5d1: call     0xffffff8000afafb0  ; __ZN13IOEventSource19signalWorkAvailableEv
+ffffff800212a5d6: movabs   rax, 0xaaaaaaaaaaaaaaaa
+ffffff800212a5e0: lea      r15, [rbp - 0x48]
+ffffff800212a5e4: mov      qword ptr [r15], rax
+ffffff800212a5e7: xor      eax, eax
+ffffff800212a5e9: lea      r12, [rbp - 0x50]
+ffffff800212a5ed: mov      qword ptr [r12], rax
+ffffff800212a5f1: mov      qword ptr [rbp - 0x58], rax
+ffffff800212a5f5: call     0xffffff80003cbf20  ; _mach_continuous_time
+ffffff800212a5fa: mov      rdi, rax
+ffffff800212a5fd: mov      rsi, r12
+ffffff800212a600: call     0xffffff8000536d80  ; _absolutetime_to_nanoseconds
+ffffff800212a605: mov      edi, 0xc350
+ffffff800212a60a: mov      esi, 0xf4240
+ffffff800212a60f: mov      rdx, r15
+ffffff800212a612: call     0xffffff80003cbe20  ; _clock_interval_to_deadline
+ffffff800212a617: mov      rax, qword ptr [rbx + 0x18]
+ffffff800212a61b: mov      rdi, qword ptr [rax + 0x70]
+ffffff800212a61f: mov      rdx, qword ptr [r15]
+ffffff800212a622: mov      rax, qword ptr [rdi]
+ffffff800212a625: mov      rsi, r14
+ffffff800212a628: call     qword ptr [rax + 0x130]
+ffffff800212a62e: test     eax, eax
+ffffff800212a630: jne      0xffffff800212a654
+ffffff800212a632: mov      rax, qword ptr [rip + 0x291adf]  ; 0xffffff80023bc118
+ffffff800212a639: mov      rax, qword ptr [rax]
+ffffff800212a63c: cmp      rax, qword ptr [rbp - 0x28]
+ffffff800212a640: jne      0xffffff800212a64f
+ffffff800212a642: add      rsp, 0x40
+ffffff800212a646: pop      rbx
+ffffff800212a647: pop      r12
+ffffff800212a649: pop      r14
+ffffff800212a64b: pop      r15
+ffffff800212a64d: pop      rbp
+ffffff800212a64e: ret      
+ffffff800212a64f: call     0xffffff8000383150  ; ___stack_chk_fail
+ffffff800212a654: mov      ebx, eax
+ffffff800212a656: call     0xffffff80003cbf20  ; _mach_continuous_time
+ffffff800212a65b: lea      r14, [rbp - 0x58]
+ffffff800212a65f: mov      rdi, rax
+ffffff800212a662: mov      rsi, r14
+ffffff800212a665: call     0xffffff8000536d80  ; _absolutetime_to_nanoseconds
+ffffff800212a66a: mov      rax, qword ptr [rbp - 0x50]
+ffffff800212a66e: sub      qword ptr [r14], rax
+ffffff800212a671: mov      rcx, qword ptr [rbp - 0x50]
+ffffff800212a675: mov      rax, rcx
+ffffff800212a678: shr      rax, 9
+ffffff800212a67c: movabs   rdi, 0x44b82fa09b5a53
+ffffff800212a686: mul      rdi
+ffffff800212a689: mov      rsi, rdx
+ffffff800212a68c: shr      rsi, 0xb
+ffffff800212a690: imul     rax, rsi, 0x3b9aca00
+ffffff800212a697: sub      rcx, rax
+ffffff800212a69a: imul     r9, rcx, 0x10624dd3
+ffffff800212a6a1: shr      r9, 0x26
+ffffff800212a6a5: mov      r8, qword ptr [r14]
+ffffff800212a6a8: mov      rax, r8
+ffffff800212a6ab: shr      rax, 9
+ffffff800212a6af: mul      rdi
+ffffff800212a6b2: mov      rcx, rdx
+ffffff800212a6b5: shr      rcx, 0xb
+ffffff800212a6b9: imul     rax, rcx, 0x3b9aca00
+ffffff800212a6c0: sub      r8, rax
+ffffff800212a6c3: imul     r8, r8, 0x10624dd3
+ffffff800212a6ca: shr      r8, 0x26
+ffffff800212a6ce: sub      rsp, 8
+ffffff800212a6d2: lea      r10, [rip + 0x202c2e]  ; "IO80211Glue.cpp"
+ffffff800212a6d9: lea      rdi, [rip + 0x202cc2]  ; ""IO80211 Sleep failed-> proably deadlock, @[%llu.%06llu] diff[%llu.%06llu], wait"
+ffffff800212a6e0: mov      rdx, r9
+ffffff800212a6e3: mov      r9d, 0xc350
+ffffff800212a6e9: xor      eax, eax
+ffffff800212a6eb: push     0x20c
+ffffff800212a6f0: push     r10
+ffffff800212a6f2: push     rbx
+ffffff800212a6f3: call     0xffffff8000bd073c  ; _panic
+ffffff800212a6f8: ud1      
+ffffff800212a6fb: cmp      ch, 0xbf
+ffffff800212a6fe: add      byte ptr [rax], al
+ffffff800212a700: ud2      

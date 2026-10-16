@@ -1,0 +1,30 @@
+# 0xffffff800297e3e8 __ZNK15IOSkywalkPacket13getDataLengthEv
+ffffff800297e3e8: push     rbp
+ffffff800297e3e9: mov      rbp, rsp
+ffffff800297e3ec: push     r15
+ffffff800297e3ee: push     r14
+ffffff800297e3f0: push     rbx
+ffffff800297e3f1: push     rax
+ffffff800297e3f2: cmp      dword ptr [rdi + 0x64], 0
+ffffff800297e3f6: je       0xffffff800297e41e
+ffffff800297e3f8: mov      rbx, rdi
+ffffff800297e3fb: xor      r15d, r15d
+ffffff800297e3fe: xor      r14d, r14d
+ffffff800297e401: mov      rax, qword ptr [rbx + 0x30]
+ffffff800297e405: mov      rdi, qword ptr [rax + r15*8]
+ffffff800297e409: call     0xffffff800297ebce  ; __ZNK21IOSkywalkPacketBuffer13getDataLengthEv
+ffffff800297e40e: add      r14d, eax
+ffffff800297e411: inc      r15
+ffffff800297e414: mov      eax, dword ptr [rbx + 0x64]
+ffffff800297e417: cmp      r15, rax
+ffffff800297e41a: jb       0xffffff800297e401
+ffffff800297e41c: jmp      0xffffff800297e421  ; __ZNK15IOSkywalkPacket13getDataLengthEv+0x39
+ffffff800297e41e: xor      r14d, r14d
+ffffff800297e421: mov      eax, r14d
+ffffff800297e424: add      rsp, 8
+ffffff800297e428: pop      rbx
+ffffff800297e429: pop      r14
+ffffff800297e42b: pop      r15
+ffffff800297e42d: pop      rbp
+ffffff800297e42e: ret      
+ffffff800297e42f: nop      

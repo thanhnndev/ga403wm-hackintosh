@@ -1,0 +1,12 @@
+# 0xffffff80022dad8a __ZN21IO80211InfraInterface16setDataPathStateEb
+ffffff80022dad8a: push     rbp
+ffffff80022dad8b: mov      rbp, rsp
+ffffff80022dad8e: mov      rax, qword ptr [rdi + 0x110]
+ffffff80022dad95: mov      rdi, qword ptr [rax + 0x28]
+ffffff80022dad99: test     rdi, rdi
+ffffff80022dad9c: je       0xffffff80022dada8
+ffffff80022dad9e: movzx    esi, sil
+ffffff80022dada2: pop      rbp
+ffffff80022dada3: jmp      0xffffff80021e208c  ; __ZN18IO80211PeerManager16setDataPathStateEb
+ffffff80022dada8: pop      rbp
+ffffff80022dada9: ret      
