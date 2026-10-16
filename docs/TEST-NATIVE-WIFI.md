@@ -938,9 +938,11 @@ scripts/native-wifi-test.sh install build/itlmt7925Native.kext --stage b --exclu
 ```
 
 `install` now also **clears `MaxKernel`** on the ESP's `itlmt7925Native.kext` entry: the Tahoe migration had capped it at
-24.99.99, and with the cap the kext silently does not load. `--exclusive` switches the Ethernet-mode core path off for the
-test (scan/join then belong to the native path; `itlmt_native_dp=1` is part of the native front end) - no Wi-Fi until the
-native path works, so keep the phone tether ready. Going back: `scripts/native-wifi-test.sh restore`.
+24.99.99, and with the cap the kext silently does not load. Stage b adds `itlmt_native=1 itlmt_native_if=1 itlmt_native_dp=1`;
+`itlmt_native_dp=1` is what makes the core scan/auth/join for the native front end (and suppresses the legacy Ethernet
+front end / user clients). `--exclusive` additionally drops `itlmt_m2`/`itlmt_m3`/`itlmt_fast`, so the native path is the
+only network device this driver produces - keep the phone tether ready until the native path works. Going back:
+`scripts/native-wifi-test.sh restore`.
 
 After the reboot (stage b), same signs as the 24H32 rounds plus the new ones:
 

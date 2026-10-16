@@ -5,7 +5,8 @@
 #   scripts/native-wifi-test.sh backup            copy ESP:/EFI to ~/itlmt-backup/EFI-<time> (+ tar.gz) and print the path
 #   scripts/native-wifi-test.sh install <kext> [--stage a|b] [--exclusive]
 #                                                 backup first, then copy the kext to OC/Kexts and add the Kernel/Add entry + boot-args.
-#                                                 --stage a (default) = controller only (itlmt_native=1); b = + interface (itlmt_native_if=1).
+#                                                 --stage a (default) = controller only (itlmt_native=1); b = + interface + native
+#                                                 datapath (itlmt_native_if=1 itlmt_native_dp=1).
 #                                                 --exclusive = switch the old Wi-Fi off for this test: removes itlmt_m2/itlmt_m3/itlmt_fast
 #                                                 Core remains the chip backend. With itlmt_native_dp=1 it scans/joins for native,
 #                                                 suppresses legacy Ethernet and legacy user clients; otherwise it only loads firmware.
@@ -77,8 +78,8 @@ else:
     e['Enabled'] = True
 a = c['NVRAM']['Add']['7C436110-AB2A-4BBB-A880-FE41995C9F82']
 toks = a.get('boot-args', '').split()
-want = ['itlmt_native=1'] + (['itlmt_native_if=1'] if stage == 'b' else [])
-drop = ['itlmt_native_if=1'] if stage == 'a' else []
+want = ['itlmt_native=1'] + (['itlmt_native_if=1', 'itlmt_native_dp=1'] if stage == 'b' else [])
+drop = ['itlmt_native_if=1', 'itlmt_native_dp=1'] if stage == 'a' else []
 if excl:
     drop += [t for t in toks if t.split('=')[0] in ('itlmt_m2', 'itlmt_m3', 'itlmt_fast')]
 toks = [t for t in toks if t not in drop] + [t for t in want if t not in toks]
