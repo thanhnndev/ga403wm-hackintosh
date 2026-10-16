@@ -28,7 +28,7 @@
 #include "../../include/StrixNativeABI.h"
 #include "StrixABIProfile.h"
 
-#define STRIXACCEL_VERSION "0.1.17"
+#define STRIXACCEL_VERSION "0.1.18"
 
 #include "IOAccelFamily2_decl.h"
 
@@ -742,7 +742,16 @@ void StrixAccelerator::populateAccelConfig(IOAccelConfig *cfg)
     static const char name[] = "StrixAccel";
     uint8_t *c = reinterpret_cast<uint8_t *>(cfg);
     *reinterpret_cast<const char **>(c + 0x00) = name;
-    *reinterpret_cast<uint32_t *>(c + 0x08) = 0x480000;
+    // +0x08 bit 21 (0x200000): this accelerator's resources live in GPU-addressable system memory (UMA), not in a
+    // separate VRAM heap.  IOAccelResource2::allocMemory (25G241 0x14b88918) tests this bit at accel+0xc90 and, when
+    // set, allocates every resource through IOAccelSysMemory::withOptions (real wired memory descriptors with a real
+    // length) instead of calling the newVidMemory vtable slot.  StrixVidMemory has no backing on this bring-up
+    // (allocPhysical/getPhysicalSegment are 0), so the vidmem path produced length-0 mappings: "failed to alloc GART
+    // space ... Needed 0 bytes" and "prepare(): failed to allocate GPU virtual address" on every WindowServer
+    // transaction (status(+58) = 0xe00002be).  The family's start() also uses this bit to create its
+    // IOAccelBufferMemoryDescriptorPool2 and to raise the wired sysmem budget (32 MiB -> min(3/32 * total, 768 MiB) at
+    // accel+0x340, with cfg+0x64 |= 0xa), all of which an APU configuration wants.
+    *reinterpret_cast<uint32_t *>(c + 0x08) = 0x680000;
     *reinterpret_cast<uint32_t *>(c + 0x0c) = 7;
     *reinterpret_cast<uint32_t *>(c + 0x10) = 0;
     *reinterpret_cast<uint32_t *>(c + 0x14) = 0;
