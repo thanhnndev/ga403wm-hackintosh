@@ -7,7 +7,21 @@ Step-by-step history: [890M trace](890M-TRACE.md).
 ## Current state
 
 
-**NEWEST (Step13, 2026-10-15, written on Linux): performance first.** Owner direction: HDR/colour/display names are
+**NEWEST (Step15, 2026-10-16, written on Linux): macOS 26.7.1 (25G241) is installed and the OLED is dead.** Cause found in the
+logs of that boot: `StrixAccel: gate FAIL: OS build does not match reviewed profile macos15-24H32...` (no OLED display pipe, so
+CoreDisplay logs `Unable to find display pipe`, WindowServer restarts on virtual framebuffers). Fix: StrixAccel 0.1.16 accepts
+the 25G241 profile (IOAcceleratorFamily2 487.4.4 regenerates a byte-identical declaration header). Linux already put 0.1.16 into
+`/Library/Extensions` and deleted the stale AuxKC; `com.itlmt7925.graphics-bootstrap` rebuilds it with `kmutil load` at boot.
+* First boot on Tahoe, please check: `ioreg -rc StrixAccelerator -l | grep StrixAccel` (Gate PASS, ABIProfile
+  macos26-25G241-x86_64-ioaccel487.4.4, Pipes>=1), `/Library/Logs/StrixGraphicsFix/<newest>/`, `log show` for
+  `(StrixAccel)` and CoreDisplay `display pipe` / `no gamma` lines (must stop). If the gate passes but the OLED is still black,
+  the private-slot/offset assumptions of 24H32 (pipe+0x240, transaction layout) are the next suspect: re-derive on Tahoe.
+* Other open Tahoe items: `bluetoothd` ExcUserFault loop (BtLeDlFix byte pattern is 24H32), `IONDRVFramebuffer` still present,
+  Wi-Fi native capped by MaxKernel 24.99.99, `docs/TAHOE-MIGRATION.md` lives on `main` (this branch has not merged it).
+* Do NOT re-run `nullmoth-setup.sh`/`macos-strix-accel-install.sh` casually: either rewrites `/Library/Extensions`; if you do,
+  the AuxKC must be rebuilt. Details and evidence: 890M-TRACE.md "Step15".
+
+Previous (Step13, 2026-10-15, written on Linux): performance first.** Owner direction: HDR/colour/display names are
 off the table until performance is fixed. Do not touch StrixGOP HDR or EDID for now.
 * Added `kexts/StrixHeadroom` (Lilu plugin, CI-built, injected from the ESP after Lilu): NOPs the mutex lock/unlock in
   `CoreDisplay::Display::CurrentHeadroom`, the 98 % hot spot of the 1150-1405 % WindowServer CPU with HDMI + OLED.
