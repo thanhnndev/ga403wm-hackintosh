@@ -1574,3 +1574,16 @@ Permanent: `tools/strix_headroom_hold.swift` + `scripts/macos-strix-headroom-hol
 `com.thanhnndev.strix.headroomhold`, KeepAlive, re-asserts on wake/screen change). Installed 2026-10-16.
 Still open: the slight p90/p99 rise in the simple-animation cases with the request open (8.4 -> 10-13 ms), and the
 remaining ~150 % idle WindowServer.
+
+### Step15 macOS 26.7.1 (25G241) upgrade: boots, display dead because StrixAccel gate refuses Tahoe (2026-10-16)
+
+Evidence (Data volume mounted ro on Linux, `Library/Logs/StrixGraphicsFix/20261016T0716*`, `private/var/log`):
+* Tahoe reaches loginwindow (14:17); no kernel panic report. Userland noise: `bluetoothd` ExcUserFault loop (14:18-14:25).
+* `kmutil load` of the AuxKC works on Darwin 25.6: NVRM, NVRMFB, NVRMAGDC, NVAccel, NVRMEdpBL (NullMoth **1.15**, Sequoia build), StrixGOP 0.1.11, StrixAccel 0.1.15 all loaded; StrixMetalGate 0.1.1, StrixHeadroom, StrixAmp, StrixProbe (ESP) load.
+* HDMI head via NVRMFramebuffer is up (1920x1080 pixel info, NVAccel clients). The OLED (`AMDStrixGOPFramebuffer`, regID 0x100000486/0x100000461) has no pipe: CoreDisplay logs `Unable to find display pipe for IOFB service / regID`, then `Attempting to get capabilities from plane with no gamma`, `Can't run fallback without surface`, `set_device_transfer: can't set device gamma`, WindowServer calls `setup_virtual_framebuffers`, restarts 3 times (pids 202, 204, 715) = the stuck screen.
+* Root cause: `StrixAccel: gate FAIL: OS build does not match reviewed profile macos15-24H32-x86_64-ioaccel485.2` (kernel log, both boots). The accelerator refuses by design, so no IOAccelDisplayPipe for the OLED (same symptom as Step04).
+* Fix (StrixAccel 0.1.16): profile table with 24H32 and 25G241 (Darwin 25.6.0, xnu-12377.161.15.700.19~2, IOAcceleratorFamily2 487.4.4). Basis for accepting it: `tools/ioaccel_layout.py` + `ioaccel_gen_header.py` run on the Tahoe `SystemKernelExtensions.kc` (read from the mounted volume) produce a declaration header BYTE-IDENTICAL to the committed one (class names, slot order, vslot indices, instance sizes). Extracted profile: scratchpad `tahoe/profile-25G241.json` (EXTRACTED, not runtime-validated). Private-slot semantics and struct offsets (pipe+0x240, transaction layout) are NOT proven; the runtime gate still checks class sizes and pure-slot coverage.
+* Not changed on purpose: StrixGOP, StrixMetalGate, StrixHeadroom (no OS-specific layout; they loaded).
+* Known remaining Tahoe risks: NullMoth NV* are 1.15 (Sequoia-only); 2.0.0 is the build with macOS 26 support (see Step14 install steps). IONDRVFramebuffer still appears on Tahoe (the `Kernel/Block IONDRVSupport` entry did not stop it).
+
+macOS side: after CI builds StrixAccel 0.1.16 (artifact), `sudo bash scripts/macos-strix-accel-install.sh` with the artifact in `build/StrixAccel.kext`, reboot, then collect `ioreg -rc StrixAccelerator -l | grep StrixAccel` (expect Gate PASS, ABIProfile macos26-25G241..., Pipes 1) and the same CoreDisplay log. Install NullMoth 2.0.0 NV* first if HDMI/NVAccel misbehave.

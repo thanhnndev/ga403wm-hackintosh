@@ -28,7 +28,7 @@
 #include "../../include/StrixNativeABI.h"
 #include "StrixABIProfile.h"
 
-#define STRIXACCEL_VERSION "0.1.15"
+#define STRIXACCEL_VERSION "0.1.16"
 
 #include "IOAccelFamily2_decl.h"
 
@@ -95,6 +95,7 @@ static volatile int32_t gCoalesced = 0;      // frames replaced by a newer one b
 static volatile int64_t gSubmitNs, gSubmitMaxNs, gSubmitCalls;
 static volatile int64_t gCmpNs, gWriteNs, gFullNs, gProbeSrcNs, gProbeShNs, gProbeWcNs;
 static volatile int64_t gCopyNs, gCopyMaxNs, gWrittenBytes, gCopyCalls, gFullFrames, gCopyBlocks;
+static const StrixABIProfile *gProfile;
 static volatile int32_t gGate;        // 0 unchecked, 1 pass, 2 fail (fail closed for the rest of the boot)
 static volatile int32_t gCounters[9]; // 0 pipes, 1 txn, 2 copied, 3 skipped, 4 begin, 5 validate fail, 6 tiled, 7 unsupported fmt, 8 no-plane
 
@@ -334,11 +335,14 @@ bool StrixAccelerator::layoutGate()
     // Class sizes alone cannot detect reordered private slots after an OS update.
     auto root = IORegistryEntry::getRegistryRoot();
     auto kernelBuild = root ? OSDynamicCast(OSString, root->getProperty("IOKitBuildVersion")) : nullptr;
-    if (version_major != STRIXABI_DARWIN_MAJOR || !kernelBuild ||
-        !kernelBuild->isEqualTo(STRIXABI_KERNEL_BUILD)) {
-        SLOG("gate FAIL: OS build does not match reviewed profile %s", STRIXABI_PROFILE_ID);
+    const StrixABIProfile *prof = nullptr;
+    for (const StrixABIProfile &c : kStrixABIProfiles)
+        if (kernelBuild && version_major == c.darwinMajor && kernelBuild->isEqualTo(c.kernelBuild)) { prof = &c; break; }
+    if (!prof) {
+        SLOG("gate FAIL: OS build does not match any reviewed profile (%s, %s)", kStrixABIProfiles[0].id, kStrixABIProfiles[1].id);
         return false;
     }
+    gProfile = prof;
     if (gGate) return gGate == 1;
     struct Gate {
         const char *ours, *fam;
@@ -452,7 +456,7 @@ bool StrixAccelerator::start(IOService *provider)
     setProperty("StrixAccel,Gate", "PASS");
     setProperty("StrixAccel,Version", STRIXACCEL_VERSION);
     restoreClassCode(provider);
-    setProperty("StrixAccel,ABIProfile", STRIXABI_PROFILE_ID);
+    setProperty("StrixAccel,ABIProfile", gProfile->id);
     setProperty("StrixNative,ABIMajor", S89N_ABI_MAJOR, 32);
     setProperty("StrixNative,MetalReady", false);
     // Display identity: without a "model" property system_profiler falls back to the EFI hide name
@@ -784,7 +788,7 @@ IOReturn StrixAccelerator::queryNativeInfo(s89n_info *info)
     info->readiness = S89N_READY_DISPLAY_ONLY; info->backend = S89N_BACKEND_NONE;
     // Expected target from Linux captures; discovered IP remains0 until read on macOS.
     info->expected_gc_ip = 0x000b0500;
-    strlcpy(info->os_build, STRIXABI_OS_BUILD, sizeof(info->os_build));
+    strlcpy(info->os_build, gProfile ? gProfile->osBuild : "", sizeof(info->os_build));
     return kIOReturnSuccess;
 }
 
