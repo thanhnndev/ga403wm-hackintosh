@@ -16,7 +16,9 @@ at `+0x40` and starts the information elements at `+0x44` (the meta buffer is `0
 predecessor, and the consumer read four bytes past the end of the buffer. The core's own AP table was never at fault:
 the `itlm3` checkpoint below shows a clean table. Fixed in `kexts/itlmt7925Native/itlmt7925_iface.cpp` (`kBeaconHeader =
 0x44`, flags moved to `+0x40`); committed as the `0xc9 beacon message header is 0x44 on 25G241` commit on `tahoe/wifi`,
-**not rebuilt or re-tested yet**.
+built by CI (run 38892788373 on `163ec60`) and installed into the ESP on 2026-10-16 18:19 from Linux
+(`scripts/linux-install-kext.sh itlmt7925Native`, sha256 `14c6af9a…`, previous kext backed up under
+`Kexts-backup/itlmt7925Native.kext.20261016-181944`). **Not booted or re-tested yet.**
 
 ## Files
 

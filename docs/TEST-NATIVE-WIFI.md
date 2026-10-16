@@ -985,3 +985,13 @@ With the header at 0x40 the IE area sat four bytes early, so every element was r
 `kexts/itlmt7925Native/itlmt7925_iface.cpp`: `kBeaconHeader = 0x44` and the flags dword moved to +0x40. Not rebuilt or
 re-tested yet - next Mac boot: rebuild both kexts, `native-wifi-test.sh install ... --stage b --exclusive`, and check that
 System Settings lists the networks with their real names.
+
+Installed 2026-10-16 18:19 (Linux, no reboot yet): the `build-kexts` workflow run
+[38892788373](https://github.com/thanhnndev/ga403wm-hackintosh/actions/runs/38892788373) on `163ec60` was downloaded and
+`scripts/linux-install-kext.sh itlmt7925Native` put its `build/itlmt7925Native.kext` into the ESP
+(`/boot/EFI/OC/Kexts/itlmt7925Native.kext`, sha256 `14c6af9a…`, previous one kept as
+`Kexts-backup/itlmt7925Native.kext.20261016-181944`; `Info.plist` unchanged). The installed binary carries the fix -
+`movl %eax, 0x40(%rbx)` then `addq $0x44, %rbx` before the IE `memcpy`, where the old one had `0x3c`/`0x40`. The ESP
+boot-args already carry stage b (`itlmt_native=1 itlmt_native_if=1 itlmt_native_dp=1 itlmt_native_nvtrace=1 itlmt_fast=6
+itlmt_stat=1 itlmt_nopwr=1`) and both itlmt entries have no Min/MaxKernel cap, so the next macOS boot is the check. The
+core kext was left as installed (2026-10-14): this fix is native-side only.
