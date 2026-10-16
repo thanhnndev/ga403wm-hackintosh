@@ -323,7 +323,7 @@ A failed native attempt is reported once (state FAILED, fail stage) and the netw
 Interface (`itlmt7925Native`): handlers for ioctl 0x1b / 0xfe (supported channels: the 12 channels the core scans), 0x1b9
 (SCAN_REQ), 0x1b3 (SCAN_ABORT), 0x1ba (ASSOCIATE: needs a raw 32-byte PMK, cipher type 6 or 9, otherwise Unsupported), 0x1b6
 (JOIN_ABORT), 0x1a9 (LEAVE_NETWORK), 0x1b1 (WCL_BSS_INFO). `getCHANNEL/RATE/RSSI/OP_MODE` answer from the core status while linked.
-`pollControl()` (100 ms inside the datapath tick) delivers results: scan table as one 0xc9 event per AP (beacon message 0x40 + IE
+`pollControl()` (100 ms inside the datapath tick) delivers results: scan table as one 0xc9 event per AP (beacon message 0x44 + IE
 length) followed by 0xed (scan done); join as 0x4e, 0xd3 and, on success, 0xd5, posted with
 `IO80211Controller::postMessage`. Scan timeout 25 s, join timeout 45 s (then LEAVE and a failure result).
 
@@ -955,3 +955,30 @@ After the reboot (stage b), same signs as the 24H32 rounds plus the new ones:
 * Failures to send back: `scripts/native-wifi-test.sh logs` (kextstat, ioreg, `log show --last boot`, dmesg; SSIDs/MACs
   removed), the stage reached, and for a panic the first 30 lines of the panic text. Sleep/wake once only after the load
   is confirmed safe.
+
+### First load result (2026-10-16): Wi-Fi came up, the scan list was garbled
+
+Stage b did load on Tahoe: `itlmt7925Wifi` init against `IO80211_kexts-1566.5`, role 1, `mk:startWithInfo ok`, service
+registered, `ifnet_attach` gave **en5** (`IOSkywalkLegacyEthernetInterface`, MAC `de:56:7b:34:81:d5`), and the radio path
+worked - `APPLE80211_IOC_CARD_CAPABILITIES` GOOD, radio power from System Settings accepted (GET POWER / GET OP MODE on
+en5), the core scanned at boot (`scan finished done=1@2410ms rx=85 bcn=83 aps=48`) and every one of airportd's 84
+`APPLE80211_IOC_SCAN_REQ` calls answered GOOD (13 live core scans, the rest from airportd's cache; `scan:delivered 48 of
+48` each time). The core's own AP table is clean (`m2-res` in the NVRAM checkpoints lists real names). The **list the Wi-Fi
+menu built was garbled**.
+
+Cause: the `0xc9` beacon message header is **0x44**, not 0x40. From the 25G241 `BootKernelExtensions.kc` (verified
+2026-10-16 on the mounted System volume):
+
+* `AppleBCMWLANBSSBeacon::getBeaconMsgFromWLBSSInfo` writes ssid at +6, ssid_len at +0x26, primary channel at +0x27,
+  bssid at +0x29, rssi at +0x30, noise at +0x34, a word at +0x36, beacon interval at +0x38, capability at +0x3a,
+  **flags at +0x40**, and the caller passes the IE destination separately.
+* `AppleBCMWLANScanAdapter::processScanResults` sets `ieBuf = meta + 0x44`, allocates the meta buffer as `0x844`
+  (= 0x44 + 0x800) and posts the event with `len = ie_len + 0x44`.
+* `AppleBCMWLANCore::getWCL_BSS_INFO`'s block does `lea rsi, [beacon_msg + 0x44]` for the same struct.
+* Nothing writes +0x3c in either builder (left zero).
+
+With the header at 0x40 the IE area sat four bytes early, so every element was read from the middle of its predecessor
+(the SSID element included) and the consumer also read four bytes past the end of the buffer. Fixed in
+`kexts/itlmt7925Native/itlmt7925_iface.cpp`: `kBeaconHeader = 0x44` and the flags dword moved to +0x40. Not rebuilt or
+re-tested yet - next Mac boot: rebuild both kexts, `native-wifi-test.sh install ... --stage b --exclusive`, and check that
+System Settings lists the networks with their real names.

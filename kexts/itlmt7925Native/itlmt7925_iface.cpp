@@ -943,17 +943,22 @@ IOReturn itlmt7925WifiInterface::setINFRA_ENUMERATED(apple80211_infra_enumerated
 //
 // Apple's driver is event driven: the SCAN_REQ / ASSOCIATE ioctls return at once and the outcome reaches userland as events
 // posted with IO80211Controller::postMessage (ids and payload layouts taken from AppleBCMWLANCore / AppleBCMWLANJoinAdapter,
-// 24H32):
-//   0xc9  one scan result: beacon message (below), length 0x40 + ie_len        0xed  scan finished, 4-byte status (0 = ok)
+// 24H32; the beacon-message header was re-checked against 25G241 on 2026-10-16, see the note on the layout below):
+//   0xc9  one scan result: beacon message (below), length 0x44 + ie_len        0xed  scan finished, 4-byte status (0 = ok)
 //   0x4e  association result, 8 bytes {status1, status2}
 //   0xd3  join result, 0x1c bytes: u16 ieee status, u16 aux, u8 flag, bssid[6] at +5, status1 at +0x14, status2 at +0x18
 //   0xd5  connect complete, 0xa4 bytes: u16 ieee status, u16 aux, 10 x {bssid[6], pad[2], u32 status1, u32 status2}
-// Beacon message: +0 u32 ie_len, +4 u16 channel spec (bits 0-7 channel, 11-13 bandwidth index 2 = 20 MHz, 14-15 band, 0xc000 = 5 GHz),
-// +6 ssid[32], +0x26 ssid_len, +0x27 primary channel, +0x29 bssid[6], +0x30 s32 rssi, +0x38 u16 beacon interval, +0x3a u16
-// capability, +0x3c u32 flags (2 always, 0x80 from a beacon, 0x4000 when rssi is valid), +0x40 information elements.
-// Not determined (left zero): noise at +0x34, the u8 flag and +0xc/+0x10 words of 0xd3, the aux words, status values on failure.
+// Beacon message (apple80211_beacon_msg as built by AppleBCMWLANBSSBeacon::getBeaconMsgFromWLBSSInfo; offsets verified on the
+// 25G241 BootKernelExtensions.kc): +0 u32 ie_len, +4 u16 channel spec (bits 0-7 channel, 11-13 bandwidth index 2 = 20 MHz,
+// 14-15 band, 0xc000 = 5 GHz), +6 ssid[32], +0x26 ssid_len, +0x27 primary channel, +0x29 bssid[6], +0x30 s32 rssi, +0x34
+// s16 noise, +0x36 u16 (Apple sets it from wl_bss_info, left zero here), +0x38 u16 beacon interval, +0x3a u16 capability,
+// +0x3c u32 (Apple never writes it in either builder, left zero), +0x40 u32 flags (2 always, 0x80 from a beacon, 0x4000 when
+// rssi is valid), +0x44 information elements (Apple: ie_len + 0x44 bytes total, IEs capped at 0x800 and the meta buffer is
+// 0x844 = 0x44 + 0x800). The header is 0x44, not 0x40: with 0x40 the IE area sat 4 bytes early, so every IE (SSID element
+// included) was parsed from the middle of its neighbour - the Wi-Fi list came up with garbled names on Tahoe.
+// Not determined (left zero): the u8 flag and +0xc/+0x10 words of 0xd3, the aux words, status values on failure.
 namespace {
-const uint32_t kBeaconHeader = 0x40;
+const uint32_t kBeaconHeader = 0x44;
 const uint32_t kEventScanResult = 0xc9, kEventScanDone = 0xed, kEventAssoc = 0x4e, kEventJoin = 0xd3, kEventFirstBeacon = 0xd4,
                kEventConnect = 0xd5, kEventLinkStatus = 0xd8;
 // 20 MHz channels the core's scan covers (itlmt7925_m2.cpp): the only channels a result can come from.
@@ -974,7 +979,7 @@ void buildBeacon(uint8_t *m, const uint8_t *bssid, uint8_t channel, const char *
     store<int32_t>(m, 0x30, rssi);
     store<uint16_t>(m, 0x38, interval);
     store<uint16_t>(m, 0x3a, cap);
-    store<uint32_t>(m, 0x3c, 2u | (probe ? 0u : 0x80u) | (rssi ? 0x4000u : 0u));
+    store<uint32_t>(m, 0x40, 2u | (probe ? 0u : 0x80u) | (rssi ? 0x4000u : 0u));
     memcpy(m + kBeaconHeader, ie, ieLen);
 }
 }
