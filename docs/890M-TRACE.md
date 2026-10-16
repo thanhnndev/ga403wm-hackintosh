@@ -1543,3 +1543,34 @@ Verdict: performance-first priority is unaffected by 2.0; keep v1.x base + Strix
   4. ESP NV* entries stay disabled (same bundle IDs as AuxKC). Do not re-enable them; the ESP 1.15 copies are now stale.
   5. After boot: `kmutil showloaded | grep -i -E 'nullmoth|strix'`, `scripts/macos-strix-0114-verify.sh` (StrixHeadroom), WindowServer CPU with HDMI+OLED.
 * Risks: 2.0 NVRMFB changes the match to NVIDIA-only (good: it no longer claims the AMD slot) and 2.0 has a documented known issue "blank frames on the other display after a refresh change". Our Strix* kexts were built against 1.15 behaviour; if StrixMetalGate/NVAccel handshake changes, collect the log before touching anything.
+
+### Step14 OLED-only now on the display pipe; StrixHeadroom did not patch; EDR request fixes the melt (2026-10-16)
+
+Boot: OLED only, StrixGOP 0.1.11, StrixAccel 0.1.15, StrixHeadroom 0.1.0 loaded. Since the framebuffer identity fix
+(47f2ce1) the OLED-only boot also uses the display pipe (`Transactions` 3195, `Copied` 3195, `Pipes=1`), so the OLED-only
+case now melts too: WindowServer 1400-1650 % idle, window drag 28 ticks/s (p50 44 ms). Data: `out/890m-trace/step14-*`.
+
+**StrixHeadroom 0.1.0 does nothing.** spindump still shows `CurrentHeadroom+334 -> std::mutex::lock` (the patched call).
+The byte patterns do match live memory (checked in-process: CoreDisplay base + 0x3F2FC + 0x142), but Lilu's UserPatcher
+reads the target binary from disk (`loadFilesForPatching` -> `FileIO::readFileToBuffer(path)`) to locate patch pages, and
+since macOS 11 `/System/Library/Frameworks/CoreDisplay.framework/Versions/A/CoreDisplay` does not exist on disk (dyld
+shared cache only). No lookup entries -> nothing patched. Release Lilu logs nothing about it.
+
+**Userland fix, no patching.** The only writer of `gHeadroomRequested` / `EDRDisplay+0x11` is `CoreDisplay_XRPresent(bool)`.
+SkyLight calls it from `WS::Displays::CoreDisplayManager::set_edr_present(float)` (`XRPresent(headroom > 1)`), reached
+from `update_edr_request()` when the session has a headroom request (`session+0x1b0`) or a wants-HDR surface
+(`session+0xc0`, `WSSurfaceSetWantsHDR`). A window with a `CAMetalLayer` (`wantsExtendedDynamicRangeContent`, rgba16F,
+extended linear P3) opens such a request. Measured, same boot:
+
+| state | WindowServer CPU | move 600x400 | move 1400x800 | anim | full-screen present |
+|---|---:|---|---|---|---|
+| no request | 1360-1650 % | 28-29 ticks/s, p50 14-44 ms, p99 75 ms | - | 119.8/s p99 9.2 | 119.5 fps p99 9.0 |
+| request open | 140-170 % | 118-119 ticks/s, p99 13 ms | 118.6/s p99 13.5 | 119.3/s p99 13.2 | 119.6 fps p99 14.3 |
+
+EDR stays off (`maximumExtendedDynamicRangeColorComponentValue` 1.0, potential 4.0), so no visible change. When the
+request closes the melt comes back after the EDR hysteresis (~20-30 s). A transparent 1x1 hidden window is enough.
+
+Permanent: `tools/strix_headroom_hold.swift` + `scripts/macos-strix-headroom-hold.sh install` (user LaunchAgent
+`com.thanhnndev.strix.headroomhold`, KeepAlive, re-asserts on wake/screen change). Installed 2026-10-16.
+Still open: the slight p90/p99 rise in the simple-animation cases with the request open (8.4 -> 10-13 ms), and the
+remaining ~150 % idle WindowServer.
