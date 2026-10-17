@@ -2118,6 +2118,11 @@ Also seen: ESP `config.plist` mtime 13:36:56 - rewritten with identical content 
 second as the session's two read-only `nvram` launches. Full diff against `config.plist.pre-strixvfct` re-verified:
 only `Kernel/Add StrixVFCT.kext`, the nmx boot-args and the emptied 890M `DeviceProperties`.
 
+Owner observation (14:5x): display sleep puts the panel **white**, not off (this parked boot runs on `.Display_boot` -
+no EDID, no DCN driver - so nothing blanks the panel and the last GOP frame stays lit). Also explains why the first
+two admin prompts failed with -60005: the dialog was opening on a sleeping display. Cosmetic for this test; revisit
+when NMXGPUFB owns the display.
+
 Fix applied (14:52): root `nvram -d nullmoth-gpu-attaching` (via osascript; the first two prompts failed with -60005 -
 the dialog was coming up on a sleeping display; `caffeinate -u` first). Verified absent. **The next boot is the first
 attach that will actually see StrixVFCT's VFCT.** Expectations and evidence plan: `Unable to locate a BIOS ROM` gone,
