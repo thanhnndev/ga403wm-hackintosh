@@ -2061,3 +2061,7 @@ it; the collector also writes `spin-kernel.txt` + `nmx-stacks.txt` (NMXGPU frame
 
 Next boot: expect amdgpu to reach IP discovery / GMC v11 / PSP 14 / SMU 14 / ring tests; if the display init succeeds
 NMXGPUFB takes over the OLED (EDID back) and NMXAccel starts, giving WindowServer a Metal device on the 890M.
+
+Step26 boot 2: the patch did not run yet - NMXGPU's boot guard saw NVRAM `nullmoth-gpu-attaching=1` left by the hung
+attach and parked the 890M ("the last attach of 1002:150e never returned ... this GPU stays with macOS"). Cleared with
+`nvram -d nullmoth-gpu-attaching`; the patch script now clears it too and the collector records `nvram-guard.txt`.

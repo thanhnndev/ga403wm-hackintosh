@@ -41,3 +41,6 @@ else
 fi
 echo "bytes now: $(cur)  sha256: $(shasum -a 256 "$B" | cut -d' ' -f1)"
 [ -n "${NO_AUXKC:-}" ] || case "$K" in /Library/Extensions/*) auxkc && echo "AuxKC rebuilt";; esac
+# NMXGPU's boot guard parks the GPU after an attach that never returned (NVRAM nullmoth-gpu-attaching=1, set by the
+# Step26 hang): clear it so the patched driver gets a fresh attach on the next boot.
+nvram -d nullmoth-gpu-attaching 2>/dev/null || true

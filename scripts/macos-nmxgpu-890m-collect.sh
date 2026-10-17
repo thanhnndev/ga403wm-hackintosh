@@ -14,7 +14,7 @@ ioreg -l -w0 -r -c NMXGPU > "$OUT/ioreg-nmxgpu.txt" 2>&1
 ioreg -l -w0 -r -c IOFramebuffer > "$OUT/ioreg-fb.txt" 2>&1
 ls -la /dev/dri > "$OUT/dev-dri.txt" 2>&1
 kmutil showloaded 2>/dev/null | grep -iE 'nmx|strix|nullmoth' > "$OUT/loaded.txt"
-sysctl kern.bootargs > "$OUT/bootargs.txt"
+sysctl kern.bootargs > "$OUT/bootargs.txt"; nvram -p | /usr/bin/grep -E "^nullmoth-" > "$OUT/nvram-guard.txt"
 system_profiler SPDisplaysDataType > "$OUT/displays.txt" 2>&1
 ls -t /Library/Logs/DiagnosticReports | head -5 > "$OUT/reports.txt"
 # Where amdgpu's attach thread is (Step26 found it spinning): kernel_task stacks with NMXGPU frames symbolised.
