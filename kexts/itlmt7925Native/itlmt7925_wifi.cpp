@@ -95,8 +95,10 @@ private:
     IOWorkLoop *loop = nullptr;             // fallback IOWorkLoop when the provider has none (a real thread, unlike wq)
     CCPipe *logPipe = nullptr;
     CCStream *logStream = nullptr;          // a CCLogStream (options type 0)
+    bool logPipeStarted = false;            // CCPipe::startPipe ran on it (the factories only init)
     CCPipe *dataPipe = nullptr;
     CCStream *dataStream = nullptr;         // a CCDataStream (options type 1)
+    bool faultPipeStarted = false;          // ditto for the fault pipe; without it the first fault flush panics corecapture
     CCFaultReporter *ccFault = nullptr;
     IO80211FaultReporter *fault = nullptr;
     itlmt7925WifiInterface *iface = nullptr;
@@ -161,6 +163,11 @@ bool itlmt7925Wifi::makeLogger(IOService *owner)
         // CCLogStream::initWithPipeAndName casts the pipe to CCLogPipe without a null check: never pass a null pipe
         if (logPipe)
             logStream = CCStream::withPipeAndName(logPipe, "itlmt7925Wifi", (const CCStreamOptions *)so);
+        // Apple starts every pipe it hands to CoreCapture (see ccPipeStartPipe); the factory only inits.
+        if (logPipe && logStream) {
+            logPipeStarted = ccPipeStartPipe(logPipe);
+            if (!logPipeStarted) itlmtTrace(this, "ctl:logPipe start failed");
+        }
         ok = logPipe && logStream;
     }
     if (po) IOFree(po, kCCPipeOptionsSize);
@@ -193,6 +200,14 @@ bool itlmt7925Wifi::makeFaultReporter(IOService *owner)
         dataPipe = CCPipe::withOwnerNameCapacity(owner, kOwnerId, "itlmt7925WifiFault", (const CCPipeOptions *)po);
         if (dataPipe)
             dataStream = CCStream::withPipeAndName(dataPipe, "itlmt7925WifiFault", (const CCStreamOptions *)so);
+        // The step the factory does not do and AppleBCMWLANBusInterfacePCIe::createCrashTracerLogger ends with: without a
+        // started pipe the first fault-report flush panics in corecapture (ccPipeStartPipe has the whole story). Keep the
+        // reporter even when it fails - a null one panics the family at findAndAttachToFaultReporter - but say so.
+        if (dataPipe && dataStream) {
+            faultPipeStarted = ccPipeStartPipe(dataPipe);
+            itlmtTrace(this, "ctl:faultPipe=%u", (unsigned)(faultPipeStarted ? 1 : 0));
+            if (!faultPipeStarted) IOLog(LOGT "fault pipe start failed (fault flushes will panic)\n");
+        }
         if (dataStream)
             ccFault = CCFaultReporter::withStreamWorkloop((CCDataStream *)dataStream, (IOWorkLoop *)wq);
         if (ccFault)

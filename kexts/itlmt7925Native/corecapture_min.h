@@ -22,6 +22,22 @@ public:
     static CCPipe *withOwnerNameCapacity(IOService *owner, const char *ownerId, const char *name, const CCPipeOptions *opts);
 };
 
+// CCPipe::startPipe is virtual (slot +0x868 in both the CCLogPipe and CCDataPipe vtables of 25G241) and the class hierarchy
+// is far too wide to declare in full, so the slot is called raw. AppleBCMWLANBusInterfacePCIe::createCrashTracerLogger ends
+// with exactly this on the data pipe it created (`mov rdi, [ivars+0xf20]; mov rax, [rdi]; call [rax+0x868]`). startPipe runs
+// the pipe's own start(provider) - on 25G241 CCDataPipe::start creates the notify timer (stored at pipe_ivars+0x90 -> +0x38,
+// handler CCDataPipe::notifyTimeout), adds it to the provider's work loop, sets IOClass/name, publishes resource "CCPipe" and
+// registers the service in the CoreCapture plane; CCLogPipe::start is the log equivalent. The factories only init, and an
+// unstarted data pipe merely looks alive: CCDataPipe::enqueueBlob dereferences that timer without a null check, so the first
+// fault report the family flushes through it panicked the kernel inside com.apple.driver.corecapture
+// (2026-10-17 10:30 and 10:37, CCDataPipe::enqueueBlob+0x128 with RDI = 0; see docs/native-wifi-results/20261017-panic-corecapture/).
+inline bool ccPipeStartPipe(void *pipe)
+{
+    if (!pipe) return false;
+    void **vptr = *(void ***)pipe;
+    return ((bool (*)(void *))vptr[0x868 / 8])(pipe);
+}
+
 class CCStream {
 public:
     // __ZN8CCStream15withPipeAndNameEP6CCPipePKcPK15CCStreamOptions; options+0 selects the class: 0 CCLogStream, 1 CCDataStream

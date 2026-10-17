@@ -1029,3 +1029,26 @@ Installed 2026-10-17 10:18 (Linux, no reboot yet): the `build-kexts` workflow ru
 `Kexts-backup/itlmt7925Native.kext.20261017-101843`, sha256 `14c6af9a…`; `Info.plist` unchanged, no Min/MaxKernel cap,
 boot-args still stage b). Verified in the installed binary: both `ieTrim` loops with their `cmpl $0x190` bound (one in the
 `getWCL_BSS_INFO` path, one in the `deliverScanResults` loop). The core kext is unchanged (native-side fix only).
+
+### 2026-10-17 (later): the IE fix held, panic #2 — the fault pipe was never started
+
+The 10:26 boot was the first with a working cap: the log store holds `scan:trim 00c896036939 ch=1 ie=473->347` (an AP
+with 473 bytes of IEs — the old build's over-read territory) and the machine joined, got a DHCP lease and was usable.
+Then, idle, it went down twice (10:30 after 229 s, 10:37 after 77 s) with a signature that has nothing to do with the
+scan cache:
+
+* `com.apple.driver.corecapture`, `CCDataPipe::enqueueBlob + 0x128`, NULL deref (`RDI = 0`) while
+  `CCFaultReporter::completeReport` (a deferred fault report, timer-driven) writes a core capture.
+* The capture is requested by the family's link-recovery path: `IO80211LinkRecovery::recordBSSBlacklistEvent` →
+  `IO80211LinkRecovery::triggerFaultReporter` → the fault reporter this driver handed to the family at start.
+
+Root cause: the `CCPipe::withOwnerNameCapacity` / `CCStream::withPipeAndName` factories only *init* a pipe. On 25G241 the
+notify timer a data pipe needs is created by `CCDataPipe::start` (stored at pipe ivars +0x90 → +0x38, handler
+`CCDataPipe::notifyTimeout`), which also publishes resource "CCPipe" and registers the service; the factories never call
+it, and `CCDataPipe::enqueueBlob` dereferences that timer without a null check. Apple's
+`AppleBCMWLANBusInterfacePCIe::createCrashTracerLogger` ends its setup with exactly the missing call —
+`CCPipe::startPipe`, virtual at vtable slot +0x868. Fixed in `kexts/itlmt7925Native`: `ccPipeStartPipe()` (raw slot call,
+documented in `corecapture_min.h`) now runs on both pipes right where Apple runs it, plus a `ctl:faultPipe=<0|1>` start
+trace. Full walk-through with the 25G241 disassembly:
+[`docs/native-wifi-results/20261017-panic-corecapture/`](../native-wifi-results/20261017-panic-corecapture/README.md).
+Not built or installed yet.
