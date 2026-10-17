@@ -2130,3 +2130,26 @@ then ATOM-BIOS parse / GMC v11 / PSP 14 / SMU 14 / IH lines; if it hangs instead
 (one reboot), and the evidence comes from that boot's `NMXGPU` log plus a `spindump` while it spins or the
 shutdown-stall report after a forced restart. Collector: `sudo bash scripts/macos-nmxgpu-890m-collect.sh
 out/890m-trace/step27-vfct`.
+
+## Step28 (2026-10-17, macOS 25G241): the StrixVFCT boots - black OLED + IOFramebuffer power-state panic; NMXGPUFB fix
+
+Owner: with the guard cleared the OLED goes black; a forced restart then comes up parked (guard) and works. Twice.
+Reports: `Kernel-2026-10-17-150228.panic` and `-152250.panic`, both the boots that attached with StrixVFCT (their
+unified log never reached disk - panic at 10.5 s / 24.3 s uptime; the following boots are the parked 15:02 / 15:22
+ones). Both identical: page fault CR2 `0x120` at `IOFramebuffer::powerStateWillChangeTo+0x25`, kernel_task PM thread
+(`pmDriverCallout -> driverInformPowerChange`), RAX 0.
+
+`powerStateWillChangeTo` starts with `this->fPrivate(0x1c8)->controller([0])->workloop(0x120)`.
+`fPrivate->controller` is only assigned in `IOFramebuffer::open()` (via `copyController`); `IOFramebuffer::start()`
+only calls `joinPMtree` (vtable 0x7a0). `NMXGPUFB::start()` calls `IOFramebuffer::start()` and then
+`registerPowerDriver(this, kFbPowerStates, 2)` (vtable 0x7a8). The initial power change it triggers can reach
+`powerStateWillChangeTo` before anything opens the framebuffer, so controller is NULL and the kernel panics. The
+framebuffer exists only after amdgpu initialised and the NullMoth display client set a mode, so with the VFCT amdgpu
+very likely got through GPU init + DC this time (unconfirmed - no log survived).
+
+Fix: `scripts/macos-nmxgpu-pcie-patch.sh` is now a patch set. `fbpm` = file offset `0x9ced22`,
+`ff90a8070000` (`call *0x7a8(%rax)`) -> `31c00f1f4000` (`xor eax,eax; nop4`). Applied together with `pcie`; stock
+sha256 is checked by un-applying the known patches; patched sha256 `01cf7420...`; `--undo` restores the stock bytes.
+AuxKC rebuilt, guard cleared. Risk: without a power driver, IOFramebuffer gets no power callbacks (no display sleep
+on NMXGPUFB) - acceptable for bring-up; if WindowServer then waits on the framebuffer the boot is black but alive, and
+its log survives a forced restart.
