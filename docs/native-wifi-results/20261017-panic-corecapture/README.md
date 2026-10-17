@@ -87,6 +87,13 @@ inline bool ccPipeStartPipe(void *pipe)
 
 ## Verify after the fix
 
+CI + ESP: `build-kexts` run [39000943950](https://github.com/thanhnndev/ga403wm-hackintosh/actions/runs/39000943950) on
+`bff6b30` → `scripts/linux-install-kext.sh itlmt7925Native` → `/boot/EFI/OC/Kexts/itlmt7925Native.kext`, sha256
+`7ddc713b…` (the IE-cap build it replaces is kept as `Kexts-backup/itlmt7925Native.kext.20261017-110334`, sha256
+`88499c27…`). Installed 2026-10-17 11:03, not booted yet. Verified in the installed binary: the two new
+`callq *0x868(%rax)` sites storing into the pipe-started members, and the `ctl:faultPipe=%u` / `ctl:logPipe start failed`
+strings.
+
 1. Boot macOS, use Wi-Fi ≥5 minutes (the panics came 77 s / 229 s in, idle); repeated `sudo wdutil scan` is welcome.
 2. `ioreg -l | grep itlmt_native_trace` must show `ctl:faultPipe=1`.
 3. No `corecapture` panic. A fault report may still be produced when link recovery records a BSS blacklist event — that

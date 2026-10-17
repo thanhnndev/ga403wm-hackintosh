@@ -1051,4 +1051,7 @@ it, and `CCDataPipe::enqueueBlob` dereferences that timer without a null check. 
 documented in `corecapture_min.h`) now runs on both pipes right where Apple runs it, plus a `ctl:faultPipe=<0|1>` start
 trace. Full walk-through with the 25G241 disassembly:
 [`docs/native-wifi-results/20261017-panic-corecapture/`](../native-wifi-results/20261017-panic-corecapture/README.md).
-Not built or installed yet.
+Installed 2026-10-17 11:03 (Linux, no reboot yet): `build-kexts` run 39000943950 on `bff6b30` →
+`/boot/EFI/OC/Kexts/itlmt7925Native.kext`, sha256 `7ddc713b…` (the IE-cap build it replaces is kept as
+`Kexts-backup/itlmt7925Native.kext.20261017-110334`, sha256 `88499c27…`). Next boot: `ioreg -l | grep itlmt_native_trace`
+must show `ctl:faultPipe=1`, and ≥5 minutes of Wi-Fi (incl. scans) must pass without a panic.
