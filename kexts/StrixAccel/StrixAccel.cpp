@@ -28,7 +28,7 @@
 #include "../../include/StrixNativeABI.h"
 #include "StrixABIProfile.h"
 
-#define STRIXACCEL_VERSION "0.1.19"
+#define STRIXACCEL_VERSION "0.1.20"
 
 #include "IOAccelFamily2_decl.h"
 
@@ -451,6 +451,15 @@ bool StrixAccelerator::start(IOService *provider)
         uint32_t caps;
         if (PE_parse_boot_argn("strixcaps", &caps, sizeof caps)) strix_agdc::gCapMask = int32_t(caps & 0xffff);
         if (PE_parse_boot_argn("strixcapall", nullptr, 0)) strix_agdc::gCapWsOnly = 0;
+        // 0.1.20: the AGDC capability entry fields CoreDisplay reads back, so the three numbers that decide whether it
+        // keeps baking colour on the GPU or hands a stage to this pipe can be A/B tested from the OpenCore config
+        // (no rebuild): strixgammatype=16 + strixgammaflags=0x88005 is Apple's own AMD gamma entry (890M-TRACE Step22).
+        uint32_t v;
+        if (PE_parse_boot_argn("strixgammatype", &v, sizeof v)) strix_agdc::gCapGammaType = int32_t(v);
+        if (PE_parse_boot_argn("strixgammaflags", &v, sizeof v)) strix_agdc::gCapGammaFlags = int32_t(v);
+        if (PE_parse_boot_argn("strixcsctype", &v, sizeof v)) strix_agdc::gCapCscType = int32_t(v);
+        if (PE_parse_boot_argn("strixcscflags", &v, sizeof v)) strix_agdc::gCapCscFlags = int32_t(v);
+        if (PE_parse_boot_argn("strixlintype", &v, sizeof v)) strix_agdc::gCapLinType = int32_t(v);
     }
     if (!OSDynamicCast(IOPCIDevice, provider)) return false;
     if (!layoutGate()) {
@@ -633,6 +642,9 @@ IOReturn StrixAccelerator::setProperties(OSObject *props)
     num("StrixAccel,CapAlt", 0, 1, &strix_agdc::gCapAlt);
     num("StrixAccel,CapLinType", 1, 0x3fff, &strix_agdc::gCapLinType);
     num("StrixAccel,CapGammaType", 1, 0x3fff, &strix_agdc::gCapGammaType);
+    num("StrixAccel,CapGammaFlags", 0, 0x7fffffff, &strix_agdc::gCapGammaFlags);
+    num("StrixAccel,CapCscType", 1, 0x3fff, &strix_agdc::gCapCscType);
+    num("StrixAccel,CapCscFlags", 0, 0x7fffffff, &strix_agdc::gCapCscFlags);
     num("StrixAccel,CapCscType", 1, 0x3fff, &strix_agdc::gCapCscType);
     num("StrixAccel,CapFixedFmt", 0, 0xff, &strix_agdc::gCapFixedFmt);
     num("StrixAccel,CapTableSize", 2, 65536, &strix_agdc::gCapTableSize);
@@ -676,6 +688,11 @@ void StrixAccelerator::publishCounters()
     setProperty("StrixAccel,Txn,BadStatus", (unsigned long long)gTxnBadStatus, 32);
     setProperty("StrixAccel,Tune,Caps", (unsigned long long)strix_agdc::gCapMask, 32);
     setProperty("StrixAccel,Tune,CapLinType", (unsigned long long)strix_agdc::gCapLinType, 32);
+    setProperty("StrixAccel,AGDC,CfgFlags", (unsigned long long)strix_agdc::gCapFlags, 32);
+    setProperty("StrixAccel,AGDC,CfgGammaType", (unsigned long long)strix_agdc::gCapGammaType, 32);
+    setProperty("StrixAccel,AGDC,CfgGammaFlags", (unsigned long long)strix_agdc::gCapGammaFlags, 32);
+    setProperty("StrixAccel,AGDC,CfgCscType", (unsigned long long)strix_agdc::gCapCscType, 32);
+    setProperty("StrixAccel,AGDC,CfgCscFlags", (unsigned long long)strix_agdc::gCapCscFlags, 32);
     setProperty("StrixAccel,AGDC,CapServed", (unsigned long long)strix_agdc::gCapServed, 32);
     setProperty("StrixAccel,AGDC,CapFromWS", (unsigned long long)strix_agdc::gCapFromWS, 32);
     setProperty("StrixAccel,AGDC,CapFromOther", (unsigned long long)strix_agdc::gCapFromOther, 32);

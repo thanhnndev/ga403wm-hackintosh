@@ -1828,3 +1828,77 @@ changes can be compile-checked here; the real build is CI (`build.yml` builds `S
   kernelcache vs in CoreDisplay, then find which query the plane fails to answer (candidate:
   `IOAccelDisplayPipe::copyCapabilities()` slot 282, or the `kCmdFbExtCap` 0x711 type `0x2` path when
   `fbIndex != 0`).
+
+## Step22 (2026-10-17, Linux): the capability entries CoreDisplay reads back — Apple's own AMD numbers, and why 0.1.20 does not flip them blindly
+
+System volume mounted read-only at `/mnt/macos-sys`, `vol=3` (Tahoe 26 keeps
+`System/Library/KernelCollections/{System,Boot}KernelExtensions.kc`; `CoreDisplay.framework` has no on-disk binary,
+so the string that WindowServer logs is userspace/dyld-cache only).
+
+* `strings` in `SystemKernelExtensions.kc` has `Table - One-Channel`, `Table - Three-Channel`, `Table - Three Channel`,
+  `Table - One Channel`, `Piece-Wise Linear`, `ICC Parametric Type 3`, `Fixed Format`, `Configuration ID` — the AGDC
+  enums. `3-channel gamma table capabilities` is *not* there, confirming the log line comes from CoreDisplay.
+* `kc.xrefs()` on those literals found two independent Apple implementations, and their jump tables decode the enums
+  (`tools/kc.py` + Capstone):
+  * `AMDRadeonX6000_AmdAgdcServices::stringifyGammaType(AGDCGammaType_t)` @0xbf792c4
+  * `stringifyDegammaType(AGDCLinearizationType_t)` @0xbf7923c, `stringifyFbCapabilityType(...)` @0xbf790b8
+  * `AtiDeviceControl::getGammaTypeString` @0x13b6eba0, `getLinearizationTypeString` @0x13b6eab0 region
+* Resulting enums (both implementations agree):
+
+  | `AGDCGammaType_t` | value | `AGDCLinearizationType_t` | value | `AGDCFBExtendedCapabilitiesType_t` (query type) | value |
+  |---|---|---|---|---|---|
+  | Configuration ID | 1 | Configuration ID | 1 | CSC | 1 |
+  | Fixed Format | 2 | Fixed Format | 2 | Gamma | 2 |
+  | Table - One Channel | 8 | Table - One-Channel | 4 | Linearization | 4 |
+  | **Table - Three Channel** | **0x10** | Table - Three-Channel | 8 | Pipeline Scaler | 8 |
+  | Piece-Wise Linear | 0x20 | Piece-Wise Linear | 0x10 | Plane Scaler | 0x10 |
+  |  |  | ICC Parametric Type 3 | 0x20 | Rotation | 0x20 |
+  |  |  |  |  | Inline Buffer | 0x40 |
+  |  |  |  |  | Queue | 0x80 |
+  |  |  |  |  | Closed Caption Regions | 0x100 |
+  |  |  |  |  | Mirroring | 0x200 |
+  |  |  |  |  | Format Convert | 0x400 |
+  |  |  |  |  | HDR Scaler | 0x800 |
+  |  |  |  |  | Plane CSC | 0x1000 |
+  |  |  |  |  | 3D LUT | 0x2000 |
+  |  |  |  |  | Pixel Processing | 0x4000 |
+  |  |  |  |  | Cursor | 0x8000 |
+
+  So every `kFbCap*` in `StrixAgdc.h` is right, and `gCapMask = 0x340f` claims CSC + Gamma + Linearization + Pipeline
+  Scaler + Format Convert + Plane CSC + 3D LUT.
+* `getFbExtendedCapability(AGDCFBGetExtendedCapability_t*)` @0xbf74dd4 is Apple's dispatcher: request layout
+  `+0x00 fb/path index (byte), +0x04 type (dword), +0x08 count (out), +0x0c entry[8]`, each entry `0x32c`; the reply for
+  the queried type comes from `getFbCapabilityForCsc` (inline for type 1), `ForGamma` (type 2), `ForDegamma` (type 4),
+  `ForScaler` (type 0x10), `ForCursor` (type 0x8000); anything else returns `0xe00002c7`. Entry field layout read
+  straight off Apple's stores: `+0x00 flags, +0x04 plane mask (u64), +0x0c update period (float), +0x10 type,
+  +0x14 fixed format, +0x18 configuration id, +0x20 min (float) / pixel format (CSC), +0x24 max (float) / min (CSC),
+  +0x28 max table size / max (CSC)`.
+* Apple's own entries (the numbers to match):
+  * CSC: `flags 0x80005`, plane mask 1, `type 8`, pixel format `0x50005`/`0x70007` (or +0x1000000 for ≥3 bit depths),
+    min `-1.0`, max `1.0`, count 1.
+  * Gamma: `flags 0x88005`, plane mask 1, `type 0x10` (Table - Three Channel), min `0.0`, max `1.0`,
+    max table size from the GPU, **count 2** (two 0x32c segments).
+  * Degamma: `flags 0x80005`, `type 1` (Configuration ID) + configuration id at `+0x18`, max table size 1, count 2.
+  * Scaler: `flags 0x80004`, plane mask 0, `type` 0.
+* What we have been sending since 0.1.14: `flags 0x80004` and `type 1` for every claimed type. WindowServer's
+  evidence that this matters: `Attempting to get 3-channel gamma table capabilities from plane with no 3-channel
+  gamma table support` (28294 lines in a long boot), `Attempting to get capabilities from plane with no gamma`
+  (91), and `GetThermalCompensationAttributes: can't get framebuffer {red,green,blue} gamma scaling factor on port N
+  (e00002ce)` — the last one is our `0x3`/`0x941` refusals (`e00002ce` = unsupported).
+* **Why 0.1.20 does not just switch `gCapGammaType` to 0x10**: `StrixAccel,Txn,GammaSeen = 0` in all 12 logged boots
+  (0.1.16 → 0.1.18) and the transaction dumps say `Dirty Regamma - GPU`, `Linearize - GPU`, `CSC - GPU`,
+  `System Gamma - Unknown` — CoreDisplay currently bakes every colour stage itself and only asks this pipe to
+  `Fetch`. Reporting a 3-channel gamma table would move the gamma stage *into* the pipe, and `StrixDisplayPipe`
+  copies the surface to the GOP raster without applying any table, so the panel would show un-gamma-corrected
+  pixels. The claim therefore has to be A/B tested, not flipped.
+* 0.1.20 (this step) adds the levers and nothing else behavioural: boot-args `strixgammatype`, `strixgammaflags`,
+  `strixcsctype`, `strixcscflags`, `strixlintype`; live tunables `StrixAccel,CapGammaFlags`, `CapCscType`,
+  `CapCscFlags`; counters `StrixAccel,AGDC,Cfg{Flags,GammaType,GammaFlags,CscType,CscFlags}`; and the served-cap log
+  line now prints the entry flags/type it actually wrote. Defaults stay at today's values (`type 1`, `flags 0x80004`)
+  so a 0.1.20 boot is byte-for-byte the 0.1.19 behaviour plus counters.
+* A/B procedure (no rebuild, config lives on the ESP and is editable from Linux): add
+  `strixgammatype=16 strixgammaflags=0x88005` to the boot-args, reboot, then compare
+  `grep -c '3-channel gamma table capabilities'`, `StrixAccel,Txn,GammaSeen`, `AGDC,CfgGammaType`, the
+  `AGDC: 0x711 type 0x2 served ...` line and the on-screen colours. If the spam stops and gamma tables arrive but
+  the picture washes out, the next step is to apply the LUT/LiT in the copy path (a 3×256 LUT lookup per pixel) —
+  that is the real colour-pipeline win this discovery unlocks.

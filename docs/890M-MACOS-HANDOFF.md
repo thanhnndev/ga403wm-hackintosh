@@ -7,7 +7,24 @@ Step-by-step history: [890M trace](890M-TRACE.md).
 ## Current state
 
 
-NEWEST (Step20, 2026-10-16/17, Linux): StrixAccel **0.1.19** — the remaining pipe-transaction fallbacks are
+NEWEST (Step22, 2026-10-17, Linux): StrixAccel **0.1.20** = 0.1.19 plus the AGDC capability levers and nothing else
+behavioural. Decoded Apple's own AGDC capability numbers from `SystemKernelExtensions.kc` (25G241): the query types
+(`1 CSC, 2 Gamma, 4 Linearization, 8 Pipeline Scaler, 0x10 Plane Scaler, 0x20 Rotation, 0x40 Inline Buffer, 0x80 Queue,
+0x100 CCR, 0x200 Mirroring, 0x400 Format Convert, 0x800 HDR Scaler, 0x1000 Plane CSC, 0x2000 3D LUT, 0x4000 Pixel
+Processing, 0x8000 Cursor`) match `StrixAgdc.h`, but the *entry* fields we send do not: Apple's AMD service sends
+`AGDCGammaType_t 0x10` = "Table - Three Channel" with flags `0x88005`, CSC `type 8` + flags `0x80005`, degamma `type 1`
++ flags `0x80005`, while we have sent `type 1` + flags `0x80004` for everything since 0.1.14. That is what WindowServer
+complains about 28294×/boot (`Attempting to get 3-channel gamma table capabilities from plane with no 3-channel gamma
+table support`) and why the transaction dump ends with `System Gamma - Unknown`. We do **not** flip it by default:
+`Txn,GammaSeen = 0` in all 12 logged boots (`Dirty Regamma/Linearize/CSC - GPU`), so CoreDisplay bakes colour itself
+today and only asks the pipe to `Fetch`; claiming a 3-channel table would move the gamma stage into this pipe, which
+does not apply tables yet. 0.1.20 therefore ships boot-args `strixgammatype`/`strixgammaflags`/`strixcsctype`/
+`strixcscflags`/`strixlintype` + live tunables `CapGammaFlags`/`CapCscType`/`CapCscFlags` + counters
+`AGDC,Cfg{Flags,GammaType,GammaFlags,CscType,CscFlags}` so the claim can be A/B tested from the ESP config without a
+rebuild (`strixgammatype=16 strixgammaflags=0x88005`), and the served-cap log prints the entry flags/type it wrote.
+Defaults unchanged. Full enum tables, the dispatch map and Apple's per-type numbers: 890M-TRACE.md "Step22".
+
+Previous (Step20, 2026-10-16/17, Linux): StrixAccel **0.1.19** — the remaining pipe-transaction fallbacks are
 `IOAccelResource2::prepare()` returning 0. `IOAccelDisplayPipeTransaction2::prepare()` (25G241 0x14baff8a) calls
 each plane resource's slot 46 (`call [vptr+0x170]`; the vptr points at the first virtual, so that *is* slot 46 =
 prepare, `+0x180` through the vtable symbol — Apple's own `AppleParavirtResource::prepare` tail-calls

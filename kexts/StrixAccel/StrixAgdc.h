@@ -97,12 +97,27 @@ static volatile int32_t gCapAlt = 1;             // also offer alternative linea
 static volatile SInt32 gCapSeen, gCapFromWS, gCapFromOther, gCapLastPid;
 static char gCapLastName[20] = "";
 static char gCapSeq[160] = "";                   // "ws:0x1,ws:0x2,..." first queries with the answering client
-static volatile int32_t gCapLinType = 0x4;       // AGDCLinearizationType bit reported
-static volatile int32_t gCapGammaType = 0x1;
-static volatile int32_t gCapCscType = 0x1;
+// The per-type values below are the *entry* fields CoreDisplay reads back. The numbers in the comments come from
+// disassembling Apple's own AMD implementation of the same command (AMDRadeonX6000_AmdAgdcServices::
+// getFbCapabilityFor{Csc,Gamma,Degamma,Scaler} and getFbExtendedCapability in SystemKernelExtensions.kc 25G241 —
+// 890M-TRACE.md "Step22"):
+//   AGDCLinearizationType_t : 1 Configuration ID, 2 Fixed Format, 4 Table - One-Channel, 8 Table - Three-Channel,
+//                             0x10 Piece-Wise Linear, 0x20 ICC Parametric Type 3
+//   AGDCGammaType_t         : 1 Configuration ID, 2 Fixed Format, 8 Table - One Channel, 0x10 Table - Three Channel,
+//                             0x20 Piece-Wise Linear
+// Apple's own entries: CSC flags 0x80005, entry type 8, pixel format at +0x20, min -1.0/max 1.0; gamma flags 0x88005,
+// entry type 0x10, count 2, min 0.0/max 1.0, table size from the GPU; degamma flags 0x80005, entry type 1, config id
+// at +0x18, count 2; scaler flags 0x80004. We keep shipping the values 0.1.14..0.1.19 used (type 1, flags 0x80004)
+// until the A/B below is run: raising the gamma claim moves the whole gamma stage into the pipe, and this pipe does
+// not apply the tables yet (Txn,GammaSeen = 0 on every boot so far, so CoreDisplay bakes gamma on the GPU today).
+static volatile int32_t gCapLinType = 0x4;       // AGDCLinearizationType reported
+static volatile int32_t gCapGammaType = 0x1;     // AGDCGammaType reported (0x10 = Table - Three Channel)
+static volatile int32_t gCapCscType = 0x1;       // CSC entry type field (Apple's own uses 8)
 static volatile int32_t gCapFixedFmt = 0;
 static volatile int32_t gCapTableSize = 1024;
 static volatile int32_t gCapFlags = 0x80004;     // same descriptor flags the plane scaler is accepted with
+static volatile int32_t gCapGammaFlags = 0x80004;   // Apple's AMD gamma entry uses 0x88005
+static volatile int32_t gCapCscFlags = 0x80004;     // Apple's AMD CSC entry uses 0x80005
 static volatile SInt32 gCapServed;
 static volatile SInt32 gRefusedLogged;
 static char gRefusedSeen[128] = "";      // "0x3fc,0x925,..." distinct refused commands, bounded
@@ -308,7 +323,8 @@ IOReturn StrixDeviceControl::vendor_doDeviceAttribute(unsigned int cmd, unsigned
             const float one = 1.0f;
             uint32_t oneBits;
             memcpy(&oneBits, &one, sizeof oneBits);
-            p32(0x00, (uint32_t)gCapFlags);
+            p32(0x00, (uint32_t)(type == kFbCapGamma ? gCapGammaFlags :
+                                 type == kFbCapCSC ? gCapCscFlags : gCapFlags));
             p64(0x04, 1);                                 // plane 0 (the desktop)
             p32(0x10, (uint32_t)(type == kFbCapLinearization ? gCapLinType :
                                  type == kFbCapGamma ? gCapGammaType :
@@ -341,8 +357,12 @@ IOReturn StrixDeviceControl::vendor_doDeviceAttribute(unsigned int cmd, unsigned
                 memcpy(&c->entry[a][0x20], &c->entry[0][0x20], 12);
                 memcpy(&c->entry[a][0x00], &c->entry[0][0x00], 4);
             }
+            uint32_t eFlags = 0, eType = 0;
+            memcpy(&eFlags, &c->entry[0][0x00], 4);
+            memcpy(&eType, &c->entry[0][0x10], 4);
             if (OSIncrementAtomic(&gCapServed) < 24)
-                SLOG("AGDC: 0x711 type %#x served to %s[%d] (count %u, mask %#x)", type, who, pid, c->count, (unsigned)gCapMask);
+                SLOG("AGDC: 0x711 type %#x served to %s[%d] (count %u, mask %#x, entry flags %#x type %#x)",
+                     type, who, pid, c->count, (unsigned)gCapMask, eFlags, eType);
             OSIncrementAtomic(&gStats.fbCap);
             return kIOReturnSuccess;
         }
