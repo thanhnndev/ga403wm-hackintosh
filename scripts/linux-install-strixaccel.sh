@@ -35,6 +35,15 @@ SRC=${1:-$ESP/EFI/$NAME-0.1.20.kext}
 
 mkdir -p "$BK" "$MP"
 
+# Never leave the Data volume writable: on any exit, sync, unmount and mount it back read-only.
+cleanup() {
+    rc=$?
+    if mountpoint -q "$MP"; then sync; umount "$MP" || true; fi
+    mount -t apfs -o "ro,vol=0,uid=${SUDO_UID:-1000},gid=${SUDO_GID:-1000}" "$DEV" "$MP" 2>/dev/null || true
+    exit $rc
+}
+trap cleanup EXIT
+
 # linux-apfs-rw allows only one mount of the container while writing: peel every stacked mount first.
 for _ in 1 2 3 4 5 6 7 8; do
     # findmnt exits 1 when nothing matches, so the substitution has to tolerate that under set -e/pipefail.
@@ -77,7 +86,9 @@ else
     echo "source: $SRC  version $(version_of "$SRC/Contents/Info.plist")  sha256 ${want:0:12}…"
     if [ -e "$MP/$REL" ]; then
         ts=$(date +%Y%m%dT%H%M%S)
-        cp -a "$MP/$REL" "$BK/$NAME.kext.$ts"
+        # plain cp: the ESP is vfat, it cannot store owners, and `cp -a` then exits 1 ("failed to preserve
+        # ownership") which used to kill this script before the AuxKC was dropped.
+        cp -r "$MP/$REL" "$BK/$NAME.kext.$ts"
         echo "backed up installed copy -> $BK/$NAME.kext.$ts (version $(version_of "$MP/$REL/Contents/Info.plist"))"
     fi
     tmp="$MP/Library/Extensions/.$NAME.strix-install"
@@ -103,14 +114,14 @@ echo "installed: $NAME version $(version_of "$MP/$REL/Contents/Info.plist") as 0
 # Drop the stale collection so kernelmanagerd relinks it from /Library/Extensions on the next boot.
 kc="$MP/Library/KernelCollections/AuxiliaryKernelExtensions.kc"
 if [ -f "$kc" ]; then
-    cp -a "$kc" "$BK/AuxiliaryKernelExtensions.kc.$(date +%Y%m%dT%H%M%S)"
+    cp "$kc" "$BK/AuxiliaryKernelExtensions.kc.$(date +%Y%m%dT%H%M%S)"      # plain cp, see the vfat note above
     rm -f "$kc"
     echo "AuxKC moved aside (backup kept in $BK) - macOS rebuilds it on the next boot"
+else
+    echo "no AuxKC at $kc (already dropped)"
 fi
 
 sync
-umount "$MP"
-mount -t apfs -o "ro,vol=0,uid=${SUDO_UID:-1000},gid=${SUDO_GID:-1000}" "$DEV" "$MP" 2>/dev/null || true
 echo
 echo "OK. Boot macOS: boot 1 relinks the AuxKC (bootstrap logs REBOOT_REQUIRED), boot 2 runs the new kext."
 echo "Verify on macOS:  ioreg -rc StrixAccelerator -l | grep -E 'StrixAccel,(Version|Res,Forced|Txn,BadStatus|AGDC,Cfg)'"
