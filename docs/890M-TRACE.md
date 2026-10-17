@@ -1775,3 +1775,56 @@ changes can be compile-checked here; the real build is CI (`build.yml` builds `S
   `chown -R root:wheel` / `chmod -R go-w` and `kmutil load --no-authorization -p`, rc 28 = AuxKC rebuilt,
   reboot required). ESP `Kernel/Add StrixAccel.kext` stays disabled and its ESP stash is still 0.1.15: left
   untouched deliberately.
+
+## Step21 (2026-10-17, Linux): the 17/10 freeze is a Wi-Fi panic, 0.1.19 was still not loaded, and what the failing transaction actually asks for
+
+* The freeze ("use it 1–2 min → hard reset") is a **Wi-Fi** panic, not the iGPU: `Kernel-2026-10-17-093407.panic`,
+  page fault at uptime 216.8 s, a store 1 byte past a 512-byte `data.kalloc.512` element inside
+  `IO80211BSSBeacon::setBeaconDataFromMsg + 0x2c`, reached from `IO80211Glue::processPendingEventQueue` →
+  `WCLMngFrameRouter::scanResultEventHandler` → `WCLScanCacheStore::updateOrAddBeacon` →
+  `IO80211ScanCacheStore::updateScanCache`. No graphics kext anywhere in the stack; that boot's own evidence
+  (`/Library/Logs/StrixGraphicsFix/20261017T023410Z/`) has `StrixAccel,Transactions = 0`, `Copied = 0` and
+  zero `Fallback`/gamma lines. Handed to the Wi-Fi track; the 890M work is unaffected.
+* 0.1.19 was **not** running in that boot, which is why nothing changed: `loaded-before.txt` lists
+  `com.itlmt7925.strixaccel (0.1.18)` (AuxKC address range), ioreg `StrixAccel,Version = 0.1.18` with no
+  `Tune,ResOk` / `Res,Prepare` / `Res,Forced` / `Txn,BadStatus`, and
+  `/Library/KernelCollections/AuxiliaryKernelExtensions.kc` still has mtime 17:10 16/10 with no
+  `StrixAccel,Tune,ResOk` string (`strings | grep -c` = 0). `/Library/Extensions/StrixAccel.kext` is 0.1.19,
+  but macOS loads the AuxKC, so the rebuild is still pending on the macOS side:
+  `sudo bash scripts/macos-strix-accel-install.sh` ends with `kmutil load --no-authorization -p <kext>`
+  (`rc 28` = AuxKC rebuilt, reboot required).
+* What the failing transaction actually asks for — CoreDisplay's own `DisplayPipeState` dump for the first
+  rejection (17:23:04.996, the earlier boot of the same log window):
+  ```
+  Plane Index: 0
+  Source Color Space: (kCGColorSpaceICCBased; kCGColorSpaceModelRGB; Built-in OLED 120 Hz)
+  Rotation Angle: 0 degrees
+  Matrix: [1 0 0][0 1 0][0 0 1]
+  LUT: R - [0..0.501961..1] with 256 entries    (same G, B)
+  LiT: R - [0..0.5..1] with 3 entries           (same G, B)
+  Display Pipe Operations:
+      Dirty  Fetch        - Pipe
+      Dirty  Scale        - None
+      Dirty  Rotate       - None
+      Dirty  Linearize    - GPU
+      Dirty  CSC          - GPU
+      Dirty  System Gamma - Unknown
+  ```
+  So the pipe is only asked to **fetch**; linearization and CSC are already done on the GPU and handed over as
+  a 256-entry LUT + 3-entry LiT per channel. `Attempting to get 3-channel gamma table capabilities from plane
+  with no 3-channel gamma table support` directly precedes every rejection on the same plane, and
+  `System Gamma - Unknown` looks like its consequence: WindowServer asks the plane for the 3-channel gamma
+  table capability, does not get it, and falls back. 27965 such lines accumulate per boot (log spam + `logd`
+  + disk), so it is worth removing even though it is not itself fatal.
+* AGDC counters, early snapshot, 0.1.18: boot 17:25 `Commands 94, CapServed 28, CapType 0x8000, Refused 38`;
+  panic boot `Commands 9, CapServed 0, Refused 2 (0x3,0x941)`. Both have `NoFramebuffer = 1` and
+  `Tune,Caps = 13327 = 0x340f`, so at least one capability query was answered while `framebuffer() == NULL`,
+  while `CapServed` is non-zero in the boot that actually renders.
+* Log-window gotcha: `display-log.txt` is a time-window capture, so it mixes entries from the *previous* boot.
+  For `20261016T102547Z` the current boot is everything with `timestamp >= 17:25:45`: **47** `Fallback ...` +
+  **329** gamma lines in ~19 s; the other 1645 / 27965 belong to the 17:23 boot inside the same window. Always
+  filter by the boot's start before counting.
+* Next trace (needs the System volume mounted read-only): locate `3-channel gamma table capabilities` in the
+  kernelcache vs in CoreDisplay, then find which query the plane fails to answer (candidate:
+  `IOAccelDisplayPipe::copyCapabilities()` slot 282, or the `kCmdFbExtCap` 0x711 type `0x2` path when
+  `fbIndex != 0`).

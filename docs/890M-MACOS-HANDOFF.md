@@ -25,6 +25,10 @@ staged as the macOS working copy's `build/StrixAccel.kext` (0.1.18 backed up to
 `/boot/EFI/OC/Kexts-backup/StrixAccel.kext.0.1.18-20261017T093234`). The only remaining macOS step is
 `cd ~/develop/projects/ga403wm-hackintosh && sudo bash scripts/macos-strix-accel-install.sh` (chown root:wheel +
 AuxKC rebuild, kmutil rc 28 = reboot), then read `StrixAccel,Res,Forced` / `Res,Prepare` / `Txn,BadStatus`.
+17/10 status: the AuxKC was **not** rebuilt (mtime 17:10 16/10, no `StrixAccel,Tune,ResOk` string, and that boot's
+`loaded-before.txt` lists strixaccel **0.1.18**), so run the script before judging anything. The 17/10 freeze itself
+was a separate **Wi-Fi** panic (`IO80211BSSBeacon::setBeaconDataFromMsg` off-by-one write, uptime 216.8 s), not the
+iGPU: that boot had `StrixAccel,Transactions = 0` and zero `Fallback` lines. See 890M-TRACE.md "Step21".
 
 Previous (Step19, 2026-10-16, Linux): the "iGPU panic" is not the iGPU. Both `Kernel-2026-10-16-*.panic`
 reports are `assertion failed: now >= *pkt_enq_time` (`classq_fq_codel.c:1127`) reached from
