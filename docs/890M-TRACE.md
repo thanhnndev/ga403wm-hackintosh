@@ -1963,3 +1963,30 @@ Chain (25G241 SystemKernelExtensions.kc):
 * Counters `Res,TypeUma`, `Res,TypeDevCache`, `Res,DevCacheKB`, `Tune,UmaSurf`.
 * Expected next boot: no `failed to alloc GART` / `failed to allocate GPU virtual address` lines,
   `Res,Forced` ~0 while `Res,Prepare` grows, `Txn,BadStatus 0`, no `Fallback ... submission failed`.
+
+
+## Step24 (2026-10-17, macOS 25G241): 0.1.21 verified; what WindowServer spends CPU on now
+
+Boot 12:07 with StrixAccel 0.1.21:
+* `Res,Forced 0` with `Res,Prepare 3371` (every family `IOAccelResource2::prepare()` now succeeds on its own),
+  `Res,TypeUma 8`, `Res,TypeDevCache 0`, `Txn,BadStatus 0`.
+* Whole-boot kernel log for `IOAcceleratorFamily2`: **0** `failed to alloc GART space`, **0**
+  `failed to allocate GPU virtual address` (2621/boot on 0.1.20). Left: 11x `surfaceStart(): failed to get the vram
+  descriptors` at boot (before the framebuffer attaches) and 13 display_change_handler traces.
+* WindowServer error log: **0** `Fallback GPU Display Pipe transaction submission failed`; 174
+  `3-channel gamma table` lines remain (AGDC entry type, Step22 A/B levers).
+* WindowServer CPU: ~165 % for the first minute, then **~74 %** steady (desktop idle-ish, OLED only + HDMI attached);
+  kernel_task ~27 %.
+* Spindump 1 (first minute): two threads (`CA::CG::Queue`, `com.apple.coreanimation.pipelines`) at 100 % each in
+  `NVMTLLibrary newFunctionWithName -> nvmtl_translate (metal2vulkan)`: CoreAnimation's shader warm-up translated
+  Metal -> SPIR-V on the CPU by NullMoth's NVMTL. Gone in spindump 2.
+* Spindump 2 (steady): compositor = `CompositorMetal` on **NVMTL (RTX 5060 via nouveau Vulkan)**, not the 890M. Per frame:
+  `nvmtlSurfaceIn -> nvmtl_vk_image_write` (CPU upload of IOSurfaces into Vulkan images), `nvmtlSurfaceOut ->
+  nvmtl_vk_image_read` (CPU readback of the composited frame into the OLED IOSurface), `waitUntilCompleted`; then
+  StrixDisplayPipe copies that IOSurface to the GOP raster in the kernel (`Copy,AvgUs` ~5.2 ms). `CombineLUTs` /
+  `RunFullDisplayPipe` no longer show up.
+
+Meaning: the 890M side of the display pipe is now clean (resources map through the family's GPU VA allocator, no
+fallback). The remaining CPU is the cross-GPU copy chain (dGPU composite -> CPU readback -> CPU copy into the iGPU
+scanout). It goes away only when the 890M composites itself: GMC/GART programming, SDMA, GFX11.5 + a Metal device on
+the 890M (port milestones 4-10), not in StrixAccel's CPU copy path.

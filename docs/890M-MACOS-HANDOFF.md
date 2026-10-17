@@ -6,8 +6,12 @@ Step-by-step history: [890M trace](890M-TRACE.md).
 
 ## Current state
 
-NEWEST (Step23, 2026-10-17, macOS): StrixAccel **0.1.21** installed on macOS (AuxKC rebuilt 12:05, one reboot
-pending). Root cause of the per-frame `failed to alloc GART space ... Needed 0 bytes` + `IOAccelResource2::prepare()
+NEWEST (Step24, 2026-10-17, macOS): **0.1.21 verified live**: Res,Forced 0, zero GART/prepare failures, zero
+`Fallback ... submission failed`; WindowServer ~74 % steady. Remaining cost = NVMTL (dGPU) composite + CPU
+upload/readback + StrixDisplayPipe CPU copy; next is the real 890M engine bring-up (milestones 4-10). Step23 (below)
+has the root cause.
+
+Step23 (2026-10-17, macOS): StrixAccel **0.1.21** installed on macOS (AuxKC rebuilt 12:05). Root cause of the per-frame `failed to alloc GART space ... Needed 0 bytes` + `IOAccelResource2::prepare()
 failed ... resType=0xc0`: WindowServer's IOSurfaces were typed 0xc0 (device cache) and
 `StrixResource::calculateIOSurfaceDeviceCacheVRAMBytes` returned 0, so the cache was 0 bytes. 0.1.21 types every
 IOSurface resource 0x80 (UMA, maps the surface itself; tunable `StrixAccel,UmaSurf`, boot-arg `strixumasurf=0`) and
