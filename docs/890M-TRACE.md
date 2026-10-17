@@ -2191,3 +2191,24 @@ Next boot - watch for: no `.Display_boot` in `ioreg -l -w0 | grep -i Display_boo
 WindowServer stays alive; then `NVDisplayPipe` transaction messages (NMXAccel copies frames to the scan-out).
 If it still panics, the report names the next NULL; the fallback is to make `getAttributeExt` NULL-safe via an OpenCore
 Kernel/Patch on `com.apple.iokit.IOGraphicsFamily` (function at KC va 0x14d0406a, 0x9c bytes).
+
+## Step30 (2026-10-17, macOS 25G241): first live boot on the 890M - display up, Metal still 0 devices
+
+Boot 15:56 (Step28 `fbpm` + Step29 `#display` name): no panic. amdgpu fully up (VFCT VBIOS `113-STRIXEMU-001`, all
+16 firmware images, VRAM 512M / GTT 16G, GART, PSP TMR, `SMU is initialized successfully!`, DC 3.2.316 on DCN 3.5,
+DMUB 0x09005600, PSR, rings + IB tests pass, `Initialized amdgpu 3.61.0 ... on minor 0`), and the NullMoth display
+client lights the OLED: `2880x1800, pitch 11520, phys 0x87c000000`, NMXGPUFB at 120.00 Hz. System Information lists the
+890M as the main display, "Metal: Supported". Only remaining IONDRVFramebuffer is on the NVIDIA PEGP (headless).
+Non-fatal: `amdgpu_bo_init: Unable to set WC memtype for the aperture base`, `Failed to initialize writeback connector`.
+
+But **WindowServer composites on the CPU (400-1000 %)**: spindump = `CA::OGL::SW::scan_convert/sample_texture` +
+`vRotate_90_ARGB_8888` - CoreAnimation's software renderer. Two independent reasons:
+1. NMXAccel 0.1 (NullMoth 2.0.4) hard-codes `gNvHeadless = 1` in `start()` ("Metal device for apps, frames copied to
+   the framebuffer WindowServer draws"), and NVMTLDriver refuses WindowServer on a headless GPU; the allow-list line
+   `!WindowServer` additionally needs `debug.nvaccelfb`, which no loaded kext registers.
+2. Even an ordinary process gets **0 Metal devices**: NVMTLDriver loads `libvulkan_radeon` + `libdrm_amdgpu`, RADV
+   creates an instance and finds no physical device, because **every open of `/dev/dri/renderD128` and `card0`
+   fails with ENODEV** (also as root). `nmx_open` only returns ENXIO; ENODEV (-0x13) comes from
+   `drm_stub_open -> drm_minor_acquire(linux_iminor(inode))` - the minor lookup in `drm_minors_xa` or the
+   `drm_dev_enter` check fails. Next: map `linux_iminor` for devfs minors 0x2c2/0x2c3 against the DRM minor ids
+   (render 128, primary 0), from the NMXGPU v2.0.4 sources (upstream git history before a7f16b0).
