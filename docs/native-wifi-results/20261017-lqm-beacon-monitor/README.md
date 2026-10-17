@@ -119,6 +119,19 @@ All four points confirmed on the first boot, plus two findings that shaped the f
   the *current* rate's MCS from the firmware; the MT7925's rate control is not readable here, so the value would be a
   guess).
 
+### Verified on hardware (boot 2026-10-17 15:02, native kext D97CD8E9)
+
+* Trace ring works: `itlmt_native_trace` holds the newest ~1384 bytes and now shows `wcl:lqm post beacons=2 delta=2 … 21
+  delta=9` (the posts were always running; they are visible now).
+* `getNSS` answers: the call ring shows `I:161x1` followed by `S:1fe x1` (slot 510 = 0x1fe) — no retry storm like the
+  512 refusals of the previous boot; `itlmt_ioctl_rejected` stays at 65 instead of climbing past 700.
+* Link again on "Kefoff Coffee" ch 52 (DFS), `fast: on lvl=6 … bw=3 center=50 nss=2 rate~2402` (160 MHz HE 2x2),
+  rx 26066 / tx 26972 with 0 drops; `networkQuality`: down 212.6 / up 73.2 Mb/s, idle 52 ms.
+* Unrelated to Wi-Fi: the same reboot produced one `Kernel-2026-10-17-150228.panic` — a page fault in
+  `IOFramebuffer::powerStateWillChangeTo + 0x25` (com.apple.iokit.IOGraphicsFamily) 10.5 s into boot, i.e. the GPU /
+  StrixGOP display stack (TAHOE-MIGRATION checklist item 2), the first panic of this shape; every earlier panic of the
+  day was the corecapture one fixed in round 27.
+
 ## Open items
 
 * The core capture our `IO80211FaultReporter` produces still crashes `corecaptured` when a fault report does happen
