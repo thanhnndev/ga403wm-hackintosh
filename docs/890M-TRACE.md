@@ -2234,3 +2234,25 @@ the cdev in `dev_rel`), opens pass it in `f_vnode`; ENXIO with `f_ops` installed
 A binary patch was judged not worth it (needs a code cave for the allocation). Next: step 2 - build environment
 (drm-kmod 6.14 + FreeBSD LinuxKPI + the port's scripts, which hard-code `/Volumes/MiniData/build/gpu-src`), carry the
 `pcie` and `fbpm` patches and StrixVFCT's VFCT path into source, build, install, boot.
+
+## Step32 (2026-10-17): own NMXGPU build installed (route B step 2)
+
+Build environment (all outside this repo, `~/develop/projects/gpu-src`): freebsd/drm-kmod `c16de0f9fa` (Linux 6.14,
+amdgpu KMS 3.61 - matches the shipped binary), freebsd-src `9d82546a` sparse (`sys/compat/linuxkpi`,
+`sys/contrib/ck`, `sys/contrib/dev/acpica/include`; the override `linux_pci.c` needs the `pci_lock` extern that
+`e2bef7e3` removed, so the author built just before it; the forked LinuxKPI headers regenerate byte-identical),
+`xkpi` -> the fork worktree. Results: runtime 76/76, amdgpu+DRM+TTM 900/900 sources (80 s on this machine), AMD-only
+link `NMXGPU 8a793bdf`, 10.8 MB; its undefined symbols are a subset of the shipped binary's (0 new), Info.plist
+identical.
+
+Fixes now in source (fork `ga403wm-nmx` 6d2f242 + 579cb54), replacing the binary patches:
+* DRM node opens (Step31): vnode per cdev + ENXIO-on-success.
+* `pcie`: `linux_pci.c` reports every GPU on a root bus (the port has no PCI-to-PCI bridges above GPUs, so
+  `pci_upstream_bridge()` returned the GPU itself and amdgpu's partner-bandwidth walk spun).
+* `fbpm`: NMXGPUFB registers its power driver in `open()` instead of `start()` - keeps display power management,
+  unlike the binary patch that dropped it.
+
+Installed with `scripts/macos-nmxgpu-own-install.sh <kext>` (backs up the installed binary-patched kext to
+`/Library/NullMoth/nmxgpu-backup`; `--undo` restores it), AuxKC rebuilt, guard cleared. StrixVFCT and the `#display`
+DeviceProperties stay. NMXAccel is still NullMoth's (headless), so WindowServer stays on the CPU this boot; the test is
+whether ordinary processes now get a Metal device (RADV opens renderD128).
