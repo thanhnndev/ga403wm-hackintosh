@@ -1103,3 +1103,29 @@ The 14:33 boot ran both round-27 kexts. Results (full write-up in the same resul
 
 Install: `scripts/native-wifi-test.sh install build/itlmt7925Native.kext --stage b` (core unchanged this round; native
 sha256 `91be08cf…`, UUID `D97CD8E9`).
+
+### 2026-10-17 (AWDL phase 2): the AWDL virtual interface and the ioctl that creates it (branch `awdl-tahoe`)
+
+First AWDL round on its own branch (cut from `tahoe/wifi`; see [ROADMAP-AWDL.md](ROADMAP-AWDL.md) section 9 for the full
+walk-through of the 25G241 disassembly). Wi-Fi behaviour is unchanged unless the boot-arg `itlmt_awdl=1` is set.
+
+What landed: `itlmt7925WifiInterface::setVIRTUAL_IF_CREATE` (protocol slot 558, ioctl `APPLE80211_IOC_VIRTUAL_IF_CREATE`
+0x5e, role 6 = AWDL) creates `itlmt7925AwdlInterface : IO80211VirtualInterface` — BSD prefix "awdl", registered through the
+Family's own `registerEthernetInterface` with a `RegistrationInfo` filled like Apple's `createProxInterface`, then
+`ctl->setAwdlInterface(vif)` — and answers the BSD name. The ioctl is let through the gate only with the boot-arg.
+Observation that shaped this: **wifip2pd never sends 0x5e on this machine** (its own "device is missing the capability"
+gate; airportd asks it for an AWDL interface on every boot and it fails before the driver), so phase 2 is exercised with
+`tools/awdl/vif_create_test.c` — it sends the ioctl itself through the private IO80211 framework.
+
+Test checklist after the next boot (boot-args now include `itlmt_awdl=1` via config.plist):
+
+1. `cc -o /tmp/vif_create_test tools/awdl/vif_create_test.c -framework CoreFoundation -framework IOKit && /tmp/vif_create_test en5`
+   — expect `RawSet(0x5e VIRTUAL_IF_CREATE, role=6) rc=0 (0x0) bsd_name='awdl0'`.
+2. `ifconfig awdl0` — present, has an IPv6 link-local address; `ioreg -l | grep itlmt_native_trace` shows
+   `awdl:vif up bsd=awdl0`; `IOInterfaceNamePrefix = awdl` on the new registry entry.
+3. No panic; Wi-Fi unchanged (`itlmt_rx_delivered` keeps growing, the link stays up); `log show` has no new faults.
+4. `pgrep wifip2pd` log (`/usr/bin/log show --last boot --predicate 'process == "wifip2pd"'`): with `awdl0` present, "No
+   AWDL interface found" should stop; watch for AWDL ioctls appearing in `itlmt_native_calls`.
+
+Build: `bash scripts/build.sh io80211check itlmt7925 itlmt7925Native` (native sha256 `1b6d4bd3…`, UUID `F3A6458D`), install
+with `scripts/native-wifi-test.sh install build/itlmt7925Native.kext --stage b`.

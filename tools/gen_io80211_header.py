@@ -86,6 +86,24 @@ for slot in range(FIRST, LAST + 1):
     decls.append('    /* %d */ virtual %s %s(%s)%s%s;%s' % (slot, ret, meth, ', '.join(plist), const or '', tail,
                                                            '   // ret: ' + why if why != 'guess' else '   // ret: guess'))
 
+# Non-virtual members (no vtable slot): symbols from IO80211Controller.methods.txt, used by the AWDL front end. The mangled
+# symbol must be in the dump or generation stops.
+methods = open(os.path.join(D, 'IO80211Controller.methods.txt')).read()
+EXTRA = [
+    ('__ZN17IO80211Controller16setAwdlInterfaceEP23IO80211VirtualInterface',
+     'void setAwdlInterface(IO80211VirtualInterface *vif);',
+     '0xffffff8002299c24: stores the pointer at [this+0x120]+0x190'),
+    ('__ZN17IO80211Controller16getAwdlInterfaceEv',
+     'IO80211VirtualInterface *getAwdlInterface();',
+     '0xffffff8002293256: returns [this+0x120]+0x190'),
+]
+extra_decls = []
+for sym, decl, why in EXTRA:
+    if sym not in methods:
+        sys.exit('non-virtual symbol not in the methods dump: %s' % sym)
+    extra_decls.append('    %s   // %s' % (decl, why))
+    used.add('IO80211VirtualInterface')
+
 builtin = {'void', 'bool', 'int', 'char', 'const', 'unsigned', 'long', 'short', 'uint8_t', 'uint16_t', 'uint32_t', 'uint64_t',
            'struct', '__mbuf', 'IOReturn', 'size_t', 'ether_addr'}
 fwd = sorted(t for t in used if t not in builtin and t not in KNOWN and t not in ENUMS and t not in ('IO80211Controller',))
@@ -125,6 +143,9 @@ public:
     // New virtuals, slots 396..464 (first number = slot incl. the two header words; byte offset in the vtable symbol = slot * 8,
     // from a vptr = slot * 8 - 0x10).
 ''' + '\n'.join(decls) + '''
+
+    // Non-virtual members (no vtable slot), from the methods dump.
+''' + '\n'.join(extra_decls) + '''
 
 protected:
     uint8_t io80211Opaque[0x10];   // 0x128 (MetaClass constructor) - 0x118 (sizeof IOEthernetController in the SDK); Apple's ivars pointer is at +0x120

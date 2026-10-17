@@ -36,9 +36,14 @@ CLASSES = {
     # routing calls; names come from AppleBCMWLANInfraProtocol (round 5). Same instance size as its parent (no ivars).
     'IO80211InfraProtocol': dict(parent='IO80211InfraInterface', include='"IO80211InfraInterface.h"', size=0x120,
                                  children=['AppleBCMWLANInfraProtocol', 'AppleBCMWLANSkywalkInterface']),   # 2nd: names slot 417 (setMacAddress)
+    # the Family's generic peer-to-peer / AWDL interface (role 6 creates the AWDL peer manager): what setVIRTUAL_IF_CREATE
+    # instantiates on this driver (the Broadcom path instantiates its own IO80211AWDLProtocol subclass instead).
+    # Size 0x130 from the MetaClass constructor (OSMetaClassC2(..., 0x130)); parent from the MetaClass at 0xffffff800248dfa0.
+    'IO80211VirtualInterface': dict(parent='IO80211SkywalkInterface', include='"IO80211SkywalkInterface.h"', size=0x130,
+                                    children=[]),
 }
 ORDER = ['IOSkywalkInterface', 'IO80211WorkQueue', 'IO80211CommandGate', 'IOSkywalkNetworkInterface', 'IOSkywalkEthernetInterface',
-         'IO80211SkywalkInterface', 'IO80211InfraInterface', 'IO80211InfraProtocol']
+         'IO80211SkywalkInterface', 'IO80211InfraInterface', 'IO80211InfraProtocol', 'IO80211VirtualInterface']
 
 # exported non-virtual members the stub calls (they do not change the layout): class -> [(mangled symbol, declaration, evidence)].
 # The mangled symbol must be in <Class>.methods.txt of the dump or generation stops.
@@ -50,6 +55,9 @@ STATICS = {
         ('__ZN26IOSkywalkEthernetInterface20initRegistrationInfoEPNS_16RegistrationInfoEjm',
          'IOReturn initRegistrationInfo(RegistrationInfo* info, uint32_t version, unsigned long size);',
          'AppleBCMWLANCore::createSkywalkInterface calls it with (info, 1, 0x130) on a zeroed block; result ignored'),
+        ('__ZN26IOSkywalkEthernetInterface25registerEthernetInterfaceEPKNS_16RegistrationInfoEPP20IOSkywalkPacketQueuejP25IOSkywalkPacketBufferPoolS7_j',
+         'IOReturn registerEthernetInterface(RegistrationInfo const* info, IOSkywalkPacketQueue** queues, uint32_t count, IOSkywalkPacketBufferPool* txPool, IOSkywalkPacketBufferPool* rxPool, uint32_t flags);',
+         'registers the ifnet of a virtual interface (AppleBCMWLANProximityInterface::start / AppleBCMWLANIO80211APSTAInterface::start call it; the AWDL interface does too)'),
     ],
     'IO80211SkywalkInterface': [
         ('__ZN23IO80211SkywalkInterface16getInterfaceRoleEv', 'uint32_t getInterfaceRole();', 'AppleBCMWLANSkywalkInterface::start compares the result with 1'),
@@ -292,6 +300,11 @@ def analyse(d, cls):
             continue                          # inherited pure virtual: not declared here
         if sym is None:
             pure_unnamed.append(s)
+            if s > parent_last:
+                # unnamed pure virtual (no override in any derived dump): a non-pure placeholder keeps the layout slot-exact
+                # and the class concrete (nothing calls this slot; pure in Apple's binary)
+                new.append(dict(slot=s, name='_unnamedPure%d' % s, params=[], const=False, pure=False,
+                                ret='void', why="___cxa_pure_virtual in Apple's binary, no symbol to name it"))
             continue
         pm = parse_method(dem[sym])
         if pm is None:

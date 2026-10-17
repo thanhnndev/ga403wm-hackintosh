@@ -278,7 +278,6 @@ IOReturn itlmt7925WifiInterface::setAP_MODE(apple80211_apmode_data* a1) { itlmtC
 IOReturn itlmt7925WifiInterface::setIE(apple80211_ie_data* a1) { itlmtCall(ctl, 'S', 555); return kIOReturnUnsupported; }
 IOReturn itlmt7925WifiInterface::setWOW_TEST(apple80211_wow_test_data* a1) { itlmtCall(ctl, 'S', 556); return kIOReturnUnsupported; }
 IOReturn itlmt7925WifiInterface::setCLEAR_PMKSA_CACHE(void* a1) { itlmtCall(ctl, 'S', 557); return kIOReturnUnsupported; }
-IOReturn itlmt7925WifiInterface::setVIRTUAL_IF_CREATE(apple80211_virt_if_create_data* a1) { itlmtCall(ctl, 'S', 558); return kIOReturnUnsupported; }
 IOReturn itlmt7925WifiInterface::setHT_CAPABILITY(apple80211_ht_capability* a1) { itlmtCall(ctl, 'S', 559); return kIOReturnUnsupported; }
 IOReturn itlmt7925WifiInterface::setOFFLOAD_ARP(apple80211_offload_arp_data* a1) { itlmtCall(ctl, 'S', 560); return kIOReturnUnsupported; }
 IOReturn itlmt7925WifiInterface::setOFFLOAD_NDP(apple80211_offload_ndp_data* a1) { itlmtCall(ctl, 'S', 561); return kIOReturnUnsupported; }

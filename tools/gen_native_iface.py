@@ -27,7 +27,7 @@ CUSTOM = {'setMacAddress', 'getCHANNEL', 'getPOWERSAVE', 'getRATE', 'getOP_MODE'
           'getWCL_LOW_LATENCY_INFO', 'setWCL_SET_SCAN_HOME_AWAY_TIME', 'setWCL_WNM_OPS', 'setWCL_TRIGGER_CC',
           'setWCL_LINK_UP_DONE', 'setWCL_LINK_STATE_UPDATE', 'getWCL_EXTENDED_BSS_INFO', 'setWCL_UPDATE_FAST_LANE',
           'getWCL_TRAFFIC_COUNTERS', 'setPM_MODE', 'setWCL_ARP_MODE', 'setWCL_QOS_PARAMS', 'setWCL_SET_ROAM_LOCK',
-          'getNSS'}
+          'getNSS', 'setVIRTUAL_IF_CREATE'}
 
 
 def pure_slots():

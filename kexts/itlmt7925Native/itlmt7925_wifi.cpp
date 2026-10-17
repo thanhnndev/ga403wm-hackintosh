@@ -16,6 +16,7 @@
 #include "../itlmt7925/io80211/IO80211WorkQueue.h"
 #include "corecapture_min.h"
 #include "itlmt7925_iface.h"
+#include "itlmt7925_awdl.h"
 
 #include <IOKit/IOLib.h>
 #include <IOKit/IOTimerEventSource.h>
@@ -645,6 +646,10 @@ static bool commandAllowed(int cmd)
     // 10-minute boot); getNSS answers with the core's negotiated stream count
     case 0x161:
         return true;
+    // AWDL phase 2: VIRTUAL_IF_CREATE is let through only with the AWDL front end enabled (boot-arg itlmt_awdl=1); with the
+    // boot-arg absent the ioctl stays refused exactly as before
+    case 0x5e:
+        return itlmtAwdlEnabled();
     default:
         return false;
     }

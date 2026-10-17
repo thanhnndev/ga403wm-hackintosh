@@ -31,6 +31,8 @@ void itlmtCall(IORegistryEntry *e, char kind, uint32_t id, const uint32_t *calle
 // Static (slide-free) low 32 bits of the three return addresses above the caller's frame; zeros where the walk is not safe.
 void itlmtCallers(uint32_t out[3], uintptr_t fp);
 
+class itlmt7925AwdlInterface;   // the AWDL virtual interface (itlmt7925_awdl.cpp), stored by setVIRTUAL_IF_CREATE
+
 class itlmt7925WifiInterface : public IO80211InfraProtocol {
     OSDeclareDefaultStructors(itlmt7925WifiInterface)
 
@@ -138,6 +140,8 @@ private:
     void destroyPoolAndQueues();
 
     IO80211Controller *ctl = nullptr;           // not retained: the controller owns the interface's lifetime
+    itlmt7925AwdlInterface *awdlVif = nullptr;  // AWDL virtual interface (phase 2), created by setVIRTUAL_IF_CREATE; owned by
+                                                // the controller once setAwdlInterface stored it (the reference from alloc)
     IOSkywalkPacketBufferPool *pool = nullptr;
     IOSkywalkTxSubmissionQueue *txSub[kNumTx] = {};
     IOSkywalkTxCompletionQueue *txComp = nullptr;

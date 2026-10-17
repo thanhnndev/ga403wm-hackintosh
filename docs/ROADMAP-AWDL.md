@@ -1,8 +1,14 @@
 # Roadmap: AWDL / AirDrop on the native MT7925 driver
 
-Status 2026-10-14: **research phase, no code**. This file records what was found, what is unknown (marked "chưa xác định"),
-and the phase plan. Nothing here is promised. Decision taken with the user on 2026-10-14: implement real AWDL in the driver
-(not the `BrowseAllInterfaces` shortcut). Phase 0 and 1 are zero-risk and come first.
+Status 2026-10-17: **phase 2 code landed** (virtual interface + ioctl, behind `itlmt_awdl=1`; test tool ready). Phase 0
+(research) and phase 1 (observation) completed on 2026-10-17 — see "Round 2026-10-17" at the end for the 25G241
+disassembly, the Family entry points and the wifip2pd finding. This file records what was found, what is unknown (marked
+"chưa xác định"), and the phase plan. Nothing here is promised. Decision taken with the user on 2026-10-14: implement real
+AWDL in the driver (not the `BrowseAllInterfaces` shortcut).
+
+Branch note (2026-10-17): the work lives on `awdl-tahoe` (worktree `.claude/worktrees/awdl`), cut from `tahoe/wifi` — main
+is 15 commits behind and does not carry the Wi-Fi fixes this code builds on. Same rules as before: new files, boot-arg
+gated, merged by pull request, never on the Wi-Fi test branch.
 
 ## 0. How this work stays out of the way (agreed 2026-10-14)
 
@@ -163,3 +169,73 @@ AWDL-side request.
 * [ ] Wi-Fi BSD name changes between boots (`en2`, `en4`, `en5`); default route stays on the previous service until the user
       reorders services.
 * [ ] Scan: more than one pass per channel at long dwell for 5 GHz DFS channels; hidden SSIDs.
+
+## 9. Round 2026-10-17: phase 0/1 findings and the phase 2 code (all addresses 25G241)
+
+### 9.1 The Family's virtual-interface path (disassembly)
+
+* Userland (wifip2pd) sends `APPLE80211_IOC_VIRTUAL_IF_CREATE` (0x5e) with an `apple80211_virt_if_create_data`
+  (`{u32 version; u8 mac[6]; u16 unk1; u32 role; u8 bsd_name[15]}`, 0x1f bytes packed; the request length is clamped to 0x20).
+  It arrives through the IO80211 userclient at `apple80211RouteExternal` (0xffffff800236cd2e), dispatch table for code
+  0x802869c8 at 0xffffff8002479060, entry `setVirtualInterfaceCreate` (0xffffff8002357f33) — which first offers the request
+  to the WCL layer (`sendIOUCToWcl(0x802869c8, 0x5e, buf, 0x20, &flag)`; only `flag == 0` or the sentinel 0xe082280f falls
+  through) — then calls `apple80211setVIRTUAL_IF_CREATE` (0xffffff8002268494): `iface->isCommandProhibited(0x5e)`
+  (slot 0xcc8, `IO80211SkywalkInterface::isCommandProhibited` 0xffffff80022f9bce forwards to the controller's
+  `isCommandProhibited`, i.e. **our gate**), then the protocol slot 558 `setVIRTUAL_IF_CREATE` (vptr + 0x1160).
+* Apple's implementation (`AppleBCMWLANInfraProtocol` thunk 0xffffff80015be8fa -> core vtable +0x1328 ->
+  `AppleBCMWLANCore::setVIRTUAL_IF_CREATE` 0xffffff80016788f4) dispatches by **role**: 6 = AWDL/proximity
+  (`createProxInterface` 0xffffff800165dcbe), 7 = APSTA (`AppleBCMWLANIO80211APSTAInterface::withOptions`), 8/9/10 = NAN.
+  For role 6 it instantiates `AppleBCMWLANProximityInterface` (an `IO80211AWDLProtocol : IO80211VirtualInterface`
+  subclass; factory `withOptions` 0xffffff80017159e6, vtable `__ZTV30AppleBCMWLANProximityInterface`), fills a
+  `RegistrationInfo` (0x130 bytes: +0xc = 3, +0x14 = 2, +0x24 = 0x8000000080, +0x30 = name pointer "awdl", +0x3c = 0x40
+  headroom, +0x40 = 4|6, +0x108 = MAC) and calls its `start(core, &info)` (0xffffff8001729376), which registers the ifnet
+  with `IOSkywalkEthernetInterface::registerEthernetInterface(info, queues, n, txPool, rxPool, flags)`
+  (0xffffff8002b10a84) and wires the core's queue objects.
+* The **generic** path the Family itself provides: `IO80211Controller::createVirtualInterface` (0xffffff800229612e, role 7
+  only, allocates `IO80211VirtualInterface::gMetaClass` at 0xffffff800248e478), `attachVirtualInterface`
+  (0xffffff80022960aa: create -> `attach(controller)` -> `registerService(0)`), `setAwdlInterface`/`getAwdlInterface`
+  (0xffffff8002299c24 / 0xffffff8002293256, store/read `[this+0x120]+0x190`; **non-virtual**, added to the generated
+  controller header). `IO80211VirtualInterface::createPeerManager` (slot 355) maps role 6 to
+  `IO80211AWDLPeerManager::withInterface` (0xffffff80021c14bc), which creates the `IO80211P2PSupervisor`
+  (0xffffff80023904ee) — the whole host-side AWDL stack. `isPeerToPeerInterface` (0xffffff800233040a) = roles 6, 8, 9, 10.
+  The generic class takes the default BSD prefix ("en", `IOSkywalkEthernetInterface::getBSDNamePrefix` 0xffffff8002b1231a);
+  only the Broadcom subclass returns "awdl" — hence the driver-side subclass in 9.2. Slot 490 is `___cxa_pure_virtual` in
+  both `IO80211VirtualInterface` and `IO80211AWDLProtocol` (implemented by the Broadcom subclass).
+* The Family builds the BSD name from the registry properties `IOInterfaceNamePrefix`/`IOInterfaceUnit`, which the
+  registration path sets from `getBSDNamePrefix()` — visible on the primary interface today (`IOInterfaceNamePrefix = en`,
+  `IOInterfaceUnit = 5`). A subclass returning "awdl" therefore yields `awdl0`.
+
+### 9.2 Phase 2 code (this branch)
+
+* `kexts/itlmt7925Native/itlmt7925_awdl.{h,cpp}`: `itlmt7925AwdlInterface : IO80211VirtualInterface` (overrides
+  `getBSDNamePrefix` -> "awdl" and the pure slot 490) plus `itlmt7925WifiInterface::setVIRTUAL_IF_CREATE` (slot 558):
+  alloc -> `init(ctl, mac, 6, "awdl")` -> `attach(ctl)` -> pool + [TxSubmission, TxCompletion, RxCompletion] queues ->
+  `RegistrationInfo` filled like `createProxInterface` -> `registerEthernetInterface` -> `registerService` ->
+  `ctl->setAwdlInterface(vif)`; answers the BSD name back. Role 6 only; 7-10 stay unsupported for now.
+* Gated by the boot-arg `itlmt_awdl=1` (off by default; the ioctl is also refused at the gate without it).
+* `tools/awdl/vif_create_test.c`: sends ioctl 0x5e itself (Apple80211Open/Bind/RawSet through the private framework) to
+  exercise the handler without wifip2pd.
+* Generated ABI additions (tools/gen_io80211_header.py + tools/io80211_abi.py): new slot-exact header
+  `kexts/itlmt7925/io80211/IO80211VirtualInterface.h` (506 slots, checker-clean; the unnamed pure slot 490 gets a
+  placeholder so the layout stays exact), `registerEthernetInterface` on IOSkywalkEthernetInterface, and
+  `setAwdlInterface`/`getAwdlInterface` on IO80211Controller.
+
+### 9.3 Phase 1 observation: wifip2pd never sends the ioctl (its own gate)
+
+* On every boot wifip2pd (the P2P daemon, `/usr/libexec/wifip2pd`, imports `Apple80211RawGet/RawSet`) is asked by airportd
+  (XPC, `com.apple.awdl:xpc`) for an AWDL interface and answers:
+  `No AWDL interface found. Creating AWDL interface` -> `Cannot create AWDL interface because the device is missing the
+  capability` -> `Failed to create interface AWDL on en5 with error <Apple80211Error Operation Not Supported>`. The ioctl
+  never reaches the driver: `itlmt_native_calls` holds no 0x5e (and no AWDL-range ioctl 0x74-0xe1) on any boot.
+* The capability model is built in userland (CoreP2P `WiFiDriverCapabilities`: supportsAWDL...); it is **chưa xác định**
+  which query feeds it. This is why phase 2 is tested with the tool and why the driver-side handler matters: once `awdl0`
+  exists, wifip2pd's "No AWDL interface found" path is not taken.
+
+### 9.4 Next
+
+1. Reboot with `itlmt_awdl=1` (config.plist boot-args updated 2026-10-17; NVRAM picks it up at boot through OpenCore
+   WriteFlash) and run `vif_create_test`: expect `RawSet(0x5e ...) rc=0 bsd_name='awdl0'`, `ifconfig awdl0` present,
+   `awdl:vif up bsd=awdl0` in `itlmt_native_trace`, no panic, Wi-Fi unaffected.
+2. Then check whether wifip2pd adopts the existing interface (it should stop trying to create one) and start recording the
+   AWDL ioctls it sends once the peer manager exists (phase 3 groundwork).
+3. Phase 3+ per section 6: channel slicing (ROC), action frames (PSF/MIF), then the data path.

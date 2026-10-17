@@ -119,6 +119,10 @@ public:
     virtual void _RESERVEDIO80211Controller15();
     /* 464 */ virtual IOReturn setMulticastList(ether_addr const* a1, uint32_t a2);   // ret: guess
 
+    // Non-virtual members (no vtable slot), from the methods dump.
+    void setAwdlInterface(IO80211VirtualInterface *vif);   // 0xffffff8002299c24: stores the pointer at [this+0x120]+0x190
+    IO80211VirtualInterface *getAwdlInterface();   // 0xffffff8002293256: returns [this+0x120]+0x190
+
 protected:
     uint8_t io80211Opaque[0x10];   // 0x128 (MetaClass constructor) - 0x118 (sizeof IOEthernetController in the SDK); Apple's ivars pointer is at +0x120
 };

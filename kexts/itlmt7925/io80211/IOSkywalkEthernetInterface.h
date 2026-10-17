@@ -13,6 +13,8 @@
 
 struct ether_addr;
 struct __mbuf;
+class IOSkywalkPacketBufferPool;
+class IOSkywalkPacketQueue;
 struct __ifnet;
 struct ifnet_init_eparams;
 struct nicproxy_info_s;
@@ -66,6 +68,7 @@ public:
 
     struct RegistrationInfo;   // distinct from IOSkywalkNetworkInterface::RegistrationInfo (mangled as IOSkywalkEthernetInterface::RegistrationInfo); 0x130 bytes, ABI-2 section 2
     IOReturn initRegistrationInfo(RegistrationInfo* info, uint32_t version, unsigned long size);   // exported: __ZN26IOSkywalkEthernetInterface20initRegistrationInfoEPNS_16RegistrationInfoEjm; AppleBCMWLANCore::createSkywalkInterface calls it with (info, 1, 0x130) on a zeroed block; result ignored
+    IOReturn registerEthernetInterface(RegistrationInfo const* info, IOSkywalkPacketQueue** queues, uint32_t count, IOSkywalkPacketBufferPool* txPool, IOSkywalkPacketBufferPool* rxPool, uint32_t flags);   // exported: __ZN26IOSkywalkEthernetInterface25registerEthernetInterfaceEPKNS_16RegistrationInfoEPP20IOSkywalkPacketQueuejP25IOSkywalkPacketBufferPoolS7_j; registers the ifnet of a virtual interface (AppleBCMWLANProximityInterface::start / AppleBCMWLANIO80211APSTAInterface::start call it; the AWDL interface does too)
 
 protected:
     uint8_t iOSkywalkEthernetInterfaceOpaque[0x120 - sizeof(IOSkywalkNetworkInterface)];   // ivars of Apple's class: layout not determined
