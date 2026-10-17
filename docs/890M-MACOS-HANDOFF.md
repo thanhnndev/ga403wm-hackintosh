@@ -6,6 +6,18 @@ Step-by-step history: [890M trace](890M-TRACE.md).
 
 ## Current state
 
+NEWEST (Step34, 2026-10-17, Linux): **login-window crash-loop root cause found and fixed from Linux**. The nvmtl
+allow list (`/Library/GPUBundles/nvmtl-allow.txt`) is only scanned until the first line that *decides*, so the
+shipped `*` on line 2 made every `-Name` below it dead code - and `!Name` is not a deny at all, it is the
+"armed-only" form (device while `debug.nvaccelfb != 0`). `scripts/linux-nvmtl-allowlist.sh` now writes **rung 1**
+(no `*` line: only `mtlprobe`/`nvmtltest`/`nvmtlrender` get the nvmtl Metal device; login window, Dock, Finder,
+Terminal, apps fall back to Apple's renderer), applied 2026-10-17 20:33. Reboot pending - the login window must
+come up; verify with `log show --last boot --style compact --predicate 'eventMessage CONTAINS "not allow-listed"'`.
+Then route B step 4: `tools/890m/drm-open` (expect `amdgpu 3.61.0`) and `drmGetDevices2 == 1` on NMXGPU
+`8fc7f7fe`. Step34 in 890M-TRACE.md also has the IF-leak forensics (their `nmx_thread_crit_check` never fired;
+suspect the lock family or NVRM; instrumentation + RenderBox/Preboot next steps listed) and the new Linux tools
+`tools/890m/macho_lite.py` / `tools/890m/kext_relocscan.py`.
+
 NEWEST (Step27, 2026-10-17, macOS): the 14:33 boot was **parked, not hung**. NVRAM `nullmoth-gpu-attaching=1` was
 stale: boot 3's attach failed cleanly at 12:47:05.596, but the kext's `removeProperty+sync` clear never reached the
 firmware store (evidence: `sender == "NMXGPU"` empty 12:47:06-14:33:54; no NMXGPU threads after boot+9s in the 14:32

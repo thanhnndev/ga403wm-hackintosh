@@ -2293,3 +2293,67 @@ chain is fine and `dev_is_pci()` is what failed: LinuxKPI's `pdev->dev.bsddev` i
 record (`is_pci` = 0), like drmn under vgapci on FreeBSD. Fork 'xkpi: DRM_IOCTL_GET_PCIINFO answers for the DRM child
 of a PCI device' accepts the child's parent. Build `NMXGPU 8fc7f7fe` (0 new undefined symbols) installed; reboot
 pending. Note: card0 is 0600, so for a normal user libdrm lists the GPU through renderD128 only (enough for RADV).
+
+## Step34 (2026-10-17, Linux): login-window crash loop root cause + IF-leak forensics
+
+### What wedged the 18:23 and 20:17 boots
+Both boots ended at the Apple logo with a visible cursor because `SecurityAgent` aborted in
+`RB::Device::make_index_buffer()` -> `RB::precondition_failure` -> SIGABRT (23x on 18:23 at the 10 s throttle,
+1x on 20:17), so the login window never appeared. The failing Metal device is the nvmtl one: the SecurityAgent
+process had `NVMTLDriver`, `libvulkan_radeon.dylib` and `libdrm_amdgpu.1.dylib` loaded
+(`usedImages` of `SecurityAgent-2026-10-17-201800.ips`, procLaunch 20:17:46, exit 20:17:47, uptime 42 s).
+
+### The allow list grammar (decoded from `-[NVMTLDevice initWithAcceleratorPort:]`)
+Decision order in `NVMTLDriver`:
+1. `name == "WindowServer"` -> hardcoded "headless GPU: no device" unless the display owner is NVIDIA.
+2. `getenv("NVMTL_ENABLE")` -> device, the list is skipped entirely.
+3. name in {`mtlprobe`, `nvmtltest`, `nvmtlrender`} -> device (hardcoded, the list is not consulted).
+4. open `/Library/GPUBundles/nvmtl-allow.txt`, else `/Library/Extensions/nvmtl-allow.txt`; unreadable -> no device.
+5. line grammar (first-char switch table at `0x25ec`): `#`/blank = keep scanning; **`-Name` = DENY** (stops the
+   scan); `*` = everyone (stops); `Name` = that one process (stops); `!Name` / `!*` = "armed-only" (device only
+   while `sysctl debug.nvaccelfb != 0`; stops).
+6. **The scan stops at the first line that decides** (`0x2360 cmp ebx,2 ; jne 0x254d`), so every `-Name` below
+   the `*` line is dead code.
+
+### Why the first two fixes did not work
+The shipped file has `*` on line 2 with `!WindowServer` below it, so nothing under `*` was ever read -
+`!WindowServer` is not a deny at all (it is the armed-only form), and appending `-SecurityAgent` to the end of
+the file could not help: the scan had already stopped at `*` and handed the device out. Evidence: with that
+file the 20:17 boot still loaded the AMD nvmtl stack into SecurityAgent, and the on-disk unified log contains
+`allow-listed` but **zero** `denied by list` occurrences.
+
+### Fix on disk (applied from Linux, no macOS required)
+`scripts/linux-nvmtl-allowlist.sh` default = **rung 1**: writes a list with no `*` line, so only the three
+hardcoded tools get the device and everything else (login window, Dock, Finder, Terminal, apps) falls back to
+Apple's renderer. `--rung3` writes the denies ABOVE `*` for app testing, `--undo` restores the newest backup.
+Applied 2026-10-17 20:33, backup `Library/NullMoth/backup-20261017-203359/nvmtl-allow.txt`.
+
+### IF-leak forensics (panic `unsafe thread_call_cancel_wait`, 17:12:54 and 18:23:36)
+* `NMXGPU`/`NVRM`/`NVRMFB` are the only kexts importing `_ml_set_interrupts_enabled`. NMXGPU has exactly
+  **11** code references (found through LC_DYSYMTAB local relocations, `tools/890m/kext_relocscan.py`), all in
+  its per-thread primitive layer: `nmx_thread_crit_check`, `nmx_critical_enter/exit`, `sched_pin/unpin`
+  (identical bodies: counter `[th+0x24]`, saved IF `[th+0xd8]`) and `nmx_mtx_lock/trylock/unlock`,
+  `nmx_lock_drop/release` (saved IF in the lock at `+0x2c`).
+* They are balanced: `critical_exit`/`sched_unpin` restore only when the counter reaches 0; ASIC-branch
+  functions (`gfx_v10_0_get_gpu_clock_counter`, 4 entries / 1 exit) share one exit; the other apparent
+  mismatches are tail-`jmp` unpins (`linux_rcu_read_unlock`, `idr_preload_end`, `lkpi_kernel_fpu_end`).
+* Their own checker agrees: `NullMoth xkpi: %s returned with critical nesting %d - closed`
+  (`nmx_thread_crit_check`, called from `nmx_open/read/close/ioctl/select`) never appears in the on-disk
+  unified log, so the counter-based path never leaked.
+* Remaining suspects: (a) a lock-family path returning to user space without unlocking, or unlocking a
+  different object so a stale saved IF is restored - `nmx_thread_crit_check` returns early when
+  `crit_count == 0`, so that class is neither reported nor repaired; (b) NVRM (same import, larger parser).
+
+### Next
+1. Reboot: login window must appear. Verify with
+   `log show --last boot --style compact --predicate 'eventMessage CONTAINS "not allow-listed"'`.
+2. Route B step 4: `tools/890m/drm-open` (expect `amdgpu 3.61.0` on `/dev/dri/renderD128`), then `drmGetDevices2`
+   should be 1 with NMXGPU `8fc7f7fe` (GET_PCIINFO now answers for the DRM child of the PCI device) and Metal
+   devices > 0. With rung 1 only `mtlprobe`/`nvmtltest`/`nvmtlrender` get the Metal device, so name the test
+   binary accordingly or add its name as a bare line to the allow list.
+3. RenderBox precondition: the framework binary on the System volume is a broken symlink (code lives in the
+   dyld shared cache), so mount the Preboot volume read-only from Linux (the one with `Cryptexes/`) and decode
+   `RB::Device::make_index_buffer()` the same way the NVMTLDriver grammar was decoded.
+4. IF leak: make `nmx_thread_crit_check` unconditional - log and `ml_set_interrupts_enabled(TRUE)` when
+   `ml_get_interrupts_enabled()` reads 0 even with `crit_count == 0` - so the next repro names the syscall
+   boundary that leaked; then hunt the missing unlock in the lock family.
