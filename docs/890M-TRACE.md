@@ -1750,3 +1750,28 @@ requires `main`, so it emits neither MH_KEXT_BUNDLE nor the undefined-symbol kex
 x86_64-apple-macosx12.0 -mkernel ... -fsyntax-only`/`-c` works against `build/MacKernelSDK`, so source
 changes can be compile-checked here; the real build is CI (`build.yml` builds `StrixAccel` and uploads the
 `kexts` artifact).
+
+### Step20 build and install (2026-10-17, Linux)
+
+* CI: pushed `ea62cb5` (source + Info.plist + this Step20 + the handoff), `gh workflow run build.yml --ref
+  research/890m-cobalt64` -> run **38994889099 success**. Artifact `kexts` -> `build/StrixAccel.kext`:
+  `CFBundleVersion 0.1.19`, `Mach-O 64-bit x86_64 kext bundle` (`filetype 0xb` MH_KEXT_BUNDLE), 180696 bytes,
+  `sha256(Contents/MacOS/StrixAccel) = a212b978f35933d6f3b809ec2eccaaa7f98092a7cd8d90621f45eba0d31c6d53`;
+  no `__cxa`/`atexit`/RTTI undefined symbols; strings carry `StrixAccel,Tune,ResOk`, `StrixAccel,Res,Forced`,
+  `StrixAccel,Txn,BadStatus`, `res prepare: family returned`. (The artifact's `StrixGOP.kext` is 0.1.11, the
+  version already installed, so nothing else needed to change.)
+* 0.1.18 backed up: `/boot/EFI/OC/Kexts-backup/StrixAccel.kext.0.1.18-20261017T093234` plus the Linux
+  scratchpad. Its `sha256(Contents/MacOS/StrixAccel) = 552358d460adc569b96c11794a2a2ae01cd7a25d7e974977f747502f42325c27`
+  is the hash Step18 recorded for 0.1.18, so the backup is the right build.
+* Data volume mounted from Linux with `mount -t apfs -o readwrite,uid=1000,gid=1000,vol=0 /dev/nvme0n1p4
+  /mnt/macos-data`. Note for next time: the plain VFS `rw` is not enough for linux-apfs-rw — without the
+  fs option `readwrite` it logs `APFS ...: experimental writes disabled to avoid data loss` and mounts `ro`.
+* Wrote: `/Library/Extensions/StrixAccel.kext` replaced with the 0.1.19 bundle (re-verified
+  `sha256 = a212b978...` after the copy), and the macOS working copy's
+  `~/develop/projects/ga403wm-hackintosh/build/StrixAccel.kext` staged with the same bundle so
+  `scripts/macos-strix-accel-install.sh` finds it. No other file touched.
+* The final macOS-side step stays manual, because the Linux APFS mount maps every file to uid 1000:
+  `cd ~/develop/projects/ga403wm-hackintosh && sudo bash scripts/macos-strix-accel-install.sh` (it does
+  `chown -R root:wheel` / `chmod -R go-w` and `kmutil load --no-authorization -p`, rc 28 = AuxKC rebuilt,
+  reboot required). ESP `Kernel/Add StrixAccel.kext` stays disabled and its ESP stash is still 0.1.15: left
+  untouched deliberately.

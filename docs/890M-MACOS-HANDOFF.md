@@ -19,7 +19,12 @@ failed (`resType/+0x14`, `flags/+0xe`, `prep/+0x28`, `map/+0x40`, `mem/+0x88`), 
 safe because the pipe copies the IOSurface into the GOP raster on the CPU and never reads a resource's GPU address.
 New counters `StrixAccel,Res,Prepare`, `Res,Forced`, `Txn,BadStatus`. Next boot: `Res,Forced > 0` and
 `Txn,BadStatus` well below 47 with no `Fallback ...` lines after the first seconds. Full detail and the slot
-arithmetic: 890M-TRACE.md "Step20". Kext built by CI (`build.yml`, artifact `kexts`); Linux cannot link kexts.
+arithmetic: 890M-TRACE.md "Step20". Kext built by CI (`build.yml`, artifact `kexts`; run 38994889099, sha256 of the
+binary a212b978...); Linux cannot link kexts. 0.1.19 is already written to `/Library/Extensions/StrixAccel.kext` and
+staged as the macOS working copy's `build/StrixAccel.kext` (0.1.18 backed up to
+`/boot/EFI/OC/Kexts-backup/StrixAccel.kext.0.1.18-20261017T093234`). The only remaining macOS step is
+`cd ~/develop/projects/ga403wm-hackintosh && sudo bash scripts/macos-strix-accel-install.sh` (chown root:wheel +
+AuxKC rebuild, kmutil rc 28 = reboot), then read `StrixAccel,Res,Forced` / `Res,Prepare` / `Txn,BadStatus`.
 
 Previous (Step19, 2026-10-16, Linux): the "iGPU panic" is not the iGPU. Both `Kernel-2026-10-16-*.panic`
 reports are `assertion failed: now >= *pkt_enq_time` (`classq_fq_codel.c:1127`) reached from
