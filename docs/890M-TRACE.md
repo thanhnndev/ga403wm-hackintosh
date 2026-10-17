@@ -1911,6 +1911,16 @@ the macOS working copy's `build/StrixAccel.kext` (sha256 re-verified after both 
 `/boot/EFI/StrixAccel-0.1.20.kext` as a fallback install source. The AuxKC is still 17:10 16/10 (0.1.18) until
 `sudo bash scripts/macos-strix-accel-install.sh` runs on macOS (kmutil rc 28 = rebuilt, reboot).
 
+The AuxKC itself cannot be built off-macOS (Mach-O fileset + prelink info, `kmutil`/`kernelmanagerd` only), but it does
+not have to be: `scripts/linux-install-strixaccel.sh` installs the bundle from Linux (`rw,readwrite` mount **without**
+`uid=`/`gid=` so `chown -hR 0:0` lands in the catalog as root:wheel, dirs 755 / files 644 / `Contents/MacOS/<name>`
+755, sha256 compared against the source), backs up the replaced bundle and the old collection into
+`/boot/EFI/OC/Kexts-backup/`, then removes
+`/Library/KernelCollections/AuxiliaryKernelExtensions.kc`. macOS relinks that collection from `/Library/Extensions` at
+the next boot, so the Linux route costs one extra boot (`boot 1` relinks, the bootstrap agent logs `REBOOT_REQUIRED` if
+it runs before that; `boot 2` maps the fresh AuxKC) — same mechanism `linux-fix-strix-graphics.sh` has used
+("Next macOS boot rebuilds/loads AuxKC").
+
 Mount gotcha seen here: the `readwrite` mount failed with `mount: WARNING: source write-protected, mounted read-only`
 while `/mnt/macos-sys` and a stacked `/mnt/macos-data` were still mounted — linux-apfs-rw allows only **one** mount of
 the container when writing, and the refusal surfaces as a read-only mount. Unmount every target of
