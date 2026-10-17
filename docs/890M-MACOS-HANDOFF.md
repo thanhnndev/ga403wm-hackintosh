@@ -6,6 +6,11 @@ Step-by-step history: [890M trace](890M-TRACE.md).
 
 ## Current state
 
+NEWEST (Step26 boot 3, 2026-10-17, macOS): PCIe patch works - amdgpu detects all 13 890M IP blocks, then fails
+"Unable to locate a BIOS ROM" (xkpi reads ACPI tables from an IORegistry "ACPI Tables" property Tahoe no longer
+publishes). StrixVFCT.kext (codeless, carries the VFCT from a local Linux dump; `scripts/macos-strixvfct-install.sh`)
+added to OpenCore. Next boot: expect GMC/PSP/SMU/ring init lines.
+
 NEWEST (Step26, 2026-10-17, macOS): first NMXGPU boot - amdgpu **hung** in `amdgpu_device_init` (PCIe
 partner-bandwidth `pci_upstream_bridge()` walk never ends on LinuxKPI's device tree; attach thread spins, OLED stays on
 the GOP `.Display_boot` buffer with no EDID, WindowServer composites on the CPU 160-460 %). Patched NMXGPU to take the

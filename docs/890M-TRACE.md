@@ -2065,3 +2065,20 @@ NMXGPUFB takes over the OLED (EDID back) and NMXAccel starts, giving WindowServe
 Step26 boot 2: the patch did not run yet - NMXGPU's boot guard saw NVRAM `nullmoth-gpu-attaching=1` left by the hung
 attach and parked the 890M ("the last attach of 1002:150e never returned ... this GPU stays with macOS"). Cleared with
 `nvram -d nullmoth-gpu-attaching`; the patch script now clears it too and the collector records `nvram-guard.txt`.
+
+Step26 boot 3 (guard cleared, PCIe patch live): **amdgpu gets through IP discovery** - all 13 blocks detected
+(soc21_common, gmc_v11_0, ih_v6_1, psp, smu, dm, gfx_v11_0, sdma_v6_0, vcn_v4_0_5, jpeg_v4_0_5, mes_v11_0, vpe_v6_1,
+isp_ip) - then `Unable to locate a BIOS ROM` -> `Fatal error during GPU init` -> `attach failed (22)`, clean unwind,
+no hang.
+
+Why: on an APU amdgpu_get_bios() wants the ACPI VFCT table (GOP-installed copy of the VBIOS). NMXGPU's xkpi
+`AcpiGetTable()` -> `nmx_xnu_acpi_table()` walks the IOService plane for a property `"ACPI Tables"` (OSDictionary of
+OSData keyed "SIG" / "SIG-n") - AppleACPIPlatformExpert on Tahoe 25G241 no longer publishes it (only
+"ACPI Statistics"), hence also "no FADT". The other fallbacks fail on this APU (VRAM BAR holds the GOP framebuffer,
+no ROM BAR, `pdev->rom` unset).
+
+Fix: `scripts/macos-strixvfct-install.sh <VFCT.bin> <esp>` builds **StrixVFCT.kext** (codeless; IOClass IOService on
+IOResources, personality property `"ACPI Tables" = {"VFCT": <table>}`) from the Linux dump
+(`/sys/firmware/acpi/tables/VFCT`, 21636 bytes, one image 101:0:0 1002:150e 21504 bytes - bus 101 matches `pcidebug`
+on Tahoe) and adds it to OpenCore Kernel/Add (MinKernel 25) so the node exists before NMXGPU attaches. The VBIOS is
+vendor firmware: the kext is generated under build/ (ignored), never committed. `--undo <esp>` removes it.
