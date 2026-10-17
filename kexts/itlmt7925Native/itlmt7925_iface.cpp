@@ -982,6 +982,24 @@ void buildBeacon(uint8_t *m, const uint8_t *bssid, uint8_t channel, const char *
     store<uint32_t>(m, 0x40, 2u | (probe ? 0u : 0x80u) | (rssi ? 0x4000u : 0u));
     memcpy(m + kBeaconHeader, ie, ieLen);
 }
+
+// Largest whole-IE prefix of an IE list, capped at max (the same walk as the core's ieWhole; clipping mid-IE would leave a
+// broken length byte). Apple's scan-result event payload is one apple80211_beacon_msg: a 0x44-byte header plus at most
+// 0x19c bytes of IEs - the message the family queues is 0x1e0 bytes (its entry is 0x20 + 0x1e0 = one 512-byte data.kalloc
+// element), and the scan cache copies exactly the length our header declares:
+// IO80211BSSBeacon::setBeaconDataFromMsg reads size = *(u32*)msg and allocateIEListBufferAndCopy memmoves size bytes from
+// payload+0x44 without ever checking them against the message length (the router only requires length >= 0x44). Reporting
+// more than the 0x19c budget reads past the queued copy: with a 416-byte list the copy ended 4 bytes past a 512-byte
+// element, in a GZAlloc guard page (panic of 2026-10-17 09:34, Kernel-2026-10-17-093407.panic, data.kalloc.512,
+// setBeaconDataFromMsg+0x2c -> memmove +0x12, RCX = 4). 0x190 (400) keeps 12 bytes of slack under the 0x19c budget.
+const uint16_t kEventIeMax = 0x190;
+
+uint16_t ieTrim(const uint8_t *ie, uint16_t len, uint16_t max)
+{
+    uint32_t n = 0;
+    while (n + 2 <= len && n + 2 + ie[n + 1] <= len && n + 2 + ie[n + 1] <= max) n += 2 + ie[n + 1];
+    return (uint16_t)n;
+}
 }
 
 bool itlmt7925WifiInterface::queryStatus(ItlNativeStatus *st)
@@ -1200,9 +1218,10 @@ IOReturn itlmt7925WifiInterface::getWCL_BSS_INFO(apple80211_beacon_msg *d)
     if (!d) return kIOReturnBadArgument;
     ItlNativeStatus st;
     if (!queryStatus(&st) || st.state != ITL_NATIVE_UP) return kIOReturnError;
+    const uint16_t il = ieTrim(st.ie, st.ieLen, kEventIeMax);
     buildBeacon((uint8_t *)d, st.bssid, st.channel, st.ssid, st.ssidLen, st.rssi, st.capability, st.beaconInterval, st.ie,
-                st.ieLen, false);
-    if (bssInfoTraced++ < 4) itlmtTrace(ctl, "wcl:bss info answered ch=%u ssidLen=%u ie=%u", st.channel, st.ssidLen, st.ieLen);
+                il, false);
+    if (bssInfoTraced++ < 4) itlmtTrace(ctl, "wcl:bss info answered ch=%u ssidLen=%u ie=%u", st.channel, st.ssidLen, il);
     return kIOReturnSuccess;
 }
 
@@ -1327,9 +1346,13 @@ void itlmt7925WifiInterface::deliverScanResults()
             const ItlNativeAp &a = snap[i];
             if (a.ageMs > 60000 || !a.channel) continue;                           // not heard in the last minute
             if (wantLen && (a.ssidLen != wantLen || memcmp(a.ssid, want, wantLen))) continue;
-            buildBeacon(msg, a.bssid, a.channel, a.ssid, a.ssidLen, a.rssi, a.capability, a.beaconInterval, a.ie, a.ieLen,
+            const uint16_t il = ieTrim(a.ie, a.ieLen, kEventIeMax);
+            if (il < a.ieLen && evTrimTraced++ < 6)
+                itlmtTrace(ctl, "scan:trim %02x%02x%02x%02x%02x%02x ch=%u ie=%u->%u", a.bssid[0], a.bssid[1], a.bssid[2],
+                           a.bssid[3], a.bssid[4], a.bssid[5], a.channel, a.ieLen, il);
+            buildBeacon(msg, a.bssid, a.channel, a.ssid, a.ssidLen, a.rssi, a.capability, a.beaconInterval, a.ie, il,
                         a.probeResponse);
-            postEvent(kEventScanResult, msg, kBeaconHeader + a.ieLen);
+            postEvent(kEventScanResult, msg, kBeaconHeader + il);
             posted++;
         }
     }

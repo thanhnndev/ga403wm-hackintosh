@@ -97,7 +97,7 @@ private:
     bool scanActive = false, scanImmediate = false, joinActive = false;
     uint32_t scanGenAtReq = 0, scanTicks = 0, joinSeq = 0, joinTicks = 0, controlTicks = 0, scanTraced = 0;
     uint32_t homeAwayTraced = 0, linkUpDoneTraced = 0, linkStateTraced = 0, bssInfoTraced = 0, linkStatusTraced = 0,
-             extBssTraced = 0, fastLaneTraced = 0;
+             extBssTraced = 0, fastLaneTraced = 0, evTrimTraced = 0;
     // the family's link state as the driver told it (event 0xd8): set when the join completes, cleared on a link loss
     bool nmLinkUp = false, linkDownPending = false;
     bool nmEverJoined = false;              // a join of the family's asking completed: the core may later restore the link by itself

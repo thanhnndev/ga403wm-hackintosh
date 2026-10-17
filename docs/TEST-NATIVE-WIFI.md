@@ -995,3 +995,29 @@ Installed 2026-10-16 18:19 (Linux, no reboot yet): the `build-kexts` workflow ru
 boot-args already carry stage b (`itlmt_native=1 itlmt_native_if=1 itlmt_native_dp=1 itlmt_native_nvtrace=1 itlmt_fast=6
 itlmt_stat=1 itlmt_nopwr=1`) and both itlmt entries have no Min/MaxKernel cap, so the next macOS boot is the check. The
 core kext was left as installed (2026-10-14): this fix is native-side only.
+
+### 2026-10-17: Wi-Fi worked, then a hard panic — the scan cache read past the queued beacon message
+
+The 0x44 build did what it was meant to do: the Wi-Fi menu listed the networks with their real names and the machine
+connected. 216 s in it went down hard (`Kernel-2026-10-17-093407.panic`): GZAlloc `data.kalloc.512`, a **read 1 byte past**
+a 512-byte element, `IO80211BSSBeacon::setBeaconDataFromMsg + 0x2c` → `_memmove + 0x12` (the `rep movsb` in `__HIB`),
+`RCX = 4`.
+
+What the registers decode to (full walk-through in
+[`docs/native-wifi-results/20261017-panic-kalloc512/`](../native-wifi-results/20261017-panic-kalloc512/README.md)):
+
+* The element is the family's queue entry for one 0xc9 scan result: 0x20 header + 0x1e0 payload
+  (`IO80211Glue::addEventToPendingQueue` allocates `length + 0x20` and copies the payload).
+* `R13/R15 = payload + 0x44` = the IE pointer (`WCLMngFrameRouter::scanResultEventHandler` checks only `length >= 0x44`
+  and hands `meta = payload`, `ies = payload + 0x44` on), `RDX/RBX = 0x1a0` = `ie_len` = the `+0` field of our header.
+* `setBeaconDataFromMsg` takes `size = *(u32*)meta` and `allocateIEListBufferAndCopy` does `memmove(beacon->ieBuffer,
+  payload + 0x44, size)` — **without validating `0x44 + ie_len` against the message**.
+* The message needed 0x44 + 416 = 484 bytes but was stored (per the 512-byte element) as 480: 412 = 0x19c bytes of IEs.
+  The copy spent its last 4 bytes one past the element, on a GZAlloc guard page.
+
+So the family's contract is one `apple80211_beacon_msg`: 0x44 header + at most **0x19c = 412** bytes of IEs. The driver was
+reporting up to `ITL_NATIVE_IE_MAX = 512`. Fixed in `kexts/itlmt7925Native/itlmt7925_iface.cpp`: `kEventIeMax = 0x190`
+(400) with `ieTrim` (whole-IE prefix) in both beacon-message paths (`deliverScanResults`, `getWCL_BSS_INFO`), plus a
+`scan:trim <bssid> ch=<n> ie=<reported>-><trimmed>` trace line (first 6 per boot) so the offending AP is identifiable.
+Not built or re-tested yet. Next boot: use Wi-Fi >=5 minutes incl. repeated `wdutil scan`; no panic, and the trace shows
+the trim for the AP that used to overflow (the 09:34 message had `ie = 416` → `416->400`).
