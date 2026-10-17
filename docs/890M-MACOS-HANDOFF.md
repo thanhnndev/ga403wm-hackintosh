@@ -6,6 +6,17 @@ Step-by-step history: [890M trace](890M-TRACE.md).
 
 ## Current state
 
+NEWEST (Step27, 2026-10-17, macOS): the 14:33 boot was **parked, not hung**. NVRAM `nullmoth-gpu-attaching=1` was
+stale: boot 3's attach failed cleanly at 12:47:05.596, but the kext's `removeProperty+sync` clear never reached the
+firmware store (evidence: `sender == "NMXGPU"` empty 12:47:06-14:33:54; no NMXGPU threads after boot+9s in the 14:32
+shutdown-stall stackshot; `softwareupdated`'s sandbox `deny nvram-get` line fires per boot only when the var exists -
+absent for boot 3). The "black screen" was `com.nullmoth.wsreset` restarting WindowServer once per boot (starts
+14:33:52 + 14:34:27), not the GPU. **Fix applied:** root `nvram -d nullmoth-gpu-attaching` (the CLI clear persists;
+the first two osascript prompts died with -60005 while the display slept - `caffeinate -u` first). **Reboot pending -
+the next boot is the first attach that sees StrixVFCT.** After it: `sudo bash scripts/macos-nmxgpu-890m-collect.sh
+out/890m-trace/step27-vfct`. If it hangs (black screen, marker left set), the boot after it parks the GPU
+automatically and the previous boot's log is the evidence. Details: 890M-TRACE.md "Step27".
+
 NEWEST (Step26 boot 3, 2026-10-17, macOS): PCIe patch works - amdgpu detects all 13 890M IP blocks, then fails
 "Unable to locate a BIOS ROM" (xkpi reads ACPI tables from an IORegistry "ACPI Tables" property Tahoe no longer
 publishes). StrixVFCT.kext (codeless, carries the VFCT from a local Linux dump; `scripts/macos-strixvfct-install.sh`)

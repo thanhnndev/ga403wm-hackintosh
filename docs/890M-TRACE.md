@@ -2082,3 +2082,46 @@ IOResources, personality property `"ACPI Tables" = {"VFCT": <table>}`) from the 
 (`/sys/firmware/acpi/tables/VFCT`, 21636 bytes, one image 101:0:0 1002:150e 21504 bytes - bus 101 matches `pcidebug`
 on Tahoe) and adds it to OpenCore Kernel/Add (MinKernel 25) so the node exists before NMXGPU attaches. The VBIOS is
 vendor firmware: the kext is generated under build/ (ignored), never committed. `--undo <esp>` removes it.
+
+## Step27 (2026-10-17, macOS 25G241): the 14:33 boot was parked by a stale NVRAM marker, not by a hang; the
+StrixVFCT test is still unrun
+
+The owner's single restart (shutdown 14:32:06, next boot 14:33:45) came up **parked**: NMXGPU found NVRAM
+`nullmoth-gpu-attaching=1` at attach time (14:33:54.674, thread 857) and printed "the last attach of 1002:150e never
+returned (the Mac stopped or restarted); this GPU stays with macOS". Nothing of amdgpu ran, the OLED stayed on
+`.Display_boot`, WindowServer had no accelerator. No hang anywhere in the system (no kernel spin; the parked state
+was the whole story).
+
+The marker was **not** left by a hung attach. The guard writes it around `nmx_port_attach()` (`xkpi/xnu/nmx_kext.cpp`
+194-227: set before, cleared after success or failure), so in boot 3 (12:46:58-14:32) the 12:47:05.585 attach failed
+cleanly ("no driver took 1002:150e" at 12:47:05.596). After that:
+* `sender == "NMXGPU"` is empty from 12:47:06 to 14:33:54, and a 13:11:47 read of `nvram -p` showed no marker.
+* The 14:32:08 shutdown-stall stackshot (boot 3, Time Since Boot 6311s) has **no NMXGPU thread active after boot+9s**:
+  every LinuxKPI worker (`linuxkpi_*_wq`, `nmx softclock`, `nmx taskq`, `amdgpu-reset-dev`) reports "last ran
+  6302.0-6302.1s ago" = 12:47:06, the boot-3 attach (a second attach would have woken the firmware-loader workers).
+* No `sudo`, `osascript` or `nvram`-write process ran in the window (the only two `nvram` launches, 13:11:47 and
+  13:36:56, are this session's read-only `nvram -p`/`nvram boot-args`).
+* `softwareupdated` emits a sandbox `deny(1) nvram-get nullmoth-gpu-attaching` line at roughly boot+10s whenever the
+  variable exists (seen at 12:32:09, 12:41:03 and 14:33:55; **absent for boot 3**). A handy passive detector.
+
+Conclusion (best-supported explanation): `nmx_marker_write(false)` - `removeProperty` + `sync()` through IODTNVRAM -
+did **not reach the firmware store**, so the stale "1" came back at the next boot and parked the GPU. The text "(the
+Mac stopped or restarted)" is the driver's assumption about a leftover marker and is wrong in this case. The
+`nvram -d` **CLI** path does persist: the 12:45:44 CLI clear held (boot 3's attach ran). Worth reporting upstream.
+
+The owner's "black screen" is not the GPU either: WindowServer started twice - 14:33:52.898 (pid 205) and 14:34:27.546
+(pid 951) - the second start being the NullMoth flicker stopgap (`com.nullmoth.wsreset` restarts WindowServer once per
+boot). A short black flash after the restart, not a parked GPU. (`pmset`: display asleep 13:51:10-14:31:00 before the
+restart.)
+
+Also seen: ESP `config.plist` mtime 13:36:56 - rewritten with identical content by an unattributed run at the same
+second as the session's two read-only `nvram` launches. Full diff against `config.plist.pre-strixvfct` re-verified:
+only `Kernel/Add StrixVFCT.kext`, the nmx boot-args and the emptied 890M `DeviceProperties`.
+
+Fix applied (14:52): root `nvram -d nullmoth-gpu-attaching` (via osascript; the first two prompts failed with -60005 -
+the dialog was coming up on a sleeping display; `caffeinate -u` first). Verified absent. **The next boot is the first
+attach that will actually see StrixVFCT's VFCT.** Expectations and evidence plan: `Unable to locate a BIOS ROM` gone,
+then ATOM-BIOS parse / GMC v11 / PSP 14 / SMU 14 / IH lines; if it hangs instead, the guard parks the boot after it
+(one reboot), and the evidence comes from that boot's `NMXGPU` log plus a `spindump` while it spins or the
+shutdown-stall report after a forced restart. Collector: `sudo bash scripts/macos-nmxgpu-890m-collect.sh
+out/890m-trace/step27-vfct`.
