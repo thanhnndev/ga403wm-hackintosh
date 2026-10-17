@@ -21,8 +21,13 @@ if [ $UNDO = 1 ]; then
   echo "restored $(basename "$LAST")"; exit 0
 fi
 
-MV=/mnt/macos-vol0
-mountpoint -q "$MV" || mount "$MV"
+MV=${MV:-/mnt/macos-vol0}
+# The Data volume may already be mounted somewhere else (the mount points have moved between sessions); reuse it instead of
+# trying to mount it a second time, which fails with "already mounted" (and used to abort the install under set -e).
+if ! mountpoint -q "$MV"; then
+  MV_ALT=$(findmnt -rn -S /dev/nvme0n1p4 -o TARGET 2>/dev/null | head -1 || true)
+  if [ -n "$MV_ALT" ]; then MV=$MV_ALT; else mount "$MV"; fi
+fi
 SRC=${SRC:-$(ls -d "$MV"/Users/*/develop/projects/ga403wm-hackintosh/build/"$NAME".kext 2>/dev/null | head -1)}
 [ -n "$SRC" ] && [ -f "$SRC/Contents/MacOS/$NAME" ] || { echo "no built $NAME.kext on the macOS volume (set SRC=...)"; exit 1; }
 echo "source: $SRC ($(stat -c %y "$SRC/Contents/MacOS/$NAME" | cut -d. -f1))"
