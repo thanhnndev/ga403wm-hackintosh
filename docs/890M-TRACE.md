@@ -1902,3 +1902,17 @@ so the string that WindowServer logs is userspace/dyld-cache only).
   `AGDC: 0x711 type 0x2 served ...` line and the on-screen colours. If the spam stops and gamma tables arrive but
   the picture washes out, the next step is to apply the LUT/LiT in the copy path (a 3×256 LUT lookup per pixel) —
   that is the real colour-pipeline win this discovery unlocks.
+
+Install of the 0.1.20 build (same day, Linux): CI run **38997096119 success** -> `build/StrixAccel.kext` version
+0.1.20, MH_KEXT_BUNDLE, 180960 bytes, `sha256(Contents/MacOS/StrixAccel) = 1ad3ab12cd6c867a8d84ab69aab7cf522d8bc566df876f166ae98b526ab8cd13`,
+0 `__cxa`/`atexit` undefined symbols. 0.1.19 (`a212b978...`, never loaded) backed up to
+`/boot/EFI/OC/Kexts-backup/StrixAccel.kext.0.1.19-<ts>`; 0.1.20 written to `/Library/Extensions/StrixAccel.kext` and to
+the macOS working copy's `build/StrixAccel.kext` (sha256 re-verified after both copies) plus an ESP copy at
+`/boot/EFI/StrixAccel-0.1.20.kext` as a fallback install source. The AuxKC is still 17:10 16/10 (0.1.18) until
+`sudo bash scripts/macos-strix-accel-install.sh` runs on macOS (kmutil rc 28 = rebuilt, reboot).
+
+Mount gotcha seen here: the `readwrite` mount failed with `mount: WARNING: source write-protected, mounted read-only`
+while `/mnt/macos-sys` and a stacked `/mnt/macos-data` were still mounted — linux-apfs-rw allows only **one** mount of
+the container when writing, and the refusal surfaces as a read-only mount. Unmount every target of
+`findmnt -rn -S /dev/nvme0n1p4 -o TARGET` first; then `mount -t apfs -o readwrite,uid=1000,gid=1000,vol=0
+/dev/nvme0n1p4 /mnt/macos-data` works (verified: `touch` succeeded).
