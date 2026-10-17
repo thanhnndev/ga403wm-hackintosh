@@ -1,4 +1,17 @@
-# NullMoth driver: what we know (2026-10-11)
+**Current state (2026-10-17 12:30): upstream 2.3.1 + the fork overlay, installed on macOS 26.7.1, loads at the next reboot.**
+`nullmoth-nvidia-2.3.1.tar.gz` SHA-256 `3522e2f5...` (matches the release's SHA256SUMS.txt, package SHA256SUMS ok);
+upstream backup `/Library/NullMoth/backup-20261017-122934.HLqztf` (`uninstall.sh <backup>` goes back to 2.0.4); fork
+`ga403wm` rebased onto `v2.3.1` without conflicts (`805e77a`, old tip tagged `ga403wm-on-2.0.4`); overlay NVRMFB `ad490cf6...`
+(new: carries 2.1-2.3 NVRMFB changes), NVRMEdpBL `433dfcbf...` (unchanged); runbook `~/efi-audit/upgrade-2.3.1/run-install.sh`
+(same parking of NVRMEdpBL as 2.0.x). AuxKC verified: NVRM, NVRMFB, NVRMEdpBL, NVRMAGDC, NVAccel, NMXGPU, NMXAccel.
+Notes for 2.2+: the package carries the NVIDIA driver only (no NMXGPU/NMXAccel/NPU); install.sh keeps an installed
+`/Library/Extensions/NMXGPU.kext` and copies `/Library/NullMoth/gpu-userland` (RADV) back into `GPUBundles/nvmtl`; the
+2.0.4 NMX kexts + userland are saved in `~/efi-audit/nmxgpu-2.0.4` (used by `scripts/macos-nmxgpu-890m-test.sh`). New
+boot guard (2.3.1): NVRM counts starts in NVRAM `nullmoth-nv-starts`, NVRMFB clears it when its display is up *or the
+card has no display* (headless OLED-only boots are fine); two failed starts turn the driver off and the lastgood job
+restores the backup. The NVMTL plugin still loads RADV for NMXAccel (`AMD, RADV`, `NMXAccel` strings present).
+
+Previous state: # NullMoth driver: what we know (2026-10-11)
 
 **Read the vendor's source first.** The driver is published with source at
 <https://github.com/nullmoth/nvidia-macos-driver> (PolyForm Noncommercial; release notes in `docs/RELEASE-*.md`). The

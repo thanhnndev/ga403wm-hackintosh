@@ -14,7 +14,10 @@
 # (linux-firmware afabaf773c4c2e2c841429933a6a084a5af4d14d). From Linux, undo = copy
 # EFI/OC/config.plist.pre-nmxgpu-890m back over EFI/OC/config.plist.
 set -euo pipefail
-KD=/Library/NullMoth/kexts/26; EXT=/Library/Extensions; GFW=/Library/NullMoth/firmware
+# NullMoth >= 2.2 ships the NVIDIA driver only: the NMX kexts then come from the copy saved out of the 2.0.4 package.
+KD=${NMX_SRC:-/Library/NullMoth/kexts/26}
+[ -d "$KD/NMXGPU.kext" ] || KD=/Users/$(stat -f %Su /dev/console)/efi-audit/nmxgpu-2.0.4
+EXT=/Library/Extensions; GFW=/Library/NullMoth/firmware
 B=7C436110-AB2A-4BBB-A880-FE41995C9F82
 
 auxkc() {
@@ -66,7 +69,8 @@ for k in NMXGPU NMXAccel; do
   rm -rf "$EXT/$k.kext"; ditto "$KD/$k.kext" "$EXT/$k.kext"
   chown -R root:wheel "$EXT/$k.kext"; chmod -R 755 "$EXT/$k.kext"
 done
-ditto /Library/NullMoth/gpu-userland /Library/GPUBundles/nvmtl
+U=/Library/NullMoth/gpu-userland; [ -d "$U" ] || U=$KD/gpu-userland
+ditto "$U" /Library/GPUBundles/nvmtl
 chown -R root:wheel /Library/GPUBundles/nvmtl; chmod -R go-w,a+rX /Library/GPUBundles/nvmtl
 
 auxkc
