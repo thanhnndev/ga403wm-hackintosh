@@ -89,6 +89,7 @@ private:
     // scan / join (stage 3): requests are handed to the core through ITL_NATIVE_*; results are posted from the datapath tick
     void pollControl();
     void deliverScanResults();
+    void postLqmUpdate();
     void finishJoin(const ItlNativeStatus &st, bool ok);
     void postLinkStatus(const uint8_t *bssid, bool up, uint32_t reason);
     void postEvent(uint32_t code, void *data, size_t length);
@@ -96,6 +97,9 @@ private:
     ItlNativeAp *snap = nullptr;            // ITL_NATIVE_AP_MAX entries: scratch for ITL_NATIVE_NETS (tick thread only)
     bool scanActive = false, scanImmediate = false, joinActive = false;
     uint32_t scanGenAtReq = 0, scanTicks = 0, joinSeq = 0, joinTicks = 0, controlTicks = 0, scanTraced = 0;
+    // LQM event (0x27) bookkeeping: the last beacon count reported and the tick of that post (the family's missed-beacon
+    // monitor expects the count to keep advancing, see postLqmUpdate)
+    uint32_t lqmBeacons = 0, lqmTicks = 0, lqmPosts = 0;
     uint32_t homeAwayTraced = 0, linkUpDoneTraced = 0, linkStateTraced = 0, bssInfoTraced = 0, linkStatusTraced = 0,
              extBssTraced = 0, fastLaneTraced = 0, evTrimTraced = 0;
     // the family's link state as the driver told it (event 0xd8): set when the join completes, cleared on a link loss

@@ -300,10 +300,17 @@ int itlmt7925::m2Scan(const char *ssidArg)
     memset(w + 4, 0xff, 6);
     w += 16;
     put16(w + 0, 12); put16(w + 2, 136);            // UNI_SCAN_CHANNEL
-    // every 2.4 GHz channel a network is commonly on (a router left on auto picks any of 1..11), then the 5 GHz set
+    // Every 2.4 GHz channel a network is commonly on (1..13 - 12/13 are the usual pick for routers outside the US), then the
+    // complete 5 GHz set including the DFS bands (52..64 and 100..144). DFS was missing until round 27: the channel domain
+    // (m3HwPrep) always allowed those channels, but the scan never visited them, so APs sitting on a DFS channel - the common
+    // pick for 80 MHz in auto mode - never showed up in the Wi-Fi list. Whether the firmware probes passively on DFS with the
+    // scan marked active is a hardware question (the TLV carries no per-channel flags; Linux's mt7925 sends the same shape).
     static const uint8_t chans[][2] = { {1, 1}, {1, 2}, {1, 3}, {1, 4}, {1, 5}, {1, 6}, {1, 7}, {1, 8}, {1, 9}, {1, 10}, {1, 11},
-                                        {2, 36}, {2, 40}, {2, 44}, {2, 48}, {2, 149}, {2, 153},
-                                        {2, 157}, {2, 161}, {2, 165} };
+                                        {1, 12}, {1, 13},
+                                        {2, 36}, {2, 40}, {2, 44}, {2, 48}, {2, 52}, {2, 56}, {2, 60}, {2, 64},
+                                        {2, 100}, {2, 104}, {2, 108}, {2, 112}, {2, 116}, {2, 120}, {2, 124}, {2, 128},
+                                        {2, 132}, {2, 136}, {2, 140}, {2, 144},
+                                        {2, 149}, {2, 153}, {2, 157}, {2, 161}, {2, 165} };
     w[4] = 4;                                         // specified channels
     w[5] = sizeof(chans) / sizeof(chans[0]);
     for (unsigned i = 0; i < sizeof(chans) / sizeof(chans[0]); i++) { w[8 + 2 * i] = chans[i][0]; w[9 + 2 * i] = chans[i][1]; }

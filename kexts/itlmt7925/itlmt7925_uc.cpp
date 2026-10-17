@@ -329,6 +329,7 @@ void itlmt7925::nativeStatus(ItlNativeStatus *s)
     s->ssidLen = (uint8_t)n;
     s->capability = tgtCap;
     s->beaconInterval = tgtBcnInt;
+    s->beaconCount = tgtBcnCount;
     uint32_t il = tgtIeLen < sizeof(tgtIe) ? tgtIeLen : (uint32_t)sizeof(tgtIe);
     s->ieLen = ieWhole(tgtIe, il, ITL_NATIVE_IE_MAX);
     memcpy(s->ie, tgtIe, s->ieLen);
@@ -488,6 +489,7 @@ void itlmt7925::apSeen(const uint8_t *p, uint32_t len, uint32_t off, const char 
     int8_t rssi = rxRssi(p, len, off);
     if (m3linkUp && !memcmp(bssid, tgtBssid, 6)) {
         tgtLastBcnMs = now ? now : 1;
+        tgtBcnCount++;
         if (rssi) tgtRssi = tgtRssi ? (int8_t)((tgtRssi * 3 + rssi) / 4) : rssi;
     }
     int k = -1;

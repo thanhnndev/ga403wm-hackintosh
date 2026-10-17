@@ -802,6 +802,7 @@ void itlmt7925WifiInterface::drainDatapath()
         for (uint32_t i = 0; i < kNumTx; i++) txSub[i]->requestDequeue(nullptr, 1);
     }
     if ((++ticks % 500) == 0) {         // once a second at the 2 ms tick
+        postLqmUpdate();                // keep the family's missed-beacon monitor fed while the link is up
         IOLockLock(rxLock);
         uint32_t received = rxReceived, dropped = rxDropped, full = rxRingFull, oversize = rxOversize, peak = rxPeak;
         IOLockUnlock(rxLock);
@@ -960,9 +961,10 @@ IOReturn itlmt7925WifiInterface::setINFRA_ENUMERATED(apple80211_infra_enumerated
 namespace {
 const uint32_t kBeaconHeader = 0x44;
 const uint32_t kEventScanResult = 0xc9, kEventScanDone = 0xed, kEventAssoc = 0x4e, kEventJoin = 0xd3, kEventFirstBeacon = 0xd4,
-               kEventConnect = 0xd5, kEventLinkStatus = 0xd8;
+               kEventConnect = 0xd5, kEventLinkStatus = 0xd8, kEventLqm = 0x27;
 // 20 MHz channels the core's scan covers (itlmt7925_m2.cpp): the only channels a result can come from.
-const uint8_t kScanChannels[] = {1, 6, 11, 36, 40, 44, 48, 149, 153, 157, 161, 165};
+const uint8_t kScanChannels[] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 36, 40, 44, 48, 52, 56, 60, 64,
+                                 100, 104, 108, 112, 116, 120, 124, 128, 132, 136, 140, 144, 149, 153, 157, 161, 165};
 const uint32_t kScanTimeoutTicks = 2500;       // 25 s at the 10 ms tick: the core blocks up to 15 s per scan
 const uint32_t kJoinTimeoutTicks = 4500;       // 45 s: scan for the AP, authentication, association, handshake
 
@@ -1413,6 +1415,38 @@ void itlmt7925WifiInterface::postLinkStatus(const uint8_t *bssid, bool up, uint3
     if (!up) store<uint32_t>(p, 8, reason);
     postEvent(kEventLinkStatus, p, sizeof(p));
     if (linkStatusTraced++ < 8) itlmtTrace(ctl, "wcl:link status posted up=%u reason=%u", up, reason);
+}
+
+// Event 0x27 (WCLNetManager::handleLqmUpdate): payload is Apple's apple80211_lqm_event_data, 0x1dc bytes - AppleBCMWLANCore::
+// postLQMEvent sends exactly {0x27, data, 0x1dc, 1} (25G241 0xffffff80015fda2a), and WCLNetManager registers 0x27 -> the
+// handler (its dispatch table entry sits at 0xffffff80024874b0 on 25G241). The handler gates on two flags and then refreshes
+// the family's two "link alive" timestamps (ctx+0x150 / ctx+0x158):
+//   +0x1d8 and +0x1d9 nonzero, then
+//   [+0x30] != 0 && [+0x28] != 0      -> ctx+0x150 = now
+//   [+0x1c] > [+0x14] || [+0x24] != 0 -> ctx+0x158 = now
+// WCLNetManager::assocTimerAction declares the beacons missed when BOTH timestamps are older than 60 s (0xea61 ms at
+// 0xffffff800218fcc6, handleMissedBeacons at 0xffffff80021902be): it reports the CommonFaultReporter fault "missed beacons
+// timeout" and leaves the network. This driver never posted 0x27, so every join died ~60 s in with exactly that fault (and
+// the resulting core capture crashed corecaptured). The fields are filled with the core's real beacon counter for the
+// connected BSS: the timestamps only refresh while beacons actually arrive, and a driver that stops posting (link down) is
+// still detected by the family's 60 s timeout.
+void itlmt7925WifiInterface::postLqmUpdate()
+{
+    ItlNativeStatus st;
+    if (!queryStatus(&st) || st.state != ITL_NATIVE_UP) { lqmBeacons = 0; return; }
+    uint8_t p[0x1dc];
+    bzero(p, sizeof(p));
+    uint32_t cur = st.beaconCount;
+    uint32_t delta = cur >= lqmBeacons ? cur - lqmBeacons : cur;
+    p[0x1d8] = 1;  p[0x1d9] = 1;                    // data valid (Apple sets both in AppleBCMWLANLQM::updateLQM)
+    p[0x30] = 1;                                     // stats valid (same)
+    store<uint32_t>(p, 0x14, lqmBeacons);            // beacons from this BSS at the previous post
+    store<uint32_t>(p, 0x1c, cur);                   // beacons now: grows only while beacons arrive
+    store<uint32_t>(p, 0x24, delta);                 // beacons since the previous post
+    store<uint32_t>(p, 0x28, delta);
+    postEvent(kEventLqm, p, sizeof(p));
+    lqmBeacons = cur;
+    if (lqmPosts++ < 4) itlmtTrace(ctl, "wcl:lqm post beacons=%u delta=%u", cur, delta);
 }
 
 // Runs every 10 ms tick on the interface's work queue; asks the core every 100 ms while a scan or join is outstanding.

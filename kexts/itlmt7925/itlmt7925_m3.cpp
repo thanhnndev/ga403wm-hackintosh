@@ -281,11 +281,11 @@ int itlmt7925::m3HwPrep()
         pollA(MT_WTBL_UPDATE_REG, 1u << 31, 0, 50);
     }
 
-    // channel domain: world regulatory ("00"), every channel we might join
-    static const uint16_t ch2[] = { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11 };
+    // channel domain: world regulatory ("00"), every channel we might join (the scan list in itlmt7925_m2.cpp mirrors this)
+    static const uint16_t ch2[] = { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13 };
     static const uint16_t ch5[] = { 36, 40, 44, 48, 52, 56, 60, 64, 100, 104, 108, 112, 116, 120, 124, 128, 132, 136, 140,
                                     144, 149, 153, 157, 161, 165 };
-    static uint8_t dom[16 + 8 * 40];
+    static uint8_t dom[16 + 8 * 48];
     unsigned n2 = sizeof(ch2) / sizeof(ch2[0]), n5 = sizeof(ch5) / sizeof(ch5[0]);
     bzero(dom, sizeof(dom));
     dom[0] = '0'; dom[1] = '0';

@@ -13,7 +13,7 @@ interface (`itlmt7925Eth`), the same trick the itlwm project uses for Intel card
 Verified on the reference machine (GA403WM, macOS 15.6.1 Recovery booted from a USB stick):
 
 * firmware download and start (patch + RAM image), NIC capabilities read, MAC address read from the firmware
-* active scan of 2.4 GHz (1, 6, 11) and 5 GHz (36, 40, 44, 48, 149, 153, 157, 161, 165) with directed probes
+* active scan of 2.4 GHz (1–13) and all of 5 GHz (36–165 incl. the DFS bands 52–64 / 100–144, since round 27) with directed probes
 * open-system authentication, association, WPA2-PSK 4-way handshake (CCMP), pairwise and group key install
 * DHCP exchange, ARP, DNS queries with answers and an NTP request observed on the interface
 * up to four configured networks, picked by priority and availability
@@ -26,7 +26,7 @@ Not done, in rough order of importance:
 | no IO80211 integration in legacy mode (native mode: see [WIFI-DRIVERS.md](WIFI-DRIVERS.md)) | shows up as Ethernet in System Settings; the [ItlWiFi menu bar app](#runtime-control-itlwifi-menu-bar-app) gives the scan list, join and disconnect (untested on hardware yet) |
 | no group re-key, no power save | battery use is not optimised (reconnect after a drop: implemented with the runtime control, untested) |
 | WPA2-PSK/CCMP only | no open networks, no WPA3/SAE, no enterprise, no 6 GHz scan |
-| regulatory domain is a fixed world domain (`00`: 2.4 GHz ch 1-11, 5 GHz ch 36-165); MAC address is the one stored in the card | |
+| regulatory domain is a fixed world domain (`00`: 2.4 GHz ch 1-13, 5 GHz ch 36-165 incl. DFS); MAC address is the one stored in the card | |
 | only the Recovery environment was exercised | behaviour of a full install (sleep, wake, power) is unknown |
 
 ## Speed: what to expect, and the ceiling

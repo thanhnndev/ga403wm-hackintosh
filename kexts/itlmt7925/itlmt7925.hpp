@@ -428,6 +428,7 @@ private:
     size_t evlen = 0;
     void evLog(const char *fmt, ...) __attribute__((format(printf, 2, 3)));
     uint32_t tgtLastBcnMs = 0, lastRxDataMs = 0;
+    uint32_t tgtBcnCount = 0;                // beacons heard from tgtBssid while linked; reported in ItlNativeStatus.beaconCount
     int8_t tgtRssi = 0;
     void ethLink(bool up);
 };

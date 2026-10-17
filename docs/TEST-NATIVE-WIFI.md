@@ -1055,3 +1055,31 @@ Installed 2026-10-17 11:03 (Linux, no reboot yet): `build-kexts` run 39000943950
 `/boot/EFI/OC/Kexts/itlmt7925Native.kext`, sha256 `7ddc713b…` (the IE-cap build it replaces is kept as
 `Kexts-backup/itlmt7925Native.kext.20261017-110334`, sha256 `88499c27…`). Next boot: `ioreg -l | grep itlmt_native_trace`
 must show `ctl:faultPipe=1`, and ≥5 minutes of Wi-Fi (incl. scans) must pass without a panic.
+
+### 2026-10-17 (round 27): the pipe fix held, the link died 60 s in — the missed-beacon monitor needed event 0x27
+
+The pipe-start boot (11:55) did not panic at the pipe; instead the link came up, worked, and **dropped ~60 s after every
+join** (`link_off`, `WiFiAgent: link recovery started`) with the family's `missed beacons timeout` fault report — and the
+fault report's core capture made `corecaptured` segfault, so every boot had a `corecaptured-*.ips` ~80 s in. Root cause:
+`WCLNetManager::assocTimerAction` declares the beacons missed when two timestamps (`ctx+0x150`/`ctx+0x158`) are both
+older than 60 s, and `ctx+0x158` is only refreshed by `WCLNetManager::handleLqmUpdate` — the handler for **driver event
+0x27** (`apple80211_lqm_event_data`, 0x1dc bytes, exactly what `AppleBCMWLANCore::postLQMEvent` sends). This driver never
+posted it. Full walk-through with the 25G241 disassembly (dispatch table, gates, fault path):
+[`docs/native-wifi-results/20261017-lqm-beacon-monitor/`](../native-wifi-results/20261017-lqm-beacon-monitor/README.md).
+
+Fixed in this build (both kexts rebuilt):
+
+* core: `tgtBcnCount` (beacons heard from the connected BSS) in `ItlNativeStatus.beaconCount`;
+* native: `postLqmUpdate()` posts event 0x27 once a second while the link is up, carrying the real beacon counter in the
+  fields the handler gates on (`+0x14/+0x1c/+0x24/+0x28`, flags `+0x1d8/+0x1d9/+0x30`); trace `wcl:lqm post beacons=N delta=D`;
+* core: the **scan list now covers 2.4 GHz 1–13 and the full 5 GHz set incl. DFS 52–64 / 100–144** (the domain always
+  allowed them, the scan never visited them — APs on a DFS channel, e.g. a 5 GHz >400 Mb/s network whose phone sees it
+  and this Mac never did, could not appear). `itlmt7925Native`'s reported supported-channel list mirrors it.
+
+Test checklist for the next boot (stage b):
+
+1. `ioreg -l | grep itlmt_native_trace` — `wcl:lqm post beacons=N delta=D` with N growing; `ctl:faultPipe=1` still there.
+2. Idle ≥2 minutes on the link: no `link_off` / `link recovery` in `log show --last boot` (previously guaranteed at ~60 s),
+   no `missed beacons` fault, no new `corecaptured-*.ips`.
+3. Wi-Fi menu: a network on a DFS channel (the "Kefoff Coffee" 5 GHz case) should now be listed; `wdutil scan` welcome.
+4. Still no panic; the usual trace lines (`scan:delivered`, `dp:` counters) unchanged.

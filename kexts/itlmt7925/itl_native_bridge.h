@@ -87,5 +87,9 @@ struct ItlNativeStatus {
     uint8_t fastActive, fastNss, fastHe, fastBw;
     uint8_t htMcs[10];
     uint16_t vhtMcs, heMcs;
+    // Beacons heard from the connected BSS since the counter started (round 27, appended at the end: both kexts are rebuilt
+    // together). The native front end posts it in the periodic LQM event (0x27) so the family's missed-beacon monitor sees the
+    // link is alive: without those posts the family drops the link with "missed beacons timeout" 60 s after it came up.
+    uint32_t beaconCount;
 };
 #define ITL_NATIVE_STATUS "itlmt-native-status-v1"
