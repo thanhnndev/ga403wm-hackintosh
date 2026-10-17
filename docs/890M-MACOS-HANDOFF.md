@@ -6,6 +6,13 @@ Step-by-step history: [890M trace](890M-TRACE.md).
 
 ## Current state
 
+NEWEST (Step25, 2026-10-17, macOS): **NMXGPU boot test armed** (NullMoth's Linux amdgpu on macOS; milestone 4 now goes
+through amdgpu's own GMC/PSP/SMU/SDMA/GFX/DCN35 code). Installed by `scripts/macos-nmxgpu-890m-test.sh`: 890M firmware
+(SHA-256 checked), NMXGPU + NMXAccel + RADV, AuxKC, boot-args `nmxamd=1 -strixgopoff -strixaccoff -strixmetalgateoff`,
+890M hiding DeviceProperties removed. OLED black / no boot -> Linux: copy `EFI/OC/config.plist.pre-nmxgpu-890m` over
+`config.plist`. After a boot: `sudo bash scripts/macos-nmxgpu-890m-collect.sh out/890m-trace/step25-nmxgpu`. Details:
+890M-TRACE.md "Step25".
+
 NEWEST (Step24, 2026-10-17, macOS): **0.1.21 verified live**: Res,Forced 0, zero GART/prepare failures, zero
 `Fallback ... submission failed`; WindowServer ~74 % steady. Remaining cost = NVMTL (dGPU) composite + CPU
 upload/readback + StrixDisplayPipe CPU copy; next is the real 890M engine bring-up (milestones 4-10). Step23 (below)

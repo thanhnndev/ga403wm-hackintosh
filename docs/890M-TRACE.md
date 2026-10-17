@@ -1990,3 +1990,45 @@ Meaning: the 890M side of the display pipe is now clean (resources map through t
 fallback). The remaining CPU is the cross-GPU copy chain (dGPU composite -> CPU readback -> CPU copy into the iGPU
 scanout). It goes away only when the 890M composites itself: GMC/GART programming, SDMA, GFX11.5 + a Metal device on
 the 890M (port milestones 4-10), not in StrixAccel's CPU copy path.
+
+
+## Step25 (2026-10-17, macOS 25G241): milestone 4 switches to NullMoth's NMXGPU (Linux amdgpu on macOS)
+
+Owner direction: with a hybrid laptop the iGPU must be the default and the NVIDIA card only for heavy work; if that is
+hard, ignore NVIDIA for now and do M4.
+
+What the NVIDIA side already does (nullmoth upstream `kexts/NVRM/accel/nvrm-accel.cpp`, headless check): NVAccel
+withholds `MetalPluginName` until an NVIDIA display head publishes. With no head after 60 s it restores the name
+*without arming* (`debug.nvaccel_headless=1`): apps get the NVIDIA Metal device, WindowServer stays on the GPU that owns
+the display (Apple's two-GPU MacBook Pro model). Our boots composite on NVIDIA because (a) an HDMI monitor on the NVIDIA
+port arms it, and (b) with OLED only, our own **StrixMetalGate** puts `MetalPluginName` back before the 60 s check so
+WindowServer gets the NVIDIA device (written when the 890M had no Metal driver at all). So "iGPU first" needs a Metal
+device on the 890M, not a change to the NVIDIA driver; StrixMetalGate must be off once the 890M has one.
+
+NMXGPU (in the installed NullMoth 2.0.4 package, `/Library/NullMoth/kexts/26/NMXGPU.kext`, 15 MB; sources in the fork
+workspace `gpu-port/`): drm-kmod (DRM core of Linux 6.14) amdgpu + i915 + xe linked into one kext through FreeBSD's
+LinuxKPI on xnu; DRM minors as devfs clone nodes in `/dev/dri`; display bridge = in-kernel DRM client publishing an
+IOFramebuffer (`NMXGPUFB`) on one contiguous scan-out buffer. NMXAccel (= nvrm-accel.cpp built `-DNMX_ACCEL`) gives a
+Metal device on the AMD GPU; the Metal plugin loads RADV (`/Library/NullMoth/gpu-userland`). Upstream status: "not
+yet loaded on hardware", opt-in `nmxamd=1`, probe score 60000 on any display-class AMD function.
+
+The binary carries every 890M IP block: `gfx_v11_0` (130 syms), `gmc_v11_0`, `soc21`, `psp_v14_0`, `smu_v14_0_0`,
+`sdma_v6_0`, `mes_v11_0`, `imu_v11_0`, `nbio_v7_11`, `dcn35`/`dcn351`, `vcn_v4_0_5`, `jpeg_v4_0_5`, `vpe_v6_1`,
+`isp_v4_1`, `umsch_mm_v4`, IP discovery. That is milestones 4-9 (GMC/GART, PSP/SMU/IH, SDMA, GFX+MES, DCN35) in
+amdgpu's own code instead of a hand-written Cobalt64-style driver.
+
+Boot test installed (`scripts/macos-nmxgpu-890m-test.sh`, undo `--undo <esp>`; from Linux copy
+`EFI/OC/config.plist.pre-nmxgpu-890m` back):
+* firmware: 16 files + LICENSE.amdgpu from linux-firmware `afabaf773c4c...` (the commit NullMoth's manifest pins),
+  each SHA-256 checked: gc_11_5_0_{imu,me,mec,mes_2,mes1,pfp,rlc}, psp_14_0_0_{toc,ta}, sdma_6_1_0, dcn_3_5_dmcub,
+  dcn_3_5_1_dmcub, vcn_4_0_5, vpe_6_1_0, isp_4_1_1, umsch_mm_4_0_0 -> `/Library/NullMoth/firmware/amdgpu` (7.3 MB).
+* NMXGPU + NMXAccel in `/Library/Extensions`, RADV userland into `/Library/GPUBundles/nvmtl`, AuxKC rebuilt
+  (contains both).
+* boot-args: `+nmxamd=1 -strixgopoff -strixaccoff -strixmetalgateoff`, `strix-probe=1` removed (no second MMIO user).
+* 890M DeviceProperties `class-code ffffffff`, `disable-gpu`, `name`/`IOName #display` removed for the test: with them
+  NMXGPU's display-class match never sees the GPU (the upstream setup drops `disable-gpu` the same way).
+* ocvalidate clean. Test with OLED only (HDMI unplugged).
+
+After the boot: `sudo bash scripts/macos-nmxgpu-890m-collect.sh out/890m-trace/step25-nmxgpu` (kernel log of
+NMXGPU/amdgpu/[drm], ioreg, /dev/dri, displays). M4 pass = amdgpu reaches `gmc_v11_0` init (VRAM/GTT sizes, GART
+enabled) and PSP/SMU/IH come up; M5-M7 = ring tests of SDMA/GFX/MES pass; display = NMXGPUFB lights the OLED.
