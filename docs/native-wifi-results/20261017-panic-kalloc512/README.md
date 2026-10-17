@@ -60,6 +60,10 @@ probabilistic). When the same AP is the 0xc9 result again, the same read happens
 
 ## Verify after the fix
 
+CI + ESP: `build-kexts` run 38998145267 on `6a73548` → `scripts/linux-install-kext.sh itlmt7925Native` →
+`/boot/EFI/OC/Kexts/itlmt7925Native.kext`, sha256 `88499c27…` (previous 0x44 build kept as
+`Kexts-backup/itlmt7925Native.kext.20261017-101843`, sha256 `14c6af9a…`). Installed 2026-10-17 10:18, not booted yet.
+
 1. Boot macOS, use Wi-Fi the way that crashed before (the panic came ~4 min in, with the menu scanning).
 2. `sudo wdutil scan` / `airport -s` a few times over ≥5 minutes: **no panic**.
 3. NVRAM: `itlmt-native-trace` shows `scan:trim … ie=<big>->400` — the AP that used to overflow is now the one being

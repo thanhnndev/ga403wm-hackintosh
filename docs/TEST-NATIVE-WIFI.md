@@ -1021,3 +1021,11 @@ reporting up to `ITL_NATIVE_IE_MAX = 512`. Fixed in `kexts/itlmt7925Native/itlmt
 `scan:trim <bssid> ch=<n> ie=<reported>-><trimmed>` trace line (first 6 per boot) so the offending AP is identifiable.
 Not built or re-tested yet. Next boot: use Wi-Fi >=5 minutes incl. repeated `wdutil scan`; no panic, and the trace shows
 the trim for the AP that used to overflow (the 09:34 message had `ie = 416` → `416->400`).
+
+Installed 2026-10-17 10:18 (Linux, no reboot yet): the `build-kexts` workflow run
+[38998145267](https://github.com/thanhnndev/ga403wm-hackintosh/actions/runs/38998145267) on `6a73548` was downloaded and
+`scripts/linux-install-kext.sh itlmt7925Native` put its `build/itlmt7925Native.kext` into the ESP
+(`/boot/EFI/OC/Kexts/itlmt7925Native.kext`, sha256 `88499c27…`; the 0x44 build it replaces is kept as
+`Kexts-backup/itlmt7925Native.kext.20261017-101843`, sha256 `14c6af9a…`; `Info.plist` unchanged, no Min/MaxKernel cap,
+boot-args still stage b). Verified in the installed binary: both `ieTrim` loops with their `cmpl $0x190` bound (one in the
+`getWCL_BSS_INFO` path, one in the `deliverScanResults` loop). The core kext is unchanged (native-side fix only).
