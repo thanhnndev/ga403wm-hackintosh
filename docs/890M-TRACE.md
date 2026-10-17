@@ -2032,3 +2032,32 @@ Boot test installed (`scripts/macos-nmxgpu-890m-test.sh`, undo `--undo <esp>`; f
 After the boot: `sudo bash scripts/macos-nmxgpu-890m-collect.sh out/890m-trace/step25-nmxgpu` (kernel log of
 NMXGPU/amdgpu/[drm], ioreg, /dev/dri, displays). M4 pass = amdgpu reaches `gmc_v11_0` init (VRAM/GTT sizes, GART
 enabled) and PSP/SMU/IH come up; M5-M7 = ring tests of SDMA/GFX/MES pass; display = NMXGPUFB lights the OLED.
+
+## Step26 (2026-10-17, macOS 25G241): first NMXGPU boot - amdgpu hangs in the PCIe partner-bandwidth walk; patched
+
+First boot of the Step25 test (OLED only, `nmxamd=1 -strixgopoff -strixaccoff -strixmetalgateoff`):
+
+- NMXGPU 1.0.0 + NMXAccel 0.1 load from the AuxKC, `/dev/dri/card0` + `renderD128` exist, no panic.
+- amdgpu logs only `kernel modesetting enabled`, `initializing kernel modesetting (IP DISCOVERY 0x1002:0x150E
+  0x1043:0x3998 0xC1)`, `register mmio base 0xDC300000 / size 524288`, then nothing. NMXGPU stays `!registered`;
+  NMXAccel waits ("NMXGPU has not claimed 1002:150e yet").
+- The OLED runs on `.Display_boot` (IONDRVFramebuffer, the GOP buffer: 19 MB, "No Kext Loaded", no EDID) - this is
+  why System Information lost the display name/details. WindowServer has no accelerator at all (StrixAccel off, NVIDIA
+  headless, NMXAccel not started) and composites on the CPU: 160-460 %.
+- spindump of kernel_task: the NMXGPU attach thread (`NMXGPU::attachThread -> attachNow -> nmx_bus_add_device ->
+  linux_pci_attach_device -> amdgpu_pci_probe -> amdgpu_driver_load_kms -> amdgpu_device_init`) is **running** in
+  `amdgpu_device_init+0x11e0..0x124b` calling `device_get_parent` - a spin that also burns a full core.
+
+Disassembly: that range is `amdgpu_device_get_pcie_info()` inlined. `0x164a4/0x164a8(adev)` = `pm.pcie_gen_mask /
+pm.pcie_mlw_mask`. On Linux the 890M sits on a root bus, so the APU branch (+0x1181) sets the defaults `0x30007 /
+0x2f0000` and returns. Under LinuxKPI the device has a bridge chain, so it takes the non-root branch (+0x11b0) into
+`amdgpu_device_partner_bandwidth()`, whose `pci_upstream_bridge()` loop never terminates on NMX's device tree. The
+`amdgpu_pcie_gen_cap/lane_cap` params would skip it but are zero-fill `__common` and NMXGPU reads no tunables.
+
+Fix (`scripts/macos-nmxgpu-pcie-patch.sh`, applied, AuxKC rebuilt; `--undo` reverts): file offset `0x1a7f0`
+(`amdgpu_device_init+0x11b0`) `83bba464010000740d` -> `e9ccffffff9090900d` = `jmp +0x1181`, i.e. take the APU/root-bus
+branch. Guarded by the stock NMXGPU sha256 (33aa04a8...); patched sha256 97a336a3.... The Step25 installer now applies
+it; the collector also writes `spin-kernel.txt` + `nmx-stacks.txt` (NMXGPU frames symbolised) in case it stops again.
+
+Next boot: expect amdgpu to reach IP discovery / GMC v11 / PSP 14 / SMU 14 / ring tests; if the display init succeeds
+NMXGPUFB takes over the OLED (EDID back) and NMXAccel starts, giving WindowServer a Metal device on the 890M.

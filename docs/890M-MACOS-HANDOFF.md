@@ -6,6 +6,12 @@ Step-by-step history: [890M trace](890M-TRACE.md).
 
 ## Current state
 
+NEWEST (Step26, 2026-10-17, macOS): first NMXGPU boot - amdgpu **hung** in `amdgpu_device_init` (PCIe
+partner-bandwidth `pci_upstream_bridge()` walk never ends on LinuxKPI's device tree; attach thread spins, OLED stays on
+the GOP `.Display_boot` buffer with no EDID, WindowServer composites on the CPU 160-460 %). Patched NMXGPU to take the
+APU/root-bus branch (`scripts/macos-nmxgpu-pcie-patch.sh`, applied + AuxKC rebuilt). Reboot, then run
+`scripts/macos-nmxgpu-890m-collect.sh out/890m-trace/step26-nmxgpu` and read `nmx-kernel.txt` / `nmx-stacks.txt`.
+
 NEWEST (Step25, 2026-10-17, macOS): **NMXGPU boot test armed** (NullMoth's Linux amdgpu on macOS; milestone 4 now goes
 through amdgpu's own GMC/PSP/SMU/SDMA/GFX/DCN35 code). Installed by `scripts/macos-nmxgpu-890m-test.sh`: 890M firmware
 (SHA-256 checked), NMXGPU + NMXAccel + RADV, AuxKC, boot-args `nmxamd=1 -strixgopoff -strixaccoff -strixmetalgateoff`,

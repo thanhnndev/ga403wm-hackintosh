@@ -69,6 +69,8 @@ for k in NMXGPU NMXAccel; do
   rm -rf "$EXT/$k.kext"; ditto "$KD/$k.kext" "$EXT/$k.kext"
   chown -R root:wheel "$EXT/$k.kext"; chmod -R 755 "$EXT/$k.kext"
 done
+# amdgpu_device_init hangs in the PCIe partner-bandwidth walk on the 890M (Step26) - skip it like on a root bus.
+NO_AUXKC=1 bash "$(dirname "$0")/macos-nmxgpu-pcie-patch.sh" "$EXT/NMXGPU.kext"
 U=/Library/NullMoth/gpu-userland; [ -d "$U" ] || U=$KD/gpu-userland
 ditto "$U" /Library/GPUBundles/nvmtl
 chown -R root:wheel /Library/GPUBundles/nvmtl; chmod -R go-w,a+rX /Library/GPUBundles/nvmtl
