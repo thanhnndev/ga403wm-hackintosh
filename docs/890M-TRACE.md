@@ -2153,3 +2153,41 @@ sha256 is checked by un-applying the known patches; patched sha256 `01cf7420...`
 AuxKC rebuilt, guard cleared. Risk: without a power driver, IOFramebuffer gets no power callbacks (no display sleep
 on NMXGPUFB) - acceptable for bring-up; if WindowServer then waits on the framebuffer the boot is black but alive, and
 its log survives a forced restart.
+
+## Step29 (2026-10-17, macOS 25G241): NMXGPU brings the whole 890M up; WindowServer's open of NMXGPUFB panics on the stale `.Display_boot` pipe
+
+Boots 15:36 / 15:37 / 15:38 (black screen; the boot guard never parked them - not the topic here). Evidence read from Linux
+(Data volume mounted ro): `Kernel-2026-10-17-153620.panic`, `-153753.panic`, and the Persist tracev3 files `…137..139`
+(LZ4 `bv41` blocks decompressed by hand, `strings`).
+
+Progress, identical in all three boots: `Fetched VBIOS from VFCT` (StrixVFCT works) -> 16 firmware images -> `VRAM 512M`,
+`GART 512M`, `reserve … for PSP TMR` -> `amdgpu_dm_initialize_drm_device` -> rings gfx_0.0.0, comp_1.0.0-1.3.1, sdma0,
+vcn_unified_0, jpeg_dec_0, mes_kiq_3.1.0, vpe -> `Runtime PM not available` -> 9 connector hotplug events
+(`cdev=dri/card0 connector=93..135`) -> `NMXGPUFB` published. **The amdgpu driver is fully up on the 890M**; the `fbpm`
+patch from Step28 holds (no `powerStateWillChangeTo` panic any more).
+
+Panic (both reports identical, WindowServer pid 917): page fault CR2 `0x120`, RAX 0,
+`IOFramebuffer::getAttributeExt+0x28 <- IOAccelLegacyDisplayPipe::displayModeDidChange+0x30 <-
+IOAccelLegacyDisplayMachine::display_mode_did_change <- IOAccelDisplayPipe::display_change_handler <-
+IOFramebuffer::deliverGroupNotification <- deliverDisplayModeDidChangeNotification <- IOFramebuffer::open+0xe4c <-
+newUserClient`. `getAttributeExt` is `fPrivate(+0x1c8)->controller([0])->workloop(+0x120)`; `controller` is assigned
+only in `open()` (copyController, 25G241 `open+0x1da`), and `open()` assigns it for *its own* framebuffer before it
+delivers the notification. So the framebuffer the pipe stores at `pipe+0x98` is **not** the one being opened.
+
+Cause: two framebuffers on the same PCI device. The 890M's IORegistry (`out/890m-trace/step26b-nmxgpu/ioreg-fb.txt`) has
+`.Display_boot` (`IONDRVFramebuffer`, `IONameMatch "display"`) under `GPPA@8,1/IOPP/VGA@0`, beside NMXGPUFB. NMXAccel's
+`IOGraphicsAccelerator2::start` sweep registers a display pipe for every framebuffer of the device, including the
+never-opened `.Display_boot`; opening NMXGPUFB then broadcasts the mode change to the group and that pipe's framebuffer
+has no controller. (The Step25 test dropped `name`/`IOName` `#display` from the 890M DeviceProperties, which is what
+let `IONDRVFramebuffer` match again.)
+
+Fix applied on the ESP (`config.plist`, backup `config.plist.pre-nodisplayname`): 890M DeviceProperties
+`name = <"#display\0">`, `IOName = "#display"` - **only those two**; `class-code` stays real so NMXGPU's class match
+still sees the GPU. With the name `#display`, `IONDRVFramebuffer` no longer matches, NMXGPUFB is the only framebuffer
+and gets the only pipe. ocvalidate clean. Trade-off: the OLED shows the GOP image until NMXGPUFB takes over; if NMXGPUFB
+fails there is no fallback framebuffer.
+
+Next boot - watch for: no `.Display_boot` in `ioreg -l -w0 | grep -i Display_boot`; NMXAccel pipe count 1;
+WindowServer stays alive; then `NVDisplayPipe` transaction messages (NMXAccel copies frames to the scan-out).
+If it still panics, the report names the next NULL; the fallback is to make `getAttributeExt` NULL-safe via an OpenCore
+Kernel/Patch on `com.apple.iokit.IOGraphicsFamily` (function at KC va 0x14d0406a, 0x9c bytes).
