@@ -1926,3 +1926,40 @@ while `/mnt/macos-sys` and a stacked `/mnt/macos-data` were still mounted — li
 the container when writing, and the refusal surfaces as a read-only mount. Unmount every target of
 `findmnt -rn -S /dev/nvme0n1p4 -o TARGET` first; then `mount -t apfs -o readwrite,uid=1000,gid=1000,vol=0
 /dev/nvme0n1p4 /mnt/macos-data` works (verified: `touch` succeeded).
+
+
+## Step23 (2026-10-17, macOS 25G241): the per-frame GART failure is a 0-byte IOSurface device cache; StrixAccel 0.1.21
+
+Live 0.1.20 boot (11:55): `Gate PASS`, `Txn,BadStatus 0` (0.1.19 ResOk works), but `Res,Forced == Copy,Frames`
+(2050): the family's `IOAccelResource2::prepare()` still fails on **every** frame, 2621x per boot:
+`freeToAllocGPUAddress: failed to alloc GART space at segment 0. Needed 0 bytes, used 20738048, size 17179865088.
+vram=0` + `prepare(): failed to allocate GPU virtual address for mapping. resType=0xc0`. `vram=0` confirms 0.1.18's
+cfg bit 21 (UMA sysmem). The failing resource is WindowServer's OLED surface (`surface 2 2880x1800 BGRA`).
+
+Chain (25G241 SystemKernelExtensions.kc):
+* `IOAccelMemoryMap::getLength()` @0x148a0afe = `map->memory(+0x18)->getLength()`; `IOAccelMemory::getLength()`
+  @0x1408c5ce = `memory+0x40`. "Needed 0 bytes" = the mapped IOAccelMemory is 0 bytes long.
+* `IOAccelResource2::map()`: for type nibble 0 it maps `+0x88` (allocMemory's memory) before `+0x80`.
+* `newResourceWithIOSurfaceDeviceCache` @0x14b8777c: type from accel slot 288 `resourceTypeForIOSurface`, `+0x80`
+  = `IOAccelSysMemory::withMemoryDescriptor(accel, 0, IOSurface::getMemoryDescriptor())` (length via
+  IOMemoryDescriptor slot 57 = getLength, correct), and for type 0xc0 `res+0xc8/+0xb8` come from resource slot 62
+  `calculateIOSurfaceDeviceCacheVRAMBytes`.
+* Family `resourceTypeForIOSurface` @0x14ba3c3e = `(IOSurface::isSysMemOnly() ? 2 : 3) << 6`, so WindowServer's
+  surfaces are 0xc0 (0x40 = device cache), `allocMemory` then allocates `roundup(res+0xc8)` sysmem at `+0x88`.
+* `StrixResource::calculateIOSurfaceDeviceCacheVRAMBytes` returned **0/0** -> 0-byte device cache -> 0-length map.
+  Apple's `AppleParavirtResource` version (@0x148a5dea) returns `IOSurface::getAllocSize()` / `getBytesPerRow()`
+  of `this+0xe0 -> +0x10` (stubs decoded: 0x10d02 getAllocSize, 0x10d08 getBytesPerRow, 0x1123c isSysMemOnly,
+  0x104c8 getMemoryDescriptor).
+* Side note: the 11x `IOAccelSurface::surfaceStart(): failed to get the vram descriptors` at boot is
+  `find_vram_descriptor` (framebuffer `getVRAMRange()` -> `map(1)` -> `getVirtualAddress`) running before a
+  framebuffer is attached; StrixGOP implements getVRAMRange. Not per frame.
+
+0.1.21 (built and installed on macOS, AuxKC rebuilt 12:05, reboot pending):
+* `StrixAccelerator::resourceTypeForIOSurface` returns **0x80** (live tunable `StrixAccel,UmaSurf`, default 1;
+  boot-arg `strixumasurf=0` restores the family rule). On UMA the IOSurface pages are the GPU memory: the resource
+  maps the surface itself (`+0x80`), no second allocation, no copy. This is the dynamic GPU-VA path working, not a
+  forced success.
+* `calculateIOSurfaceDeviceCacheVRAMBytes` mirrors Apple's (only reached with UmaSurf 0).
+* Counters `Res,TypeUma`, `Res,TypeDevCache`, `Res,DevCacheKB`, `Tune,UmaSurf`.
+* Expected next boot: no `failed to alloc GART` / `failed to allocate GPU virtual address` lines,
+  `Res,Forced` ~0 while `Res,Prepare` grows, `Txn,BadStatus 0`, no `Fallback ... submission failed`.

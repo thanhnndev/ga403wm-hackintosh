@@ -6,6 +6,15 @@ Step-by-step history: [890M trace](890M-TRACE.md).
 
 ## Current state
 
+NEWEST (Step23, 2026-10-17, macOS): StrixAccel **0.1.21** installed on macOS (AuxKC rebuilt 12:05, one reboot
+pending). Root cause of the per-frame `failed to alloc GART space ... Needed 0 bytes` + `IOAccelResource2::prepare()
+failed ... resType=0xc0`: WindowServer's IOSurfaces were typed 0xc0 (device cache) and
+`StrixResource::calculateIOSurfaceDeviceCacheVRAMBytes` returned 0, so the cache was 0 bytes. 0.1.21 types every
+IOSurface resource 0x80 (UMA, maps the surface itself; tunable `StrixAccel,UmaSurf`, boot-arg `strixumasurf=0`) and
+mirrors Apple's devcache size for the 0xc0 case. After reboot check `ioreg -rc StrixAccelerator -l | grep
+'Res,\|Txn,BadStatus'` (Res,Forced should stay ~0, Res,TypeUma > 0) and `log show --last boot --predicate 'sender ==
+"IOAcceleratorFamily2"'` (no GART lines). Details: 890M-TRACE.md "Step23".
+
 
 NEWEST (Step22, 2026-10-17, Linux): StrixAccel **0.1.20** = 0.1.19 plus the AGDC capability levers and nothing else
 behavioural. Decoded Apple's own AGDC capability numbers from `SystemKernelExtensions.kc` (25G241): the query types

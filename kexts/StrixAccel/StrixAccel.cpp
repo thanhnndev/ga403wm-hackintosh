@@ -28,7 +28,7 @@
 #include "../../include/StrixNativeABI.h"
 #include "StrixABIProfile.h"
 
-#define STRIXACCEL_VERSION "0.1.20"
+#define STRIXACCEL_VERSION "0.1.21"
 
 #include "IOAccelFamily2_decl.h"
 
@@ -47,6 +47,8 @@ IOSurface *strix_txn_getPlaneIOSurface(const IOAccelDisplayPipeTransaction2 *t, 
 // IOSurface (com.apple.iokit.IOSurface): non-virtual getters, `this` as first argument
 IOMemoryDescriptor *strix_surf_getMemoryDescriptor(const IOSurface *s) __asm__("__ZNK9IOSurface19getMemoryDescriptorEv");
 uint32_t strix_surf_getBytesPerRow(const IOSurface *s) __asm__("__ZNK9IOSurface14getBytesPerRowEv");
+uint64_t strix_surf_getAllocSize(const IOSurface *s) __asm__("__ZNK9IOSurface12getAllocSizeEv");
+bool strix_surf_isSysMemOnly(const IOSurface *s) __asm__("__ZNK9IOSurface12isSysMemOnlyEv");
 uint32_t strix_surf_getWidth(const IOSurface *s) __asm__("__ZNK9IOSurface8getWidthEv");
 uint32_t strix_surf_getHeight(const IOSurface *s) __asm__("__ZNK9IOSurface9getHeightEv");
 uint32_t strix_surf_getPixelFormat(const IOSurface *s) __asm__("__ZNK9IOSurface14getPixelFormatEv");
@@ -92,6 +94,11 @@ static volatile int32_t gTuneProbe = 0;      // 1 = run the bandwidth probe on t
 static volatile int32_t gTuneBlock = 128;    // diff block size in bytes (multiple of 8)
 static volatile int32_t gTuneResOk = 1;      // 1 = a failing IOAccelResource2::prepare() is reported as success (see StrixResource::prepare)
 static volatile int32_t gResPrepare, gResForced;   // resource prepare() calls / forced successes
+// 0.1.21: 1 = every IOSurface resource is type 0x80 (system memory, mapped straight from the IOSurface: UMA zero-copy).
+// The family default types non-sysmem-only surfaces 0xc0, which adds a separate "device cache" allocation sized by
+// calculateIOSurfaceDeviceCacheVRAMBytes (0 bytes before 0.1.21 -> 0-length map -> GART alloc failure every frame).
+static volatile int32_t gTuneUmaSurf = 1;
+static volatile int32_t gResTypeUma, gResTypeDev, gDevCacheBytes;   // resourceTypeForIOSurface results / last devcache size (KB)
 static volatile int32_t gTxnBadStatus;       // transactions whose txn+0x58 status was non-zero at submit time
 static volatile int32_t gCacheGen = 0;       // bumped when the source cache mode changes: pipes drop their mappings
 static volatile int32_t gCoalesced = 0;      // frames replaced by a newer one before the worker got to them
@@ -156,6 +163,7 @@ public:
     uintptr_t newVidMemory() override;
     uintptr_t newResource() override;
     uintptr_t newMemoryMap() override;
+    uintptr_t resourceTypeForIOSurface(IOSurface *s) override;
 
     void scan(const char *why);
     void publishCounters();
@@ -460,6 +468,7 @@ bool StrixAccelerator::start(IOService *provider)
         if (PE_parse_boot_argn("strixcsctype", &v, sizeof v)) strix_agdc::gCapCscType = int32_t(v);
         if (PE_parse_boot_argn("strixcscflags", &v, sizeof v)) strix_agdc::gCapCscFlags = int32_t(v);
         if (PE_parse_boot_argn("strixlintype", &v, sizeof v)) strix_agdc::gCapLinType = int32_t(v);
+        if (PE_parse_boot_argn("strixumasurf", &v, sizeof v)) gTuneUmaSurf = v ? 1 : 0;
     }
     if (!OSDynamicCast(IOPCIDevice, provider)) return false;
     if (!layoutGate()) {
@@ -650,6 +659,7 @@ IOReturn StrixAccelerator::setProperties(OSObject *props)
     num("StrixAccel,CapTableSize", 2, 65536, &strix_agdc::gCapTableSize);
     num("StrixAccel,Block", 32, 4096, &gTuneBlock);
     num("StrixAccel,ResOk", 0, 1, &gTuneResOk);
+    num("StrixAccel,UmaSurf", 0, 1, &gTuneUmaSurf);
     volatile int32_t cm = gTuneSrcCache;
     if (num("StrixAccel,SrcCache", 0, 4, &cm) && cm != gTuneSrcCache) {
         gTuneSrcCache = cm;
@@ -685,6 +695,10 @@ void StrixAccelerator::publishCounters()
     setProperty("StrixAccel,Tune,ResOk", (unsigned long long)gTuneResOk, 32);
     setProperty("StrixAccel,Res,Prepare", (unsigned long long)gResPrepare, 32);
     setProperty("StrixAccel,Res,Forced", (unsigned long long)gResForced, 32);
+    setProperty("StrixAccel,Tune,UmaSurf", (unsigned long long)gTuneUmaSurf, 32);
+    setProperty("StrixAccel,Res,TypeUma", (unsigned long long)gResTypeUma, 32);
+    setProperty("StrixAccel,Res,TypeDevCache", (unsigned long long)gResTypeDev, 32);
+    setProperty("StrixAccel,Res,DevCacheKB", (unsigned long long)gDevCacheBytes, 32);
     setProperty("StrixAccel,Txn,BadStatus", (unsigned long long)gTxnBadStatus, 32);
     setProperty("StrixAccel,Tune,Caps", (unsigned long long)strix_agdc::gCapMask, 32);
     setProperty("StrixAccel,Tune,CapLinType", (unsigned long long)strix_agdc::gCapLinType, 32);
@@ -968,6 +982,20 @@ uintptr_t StrixAccelerator::newVidMemory() { return reinterpret_cast<uintptr_t>(
 uintptr_t StrixAccelerator::newResource() { return reinterpret_cast<uintptr_t>(OSTypeAlloc(StrixResource)); }
 uintptr_t StrixAccelerator::newMemoryMap() { return reinterpret_cast<uintptr_t>(OSTypeAlloc(StrixMemoryMap)); }
 
+// IOGraphicsAccelerator2::resourceTypeForIOSurface (25G241): (isSysMemOnly() ? 2 : 3) << 6. 0x40 asks for a device
+// cache: IOAccelResource2::allocMemory then allocates calculateIOSurfaceDeviceCacheVRAMBytes() bytes at +0x88 and
+// map() prefers it over the IOSurface's own memory at +0x80. The 890M is UMA, the IOSurface pages *are* GPU memory,
+// so 0x80 (map the surface itself) is the correct type, and it is what keeps the OLED surface prepare()-able.
+uintptr_t StrixAccelerator::resourceTypeForIOSurface(IOSurface *s)
+{
+    if (gTuneUmaSurf) {
+        OSIncrementAtomic(&gResTypeUma);
+        return 0x80;
+    }
+    OSIncrementAtomic(&gResTypeDev);
+    return s && strix_surf_isSysMemOnly(s) ? 0x80 : 0xc0;
+}
+
 // ---------------------------------------------------------------------------------------------------------------------
 // event machine: stamps live in plain memory, nothing ever increments them
 // ---------------------------------------------------------------------------------------------------------------------
@@ -1075,10 +1103,18 @@ uintptr_t StrixResource::getBackingLevelOffset(unsigned char, unsigned char, int
     if (off) *off = 0;
     return 0;
 }
+// AppleParavirtResource::calculateIOSurfaceDeviceCacheVRAMBytes (25G241): size = IOSurface::getAllocSize(),
+// row bytes = IOSurface::getBytesPerRow() of the device cache's surface (this+0xe0 -> +0x10). Only reached for 0xc0
+// resources (UmaSurf 0); it used to report 0, which produced the 0-byte device cache.
 uintptr_t StrixResource::calculateIOSurfaceDeviceCacheVRAMBytes(unsigned long long *a, unsigned long long *b)
 {
-    if (a) *a = 0;
-    if (b) *b = 0;
+    const uint8_t *self = reinterpret_cast<const uint8_t *>(this);
+    const uint8_t *dc = *reinterpret_cast<const uint8_t *const *>(self + 0xe0);
+    const IOSurface *s = dc ? *reinterpret_cast<const IOSurface *const *>(dc + 0x10) : nullptr;
+    const uint64_t size = s ? strix_surf_getAllocSize(s) : 0;
+    if (b) *b = s ? strix_surf_getBytesPerRow(s) : 0;
+    if (a) *a = size;
+    gDevCacheBytes = int32_t(size >> 10);
     return 0;
 }
 uintptr_t StrixResource::addToAperture() { return 0; }
