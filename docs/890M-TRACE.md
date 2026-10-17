@@ -2256,3 +2256,30 @@ Installed with `scripts/macos-nmxgpu-own-install.sh <kext>` (backs up the instal
 `/Library/NullMoth/nmxgpu-backup`; `--undo` restores it), AuxKC rebuilt, guard cleared. StrixVFCT and the `#display`
 DeviceProperties stay. NMXAccel is still NullMoth's (headless), so WindowServer stays on the CPU this boot; the test is
 whether ordinary processes now get a Metal device (RADV opens renderD128).
+
+## Step33 (2026-10-17): own NMXGPU boots clean; DRM opens work, enumeration does not (clone minors)
+
+The Step32 build booted without problems (OLED, no guard trip). New tools in `tools/890m/`: `drm-open.c` (opens a
+node through NullMoth's libdrm, prints the driver) and `metal-devices.swift` (what `MTLCopyAllDevices()` returns).
+* `drm-open`: `open /dev/dri/renderD128: driver amdgpu 3.61.0 (AMD GPU)` - the Step31 fix works (before: ENODEV).
+* `drmGetDevices2()` still 0, so RADV creates an instance and finds no physical device; Metal devices: 0.
+
+Root cause: NMXGPU's nodes are xnu devfs clone nodes (`devfs_make_node_clone`), and devfs clones at every lookup,
+`stat()` included: `stat /dev/dri/renderD128` three times gave rdev `0x21000223`, `...225`, `...227` (open minors
+256+, handed out in sequence; `/dev/null` stays `0x3000002`). libdrm's macOS port (`patches/libdrm-macos.patch`)
+recognises a node by stat'ing `/dev/dri/*` for the same major:minor (`drmNodeIsDRM`) and names a node from its minor
+(`drmProcessPciDevice`: `renderD<minor>`), so with a fresh minor at each stat no node ever matched.
+
+Fix, in two halves:
+* fork `nmx_devfs.cpp`: an open minor is `(sequence << 8) | node minor`, and a node's minor is its DRM minor
+  (`dri/card0` = 0, `dri/renderD128` = 128; other nodes take free minors from 255 down). Open bookkeeping is per
+  sequence; the open hash in `nmx_linux_cdev.c` keys on the sequence. Build `NMXGPU 3533f839`, 0 new undefined
+  symbols.
+* `scripts/macos-nvmtl-libdrm-minor-patch.sh`: libdrm keeps only the low byte of every minor it takes from a dev_t
+  (8 `and $0xffffff` -> `and $0xff`, re-signed ad hoc; stock backed up to `/Library/NullMoth/libdrm-backup`,
+  `--undo`). With the low byte the minor is stable across stats and is the DRM minor libdrm expects. The proper form
+  is the same change in the libdrm patch when the userland is rebuilt from source (route B step 4).
+
+Both installed (AuxKC rebuilt, libdrm `5f2971fc`); takes effect at the next boot. Expected after it: `drmGetDevices2`
+= 1 (card0 + renderD128 folded), RADV lists the 890M, ordinary processes get a Metal device; WindowServer still CPU
+(NMXAccel headless).
