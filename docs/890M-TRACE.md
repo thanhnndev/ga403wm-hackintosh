@@ -2283,3 +2283,13 @@ Fix, in two halves:
 Both installed (AuxKC rebuilt, libdrm `5f2971fc`); takes effect at the next boot. Expected after it: `drmGetDevices2`
 = 1 (card0 + renderD128 folded), RADV lists the 890M, ordinary processes get a Metal device; WindowServer still CPU
 (NMXAccel headless).
+
+### Step33b (2026-10-17): minors stable after reboot; GET_PCIINFO was the next wall
+
+After the reboot `stat` gives stable low bytes (card0 `...00`, renderD128 `...80`), but `drmGetDevices2` still 0.
+libdrm's `drmProcessPciDevice` opens the node and asks `DRM_IOCTL_GET_PCIINFO` (`0x40106415`): ENODEV. A
+`NMX_DRM_IOCTL_SYSFS_GET` probe (same `drm_file -> minor -> dev -> dev` chain, no PCI check) answered ENOENT, so the
+chain is fine and `dev_is_pci()` is what failed: LinuxKPI's `pdev->dev.bsddev` is the DRM child of the PCI device
+record (`is_pci` = 0), like drmn under vgapci on FreeBSD. Fork 'xkpi: DRM_IOCTL_GET_PCIINFO answers for the DRM child
+of a PCI device' accepts the child's parent. Build `NMXGPU 8fc7f7fe` (0 new undefined symbols) installed; reboot
+pending. Note: card0 is 0600, so for a normal user libdrm lists the GPU through renderD128 only (enough for RADV).
