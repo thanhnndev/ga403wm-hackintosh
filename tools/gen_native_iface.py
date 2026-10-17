@@ -26,7 +26,8 @@ CUSTOM = {'setMacAddress', 'getCHANNEL', 'getPOWERSAVE', 'getRATE', 'getOP_MODE'
           'setWCL_SCAN_REQ', 'setWCL_SCAN_ABORT', 'setWCL_ASSOCIATE', 'setWCL_LEAVE_NETWORK', 'setWCL_JOIN_ABORT',
           'getWCL_LOW_LATENCY_INFO', 'setWCL_SET_SCAN_HOME_AWAY_TIME', 'setWCL_WNM_OPS', 'setWCL_TRIGGER_CC',
           'setWCL_LINK_UP_DONE', 'setWCL_LINK_STATE_UPDATE', 'getWCL_EXTENDED_BSS_INFO', 'setWCL_UPDATE_FAST_LANE',
-          'getWCL_TRAFFIC_COUNTERS', 'setPM_MODE', 'setWCL_ARP_MODE', 'setWCL_QOS_PARAMS', 'setWCL_SET_ROAM_LOCK'}
+          'getWCL_TRAFFIC_COUNTERS', 'setPM_MODE', 'setWCL_ARP_MODE', 'setWCL_QOS_PARAMS', 'setWCL_SET_ROAM_LOCK',
+          'getNSS'}
 
 
 def pure_slots():

@@ -641,6 +641,9 @@ static bool commandAllowed(int cmd)
     case 0x170: case 0x1ab: case 0x1be: case 0x1b7:
     // round 19: what WCLNetManager::setCurrentBSS / linkUp / startProtectIp send once the family has the link
     case 0x1f6: case 0x1b2: case 0x188: case 0x1b5: case 0x1bb: case 0x1ac:
+    // round 27: NSS is polled about once a second while linked and was refused until the handler existed (512 refusals in one
+    // 10-minute boot); getNSS answers with the core's negotiated stream count
+    case 0x161:
         return true;
     default:
         return false;

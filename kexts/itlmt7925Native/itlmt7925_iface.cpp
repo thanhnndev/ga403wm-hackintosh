@@ -67,39 +67,38 @@ void itlmtTrace(IORegistryEntry *e, const char *fmt, ...)
     va_end(ap);
     IOLog("itlmt-native: %s\n", add); // also emit every milestone to the kernel log before registry work
     e->setProperty("itlmt_native_last", add);
-    char buf[1536];
+    // Ring, not an append-only log: keep the most recent entries. The old two-buffer scheme stopped recording as soon as both
+    // 1500-byte properties filled up (hit on 2026-10-17: the round-27 LQM posts ran but nothing showed in the registry, only
+    // the call ring's P:27 count gave them away). The boot prefix is still reachable through the panic checkpoints below and
+    // the live kernel log.
+    char buf[2048];
     buf[0] = 0;
     OSObject *snapshot = e->copyProperty("itlmt_native_trace");
     if (OSString *old = OSDynamicCast(OSString, snapshot))
         strlcpy(buf, old->getCStringNoCopy(), sizeof(buf));
     if (snapshot) snapshot->release();
     if (buf[0]) strlcat(buf, "; ", sizeof(buf));
-    bool full = strlcat(buf, add, 1500) >= 1500;
-    if (full) {
-        // The startup prefix is full: keep going in a second append-only property (latest entry stays in itlmt_native_last).
-        char tail[1536];
-        tail[0] = 0;
-        OSObject *ts = e->copyProperty("itlmt_native_trace_tail");
-        if (OSString *old = OSDynamicCast(OSString, ts))
-            strlcpy(tail, old->getCStringNoCopy(), sizeof(tail));
-        if (ts) ts->release();
-        if (tail[0]) strlcat(tail, "; ", sizeof(tail));
-        if (strlcat(tail, add, 1500) < 1500)
-            e->setProperty("itlmt_native_trace_tail", tail);
+    strlcat(buf, add, sizeof(buf));
+    size_t len = strlen(buf);
+    while (len > 1400) {                 // drop whole oldest entries until the property is bounded again
+        size_t i = 0;                    // strstr is not in the freestanding kext environment
+        while (i + 2 <= len && !(buf[i] == ';' && buf[i + 1] == ' ')) i++;
+        if (i + 2 > len) break;
+        memmove(buf, buf + i + 2, len - i - 2 + 1);
+        len = strlen(buf);
     }
-    if (!full) e->setProperty("itlmt_native_trace", buf);
+    e->setProperty("itlmt_native_trace", buf);
     uint32_t nvtrace = 0;
     if (PE_parse_boot_argn("itlmt_native_nvtrace", &nvtrace, sizeof(nvtrace)) && nvtrace) {
         // Low-frequency lifecycle checkpoints only, no packet bytes or network identifiers.
         // Best effort: a panic before NVRAM flush can still lose the latest checkpoint.
         IORegistryEntry *options = IORegistryEntry::fromPath("/options", gIODTPlane);
         if (options) {
-            OSData *data = OSData::withBytes(full ? add : buf, (unsigned)strlen(full ? add : buf));
+            OSData *data = OSData::withBytes(buf, (unsigned)strlen(buf));
             if (data) {
-                const char *key = full ? "itlmt-native-last" : "itlmt-native-trace";
-                options->setProperty(key, data);
+                options->setProperty("itlmt-native-trace", data);
                 data->release();
-                options->setProperty("IONVRAM-FORCESYNCNOW-PROPERTY", key);
+                options->setProperty("IONVRAM-FORCESYNCNOW-PROPERTY", "itlmt-native-trace");
             }
             options->release();
         }
@@ -913,6 +912,22 @@ IOReturn itlmt7925WifiInterface::getRSSI(apple80211_rssi_data *d)
         store<int32_t>(d, 0x1c, st.rssi);
         store<uint32_t>(d, 4, 1);
     }
+    return kIOReturnSuccess;
+}
+
+// getNSS (ioctl 0x161, polled about once a second while linked): apple80211_nss_data = { u32 version; u8 nss }
+// (IOKit/80211/apple80211_ioctl.h). Apple's AppleBCMWLANCore::getNSS (0xffffff800169df9c) asks the firmware for the "nrate"
+// iovar and writes the stream count as a dword at +4 (the SDK's u8 nss plus padding; the version at +0 is left as the caller
+// set it). This driver knows the negotiated stream count exactly (the core's fast plan, ItlNativeStatus.fastNss), which is
+// what the value describes; the option-click Wi-Fi menu and the coexistence code read it.
+IOReturn itlmt7925WifiInterface::getNSS(apple80211_nss_data *d)
+{
+    itlmtCall(ctl, 'S', 510);
+    if (!d) return kIOReturnBadArgument;
+    ItlNativeStatus st;
+    if (!queryStatus(&st) || st.state != ITL_NATIVE_UP) return kNotAssociated;
+    store<uint32_t>(d, 0, 1);
+    store<uint32_t>(d, 4, st.fastNss);
     return kIOReturnSuccess;
 }
 

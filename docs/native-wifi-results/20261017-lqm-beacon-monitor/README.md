@@ -88,6 +88,37 @@ Boot with the stage-b build and watch:
    malformed core capture from the missed-beacons fault report; without the fault there is nothing to parse).
 4. Wi-Fi list: a network known to be on a DFS channel (e.g. "Kefoff Coffee" 5 GHz) should now appear.
 
+## Hardware result (boot 2026-10-17 14:33, stage b, both kexts from 2d2c763)
+
+All four points confirmed on the first boot, plus two findings that shaped the follow-up round:
+
+* **The DFS fix is what mattered**: the user connected to "Kefoff Coffee" — previously invisible — and the link came up on
+  **channel 52, a DFS channel** (`system_profiler SPAirPortDataType`: `Channel: 52 (5GHz, 20MHz)`; the core's fast plan
+  log: `fast: on lvl=6 ht=1 vht=1 he=1/1 bw=3 center=50 nss=2 rate~2402` — 160 MHz HE 2x2 negotiated). The link_off at
+  14:37:09 is the *switch* to that network (`AutoJoin: _handleLinkEvent: Join is in progress, suppressing link down
+  recovery`), not a drop.
+* **No 60 s drop**: one join, one link, hours of idle — no `missed beacons` fault in the kernel log, no `link recovery`,
+  and no new `corecaptured-*.ips` (the last is from the previous boots, 12:48).
+* **The LQM posts run**: the call ring shows `P:27x517` (≈1/s). They were invisible in the trace properties because both
+  1500-byte trace buffers had filled up — fixed in round 27b (ring buffer, below).
+* **Speedtest** (`networkQuality -v`, 14:44): downlink 176.6 Mb/s, uplink 65.0 Mb/s, idle latency 51 ms, responsiveness
+  Low (316 ms). The AP is shared and the datapath counters are clean (rx 39725 / tx 42403, 0 drops).
+
+## Round 27b — what the first hardware run asked for
+
+* **`itlmtTrace` is a ring now** (`kexts/itlmt7925Native/itlmt7925_iface.cpp`): the old append-only property plus a
+  second overflow property both stop recording once full (which is exactly why the working 0x27 posts were invisible).
+  The property keeps the most recent ~1400 bytes, dropping whole oldest entries; `itlmt_native_last` still carries the
+  newest entry and the NVRAM checkpoint keeps the boot prefix.
+* **`getNSS` implemented** (ioctl 0x161, vtable slot 510): the family polls it about once a second while linked and the
+  driver refused it 512 times in one boot. `apple80211_nss_data = { u32 version; u8 nss }`; Apple's
+  `AppleBCMWLANCore::getNSS` (`0xffffff800169df9c`) derives the value from the firmware `nrate` iovar and stores it as a
+  dword at +4, which this driver now answers from the core's negotiated stream count (`ItlNativeStatus.fastNss`).
+* Still refused on purpose: `0x15a getBEACON_INFO` (payload is a firmware `beacon_info` iovar blob of up to 0x800 bytes
+  whose fields the family parses — inventing one is riskier than an error) and `0x39/0xc3 getMCS[_VHT]` (Apple reports
+  the *current* rate's MCS from the firmware; the MT7925's rate control is not readable here, so the value would be a
+  guess).
+
 ## Open items
 
 * The core capture our `IO80211FaultReporter` produces still crashes `corecaptured` when a fault report does happen

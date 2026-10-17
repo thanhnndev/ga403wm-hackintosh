@@ -1083,3 +1083,23 @@ Test checklist for the next boot (stage b):
    no `missed beacons` fault, no new `corecaptured-*.ips`.
 3. Wi-Fi menu: a network on a DFS channel (the "Kefoff Coffee" 5 GHz case) should now be listed; `wdutil scan` welcome.
 4. Still no panic; the usual trace lines (`scan:delivered`, `dp:` counters) unchanged.
+
+### 2026-10-17 (round 27b): the fixes hold on hardware; NSS ioctl and a trace ring
+
+The 14:33 boot ran both round-27 kexts. Results (full write-up in the same results directory):
+
+* **"Kefoff Coffee" joined on channel 52 — a DFS channel** (`fast: on lvl=6 … bw=3 center=50 nss=2 rate~2402`, 160 MHz
+  HE 2x2). The link_off at 14:37:09 is the network switch itself (`AutoJoin: … Join is in progress`), not a drop.
+* No `missed beacons` fault, no `link recovery`, no new `corecaptured-*.ips`; the LQM posts run (`P:27x517` in the call
+  ring, ≈1/s) — they were invisible in the trace only because both 1500-byte trace buffers had filled up.
+* `networkQuality -v`: **down 176.6 / up 65.0 Mb/s**, idle latency 51 ms; datapath counters clean (rx 39725 / tx 42403,
+  0 drops).
+* Two follow-ups landed in this build: `itlmtTrace` is now a **ring buffer** (keeps the most recent ~1400 bytes, drops
+  whole oldest entries — the trace stays useful instead of freezing at the join), and **`getNSS` (ioctl 0x161, slot 510)
+  is implemented** from `ItlNativeStatus.fastNss` (Apple's `AppleBCMWLANCore::getNSS` 0xffffff800169df9c stores the value
+  as a dword at +4; the family polled the refused ioctl 512 times in one boot). `getBEACON_INFO` (0x15a) and
+  `getMCS[_VHT]` (0x39/0xc3) stay refused on purpose: their values come from firmware iovars this driver cannot read
+  honestly.
+
+Install: `scripts/native-wifi-test.sh install build/itlmt7925Native.kext --stage b` (core unchanged this round; native
+sha256 `91be08cf…`, UUID `D97CD8E9`).

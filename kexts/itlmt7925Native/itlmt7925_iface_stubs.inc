@@ -235,7 +235,6 @@ IOReturn itlmt7925WifiInterface::getLQM_CONFIG(apple80211_lqm_config_t* a1) { it
 IOReturn itlmt7925WifiInterface::getTRAP_CRASHTRACER_MINI_DUMP(apple80211_trap_mini_dump_data* a1) { itlmtCall(ctl, 'S', 507); return kIOReturnUnsupported; }
 IOReturn itlmt7925WifiInterface::getBEACON_INFO(apple80211_beacon_info_t* a1) { itlmtCall(ctl, 'S', 508); return kIOReturnUnsupported; }
 IOReturn itlmt7925WifiInterface::getCHIP_POWER_RANGE(apple80211_chip_power_limit* a1) { itlmtCall(ctl, 'S', 509); return kIOReturnUnsupported; }
-IOReturn itlmt7925WifiInterface::getNSS(apple80211_nss_data* a1) { itlmtCall(ctl, 'S', 510); return kIOReturnUnsupported; }
 IOReturn itlmt7925WifiInterface::getHW_ADDR(apple80211_hw_mac_address* a1) { itlmtCall(ctl, 'S', 511); return kIOReturnUnsupported; }
 IOReturn itlmt7925WifiInterface::getCHIP_DIAGS(appl80211_chip_diags_data* a1) { itlmtCall(ctl, 'S', 512); return kIOReturnUnsupported; }
 IOReturn itlmt7925WifiInterface::getHP2P_CTRL(apple80211_hp2p_ctrl* a1) { itlmtCall(ctl, 'S', 513); return kIOReturnUnsupported; }
