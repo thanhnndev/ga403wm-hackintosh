@@ -1,26 +1,34 @@
 #!/usr/bin/env bash
 # SPDX-License-Identifier: BSD-3-Clause-Clear
 # Copyright (c) 2026 thanhnndev and contributors
-# Keeps the (still incomplete) NullMoth Metal device away from the system UI.
 #
-# ROOT CAUSE, decoded from NVMTLDriver (0x1e61..0x256a, 2026-10-17):
-#   * decision order: process "WindowServer" (hardcoded, no device unless the vendor is NVIDIA and
-#     debug.nvaccel_headless says otherwise) -> NVMTL_ENABLE env var -> hardcoded tools (mtlprobe, nvmtltest,
-#     nvmtlrender always get one) -> /Library/GPUBundles/nvmtl-allow.txt, else /Library/Extensions/nvmtl-allow.txt.
-#   * line grammar of that file:
-#       #...       comment
-#       -Name      DENY      (hard: sets the deny state and stops reading, so it beats "*")
-#       *          allow every process
-#       Name       allow only this process
-#       !Name / !* "armed-only": allowed only while `sysctl debug.nvaccelfb != 0` (that is what the line
-#                  "!WindowServer" in the shipped file does - it is NOT a deny).
-#   * so the shipped rung 3 ("*" + "!WindowServer") hands the Metal device to every process, including
-#     SecurityAgent. Its RenderBox aborts in RB::Device::make_index_buffer() -> RB::precondition_failure, launchd
-#     restarts it every 10 s and the login window crash-loops (23 crashes, 2026-10-17 18:23 boot, uptime 42..270 s).
+# Keep the (still incomplete) NullMoth Metal device away from processes whose RenderBox aborts.
 #
-# RUN ON LINUX AS ROOT (macOS is not needed, the Data volume just has to go read-write).
-#   sudo bash scripts/linux-nvmtl-allowlist.sh          deny the system UI (backup first)
-#   sudo bash scripts/linux-nvmtl-allowlist.sh --undo   restore the newest backup
+# DECODED FROM NVMTLDriver (`-[NVMTLDevice initWithAcceleratorPort:]`, 2026-10-17) - the whole
+# decision, in order:
+#   1. name == "WindowServer"                  -> "headless GPU: no device" unless the display owner is NVIDIA.
+#   2. getenv("NVMTL_ENABLE") != NULL          -> give the device, skip the allow list entirely.
+#   3. name in {mtlprobe, nvmtltest, nvmtlrender} -> give the device (hardcoded, allow list is not consulted).
+#   4. open /Library/GPUBundles/nvmtl-allow.txt, else /Library/Extensions/nvmtl-allow.txt.
+#      Unreadable -> "no allow-list readable ... no device".
+#   5. line grammar (first char switch table at 0x25ec, handlers 0x23c4/0x23cc/0x23da/0x2438):
+#        #...        comment                 -> keep scanning
+#        <blank>     blank                   -> keep scanning
+#        -Name       DENY (hard)             -> stop scanning, no device
+#        *           allow every process     -> stop scanning, device
+#        Name        allow this process only -> stop scanning, device
+#        !Name / !*  "armed-only"            -> stop scanning; device only while
+#                                               `sysctl debug.nvaccelfb != 0`, else no device
+#   6. **THE SCAN STOPS AT THE FIRST LINE THAT DECIDES** (0x2360: `cmp ebx,2 ; jne 0x254d`).
+#      Therefore every `-Name` line must sit ABOVE the `*` line - a `-Name` below `*` is dead code,
+#      which is exactly why the shipped file (`*` on line 2, `!WindowServer` below) handed the device
+#      to SecurityAgent: its RenderBox aborts in RB::Device::make_index_buffer() (RB::precondition_failure),
+#      launchd restarts it every 10 s and the login window crash-loops (2026-10-17 18:23 + 20:17 boots).
+#
+# RUN ON LINUX AS ROOT (no macOS needed, the Data volume only has to go read-write):
+#   sudo bash scripts/linux-nvmtl-allowlist.sh            rung 1: only the hardcoded tools get the device
+#   sudo bash scripts/linux-nvmtl-allowlist.sh --rung3    rung 3: everyone except the system UI below
+#   sudo bash scripts/linux-nvmtl-allowlist.sh --undo     restore the newest backup
 set -euo pipefail
 [[ $(id -u) == 0 ]] || { echo 'Run this script with sudo.'; exit 1; }
 
@@ -29,12 +37,16 @@ MP=/mnt/macos-data
 REL=Library/GPUBundles/nvmtl-allow.txt
 BACKUPS=/Library/NullMoth
 
-# The login window first (that is what makes the machine unbootable), then the session UI: a crash-loop in any of
-# these makes the desktop unusable, and none of them needs the test driver.
-DENY=(SecurityAgent loginwindow Dock Finder SystemUIServer NotificationCenter ControlCenter CoreServicesUIAgent)
+MODE=rung1
+case "${1:-}" in
+    --rung3) MODE=rung3 ;;
+    --undo)  MODE=undo ;;
+    '')      ;;
+    *) echo "usage: $0 [--rung3|--undo]"; exit 2 ;;
+esac
 
-UNDO=0
-[ "${1:-}" = "--undo" ] && UNDO=1
+# rung 3 only: system UI that must NOT see the device (login window first, then the session UI).
+DENY=(SecurityAgent loginwindow Dock Finder SystemUIServer NotificationCenter ControlCenter CoreServicesUIAgent)
 
 mkdir -p "$MP"
 cleanup() {
@@ -48,7 +60,7 @@ trap cleanup EXIT
 for _ in 1 2 3 4 5 6 7 8; do
     targets=$(findmnt -rn -S "$DEV" -o TARGET 2>/dev/null | sort -u || true)
     [ -n "$targets" ] || break
-    while IFS= read -r t; do umount "$t" || true; done <<< "$targets"
+    while IFS= read -r t; do [ -n "$t" ] && umount "$t" || true; done <<< "$targets"
 done
 echo "mounting $DEV rw at $MP ..."
 mount -t apfs -o rw,readwrite,vol=0 "$DEV" "$MP"
@@ -60,7 +72,7 @@ if ! printf '%s\n' "$opts" | tr ',' '\n' | grep -qx rw; then
 fi
 [[ -f "$MP/$REL" ]] || { echo "FATAL: $MP/$REL not found"; exit 1; }
 
-if [ $UNDO = 1 ]; then
+if [ "$MODE" = undo ]; then
     LAST=$(ls -1dt "$MP/$BACKUPS"/backup-*/nvmtl-allow.txt 2>/dev/null | head -1 || true)
     [ -n "$LAST" ] || { echo "no nvmtl-allow.txt backup under $BACKUPS/backup-*"; exit 1; }
     echo "restoring from ${LAST#"$MP/"}"
@@ -73,9 +85,22 @@ else
     chown 0:0 "$bdir" "$bdir/nvmtl-allow.txt" 2>/dev/null || true
     echo "backed up -> ${bdir#"$MP/"}/nvmtl-allow.txt"
     echo "--- before ---"; cat "$MP/$REL"
-    for name in "${DENY[@]}"; do
-        grep -qxF -- "-$name" "$MP/$REL" || echo "-$name" >> "$MP/$REL"
-    done
+    if [ "$MODE" = rung3 ]; then
+        # Denies MUST come before '*': the scan stops at the first line that decides.
+        {
+            echo '# rung 3: everyone; -Name lines MUST stay above the * line (scan stops at the first decision)'
+            for name in "${DENY[@]}"; do echo "-$name"; done
+            echo '*'
+        } > "$MP/$REL"
+    else
+        # Rung 1: no '*' at all -> every process that is not the hardcoded tool is denied.
+        {
+            echo '# rung 1: only the driver-hardcoded tools (mtlprobe, nvmtltest, nvmtlrender) get the device.'
+            echo '# Add a bare process name below to let that one app test the device (it will abort until'
+            echo '# the driver passes RB::Device::make_index_buffer()). Never add a * line: it would kill'
+            echo '# every -Name deny below it and hand the device to the login window again.'
+        } > "$MP/$REL"
+    fi
 fi
 
 chown 0:0 "$MP/$REL" 2>/dev/null || true
@@ -83,6 +108,12 @@ chmod 644 "$MP/$REL"
 sync
 echo "--- after ---"; cat "$MP/$REL"
 echo
-echo "Denies are '-' (hard), NOT '!' (that one is armed-only: it lifts while debug.nvaccelfb != 0)."
-echo "Next boot: the login window and the session UI fall back to Apple's renderer; the hardcoded tools"
-echo "(mtlprobe/nvmtltest/nvmtlrender) and any process you leave allowed still get the nvmtl Metal device."
+if grep -q '^\*' "$MP/$REL"; then
+    star=$(grep -n '^\*' "$MP/$REL" | head -1 | cut -d: -f1)
+    if awk -v s="$star" 'NR>s && /^-/' "$MP/$REL" | grep -q .; then
+        echo "WARNING: there is a -Name deny BELOW the '*' line at line $star - dead code, move it up." >&2
+    fi
+else
+    echo "Nobody but the hardcoded tools gets the nvmtl Metal device (login window + all apps use Apple's renderer)."
+fi
+echo "Note: '!Name' is NOT a deny - it is 'armed-only' (device only while debug.nvaccelfb != 0). Use '-Name'."
