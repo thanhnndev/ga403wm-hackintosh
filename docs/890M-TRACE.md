@@ -2212,3 +2212,25 @@ But **WindowServer composites on the CPU (400-1000 %)**: spindump = `CA::OGL::SW
    `drm_stub_open -> drm_minor_acquire(linux_iminor(inode))` - the minor lookup in `drm_minors_xa` or the
    `drm_dev_enter` check fails. Next: map `linux_iminor` for devfs minors 0x2c2/0x2c3 against the DRM minor ids
    (render 128, primary 0), from the NMXGPU v2.0.4 sources (upstream git history before a7f16b0).
+
+## Step31 (2026-10-17): route B - own NMX build; root cause of the ENODEV opens, fixed in source
+
+Decision with the owner: stop depending on the NullMoth NVIDIA package; build NMXGPU/NMXAccel ourselves from the
+NullMoth v2.0.4 sources (PolyForm Noncommercial - personal use, kept in the fork, never copied into this BSD repo),
+then replace NMXAccel's headless path with our own accelerator. Sources: worktree
+`~/develop/projects/nmx-src-2.0.4`, branch `ga403wm-nmx` of the fork (`thanhnndev/nvidia-macos-driver`).
+
+Root cause of Step30's `/dev/dri` ENODEV (read from `gpu-port/xkpi`, matches the shipped binary):
+1. `override/src/nmx_linux_cdev.c` `nmx_cdev_open()` hands `d_fdopen` a zeroed `struct file`. LinuxKPI's
+   `linux_dev_fdopen()` passes `file->f_vnode` (NULL) as the Linux inode to `drm_stub_open()`; `linux_iminor(NULL)` =
+   `-1U`; `drm_minor_acquire(&drm_minors_xa, -1U)` finds nothing and returns -ENODEV. No code in the port ever creates
+   the vnode its own `sys/vnode.h` describes.
+2. Behind it: `linux_dev_fdopen()` returns ENXIO on success (FreeBSD devfs "file replaced" convention, after
+   `finit()`), and `nmx_cdev_open()` treats any non-zero as failure.
+So no DRM node open could ever succeed in 2.0.4; RADV (and every Metal device on top of it) had no way in.
+
+Fix (fork commit 6d2f242 "xkpi: DRM device nodes open"): each cdev owns a vnode (`v_rdev` = cdev, VCHR, freed with
+the cdev in `dev_rel`), opens pass it in `f_vnode`; ENXIO with `f_ops` installed = success.
+A binary patch was judged not worth it (needs a code cave for the allocation). Next: step 2 - build environment
+(drm-kmod 6.14 + FreeBSD LinuxKPI + the port's scripts, which hard-code `/Volumes/MiniData/build/gpu-src`), carry the
+`pcie` and `fbpm` patches and StrixVFCT's VFCT path into source, build, install, boot.
