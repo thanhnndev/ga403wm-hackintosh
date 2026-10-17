@@ -1697,3 +1697,56 @@ Transactions=Copied=46, `NoPlane=0`, `ValidateFail=0`, ABIProfile `macos26-25G24
 present: 192 `Fallback GPU Display Pipe transaction submission failed` in the first minute
 (`status(+58)` 4x `0`, 4x `0xe00002be`), so the UMA resource change fixed the GART/virtual-address failure
 but not every submit. This is again not a panic. `bluetoothd` `ExcUserFault` (5 reports) is userland.
+
+## Step20 (2026-10-16/17, Linux): the remaining pipe-transaction status is `IOAccelResource2::prepare()`; StrixAccel 0.1.19 reports success for it
+
+The boot-17:25 log (`/Library/Logs/StrixGraphicsFix/20261016T102547Z/display-log.txt`, filtered to the new
+boot: timestamps >= 17:25:45) has 47 `Fallback GPU Display Pipe transaction submission failed` lines, all in
+the first ~9 seconds (17:25:54–17:26:03), and every logged submit carries `status(+58) = 0xe00002be`
+(txn 1–4; the diag only printed the first 4). 0.1.18 therefore removed the GART/virtual-address storms but
+the transaction status is still non-zero.
+
+Where `0xe00002be` comes from, in the 487.4.4 disassembly (SKC, `tools/kc_disasm.py`):
+
+* `IOAccelDisplayPipeTransaction2::prepare()` (0x14baff8a) walks the transaction's planes
+  (`[txn+0x38]`, 0x70 bytes each; `plane+0x10` deviceCache[2], `plane+0x20` IOSurface[2],
+  `plane+0x30` resource[2] — layout confirmed by `set_transaction_args` 0x14bb088b-0x14bb08ad), and for each
+  plane resource does `mov rax,[rdi]; call [rax+0x170]`; a zero return loads `r14d = 0xe00002be`
+  (0x14baffd9). It returns r14d.
+* `IOAccelDisplayPipe::transaction_end()` (0x14bb0560) then stores that at `txn+0x58` (0x14bb061e) and
+  aborts the transaction, which is the status CoreDisplay reports as the fallback.
+* Slot arithmetic: an object's vptr points at its **first virtual**, so `[vptr+0x170]` is virtual #0x170/8 =
+  **46 = `IOAccelResource2::prepare`**; read through the vtable *symbol* (which starts with
+  offset-to-top/typeinfo) the same entry is at `+0x180`. Apple's own software accelerator agrees:
+  `AppleParavirtResource::prepare()` (0x148a6038) tail-calls `[__ZTV16IOAccelResource2+0x180]`, and
+  `AppleParavirtResource` overrides exactly slots 46/47 (`prepare`/`complete`) plus 40/51/55/57/58/60-67.
+* `IOAccelResource2::prepare` (0x14b8befa) fails when `IOAccelResource2::map()` returns 0; the paths that
+  matter are the `freeToPrepareMapping` fallback at 0x14b8c007-0x14b8c016 -> 0x14b8c138 ("failed to wire
+  down VRAM size=... trying to fall back to system mem", the message Step18 saw) and the `map()` retry at
+  0x14b8c1d1.
+
+Fix in 0.1.19 (`kexts/StrixAccel/StrixAccel.cpp`): override `StrixResource::prepare()` (slot 46).
+
+* It calls the family's implementation first, so the real mapping still happens;
+* it logs the first 6 results, and on a failure the resource's `resType(+0x14)`, `flags(+0xe)`,
+  prepared-count `(+0x28)`, `map(+0x40)` and `mem(+0x88)`, which is what will say *why* `map()` failed if it
+  still does;
+* with the new live tunable `StrixAccel,Tune,ResOk` (**default 1**) a failed prepare is reported as success
+  and the family's prepared count at `this+0x28` is advanced the way the family itself does at 0x14b8bf76,
+  so the family's `complete()` stays balanced. This is sound here because the pipe presents by copying the
+  IOSurface into the GOP raster on the CPU and never reads a resource's GPU address. Set
+  `StrixAccel,Tune,ResOk 0` to get the raw family result back.
+* Counters so the next boot answers the question without another disassembly round: `StrixAccel,Res,Prepare`,
+  `StrixAccel,Res,Forced`, and `StrixAccel,Txn,BadStatus` (`txn+0x58 != 0` at submit time — the exact
+  condition CoreDisplay logs as a fallback). The submit diagnostic now covers the first 12 transactions.
+
+Verification on the next boot: `StrixAccel,Res,Forced > 0` and `StrixAccel,Txn,BadStatus == 0` (or at least
+far below the 47 above) with no `Fallback GPU Display Pipe transaction submission failed` after the first
+seconds; if `Forced > 0` but `BadStatus` stays high, the zero status is not coming from the plane resource's
+`prepare()` and the `StrixAccel,Res,Prepare` line's field dump is the next evidence.
+
+Build note: a kext cannot be linked on Linux (`ld64.lld` warns "Option `-kext' is undocumented" and then
+requires `main`, so it emits neither MH_KEXT_BUNDLE nor the undefined-symbol kext link). `clang++ -target
+x86_64-apple-macosx12.0 -mkernel ... -fsyntax-only`/`-c` works against `build/MacKernelSDK`, so source
+changes can be compile-checked here; the real build is CI (`build.yml` builds `StrixAccel` and uploads the
+`kexts` artifact).

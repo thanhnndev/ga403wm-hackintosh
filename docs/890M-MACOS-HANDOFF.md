@@ -7,7 +7,21 @@ Step-by-step history: [890M trace](890M-TRACE.md).
 ## Current state
 
 
-NEWEST (Step19, 2026-10-16, Linux): the "iGPU panic" is not the iGPU. Both `Kernel-2026-10-16-*.panic`
+NEWEST (Step20, 2026-10-16/17, Linux): StrixAccel **0.1.19** — the remaining pipe-transaction fallbacks are
+`IOAccelResource2::prepare()` returning 0. `IOAccelDisplayPipeTransaction2::prepare()` (25G241 0x14baff8a) calls
+each plane resource's slot 46 (`call [vptr+0x170]`; the vptr points at the first virtual, so that *is* slot 46 =
+prepare, `+0x180` through the vtable symbol — Apple's own `AppleParavirtResource::prepare` tail-calls
+`[__ZTV16IOAccelResource2+0x180]`) and stores `0xe00002be` at `txn+0x58` when it returns 0; `transaction_end`
+(0x14bb0560) then aborts, which is what CoreDisplay logs as `Fallback GPU Display Pipe transaction submission
+failed`. 0.1.19 overrides `StrixResource::prepare()`: calls the family's implementation (real mapping), logs why it
+failed (`resType/+0x14`, `flags/+0xe`, `prep/+0x28`, `map/+0x40`, `mem/+0x88`), and with the new live tunable
+`StrixAccel,Tune,ResOk` (default 1) reports success and advances `this+0x28` so the family's `complete()` balances —
+safe because the pipe copies the IOSurface into the GOP raster on the CPU and never reads a resource's GPU address.
+New counters `StrixAccel,Res,Prepare`, `Res,Forced`, `Txn,BadStatus`. Next boot: `Res,Forced > 0` and
+`Txn,BadStatus` well below 47 with no `Fallback ...` lines after the first seconds. Full detail and the slot
+arithmetic: 890M-TRACE.md "Step20". Kext built by CI (`build.yml`, artifact `kexts`); Linux cannot link kexts.
+
+Previous (Step19, 2026-10-16, Linux): the "iGPU panic" is not the iGPU. Both `Kernel-2026-10-16-*.panic`
 reports are `assertion failed: now >= *pkt_enq_time` (`classq_fq_codel.c:1127`) reached from
 `HoRNDIS::outputStart` -> `ifnet_dequeue` -> `fq_codel_dq` (USB tether + AMD TSC skew); no
 StrixGOP/StrixAccel/IOAccel/AGDC/amdgpu in any panic. The ESP Kernel/Patch "Strix | fq_codel_dq" was

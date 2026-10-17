@@ -28,7 +28,7 @@
 #include "../../include/StrixNativeABI.h"
 #include "StrixABIProfile.h"
 
-#define STRIXACCEL_VERSION "0.1.18"
+#define STRIXACCEL_VERSION "0.1.19"
 
 #include "IOAccelFamily2_decl.h"
 
@@ -90,6 +90,9 @@ static volatile int32_t gTuneSrcCache = 0;   // source mapping cache: 0 default,
 // (measured 0.1.9: SrcRead 188 ms WC vs 0.6 ms cached, copy 390 ms avg, display-link collapses to ~12 fps).
 static volatile int32_t gTuneProbe = 0;      // 1 = run the bandwidth probe on the next presented frame
 static volatile int32_t gTuneBlock = 128;    // diff block size in bytes (multiple of 8)
+static volatile int32_t gTuneResOk = 1;      // 1 = a failing IOAccelResource2::prepare() is reported as success (see StrixResource::prepare)
+static volatile int32_t gResPrepare, gResForced;   // resource prepare() calls / forced successes
+static volatile int32_t gTxnBadStatus;       // transactions whose txn+0x58 status was non-zero at submit time
 static volatile int32_t gCacheGen = 0;       // bumped when the source cache mode changes: pipes drop their mappings
 static volatile int32_t gCoalesced = 0;      // frames replaced by a newer one before the worker got to them
 static volatile int64_t gSubmitNs, gSubmitMaxNs, gSubmitCalls;
@@ -223,6 +226,7 @@ class StrixResource : public IOAccelResource2 {
     OSDeclareDefaultStructors(StrixResource)
 public:
     STRIXACCEL_LEAFDECL_IOAccelResource2
+    uintptr_t prepare() override;   // 46: the slot every display-pipe transaction prepares its plane resources through
     uintptr_t rebuildPagingBuffer() override;
     uintptr_t getLevelOffset(unsigned char, unsigned char, int *) override;
     uintptr_t getBackingLevelOffset(unsigned char, unsigned char, int *) override;
@@ -633,6 +637,7 @@ IOReturn StrixAccelerator::setProperties(OSObject *props)
     num("StrixAccel,CapFixedFmt", 0, 0xff, &strix_agdc::gCapFixedFmt);
     num("StrixAccel,CapTableSize", 2, 65536, &strix_agdc::gCapTableSize);
     num("StrixAccel,Block", 32, 4096, &gTuneBlock);
+    num("StrixAccel,ResOk", 0, 1, &gTuneResOk);
     volatile int32_t cm = gTuneSrcCache;
     if (num("StrixAccel,SrcCache", 0, 4, &cm) && cm != gTuneSrcCache) {
         gTuneSrcCache = cm;
@@ -665,6 +670,10 @@ void StrixAccelerator::publishCounters()
     setProperty("StrixAccel,Tune,Async", (unsigned long long)gTuneAsync, 32);
     setProperty("StrixAccel,Tune,SrcCache", (unsigned long long)gTuneSrcCache, 32);
     setProperty("StrixAccel,Tune,Block", (unsigned long long)gTuneBlock, 32);
+    setProperty("StrixAccel,Tune,ResOk", (unsigned long long)gTuneResOk, 32);
+    setProperty("StrixAccel,Res,Prepare", (unsigned long long)gResPrepare, 32);
+    setProperty("StrixAccel,Res,Forced", (unsigned long long)gResForced, 32);
+    setProperty("StrixAccel,Txn,BadStatus", (unsigned long long)gTxnBadStatus, 32);
     setProperty("StrixAccel,Tune,Caps", (unsigned long long)strix_agdc::gCapMask, 32);
     setProperty("StrixAccel,Tune,CapLinType", (unsigned long long)strix_agdc::gCapLinType, 32);
     setProperty("StrixAccel,AGDC,CapServed", (unsigned long long)strix_agdc::gCapServed, 32);
@@ -1001,6 +1010,42 @@ uintptr_t StrixDisplayMachine::found_framebuffer(IOFramebuffer *fb)
 uint64_t StrixVidMemory::getPhysicalSegment(unsigned long long, unsigned long long *) { return 0; }
 uintptr_t StrixVidMemory::allocPhysical() { return 0; }
 uintptr_t StrixVidMemory::deallocPhysical() { return 0; }
+
+// Every CoreDisplay transaction prepares the plane's resource through this slot, and the family turns a zero return
+// into the transaction status 0xe00002be, which CoreDisplay reports as "Fallback GPU Display Pipe transaction
+// submission failed":
+//   25G241 IOAccelDisplayPipeTransaction2::prepare()  0x14baff8a  per-plane `call [resource_vptr+0x170]`
+//                            (the object's vptr points at its first virtual, so +0x170 is vtable slot 46 = prepare),
+//                            `mov r14d, 0xe00002be` when that call returns 0, `IOAccelDisplayPipe::transaction_end`
+//                            0x14bb0560 stores r14d at txn+0x58 and aborts.
+// 0.1.18 (accel config bit 21 -> IOAccelSysMemory resources) removed the "failed to alloc GART space" /
+// "failed to allocate GPU virtual address" storms, but prepare() can still return 0 during the first seconds of a
+// boot, so keep the family's implementation (it performs the real mapping) and record why it failed.  Our pipe
+// presents by copying the IOSurface into the GOP raster on the CPU and never reads a resource's GPU address, so
+// Tune,ResOk (default 1) additionally reports success, advancing the family's prepared count (this+0x28, the int
+// IOAccelResource2::prepare increments at 0x14b8bf76) so that the family's complete() stays balanced.  Set
+// StrixAccel,Tune,ResOk 0 to see the raw family result instead.
+uintptr_t StrixResource::prepare()
+{
+    const uintptr_t famPrepare = fam_ztv_Resource[2 + 46];   // vtable symbol + 16 = first virtual; slot 46 = 0x180
+    const uintptr_t r = famPrepare ? reinterpret_cast<uintptr_t (*)(StrixResource *)>(famPrepare)(this) : 0;
+    const uint8_t *b = reinterpret_cast<const uint8_t *>(this);
+    const int32_t k = OSIncrementAtomic(&gResPrepare) + 1;
+    if (r) {
+        if (k <= 6) SLOG("res prepare: family returned %lu (call %d)", (unsigned long)r, k);
+        return r;
+    }
+    if (k <= 24)
+        SLOG("res prepare: family returned 0 (call %d) resType %#x flags %#x prep %d map %p mem %p -> %s", k,
+             (unsigned)b[0x14], (unsigned)b[0xe], *reinterpret_cast<const int32_t *>(b + 0x28),
+             (void *)*reinterpret_cast<const void *const *>(b + 0x40),
+             (void *)*reinterpret_cast<const void *const *>(b + 0x88),
+             gTuneResOk ? "reported success" : "reported failure");
+    if (!gTuneResOk) return 0;
+    OSIncrementAtomic(&gResForced);
+    ++*reinterpret_cast<int32_t *>(const_cast<uint8_t *>(b) + 0x28);
+    return 1;
+}
 
 uintptr_t StrixResource::rebuildPagingBuffer() { return 0; }
 uintptr_t StrixResource::getLevelOffset(unsigned char, unsigned char, int *off)
@@ -1511,6 +1556,9 @@ void StrixDisplayPipe::workerFire(thread_call_param_t self, thread_call_param_t)
 IOReturn StrixDisplayPipe::submitTransaction(IOAccelDisplayPipeTransaction2 *t)
 {
     const unsigned n = unsigned(OSIncrementAtomic(&gCounters[kCTxn])) + 1;
+    // txn+0x58 is what IOAccelDisplayPipe::transaction_end stores set_transaction_args()/prepare() into; a non-zero
+    // value here is exactly what CoreDisplay logs as "Fallback GPU Display Pipe transaction submission failed".
+    if (*reinterpret_cast<const uint32_t *>(reinterpret_cast<const uint8_t *>(t) + 0x58)) OSIncrementAtomic(&gTxnBadStatus);
     if (!(strix_txn_flags(t) & 3)) {
         OSIncrementAtomic(&gCounters[kCNoPlane]);   // no plane changed: what is on screen is still current
         if (owner && n <= 8) owner->publishCounters();
@@ -1518,7 +1566,7 @@ IOReturn StrixDisplayPipe::submitTransaction(IOAccelDisplayPipeTransaction2 *t)
     }
     const uint64_t t0 = mach_absolute_time();
     IOSurface *s = strix_pick_surface(t);
-    if (n <= 4) strix_diag_txn(this, t, n, "submit");
+    if (n <= 12) strix_diag_txn(this, t, n, "submit");
     if (s && gTuneAsync && worker && qlock && !closing) {
         // The caller is WindowServer: park the newest surface and return. A frame the worker has not started yet is
         // replaced (coalesced), so a slow copy can only drop frames, never queue them or stall the other display.
