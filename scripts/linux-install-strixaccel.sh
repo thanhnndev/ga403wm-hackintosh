@@ -37,13 +37,23 @@ mkdir -p "$BK" "$MP"
 
 # linux-apfs-rw allows only one mount of the container while writing: peel every stacked mount first.
 for _ in 1 2 3 4 5 6 7 8; do
-    targets=$(findmnt -rn -S "$DEV" -o TARGET | sort -u)
+    # findmnt exits 1 when nothing matches, so the substitution has to tolerate that under set -e/pipefail.
+    targets=$(findmnt -rn -S "$DEV" -o TARGET 2>/dev/null | sort -u || true)
     [ -n "$targets" ] || break
     while IFS= read -r t; do umount "$t" || true; done <<< "$targets"
 done
+echo "mounting $DEV rw at $MP ..."
 mount -t apfs -o rw,readwrite,vol=0 "$DEV" "$MP"
-findmnt -rn -T "$MP" -o OPTIONS | tr ',' '\n' | grep -qx rw
-[[ -d "$MP/Library/Extensions" && -d "$MP/Library/KernelCollections" ]]
+opts=$(findmnt -rn -T "$MP" -o OPTIONS 2>/dev/null || true)
+if ! printf '%s\n' "$opts" | tr ',' '\n' | grep -qx rw; then
+    echo "FATAL: $MP came up as '$opts' (need rw). Another mount of the container is probably still there:"
+    echo "       findmnt -rn -S $DEV -o TARGET"
+    exit 1
+fi
+if [[ ! -d "$MP/Library/Extensions" || ! -d "$MP/Library/KernelCollections" ]]; then
+    echo "FATAL: $MP does not look like the macOS Data volume (Library/Extensions or Library/KernelCollections missing)"
+    exit 1
+fi
 
 version_of() {
     python3 -I - "$1" <<'PY'
