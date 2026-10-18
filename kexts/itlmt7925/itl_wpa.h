@@ -29,9 +29,10 @@ int itl_aes128_unwrap(const uint8_t kek[16], const uint8_t *in, size_t inlen, ui
 void itl_wpa_pmk(const char *pass, const uint8_t *ssid, size_t ssidlen, uint8_t pmk[32]);
 
 // PTK = PRF-384(PMK, "Pairwise key expansion", min(AA,SPA) || max(AA,SPA) || min(ANonce,SNonce) || max(ANonce,SNonce))
-struct itl_ptk { uint8_t kck[16]; uint8_t kek[16]; uint8_t tk[16]; };
+// CCMP needs 384 bits; TKIP 512 (the extra 128 are the two MIC keys, TX first, as the AP computes them).
+struct itl_ptk { uint8_t kck[16]; uint8_t kek[16]; uint8_t tk[16]; uint8_t mic[16]; };
 void itl_wpa_ptk(const uint8_t pmk[32], const uint8_t aa[6], const uint8_t spa[6], const uint8_t anonce[32],
-                 const uint8_t snonce[32], itl_ptk *ptk);
+                 const uint8_t snonce[32], itl_ptk *ptk, bool tkip);
 
 // EAPOL-Key (802.1X, type 3), RSN descriptor 2
 #define ITL_KI_VER_MASK   0x0007

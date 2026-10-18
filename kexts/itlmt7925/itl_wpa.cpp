@@ -126,15 +126,17 @@ void itl_wpa_pmk(const char *pass, const uint8_t *ssid, size_t ssidlen, uint8_t 
 }
 
 void itl_wpa_ptk(const uint8_t pmk[32], const uint8_t aa[6], const uint8_t spa[6], const uint8_t anonce[32],
-                 const uint8_t snonce[32], itl_ptk *ptk)
+                 const uint8_t snonce[32], itl_ptk *ptk, bool tkip)
 {
-    uint8_t d[76], out[48];
+    uint8_t d[76], out[64];
     const uint8_t *lo = memcmp(aa, spa, 6) < 0 ? aa : spa, *hi = lo == aa ? spa : aa;
     memcpy(d, lo, 6); memcpy(d + 6, hi, 6);
     const uint8_t *nlo = memcmp(anonce, snonce, 32) < 0 ? anonce : snonce, *nhi = nlo == anonce ? snonce : anonce;
     memcpy(d + 12, nlo, 32); memcpy(d + 44, nhi, 32);
-    itl_prf_sha1(pmk, 32, "Pairwise key expansion", d, sizeof(d), out, 48);
+    itl_prf_sha1(pmk, 32, "Pairwise key expansion", d, sizeof(d), out, tkip ? 64 : 48);
     memcpy(ptk->kck, out, 16); memcpy(ptk->kek, out + 16, 16); memcpy(ptk->tk, out + 32, 16);
+    bzero(ptk->mic, sizeof(ptk->mic));
+    if (tkip) memcpy(ptk->mic, out + 48, 16);                // TX MIC key then RX MIC key, the order the PRF produces
 }
 
 // ------------------------------------------------------------------------------------------------

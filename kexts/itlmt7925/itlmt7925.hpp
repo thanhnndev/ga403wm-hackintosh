@@ -171,6 +171,8 @@ private:
     uint8_t apCck = 0, apBasicCck = 0;       // 2.4 GHz CCK rate bitmaps (1,2,5.5,11 -> bit 0..3)
     uint8_t apRsn[64] = {0};
     uint8_t apRsnLen = 0;
+    uint8_t apGroupCipher = 0;               // RSN suite type: 1 WEP40, 2 TKIP, 4 CCMP, 5 WEP104 (0 unknown)
+    uint8_t apPairCipher = 0;                // what the 4-way handshake will use: CCMP when offered, else TKIP
     char m3buf[8000] = {0};
     size_t m3len = 0;
     char m3res[400] = {0};
@@ -207,10 +209,10 @@ private:
     volatile bool m3linkUp = false;
     itlmt7925Eth *eth = nullptr;
     IOLock *txLock = nullptr;
-    uint32_t stRxData = 0, stRxEapol = 0, stRxEth = 0, stRxDrop = 0, stTx = 0, stTxFail = 0, stNote = 0, stGrpTx = 0;
+    uint32_t stRxData = 0, stRxEapol = 0, stRxEth = 0, stRxDrop = 0, stTx = 0, stTxFail = 0, stNote = 0, stGrpTx = 0, stEcho = 0;
     int  m3Handshake();
     bool m3Eapol(const uint8_t *eapol, uint32_t len);
-    int  m3Key(uint16_t wcid, bool pairwise, uint8_t keyId, const uint8_t *key, uint8_t keyLen);
+    int  m3Key(uint16_t wcid, bool pairwise, uint8_t keyId, const uint8_t *key, uint8_t keyLen, uint8_t cipher);
     bool m3RxData(const uint8_t *p, uint32_t len);
     bool m3TxData(const uint8_t *da, uint16_t ethertype, const uint8_t *payload, uint32_t plen, bool protect,
                   bool *full = nullptr);

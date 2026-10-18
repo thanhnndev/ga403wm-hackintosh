@@ -1200,3 +1200,41 @@ dereferenced a NULL controller and the machine panicked twice on 2026-10-17; the
 `deferBSDAttach(false)` order (and `RegistrationInfo +0x38 = 0` so the BSD client gets its `IOInterfaceUnit`). Expect
 `rc=0 bsd_name='awdl0'`, `awdl:vif started` / `awdl:vif up bsd=awdl0` in `itlmt_native_trace`, `ifconfig awdl0` present,
 no panic.
+
+### Control test on hardware: the `itl_grp19` switch works, and the rejoin path has its own bug
+
+The `itl_grp19` A/B ran on Tiem O Day in one boot (`itl_grp19=1 itl_lvl=6; sleep 30; itl_grp19=0 itl_lvl=6`):
+
+* grp19=1: the join carried `sta_rec_bss rc=0` and the group frames went out as `tx grp … wc=19` — the switch reaches
+  the TXD. grp19=0: the same frames came back as `wc=1`. No DHCP OFFER in either phase, but the DHCP client did not
+  even DISCOVER in the first phase (the lease survived the reconnect) — the control is the `wc=` field, not DHCP.
+* **Both** ctl-triggered rejoins went silent 4 s after link-up (`postmortem silent 4s`: no beacon and no data frame for
+  4 s) — with wcid 19 and with wcid 1 alike, so it is the rejoin path, not the wcid. Phase B then hit the 15 s check
+  (`link lost`), did `recover #1` (wfsys reset + firmware reload) and the next session came up clean — the state the
+  machine is in now. The AP also sent deauths (`other frame fc=d000 a1=<our mac>`) during both rejoins. Next time this
+  reproduces, the new `pulse` line (below) tells whether beacons stopped arriving at the ring or only stopped being
+  parsed.
+* The 8 KB `m3-log` buffer filled up right at link-up and `m3log()` silently stopped appending (the property was exactly
+  8005 bytes — a frozen tail). `m3log()` now drops the oldest third at a `;` boundary and keeps writing.
+
+### Root cause work for "weak security" networks: the driver was CCMP-only
+
+Reading the code next to the failing-network evidence turned up a real, network-specific bug:
+
+* Both RSN IEs (association request, msg2) were **hardcoded to group=CCMP + pairwise=CCMP**, and `m3Key()` hardcoded
+  `CONNAC3_CIPHER_AES_CCMP`, and the handshake **refused any GTK that was not 16 bytes** (`if (gtkLen != 16) return
+  ITL_EIO`). A WPA/WPA2-mixed AP (the classic "weak security" setup: CCMP pairwise, **TKIP group**) therefore either
+  refuses the association/M2 (no common cipher) or gets its 32-byte TKIP GTK rejected — and even if it got through, the
+  keys were installed as CCMP. This is exactly the profile of the two networks that never worked while a plain WPA2
+  (CCMP) network did.
+* Fix (mt76 parity, `mt7925_mcu_sta_key_tlv` / `mt7925_mcu_bss_sec_tlv`): the RSN IEs are built from the AP's beacon —
+  its group cipher and the pairwise pick (CCMP whenever offered, TKIP only without it); the PTK is derived 512 bits
+  when TKIP (the extra 128 are the two MIC keys); `m3Key()` takes the cipher and, for TKIP, stores 32 bytes with the
+  RX/TX MIC keys swapped; the BSS_SEC TLV uses `status 4` for TKIP; 32-byte GTKs are accepted.
+* New trace for the hotspot round: `pulse bcn=… rxd=… rxe=… eth=… tx=… echo=…` every 5 s (RX liveness at a glance),
+  `rx echo et=… len=…` when the AP relays one of our own group frames back (proves group TX reached it and came back
+  encrypted), `key(gtk,c04)` / `key(ptk,c04)` show the cipher that was installed, and the RSN line now carries
+  `pick=` (chosen pairwise) and `cap=` (RSN capabilities, PMF bits).
+
+Test order after the reboot: Tiem O Day first (`pulse` must show `bcn` climbing), then the phone hotspot, then Thai
+Apartment when back in range — the hotspot log now shows the cipher path end to end.

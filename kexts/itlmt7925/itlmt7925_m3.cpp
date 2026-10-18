@@ -31,6 +31,14 @@ void itlmt7925::m3log(const char *fmt, ...)
     va_end(ap);
     IOLog("itlmt7925: M3 %s\n", tmp);
     size_t n = strlen(tmp);
+    if (m3len + n + 2 >= sizeof(m3buf)) {
+        // ring: drop the oldest third so the newest lines always survive (the log used to freeze at 8 KB, right at link-up)
+        size_t drop = m3len / 3;
+        while (drop < m3len && m3buf[drop] != ';') drop++;
+        if (drop < m3len) drop++;
+        memmove(m3buf, m3buf + drop, m3len - drop + 1);
+        m3len -= drop;
+    }
     if (m3len + n + 2 < sizeof(m3buf)) {
         memcpy(m3buf + m3len, tmp, n);
         m3len += n;
@@ -157,6 +165,18 @@ void itlmt7925::m3Event(const uint8_t *ev, uint32_t len)
     }
 }
 
+// RSN IE (48) for the association request and for msg2: the AP's group cipher, the pairwise cipher this link will use
+// (CCMP when the AP offers it, TKIP otherwise) and PSK. Hardcoding CCMP here made mixed WPA/WPA2 APs (TKIP group) either
+// refuse the association (status 40: no common cipher) or refuse msg2.
+static void m3RsnIe(uint8_t *p, uint8_t group, uint8_t pw)
+{
+    static const uint8_t t[22] = {0x30, 0x14, 0x01, 0x00, 0x00, 0x0f, 0xac, 0x04, 0x01, 0x00, 0x00, 0x0f, 0xac, 0x04,
+                                  0x01, 0x00, 0x00, 0x0f, 0xac, 0x02, 0x00, 0x00};
+    memcpy(p, t, sizeof(t));
+    p[7] = group ? group : 4;
+    p[13] = pw ? pw : 4;
+}
+
 // Rates / RSN of the target AP from the captured beacon IEs.
 void itlmt7925::m3ParseAp()
 {
@@ -165,6 +185,7 @@ void itlmt7925::m3ParseAp()
     const uint8_t *ie = tgtIe, *end = tgtIe + tgtIeLen;
     apSupp = apBasic = apCck = apBasicCck = 0;
     apRsnLen = 0;
+    apGroupCipher = apPairCipher = 0;
     while (ie + 2 <= end && ie + 2 + ie[1] <= end) {
         uint8_t id = ie[0], l = ie[1];
         if (id == 1 || id == 50) {
@@ -183,11 +204,25 @@ void itlmt7925::m3ParseAp()
     m3log("ap rates supp=%02x basic=%02x cck=%x/%x rsn=%u", apSupp, apBasic, apCck, apBasicCck, apRsnLen);
     m3FastPlan();
     if (apRsnLen >= 14) {
-        // version(2) group(4) pairwise count(2) ...
+        // version(2) group(4) pairwise count(2) list(4 each) akm count(2) list(4 each) capabilities(2)
         const uint8_t *r = apRsn + 2;
+        int rl = apRsnLen - 2;                               // bytes available in r[]
         uint16_t pc = (uint16_t)(r[6] | (r[7] << 8));
-        m3log("rsn group=%02x pairwise n=%u first=%02x akm1=%02x", r[5], pc, pc ? r[11] : 0,
-              (apRsnLen >= 12 + 4 * pc + 6) ? r[8 + 4 * pc + 2 + 3] : 0);
+        int akmOff = 10 + 4 * pc;
+        uint16_t ac = (rl >= akmOff + 2) ? (uint16_t)(r[akmOff - 2] | (r[akmOff - 1] << 8)) : 0;
+        uint8_t akm = (rl >= akmOff + 4) ? r[akmOff + 3] : 0;
+        int capOff = akmOff + 4 * ac;
+        uint16_t cap = (rl >= capOff + 2) ? (uint16_t)(r[capOff] | (r[capOff + 1] << 8)) : 0;
+        apGroupCipher = r[5];
+        apPairCipher = 0;
+        for (uint16_t i = 0; i < pc && 4 * i + 13 < rl; i++) {
+            uint8_t t = r[11 + 4 * i];
+            if (t == 4) { apPairCipher = 4; break; }         // CCMP whenever the AP offers it, TKIP only without it
+            if (t == 2) apPairCipher = 2;
+            else if (!apPairCipher) apPairCipher = t;
+        }
+        m3log("rsn group=%02x pw n=%u first=%02x pick=%02x akm=%02x cap=%04x", r[5], pc, pc ? r[11] : 0,
+              apPairCipher, akm, cap);
     }
 }
 
@@ -362,6 +397,7 @@ int itlmt7925::m3Bss(M3BssOp op)
 
     uint8_t *s = m.tlv(16, 8);                               // UNI_BSS_INFO_SEC
     if (m3cipher == 4) { s[4] = 7; s[5] = 6; s[6] = 4; }     // WPA2-PSK, CCMP
+    else if (m3cipher == 2) { s[4] = 7; s[5] = 4; s[6] = 2; } // WPA2-PSK, TKIP (mt7925_mcu_bss_sec_tlv: status 4)
     else { s[4] = 0; s[5] = 1; s[6] = 0; }                   // open
 
     uint8_t *r = m.tlv(11, 16);                              // UNI_BSS_INFO_RATE
@@ -779,9 +815,8 @@ int itlmt7925::m3Assoc()
     static const uint8_t ext2g[4] = {0x30, 0x48, 0x60, 0x6c};                               // 24, 36, 48, 54
     *p++ = 1; *p++ = 8; memcpy(p, g2 ? rates2g : rates, 8); p += 8;
     if (g2) { *p++ = 50; *p++ = 4; memcpy(p, ext2g, 4); p += 4; }
-    static const uint8_t rsn[22] = {0x30, 0x14, 0x01, 0x00, 0x00, 0x0f, 0xac, 0x04, 0x01, 0x00, 0x00, 0x0f, 0xac, 0x04,
-                                    0x01, 0x00, 0x00, 0x0f, 0xac, 0x02, 0x00, 0x00};
-    memcpy(p, rsn, sizeof(rsn)); p += sizeof(rsn);
+    m3RsnIe(p, apGroupCipher, apPairCipher);
+    p += 22;
     if (fastActive) {
         p += itl_caps_build_ht(p);
         if (apCaps.vht) p += itl_caps_build_vht(p, fastAllow160);
@@ -910,6 +945,7 @@ int itlmt7925::m3Run1()
     if (!rc) {
         m3log("RESULT rc=0 link up");
         stGrpTx = 0;                                         // per-session: log the first few group TX frames again
+        stEcho = 0;
         m3Link();                                            // returns only when this level has to be given up (m3stepDown)
         return ITL_EIO;
     }
@@ -1252,7 +1288,10 @@ bool itlmt7925::m3RxData(const uint8_t *p, uint32_t len)
                 return true;
             }
             if (!m3linkUp || pn > 1600) { stRxDrop++; return true; }
-            if (memcmp(p + off + 16, mac, 6) == 0) return true;             // our own broadcast echoed back
+            if (memcmp(p + off + 16, mac, 6) == 0) {                        // our own broadcast echoed back: the AP relayed it
+                if (stEcho < 6) { stEcho++; m3log("rx echo et=%04x len=%u", et, len); }
+                return true;
+            }
             static uint8_t eb[14 + 1600];
             memcpy(eb, p + off + 4, 6);                                      // DA
             memcpy(eb + 6, p + off + 16, 6);                                 // SA = addr3
@@ -1320,8 +1359,10 @@ int itlmt7925::ethTx(const uint8_t *e, uint32_t len)
     return ok ? 0 : -1;
 }
 
-// STA_REC_KEY_V3 (mt7925_mcu_sta_key_tlv): CCMP key on the AP's wcid (pairwise) or on the BSS's broadcast wcid (group)
-int itlmt7925::m3Key(uint16_t wcid, bool pairwise, uint8_t keyId, const uint8_t *key, uint8_t keyLen)
+// STA_REC_KEY_V3 (mt7925_mcu_sta_key_tlv): key on the AP's wcid (pairwise) or on the BSS's broadcast wcid (group).
+// TKIP carries 32 bytes (key + TX MIC + RX MIC) and the firmware wants the two MIC keys the other way round
+// (mt7925_mcu_sta_key_tlv: "Rx/Tx MIC keys are swapped").
+int itlmt7925::m3Key(uint16_t wcid, bool pairwise, uint8_t keyId, const uint8_t *key, uint8_t keyLen, uint8_t cipher)
 {
     M3Msg m;
     m.init(8);
@@ -1337,13 +1378,21 @@ int itlmt7925::m3Key(uint16_t wcid, bool pairwise, uint8_t keyId, const uint8_t 
     s[7] = 0;                                                // is_authenticator
     memcpy(s + 8, tgtBssid, 6);                              // peer_addr
     s[14] = M3_BSS_IDX;
-    s[15] = 4;                                               // CONNAC3_CIPHER_AES_CCMP
+    s[15] = cipher ? cipher : 4;                             // CONNAC3_CIPHER_AES_CCMP (4) / CONNAC3_CIPHER_TKIP (2)
     s[16] = keyId;
     s[17] = keyLen;
     s[18] = wcid & 0xff;
     s[19] = 1;                                               // mgmt_prot
-    memcpy(s + 20, key, keyLen);
-    int rc = m3Cmd(UNI_STA_REC_UPDATE, m.b, m.n, pairwise ? "key(ptk)" : "key(gtk)");
+    if (s[15] == 2 && keyLen == 32) {
+        memcpy(s + 20, key, 16);
+        memcpy(s + 36, key + 24, 8);
+        memcpy(s + 44, key + 16, 8);
+    } else {
+        memcpy(s + 20, key, keyLen);
+    }
+    char nm[24];
+    snprintf(nm, sizeof(nm), pairwise ? "key(ptk,c%02x)" : "key(gtk,c%02x)", s[15]);
+    int rc = m3Cmd(UNI_STA_REC_UPDATE, m.b, m.n, nm);
     bzero(m.b, sizeof(m.b));
     return rc;
 }
@@ -1379,8 +1428,8 @@ bool itlmt7925::m3EapolNext()
 
 int itlmt7925::m3Handshake()
 {
-    static const uint8_t rsnIe[22] = {0x30, 0x14, 0x01, 0x00, 0x00, 0x0f, 0xac, 0x04, 0x01, 0x00, 0x00, 0x0f, 0xac, 0x04,
-                                      0x01, 0x00, 0x00, 0x0f, 0xac, 0x02, 0x00, 0x00};
+    uint8_t rsnIe[22];
+    m3RsnIe(rsnIe, apGroupCipher, apPairCipher);
     uint8_t snonce[32], zero[32], replay[8] = {}, anonce[32] = {}, out[160], kd[8 * 40];
     itl_eapol_key k;
     itl_ptk ptk = {};
@@ -1457,7 +1506,7 @@ int itlmt7925::m3Handshake()
                 bool changed = !have1 || memcmp(anonce, k.nonce, 32);
                 memcpy(replay, k.replay, 8);
                 memcpy(anonce, k.nonce, 32);
-                if (changed) itl_wpa_ptk(m3pmk, tgtBssid, mac, anonce, snonce, &ptk);
+                if (changed) itl_wpa_ptk(m3pmk, tgtBssid, mac, anonce, snonce, &ptk, apPairCipher == 2);
                 have1 = true;
                 m1Count++;
                 n2 = itl_eapol_build(out, 0x010a, 0, replay, snonce, rsnIe, sizeof(rsnIe));
@@ -1520,7 +1569,7 @@ int itlmt7925::m3Handshake()
         m3log("eapol: key data not usable (info=%04x len=%u)", k.info, k.datalen);
     }
     m3log("gtk id=%u len=%u", gtkId, gtkLen);
-    if (gtkLen != 16) return ITL_EIO;
+    if (gtkLen != 16 && gtkLen != 32) return ITL_EIO;          // 16 = CCMP, 32 = TKIP (key + TX/RX MIC keys)
 
     // msg4: ver 2 | pairwise | MIC | secure
     uint8_t replay3[8];
@@ -1531,10 +1580,13 @@ int itlmt7925::m3Handshake()
     m3log("eapol m4 tx %s", ok ? "queued" : "FAILED");
     for (int i = 0; i < 30; i++) m3Pump(1);                    // let it go out in the clear before the keys arrive
 
-    m3cipher = 4;
-    m3Bss(M3_BSS_ASSOC);                                       // BSS now secured with CCMP
-    int r1 = m3Key(M3_AP_WCID, true, 0, ptk.tk, 16);
-    int r2 = m3Key(M3_BMC_WCID, false, gtkId, gtk, 16);
+    bool tkipPw = apPairCipher == 2, tkipGrp = gtkLen == 32;
+    m3cipher = tkipPw ? 2 : 4;
+    m3Bss(M3_BSS_ASSOC);                                       // BSS now secured (CCMP, or TKIP on a WPA/WPA2 mixed AP)
+    uint8_t tk32[32];
+    if (tkipPw) { memcpy(tk32, ptk.tk, 16); memcpy(tk32 + 16, ptk.mic, 16); }
+    int r1 = m3Key(M3_AP_WCID, true, 0, tkipPw ? tk32 : ptk.tk, tkipPw ? 32 : 16, m3cipher);
+    int r2 = m3Key(M3_BMC_WCID, false, gtkId, gtk, gtkLen, tkipGrp ? 2 : 4);
     memcpy(m3ptk, &ptk, sizeof(m3ptk));
     bzero(&ptk, sizeof(ptk));
     bzero(gtk, sizeof(gtk));
@@ -1576,9 +1628,14 @@ void itlmt7925::m3Link()
     if (nativeMode) ethLink(true);
     evLog("up lvl %u ch %u bw %u", lvl, tgtCh, fastActive ? fastBw : 0);
     bool watchdogDone = false, silenceDone = false;
+    uint32_t lastPulse = nowMs();
     for (;;) {
         int act = m3PumpOnce();
         uint32_t now = nowMs();
+        if (now - lastPulse >= 5000) {                       // heartbeat: RX liveness (beacons, data, group frames the AP relayed back)
+            lastPulse = now;
+            m3log("pulse bcn=%u rxd=%u rxe=%u eth=%u tx=%u echo=%u", tgtBcnCount, stRxData, stRxEapol, stRxEth, stTx, stEcho);
+        }
         if (cmdPending(CMD_SCAN)) {                          // scan on the link: the firmware returns to the AP's channel between dwells
             cmdTake(CMD_SCAN, nullptr);
             wifiScan();
