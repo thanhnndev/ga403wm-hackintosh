@@ -2398,3 +2398,26 @@ and the bo_unmap munmap to `drmNmxMunmap` (stubs re-bound from two display-only 
 Result: `metal-compute` (run as `nvmtltest` because of the rung-1 allow list): command buffer completed in 5.35 ms,
 all 1048576 values correct. NVMTL -> RADV -> libdrm_amdgpu -> own NMXGPU executes real compute on the Radeon 890M.
 Remaining for WindowServer: a non-headless accelerator, the display-sleep hang, and graphics pipelines.
+
+## Step35 - the first graphics job hung the GFX ring and the reset path panicked the Mac (2026-10-18 15:35)
+
+What happened: to cure the WindowServer CPU melt, the headroom-hold LaunchAgent (a 1x1 transparent CAMetalLayer, it
+stopped working when rung 1 of the allow list took the Metal device away: "no Metal device" in its log) was added to
+`/Library/GPUBundles/nvmtl-allow.txt`. Within a minute: Kernel-2026-10-18-153556.panic, `NMIPI for unresponsive
+processor: TLB flush timeout`. Backtrace of the stuck CPU (the NMXGPU taskqueue thread):
+`amdgpu_job_timedout -> gfx_v11_0_reset_kgq -> amdgpu_mes_reset_legacy_queue -> mes_v11_0_submit_pkt_and_poll_completion
+-> amdgpu_fence_wait_polling`. So two separate problems:
+
+1. A graphics (not compute) job submitted through RADV never completed on the 890M. Not yet explained; compute works
+   (Step33d). The entry was removed from the allow list again and the agent unloaded. Next: reproduce under a bounded
+   setup (see 3) with the per-job trace.
+2. The recovery path must not be able to take the Mac down. Root cause: every LinuxKPI `spin_lock` pins the thread
+   (`local_bh_disable -> sched_pin`) and `sched_pin` was a real critical section, i.e. interrupts off on that CPU. The MES
+   reset polls a fence for up to two seconds under its ring lock, so this CPU sat with interrupts off for two seconds
+   and another CPU's TLB shootdown IPI timed out. Same family as the Step33c IF leak.
+3. Fix (fork): `sched_pin/sched_unpin` now only count (`td_pinned`); a lock is a mutex and excludes other threads
+   without owning the CPU. `critical_enter` (FPU window, seqc) is unchanged. `nmx_in_critical` reports both. The devfs
+   entry points also close a leaked pin and log it. NMXGPU 67cee035, runtime 76/76, 900/900 compiled.
+
+Cross-check with upstream: docs/NULLMOTH-2.3.6-LESSONS.md (they treat "GPU busy" as different from "GPU gone",
+bound every present wait and keep a boot guard; we need the same).
