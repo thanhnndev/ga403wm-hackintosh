@@ -2357,3 +2357,31 @@ Applied 2026-10-17 20:33, backup `Library/NullMoth/backup-20261017-203359/nvmtl-
 4. IF leak: make `nmx_thread_crit_check` unconditional - log and `ml_set_interrupts_enabled(TRUE)` when
    `ml_get_interrupts_enabled()` reads 0 even with `crit_count == 0` - so the next repro names the syscall
    boundary that leaked; then hunt the missing unlock in the lock family.
+
+## Step33c - the 890M executes user-space command streams (2026-10-18, boot 09:00)
+
+Installed: NMXGPU 4427b86a (fork 54a9fc2) + libdrm 47dbb6f2 (`scripts/macos-nvmtl-libdrm-minor-patch.sh` v2).
+
+Fixes since Step33b:
+- **mmap EINVAL for every offset >= 4096:** LinuxKPI's `PAGE_MASK` is `~(PAGE_SIZE-1)` (BSD's is `PAGE_SIZE-1`), so
+  `offset & PAGE_MASK` rejected everything. `nmx_mmap` now tests the in-page bits explicitly.
+- **drmGetDevice2(fd) failed ("amdgpu: drmGetDevice2 failed"):** an open fd's st_rdev carries the open sequence, a
+  stat of the path does not; the four `cmp %r14d, m32` sites in libdrm now compare the low byte (`cmpb`).
+- **Panic `unsafe thread_call_cancel_wait` in workq_exit** (Kernel-2026-10-17-171254, 18:23 boot): the per-CPU critical
+  counter let a thread leave a DRM syscall with interrupts disabled. Critical nesting is now per thread
+  (`td_critnest`, saved IF in `td_crit_saved`, last field of struct thread) and every devfs entry point calls
+  `nmx_thread_crit_check` on return. Zero panics and zero "critical nesting" lines on this boot.
+
+Live result (no shim, renderD128, rung-1 allow list):
+- `drmGetDevices2: 1`, `drm-open: amdgpu 3.61.0`, Metal device "... RADV STRIX1" via mtlprobe.
+- `tools/890m/amdgpu-smoke`: ctx create, GTT BO + cpu_map, VA map, GFX IB submit, fence signalled, the GPU wrote
+  0x890d890d to the BO and the CPU read it back. First proof of the 890M running work from user space.
+- `tools/890m/metal-compute`: device + MSL compile OK, then `vkCreateComputePipelines` FAILED (wall for Step35).
+  Earlier shim trace also showed AMDGPU_CTX EACCES for priority > normal and one AMDGPU_INFO EINVAL; not yet tied to it.
+
+New problem found on the 23:27 boot: the machine hung hard ~23 s after the first display sleep (pmset 23:37:20:
+"NMXGPU slow (SetState 0, 708 ms)", WindowServer timed out 30000 ms, then the log just ends, no panic record).
+Test boots are run under `caffeinate -dis`; the NMXGPU display-sleep/wake path needs its own fix.
+
+Next: (1) RADV_DEBUG / NVMTL_DUMP_FAILED_DIR on the pipeline failure; (2) NMXGPU power-state (SetState 0/1) hang;
+(3) non-headless accelerator so WindowServer composites on the 890M.
