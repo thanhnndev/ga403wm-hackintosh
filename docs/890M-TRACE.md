@@ -2562,3 +2562,5 @@ Build 11 = build 8 contents (ringdump2: ring around hw RPTR) + `amdgpu-noretry.p
 translation now faults and is reported instead of stalling the CP) + `amdgpu-ibdump.patch` (timeout dump prints the failing
 job's IB gpu_addr/length and first 96 dwords, for comparison with the same triangle on Linux/RADV).
 Build 11 = NMXGPU d2c08472, INSTALLED (loads at next boot).
+
+Step41b: build 12 NMXGPU 0309394d INSTALLED (loads next boot) = build 11 + per-gfx-job 'NullMoth vmflush' trace (vmid, pasid, pd, flush flags) + 'NullMoth vmregs' dump (GCVM_CONTEXT0-7 PT_BASE/CNTL, INVALIDATE_ENG0 REQ/ACK/SEM, L2 status). Run render-stress once after boot; compare the failing job's vmid/pd with the previous passing job.
