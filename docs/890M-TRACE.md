@@ -2564,3 +2564,18 @@ job's IB gpu_addr/length and first 96 dwords, for comparison with the same trian
 Build 11 = NMXGPU d2c08472, INSTALLED (loads at next boot).
 
 Step41b: build 12 NMXGPU 0309394d INSTALLED (loads next boot) = build 11 + per-gfx-job 'NullMoth vmflush' trace (vmid, pasid, pd, flush flags) + 'NullMoth vmregs' dump (GCVM_CONTEXT0-7 PT_BASE/CNTL, INVALIDATE_ENG0 REQ/ACK/SEM, L2 status). Run render-stress once after boot; compare the failing job's vmid/pd with the previous passing job.
+
+## Step42 - M3 audit: what "non-headless accelerator" actually means (no reboot needed)
+
+Source: fork `kexts/NVRM/accel/nvrm-accel.cpp` (class NVAccel, built as NMXAccel with `-DNMX_ACCEL`).
+* Under `NMX_ACCEL`, `start()` hard-sets `gNvHeadless=1` and property `NMXAccelHeadless` (line ~620-626) and skips the
+  framebuffer-watch / MetalPluginName-withhold / arm path. So today NMXAccel offers a Metal device to apps only; frames are
+  copied by the Metal plugin into the framebuffer that WindowServer draws on (the CPU software rasteriser = our 400-950% CPU).
+* The NVIDIA path that DOES give WindowServer the GPU is the "armed" path: NVRMFB head publishes -> `fbPublished` ->
+  `debug.nvaccelfb=1/3` -> `NVDisplayPipe::initFramebufferResource` (scanout gate) -> mode change delivered. That path is wired to
+  `NVRMNVDAFramebuffer` (NVIDIA scan-out). There is no AMD equivalent: nothing publishes an IOFramebuffer owned by NMXGPU
+  (the panel is still driven by StrixGOP/GOP framebuffer).
+* M3 therefore = (a) an NMX IOFramebuffer/display pipe on amdgpu DC for the eDP OLED (or adopt StrixGOP's framebuffer as the
+  scan-out resource for NVDisplayPipe), (b) remove the forced headless in the NMX_ACCEL branch and arm like the NVIDIA path,
+  (c) allow-list WindowServer. Not testable until M2 (graphics jobs reliable) - a hung job in WindowServer = black screen.
+Order stays: reboot -> build 12 data (vmflush/vmregs) -> fix M2 -> then M3 (a)-(c) in one kext. Nothing installed in this step.

@@ -24,7 +24,7 @@ So only the kernel driver is ours. Everything between the driver and WindowServe
 |---|---|---|
 | M1 | Own kernel driver brings up the 890M, DRM nodes, IB execution, compute | done (Step31-36) |
 | M2 | **Graphics jobs reliable** (gfx ring, VM, fences) | in progress; strict pass/fail alternation, CP stalls fetching a new process's IB (Step38-41). Needed by ANY route: it is a bug in our kernel port, not in NullMoth code |
-| M3 | A non-headless accelerator so WindowServer can obtain a Metal device and present | not started; today blocked: WindowServer must stay off the allow list until M2 is solid, a hung job there means no display |
+| M3 | A non-headless accelerator so WindowServer can obtain a Metal device and present | audited (Step42): NMX_ACCEL branch is hard-headless and no AMD IOFramebuffer/display pipe exists, needs (a) NMX scan-out framebuffer (b) arm like NVIDIA path (c) WindowServer allow; today blocked: WindowServer must stay off the allow list until M2 is solid, a hung job there means no display |
 | M4 | Own userland: libdrm/RADV from source (route B step 4), then replace NVMTLDriver | not started; NVMTLDriver (Metal on Vulkan) is the largest piece and has no source here |
 | M5 | Remove NVRM/NVAccel/NMXAccel (NullMoth binaries) | after M3/M4 |
 
