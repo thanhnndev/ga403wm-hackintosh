@@ -621,14 +621,21 @@ bool itlmt7925::m3Tx(const uint8_t *frame, uint32_t len, uint8_t type, uint8_t s
     bzero(w, 128);
     memcpy(w + 128, frame, len);
 
+    // Group-addressed data goes out on the BSS wcid (19), exactly like mt792x_tx does for frames without a station
+    // (sta == NULL -> mvif->sta.deflink.wcid): that is the wcid the group key is installed on, and the hardware picks the key
+    // of the wcid the descriptor points at. MT_TXD3_BCM stays clear: mt7925_mac_write_txwi_80211 raises it only when addr1
+    // (the RA) is group addressed, which never happens for these ToDS frames (RA = AP BSSID, DA = addr3).
+    bool grp = type == 2 && len >= 18 && (frame[16] & 1);
+    uint16_t wcid = grp ? M3_BMC_WCID : M3_AP_WCID;
     put32(w + 0, (len + 32) | (0u << 23) | ((uint32_t)o.qidx << 25));         // TX_BYTES | PKT_FMT=CT | Q_IDX
     uint32_t hdrLen = (type == 2 && (frame[0] & 0x80)) ? 26 : 24;               // QoS data frames carry the 2-byte QoS control field
     // wlan idx, HDR_FORMAT=802.11, HDR_INFO, TID; FIXED_RATE unless the firmware's rate control (STA_REC_RA) picks the rate
-    put32(w + 4, M3_AP_WCID | (2u << 14) | ((hdrLen / 2) << 16) | ((uint32_t)(o.tid & 0xf) << 21) | (o.rateAdapt ? 0u : (1u << 31)));
+    put32(w + 4, wcid | (2u << 14) | ((hdrLen / 2) << 16) | ((uint32_t)(o.tid & 0xf) << 21) | (o.rateAdapt ? 0u : (1u << 31)));
     put32(w + 8, ((uint32_t)type << 4) | subtype);
     // REM_TX_COUNT=15, BA_DISABLE unless this frame may be aggregated, PROTECT_FRAME, SN_VALID + SEQ for a host-chosen sequence number
     put32(w + 12, (15u << 11) | (o.aggr ? 0u : (1u << 28)) | (o.protect ? 2u : 0) |
                       (o.sn >= 0 ? ((1u << 31) | ((uint32_t)(o.sn & 0xfff) << 16)) : 0u));
+    if (grp && stGrpTx < 6) { stGrpTx++; m3log("tx grp len=%u wc=%u", len, wcid); }
     put32(w + 20, o.rateAdapt ? 0u : (3 | (1u << 10)));          // PID = MT_PACKET_ID_FIRST, TX_STATUS_HOST: report completion (none for rate-adapted data)
     put32(w + 24, (1u << 2) | (1u << 4) | (1u << 3) | (o.rateAdapt ? 0u : ((uint32_t)M3_RATE_IDX << 16)));   // DAS, MSDU_CNT=1, DIS_MAT, TX_RATE
 
@@ -871,6 +878,7 @@ int itlmt7925::m3Run1()
     bzero(m3pmk, sizeof(m3pmk));
     if (!rc) {
         m3log("RESULT rc=0 link up");
+        stGrpTx = 0;                                         // per-session: log the first few group TX frames again
         m3Link();                                            // returns only when this level has to be given up (m3stepDown)
         return ITL_EIO;
     }

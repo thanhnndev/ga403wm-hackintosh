@@ -2,6 +2,11 @@
 // Copyright (c) 2026 thanhnndev and contributors
 // AWDL front end implementation (see itlmt7925_awdl.h). Phase 2: the virtual interface exists and is registered; no RF work
 // yet (phases 3-5 of docs/ROADMAP-AWDL.md: channel slicing, action frames, data path).
+//
+// Creation order (docs/ROADMAP-AWDL.md §9.5): init -> attach -> deferBSDAttach(true) -> start(ctl) -> register the ifnet ->
+// registerService + setRunningState(false) -> setAwdlInterface -> deferBSDAttach(false). The start(ctl) call is mandatory:
+// it is what stores the controller at ivars+0x30 (getController), which IO80211VirtualInterface::attachToBpf dereferences
+// from the BSD client's start - skipping it panics on the first BSD attach (Kernel-2026-10-17-163303/165042).
 #include "itlmt7925_awdl.h"
 #include "itlmt7925_iface.h"
 
@@ -97,7 +102,8 @@ IOReturn itlmt7925AwdlInterface::registerAwdlInterface(const uint8_t *mac)
 
     // RegistrationInfo (opaque 0x130 bytes): the fields AppleBCMWLANCore::createProxInterface sets before calling the
     // proximity interface's start (0xffffff800165dcbe): +0xc = 3, +0x14 = 2, +0x24 = 0x8000000080, +0x30 = the name pointer,
-    // +0x3c = 0x40 (headroom), +0x40 = 4|6 (flags), +0x108 = the MAC.
+    // +0x38 = 0 (BSD unit: registerNetworkInterface sets the IOInterfaceUnit property only when this is >= 0; the BSD client
+    // needs that property to build its name), +0x3c = 0x40 (headroom), +0x40 = 4|6 (flags), +0x108 = the MAC.
     uint8_t info[0x130];
     bzero(info, sizeof(info));
     initRegistrationInfo((IOSkywalkEthernetInterface::RegistrationInfo *)info, 1, 0x130);
@@ -105,6 +111,7 @@ IOReturn itlmt7925AwdlInterface::registerAwdlInterface(const uint8_t *mac)
     field<uint32_t>(info, 0x14) = 2;
     field<uint64_t>(info, 0x24) = 0x8000000080ULL;
     field<const char *>(info, 0x30) = "awdl";
+    field<uint32_t>(info, 0x38) = 0;             // unit 0 -> awdl0
     field<uint16_t>(info, 0x3c) = 0x40;
     field<uint32_t>(info, 0x40) = 6;
     memcpy((uint8_t *)info + 0x108, mac, 6);
@@ -192,6 +199,33 @@ IOReturn itlmt7925WifiInterface::setVIRTUAL_IF_CREATE(apple80211_virt_if_create_
         return kIOReturnError;
     }
 
+    // Order (docs/ROADMAP-AWDL.md §9.5). AppleBCMWLANCore::createProxInterface (0xffffff800165dcbe) does withOptions ->
+    // attach -> start(core, info) [which registers the ifnet and then registerService(kIOServiceSynchronous) +
+    // setRunningState(false)], and the Family's own interfaces additionally bracket the whole setup with deferBSDAttach:
+    // AppleBCMWLANSkywalkInterface::start calls deferBSDAttach(true) first, AppleBCMWLANCore::setupDriver calls
+    // deferBSDAttach(false) once everything is up.
+    //
+    //   start(ctl)            IO80211VirtualInterface::start -> IO80211SkywalkInterface::start. That function is the only
+    //                         place that stores the controller at ivars+0x30, which is exactly what getController()
+    //                         (vtable slot 375) returns - and IO80211VirtualInterface::attachToBpf dereferences
+    //                         getController()->[0x120] unconditionally. attachToBpf runs from the BSD client's start
+    //                         (registerEthernetInterface -> registerNetworkInterface -> IOSkywalkNetworkBSDClient::
+    //                         start -> nexus -> prepareBSDInterface), so without this call the first BSD attach panics
+    //                         on a NULL controller (Kernel-2026-10-17-163303/165042: attachToBpf+0x37, CR2 0x120).
+    //                         start() also runs IOService::start (IOSkywalkNetworkInterface::start, slot 188), so the
+    //                         framework will not call start again (that would panic: "Calling start twice in a row").
+    //   registerAwdlInterface the ifnet + BSD client; the client must NOT attach yet, hence the deferral below.
+    //   deferBSDAttach(false) removeProperty(IODeferBSDAttach) + registerService(0): the BSD client re-probes only now,
+    //                         with the controller in place. IOSkywalkNetworkBSDClient::start fails (defers) while the
+    //                         property is true, so the deferral also closes the race with the config thread.
+    vif->deferBSDAttach(true);
+    if (!vif->start(ctl)) {
+        itlmtTrace(ctl, "awdl:vif start failed");
+        vif->release();
+        return kIOReturnError;
+    }
+    itlmtTrace(ctl, "awdl:vif started");
+
     IOReturn rr = vif->registerAwdlInterface(mac);
     if (rr != kIOReturnSuccess) {
         itlmtTrace(ctl, "awdl:vif register rc=%x", rr);
@@ -200,11 +234,20 @@ IOReturn itlmt7925WifiInterface::setVIRTUAL_IF_CREATE(apple80211_virt_if_create_
     }
 
     vif->registerService(kIOServiceAsynchronous);
+    vif->setRunningState(false);
     ctl->setAwdlInterface(vif);
     awdlVif = vif;
+    vif->deferBSDAttach(false);
 
+    // The BSD client builds the BSD name during its (now asynchronous) re-probe, so getBSDName() may still be empty here;
+    // the prefix is ours and the unit is the one registerAwdlInterface handed to the RegistrationInfo.
     const char *n = vif->getBSDName();
-    strlcpy((char *)data->bsd_name, n ? n : "", 15);
-    itlmtTrace(ctl, "awdl:vif up bsd=%s", n ? n : "?");
+    char fallback[16];
+    if (!n || !*n) {
+        snprintf(fallback, sizeof(fallback), "awdl%u", 0);
+        n = fallback;
+    }
+    strlcpy((char *)data->bsd_name, n, 15);
+    itlmtTrace(ctl, "awdl:vif up bsd=%s", n);
     return kIOReturnSuccess;
 }

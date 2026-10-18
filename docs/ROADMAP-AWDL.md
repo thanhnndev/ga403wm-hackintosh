@@ -213,8 +213,8 @@ AWDL-side request.
   `RegistrationInfo` filled like `createProxInterface` -> `registerEthernetInterface` -> `registerService` ->
   `ctl->setAwdlInterface(vif)`; answers the BSD name back. Role 6 only; 7-10 stay unsupported for now.
 * Gated by the boot-arg `itlmt_awdl=1` (off by default; the ioctl is also refused at the gate without it).
-* `tools/awdl/vif_create_test.c`: sends ioctl 0x5e itself (Apple80211Open/Bind/RawSet through the private framework) to
-  exercise the handler without wifip2pd.
+* `tools/awdl/vif_create_test.m`: sends ioctl 0x5e itself (Apple80211Open/Bind/RawSet through the private framework) to
+  exercise the handler without wifip2pd; see §9.5 for the 25G241 calling ABI it bakes in.
 * Generated ABI additions (tools/gen_io80211_header.py + tools/io80211_abi.py): new slot-exact header
   `kexts/itlmt7925/io80211/IO80211VirtualInterface.h` (506 slots, checker-clean; the unnamed pure slot 490 gets a
   placeholder so the layout stays exact), `registerEthernetInterface` on IOSkywalkEthernetInterface, and
@@ -239,3 +239,37 @@ AWDL-side request.
 2. Then check whether wifip2pd adopts the existing interface (it should stop trying to create one) and start recording the
    AWDL ioctls it sends once the peer manager exists (phase 3 groundwork).
 3. Phase 3+ per section 6: channel slicing (ROC), action frames (PSF/MIF), then the data path.
+
+### 9.5 The 2026-10-17 panics: the virtual interface never ran `start()` (fixed 2026-10-18, HW test pending)
+
+The first `vif_create_test` run with `itlmt_awdl=1` reached the handler, built and registered the interface, answered the
+ioctl - and then the machine panicked twice on the first BSD attach
+(`/Library/Logs/DiagnosticReports/Kernel-2026-10-17-163303.panic`, `…-165042.panic`):
+`IO80211VirtualInterface::attachToBpf` (+0x37) dereferences `getController()->[0x120]` and the register held 0
+(CR2 = 0x120). `getController()` (vtable slot 375) returns the controller stored at ivars+0x30 - and the only code that
+stores it there is `IO80211SkywalkInterface::start` (0xffffff80022f5792, store at 0x22f583f). The phase 2 code went
+straight from `attach` to `registerEthernetInterface`, so `attachToBpf` - which runs from the BSD client's start
+(`registerNetworkInterface` -> nexus -> `prepareBSDInterface`) - found a NULL controller.
+
+The fix mirrors what Apple's own interfaces do (all offsets 25G241; the same sequence is what the working infra
+interface, `itlmt7925_iface.cpp`, already used):
+
+1. `deferBSDAttach(true)` (slot 297): sets `IODeferBSDAttach`, so `IOSkywalkNetworkBSDClient::start` (0x2aff562, defer
+   check at 0x2aff6ae) returns false and the BSD client re-probes later; this also closes the race with the config thread.
+2. `start(ctl)`: stores the controller at ivars+0x30 (`IO80211VirtualInterface::start` ->
+   `IO80211SkywalkInterface::start`; slot 375 = `getController` reads it back), registers the ifnet, and runs
+   `IOService::start` along the way - it must be the single start call ("Calling start twice in a row" otherwise).
+3. `registerAwdlInterface`: `RegistrationInfo` filled like `createProxInterface` (0x165dcbe) plus `+0x38 = 0` - the unit
+   `registerNetworkInterface` turns into the `IOInterfaceUnit` property (it only sets it when the value is >= 0 and the
+   BSD client needs it to build its name); unit 0 -> `awdl0`.
+4. `registerService(kIOServiceAsynchronous)` + `setRunningState(false)` (slot 297's neighbours; the pattern at the tail of
+   the prox interface's start, 0x1729825 / 0x1729838, and of `setupDriver`).
+5. `ctl->setAwdlInterface(vif)`, then `deferBSDAttach(false)`: the BSD client re-probes now that the controller is in
+   place and produces `awdl0`.
+6. The BSD name is built during that asynchronous re-probe, so `getBSDName()` may still be empty when the ioctl answers;
+   the handler falls back to `awdl0` (prefix "awdl", unit 0).
+
+`tools/awdl/vif_create_test.m` (the Obj-C rewrite; 25G241 calling ABI: `Apple80211BindToInterfaceWithService` wants
+(ref, service, name) and `Apple80211RawSet` takes (ref, apple80211req*), not the classic (ref, cmd, data, len)) is the
+tool that exercises this. After the next boot: `rc=0 bsd_name='awdl0'`, no panic, `ifconfig awdl0` present,
+`awdl:vif started` then `awdl:vif up bsd=awdl0` in `itlmt_native_trace`.

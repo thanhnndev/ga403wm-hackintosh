@@ -168,7 +168,7 @@ private:
     uint8_t apCck = 0, apBasicCck = 0;       // 2.4 GHz CCK rate bitmaps (1,2,5.5,11 -> bit 0..3)
     uint8_t apRsn[64] = {0};
     uint8_t apRsnLen = 0;
-    char m3buf[3000] = {0};
+    char m3buf[8000] = {0};
     size_t m3len = 0;
     char m3res[400] = {0};
     char m3ssid[33] = {0};
@@ -204,7 +204,7 @@ private:
     volatile bool m3linkUp = false;
     itlmt7925Eth *eth = nullptr;
     IOLock *txLock = nullptr;
-    uint32_t stRxData = 0, stRxEapol = 0, stRxEth = 0, stRxDrop = 0, stTx = 0, stTxFail = 0, stNote = 0;
+    uint32_t stRxData = 0, stRxEapol = 0, stRxEth = 0, stRxDrop = 0, stTx = 0, stTxFail = 0, stNote = 0, stGrpTx = 0;
     int  m3Handshake();
     bool m3Eapol(const uint8_t *eapol, uint32_t len);
     int  m3Key(uint16_t wcid, bool pairwise, uint8_t keyId, const uint8_t *key, uint8_t keyLen);

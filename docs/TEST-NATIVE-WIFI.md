@@ -1119,7 +1119,7 @@ gate; airportd asks it for an AWDL interface on every boot and it fails before t
 
 Test checklist after the next boot (boot-args now include `itlmt_awdl=1` via config.plist):
 
-1. `cc -o /tmp/vif_create_test tools/awdl/vif_create_test.c -framework CoreFoundation -framework IOKit && /tmp/vif_create_test en5`
+1. `cc -o /tmp/vif_create_test tools/awdl/vif_create_test.m -framework CoreFoundation -framework Foundation -framework IOKit && /tmp/vif_create_test en5`
    — expect `RawSet(0x5e VIRTUAL_IF_CREATE, role=6) rc=0 (0x0) bsd_name='awdl0'`.
 2. `ifconfig awdl0` — present, has an IPv6 link-local address; `ioreg -l | grep itlmt_native_trace` shows
    `awdl:vif up bsd=awdl0`; `IOInterfaceNamePrefix = awdl` on the new registry entry.
@@ -1129,3 +1129,40 @@ Test checklist after the next boot (boot-args now include `itlmt_awdl=1` via con
 
 Build: `bash scripts/build.sh io80211check itlmt7925 itlmt7925Native` (native sha256 `1b6d4bd3…`, UUID `F3A6458D`), install
 with `scripts/native-wifi-test.sh install build/itlmt7925Native.kext --stage b`.
+
+### 2026-10-18: group-addressed TX moves to the BSS wcid (two networks that connect but cannot reach the internet)
+
+Thai Apartment (the "weak security" WPA/WPA2 network) and a phone hotspot both fail the same way: association and the
+4-way handshake complete (`assoc-ok`, `hs-ok`, `key(ptk) rc=0`, `key(gtk) rc=0`), DHCP DISCOVERs (`tx udp 68>67`) and
+ARP probes (`tx arp op=1`) go out — and nothing answers (no `rx udp 67>68`, no ARP reply), so the interface falls back
+to 169.254/16. Tiem O Day works fully in the same boot, so the RF/RX path is fine.
+
+One difference against mt76 had been left in the TX descriptor: group-addressed data (broadcast/multicast DA = `addr3`)
+went out on wcid 1 (the AP/station entry, where the pairwise key lives), while `mt792x_tx` sends frames without a station
+on the BSS wcid 19 (`mvif->sta.deflink.wcid`) — the same wcid the group key is installed on (`mt7925_set_link_key` with
+`sta == NULL` installs on `mvif->sta.deflink.wcid`). Group TX now uses 19 as well. `MT_TXD3_BCM` stays clear on purpose:
+`mt7925_mac_write_txwi_80211` raises that bit only when `addr1` (the RA) is group addressed, which never happens for
+these ToDS frames (RA = AP BSSID, DA = addr3). Rate (fixed basic 6 M), `BA_DISABLE` and `PROTECT_FRAME` are unchanged.
+
+Also in this round: `m3buf` 3000 -> 8000 bytes (a session log no longer truncates halfway through the DHCP phase) and the
+first six group frames of every session log `tx grp len=… wc=19`.
+
+Test after the reboot (both kext binaries on the ESP were refreshed; `itlmt_awdl=1` is back in the config.plist
+boot-args for the AWDL step below):
+
+1. Join the hotspot, then `ioreg -l -w0 | grep -E "m3-log|m3-res"`: expect `auth-ok` -> `assoc-ok` -> `gtk id=N` ->
+   `hs-ok` -> `tx grp len=… wc=19` -> `tx udp 68>67`, and then either `rx udp 67>68` (DHCP answered — internet works)
+   or no answer at all (= still broken; the log now shows the `gtk id`, the negotiated cipher and that group TX really
+   used wcid 19).
+2. If DHCP is still silent, keep the log for the record: sessions that failed so far were seen with `gtk id=2` while the
+   working ones used `gtk id=1`, so the group-key id (and which key slot the hardware stamps) is the next suspect.
+
+### AWDL: the phase 2 panic fix (in the same build)
+
+`tools/awdl/vif_create_test.m` (Obj-C rewrite; bakes in the 25G241 calling ABI) with `itlmt_awdl=1`, once the hotspot
+round is done. `docs/ROADMAP-AWDL.md` §9.5 has the walk-through: the interface never ran `start()`, so `attachToBpf`
+dereferenced a NULL controller and the machine panicked twice on 2026-10-17; the fix mirrors the infra interface's
+`deferBSDAttach(true)` -> `start(ctl)` -> register -> `registerService` + `setRunningState(false)` ->
+`deferBSDAttach(false)` order (and `RegistrationInfo +0x38 = 0` so the BSD client gets its `IOInterfaceUnit`). Expect
+`rc=0 bsd_name='awdl0'`, `awdl:vif started` / `awdl:vif up bsd=awdl0` in `itlmt_native_trace`, `ifconfig awdl0` present,
+no panic.
