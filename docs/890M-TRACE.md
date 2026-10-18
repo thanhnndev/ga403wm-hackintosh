@@ -2421,3 +2421,24 @@ processor: TLB flush timeout`. Backtrace of the stuck CPU (the NMXGPU taskqueue 
 
 Cross-check with upstream: docs/NULLMOTH-2.3.6-LESSONS.md (they treat "GPU busy" as different from "GPU gone",
 bound every present wait and keep a boot guard; we need the same).
+
+## Step36 - DRM syncobj waits timed out early: kernel clock base was not CLOCK_MONOTONIC
+
+Verified after the Step35 reboot: sched_pin fix works (a GFX ring timeout now ends in MES reset failure, MODE2 reset,
+"GPU reset(2) succeeded!", no TLB-flush panic).
+
+Symptom: NVMTL metal-compute -> "GPU event segment submission failed". ioctl trace: DRM_IOCTL_SYNCOBJ_WAIT (nr 0xc3,
+WAIT_ALL|WAIT_FOR_SUBMIT, absolute timeout) returned ETIMEDOUT right after AMDGPU_CS.
+
+Test `tools/890m/syncobj-wait.c` (500 ms wait on a never-signalled syncobj, deadline built from three clocks):
+
+| deadline clock | returned after |
+|---|---|
+| CLOCK_MONOTONIC | 27 ms (wrong) |
+| CLOCK_UPTIME_RAW | 501 ms |
+| CLOCK_MONOTONIC_RAW | 501 ms |
+
+Cause: macOS CLOCK_MONOTONIC = mach_continuous_time (counts sleep); the kernel's ktime_get -> nanouptime used
+mach_absolute_time, 0.47 s behind. RADV builds deadlines from CLOCK_MONOTONIC, so they looked ~0.47 s too close/past.
+Fix (xkpi bsdcompat/src/nmx_time.c): uptime_ns uses mach_continuous_time. Timers only use deltas, so nothing else moves.
+Open: whether the two hung GFX jobs (seq 8,9) were the same bug or a separate fence/IRQ issue - retest after install.
