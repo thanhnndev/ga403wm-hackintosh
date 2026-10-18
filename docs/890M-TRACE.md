@@ -2516,3 +2516,24 @@ suspects therefore stay open and the next kext carries a test for each in the sa
    ring dwords are flushed before the doorbell (`amdgpu_ring_commit`).
 
 Also in the same kext: readable IP-state dump (Step38/39), display-sleep DPMS and setPowerState timing, syncobj clock.
+
+### Step40 - build 7 (2f79cc2f) first boot: H1 confirmed in part, graphics hang is a real CP stall, strict pass/fail alternation
+
+Boot 17:00, kext 2f79cc2f loaded, `syncobj-wait` MONOTONIC 501 ms. `render-stress.sh 6`: **pass, fail, pass, fail, pass, fail**
+(strictly alternating; fail = NVMTL "GPU event segment submission failed" at 253 ms, kernel timeout ~18 s later, MODE2 reset).
+
+- `STALE fence read` fired 13 times in the window (gfx_0.0.0 x1, mes_3.0.0 x9, sdma0 x3: cached N, memory N+1). So GPU writes to
+  system memory do NOT invalidate the CPU's cache lines here: H1 is real for GPU->CPU. With the clflush in place the fences
+  that complete are seen, so H1 alone no longer explains the failures.
+- No `fence fallback on` lines in this window: the interrupt path is not the story for these hangs (H2 not supported).
+- The failing job is now on **gfx_0.0.0** (signaled seq=6, emitted seq=8), not sdma0, and the engine is genuinely busy:
+  `CP_RB0_RPTR 0x14e` vs `WPTR 0xb00` (CP stopped inside the ring), `CP_ME_HEADER_DUMP 0xc0023f00` (PM4 type 3, opcode 0x3F
+  INDIRECT_BUFFER), `CP_IB1_BASE 0x8001_0002b000`, `CP_IB1_CMD_BUFSZ 0x38`, `GRBM_STATUS 0xa800302c`, `GRBM_STATUS_SE0 0x6`,
+  `CPF_STALLED_STAT1 0x1`, all UTCL1 status 0 (no page fault). The CP sits executing an IB with no fault.
+- Alternation = state: the first job after boot/after a reset passes, the next one hangs. Something a good graphics job
+  leaves behind (or does not flush) breaks the next one.
+
+Hypothesis for build 8 (patches/amdgpu-ttm-force-wc.patch): since GPU writes are not snooped, assume the CPU->GPU direction is
+equally incoherent (IB / descriptor / shader contents written through cached CPU views not visible to the GPU, stale RAM
+read instead). Make **every GTT page write-combined** (TTM caching = write_combined: PTE not snooped, kernel and user maps WC,
+page flushed when it leaves WB). If the alternation disappears, coherence is the root cause.
