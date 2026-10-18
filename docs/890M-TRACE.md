@@ -2482,3 +2482,23 @@ Then: metal-compute, then ONE bounded graphics job (not the headroom agent) and 
 - Mistake recorded: an 80-run `amdgpu-smoke` loop in the foreground hung the terminal for minutes (every failed run
   blocks until the kernel timeout + GPU reset, 8 resets). Stress loops must be bounded with `timeout` and run in the
   background.
+
+## Step39 - the GPU finishes the work; the CPU does not see the fence (stale cache line) (2026-10-18 16:37)
+
+First readable IP-state dump (kext 12bf55a8, `NullMoth ipdump:` lines), taken at the job timeout of a hung render:
+
+- `ring sdma0 timeout, signaled seq=11, emitted seq=13`, then "Fence fallback timer expired on ring sdma0/gfx_0.0.0"
+  every 0.5 s for as long as the process lives (52 times in 90 s).
+- GFX side: `CP_RB0_RPTR == CP_RB0_WPTR == 0x600` and `CP_BUSY_STAT/CPC/CPF == 0`: the CP consumed every command and is
+  idle. `SDMA0_STATUS_REG` has the idle bit set and `UTCL1_*_XNACK = 0` (no translation fault).
+- So the engines are done, yet the CPU's view of the fence says "not yet" and keeps saying it from the fallback timer too.
+  That is the signature of a stale CPU-cache line: the fence page is written by the GPU through system memory and the
+  kernel's mapping of it is write-back (the port cannot change the cache type of an existing kernel mapping), so a line
+  already cached hides the GPU's write until it happens to be evicted - hence the pass/fail lottery (and why compute,
+  which touches little memory, mostly passes).
+- The stuck process also cannot exit (state `?NE`) until the fences resolve.
+
+Experiment (patches/amdgpu-fence-read-flush.patch): `amdgpu_fence_read` reads, clflushes the line, reads again and
+returns the post-flush value; every difference is logged as `STALE fence read on <ring>: cached X, memory Y` (first 40).
+Proof if the log fires; fix if renders become reliable. If it proves right, the lasting fix is to map the writeback
+(fence) pages uncached in the kernel (or flush at the fence-process points) rather than a per-read clflush.
