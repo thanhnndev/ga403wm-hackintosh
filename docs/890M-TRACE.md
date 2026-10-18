@@ -2464,3 +2464,21 @@ Batch for the next boot (kext 4d12165b + this commit, one reboot for all):
    (patches/amdgpu-timeout-ipdump.patch, applied by all.sh) - this is the first look at WHY a graphics job hangs.
 3. Display sleep / setPowerState are timed in the log ("power off begin/done in N ms").
 Then: metal-compute, then ONE bounded graphics job (not the headroom agent) and read the dump.
+
+## Step38 - first boot with ffcef230: clock fix verified, compute correct, graphics job intermittent (2026-10-18 16:16)
+
+- `syncobj-wait`: CLOCK_MONOTONIC deadline now waits 502 ms (was 78 ms). RADV uses MONOTONIC, so this is the one that
+  matters; the other two clocks now overshoot, as expected.
+- `metal-compute`: all 1,048,576 values correct, 2.27 ms. `amdgpu-smoke` GFX IB: fence written by the GPU.
+- NEW `tools/890m/metal-render.swift`: one triangle into a 64x64 offscreen texture, polled for 5 s (never blocks).
+  Result: INTERMITTENT. Some runs complete in 1-2 ms with the right pixel [255,128,64,255]; others fail after ~254 ms
+  ("GPU event segment submission failed") and the kernel only notices ~18 s later (job timeout, MES REMOVE_QUEUE fails,
+  MODE2 reset succeeds, no panic). Sequence seen: fail, pass, fail, fail. A pass is as fast as compute, so the
+  pipeline is correct; something non-deterministic loses or never delivers the work (suspects: cache coherency between
+  the CPU's cached view of system memory and non-snooped GPU reads - the port keeps kernel mappings write-back; doorbell
+  or wptr visibility; fence/EOP interrupt delivery).
+- The IP-state dump on timeout works but prints garbage: the port's printf has no `%pV`, so `drm_info_printer` printed
+  the va_format pointer. Patch now formats each line itself ("NullMoth ipdump: ...").
+- Mistake recorded: an 80-run `amdgpu-smoke` loop in the foreground hung the terminal for minutes (every failed run
+  blocks until the kernel timeout + GPU reset, 8 resets). Stress loops must be bounded with `timeout` and run in the
+  background.
