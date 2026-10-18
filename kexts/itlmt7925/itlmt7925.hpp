@@ -148,7 +148,8 @@ private:
     int  m3Cmd(uint8_t cid, const void *payload, size_t plen, const char *name);
     int  m3HwPrep();
     void ctlPoll();                          // link loop: take run-time control requests (setProperties)
-    int  m3Bss(bool enable);
+    enum M3BssOp { M3_BSS_ADD, M3_BSS_ASSOC, M3_BSS_REMOVE };
+    int  m3Bss(M3BssOp op);
     int  m3Clc(const char *cc, uint8_t env);   // CLC power tables from the RAM firmware for country cc
     int  clcSend(const uint8_t *clc, const char *cc, uint8_t env, uint8_t idx);
     int  m3TxPower();                        // per-channel rate power limits (SAR from ACPI MTDS / MTGS)
@@ -157,6 +158,7 @@ private:
     int  powerCmd(const void *payload, size_t plen, const char *name);
     int  m3Edca();                           // per-AC contention parameters from the AP's WMM element (after every BSS_INFO)
     int  m3Sta(uint8_t state, bool newly, uint16_t aid);
+    int  m3StaBss();                         // STA_REC_UPDATE for the BSS wcid (19): what mt76 sends on BSS_CHANGED_ASSOC
     int  m3Roc(bool acquire);
     void m3Pump(uint32_t ms);
     void m3Event(const uint8_t *ev, uint32_t len);

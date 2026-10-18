@@ -327,19 +327,24 @@ int itlmt7925::m3PowerSetup()
 // ---------------------------------------------------------------------------------------------
 // BSS_INFO_UPDATE for the station interface (mt7925_mcu_add_bss_info_sta, non-MLD)
 // ---------------------------------------------------------------------------------------------
-int itlmt7925::m3Bss(bool enable)
+// UNI_BSS_INFO_BASIC + SEC + RATE + QBSS + MLD + IFS_TIME (+ RLM, HE_BASIC, BSS_COLOR once associated) for our one BSS.
+// The three shapes mirror mt76: creation and removal are mt76_connac_mcu_uni_add_dev (sta_idx = the BSS wcid 19,
+// conn_state 1, inactive on removal), the associated update is mt7925_mcu_add_bss_info with the peer link
+// (sta_idx = the AP wcid 1, conn_state 0). The post-handshake re-send (cipher now known) is another ASSOC.
+int itlmt7925::m3Bss(M3BssOp op)
 {
+    bool assoc = op == M3_BSS_ASSOC;
     M3Msg m;
     m.init(4);
     m.b[0] = M3_BSS_IDX;
 
     uint8_t *b = m.tlv(0, 32);                               // UNI_BSS_INFO_BASIC
-    b[4] = 1;                                                // active (station)
+    b[4] = op == M3_BSS_REMOVE ? 0 : 1;                      // active (station)
     b[5] = 0;                                                // omac_idx
     b[6] = 0;                                                // hw_bss_idx
     b[7] = 0xff;                                             // band_idx
     put32(b + 8, 0x10001);                                   // CONNECTION_INFRA_STA
-    b[12] = enable ? 0 : 1;                                  // conn_state
+    b[12] = assoc ? 0 : 1;                                   // conn_state
     b[13] = 0;                                               // wmm_idx
     memcpy(b + 14, tgtBssid, 6);
     put16(b + 20, M3_BMC_WCID);
@@ -349,7 +354,7 @@ int itlmt7925::m3Bss(bool enable)
     b[25] = 0x01;                                            // phymode: 5 GHz legacy (PHY_MODE_A)
     if (fastActive && !g2) b[25] |= 0x10 | (apCaps.vht ? 0x20 : 0) | (fastHe ? 0x80 : 0);   // | PHY_MODE_AN | PHY_MODE_AC | PHY_MODE_AX_5G
     if (fastActive && g2) b[25] = 0x02 | 0x04 | 0x08 | (fastHe ? 0x40 : 0);                  // 2.4 GHz: B | G | GN | AX_24G
-    put16(b + 26, M3_AP_WCID);
+    put16(b + 26, assoc ? M3_AP_WCID : M3_BMC_WCID);         // sta_idx: the peer once associated, the BSS wcid otherwise
     put16(b + 28, (fastActive && g2) ? 1 : 3);               // nonht_basic_phy = PHY_TYPE_ERP_INDEX (2.4 GHz) / OFDM_INDEX
     b[30] = 0;                                               // phymode_ext
     b[31] = 0;                                               // link_idx
@@ -378,7 +383,7 @@ int itlmt7925::m3Bss(bool enable)
     f[4] = 1;                                                // slot_valid
     put16(f + 8, 9);                                         // slot_time
 
-    if (enable) {
+    if (assoc) {
         uint8_t *rl = m.tlv(2, 16);                          // UNI_BSS_INFO_RLM
         rl[4] = tgtCh;                                       // control_channel
         rl[5] = tgtCh;                                       // center_chan (20 MHz)
@@ -397,7 +402,7 @@ int itlmt7925::m3Bss(bool enable)
         }
         rl[12] = tgtCh > 14 ? 2 : 1;                         // band
     }
-    if (enable && fastHe) {
+    if (assoc && fastHe) {
         uint8_t *he = m.tlv(5, 16);                          // UNI_BSS_INFO_HE_BASIC: default PE duration, RTS threshold, our MCS maps
         put16(he + 4, 1023);                                 // he_rts_thres
         he[6] = 4;                                           // he_pe_duration
@@ -408,7 +413,8 @@ int itlmt7925::m3Bss(bool enable)
         col[4] = apCaps.heColorOn ? 1 : 0;
         col[5] = apCaps.heColor;
     }
-    int rc = m3Cmd(UNI_BSS_INFO_UPDATE, m.b, m.n, enable ? "bss_info(enable)" : "bss_info(add)");
+    int rc = m3Cmd(UNI_BSS_INFO_UPDATE, m.b, m.n,
+                   op == M3_BSS_ADD ? "bss_info(add)" : op == M3_BSS_ASSOC ? "bss_info(assoc)" : "bss_info(del)");
     m3Edca();                                                // Linux: "ensure that enable txcmd_mode after bss_info"
     return rc;
 }
@@ -540,6 +546,28 @@ int itlmt7925::m3Sta(uint8_t state, bool newly, uint16_t aid)
     char nm[32];
     snprintf(nm, sizeof(nm), "sta_rec(st=%u)", state);
     return m3Cmd(UNI_STA_REC_UPDATE, m.b, m.n, nm);
+}
+
+// STA_REC_UPDATE for the BSS wcid (19) - the message mt7925_vif_cfg_changed sends on BSS_CHANGED_ASSOC:
+// mt7925_mcu_sta_update(dev, NULL, vif, &mvif->sta.deflink, true, MT76_STA_INFO_STATE_ASSOC) reaches
+// mt7925_mcu_sta_cmd with link_sta == NULL, which appends nothing but STA_REC_HDR_TRANS. This is the update that
+// brings wcid 19 up in the firmware's table; without it the entry never exists, so group-addressed TX (and the group
+// key installed on this wcid) has no path and the hardware drops those frames.
+int itlmt7925::m3StaBss()
+{
+    M3Msg m;
+    m.init(8);
+    m.b[0] = M3_BSS_IDX;
+    m.b[1] = M3_BMC_WCID & 0xff;                             // wlan_idx_lo
+    m.b[4] = 1;                                              // is_tlv_append
+    m.b[5] = 0;                                              // muar_idx = omac_idx
+    m.b[6] = M3_BMC_WCID >> 8;
+
+    uint8_t *h = m.tlv(0x2b, 8);                             // STA_REC_HDR_TRANS (mt7925_mcu_sta_hdr_trans_tlv)
+    h[4] = 0;                                                // from_ds
+    h[5] = 1;                                                // to_ds (station vif)
+    h[6] = 1;                                                // dis_rx_hdr_tran: we handle 802.11 frames ourselves
+    return m3Cmd(UNI_STA_REC_UPDATE, m.b, m.n, "sta_rec_bss");
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -849,7 +877,7 @@ int itlmt7925::m3Run1()
     m3ParseAp();
     int prepRc = m3HwPrep();
     if (prepRc) { m3Publish("hw-prep-fail"); return prepRc; }
-    m3Bss(false);
+    m3Bss(M3_BSS_ADD);
     m3Sta(0, true, 0);
     m3Roc(true);
     for (int i = 0; i < 1000 && !rocGrant; i++) m3Pump(1);
@@ -868,8 +896,9 @@ int itlmt7925::m3Run1()
 
     // step 4: BSS up, station state "associated", 4-way handshake with key install, Ethernet interface
     if (!rc) {
-        m3Bss(true);
+        m3Bss(M3_BSS_ASSOC);
         m3Sta(2, false, m3aid);
+        m3StaBss();                                          // wcid 19 in the firmware table before any group TX
         rc = m3Handshake();
         m3wantEapol = false;
         m3Publish(rc ? "hs-fail" : "hs-ok");
@@ -935,7 +964,7 @@ void itlmt7925::m3Teardown()
     put16(f + 24, 3);
     m3Tx(f, sizeof(f), 0, 12);
     IOSleep(100);
-    m3Bss(false);                                            // BSS back to "not connected"
+    m3Bss(M3_BSS_REMOVE);                                    // BSS back to "not connected"
     m3dataOn = false;
     m3cipher = 0;
     IOSleep(100);
@@ -1501,7 +1530,7 @@ int itlmt7925::m3Handshake()
     for (int i = 0; i < 30; i++) m3Pump(1);                    // let it go out in the clear before the keys arrive
 
     m3cipher = 4;
-    m3Bss(true);                                               // BSS now secured with CCMP
+    m3Bss(M3_BSS_ASSOC);                                       // BSS now secured with CCMP
     int r1 = m3Key(M3_AP_WCID, true, 0, ptk.tk, 16);
     int r2 = m3Key(M3_BMC_WCID, false, gtkId, gtk, 16);
     memcpy(m3ptk, &ptk, sizeof(m3ptk));

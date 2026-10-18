@@ -1147,15 +1147,35 @@ these ToDS frames (RA = AP BSSID, DA = addr3). Rate (fixed basic 6 M), `BA_DISAB
 Also in this round: `m3buf` 3000 -> 8000 bytes (a session log no longer truncates halfway through the DHCP phase) and the
 first six group frames of every session log `tx grp len=… wc=19`.
 
-Test after the reboot (both kext binaries on the ESP were refreshed; `itlmt_awdl=1` is back in the config.plist
-boot-args for the AWDL step below):
+### First hardware result: wcid 19 alone is not enough — the firmware never had the entry
 
-1. Join the hotspot, then `ioreg -l -w0 | grep -E "m3-log|m3-res"`: expect `auth-ok` -> `assoc-ok` -> `gtk id=N` ->
-   `hs-ok` -> `tx grp len=… wc=19` -> `tx udp 68>67`, and then either `rx udp 67>68` (DHCP answered — internet works)
-   or no answer at all (= still broken; the log now shows the `gtk id`, the negotiated cipher and that group TX really
-   used wcid 19).
-2. If DHCP is still silent, keep the log for the record: sessions that failed so far were seen with `gtk id=2` while the
-   working ones used `gtk id=1`, so the group-key id (and which key slot the hardware stamps) is the next suspect.
+The first build (wcid 19 in the TXD, nothing else) went on the machine on 2026-10-18: Tiem O Day — the network that
+worked before — lost DHCP as well (`tx grp len=… wc=19` x6, `tx udp 68>67` x4, no `rx udp 67+`), so group TX on wcid 19
+was being dropped, not mis-encrypted. The missing piece is in the firmware's view of wcid 19, and mt76 has it:
+
+* `mt7925_mac_link_bss_add` (mt7925/main.c) creates the BSS wcid as `MT792x_WTBL_RESERVED - vif_idx` (= 19) and its
+  BSS_INFO_BASIC (through `mt76_connac_mcu_uni_add_dev`) carries **`sta_idx = 19`** as well as `bmc_tx_wlan_idx = 19`.
+  The associated update (`mt7925_mcu_add_bss_info`) is the only one that passes the peer wcid (1) as `sta_idx`.
+  Ours always sent `sta_idx = 1`.
+* At assoc, `mt7925_vif_cfg_changed` (BSS_CHANGED_ASSOC) runs `mt7925_mcu_sta_update(dev, NULL, vif,
+  &mvif->sta.deflink, …)`; with `link_sta == NULL` `mt7925_mcu_sta_cmd` appends nothing but **STA_REC_HDR_TRANS** for
+  wcid 19. This is the update that brings the wcid up in the firmware's table — without it the entry never exists.
+  Our driver sent STA_REC updates only for wcid 1 (the AP peer).
+
+Fix (both, mt76 parity): `m3Bss` is now phase-explicit — `M3_BSS_ADD`/`M3_BSS_REMOVE` send `sta_idx = 19` (active 0 on
+remove, like mt76's `uni_add_dev`), `M3_BSS_ASSOC` keeps `sta_idx = 1` (the peer, `mt7925_mcu_add_bss_info`) — and a new
+`m3StaBss()` sends the wcid-19 `STA_REC_UPDATE` with the HDR_TRANS TLV (`to_ds = 1`, `dis_rx_hdr_tran = 1`, the exact
+`mt7925_mcu_sta_hdr_trans_tlv` values) right after assoc, before the 4-way handshake. The log shows the new record as
+`sta_rec_bss rc=0 st=0` and the BSS phases as `bss_info(add)`, `bss_info(assoc)`, `bss_info(del)`.
+
+Test after the next reboot (core kext refreshed on the ESP):
+
+1. Tiem O Day first: it must work again (this also proves the wcid-19 path itself is sound) — look for `sta_rec_bss`,
+   `tx grp len=… wc=19` and then `rx udp 67+` (the DHCP OFFER).
+2. Then the phone hotspot: `assoc-ok` -> `gtk id=N` -> `hs-ok` -> `tx grp … wc=19` -> `tx udp 68>67`, and either the
+   OFFER or no answer. The `rsn group=… pairwise n=… first=…` line matters now: sessions that failed so far used
+   `gtk id=2` while the working ones used `gtk id=1`; if the hotspot also shows a group cipher other than `04` (CCMP),
+   the group-key/cipher handling is the next root cause to fix.
 
 ### AWDL: the phase 2 panic fix (in the same build)
 
