@@ -1162,20 +1162,34 @@ was being dropped, not mis-encrypted. The missing piece is in the firmware's vie
   wcid 19. This is the update that brings the wcid up in the firmware's table — without it the entry never exists.
   Our driver sent STA_REC updates only for wcid 1 (the AP peer).
 
-Fix (both, mt76 parity): `m3Bss` is now phase-explicit — `M3_BSS_ADD`/`M3_BSS_REMOVE` send `sta_idx = 19` (active 0 on
-remove, like mt76's `uni_add_dev`), `M3_BSS_ASSOC` keeps `sta_idx = 1` (the peer, `mt7925_mcu_add_bss_info`) — and a new
-`m3StaBss()` sends the wcid-19 `STA_REC_UPDATE` with the HDR_TRANS TLV (`to_ds = 1`, `dis_rx_hdr_tran = 1`, the exact
-`mt7925_mcu_sta_hdr_trans_tlv` values) right after assoc, before the 4-way handshake. The log shows the new record as
-`sta_rec_bss rc=0 st=0` and the BSS phases as `bss_info(add)`, `bss_info(assoc)`, `bss_info(del)`.
+Fix (both, mt76 parity, now behind the `itl_grp19` switch): `m3Bss` is phase-explicit — with the switch on,
+`M3_BSS_ADD`/`M3_BSS_REMOVE` send `sta_idx = 19` (active 0 on remove, like mt76's `uni_add_dev`), `M3_BSS_ASSOC` keeps
+`sta_idx = 1` (the peer, `mt7925_mcu_add_bss_info`) — and `m3StaBss()` sends the wcid-19 `STA_REC_UPDATE` with the
+HDR_TRANS TLV (`to_ds = 1`, `dis_rx_hdr_tran = 1`, the exact `mt7925_mcu_sta_hdr_trans_tlv` values) right after assoc.
+The log shows the new record as `sta_rec_bss rc=0 st=0` and the BSS phases as `bss_info(add)`, `bss_info(assoc)`,
+`bss_info(del)`.
 
-Test after the next reboot (core kext refreshed on the ESP):
+### Second hardware result: even with every mt76 record, this firmware drops wcid-19 TX
 
-1. Tiem O Day first: it must work again (this also proves the wcid-19 path itself is sound) — look for `sta_rec_bss`,
-   `tx grp len=… wc=19` and then `rx udp 67+` (the DHCP OFFER).
-2. Then the phone hotspot: `assoc-ok` -> `gtk id=N` -> `hs-ok` -> `tx grp … wc=19` -> `tx udp 68>67`, and either the
-   OFFER or no answer. The `rsn group=… pairwise n=… first=…` line matters now: sessions that failed so far used
-   `gtk id=2` while the working ones used `gtk id=1`; if the hotspot also shows a group cipher other than `04` (CCMP),
-   the group-key/cipher handling is the next root cause to fix.
+After the reboot every new record was accepted (`bss_info(add)`, `sta_rec_bss rc=0 st=0`, `bss_info(assoc)`,
+`key(gtk) rc=0`) and group TX really used `wc=19` — and Tiem O Day still got no DHCP OFFER (4 DISCOVERs out, one
+broadcast ARP in, then the supervisor gave up). Meanwhile the wcid-1 path has always worked, and it demonstrably uses
+the group key (the AP accepts those frames) — so the hardware picks the BSS group key for group-addressed data no matter
+which of our wcids the descriptor points at. Conclusion: mt76's wcid choice is not the fix, and forcing it needs the
+firmware's own wcid-19 entry state, which the driver never sees.
+
+The whole experiment is therefore switchable at run time — `sudo build/itlctl itl_grp19=0|1` — default **0 = the proven
+AP-wcid path** (what has always worked, plus the new trace); 1 = mt76's BSS wcid 19 plus its STA_REC records at the next
+reconnect. A/B inside one boot:
+
+1. Boot with the default: Tiem O Day must work again.
+2. `sudo build/itlctl itl_grp19=1 itl_lvl=6` (the level forces the reconnect so the wcid-19 records go out): the same
+   network should stop answering DHCP — that is the control for the hotspot test.
+3. `sudo build/itlctl itl_grp19=0 itl_lvl=6`: back to working.
+4. Hotspot: capture with grp19=0 first (the original bug), then grp19=1 — whichever shape gets an OFFER shows whether the
+   entry/records matter for that network. Watch `gtk id=N` and `rsn group=… pairwise n=… first=…`: the sessions that
+   failed so far used `gtk id=2` while the working ones used `gtk id=1`; if the hotspot also shows a group cipher other
+   than `04` (CCMP), the group-key/cipher handling is the next root cause to fix.
 
 ### AWDL: the phase 2 panic fix (in the same build)
 

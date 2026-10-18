@@ -5,6 +5,8 @@
 //   sudo ./itlctl itl_no160=1          run 160 MHz channels as 80 MHz (with the next reconnect)
 //   sudo ./itlctl itl_reo=10           reorder timeout 10 ms
 //   sudo ./itlctl itl_pwr=40           send the CLC + SKU power tables now, ceiling 40 = 20 dBm (0.5 dBm units)
+//   sudo ./itlctl itl_grp19=1          group-addressed TX on mt76's BSS wcid 19 instead of the AP wcid (0 = default; the
+//                                      STA_REC records for wcid 19 are sent at the next reconnect)
 // Several key=value pairs in one call are applied together (no160 first, then the level, so the reconnect sees both).
 #include <CoreFoundation/CoreFoundation.h>
 #include <IOKit/IOKitLib.h>

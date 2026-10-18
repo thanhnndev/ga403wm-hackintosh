@@ -150,6 +150,7 @@ private:
     void ctlPoll();                          // link loop: take run-time control requests (setProperties)
     enum M3BssOp { M3_BSS_ADD, M3_BSS_ASSOC, M3_BSS_REMOVE };
     int  m3Bss(M3BssOp op);
+    uint8_t grpWcid19 = 0;                   // itl_grp19: 0 = group TX on the AP wcid (the proven path), 1 = the mt76 BSS wcid 19 + its STA_REC records
     int  m3Clc(const char *cc, uint8_t env);   // CLC power tables from the RAM firmware for country cc
     int  clcSend(const uint8_t *clc, const char *cc, uint8_t env, uint8_t idx);
     int  m3TxPower();                        // per-channel rate power limits (SAR from ACPI MTDS / MTGS)

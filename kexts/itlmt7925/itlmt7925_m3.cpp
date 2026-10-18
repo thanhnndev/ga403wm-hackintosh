@@ -328,9 +328,10 @@ int itlmt7925::m3PowerSetup()
 // BSS_INFO_UPDATE for the station interface (mt7925_mcu_add_bss_info_sta, non-MLD)
 // ---------------------------------------------------------------------------------------------
 // UNI_BSS_INFO_BASIC + SEC + RATE + QBSS + MLD + IFS_TIME (+ RLM, HE_BASIC, BSS_COLOR once associated) for our one BSS.
-// The three shapes mirror mt76: creation and removal are mt76_connac_mcu_uni_add_dev (sta_idx = the BSS wcid 19,
-// conn_state 1, inactive on removal), the associated update is mt7925_mcu_add_bss_info with the peer link
-// (sta_idx = the AP wcid 1, conn_state 0). The post-handshake re-send (cipher now known) is another ASSOC.
+// Default shape (grpWcid19 == 0, the path that has worked on hardware): sta_idx = the AP wcid in every phase. With
+// itl_grp19=1 the three shapes follow mt76 instead: creation and removal are mt76_connac_mcu_uni_add_dev (sta_idx = the
+// BSS wcid 19, conn_state 1, inactive on removal) and only the associated update is mt7925_mcu_add_bss_info with the
+// peer link (sta_idx = the AP wcid 1, conn_state 0).
 int itlmt7925::m3Bss(M3BssOp op)
 {
     bool assoc = op == M3_BSS_ASSOC;
@@ -339,7 +340,7 @@ int itlmt7925::m3Bss(M3BssOp op)
     m.b[0] = M3_BSS_IDX;
 
     uint8_t *b = m.tlv(0, 32);                               // UNI_BSS_INFO_BASIC
-    b[4] = op == M3_BSS_REMOVE ? 0 : 1;                      // active (station)
+    b[4] = (grpWcid19 && op == M3_BSS_REMOVE) ? 0 : 1;       // active (station)
     b[5] = 0;                                                // omac_idx
     b[6] = 0;                                                // hw_bss_idx
     b[7] = 0xff;                                             // band_idx
@@ -354,7 +355,7 @@ int itlmt7925::m3Bss(M3BssOp op)
     b[25] = 0x01;                                            // phymode: 5 GHz legacy (PHY_MODE_A)
     if (fastActive && !g2) b[25] |= 0x10 | (apCaps.vht ? 0x20 : 0) | (fastHe ? 0x80 : 0);   // | PHY_MODE_AN | PHY_MODE_AC | PHY_MODE_AX_5G
     if (fastActive && g2) b[25] = 0x02 | 0x04 | 0x08 | (fastHe ? 0x40 : 0);                  // 2.4 GHz: B | G | GN | AX_24G
-    put16(b + 26, assoc ? M3_AP_WCID : M3_BMC_WCID);         // sta_idx: the peer once associated, the BSS wcid otherwise
+    put16(b + 26, (grpWcid19 && !assoc) ? M3_BMC_WCID : M3_AP_WCID);   // sta_idx: mt76's BSS wcid before/after the association
     put16(b + 28, (fastActive && g2) ? 1 : 3);               // nonht_basic_phy = PHY_TYPE_ERP_INDEX (2.4 GHz) / OFDM_INDEX
     b[30] = 0;                                               // phymode_ext
     b[31] = 0;                                               // link_idx
@@ -649,12 +650,13 @@ bool itlmt7925::m3Tx(const uint8_t *frame, uint32_t len, uint8_t type, uint8_t s
     bzero(w, 128);
     memcpy(w + 128, frame, len);
 
-    // Group-addressed data goes out on the BSS wcid (19), exactly like mt792x_tx does for frames without a station
-    // (sta == NULL -> mvif->sta.deflink.wcid): that is the wcid the group key is installed on, and the hardware picks the key
-    // of the wcid the descriptor points at. MT_TXD3_BCM stays clear: mt7925_mac_write_txwi_80211 raises it only when addr1
-    // (the RA) is group addressed, which never happens for these ToDS frames (RA = AP BSSID, DA = addr3).
+    // Group-addressed data: default goes out on the AP wcid (1) - the path that has worked on hardware, where the
+    // hardware evidently picks the BSS group key for the frame anyway. itl_grp19=1 switches to mt76's choice (the BSS
+    // wcid 19, mvif->sta.deflink.wcid, the wcid the group key is installed on) together with its STA_REC records.
+    // MT_TXD3_BCM stays clear either way: mt7925_mac_write_txwi_80211 raises it only when addr1 (the RA) is group
+    // addressed, which never happens for these ToDS frames (RA = AP BSSID, DA = addr3).
     bool grp = type == 2 && len >= 18 && (frame[16] & 1);
-    uint16_t wcid = grp ? M3_BMC_WCID : M3_AP_WCID;
+    uint16_t wcid = (grp && grpWcid19) ? M3_BMC_WCID : M3_AP_WCID;
     put32(w + 0, (len + 32) | (0u << 23) | ((uint32_t)o.qidx << 25));         // TX_BYTES | PKT_FMT=CT | Q_IDX
     uint32_t hdrLen = (type == 2 && (frame[0] & 0x80)) ? 26 : 24;               // QoS data frames carry the 2-byte QoS control field
     // wlan idx, HDR_FORMAT=802.11, HDR_INFO, TID; FIXED_RATE unless the firmware's rate control (STA_REC_RA) picks the rate
@@ -898,7 +900,7 @@ int itlmt7925::m3Run1()
     if (!rc) {
         m3Bss(M3_BSS_ASSOC);
         m3Sta(2, false, m3aid);
-        m3StaBss();                                          // wcid 19 in the firmware table before any group TX
+        if (grpWcid19) m3StaBss();                           // mt76 parity: wcid 19 in the firmware table before any group TX
         rc = m3Handshake();
         m3wantEapol = false;
         m3Publish(rc ? "hs-fail" : "hs-ok");

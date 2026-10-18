@@ -60,6 +60,10 @@ IOReturn itlmt7925::setProperties(OSObject *props)
             snprintf(log + strlen(log), sizeof(log) - strlen(log), "lvl=%u ", v);
         }
     }
+    if (ctlNum(d, "itl_grp19", &v)) {
+        grpWcid19 = v ? 1 : 0;                               // 0: group TX on the AP wcid (default, proven); 1: mt76's BSS wcid 19 (+ its records at the next reconnect)
+        snprintf(log + strlen(log), sizeof(log) - strlen(log), "grp19=%u ", grpWcid19);
+    }
     if (!log[0]) return kIOReturnBadArgument;
     evLog("ctl: %s", log);
     return kIOReturnSuccess;
