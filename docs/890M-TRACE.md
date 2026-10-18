@@ -2551,3 +2551,14 @@ Findings:
 4. Interpretation: ring fetch by the CPF from system memory (GART) never completes while no fault is reported. Next batch: dump ring dwords around hw RPTR, CP_RB0_BASE/RB_RPTR_ADDR, CP_IB1_BASE/BUFSZ, MES queue state, and test ring placement/flush variants.
 
 Step40b: the nmx_wc A/B (tools/890m/wc-ab.sh) hung on its first pass: an nvmtltest render stayed in state R for >5 min after a MODE2 reset (reset(14)) and would not exit (same exit-stuck bug as before; reboot clears it). No A/B result. Build 8 (NMXGPU 39d039f3 = build 7 + patches/amdgpu-ringdump2.patch: dwords around the hardware RPTR, CP_RB0_BASE/CNTL, IB1 base/bufsz) is INSTALLED, loads at the next boot. Next boot: run render-stress ONCE (background, bounded), read `ringdump hw rptr` / `rptr+xx` lines of the first failing job, then run nmx-tune A/B only if the first test fails to explain the stall; never run wc-ab as a first step (it multiplies hung processes).
+
+## Step41 - build 11 (everything in one kext, no more A/B)
+
+Owner decision: stop A/B and test-read-reboot loops; ship one complete kext and trace on Linux if it still misbehaves.
+Data already in hand (Step40): the gfx failure is the CP stalled fetching an IB (INDIRECT_BUFFER, IB1 0x8001_0002b000, 0x38 dw,
+CPF_STALLED_STAT1=1) with no UTCL1 fault; force-WC GTT (build 10, c4e26ec4) did not remove the strict pass/fail alternation, so
+CPU->GPU coherence of GTT pages is not the cause. A translation that retries forever looks exactly like this (no fault reported).
+Build 11 = build 8 contents (ringdump2: ring around hw RPTR) + `amdgpu-noretry.patch` (retry faults off by default: a bad
+translation now faults and is reported instead of stalling the CP) + `amdgpu-ibdump.patch` (timeout dump prints the failing
+job's IB gpu_addr/length and first 96 dwords, for comparison with the same triangle on Linux/RADV).
+Build 11 = NMXGPU d2c08472, INSTALLED (loads at next boot).
