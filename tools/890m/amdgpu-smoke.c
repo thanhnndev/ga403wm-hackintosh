@@ -6,6 +6,7 @@
 #include <fcntl.h>
 #include <stdint.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
 
@@ -65,14 +66,17 @@ int main(int argc, char **argv)
     printf("  device_id 0x%x chip_rev %u external_rev 0x%x family %u num_shader_engines %u\n",
            info[0], info[1], info[2], info[4], info[5]);
 
-    struct amdgpu_bo_alloc_request req = { 4096, 4096, AMDGPU_GEM_DOMAIN_GTT, AMDGPU_GEM_CREATE_CPU_ACCESS_REQUIRED };
+    // argv[2] = heap mask (2 GTT, 4 VRAM, 6 both; default GTT), argv[3] = size of the BO in bytes (default 4096; the IB is 4 KiB in)
+    uint32_t heap = argc > 2 ? (uint32_t)strtoul(argv[2], 0, 0) : AMDGPU_GEM_DOMAIN_GTT;
+    uint64_t bosz = argc > 3 ? strtoull(argv[3], 0, 0) : 4096;
+    struct amdgpu_bo_alloc_request req = { bosz, 4096, heap, AMDGPU_GEM_CREATE_CPU_ACCESS_REQUIRED };
     amdgpu_bo_handle bo;
-    CHECK("bo_alloc (GTT 4K)", amdgpu_bo_alloc(dev, &req, &bo));
+    CHECK("bo_alloc", amdgpu_bo_alloc(dev, &req, &bo));
     uint32_t *cpu;
     CHECK("bo_cpu_map", amdgpu_bo_cpu_map(bo, (void **)&cpu));
     uint64_t va; amdgpu_va_handle vah;
-    CHECK("va_range_alloc", amdgpu_va_range_alloc(dev, 0, 4096, 4096, 0, &va, &vah, 0));
-    CHECK("bo_va_op MAP", amdgpu_bo_va_op(bo, 0, 4096, va, AMDGPU_VM_PAGE_READABLE | AMDGPU_VM_PAGE_WRITEABLE |
+    CHECK("va_range_alloc", amdgpu_va_range_alloc(dev, 0, bosz, 4096, 0, &va, &vah, 0));
+    CHECK("bo_va_op MAP", amdgpu_bo_va_op(bo, 0, bosz, va, AMDGPU_VM_PAGE_READABLE | AMDGPU_VM_PAGE_WRITEABLE |
                                           AMDGPU_VM_PAGE_EXECUTABLE, AMDGPU_VA_OP_MAP));
     printf("  cpu %p gpu va 0x%llx\n", (void *)cpu, (unsigned long long)va);
 

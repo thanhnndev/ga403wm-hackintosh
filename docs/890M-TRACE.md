@@ -2385,3 +2385,16 @@ Test boots are run under `caffeinate -dis`; the NMXGPU display-sleep/wake path n
 
 Next: (1) RADV_DEBUG / NVMTL_DUMP_FAILED_DIR on the pipeline failure; (2) NMXGPU power-state (SetState 0/1) hang;
 (3) non-headless accelerator so WindowServer composites on the 890M.
+
+## Step33d - a Metal compute kernel runs on the 890M (2026-10-18)
+
+`vkCreateComputePipelines` failed because the shader arena BO could not be CPU mapped: RADV's
+`radv_amdgpu_winsys_bo_map` calls mmap(2) on the DRM fd (ENODEV on macOS, a kext cdev cannot be mmap'ed). Found with
+`tools/890m/vk-compute-min.c` (bare Vulkan, empty compute shader: NULL shader deref after ACO compiled fine), the
+mmap interposer in `pciinfo-shim.c` (`mmap(... off 0x1013c8000) = errno 19`) and the ioctl trace (GEM_CREATE, VA map,
+GEM_MMAP, then an immediate VA unmap).
+Fix: `scripts/macos-nvmtl-radv-nmxmap-patch.sh` (with --undo) redirects the bo_map mmap to libdrm's `drmNmxMmap`
+and the bo_unmap munmap to `drmNmxMunmap` (stubs re-bound from two display-only imports).
+Result: `metal-compute` (run as `nvmtltest` because of the rung-1 allow list): command buffer completed in 5.35 ms,
+all 1048576 values correct. NVMTL -> RADV -> libdrm_amdgpu -> own NMXGPU executes real compute on the Radeon 890M.
+Remaining for WindowServer: a non-headless accelerator, the display-sleep hang, and graphics pipelines.
