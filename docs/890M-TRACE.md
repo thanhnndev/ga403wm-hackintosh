@@ -2450,3 +2450,17 @@ Open: whether the two hung GFX jobs (seq 8,9) were the same bug or a separate fe
 mach_continuous_time = mach_absolute_time = 120.374 s (no sleep yet). CLOCK_MONOTONIC trails mach time by ~0.42 s, the
 gap between mach's epoch and the moment boottime was stamped. Fix: calibrate once, offset = cont_ns - (calendar -
 kern.boottime), uptime_ns = cont_ns - offset (kernel time stays strictly monotonic, origin matches user CLOCK_MONOTONIC).
+
+## Step37 - why WindowServer burns 500-700% CPU, and what the next boot will tell us (2026-10-18)
+
+`sample WindowServer` (3 s): top of stack is `CA::OGL::SW::image_sampler / scan_convert / scanline` (CoreAnimation's
+SOFTWARE rasteriser), memmove, bzero and idle workq threads. WS composites on the CPU because it has no usable Metal
+device. The only real cure is a GFX (graphics) job that completes on the 890M so the NVMTL/NMXAccel path can hand WS a
+device - compute already works (Step33d), graphics (CAMetalLayer) hangs the GFX ring (Step35).
+
+Batch for the next boot (kext 4d12165b + this commit, one reboot for all):
+1. syncobj clock fix (Step36b) - check `tools/890m/build/syncobj-wait` prints ~500 ms for all three clocks.
+2. Job timeout now prints the IP-state dump (GRBM_STATUS, CP_RB/IB, RLC...) to the kernel log
+   (patches/amdgpu-timeout-ipdump.patch, applied by all.sh) - this is the first look at WHY a graphics job hangs.
+3. Display sleep / setPowerState are timed in the log ("power off begin/done in N ms").
+Then: metal-compute, then ONE bounded graphics job (not the headroom agent) and read the dump.
