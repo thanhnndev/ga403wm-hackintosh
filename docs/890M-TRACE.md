@@ -2442,3 +2442,11 @@ Cause: macOS CLOCK_MONOTONIC = mach_continuous_time (counts sleep); the kernel's
 mach_absolute_time, 0.47 s behind. RADV builds deadlines from CLOCK_MONOTONIC, so they looked ~0.47 s too close/past.
 Fix (xkpi bsdcompat/src/nmx_time.c): uptime_ns uses mach_continuous_time. Timers only use deltas, so nothing else moves.
 Open: whether the two hung GFX jobs (seq 8,9) were the same bug or a separate fence/IRQ issue - retest after install.
+
+### Step36b - correction: mach_continuous_time is not CLOCK_MONOTONIC either
+
+2f6fc266 (uptime_ns = mach_continuous_time) rebooted and re-tested: `syncobj-wait` MONOTONIC case still returned early
+(78 ms of 500). Measured on the live system: CLOCK_MONOTONIC 119.950 s = wall clock - kern.boottime 119.950 s, while
+mach_continuous_time = mach_absolute_time = 120.374 s (no sleep yet). CLOCK_MONOTONIC trails mach time by ~0.42 s, the
+gap between mach's epoch and the moment boottime was stamped. Fix: calibrate once, offset = cont_ns - (calendar -
+kern.boottime), uptime_ns = cont_ns - offset (kernel time stays strictly monotonic, origin matches user CLOCK_MONOTONIC).
