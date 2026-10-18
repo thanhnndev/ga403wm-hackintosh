@@ -2502,3 +2502,17 @@ Experiment (patches/amdgpu-fence-read-flush.patch): `amdgpu_fence_read` reads, c
 returns the post-flush value; every difference is logged as `STALE fence read on <ring>: cached X, memory Y` (first 40).
 Proof if the log fires; fix if renders become reliable. If it proves right, the lasting fix is to map the writeback
 (fence) pages uncached in the kernel (or flush at the fence-process points) rather than a per-read clflush.
+
+### Step39b - reading the fallback message correctly; batch for the next boot
+
+`Fence fallback timer expired` is printed only when `amdgpu_fence_process` saw `seq != last_seq`: the fences DO advance,
+but only because the 0.5 s timer polled; the completion interrupt did not (promptly) process them. Two independent
+suspects therefore stay open and the next kext carries a test for each in the same boot:
+
+1. Lost/late interrupts: `nmx_irq_dispatched` (every IV handled since boot) is printed in each of the first 60 fallback
+   lines, together with `last_seq -> new seq` and `sync_seq`. Zero or flat count while jobs run = EOP interrupts never
+   arrive.
+2. Stale CPU cache of GPU-written memory: `STALE fence read` (plain read vs clflush read of the fence line), and the
+   ring dwords are flushed before the doorbell (`amdgpu_ring_commit`).
+
+Also in the same kext: readable IP-state dump (Step38/39), display-sleep DPMS and setPowerState timing, syncobj clock.
