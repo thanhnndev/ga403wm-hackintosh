@@ -2537,3 +2537,15 @@ Hypothesis for build 8 (patches/amdgpu-ttm-force-wc.patch): since GPU writes are
 equally incoherent (IB / descriptor / shader contents written through cached CPU views not visible to the GPU, stale RAM
 read instead). Make **every GTT page write-combined** (TTM caching = write_combined: PTE not snooped, kernel and user maps WC,
 page flushed when it leaves WB). If the alternation disappears, coherence is the root cause.
+
+## Step40 - build 7 (NMXGPU 2f79cc2f) first boot, 2026-10-18 17:19
+
+Kext c4e26ec4 (file sha) / build id 2f79cc2f loaded. syncobj-wait MONOTONIC 501 ms (clock fix holds). metal-compute: 2.08 ms, all 1048576 correct.
+
+render-stress 6: strictly alternating fail/pass (fail, pass, fail, pass, fail, pass). Failures return "GPU event segment submission failed" after ~254 ms; passes take 1-2 ms and are CORRECT. Every failing run ends in a gfx_0.0.0 timeout (signaled 5/emitted 7, 13/15, 21/23) and a MODE2 reset (succeeds, no panic). The reset happens ~13 s after the run, the runs themselves do not wait for it.
+
+Findings:
+1. H1 (stale CPU cache) is real but benign here: `STALE fence read` (cached N, memory N+1) fires on mes_3.0.0 and sdma0. It is NOT on gfx_0.0.0, and no `fence fallback on` line appears at all, because the gfx fence never advances.
+2. This failure is different from the Step39 sdma one (engines idle, RPTR==WPTR). Here the GFX CP is genuinely stuck: CP_RB0_RPTR 0x3a (later 0x14e, twice) vs CP_RB0_WPTR 0xa00/0xb00, CP_CPF_STALLED_STAT1 = 1 (CPF waiting for ring data), CP_BUSY_STAT 0x80, GRBM_STATUS 0xa800302c, no UTCL1 faults. The CP has not even fetched the first dwords of the failing submission; the stall position (0x14e) repeats after resets.
+3. The old ringdump patch prints the 96 dwords BEFORE wptr: all 0xffff1000 (NOP) so it shows nothing useful. It must dump around RPTR.
+4. Interpretation: ring fetch by the CPF from system memory (GART) never completes while no fault is reported. Next batch: dump ring dwords around hw RPTR, CP_RB0_BASE/RB_RPTR_ADDR, CP_IB1_BASE/BUFSZ, MES queue state, and test ring placement/flush variants.
