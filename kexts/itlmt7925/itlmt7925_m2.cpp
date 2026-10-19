@@ -274,6 +274,7 @@ int itlmt7925::m2Scan(const char *ssidArg)
     const uint8_t *e; uint32_t l; int bi;
     scanDone = false;
     bzero(chHist, sizeof(chHist));
+    apGen++;                                              // this scan's generation: entries heard from now on carry it
     // SCAN_REQ: hdr{seq_num, bss_idx, pad[2]} + scan_req + ssid + bssid + channel + misc TLVs
     static uint8_t sc[4 + 20 + 368 + 16 + 136 + 12];
     bzero(sc, sizeof(sc));

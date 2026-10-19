@@ -1238,3 +1238,29 @@ Reading the code next to the failing-network evidence turned up a real, network-
 
 Test order after the reboot: Tiem O Day first (`pulse` must show `bcn` climbing), then the phone hotspot, then Thai
 Apartment when back in range — the hotspot log now shows the cipher path end to end.
+
+### The scan list was missing every named 2.4 GHz network (the 48-slot AP table evicted them)
+
+After the cipher round the machine booted onto VIETTEL_GPON_CBDE78 (ch153) and the Wi-Fi menu showed no 2.4 GHz
+networks at all - MediCOMM and the phone hotspot were simply not in the list. The scans themselves were fine
+(`scan_req rc=0 status=0`, `scan finished done=1@4.7s rx=1532 bcn=1514 aps=48`), and the table was *always* exactly 48
+entries: the cap. The channel histogram in `m2-res` (`h:1=2,6=3,7=1,36=8,...153=32,161=10`) showed 42 of 48 slots on
+5 GHz and 6 on 2.4 GHz - and those six were hidden APs, so the published `wifi-networks` list (27 entries) had **zero**
+2.4 GHz networks.
+
+Cause: the scan visits 2.4 GHz (1..13) first and 5 GHz (36..165) after, and when the table was full every newly heard
+5 GHz AP evicted "the AP heard from longest ago" - the 2.4 GHz APs found at the start of the same scan. A named
+2.4 GHz network could therefore never survive to the end of a scan in a dense neighbourhood.
+
+Fix: `ITL_NATIVE_AP_MAX` 48 -> 128 (shared header, both kexts rebuilt) and the eviction now prefers entries **not** heard
+in the running scan (`seenGen` vs `apGen`, bumped in `m2Scan`): a current-scan find is only dropped when the whole table
+was heard in that scan. Check after the reboot: `m2-res`'s histogram must show the 2.4 GHz channels, and the Wi-Fi menu
+must list MediCOMM / the hotspot.
+
+### Boot note: VIETTEL_GPON needs the ladder - lvl 6 fails the 4-way, lvl 3 works
+
+The first join ran at lvl=6 (assoc ok, `aid=4`), the AP resent msg1 five times with fresh ANonces and then deauthed us
+(`reason=15`, 4-way timeout): our msg2s left the driver but the AP never accepted one. The ladder stepped down and lvl=3
+completed in 93 ms (`m1=1 m2=1 m3=1`, `gtk id=1 len=16`, `key(ptk,c04)` / `key(gtk,c04)`), then DHCP (`rx udp 67>68`),
+`rx echo` x6 and a steady `pulse` (bcn climbing, rxd ~20k). Same class as earlier fast-lane step-downs; the ladder handled
+it inside the attempt, no supervisor involvement.

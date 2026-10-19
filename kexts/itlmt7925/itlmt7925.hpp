@@ -134,9 +134,10 @@ private:
     uint32_t evCount = 0;
     // sec: ITL_SEC_* (itlmt7925_uc.cpp); rssi in dBm, 0 = not measured; seenMs = nowMs() of the last beacon / probe response
     // cap / bcnInt / ie / probe: the frame as heard (native Wi-Fi hands them to the Family as the scan result's beacon message)
-    struct itl_ap { uint8_t bssid[6]; uint8_t ch; char ssid[33]; int8_t rssi; uint8_t sec; uint32_t seenMs;
+    struct itl_ap { uint8_t bssid[6]; uint8_t ch; char ssid[33]; int8_t rssi; uint8_t sec; uint32_t seenMs; uint32_t seenGen;
                     uint8_t probe; uint16_t cap, bcnInt, ieLen; uint8_t ie[ITL_NATIVE_IE_MAX]; } aps[ITL_NATIVE_AP_MAX];
     int nAps = 0;
+    uint32_t apGen = 0;                      // bumped per scan: an entry with seenGen != apGen was not heard in the current scan
     uint8_t mcuSeq = 0;
     // M3 (boot-arg itlmt_m3=1, implies M2): associate to the configured network, WPA2-PSK, Ethernet interface
     bool m3On = false;

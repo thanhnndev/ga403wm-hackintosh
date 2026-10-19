@@ -18,7 +18,11 @@ struct ItlNativeTx { const uint8_t *bytes; uint32_t length; int result; };
 // ---- scan / join control (all calls come from the interface's work queue; none blocks on the chip) -------------------------
 // Information elements are kept whole-element up to this many bytes (a beacon's own IEs; the rest is cut at an element boundary).
 #define ITL_NATIVE_IE_MAX 512
-#define ITL_NATIVE_AP_MAX 48
+// AP table size. 48 was too small for a dense 5 GHz neighbourhood: the scan visits 2.4 GHz (1..13) first and 5 GHz (36..165)
+// after, so with the table full the early-heard 2.4 GHz APs were the "oldest" and got evicted by the 5 GHz flood - named
+// 2.4 GHz networks (the ones the user was looking for) never reached the published list. 128 keeps everything in one pass;
+// the eviction below additionally refuses to drop an AP heard in the scan that is running.
+#define ITL_NATIVE_AP_MAX 128
 
 // ITL_NATIVE_SCAN, p1 = ItlNativeScan*: asks the core worker for one wildcard scan. started = 0 when the core scanned less than
 // 10 s ago (the cached list is current enough; the caller delivers it at once), 1 when a scan was queued.

@@ -496,9 +496,12 @@ void itlmt7925::apSeen(const uint8_t *p, uint32_t len, uint32_t off, const char 
     for (int i = 0; i < nAps; i++) if (!memcmp(aps[i].bssid, bssid, 6)) { k = i; break; }
     if (k < 0) {
         if (nAps < (int)(sizeof(aps) / sizeof(aps[0]))) k = nAps++;
-        else {                                                                // full: replace the AP heard from longest ago
+        else {                                                                // full: drop the oldest AP this scan did not hear
             k = 0;
-            for (int i = 1; i < nAps; i++) if (now - aps[i].seenMs > now - aps[k].seenMs) k = i;
+            for (int i = 1; i < nAps; i++) {
+                bool si = aps[i].seenGen != apGen, sk = aps[k].seenGen != apGen;
+                if (si != sk ? si : (now - aps[i].seenMs > now - aps[k].seenMs)) k = i;
+            }
         }
         bzero(&aps[k], sizeof(aps[k]));
         memcpy(aps[k].bssid, bssid, 6);
@@ -509,6 +512,7 @@ void itlmt7925::apSeen(const uint8_t *p, uint32_t len, uint32_t off, const char 
     if (rssi) a.rssi = a.rssi ? (int8_t)((a.rssi + rssi) / 2) : rssi;
     a.sec = secFromIes(f + 36, p + len, (uint16_t)(f[34] | (f[35] << 8)));
     a.seenMs = now;
+    a.seenGen = apGen;
     a.probe = f[0] == 0x50;                                                  // probe response (a beacon is 0x80)
     a.bcnInt = (uint16_t)(f[32] | (f[33] << 8));
     a.cap = (uint16_t)(f[34] | (f[35] << 8));
