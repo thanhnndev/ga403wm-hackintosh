@@ -40,10 +40,17 @@ CLASSES = {
     # instantiates on this driver (the Broadcom path instantiates its own IO80211AWDLProtocol subclass instead).
     # Size 0x130 from the MetaClass constructor (OSMetaClassC2(..., 0x130)); parent from the MetaClass at 0xffffff800248dfa0.
     'IO80211VirtualInterface': dict(parent='IO80211SkywalkInterface', include='"IO80211SkywalkInterface.h"', size=0x130,
-                                    children=[]),
+                                    children=['IO80211AWDLProtocol']),
+    # the Family's AWDL protocol class: IO80211VirtualInterface plus 65 virtuals (slots 507-570) that the AWDL ioctls
+    # (apple80211setAWDL_*) and the AWDL peer manager call; names come from AppleBCMWLANProximityInterface (the Broadcom
+    # proximity/AWDL interface, 25G241). Instance size 0x130 (same as the parent, no new ivars). setCOMPANION_SKYWALK_IF_CREATE
+    # is slot 562 (the compiled offset 0x1180 counts from the vptr, i.e. after the two header words).
+    'IO80211AWDLProtocol': dict(parent='IO80211VirtualInterface', include='"IO80211VirtualInterface.h"', size=0x130,
+                                children=['AppleBCMWLANProximityInterface']),
 }
 ORDER = ['IOSkywalkInterface', 'IO80211WorkQueue', 'IO80211CommandGate', 'IOSkywalkNetworkInterface', 'IOSkywalkEthernetInterface',
-         'IO80211SkywalkInterface', 'IO80211InfraInterface', 'IO80211InfraProtocol', 'IO80211VirtualInterface']
+         'IO80211SkywalkInterface', 'IO80211InfraInterface', 'IO80211InfraProtocol', 'IO80211VirtualInterface',
+         'IO80211AWDLProtocol']
 
 # exported non-virtual members the stub calls (they do not change the layout): class -> [(mangled symbol, declaration, evidence)].
 # The mangled symbol must be in <Class>.methods.txt of the dump or generation stops.
@@ -254,6 +261,8 @@ def ret_for(name, params, const, cls=None):
         return RET[name][0], RET[name][1]
     if cls == 'IO80211InfraProtocol' and PROTOCOL_HANDLER.match(name):
         return 'IOReturn', 'guess: tail call into the core handler (see PROTOCOL_HANDLER)'
+    if cls == 'IO80211AWDLProtocol':
+        return 'IOReturn', 'guess: the Family ioctl dispatchers pass the method result back (AppleBCMWLANProximityInterface::setCOMPANION_SKYWALK_IF_CREATE returns ebx in eax)'
     if name in PTR:
         return PTR[name], 'guess from name'
     if name in UINT:

@@ -1,0 +1,35 @@
+# 0xffffff8002198bc8 __ZN19IO80211AWDLProtocol9MetaClassC1Ev
+ffffff8002198bc8: push     rbp
+ffffff8002198bc9: mov      rbp, rsp
+ffffff8002198bcc: push     rbx
+ffffff8002198bcd: push     rax
+ffffff8002198bce: mov      rbx, rdi
+ffffff8002198bd1: lea      rsi, [rip + 0x229b59]  ; "IO80211AWDLProtocol"
+ffffff8002198bd8: lea      rdx, [rip + 0x2f5899]  ; 0xffffff800248e478
+ffffff8002198bdf: mov      ecx, 0x130
+ffffff8002198be4: call     0xffffff8000a1a9d0  ; __ZN11OSMetaClassC2EPKcPKS_j
+ffffff8002198be9: lea      rax, [rip + 0x2bea38]  ; 0xffffff8002457628
+ffffff8002198bf0: mov      qword ptr [rbx], rax
+ffffff8002198bf3: add      rsp, 8
+ffffff8002198bf7: pop      rbx
+ffffff8002198bf8: pop      rbp
+ffffff8002198bf9: ret      
+ffffff8002198bfa: push     rbp
+ffffff8002198bfb: mov      rbp, rsp
+ffffff8002198bfe: pop      rbp
+ffffff8002198bff: jmp      0xffffff8000a1b0c0  ; __ZN11OSMetaClassD2Ev
+ffffff8002198c04: push     rbp
+ffffff8002198c05: mov      rbp, rsp
+ffffff8002198c08: push     rbx
+ffffff8002198c09: push     rax
+ffffff8002198c0a: mov      rbx, rdi
+ffffff8002198c0d: call     0xffffff8002b1066c  ; __ZN26IOSkywalkEthernetInterfaceC2EPK11OSMetaClass
+ffffff8002198c12: lea      rax, [rip + 0x2bd837]  ; 0xffffff8002456450
+ffffff8002198c19: mov      qword ptr [rbx], rax
+ffffff8002198c1c: add      rsp, 8
+ffffff8002198c20: pop      rbx
+ffffff8002198c21: pop      rbp
+ffffff8002198c22: ret      
+ffffff8002198c23: nop      
+ffffff8002198c24: push     rbp
+ffffff8002198c25: mov      rbp, rsp

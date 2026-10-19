@@ -273,3 +273,68 @@ interface, `itlmt7925_iface.cpp`, already used):
 (ref, service, name) and `Apple80211RawSet` takes (ref, apple80211req*), not the classic (ref, cmd, data, len)) is the
 tool that exercises this. After the next boot: `rc=0 bsd_name='awdl0'`, no panic, `ifconfig awdl0` present,
 `awdl:vif started` then `awdl:vif up bsd=awdl0` in `itlmt_native_trace`.
+
+## 10. Round 2026-10-19: phase 2 verified on hardware, wifip2pd adopts the interface, the AWDL protocol class
+
+### 10.1 The phase 2 test passed (no panic)
+
+`./vif_create_test en5` on the boot with `itlmt_awdl=1`: `BindToInterfaceWithService(service=0x1803, en5) rc=0` +
+`RawSet(0x5e VIRTUAL_IF_CREATE, role=6) rc=0 bsd_name='awdl0'`, no administrator rights needed. `ifconfig awdl0`:
+`flags=8843<UP,BROADCAST,RUNNING,SIMPLEX,MULTICAST> mtu 1484`, MAC `de:56:7b:34:81:d4` (primary + locally-administered
+bit + last byte flipped), `inet6 fe80::dc56:7bff:fe34:81d4%awdl0`. `itlmt_native_trace`: `awdl:vif started`,
+`awdl:vif up bsd=awdl0`. No panic, Wi-Fi unaffected (ping 2.9 ms, `wifi-state=connected`). The 2026-10-17 panics are
+gone.
+
+### 10.2 wifip2pd adopts the interface and maps the rings
+
+Right after the create (log 16:36:03): `(IO80211) Apple80211BindToInterfaceWithService: Sanity test passed` ->
+`Found new interface awdl0 with role AWDL` -> `Created AWDLInterface<P2PController<AppleIO80211Driver>>[awdl0]<de:56:7b:34:81:d4>`
+-> `Successfully updated awdl0 link state to Link Up` -> `(IO80211) _createMemoryMappings: ringBuffer[0x102f80000]
+ringSize[0x4b000], ringState[0x102ac0000] ringSize[0x1000]` -> then the normal power/eligibility bring-up
+(`Registering for Power State changes from wifid`, `OS Eligibility: 5G/160 answer eligible`). The one failure is
+`APPLE80211_IOC_COMPANION_SKYWALK_IF_CREATE` (0x125, len 24) -> `return 58/0x3a` ->
+`Failed to create the companion low latency interface for AWDL: <WiFiP2PError Unavailable>` - and it is **non-fatal**:
+the daemon continues and the interface stays up.
+
+### 10.3 What the AWDL ioctls and the peer manager need (25G241 disassembly)
+
+* `apple80211setCOMPANION_SKYWALK_IF_CREATE(controller, iface, uc, req)` (0xffffff800228b4b8) first offers the request to
+  the userland WCL (`IO80211Glue::sendIOUCToWcl` when `[controller+0xd8] != NULL`); on this Intel/kext path that is NULL
+  and it tail-calls `apple80211setCOMPANION_SKYWALK_IF_CREATE(iface, req)` (0xffffff800226a32f), which calls slot
+  `[vptr+0xcc8]` with the ioctl number, then `safeMetaCast(iface, IO80211AWDLProtocol::gMetaClass)` and calls slot 562
+  (`0x1180` from the vptr = dump slot 562). So **the vif must be an `IO80211AWDLProtocol`** or every AWDL ioctl answers
+  `0xe082280e` before reaching the driver.
+* The `apple80211{get,set}AWDL_*` dispatchers (e.g. `getAWDL_SYNC_ENABLED` 0xffffff800227bc2f) do NOT cast the vif: they
+  read the peer manager from `[iface+0x120]+0x28`, cast THAT to `IO80211AWDLPeerManager` and call its methods. The peer
+  manager is created by the Family's `IO80211VirtualInterface::createPeerManager` (0xffffff80023308c2, virtual slot 355):
+  for role 6 it runs `IO80211AWDLPeerManager::withInterface(vif, mac)` (role read from `[vif+0x120]+0x58`, MAC from
+  `getMacAddress`). That is the Family's own code path, so it runs for this driver too once the vif exists.
+* `AppleBCMWLANProximityInterface::setCOMPANION_SKYWALK_IF_CREATE` (0xffffff8001722ef2) reads `action` at req+4
+  (0 = destroy, 1 = create), builds `apple80211SkywalkIfCreateParams_t {class ptr, MAC, 9, 2}`, calls
+  `AppleBCMWLANCore::createSkywalkInterface(&vif->companion, params, vif)`, then
+  `companion->setCompanionInterfaceId(vif->getInterfaceId())` and `strncpy(req+8, companion->getBSDName(), 0x10)`.
+  `apple80211_companion_skywalk_if_create` is 24 bytes: `u32 version; u32 action; char bsd_name[16]`.
+* The AWDL protocol class: `IO80211AWDLProtocol : IO80211VirtualInterface`, 571 slots, 0x130 bytes (same ivars), 63 new
+  pure virtuals (slots 507..569) named from `AppleBCMWLANProximityInterface`: getSSID/CHANNEL/BSSID/STATE, the
+  AWDL_SYNC_* / AWDL_ELECTION_* / AWDL_MASTER_CHANNEL / AWDL_SYNC_FRAME_TEMPLATE / PSF_DWELL / LLW_PARAMS families, and
+  `setCOMPANION_SKYWALK_IF_CREATE` at slot 562. Slot 490 (pure in both classes) is the Broadcom `setMacAddress(ether_addr&)`.
+
+### 10.4 Code in this round
+
+* `tools/io80211_abi.py`: `IO80211AWDLProtocol` added (parent IO80211VirtualInterface, size 0x130,
+  children AppleBCMWLANProximityInterface) + the IOReturn rule for its methods; dumps for 25G241
+  (`IO80211AWDLProtocol`, `AppleBCMWLANProximityInterface`, MetaClass) added; `tools/kc_extract.py` extracts one fileset
+  entry from the KC for disassemblers.
+* `kexts/itlmt7925/io80211/IO80211AWDLProtocol.h`: generated, layout-checked (`io80211check: ok`).
+* `itlmt7925AwdlInterface` now derives from `IO80211AWDLProtocol`; all 63 protocol slots are implemented as tracing stubs
+  (`IOLog("itlmt7925: awdl proto %s (stub)")` + `kIOReturnUnsupported`, 48-line budget) and
+  `setCOMPANION_SKYWALK_IF_CREATE` logs the action and answers unsupported (non-fatal for wifip2pd). The kernel log after
+  the reboot will show which slots the Family and the peer manager actually call - that is the phase 3 to-do list.
+
+### 10.5 Next
+
+1. Reboot, `./vif_create_test en5`, then `log show --last 2m | grep "awdl proto"`: the calls that appear name the slots
+   the peer manager drives (expect `setAWDL_SYNC_ENABLED`, `setAWDL_SYNC_PARAMS`, `setAWDL_SYNCHRONIZATION_CHANNEL_SEQUENCE`,
+   `setPSF_DWELL` once AirDrop/peer discovery starts).
+2. Phase 3: implement the channel sequence (ROC slicing) and the PSF/action-frame TX those slots need; the LLW companion
+   interface (slot 562) afterwards.
