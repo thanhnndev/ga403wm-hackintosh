@@ -42,12 +42,19 @@ public:
     // groundwork: each logs its first calls and answers kIOReturnUnsupported, so the Family's ioctls fail cleanly
     // instead of hitting an unimplemented pure virtual. The companion create (562) is in the .cpp.
     IOReturn awdlProto(const char *name);
+    // Phase 3 step 2 - the configure handshake. IO80211AWDLPeerManager::configure aborts on the first slot that answers
+    // unsupported: the trace on 2026-10-19 21:27 shows "configure Unable to set BSSID ret e00002c7" -> "doEnable:2839
+    // ERROR: cannot configure AWDL after enabling interface" -> AWDL disabled, i.e. slot 540 (setAWDL_BSSID) alone kept the
+    // whole stack down. awdlAccept() answers success and traces the slot; the values whose layout is public (the four AWDL
+    // structs in IOKit/80211/apple80211_ioctl.h) are stored/printed as well. The configure sequence is only a parameter
+    // handshake - the RF work (channel slicing, PSF frames, peer table) is what follows it.
+    IOReturn awdlAccept(const char *name);
     /* 507 */ IOReturn getSSID(apple80211_ssid_data*a1) override { return awdlProto("getSSID"); }
     /* 508 */ IOReturn getCHANNEL(apple80211_channel_data*a1) override { return awdlProto("getCHANNEL"); }
     /* 509 */ IOReturn getBSSID(apple80211_bssid_data*a1) override { return awdlProto("getBSSID"); }
     /* 510 */ IOReturn getSTATE(apple80211_state_data*a1) override { return awdlProto("getSTATE"); }
     /* 511 */ IOReturn getAWDL_SYNC_PARAMS(apple80211_awdl_sync_params*a1) override { return awdlProto("getAWDL_SYNC_PARAMS"); }
-    /* 512 */ IOReturn getAWDL_SYNC_ENABLED(apple80211_awdl_sync_enabled*a1) override { return awdlProto("getAWDL_SYNC_ENABLED"); }
+    /* 512 */ IOReturn getAWDL_SYNC_ENABLED(apple80211_awdl_sync_enabled*a1) override;
     /* 513 */ IOReturn getAWDL_EXTENSION_STATE_MACHINE_PARAMETERS(apple80211_awdl_extension_state_machine_parameter*a1) override { return awdlProto("getAWDL_EXTENSION_STATE_MACHINE_PARAMETERS"); }
     /* 514 */ IOReturn getAWDL_ELECTION_ID(apple80211_awdl_election_id*a1) override { return awdlProto("getAWDL_ELECTION_ID"); }
     /* 515 */ IOReturn getAWDL_ELECTION_METRIC(apple80211_awdl_election_metric*a1) override { return awdlProto("getAWDL_ELECTION_METRIC"); }
@@ -69,42 +76,42 @@ public:
     /* 531 */ IOReturn getAWDL_CCA(apple80211_awdl_cca*a1) override { return awdlProto("getAWDL_CCA"); }
     /* 532 */ IOReturn getAWDL_AF_SECONDARY_PAYLOAD_CAPABILITIES(apple80211_awdl_cap*a1) override { return awdlProto("getAWDL_AF_SECONDARY_PAYLOAD_CAPABILITIES"); }
     /* 533 */ IOReturn getLLW_PARAMS(apple80211_llw_params*a1) override { return awdlProto("getLLW_PARAMS"); }
-    /* 534 */ IOReturn setSSID(apple80211_ssid_data*a1) override { return awdlProto("setSSID"); }
-    /* 535 */ IOReturn setCHANNEL(apple80211_channel_data*a1) override { return awdlProto("setCHANNEL"); }
-    /* 536 */ IOReturn setAWDL_SYNC_PARAMS(apple80211_awdl_sync_params*a1) override { return awdlProto("setAWDL_SYNC_PARAMS"); }
-    /* 537 */ IOReturn setAWDL_SYNC_ENABLED(apple80211_awdl_sync_enabled*a1) override { return awdlProto("setAWDL_SYNC_ENABLED"); }
-    /* 538 */ IOReturn setAWDL_EXTENSION_STATE_MACHINE_PARAMETERS(apple80211_awdl_extension_state_machine_parameter*a1) override { return awdlProto("setAWDL_EXTENSION_STATE_MACHINE_PARAMETERS"); }
-    /* 539 */ IOReturn setAWDL_ELECTION_ID(apple80211_awdl_election_id*a1) override { return awdlProto("setAWDL_ELECTION_ID"); }
-    /* 540 */ IOReturn setAWDL_BSSID(apple80211_awdl_bssid*a1) override { return awdlProto("setAWDL_BSSID"); }
-    /* 541 */ IOReturn setAWDL_ELECTION_METRIC(apple80211_awdl_election_metric*a1) override { return awdlProto("setAWDL_ELECTION_METRIC"); }
-    /* 542 */ IOReturn setAWDL_SYNCHRONIZATION_CHANNEL_SEQUENCE(apple80211_awdl_sync_channel_sequence*a1) override { return awdlProto("setAWDL_SYNCHRONIZATION_CHANNEL_SEQUENCE"); }
-    /* 543 */ IOReturn setAWDL_MASTER_CHANNEL(apple80211_awdl_master_channel*a1) override { return awdlProto("setAWDL_MASTER_CHANNEL"); }
-    /* 544 */ IOReturn setAWDL_SYNC_STATE(apple80211_awdl_sync_state*a1) override { return awdlProto("setAWDL_SYNC_STATE"); }
-    /* 545 */ IOReturn setAWDL_ELECTION_RSSI_THRESHOLDS(apple80211_awdl_election_rssi_thresholds*a1) override { return awdlProto("setAWDL_ELECTION_RSSI_THRESHOLDS"); }
-    /* 546 */ IOReturn setAWDL_PRESENCE_MODE(apple80211_awdl_presence_mode*a1) override { return awdlProto("setAWDL_PRESENCE_MODE"); }
-    /* 547 */ IOReturn setPEER_CACHE_CONTROL(apple80211_peer_cache_control*a1) override { return awdlProto("setPEER_CACHE_CONTROL"); }
+    /* 534 */ IOReturn setSSID(apple80211_ssid_data*a1) override { return awdlAccept("setSSID"); }
+    /* 535 */ IOReturn setCHANNEL(apple80211_channel_data*a1) override { return awdlAccept("setCHANNEL"); }
+    /* 536 */ IOReturn setAWDL_SYNC_PARAMS(apple80211_awdl_sync_params*a1) override { return awdlAccept("setAWDL_SYNC_PARAMS"); }
+    /* 537 */ IOReturn setAWDL_SYNC_ENABLED(apple80211_awdl_sync_enabled*a1) override;
+    /* 538 */ IOReturn setAWDL_EXTENSION_STATE_MACHINE_PARAMETERS(apple80211_awdl_extension_state_machine_parameter*a1) override { return awdlAccept("setAWDL_EXTENSION_STATE_MACHINE_PARAMETERS"); }
+    /* 539 */ IOReturn setAWDL_ELECTION_ID(apple80211_awdl_election_id*a1) override { return awdlAccept("setAWDL_ELECTION_ID"); }
+    /* 540 */ IOReturn setAWDL_BSSID(apple80211_awdl_bssid*a1) override;
+    /* 541 */ IOReturn setAWDL_ELECTION_METRIC(apple80211_awdl_election_metric*a1) override;
+    /* 542 */ IOReturn setAWDL_SYNCHRONIZATION_CHANNEL_SEQUENCE(apple80211_awdl_sync_channel_sequence*a1) override { return awdlAccept("setAWDL_SYNCHRONIZATION_CHANNEL_SEQUENCE"); }
+    /* 543 */ IOReturn setAWDL_MASTER_CHANNEL(apple80211_awdl_master_channel*a1) override { return awdlAccept("setAWDL_MASTER_CHANNEL"); }
+    /* 544 */ IOReturn setAWDL_SYNC_STATE(apple80211_awdl_sync_state*a1) override { return awdlAccept("setAWDL_SYNC_STATE"); }
+    /* 545 */ IOReturn setAWDL_ELECTION_RSSI_THRESHOLDS(apple80211_awdl_election_rssi_thresholds*a1) override { return awdlAccept("setAWDL_ELECTION_RSSI_THRESHOLDS"); }
+    /* 546 */ IOReturn setAWDL_PRESENCE_MODE(apple80211_awdl_presence_mode*a1) override { return awdlAccept("setAWDL_PRESENCE_MODE"); }
+    /* 547 */ IOReturn setPEER_CACHE_CONTROL(apple80211_peer_cache_control*a1) override { return awdlAccept("setPEER_CACHE_CONTROL"); }
     /* 548 */ IOReturn setAWDL_OOB_REQUEST(apple80211_awdl_oob_request*a1) override { return awdlProto("setAWDL_OOB_REQUEST"); }
-    /* 549 */ IOReturn setAWDL_SYNC_FRAME_TEMPLATE(apple80211_awdl_sync_frame_template*a1) override { return awdlProto("setAWDL_SYNC_FRAME_TEMPLATE"); }
-    /* 550 */ IOReturn setAWDL_ELECTION_PARAMS(apple80211_awdl_election_params*a1) override { return awdlProto("setAWDL_ELECTION_PARAMS"); }
-    /* 551 */ IOReturn setAWDL_PEER_TRAFFIC_REGISTRATION(apple80211_awdl_peer_traffic_registration*a1) override { return awdlProto("setAWDL_PEER_TRAFFIC_REGISTRATION"); }
-    /* 552 */ IOReturn setAWDL_SECONDARY_MASTER_CHANNEL(apple80211_awdl_secondary_master_channel*a1) override { return awdlProto("setAWDL_SECONDARY_MASTER_CHANNEL"); }
-    /* 553 */ IOReturn setAWDL_AF_TX_MODE(apple80211_awdl_af_tx_mode*a1) override { return awdlProto("setAWDL_AF_TX_MODE"); }
-    /* 554 */ IOReturn setAWDL_MIN_RATE(apple80211_awdl_min_rate*a1) override { return awdlProto("setAWDL_MIN_RATE"); }
-    /* 555 */ IOReturn setAWDL_ENCRYPTION_KEYS(apple80211_key*a1) override { return awdlProto("setAWDL_ENCRYPTION_KEYS"); }
-    /* 556 */ IOReturn setAWDL_ENCRYPTION_TYPE(apple80211_encrypt*a1) override { return awdlProto("setAWDL_ENCRYPTION_TYPE"); }
+    /* 549 */ IOReturn setAWDL_SYNC_FRAME_TEMPLATE(apple80211_awdl_sync_frame_template*a1) override;
+    /* 550 */ IOReturn setAWDL_ELECTION_PARAMS(apple80211_awdl_election_params*a1) override { return awdlAccept("setAWDL_ELECTION_PARAMS"); }
+    /* 551 */ IOReturn setAWDL_PEER_TRAFFIC_REGISTRATION(apple80211_awdl_peer_traffic_registration*a1) override;
+    /* 552 */ IOReturn setAWDL_SECONDARY_MASTER_CHANNEL(apple80211_awdl_secondary_master_channel*a1) override { return awdlAccept("setAWDL_SECONDARY_MASTER_CHANNEL"); }
+    /* 553 */ IOReturn setAWDL_AF_TX_MODE(apple80211_awdl_af_tx_mode*a1) override { return awdlAccept("setAWDL_AF_TX_MODE"); }
+    /* 554 */ IOReturn setAWDL_MIN_RATE(apple80211_awdl_min_rate*a1) override { return awdlAccept("setAWDL_MIN_RATE"); }
+    /* 555 */ IOReturn setAWDL_ENCRYPTION_KEYS(apple80211_key*a1) override { return awdlAccept("setAWDL_ENCRYPTION_KEYS"); }
+    /* 556 */ IOReturn setAWDL_ENCRYPTION_TYPE(apple80211_encrypt*a1) override { return awdlAccept("setAWDL_ENCRYPTION_TYPE"); }
     /* 557 */ IOReturn setAWDL_OOB_AUTO_REQUEST(apple80211_awdl_oob_request*a1) override { return awdlProto("setAWDL_OOB_AUTO_REQUEST"); }
-    /* 558 */ IOReturn setAWDL_TXCAL_PERIOD(apple80211_awdl_txcal_period*a1) override { return awdlProto("setAWDL_TXCAL_PERIOD"); }
-    /* 559 */ IOReturn setAWDL_AWDL_ADVERTISERS(awdl_peer_advert_add*a1) override { return awdlProto("setAWDL_AWDL_ADVERTISERS"); }
-    /* 560 */ IOReturn setAWDL_DFSP_CONFIG(apple80211_awdl_dfsp_config*a1) override { return awdlProto("setAWDL_DFSP_CONFIG"); }
-    /* 561 */ IOReturn setAWDL_DFSP_UCSA_CONFIG(apple80211_awdl_dfsp_ucsa_config*a1) override { return awdlProto("setAWDL_DFSP_UCSA_CONFIG"); }
+    /* 558 */ IOReturn setAWDL_TXCAL_PERIOD(apple80211_awdl_txcal_period*a1) override { return awdlAccept("setAWDL_TXCAL_PERIOD"); }
+    /* 559 */ IOReturn setAWDL_AWDL_ADVERTISERS(awdl_peer_advert_add*a1) override { return awdlAccept("setAWDL_AWDL_ADVERTISERS"); }
+    /* 560 */ IOReturn setAWDL_DFSP_CONFIG(apple80211_awdl_dfsp_config*a1) override { return awdlAccept("setAWDL_DFSP_CONFIG"); }
+    /* 561 */ IOReturn setAWDL_DFSP_UCSA_CONFIG(apple80211_awdl_dfsp_ucsa_config*a1) override { return awdlAccept("setAWDL_DFSP_UCSA_CONFIG"); }
     /* 562 */ IOReturn setCOMPANION_SKYWALK_IF_CREATE(apple80211_companion_skywalk_if_create*a1) override;
     /* 563 */ IOReturn setAWDL_OOB_SEC_PAYLOAD_REQUEST(apple80211_awdl_af_sec_payload_request*a1) override { return awdlProto("setAWDL_OOB_SEC_PAYLOAD_REQUEST"); }
     /* 564 */ IOReturn setLLW_PARAMS(apple80211_llw_params*a1) override { return awdlProto("setLLW_PARAMS"); }
-    /* 565 */ IOReturn setTX_RATE(apple80211_tx_rate*a1) override { return awdlProto("setTX_RATE"); }
-    /* 566 */ IOReturn setP2P_COEX_PROTECTION(apple80211_p2p_coex_protection*a1) override { return awdlProto("setP2P_COEX_PROTECTION"); }
-    /* 567 */ IOReturn setPSF_DWELL(apple80211_awdl_psf_dwell_params*a1) override { return awdlProto("setPSF_DWELL"); }
-    /* 568 */ IOReturn setAWDL_CONFIG(apple80211_awdl_config_request*a1) override { return awdlProto("setAWDL_CONFIG"); }
-    /* 569 */ IOReturn setAWDL_RTG_PEER_STATS_CONFIG(apple80211_rtg_peer_stats_cfg*a1) override { return awdlProto("setAWDL_RTG_PEER_STATS_CONFIG"); }
+    /* 565 */ IOReturn setTX_RATE(apple80211_tx_rate*a1) override { return awdlAccept("setTX_RATE"); }
+    /* 566 */ IOReturn setP2P_COEX_PROTECTION(apple80211_p2p_coex_protection*a1) override { return awdlAccept("setP2P_COEX_PROTECTION"); }
+    /* 567 */ IOReturn setPSF_DWELL(apple80211_awdl_psf_dwell_params*a1) override { return awdlAccept("setPSF_DWELL"); }
+    /* 568 */ IOReturn setAWDL_CONFIG(apple80211_awdl_config_request*a1) override { return awdlAccept("setAWDL_CONFIG"); }
+    /* 569 */ IOReturn setAWDL_RTG_PEER_STATS_CONFIG(apple80211_rtg_peer_stats_cfg*a1) override { return awdlAccept("setAWDL_RTG_PEER_STATS_CONFIG"); }
 
     // Creates the pool and the (three) queues and registers the ifnet from a RegistrationInfo filled like
     // AppleBCMWLANCore::createProxInterface fills it. Keeps the objects for the interface's lifetime.
@@ -113,6 +120,11 @@ public:
 
 private:
     uint32_t awdlProtoLogged = 0;              // trace budget for the AWDL protocol stubs
+    uint32_t awdlAccepted = 0;                 // trace budget for the accepted (configure-handshake) slots
+    uint32_t awdlSyncEnabled = 0;              // last setAWDL_SYNC_ENABLED value, answered back by getAWDL_SYNC_ENABLED
+    uint8_t awdlBssid[6] = {};                 // last setAWDL_BSSID bytes (traced only: the layout is not public)
+    uint32_t awdlElectionMetric = 0;           // last setAWDL_ELECTION_METRIC
+    uint32_t awdlSyncFrameLen = 0;             // last setAWDL_SYNC_FRAME_TEMPLATE payload_len (phase 4: the PSF frame)
     IOSkywalkPacketBufferPool *awdlPool = nullptr;
     IOSkywalkPacketQueue *awdlQueues[3] = {};
 };
@@ -135,6 +147,94 @@ IOReturn itlmt7925AwdlInterface::awdlProto(const char *name)
         itlmtTrace(getController(), "awdl:proto %s", name);
     }
     return kIOReturnUnsupported;
+}
+
+// -----------------------------------------------------------------------------------------------------------------------
+// Phase 3 step 2: the configure handshake (see the class comment). The peer manager hands the driver its parameters through
+// these slots and aborts the whole configure sequence on the first unsupported answer, so they accept (and the four values
+// whose layout is public are stored/printed). This is deliberately not RF work: no channel is switched and no frame is
+// sent yet - it is what lets configure() finish so the next missing piece (the channel sequence / PSF path) becomes visible
+// in the trace.
+// -----------------------------------------------------------------------------------------------------------------------
+IOReturn itlmt7925AwdlInterface::awdlAccept(const char *name)
+{
+    if (awdlAccepted < 96) {
+        awdlAccepted++;
+        itlmtTrace(getController(), "awdl:accept %s", name);
+    }
+    return kIOReturnSuccess;
+}
+
+// apple80211_awdl_sync_enabled { u32 version; u32 unk1; u32 enabled } (IOKit/80211/apple80211_ioctl.h, packed).
+IOReturn itlmt7925AwdlInterface::setAWDL_SYNC_ENABLED(apple80211_awdl_sync_enabled *a1)
+{
+    awdlSyncEnabled = a1 ? *(const uint32_t *)((const uint8_t *)a1 + 8) : 1;
+    itlmtTrace(getController(), "awdl:set SYNC_ENABLED=%u", (unsigned)awdlSyncEnabled);
+    return kIOReturnSuccess;
+}
+
+IOReturn itlmt7925AwdlInterface::getAWDL_SYNC_ENABLED(apple80211_awdl_sync_enabled *a1)
+{
+    if (a1) {
+        *(uint32_t *)((uint8_t *)a1 + 0) = 1;               // version
+        *(uint32_t *)((uint8_t *)a1 + 4) = 0;               // unk1
+        *(uint32_t *)((uint8_t *)a1 + 8) = awdlSyncEnabled; // enabled
+    }
+    return kIOReturnSuccess;
+}
+
+// Slot 540 - the first call that failed ("configure Unable to set BSSID ret e00002c7"). The struct is u32 version + the
+// BSSID the peer manager derived for this interface; the address part is read as six bytes at +4 (the layout is not in the
+// public header) and only traced, so a wrong guess cannot corrupt anything.
+IOReturn itlmt7925AwdlInterface::setAWDL_BSSID(apple80211_awdl_bssid *a1)
+{
+    if (a1) {
+        memcpy(awdlBssid, (const uint8_t *)a1 + 4, sizeof(awdlBssid));
+        itlmtTrace(getController(), "awdl:set BSSID %02x:%02x:%02x:%02x:%02x:%02x",
+                   awdlBssid[0], awdlBssid[1], awdlBssid[2], awdlBssid[3], awdlBssid[4], awdlBssid[5]);
+    } else {
+        itlmtTrace(getController(), "awdl:set BSSID (null)");
+    }
+    return kIOReturnSuccess;
+}
+
+// apple80211_awdl_election_metric { u32 version; u32 metric }.
+IOReturn itlmt7925AwdlInterface::setAWDL_ELECTION_METRIC(apple80211_awdl_election_metric *a1)
+{
+    awdlElectionMetric = a1 ? *(const uint32_t *)((const uint8_t *)a1 + 4) : 0;
+    itlmtTrace(getController(), "awdl:set ELECTION_METRIC=%u", (unsigned)awdlElectionMetric);
+    return kIOReturnSuccess;
+}
+
+// apple80211_awdl_sync_frame_template { u32 version; u32 payload_len; void *payload } - the PSF/action frame body the
+// driver is expected to transmit on the AWDL channels (phase 4). Only the length is traced here.
+IOReturn itlmt7925AwdlInterface::setAWDL_SYNC_FRAME_TEMPLATE(apple80211_awdl_sync_frame_template *a1)
+{
+    awdlSyncFrameLen = a1 ? *(const uint32_t *)((const uint8_t *)a1 + 4) : 0;
+    itlmtTrace(getController(), "awdl:set SYNC_FRAME_TEMPLATE len=%u", (unsigned)awdlSyncFrameLen);
+    return kIOReturnSuccess;
+}
+
+// apple80211_awdl_peer_traffic_registration { u32 version; void *addr; u32 name_len; char name[152]; u32 active } packed -
+// the real-time group registration ("Can't send peer traffic registration to the driver" in the 21:27 log came from here).
+IOReturn itlmt7925AwdlInterface::setAWDL_PEER_TRAFFIC_REGISTRATION(apple80211_awdl_peer_traffic_registration *a1)
+{
+    if (a1) {
+        const uint8_t *p = (const uint8_t *)a1;
+        uint32_t nameLen = *(const uint32_t *)(p + 12);
+        uint32_t active = *(const uint32_t *)(p + 168);
+        char name[17];
+        size_t n = nameLen < sizeof(name) - 1 ? nameLen : sizeof(name) - 1;
+        memcpy(name, p + 16, n);
+        name[n] = 0;
+        for (size_t i = 0; i < n; i++)
+            if (name[i] < 0x20 || name[i] > 0x7e) name[i] = '.';
+        itlmtTrace(getController(), "awdl:set PEER_TRAFFIC_REG active=%u len=%u name=%s",
+                   (unsigned)active, (unsigned)nameLen, name);
+    } else {
+        itlmtTrace(getController(), "awdl:set PEER_TRAFFIC_REG (null)");
+    }
+    return kIOReturnSuccess;
 }
 
 // Slot 562. AppleBCMWLANProximityInterface::setCOMPANION_SKYWALK_IF_CREATE (0xffffff8001722ef2) reads action at +4

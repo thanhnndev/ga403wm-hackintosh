@@ -365,3 +365,50 @@ AirDrop-off trace on the boot with the AWDL protocol class (`./vif_create_test e
   NVRAM): IOLog from this kext does not reach the unified log on this machine. `nvram -p | grep itlmt-native-trace`
   after the reboot shows `awdl:proto <slot>` / `awdl:companion action=<n>` - i.e. which protocol slots the peer manager
   drives once the gate is open.
+
+### 10.7 Round 2026-10-19 late: the gate was the whole AWDL blocker - the peer manager now drives the protocol slots
+
+Reboot with the 10.6 gate fix (`com.itlmt7925.native` UUID `56A5CD9C-0E15-3C07-8C55-BA309D3B9DA4`), AirDrop on,
+`./vif_create_test en5`. The driver's own trace (`nvram -p | grep itlmt-native-trace`) now shows the whole AWDL ioctl
+family **allowed** and the interface's protocol slots being called for the first time:
+
+```
+ioctl:cmd=75 allowed   ioctl:cmd=7d allowed   ioctl:cmd=97 allowed   ioctl:cmd=7e allowed
+ioctl:cmd=a4 allowed   ioctl:cmd=125 allowed  ioctl:cmd=23f allowed  ioctl:cmd=81 allowed
+awdl:vif started; awdl:vif up bsd=awdl0
+awdl:proto getAWDL_SYNC_ENABLED
+awdl:proto setAWDL_BSSID
+awdl:proto setAWDL_SYNC_FRAME_TEMPLATE
+awdl:proto setAWDL_ELECTION_METRIC
+awdl:proto setAWDL_PEER_TRAFFIC_REGISTRATION
+awdl:companion action=1 (unsupported)
+awdl:proto getAWDL_SYNCHRONIZATION_CHANNEL_SEQUENCE
+```
+
+and wifip2pd brings the interface up on its own (`No AWDL interface found. Creating AWDL interface`, link up, IPv6,
+mDNS agent, `OS Eligibility: 5G/160 = ENABLED`). `setCOMPANION_SKYWALK_IF_CREATE` now answers the stub's
+`kIOReturnUnsupported` instead of the old gate's `0x3a` - proof the ioctl reached the driver.
+
+**The remaining blocker is one slot.** `IO80211AWDLPeerManager`'s enable path (`doEnable` -> `configure`) aborts on the
+first unsupported answer, and the first parameter it hands over is the BSSID:
+
+```
+IO80211AWDLPeerManager::enable: <awdl0> enable 1 ...
+doEnable:2829 Enabling AWDL Interface because of setLinkState... configured = 0
+IO80211AWDLPeerManager::configure Configuring AWDL interface
+IO80211AWDLPeerManager::initParamsToDefaults RTGConcurrency:1 RTScan:1 RTGSteering:1 ...
+IO80211AWDLPeerManager::configure  Unable to set BSSID ret e00002c7
+IO80211AWDLPeerManager::configure configure error!! :(
+doEnable:2839 ERROR: cannot configure AWDL after enabling interface!! ret=e00002c7 _enabling 1
+<awdl0> disable 1 ont 0   -> AWDL DISABLE SET last state 0
+```
+
+So this round accepts the configure handshake: `awdlAccept()` (slot 540 `setAWDL_BSSID`, 541 `setAWDL_ELECTION_METRIC`,
+549 `setAWDL_SYNC_FRAME_TEMPLATE`, 551 `setAWDL_PEER_TRAFFIC_REGISTRATION` and the rest of the parameter setters
+536-569) answers `kIOReturnSuccess` and traces the slot, and the four AWDL structs that are public in
+`IOKit/80211/apple80211_ioctl.h` are stored/printed (`apple80211_awdl_sync_enabled` {version, unk1, enabled},
+`apple80211_awdl_election_metric` {version, metric}, `apple80211_awdl_sync_frame_template` {version, payload_len,
+payload}, `apple80211_awdl_peer_traffic_registration` {version, addr, name_len, name[152], active} packed). The
+out-of-band request slots (548/557/563) and the LLW/companion path (562/564) still answer unsupported - they expect a
+response or a second interface, not just a parameter handshake. No RF work is done by these slots: the point is to let
+`configure()` finish so the next missing piece (the channel sequence, then the PSF/ROC path) shows up in the trace.
