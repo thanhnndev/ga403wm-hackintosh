@@ -2816,3 +2816,43 @@ was returned. `kmutil inspect` lists NMXGPU and the new UUID bytes are present i
 After reboot verify UUID `304F821C-A6F0-323B-8328-DC580234D3AF` before running a single bounded two-VM check.
 This batch fixes proven dead preparation/build paths; the second-VM graphics hang and WindowServer acceleration
 are **not yet verified fixed**. Keep rung 1 and do not add WindowServer/headroom-hold during that check.
+
+## Step47 - Linux after build15 reboot: early TLB/IPI panic recovered from NVRAM
+
+Pulled main repo to `f7b37a0`. Installed NMXGPU still matches build15 SHA256
+`c5dea0e09c96981cd186036831c6dd03ad3f81087156eea7820c1d5d198c61ee`; the build15 UUID is present in AuxKC
+(mtime 21:38:54 +0700). Live ESP still has the exact 21504-byte PCI `vbios` fallback from Step45.
+
+Important evidence boundary: Persist `173`/`174` decode to the **previous** boot
+`725E7CAFA2AB47F5AA15C4E822EE8968`, ending in logout/shutdown at 21:44:31. That boot reached the desktop
+(`loginwindow USER_PROCESS` at 21:23:46). It is not a log of the reported new logo freeze. There is no new
+on-disk Kernel panic report, no new graphics-bootstrap directory after 21:23, and no later persisted unified-log
+boot in the two latest files. Do not reuse the old missing-VBIOS diagnosis for the latest freeze.
+
+Recovered all ten `AAPL,PanicInfo0000`..`0009` EFI variables read-only (strip each 4-byte efivar attribute header,
+concatenate in numeric order, unpack little-endian 7-bit ASCII). They contain a readable panic absent from the
+on-disk reports, at uptime **11.627151386 seconds**:
+
+```
+NMIPI for unresponsive processor: TLB flush timeout
+CPU 0: _thread_go <- _thread_wakeup_prim <- VoodooI2CControllerDriver::handleInterrupt+0x138
+       <- AppleAPIC <- AppleACPIPlatform (nested interrupt frames)
+CPU 12: IPI timeout, unresponsive CPU bitmap 0x1, pmap.c:3101
+        _pmap_flush_tlbs <- _pmap_remove_range <- ... <- OSSerialize::free
+        <- OSKext::serializeLogInfo <- OSKext::handleRequest
+        process: kernelmanagerd
+```
+
+`nullmoth-gpu-attaching` currently contains `1`: an NMXGPU attach did not clear its guard. This is consistent
+with an early failed boot during attach, but neither the marker nor the retained panic contains an absolute
+boot timestamp or the loaded NMXGPU UUID. Exact association with build15 is therefore probable, not proven.
+Unlike the Oct18 GPU-reset panic, this retained panic does **not** have amdgpu/MES in its captured stacks.
+VoodooI2C is on the unresponsive CPU's interrupt/wakeup path; that alone does not establish it caused the lockup
+(a scheduler lock held by another CPU or interrupt-state corruption remains possible). There is no Wi-Fi frame
+in this report. Do not claim a proven VoodooI2C, Wi-Fi or NMXGPU root cause from this stack alone.
+
+Private evidence: `~/ga403-logs/boot-review-20261019-b15/` holds raw EFI panic chunks, decoded panic, marker,
+and previous-boot JSONL. No EFI, NVRAM or installed kext mutation was made in this investigation. A subsequent
+boot with the guard still set can park NMXGPU and leave no display; that must not be mistaken for another
+driver attach attempt. Next diagnostic work needs persistent stage/CPU tracing through NMXGPU attach and the
+interrupt/critical-section paths, with a recoverable display plan, rather than another uninstrumented reboot.
