@@ -2645,3 +2645,49 @@ Expected readings after the reboot:
 * if it still hangs and `PFLT_STATUS`/`FAULT_ADDR` are non-zero -> H2, with the faulting address;
 * if it still hangs with no fault and `hw_rptr == hw_rptr_5ms` -> the CP is looping on the ring (H1 variant that the
   flush does not reach), and the next step is the ring BO's cache attribute, not more ring flushing.
+
+## Step44 - build 13: the wptr page was not it; the trigger is the SECOND VM, not the second job
+
+Build 13 (`ac3edcd7`) installed and booted (20:16). `render-stress.sh 6`: run 1 PASS, 2 FAIL, 3 PASS, 4 FAIL,
+5 PASS, 6 FAIL (3/3), i.e. the same alternation - flushing the wptr writeback page and the whole ring changed nothing.
+
+What the corrected (GC 11.5, +4 dword) diagnostics finally say, first timeout 20:18:
+
+* `PFLT_STATUS = 0`, `FAULT_ADDR = 0`, `L2_STATUS = 0` -> no protection fault, no bad translation. `noretry` is set
+  (`RETRY_PERMISSION_OR_INVALID_PAGE_FAULT = 0`), so a missed PTE would have been reported, not retried forever.
+* `INV_REQ`/`INV_ACK` mirror each other (`0x00f80004`/`04`, `0x00f80010`/`10`, `0x00f80040`/`40`, `INV_SEM = 1`):
+  every invalidate the driver asked for was acknowledged.
+* `CONTEXT0..2` enabled, `PT_BASE` 0x87fb00001 / 0x87fafc001 / 0x87fafb001, `PAGE_TABLE_DEPTH = 3` (4 levels),
+  `BLOCK_SIZE = 0` (9-bit), same for every context - the context programming is consistent.
+* `CP_RB_VMID = 0`, `CP_RB_WPTR_DELAY = 0`, `CP_RB_DOORBELL_CONTROL = 0xc0000458` (doorbell on, offset 0x458),
+  `CP_RB_WPTR_POLL_ADDR = 0x7fff00401060 = ring->wptr_gpu_addr`, `RPTR_ADDR = 0x7fff00401040`, ring `0x7fff0064d000`.
+* `cpstate`: `doorbell 1 wptr 2816` and `CP_RB0_WPTR = 0xb00` - the CP has exactly the driver's wptr. `hw_rptr` sampled
+  twice 5 ms apart was identical both times (0x13a/0x13a, 0x14e/0x14e): the CP stands still.
+* `sw_rptr`/`mem_rptr` (0x100 / 0x300) lag the hardware rptr (0x13a / 0x34e): the GPU-writes-visible-to-CPU direction is
+  still broken, but that is a symptom we already knew about, not the stall.
+* `ringdump` at the rptr decodes as one complete submission: `INDIRECT_BUFFER` (IB `0x8001_00001000`, 0x1d8 dwords,
+  vmid 2) -> `FRAME_CONTROL` end -> `RELEASE_MEM` (gfx shadow) -> `COND_EXEC` (cond_exe_gpu_addr) -> `RELEASE_MEM`
+  (the ring fence, seq) -> NOP fill. The ring side is complete and correct, and the fence sits **after** the IB: a
+  stall inside the IB explains both "RPTR pinned at the IB" and "the fence never signals".
+
+So `CP_ME_HEADER_DUMP = 0xc0023f00` is the ME executing that IB, not a stale earlier header.
+
+Isolation (`tools/890m/metal-render-loop.swift`, new): the same triangle N times in **one process** (one VM) is
+6/6 CORRECT, twice. The same triangle from a **second process** fails on its first submission after ~250 ms
+("GPU event segment submission failed"), then the kernel job timeout + GPU reset. It also fails while the first
+process is still alive and holding its device (no teardown, no BO free), so the ingredient is the **second VM**, not
+the first process exiting and not the second submission.
+
+Consequences:
+
+* Dead: wptr/doorbell delivery, ring content visibility, ring/wptr flushing, invalidate-engine selection, translation
+  faults, memory pressure on the ring. All checks out.
+* The defect is in the per-VM path - the second VM's PD/PT/VMID setup or the IB its job points at - and it makes the
+  first job of any VM other than the one that started right after a GPU reset read something the CP cannot execute.
+* The "first VM after a reset works, the next one fails" rule is a consequence, not the rule: after a reset only one VM
+  exists, and as soon as a second one appears it fails.
+
+Build 14 (planned, not built): for a user IB amdgpu keeps no kernel pointer (`ib->ptr` is NULL), so the coredump
+cannot print what the CP was asked to run. Add a VM-mapping lookup that kmaps the IB's BO and prints the first 96
+dwords at timeout, dump the PD/PT walk for the same VA, and flush the IB's lines just before `emit_ib` - one build
+that either fixes it (stale IB content) or names what the CP is really reading (wrong page / wrong PTEs).
