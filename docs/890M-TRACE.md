@@ -2579,3 +2579,69 @@ Source: fork `kexts/NVRM/accel/nvrm-accel.cpp` (class NVAccel, built as NMXAccel
   scan-out resource for NVDisplayPipe), (b) remove the forced headless in the NMX_ACCEL branch and arm like the NVIDIA path,
   (c) allow-list WindowServer. Not testable until M2 (graphics jobs reliable) - a hung job in WindowServer = black screen.
 Order stays: reboot -> build 12 data (vmflush/vmregs) -> fix M2 -> then M3 (a)-(c) in one kext. Nothing installed in this step.
+
+## Step43 - build 12 data decoded: the CP stalls on the ring fetch, and it knows the wptr
+
+Read of the build 12 (0309394d) boot of Oct 19 16:12, first `tools/890m/render-stress.sh` run at 16:23
+(raw `kernel: (NMXGPU)` lines, not the script's filtered copy).
+
+Retraction first. `amdgpu_dev_coredump.c` and `gfx_v11_0_print_ip_state()` include `gc/gc_11_0_0_offset.h`, but the
+hardware is GC 11.5 (890M/gfx1150) and the whole **GCVM/GCMC block is 4 dwords higher** in
+`gc_11_5_0_offset.h` (`CONTEXT0_CNTL` 0x1688 -> 0x168c, `INVALIDATE_ENG0_REQ/ACK/SEM` 0x16ab/0x16bd/0x1699 ->
+0x16af/0x16c1/0x169d, `L2_CNTL` 0x15bc -> 0x15c0, `PAGE_TABLE_BASE_ADDR_LO/HI` 0x16f3/0x16f4 -> 0x16f7/0x16f8).
+So the build 12 `vmregs` line read other registers: "ctx4/5 CNTL 0x01fffe01/0x01fffe07" are really CONTEXT0/1 CNTL
+(contexts **enabled**), "ctx2/3/4 PT_BASE" are really CONTEXT0..2, and the INV_REQ/ACK/SEM and L2/FAULT_ADDR values
+are meaningless. Everything derived from them in Step41b ("context 0 disabled", "INV_ACK=0x02f80000",
+`FAULT_ADDR=0xffffffff00060000`) is withdrawn. CP block offsets (`RB0_BASE/WPTR/RPTR/CNTL`, `IB1_*`) are identical
+in both headers, so those readings stay valid.
+
+What the valid registers say (16:23:38, first gfx timeout of that boot):
+
+* `CP_RB0_CNTL = 0x08a0080a`: RB_BUFSZ=10, RB_BLKSZ=8 (8K ring / 2048 dword), MIN_AVAILSZ=2,
+  MIN_IB_AVAILSZ=2, RB_NO_UPDATE=1. Decoded with the 11.5 field list this is the normal GFX11 configuration
+  (`rb_bufsz = order_base_2(ring_size / 8)` for an 8192-byte ring), so the ring setup is not the bug.
+* `CP_RB_VMID = 0` (ring is fetched in the GART context), `ring gfx_0.0.0 uses VM inv eng 0 on hub 0` - identical to
+  the known-good Linux probe in `890M-LINUX-DUMP.md`, so the invalidation-engine allocation is right.
+* `CP_CPF_STALLED_STAT1 = 0x1` = **only RING_FETCHING_DATA**. `INDR1_FETCHING_DATA` (bit 1), `UTCL2IU_WAITING_ON_*`
+  (7/8) and `GFX_UTCL1_WAITING_ON_TRANS` (9) are all 0: the CP is waiting on **ring data**, not on the IB and not on
+  an address translation. `CP_CPF_BUSY_STAT = 0x6` (CSF_RING_BUSY | CSF_INDIRECT1_BUSY), `CP_BUSY_STAT = 0x80`
+  (PFP parsing packets).
+* `CP_ME_HEADER_DUMP = 0xc0023f00` (INDIRECT_BUFFER) and `CP_IB1_BASE = 0x8001_0002b000`, size 0x38 dw are the
+  **previous** job's IB: the ME never entered the job at rptr.
+* `CP_RB0_RPTR = 0x13a` is the start of the next job's INDIRECT_BUFFER packet, and `CP_RB0_WPTR = 0xb00` (masked
+  0x300) shows the CP **does** know about the new work. So the wptr/doorbell delivery is not what is stuck.
+* `ring gfx_0.0.0 timeout, signaled seq=6, emitted seq=8`: six jobs ran, the seventh stopped at its first ring dword.
+* The driver is 2502 dwords ahead of the rptr on a 2048-dword ring, i.e. it overran a full ring while the CP sat
+  still. That is a consequence, not the cause: `amdgpu_ring_alloc()` only checks `ndw > max_dw`, the space is not
+  re-checked per submission.
+
+So the failing operation is a **ring read at rptr that never produces data**. Two mechanisms survive, and the build 12
+data cannot separate them:
+
+* H1 - the ring bytes the CP fetches are stale (write-back kernel mapping / non-snooping CP). The empty part of the
+  ring is `PACKET3_NOP` with count 0x3FFF = 16384 dwords = **exactly 8 rings**, so a stale NOP at 0x13a makes the CP
+  skip 0x4000 dwords, land on 0x13a again and loop with RPTR never changing - which is what every sample shows.
+  Note `mb()` in the port is a real `mfence`, so the barrier was never the missing piece; the *wptr page* was: the
+  flush in `amdgpu_ring_commit` covered `wptr_old..wptr` of the ring only, while the CP reads the wptr itself from
+  `CP_RB_WPTR_POLL_ADDR = ring->wptr_gpu_addr` (a write-back kernel mapping) and `gfx_v11_0_ring_set_wptr_gfx()`
+  only did `atomic64_set(ring->wptr_cpu_addr, ...)` before the doorbell.
+* H2 - the read really hangs on the fabric (bad GART PTE / wrong physical address). For this one the build 12 dump
+  has no usable value, because exactly the registers that would show it (`GCVM_L2_PROTECTION_FAULT_STATUS/ADDR`,
+  `INVALIDATE_ENG0_ACK`) were read at the 11.0 offsets.
+
+Build 13 (`ac3edcd7`, 10,812,792 B) tests both at once - one reboot, one run:
+
+1. `gfx_v11_0_ring_set_wptr_gfx()`: `clflush` the wptr writeback line and `mb()` before `WDOORBELL64`.
+2. `amdgpu_ring_commit()`: flush the whole 8K ring instead of the `wptr_old..wptr` range (removes the range/wrap
+   arithmetic from the picture).
+3. `amdgpu_dev_coredump.c`: every GCVM read shifted by +4 dwords for GC 11.5 (+PFLT_CNTL/PFLT_STATUS,
+   CP_RB_VMID/WPTR_DELAY/DOORBELL_CONTROL/WPTR_POLL_ADDR/RPTR_ADDR), plus ring state (`use_doorbell`, `wptr`,
+   `wptr_old`, software rptr, **rptr read from the writeback memory**, hardware rptr and a second hardware rptr
+   sample 5 ms later).
+
+Patch: fork `0fe7d66` (`gpu-port/xkpi/patches/amdgpu-wptr-flush-b13.patch`, applies last over the existing set).
+Expected readings after the reboot:
+* if the run passes and `hw_rptr == hw_rptr_5ms` moves on -> H1 (visibility) and the wptr-page flush was the cure;
+* if it still hangs and `PFLT_STATUS`/`FAULT_ADDR` are non-zero -> H2, with the faulting address;
+* if it still hangs with no fault and `hw_rptr == hw_rptr_5ms` -> the CP is looping on the ring (H1 variant that the
+  flush does not reach), and the next step is the ring BO's cache attribute, not more ring flushing.
