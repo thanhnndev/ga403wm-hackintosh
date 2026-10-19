@@ -125,12 +125,14 @@ const char *itlmt7925AwdlInterface::getBSDNamePrefix() { return "awdl"; }
 void itlmt7925AwdlInterface::_unnamedPure490() {}
 
 // The AWDL protocol slots (507..569) answer unsupported until the real implementation (channel sequence, PSF frames, peer
-// table - phases 3/4). The kernel-log trace shows which ones the Family and wifip2pd actually call, in what order.
+// table - phases 3/4). The trace goes through the controller's itlmt_native_trace ring (mirrored to NVRAM with
+// itlmt_native_nvtrace=1): IOLog from this kext does not reach the unified log on this machine, so NVRAM/ioreg is the only
+// way to see which slots the Family and the AWDL peer manager actually call, in what order.
 IOReturn itlmt7925AwdlInterface::awdlProto(const char *name)
 {
-    if (awdlProtoLogged < 48) {
+    if (awdlProtoLogged < 96) {
         awdlProtoLogged++;
-        IOLog("itlmt7925: awdl proto %s (stub)\n", name);
+        itlmtTrace(getController(), "awdl:proto %s", name);
     }
     return kIOReturnUnsupported;
 }
@@ -144,7 +146,7 @@ IOReturn itlmt7925AwdlInterface::awdlProto(const char *name)
 IOReturn itlmt7925AwdlInterface::setCOMPANION_SKYWALK_IF_CREATE(apple80211_companion_skywalk_if_create *a1)
 {
     uint32_t action = a1 ? *(const uint32_t *)((const uint8_t *)a1 + 4) : 0xffffffffu;
-    IOLog("itlmt7925: awdl companion create action=%u (stub, unsupported)\n", action);
+    itlmtTrace(getController(), "awdl:companion action=%u (unsupported)", action);
     return kIOReturnUnsupported;
 }
 

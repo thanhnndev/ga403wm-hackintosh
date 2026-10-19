@@ -338,3 +338,30 @@ the daemon continues and the interface stays up.
    `setPSF_DWELL` once AirDrop/peer discovery starts).
 2. Phase 3: implement the channel sequence (ROC slicing) and the PSF/action-frame TX those slots need; the LLW companion
    interface (slot 562) afterwards.
+
+### 10.6 Round 2026-10-19 (evening): the AWDL ioctls never left the driver - `ret=58` is this driver's own gate
+
+AirDrop-off trace on the boot with the AWDL protocol class (`./vif_create_test en5`, then the kernel log):
+
+* `(IO80211Family) com.apple.p2p.awdl0:` lines prove the **Family's AWDL peer manager runs for this vif**:
+  `IO80211AWDLPeerManager::updateLocalRequests`, `::interfaceStateChange`, `isScanDisallowedByAwdl`,
+  `IO80211PeerManager::setScanningState` (source ScanManagerFamily / DriverInternalScanDone). So
+  `IO80211VirtualInterface::createPeerManager` (slot 355) did run for role 6.
+* `IO80211AWDLPeerManager::getAwdlChannelSequence[28260] : unable to get AWDL channel sequence ret=58` - the peer
+  manager asks the driver through `apple80211RouteInternal(0xc02869c9, 0x81, iface, out)`, which indexes the Family's
+  route table at `0xffffff800247cea0` (get) / `0xffffff800247e0f0` (set) by `ioctl - 1`; entry 0x81 is
+  `apple80211getAWDL_SYNCHRONIZATION_CHANNEL_SEQUENCE(iface, out)` (0xffffff8002263a45), whose first step is
+  `call [vptr + 0xcc8]` = **slot 411 `IO80211SkywalkInterface::isCommandProhibited(int)`** (0xffffff80022f9bce), which
+  tail-calls the **controller's** `isCommandProhibited`. Returning non-zero there returns that value to the caller -
+  and `ret=58` is exactly `itlmt7925Wifi::isCommandProhibited`'s `kProhibited` (0x3a, itlmt7925_wifi.cpp:127).
+* So the whole AWDL ioctl family (channel sequence, sync params, election, PSF dwell, LLW params, companion create
+  0x125, OS eligibility 0x23f) was refused by this driver's own allowlist before reaching either the Family's handlers
+  or the interface's `IO80211AWDLProtocol` slots. `wifip2pd`'s `Apple80211IOCTLSetWrapper ... return 58/0x0000003a`
+  lines are the same gate.
+* Fix in this round: `commandAllowed()` now lets the AWDL family through when `itlmt_awdl=1` (the ioctl numbers are the
+  route-table indices above: 0x74-0x8b, 0x8f, 0x94-0x97, 0x9b, 0x9e, 0xa2-0xa7, 0xc9-0xe9, 0xf4-0x107, 0x125,
+  0x152-0x158, 0x15f, 0x172, 0x1a0, 0x1a1, 0x1b0, 0x1d3, 0x23f). With the boot-arg absent nothing changes.
+* The AWDL stub trace now goes through `itlmtTrace(getController(), ...)` (the `itlmt_native_trace` ring, mirrored to
+  NVRAM): IOLog from this kext does not reach the unified log on this machine. `nvram -p | grep itlmt-native-trace`
+  after the reboot shows `awdl:proto <slot>` / `awdl:companion action=<n>` - i.e. which protocol slots the peer manager
+  drives once the gate is open.

@@ -650,6 +650,19 @@ static bool commandAllowed(int cmd)
     // boot-arg absent the ioctl stays refused exactly as before
     case 0x5e:
         return itlmtAwdlEnabled();
+    // AWDL phase 3: the Family drives the whole AWDL protocol through these ioctls (apple80211{get,set}AWDL_*, LLW_PARAMS,
+    // COMPANION_SKYWALK_IF_CREATE, OS_ELIGIBILITY). The numbers are the indices of the Family's route tables
+    // (0xffffff800247cea0 get / 0xffffff800247e0f0 set, 25G241) plus one; every name below has a handler in one of them.
+    // Refusing them is what the AWDL peer manager reports as "unable to get AWDL channel sequence ret=58" - 0x3a is
+    // kProhibited, i.e. this gate - and it means the ioctl never reaches the interface's IO80211AWDLProtocol slots.
+    case 0x74: case 0x75: case 0x76: case 0x77: case 0x78: case 0x7a: case 0x7c: case 0x7d: case 0x7e: case 0x7f:
+    case 0x80: case 0x81: case 0x82: case 0x83: case 0x84: case 0x85: case 0x86: case 0x87: case 0x88: case 0x8a:
+    case 0x8b: case 0x8f: case 0x94: case 0x95: case 0x97: case 0x9b: case 0x9e: case 0xa2: case 0xa3: case 0xa4:
+    case 0xa7: case 0xc9: case 0xca: case 0xcb: case 0xcc: case 0xcd: case 0xd0: case 0xd5: case 0xd9: case 0xdb:
+    case 0xdc: case 0xdf: case 0xe0: case 0xe1: case 0xe2: case 0xe5: case 0xe9: case 0xf4: case 0xf6: case 0xf7:
+    case 0xf9: case 0xfd: case 0x106: case 0x107: case 0x125: case 0x152: case 0x155: case 0x156: case 0x157: case 0x158:
+    case 0x15f: case 0x172: case 0x1a0: case 0x1a1: case 0x1b0: case 0x1d3: case 0x23f:
+        return itlmtAwdlEnabled();
     default:
         return false;
     }
