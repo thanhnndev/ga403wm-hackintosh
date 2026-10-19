@@ -1,5 +1,35 @@
 # 890M port - session handoff (2026-10-18, written ~17:00)
 
+## Latest override — Step46, Oct 19 after 21:22 boot
+
+This block supersedes the older live/install and next-step sections below. Read Step46 at the end of
+`docs/890M-TRACE.md` first. Current macOS is **26.7.1 / 25G241**. NMXGPU owns DCN35 OLED scan-out
+2880x1800 @120; NMXAccel remains headless and the NVMTL allow list remains rung 1. StrixGOP/StrixAccel
+are not loaded in this boot. VBIOS acquisition succeeds through VFCT; PCI `vbios` fallback was not exercised.
+
+Loaded/installed before the new batch: SHA256 `b5b573db11bc52ffd5791bffc0efaefdef93b4f64f8af0943adc169132648958`,
+UUID `80D4A3FF-1840-3AF3-8219-1E007B0CEB11` (build14). One new two-VM check: VM1 3/3 correct,
+VM2 first frame fails. Do not repeat build14 stress. Its flush/dump hook is dead: scheduler clears `job->vm`
+before that hook; it also fails to mask canonical VAs. Build14 therefore never tested actual user-IB flushing.
+
+Build15 moves GFX IB preparation into the reserved CS path, checks VA/BO bounds, flushes IB lines and owns a
+96-dword first-IB snapshot for timeout reporting. It also fixes ordered patch replay and stale-object builds.
+The old build pipeline could silently reinsert obsolete patch hunks and link a failed compile's old object;
+**reject `03d85486`**, the first failed attempt. Use only the verified full rebuild recorded in Step46.
+**Installed and AuxKC rebuilt:** build15 SHA256
+`c5dea0e09c96981cd186036831c6dd03ad3f81087156eea7820c1d5d198c61ee`, UUID
+`304F821C-A6F0-323B-8328-DC580234D3AF`, fork commit `05562f5` pushed. Full build: runtime 76/76,
+driver 900/900, failure 0. Installed file hash matches; new UUID occurs in AuxKC. Backup of the running build:
+`/Library/NullMoth/nmxgpu-step46-20261019T143851Z/NMXGPU.kext`. **Reboot pending; live kernel still build14.**
+
+No new automatic reboot tests are armed. After booting the verified build15: compare loaded UUID to its manifest,
+then one bounded pair of processes (3 renders each), capturing `ibprep b15` and `ibsnapshot b15` if it fails.
+If it still hangs, decode the owned PM4 snapshot and the context transition rather than adding another blind
+ring/wptr flush. Do not open WindowServer's allow list until graphics jobs are reliable.
+
+REA MCP is connected, but deep providers are unavailable (no Ghidra/Java, Hopper, IDA or Kuna configured).
+Mach-O identity inspection succeeded; focused assembly came from the existing llvm-objdump. No installations.
+
 Read this first, then `docs/890M-TRACE.md` (Step33c .. Step39b are the live log) and `docs/NULLMOTH-2.3.6-LESSONS.md`.
 Everything described here is committed and pushed (repo branch `research/890m-cobalt64`; fork branch `ga403wm-nmx`),
 except what section 3 lists as "not yet installed / not yet built".

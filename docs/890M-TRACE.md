@@ -2723,3 +2723,96 @@ the extracted `vbios` bytes, candidate and installed config pass ocvalidate 1.0.
 `~/ga403-logs/boot-review-20261019/`. Hardware verification is pending: boot macOS and confirm VBIOS acquisition
 (the fallback logs `Fetched VBIOS from ROM BAR` even when supplied by the property), successful attach and a stable
 WindowServer. This fixes the missing-ROM path; the separate second-VM graphics hang from Step44 remains open.
+
+
+## Step46 - current boot, dead build-14 IB hook fixed, reproducible build batch (2026-10-19)
+
+Pulled the main repo to `b78a1d7` and the NMX fork to `33fa7fb`. Actual boot is macOS 26.7.1 / 25G241,
+21:22:57 local. Loaded NMXGPU UUID `80D4A3FF-1840-3AF3-8219-1E007B0CEB11` matches the installed binary
+SHA256 `b5b573db11bc52ffd5791bffc0efaefdef93b4f64f8af0943adc169132648958`. NMXAccel is loaded;
+StrixGOP/StrixAccel are not the current scan-out path. Kernel logs show `Fetched VBIOS from VFCT`, successful
+amdgpu attach, DCN 3.5 and OLED 2880x1800 @120 Hz. The direct PCI `vbios` fallback remains present but this boot
+used VFCT; successful attach does not establish that the fallback itself was exercised.
+
+One bounded, sequential two-process render check of this newly booted build: first VM **3/3 correct** (1-2 ms,
+RGBA `[255,128,64,255]`); second VM fails its first submission at 252 ms. At 21:27:32 the GFX timeout has
+hw RPTR `0x53a` unchanged over 5 ms, WPTR `0xf00`, and no GCVM protection fault. The second process reused the
+same PD/PASID as the first (`87fafc001` / 32769), but received VMID 2 instead of 1. This further narrows the
+observation to a new client/VMID/context transition; it does not prove the page tables are the root cause.
+No repeated stress/benchmarks or WindowServer allow-list changes were performed.
+
+### Why build 14 did not flush or dump any user IB
+
+`amdgpu_job_prepare_job()` explicitly clears `job->vm` once the VMID is assigned, before `amdgpu_job_run()` ->
+`amdgpu_ib_schedule()`. Build 14's `nmx_ib_prepare()` immediately returns on that NULL VM. The timeout dump has
+the same dead guard. Independently, its lookup uses canonical/sign-extended addresses directly, unlike the
+existing CS/GEM paths, which mask with `AMDGPU_GMC_HOLE_MASK`. The installed binary's assembly confirms a bare
+`shrq $12` followed by `amdgpu_vm_bo_lookup_mapping`, with no mask. Consequently, this boot does **not** test
+whether flushing the actual user IB fixes the hang.
+
+Build 15 moves preparation into `amdgpu_cs_patch_ibs`, after BO reservation and before VM handling/job enqueue.
+It uses the existing reservation-checking `amdgpu_cs_find_mapping`, masks the VA, validates mapping and BO bounds
+with 64-bit arithmetic, flushes every cache line of the GFX IB, and issues the memory barrier before enqueue.
+It removes the unreachable scheduler hook. A bounded 96-dword first-IB snapshot is owned by each job, so timeout
+reporting never walks a VM/BO whose lifetime has ended. The snapshot is the CPU view at submission, not proof
+of what the CP fetched, and does not include chained IBs or all shader/descriptor memory.
+
+### Build reliability defect discovered and fixed in the same batch
+
+The old `all.sh` reapplied patches alphabetically with every failure suppressed. This reinserted the obsolete
+IB call after its helper had been removed, and duplicated the GCVM diagnostic block. A real compile failure
+(`nmx_ib_prepare` undeclared) still produced a linked kext using the previous object (`03d85486`): that artifact
+is rejected and **must not be installed**. The legacy b14 patch also contained blank lines as internal context
+that do not exist in vendor HEAD; its context is normalized without changing that historical implementation.
+
+An explicit `patches/series` now names all patches in dependency order. `apply-patches.py` replays them on vendor
+Git HEAD in a temporary tree with zero fuzz, validates every destination against known intermediate/final
+contents, refuses unknown edits, and only then updates changed sources. Repeated replay is an identity operation.
+`all.sh` and `rt.sh` return failure when compilation fails; `one.sh` deletes an old object on failure; direct
+linking refuses outstanding compile-failure markers. No vendor checkout reset/clean is used.
+
+Validation: the actual IB helper passes 11 host cases (canonical VA, BO offset, snapshot bounds, mapping/kmap
+errors, non-GFX/empty/kernel-IB skips). Patch replay tests pass clean application, repeat identity, preservation
+of unknown edits, removal of stale objects and direct-link refusal. These tests do not establish GPU reliability.
+The sanitizer-enabled host executable terminated with SIGILL on this host; the successful helper checks use the
+normal compiler runtime and are not claimed as an ASan/UBSan pass.
+
+### REA boundary and evidence
+
+Applied the `reverse-engineer-anything` skill. REA opened the actual installed NMXGPU and `inspect_macho`
+returned UUID/SHA identity matching the loaded kext (parent evidence
+`ev_5d5bb88f479ecc766450f761d1d923cfccbbb37a51bc87a7ae664c15f754af9d`). Deep assembly was unavailable:
+Ghidra/Java, Hopper, IDA and Kuna providers are not configured/installed. No downloads or configuration changes
+were made. Used the existing `xcrun llvm-objdump` for the focused function instead; REA session closed.
+Private raw evidence: `out/890m-trace/step46/` (`two-vm.txt`, `kernel.txt`, `ib-schedule.asm`, host/replay test logs,
+source reconciliation backup, build logs). Build/install completion is recorded below when verified.
+
+
+### Build15 completion
+
+Fork commit `05562f5` is pushed to `fork/ga403wm-nmx`. Final driver rebuild: **900/900 compiled, failed 0**;
+runtime rebuild: **76 sources, failed 0**. Binary SHA256
+`c5dea0e09c96981cd186036831c6dd03ad3f81087156eea7820c1d5d198c61ee`, UUID
+`304F821C-A6F0-323B-8328-DC580234D3AF`, 10,812,824 bytes. Vendor HEAD:
+`c16de0f9fa84f70b9551f69fde837a7f3a73c0e9`. Candidate directory is
+`~/develop/projects/gpu-src/out-b15/NMXGPU.kext`; do not confuse it with stale `gpu-src/out`.
+`candidate-patch-jobs.asm` confirms `_amdgpu_cs_find_mapping` and `clflush` inside `_amdgpu_cs_patch_jobs`;
+strings contain `ibprep b15`/`ibsnapshot b15` and no old `ibsub`/`ibmap` hook. Build manifest is saved privately.
+Both host suites pass and the changed shell scripts parse. A build interrupted while its script was being
+revised was also rejected; the final run used a frozen copy and compiled every driver source successfully.
+
+The pipeline also keeps an incomplete marker until each stage succeeds; direct linking refuses either
+runtime/driver marker even when compile-failure files have been cleared. Host checks include this case.
+Installation was started through the normal administrator dialog, with a hash-checked candidate and a separate
+backup of the currently installed kext. Its result is recorded next; hardware reliability remains unverified
+until this new binary has actually been booted. No new WindowServer Metal access has been enabled.
+
+
+### Build15 installed — reboot pending
+
+Administrator install completed successfully. Installed hash matches the verified candidate and `AuxKC rebuilt`
+was returned. `kmutil inspect` lists NMXGPU and the new UUID bytes are present in AuxKC. Separate backup:
+`/Library/NullMoth/nmxgpu-step46-20261019T143851Z/NMXGPU.kext`. Runtime remains the old loaded build14 until reboot.
+After reboot verify UUID `304F821C-A6F0-323B-8328-DC580234D3AF` before running a single bounded two-VM check.
+This batch fixes proven dead preparation/build paths; the second-VM graphics hang and WindowServer acceleration
+are **not yet verified fixed**. Keep rung 1 and do not add WindowServer/headroom-hold during that check.

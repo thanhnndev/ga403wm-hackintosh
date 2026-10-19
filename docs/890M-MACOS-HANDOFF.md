@@ -6,6 +6,13 @@ Step-by-step history: [890M trace](890M-TRACE.md).
 
 ## Current state
 
+**Latest: Step46 (2026-10-19)** — use [session handoff](890M-SESSION-HANDOFF.md) and the final Step46 in
+[trace](890M-TRACE.md). macOS 26.7.1 now uses NMXGPU/DCN35 for OLED scan-out. Build14 reproduces a second-VM
+graphics stall; its intended IB flush was unreachable after scheduler VM release. Build15 fixes that lifetime
+and canonical-VA path plus ordered patch application and stale-object build failures. Build15 `c5dea0e0`
+is installed with AuxKC rebuilt, reboot pending (fork `05562f5`). Older entries below
+are historical, including their reboot/install instructions.
+
 NEWEST (Step34, 2026-10-17, Linux): **login-window crash-loop root cause found and fixed from Linux**. The nvmtl
 allow list (`/Library/GPUBundles/nvmtl-allow.txt`) is only scanned until the first line that *decides*, so the
 shipped `*` on line 2 made every `-Name` below it dead code - and `!Name` is not a deny at all, it is the
