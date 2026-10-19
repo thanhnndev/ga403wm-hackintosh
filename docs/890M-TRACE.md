@@ -2691,3 +2691,35 @@ Build 14 (planned, not built): for a user IB amdgpu keeps no kernel pointer (`ib
 cannot print what the CP was asked to run. Add a VM-mapping lookup that kmaps the IB's BO and prints the first 96
 dwords at timeout, dump the PD/PT walk for the same VA, and flush the IB's lines just before `emit_ib` - one build
 that either fixes it (stale IB content) or names what the CP is really reading (wrong page / wrong PTEs).
+
+## Step45 - Oct 19 Apple-logo boot failure: missing VBIOS; direct PCI ROM fallback installed from Linux
+
+Read-only decode of Persist `16f` and `170`: boot E818A3CA1ECF46D695F10A0F0D0B4BF8 starts at
+20:42:10 +0700. At 20:42:18.894, `drmn0: Unable to locate a BIOS ROM` -> `Fatal error during GPU init` ->
+`attach failed (22)` -> `no driver took 1002:150E`. NMXAccel waits for NMXGPU to claim the device. WindowServer
+then asserts approximately every ten seconds, through 20:49:21. CoreDisplay's 20:48:09 report says
+`FB: 0 of 1 opened`, `IOFramebufferOpen` error `0xe00002c7` on NVIDIA PEGP/IONDRVFramebuffer, and
+`MappedDisplay.cpp:5509`. This boot fails to bring up a display; there is no new kernel panic report.
+
+StrixVFCT is enabled on the ESP and its 21636-byte payload passes its checksum. The failure is not explained by
+a missing EFI bundle. The ACPI shim searches the published IOService tree; timing and its first-dictionary selection
+remain hypotheses, not proven root causes. The installed NMXGPU binary (modified 20:38) has SHA256
+`b5b573db11bc52ffd5791bffc0efaefdef93b4f64f8af0943adc169132648958`.
+
+Fix applied to the live ESP: `tools/890m/inject-vbios.py` extracts the exact 101:0:0 1002:150e image from StrixVFCT,
+checks VFCT length/checksum and the ROM's ATOM header, then adds it as Data property `vbios` on
+`PciRoot(0x0)/Pci(0x8,0x1)/Pci(0x0,0x0)`. The existing port supports this path:
+`amdgpu_get_bios_apu` -> `amdgpu_read_bios` -> `linuxkpi_pci_map_rom` -> `vga_pci_map_bios` ->
+`nmx_xnu_pci_rom`, which checks `vbios` before attempting the ROM BAR. The firmware is 21504 bytes, SHA256
+`7375149330e753a4f5903cb9087a79fdab008d02856ca72366a40e6dcfde1777`; firmware and private EFI configs stay outside Git.
+
+Only `vbios` changes: preserve `#display`, boot arguments, the cobalt framebuffer and installed kexts. Do not
+enable StrixGOP alongside NMXGPUFB as part of this fix (Step29 documents the duplicate-framebuffer failure).
+The prior suggestion to restore StrixGOP is therefore superseded by this narrower fix. No AuxKC rebuild is needed
+for a PCI property supplied by OpenCore.
+
+Validation: malformed/truncated/checksum-invalid VFCT inputs rejected, candidate differs from original only by
+the extracted `vbios` bytes, candidate and installed config pass ocvalidate 1.0.9. Original config backed up under
+`~/ga403-logs/boot-review-20261019/`. Hardware verification is pending: boot macOS and confirm VBIOS acquisition
+(the fallback logs `Fetched VBIOS from ROM BAR` even when supplied by the property), successful attach and a stable
+WindowServer. This fixes the missing-ROM path; the separate second-VM graphics hang from Step44 remains open.
