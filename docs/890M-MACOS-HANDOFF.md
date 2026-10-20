@@ -6,12 +6,12 @@ Step-by-step history: [890M trace](890M-TRACE.md).
 
 ## Current state
 
-**Latest: Step54 (2026-10-20)** — AGDC association fix **installed, reboot pending**.
-Step53 boot created the OLED kernel pipe but no frames reached it: AGDC/IOPresentment reported only
-HDMI. A helper-only reply simulation validated the missing second map entry. New NVRMAGDC/NVAccel/
-NMXGPU publish the OLED association and real timing before first map creation. Six UUIDs verified
-in AuxKC, HDMI session retained; actual OLED output still needs boot verification. HDR unresolved.
-See [session handoff](890M-SESSION-HANDOFF.md) and final Step54 in [trace](890M-TRACE.md).
+**Latest: Step55 (2026-10-20)** — AGDC client handshake fix **installed, reboot pending**.
+Step54 boot confirms actual two-screen map and correct timing replies, but OLED still receives no
+frames. AGDC rejects IOPresentment cmd0x2001 exactly when WS reports information failure. The scoped
+companion now handles that passive client declaration; only NVRMAGDC changed, five other kexts and
+plugin retained. Six UUIDs in AuxKC. Actual OLED presentation and HDR are not yet fixed/verified.
+See [session handoff](890M-SESSION-HANDOFF.md) and final Step55 in [trace](890M-TRACE.md).
 
 NEWEST (Step34, 2026-10-17, Linux): **login-window crash-loop root cause found and fixed from Linux**. The nvmtl
 allow list (`/Library/GPUBundles/nvmtl-allow.txt`) is only scanned until the first line that *decides*, so the

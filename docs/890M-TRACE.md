@@ -3267,3 +3267,54 @@ check iop_ok_h4 increasing, errors gone and visible OLED desktop while HDMI stay
 Committed read-only tools/890m/iop-map.c and adjacent development entitlement enable this check.
 The previous scoped HiDPI helper already removed itself after success; existing real EDID/name/
 120Hz HiDPI settings preserved. This is not yet an OLED presentation pass and not an HDR fix.
+
+
+## Step55 — accept the missing AGDC client declaration before initialization (2026-10-20)
+
+Boot11:05:29 matches all Step54 UUIDs. User reports OLED retains verbose console; HDMI functional.
+AGDC now actually reports both framebuffers: HDMI0x1000005fc/slot0, OLED0x1000005df/slot1. Fresh
+IOPresentment map confirms both entries, NVAccel0x1000004de nonzero, same AGDC0x100000608. Kernel
+heads_piped0x11, NMX render-PCI marker/actual pipe index1 correct, real NVRMTiming published. K5
+link/caps15each, asked/link/caps masks3, why0, refused_idx-1. iop_ok_h4 remains0 while head0 advances.
+Thus Step54 association/timing fixes are real but not a complete presentation pass.
+
+The next failure is explicit: kernel logs cmd0x2001/in4 -> Unsupported at11:05:49.665 (three calls)
+and49.992 (two), immediately matching WS IOPresentment `Unable to get AGDC information`, error
+0x10000003. No OLED frame reaches the copy path. Kernel creates foreign pipe1 at49.850/arms49.879,
+then WS retries at49.992 but the same declaration is still rejected. Existing old Strix AGDC
+(kexts/StrixAccel/StrixAgdc.h kCmdClientSet) already recorded and acknowledged this passive4-byte
+client declaration. The NVIDIA companion lacked that handler. Map success alone was insufficient
+validation in Step54; do not repeat that inference.
+
+Read available SDK/source and local IOPresentment wrapper bytes copied from our own process
+(no WS memory access): Initialize accepts one object argument; CreateForRegistryID wraps the
+factory. A separate entitled helper attempts CreateForRegistryID for OLED but NVAccel's display
+pipe user-client open returns kIOReturnExclusiveAccess because WS owns it. IOServiceOpen/call
+interposition only in that helper identifies NVAccel type4 selector0 as this boundary. The helper
+returns NULL before initialization. No WS/client ownership was bypassed, no debugserver/security
+change and no full initialization success claim. Private helper/interposer traces and wrapper
+byte dumps in out/890m-trace/step55; ordinary local evidence, not REA provider output.
+
+Fix: scoped hybrid NVRMAGDC handles0x2001 with exact4-byte input and zero-output validation;
+unaligned payload copied safely, declaration recorded, kIOReturnSuccess returned. No client-specific
+hardware policy exists in this display companion; this declaration does not acknowledge a GPU
+completion, memory preparation, modeset or HDR feature. New header nvrm-agdc-client.h validates
+the boundary; focused C checks cover declarations1/0, unaligned input, null input/output storage,
+short/oversized input and nonzero output length. Read-only nvrmfb_agdc_client_set and
+nvrmfb_agdc_client_set_value counters record handling. Native-only default behavior unchanged.
+
+Built and installed only NVRMAGDC, retaining release2.4.2 metadata + existing hybrid flag:
+SHA256 `460fba65165c59c94a03f13d4cc374b2465212d87046175a26017541deb90350`, UUID
+`52DE7317-C506-3728-B84F-83533FBE6AEE`. Full AuxKC rebuilt and six UUIDs verified; other five
+kernel image hashes and plugin checked unchanged from Step54. Transaction installer
+macos-nvidia-agdc-client-install.sh backs up AGDC/AuxKC, rolls back errors. Backup
+`/Library/NullMoth/agdc-client-step55-YevKYGQT`; manifest/install/build/protocol checks in step55.
+No live kext swap, WS restart, NVRAM clear or EFI/security change. Existing real panel identity,
+HiDPI120 and HDMI working session retained. No repetitive unchanged GPU stress tests.
+
+**Reboot pending; new handler has not executed.** Normal hybrid boot with HDMI. First confirm new
+AGDC UUID and client_set counter growth; require AGDC information error gone. Then confirm actual
+map still2, OLED plane transactions/head4 successes and visible desktop with HDMI intact. If it
+still fails, trace initialization/activation after the now-accepted declaration instead of
+reverting working association/EDID code or claiming map/pipe creation equals display success.
+HDR remains unresolved; the framebuffer's current supported path is SDR8-bit.

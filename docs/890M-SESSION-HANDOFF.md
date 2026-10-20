@@ -1,5 +1,32 @@
 # 890M port - session handoff (2026-10-18, written ~17:00)
 
+## Latest override — Step55 AGDC client handshake installed, reboot pending
+
+Boot11:05:29 loaded Step54 successfully: actual AGDC fbmap/maxfb2 and fresh IOPresentment map2
+(both framebuffer IDs on NVAccel, indices0/1). Both real timing and scaler queries answered,
+K5 link/caps masks3/why0. Kernel pipe exists/armed, but OLED still retains console and iop_ok_h4=0.
+Do not call Step54 a full presentation pass. HDMI remains functional.
+
+Next concrete blocker: NVRMAGDC rejects cmd0x2001/in4 immediately at WS11:05:49.665 and49.992;
+IOPresentment logs AGDC information error0x10000003 at those same times. This passive client
+handshake was implemented in old Strix AGDC but missing in new NVIDIA companion. New handler
+(hybrid profile only) validates exact4-byte input/zero output, records client declaration and
+returns success. No fake prepare, modeset, GPU completion or HDR capability. Bounds/unaligned
+payload checks and build/AuxKC checks pass.
+
+**Only NVRMAGDC changed/installed**, SHA `460fba65...`, UUID
+`52DE7317-C506-3728-B84F-83533FBE6AEE`; other five kernel images + plugin retained from Step54,
+six UUIDs verified in AuxKC. Backup `/Library/NullMoth/agdc-client-step55-YevKYGQT` (AGDC and AuxKC).
+Installer `macos-nvidia-agdc-client-install.sh`; logs/manifest in `out/890m-trace/step55/`.
+Full IOPresentment initialization cannot be validated in a fresh helper while WS holds NVAccel's
+exclusive display-pipe client: helper creation returned NULL at ExclusiveAccess, no control stolen.
+No WS restart or security/EFI/NVRAM change. Existing real EDID/120Hz HiDPI and HDMI path preserved.
+
+Next normal hybrid boot with HDMI: confirm new AGDC UUID, nvrmfb_agdc_client_set>0, absence of
+AGDC information error and OLED missing-pipe messages, then iop_ok_h4 growth and OLED desktop.
+Full rendering still unverified. HDR remains unresolved. Do not repeat map-only tests and call
+that initialization or scanout success.
+
 ## Latest override — Step54 AGDC association fix installed, reboot pending
 
 Boot10:51:00 loaded Step53 correctly. Kernel OLED pipe actually exists: heads_published/piped0x11,
