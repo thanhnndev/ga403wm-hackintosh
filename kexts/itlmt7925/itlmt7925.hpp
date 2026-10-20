@@ -167,6 +167,7 @@ private:
     // window on the AWDL channel (the firmware has no AWDL channel sequencing of its own).
     int  awdlSubmit(const uint8_t *frame, uint32_t len, uint8_t channel, uint32_t dwellMs);
     void awdlSyncTx();
+    int  awdlRxFetch(uint8_t *out, uint32_t cap, uint32_t *outLen);
     uint8_t awdlFrame[256] = {};
     volatile uint32_t awdlFrameLen = 0;
     uint32_t awdlAfSeq = 0;                                  // seq_ctrl counter of the AWDL action frames this driver sends
@@ -178,6 +179,12 @@ private:
     // the exact 802.11 wrapper Apple's driver builds around the TLV blob the Family hands over, which is what the transmit
     // path still has to reproduce.
     uint32_t awdlAfSeen = 0, awdlAfDumped = 0;
+    // AWDL action frames heard on the social channel, waiting for the AWDL interface to hand them to the peer manager
+    // (phase 3 receive half). Single producer (the RX path) and single consumer (the interface's work loop), so the two
+    // indices are the only shared state.
+    struct AwdlRxSlot { uint32_t len; uint8_t data[512]; };
+    AwdlRxSlot awdlRxRing[4] = {};
+    volatile uint32_t awdlRxHead = 0, awdlRxTail = 0;
     void m3Pump(uint32_t ms);
     void m3Event(const uint8_t *ev, uint32_t len);
     void m3ParseAp();

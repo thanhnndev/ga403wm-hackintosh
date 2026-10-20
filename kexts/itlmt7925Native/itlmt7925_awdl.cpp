@@ -137,6 +137,10 @@ public:
     void awdlPsfStart();
     void awdlPsfTick();
     static void awdlPsfTimerFired(OSObject *owner, IOTimerEventSource *sender);
+    // Phase 3 receive half: action frames the radio heard on the social channel are queued by the core and handed to the
+    // Family's io80211 peer manager here, which is what turns them into peers / sync / service requests.
+    void awdlPollRx();
+    void awdlDeliverRx(const uint8_t *frame, uint32_t len);
     void free() override;
 
     // Creates the pool and the (three) queues and registers the ifnet from a RegistrationInfo filled like
@@ -157,6 +161,7 @@ private:
     uint8_t awdlPsfFrame[256] = {};            // copy of the last template (the Family's buffer is not ours to keep)
     uint32_t awdlPsfLen = 0;
     uint32_t awdlPsfTicks = 0;                 // trace/metrics counter
+    uint32_t awdlRxFrames = 0, awdlRxLogged = 0;   // action frames handed to the peer manager / trace budget
     IOService *coreDev = nullptr;              // the core service (itlmt-native-awdl-sync-v1)
     IOSkywalkPacketBufferPool *awdlPool = nullptr;
     IOSkywalkPacketQueue *awdlQueues[3] = {};
@@ -317,6 +322,7 @@ void itlmt7925AwdlInterface::awdlPsfStart()
 
 void itlmt7925AwdlInterface::awdlPsfTick()
 {
+    if (coreDev && awdlSyncEnabled) awdlPollRx();            // frames heard during the previous window go up first
     if (awdlPsfLen >= 24 && coreDev && awdlSyncEnabled) {
         ItlNativeAwdlSync req = { 1, awdlPsfFrame, awdlPsfLen, 6, kAwdlPsfRocMs };
         IOReturn r = coreDev->callPlatformFunction(ITL_NATIVE_AWDL_SYNC, false, &req, nullptr, nullptr, nullptr);
@@ -325,6 +331,62 @@ void itlmt7925AwdlInterface::awdlPsfTick()
             itlmtTrace(getController(), "awdl:psf tick %u len=%u rc=%x", (unsigned)awdlPsfTicks, awdlPsfLen, r);
     }
     if (awdlPsfTimer && awdlSyncEnabled && awdlPsfLen) awdlPsfTimer->setTimeoutMS(kAwdlPsfPeriodMs);
+}
+
+// -----------------------------------------------------------------------------------------------------------------------
+// Phase 3, receive half (docs/ROADMAP-AWDL.md §10.12). The core's RX path recognises an AWDL action frame (0x7f / 00:17:f2 /
+// type 8) and queues it; this drains the queue and hands each frame to the Family's AWDL peer manager, which is the only
+// component that can turn frames into peers, sync state and service requests. Without it the peer list stays empty and
+// AirDrop never advertises anything, however well the PSF transmit half works.
+// -----------------------------------------------------------------------------------------------------------------------
+void itlmt7925AwdlInterface::awdlPollRx()
+{
+    for (int i = 0; i < 4; i++) {
+        uint8_t buf[512];
+        ItlNativeAwdlRx req = { 1, buf, sizeof(buf), 0 };
+        IOReturn r = coreDev->callPlatformFunction(ITL_NATIVE_AWDL_RX, false, &req, nullptr, nullptr, nullptr);
+        if (r != kIOReturnSuccess || !req.len) return;
+        awdlDeliverRx(buf, req.len);
+    }
+}
+
+void itlmt7925AwdlInterface::awdlDeliverRx(const uint8_t *frame, uint32_t len)
+{
+    // Two offsets from the KernelCollection (this build): IO80211SkywalkInterface::getPeerManager() is [[this+0x120]+0x28],
+    // and IO80211AWDLPeerManager::actionFrameInput(IO80211Buffer*, uint len, void*, uint) is virtual slot 73, i.e. the entry
+    // 0x238 bytes into the object's vptr (slot 73 of the table minus its two header words). The argument is a plain
+    // {data, len} pair, the same layout the Family's own readers use for an IO80211Buffer.
+    void *pm = *(void **)((uint8_t *)this + 0x120);
+    if (pm) pm = *(void **)((uint8_t *)pm + 0x28);
+    if (!pm) {
+        if (awdlRxLogged < 4) { awdlRxLogged++; itlmtTrace(getController(), "awdl:rx no peer manager yet"); }
+        return;
+    }
+    void **vt = *(void ***)pm;
+    if (!vt) return;
+    // The slot is only used when it can be proved: in this KernelCollection the neighbouring entry (slot 74) is doEnable, and
+    // the distance between the two function pointers is fixed. A KASLR slide cancels out, so a mismatch means the table is
+    // not laid out the way this code expects - and calling an unknown function pointer would panic the machine.
+    const long kDoEnableDelta = (long)(0xffffff80021c5216LL - 0xffffff800220e1aeLL);
+    uintptr_t fnAF = (uintptr_t)vt[73 - 2], fnNext = (uintptr_t)vt[74 - 2];
+    if (!fnAF || (long)(fnNext - fnAF) != kDoEnableDelta) {
+        if (awdlRxLogged < 4) {
+            awdlRxLogged++;
+            itlmtTrace(getController(), "awdl:rx slot check failed af=%p next=%p", (void *)fnAF, (void *)fnNext);
+        }
+        return;
+    }
+    struct { const uint8_t *data; uint64_t len; } b = { frame, len };
+    typedef int (*AfInput)(void *, void *, uint32_t, void *, unsigned long);
+    AfInput fn = (AfInput)fnAF;
+    if (!fn) return;
+    awdlRxFrames++;
+    if (awdlRxLogged < 6) {
+        awdlRxLogged++;
+        itlmtTrace(getController(), "awdl:rx af len=%u n=%u pm=%p fn=%p sub=%02x", len, (unsigned)awdlRxFrames, pm,
+                   (void *)fn, len > 30 ? frame[30] : 0);
+    }
+    fn(pm, &b, len, nullptr, 0);
 }
 
 void itlmt7925AwdlInterface::free()

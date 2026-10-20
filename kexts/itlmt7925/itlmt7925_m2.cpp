@@ -233,6 +233,16 @@ void itlmt7925::rxParseFrame(const uint8_t *p, uint32_t len)
         bool awdlAf = p[off + 24] == 0x7f && p[off + 25] == 0x00 && p[off + 26] == 0x17 && p[off + 27] == 0xf2 &&
                       p[off + 28] == 0x08;
         awdlAfSeen++;
+        if (awdlAf) {                                    // queued for the peer manager (the AWDL interface drains this ring)
+            uint32_t head = awdlRxHead;
+            if ((head - __atomic_load_n(&awdlRxTail, __ATOMIC_ACQUIRE)) < 4) {
+                AwdlRxSlot &s = awdlRxRing[head & 3];
+                uint32_t n = len - off; if (n > sizeof(s.data)) n = sizeof(s.data);
+                memcpy(s.data, p + off, n);
+                s.len = n;
+                __atomic_store_n(&awdlRxHead, head + 1, __ATOMIC_RELEASE);
+            }
+        }
         if (awdlAfDumped < 10 || awdlAf) {
             awdlAfDumped++;
             char hex[3 * 48 + 1];

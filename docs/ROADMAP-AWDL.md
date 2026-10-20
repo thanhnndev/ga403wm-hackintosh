@@ -573,3 +573,34 @@ instead of the wrong `00:25:00` it checked before (which is the BSSID OUI, not t
 Also observed in the same run: the Family re-sends `setAWDL_SYNC_FRAME_TEMPLATE` every few seconds with updated TLVs
 (110 -> 112 -> 113 bytes) - i.e. its state machine is alive and the sync parameters are changing (channel sequence, counters),
 so the cadence and the content both come from it.
+
+### 10.12 Receive half: action frames go to the Family's peer manager
+
+The transmit half is now correct (`awdl:psf armed tlv=110 frame=150 fc=d0 cat=7f oui=0017f2 type=08 sa=de567b3481d4`,
+`awdl sync: tx ch=6 len=150 ok=1`, ROC granted every time), and the other device still shows nothing. That is expected once
+the discovery chain is looked at: AirDrop lists a device only after that device's **service** is learned, and services are
+exchanged in AWDL action frames (service request / response, MIF). The Family builds them in `IO80211AWDLPeerManager`
+(`buildServiceResponseTlvs`, `buildMasterIndicationTemplate`) in reply to frames it receives. With no receive path the peer
+list stays empty, so nothing is advertised and nothing shows up - transmit alone can never be enough.
+
+So the frames the radio hears now go where the Family expects them:
+
+* `rxParseFrame` already recognises an AWDL action frame by its header (24-byte 802.11 action frame with `addr3` a unicast
+  BSSID, then `0x7f / 00:17:f2 / 8`). Those frames are copied into a four-entry ring (`awdlRxRing`) - single producer, the RX
+  thread - and nothing else in the RX path changes.
+* The AWDL interface drains the ring once per PSF tick through a new platform function, `itlmt-native-awdl-rx-v1`
+  (`ITL_NATIVE_AWDL_RX`), and hands each frame to `IO80211AWDLPeerManager::actionFrameInput`.
+* Reaching that method needed two offsets from the KernelCollection, and both are checked at run time: the peer manager is
+  `IO80211SkywalkInterface::getPeerManager()`, i.e. `[[this+0x120]+0x28]` (`0xffffff80022f5fa8`), and `actionFrameInput` is
+  **virtual slot 73** - 0x238 bytes into the object's vptr once the two vtable header words are accounted for. Before the
+  first call the driver verifies that slot 74 is `doEnable` by comparing the distance between the two function pointers
+  (`0xffffff80021c5216 - 0xffffff800220e1ae`); a KASLR slide cancels out, and a mismatch means the table is not what this
+  code assumes, in which case the frame is dropped and `awdl:rx slot check failed` is traced instead of calling an unknown
+  pointer.
+
+The trace tells the two possible outcomes apart on the next run:
+
+* `awdl:rx af len=.. n=.. pm=.. fn=.. sub=..` - frames arrive on the social channel, the peer manager is being fed, and the
+  next observable is `IO80211AWDLPeerManager` state in the unified log (peers, election, sync).
+* nothing at all - the firmware is not delivering other-BSS management frames to the host while parked on the social channel.
+  Then the RX filter (chip side), not the parser, is the next thing to change.

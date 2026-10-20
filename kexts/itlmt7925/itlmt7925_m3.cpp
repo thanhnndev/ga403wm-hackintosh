@@ -709,6 +709,21 @@ void itlmt7925::awdlSyncTx()
     if (awdlTxTry <= 10) m3log("awdl sync: tx ch=%u len=%u ok=%d", ch, len, ok ? 1 : 0);
 }
 
+// Pops one AWDL action frame the RX path queued (docs/ROADMAP-AWDL.md phase 3, receive half). Returns 1 when a frame was
+// copied out, 0 when the queue is empty; the caller is the AWDL interface's work loop, the producer is the RX thread.
+int itlmt7925::awdlRxFetch(uint8_t *out, uint32_t cap, uint32_t *outLen)
+{
+    if (!out || !outLen) return 0;
+    uint32_t tail = awdlRxTail;
+    if (tail == __atomic_load_n(&awdlRxHead, __ATOMIC_ACQUIRE)) return 0;
+    const AwdlRxSlot &s = awdlRxRing[tail & 3];
+    uint32_t n = s.len; if (n > cap) n = cap;
+    memcpy(out, s.data, n);
+    *outLen = n;
+    __atomic_store_n(&awdlRxTail, tail + 1, __ATOMIC_RELEASE);
+    return 1;
+}
+
 // ---------------------------------------------------------------------------------------------
 // Management frame TX / RX (mt7925e_tx_prepare_skb + mt7925_mac_write_txwi, CT path with a token in the hw txp)
 // ---------------------------------------------------------------------------------------------

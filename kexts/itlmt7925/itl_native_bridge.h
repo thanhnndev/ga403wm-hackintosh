@@ -28,6 +28,18 @@ struct ItlNativeAwdlSync {
 };
 #define ITL_NATIVE_AWDL_SYNC "itlmt-native-awdl-sync-v1"
 
+// ITL_NATIVE_AWDL_RX, p1 = ItlNativeAwdlRx*: pop one AWDL action frame the radio heard while it was parked on the social
+// channel, so the AWDL interface can hand it to IO80211AWDLPeerManager::actionFrameInput. The firmware has no AWDL receive
+// path: it only delivers ordinary frames, and the driver is the one that knows they belong to the peer manager
+// (docs/ROADMAP-AWDL.md phase 3, receive half). `len` is 0 when the queue is empty.
+struct ItlNativeAwdlRx {
+    uint32_t version;
+    uint8_t *buf;
+    uint32_t cap;
+    uint32_t len;             // out
+};
+#define ITL_NATIVE_AWDL_RX "itlmt-native-awdl-rx-v1"
+
 // ---- scan / join control (all calls come from the interface's work queue; none blocks on the chip) -------------------------
 // Information elements are kept whole-element up to this many bytes (a beacon's own IEs; the rest is cut at an element boundary).
 #define ITL_NATIVE_IE_MAX 512
