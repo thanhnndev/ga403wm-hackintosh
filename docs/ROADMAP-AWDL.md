@@ -531,3 +531,13 @@ What this round adds:
 Once the layout is known the transmit path becomes three lines of wrapping in `awdlSyncTx()` - 802.11 header with the AWDL MAC
 (`de:56:7b:34:81:d4`) and the peer manager's BSSID (`00:25:00:ff:94:73`), category, OUI, then `awdlFrame` - and the same
 parser routes received frames to the peer manager.
+
+First capture attempt (d8a7d57, core `b614d747`, native `b14c06b4`): four dumps arrived, all `apple=0`, and none of them is
+an AWDL frame - the probe accepted any `0xd0` byte inside the received buffer, and data frames (IP payloads, IPv6 multicast
+DA `33:33:00:00:00:fb` in one of them) contain that byte too. It also ran with no `awdl0` at all (the vif is recreated per
+boot and had not been created), i.e. on the infrastructure channel, so nothing was even looking at the social channel.
+
+The probe is now strict: duration 0, DA broadcast or unicast, TA and BSSID unicast and non-zero (any real 802.11 header
+satisfies these, data frames found at a stray `0xd0` almost never do), the dump budget is 10 frames plus every frame that
+carries the Apple OUI at +25, and every 25th hit logs a one-line summary so a long run shows whether anything is arriving at
+all. Core `e756604c`.

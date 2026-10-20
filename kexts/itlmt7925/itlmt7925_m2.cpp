@@ -220,20 +220,29 @@ void itlmt7925::rxParseFrame(const uint8_t *p, uint32_t len)
         return;
     }
     // Phase 3 RX probe (docs/ROADMAP-AWDL.md): management Action frames heard during the ROC window on the social channel.
-    // Apple's driver never sends the TLV blob raw - its firmware wraps it in an 802.11 action frame (category + Apple OUI at
-    // +24..+27 here) - so the bytes of a real frame are the ground truth the transmit wrapper needs. Dumped for the first
-    // few frames only; the counters keep counting.
-    for (uint32_t off = 32; off + 28 <= len && off < 160; off++) {
+    // Apple's driver never sends the TLV blob raw - its firmware wraps it in an 802.11 action frame - so the bytes of a real
+    // frame are the ground truth the transmit wrapper needs. The first version accepted any 0xd0 byte and collected data
+    // frames (IP payloads contain 0xd0 too), so the header has to validate: duration 0, DA broadcast or unicast, TA and BSSID
+    // unicast and non-zero.
+    for (uint32_t off = 32; off + 34 <= len && off < 160; off++) {
         if (p[off] != 0xd0 || p[off + 1] != 0) continue;
+        const uint8_t *a1 = p + off + 4, *a2 = p + off + 10, *a3 = p + off + 16;
+        if ((a1[0] & 1) && (a1[0] & a1[1] & a1[2] & a1[3] & a1[4] & a1[5]) != 0xff) continue;
+        if ((a2[0] & 1) || !(a2[0] | a2[1] | a2[2] | a2[3] | a2[4] | a2[5])) continue;
+        if ((a3[0] & 1) || !(a3[0] | a3[1] | a3[2] | a3[3] | a3[4] | a3[5])) continue;
+        if (p[off + 2] != 0 || p[off + 3] != 0) continue;
         bool appleOui = p[off + 25] == 0x00 && p[off + 26] == 0x25 && p[off + 27] == 0x00;
         awdlAfSeen++;
-        if (awdlAfDumped < 4) {
+        if (awdlAfDumped < 10 || appleOui) {
             awdlAfDumped++;
-            char hex[3 * 40 + 1];
-            uint32_t n = len - off; if (n > 40) n = 40;
+            char hex[3 * 48 + 1];
+            uint32_t n = len - off; if (n > 48) n = 48;
             for (uint32_t i = 0; i < n; i++) snprintf(hex + i * 3, 4, "%02x ", p[off + i]);
             hex[n ? n * 3 - 1 : 0] = 0;
-            m3log("awdl af rx len=%u cat=%02x apple=%d %s", len - off, p[off + 24], appleOui ? 1 : 0, hex);
+            m3log("awdl af rx len=%u cat=%02x apple=%d da=%02x%02x sa=%02x%02x%02x%02x%02x%02x %s",
+                  len - off, p[off + 24], appleOui ? 1 : 0, a1[0], a1[5], a2[0], a2[1], a2[2], a2[3], a2[4], a2[5], hex);
+        } else if ((awdlAfSeen % 25) == 0) {
+            m3log("awdl af seen=%u (last apple=%d cat=%02x)", awdlAfSeen, appleOui ? 1 : 0, p[off + 24]);
         }
         return;
     }
