@@ -494,3 +494,40 @@ Still open after this round: the peer manager's `Did not get AW start event` war
 `APPLE80211_M_AWDL_AVAILABILITY_WINDOW_START` posted per window; the numeric id has not been confirmed yet - the name table
 in the kernel points at 0x4f3 but the spacing of neighbouring ids makes that unverified), and the receive half - routing
 received AWDL action frames up to `IO80211AWDLPeerManager` so `peers:` leaves 0 and election can run.
+
+### 10.10 Round 2026-10-20 evening: a real root cause - the template is a TLV blob, not a frame
+
+The 10.9 build runs (timer armed, `awdl:psf armed len=110`, ticks reaching the core), but the trace of the template's first
+byte exposed a defect that is worse than the cadence one: the 110 bytes the Family hands over are **not an 802.11 frame**.
+
+```
+awdl:psf armed len=110 type=06 sub=0
+```
+
+`0x06` is not a frame-control byte - an AWDL action frame would start with `0xd0`. The kernel confirms where it comes from:
+`IO80211AWDLPeerManager::updateSyncFrameTemplate` (0xffffff80021dc5b2) builds the buffer with `buildServiceParamTlv`,
+`buildAWDLElectionParamsVer2`, `buildAwdlDataPathStateTlv`, `buildEnhDataRateTlv` ... and `buildServiceParamTlv`
+(0xffffff80022118a6) starts with `mov byte ptr [rsi], 6` - TLV type 6, little-endian length, then the value. So the payload is
+a **TLV blob**, exactly what the Family also feeds into the master indication template (`buildMasterIndicationTemplate`, no
+`0xd0`/OUI anywhere in it). On Apple hardware the firmware wraps it: the driver only hands the bytes to the chip.
+
+This driver's firmware has no AWDL support, so the wrapper has to be built by the host before `m3Tx()` - and it was not: the
+raw TLV blob went out as an MPDU whose first 24 bytes (TLV types/lengths) were interpreted as addresses. That is why nothing
+ever appeared on the other device's AirDrop, while the counters looked healthy (`awdl sync: tx ... ok=1` only means the
+firmware accepted the descriptor).
+
+What this round adds:
+
+* The transmit wrapper is **not** guessed. A capture probe in the RX path (`rxParseFrame`, `itlmt7925_m2.cpp`) now looks for
+  management Action frames (`fc 0xd0`) in the received buffer, notes whether the Apple OUI `00:25:00` sits at +25 (category
+  at +24), and hex-dumps the first 40 bytes of the first four into `m3-log`:
+  `awdl af rx len=.. cat=.. apple=1 <hex>`. The frame is only heard while the radio is on the social channel, i.e. inside the
+  ROC window, so that window grew from 30 ms to 60 ms for these runs.
+* Reading those bytes from a real iPhone/Mac gives the exact header (FC, DA, SA/BSSID, category, OUI, and where the TLV blob
+  begins), which is also the format the receive half has to parse. Both directions need the same layout, so the probe is the
+  cheapest way to obtain it: it either captures a frame (ground truth immediately) or proves the firmware does not forward
+  broadcast action frames at all (then the RX filter, not the parser, is the next suspect).
+
+Once the layout is known the transmit path becomes three lines of wrapping in `awdlSyncTx()` - 802.11 header with the AWDL MAC
+(`de:56:7b:34:81:d4`) and the peer manager's BSSID (`00:25:00:ff:94:73`), category, OUI, then `awdlFrame` - and the same
+parser routes received frames to the peer manager.

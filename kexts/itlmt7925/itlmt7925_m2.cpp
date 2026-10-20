@@ -219,6 +219,24 @@ void itlmt7925::rxParseFrame(const uint8_t *p, uint32_t len)
         apSeen(p, len, off, ssid, ch);
         return;
     }
+    // Phase 3 RX probe (docs/ROADMAP-AWDL.md): management Action frames heard during the ROC window on the social channel.
+    // Apple's driver never sends the TLV blob raw - its firmware wraps it in an 802.11 action frame (category + Apple OUI at
+    // +24..+27 here) - so the bytes of a real frame are the ground truth the transmit wrapper needs. Dumped for the first
+    // few frames only; the counters keep counting.
+    for (uint32_t off = 32; off + 28 <= len && off < 160; off++) {
+        if (p[off] != 0xd0 || p[off + 1] != 0) continue;
+        bool appleOui = p[off + 25] == 0x00 && p[off + 26] == 0x25 && p[off + 27] == 0x00;
+        awdlAfSeen++;
+        if (awdlAfDumped < 4) {
+            awdlAfDumped++;
+            char hex[3 * 40 + 1];
+            uint32_t n = len - off; if (n > 40) n = 40;
+            for (uint32_t i = 0; i < n; i++) snprintf(hex + i * 3, 4, "%02x ", p[off + i]);
+            hex[n ? n * 3 - 1 : 0] = 0;
+            m3log("awdl af rx len=%u cat=%02x apple=%d %s", len - off, p[off + 24], appleOui ? 1 : 0, hex);
+        }
+        return;
+    }
     rxOther++;
     if (m3dataOn) szOther[szClass(len > 120 ? len - 120 : 0)]++;
 }

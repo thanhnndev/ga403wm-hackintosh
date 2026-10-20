@@ -21,7 +21,7 @@
 // over only when it changes, so the interface repeats the last one itself at that period. The ROC window only has to cover one
 // management frame (a few ms); 30 ms leaves room for the channel switch without keeping the AP's channel away for long.
 static const uint32_t kAwdlPsfPeriodMs = 440;
-static const uint32_t kAwdlPsfRocMs = 30;
+static const uint32_t kAwdlPsfRocMs = 60;
 
 // -----------------------------------------------------------------------------------------------------------------------
 // The virtual interface: IO80211VirtualInterface with the AWDL BSD name prefix.

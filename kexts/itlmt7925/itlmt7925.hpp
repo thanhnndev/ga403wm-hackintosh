@@ -173,6 +173,10 @@ private:
     uint8_t awdlChannel = 6;
     uint32_t awdlDwellMs = 60;
     uint32_t awdlTxTry = 0, awdlTxOk = 0, awdlTxRocFail = 0;
+    // Phase 3 RX probe: AWDL action frames heard from other devices during the ROC window (see rxParseFrame). The bytes give
+    // the exact 802.11 wrapper Apple's driver builds around the TLV blob the Family hands over, which is what the transmit
+    // path still has to reproduce.
+    uint32_t awdlAfSeen = 0, awdlAfDumped = 0;
     void m3Pump(uint32_t ms);
     void m3Event(const uint8_t *ev, uint32_t len);
     void m3ParseAp();
