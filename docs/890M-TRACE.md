@@ -3318,3 +3318,42 @@ map still2, OLED plane transactions/head4 successes and visible desktop with HDM
 still fails, trace initialization/activation after the now-accepted declaration instead of
 reverting working association/EDID code or claiming map/pipe creation equals display success.
 HDR remains unresolved; the framebuffer's current supported path is SDR8-bit.
+
+
+## Step56 — where the OLED transaction stops; controller order from the 780M repo (2026-10-20)
+
+Live boot16:05 (Step55) settles where the OLED stops: AGDC0x2001 is accepted (no `AGDC information error`,
+client_set12, fbmap n2), WindowServer has a display pipe for head4 (heads_piped0x11), yet every OLED transaction
+comes back kIOReturnNotReady — WS: `Failed to submit transaction: IOPRESENTMENT_METHOD_FAILURE: IOReturn: 0x2d8` —
+and the panel keeps the verbose console. Counters: iop_ok_h0 41.7k and rising, iop_ok_h4 0, iop_fail 0, copy_skip
+3.2k, blank 40. iop_fail0 means NVAccel's performTransaction never refused anything, and the missing K6 line says it
+never ran for head4: the pipe call is stopped before the copy. Step54's pipe1active0 is the same fact seen from the
+family side.
+
+Read luuumi-dev/amd-rdna3-macos-driver (780M, same NullMoth/Cobalt64 lineage, commits to 2026-10-20). It is not a
+working OLED there either — M2 is groundwork, not installed, and commits still fix PhxFB panics; its own doc says
+the plugin withholds the device from WindowServer in AMD mode. Three points transfer:
+- PhxFB sets IOFBDependentID/Index BEFORE IOFramebuffer::start, because start creates the framebuffer's controller
+  only from a dependent ID that already exists (IOFBController::copyController(kDepIDCreate)); without one the
+  controller is NULL and the first power-change callout panics (their 7c5c09a). nmx_fb.cpp wrote the ID after start,
+  so whatever controller start made was not made from the head4 group.
+- isConsoleDevice() must be false when another IOFramebuffer already drives the same GPU's console ("not the console
+  beside IONDRV"); ours answered true unconditionally.
+- Their boot daemon arms in another order: nvaccelfb1 -> nvaccel_iop1 -> nvaccelfb3 -> killall WindowServer
+  (ours: ... -> nvaccelfb4, no WS restart). tools/890m/oled-arming.sh runs either.
+
+Build17 (`out-b17`), source only beyond the ordering/console bits:
+- NMX fork ga403wm-nmx: nmx_fb.cpp sets IOFBDependentIndex/ID/built-in/NVRMTiming before IOFramebuffer::start;
+  isConsoleDevice() = !fBeside (provider's IOFramebuffer children); a bounded `pipe:` trace of open,
+  enableController, setDisplayMode, set/getAttribute(wsrv), VBL registration and the scanout ABI, including the
+  NotReady reason (!fPowerRegistered, !fInfo.ok).
+- NVIDIA fork research/ga403wm-hybrid-2.4.2: nvrm-accel.cpp logs `trx:` at validateTransaction,
+  isTransactionComplete and performTransaction entry, three per head, naming the framebuffer each pipe resolves to.
+- Installed NMXGPU `9afb0ffc...` UUID `ADB05A88-79CF-3E1E-A7B4-E5F950A99F64`, NVAccel `7050be67...` UUID
+  `FA0F821A-4AA6-39B2-9605-A1C32864C58F`; NVRM/NVRMFB/NVRMAGDC/NMXAccel and the plugin retained byte for byte; six
+  UUIDs verified in the rebuilt AuxKC. Installer macos-nvidia-oled-map-install.sh (kept its step54 labelling),
+  backup /Library/NullMoth/oled-map-step54-EoYnCyo7, artifacts out/890m-trace/step56/.
+
+Reboot pending. After boot run tools/890m/oled-arming.sh (luuumi order) and read `pipe:`/`trx:` with iop_ok_h4 and
+iop_fail. If the pipe still never activates, the trace already names the next question (which entry point WS reaches,
+which framebuffer the pipe resolves to); another map test would not. No claim of OLED presentation.

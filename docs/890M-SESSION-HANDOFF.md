@@ -1,5 +1,27 @@
 # 890M port - session handoff (2026-10-18, written ~17:00)
 
+## Latest override — Step56 build17: controller order + pipe/transaction traces, reboot pending
+
+Boot16:05 (Step55) proves the AGDC handshake is no longer the blocker: 0x2001 accepted, fbmap n2, client_set12, no
+information error, HDMI fine. The OLED still shows the verbose console because its pipe never activates:
+heads_piped0x11 but iop_ok_h4=0, iop_fail=0 and no NVAccel K6 line — performTransaction never ran for head4; WS
+gets kIOReturnNotReady (`IOPRESENTMENT_METHOD_FAILURE: IOReturn: 0x2d8`) from an earlier stage.
+
+build17 (`out-b17`, installed, reboot pending) changes only the framebuffer/accelerator boundary learned from
+luuumi-dev/amd-rdna3-macos-driver:
+- NMXGPU `9afb0ffc...` `ADB05A88-...`: IOFBDependentID/Index set BEFORE IOFramebuffer::start (start creates the
+  controller only from an ID that already exists — their 7c5c09a); isConsoleDevice() = !fBeside; bounded `pipe:`
+  trace of open/enableController/setDisplayMode/set-getAttribute(wsrv)/VBL/scanout-ABI.
+- NVAccel `7050be67...` `FA0F821A-...`: `trx:` trace at validateTransaction/isTransactionComplete/
+  performTransaction entry, 3 per head, with the framebuffer each pipe resolves to.
+- NVRM/NVRMFB/NVRMAGDC/NMXAccel and the plugin byte-identical; six UUIDs in AuxKC; backup
+  /Library/NullMoth/oled-map-step54-EoYnCyo7; artifacts out/890m-trace/step56/; installer kept its step54 naming.
+
+After the reboot: `sudo tools/890m/oled-arming.sh` runs luuumi's order (nvaccelfb1 -> iop1 -> nvaccelfb3 -> WS
+restart; `--fb4` for our old order, `--status` for counters only). Then read `pipe:`/`trx:` in the kernel log with
+iop_ok_h4/iop_fail. That says whether WS's OLED transactions reach NVAccel's pipe and which framebuffer it resolves
+to. Still no OLED presentation claim; HDR unchanged; do not rerun map-only tests as proof.
+
 ## Latest override — Step55 AGDC client handshake installed, reboot pending
 
 Boot11:05:29 loaded Step54 successfully: actual AGDC fbmap/maxfb2 and fresh IOPresentment map2
