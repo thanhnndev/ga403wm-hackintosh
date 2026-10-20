@@ -1,5 +1,36 @@
 # 890M port - session handoff (2026-10-18, written ~17:00)
 
+## Latest override — Step54 AGDC association fix installed, reboot pending
+
+Boot10:51:00 loaded Step53 correctly. Kernel OLED pipe actually exists: heads_published/piped0x11,
+foreign_armed=true, NMXGPUFB dependent head4 and IOAccelIndex1/IOAccelTypes NVAccel. OLED is black,
+HDMI works. iop_ok_h4=0 and WS still cannot find OLED pipe. **Do not call Step53 a presentation pass.**
+
+Read-only fresh IOPresentment map has exactly HDMI; AGDC fbmap/maxfb1. Stock AGDC scans only
+same-PCI NVRMNVDAFramebuffer and cannot advertise the foreign AMD head. Private helper-only
+0x980 reply simulation adds OLED as slot1: real IOPresentment returns both screens with nonzero
+NVAccel and indices0/1. This validates the association fix before boot; it is not a live WS pass.
+No WS injection/restart, GPU stress loop or system debug/security change. LLDB launch of our helper
+was denied; own-process interposition supplied the evidence instead.
+
+**New fix installed:** NMX fork `0a07b49` supplies actual DRM K5 timing/sync polarity. NVIDIA fork
+`287381a` declares render PCI ownership before framebuffer open and includes the unique marked OLED
+in a compact AGDC slot after native heads, with identity/timing/actual-index checks. Hybrid-only
+0x980 rescans bypass one-second startup cache; table access is serialized. Native-only profile
+behavior and HDMI binaries preserved. NVRMAGDC personality must explicitly enable the hybrid flag.
+
+Installed/rebuilt AuxKC, all six UUIDs verified; cached26 NVAccel updated:
+- NMXGPU `3c081efc...`, `087D392A-8DEB-3F54-9F11-EF10E954130C`;
+- NVAccel `004ea250...`, `23FB22FE-E38E-3A25-BA12-383B8DC6F2C7`;
+- NVRMAGDC `9b8e19e3...`, `22A5F5CA-AC89-325E-AA29-7DE6E3D15741`.
+NVRM/NVRMFB/NMXAccel/plugin unchanged. Backup `/Library/NullMoth/oled-map-step54-9Nf905Py`
+(three changed kexts, cached26, previous AuxKC). Artifacts `out/890m-trace/step54/`.
+
+Next: normal hybrid boot with HDMI. First fresh `iop-map` must show OLED and HDMI entries, both
+on NVAccel, indices1/0; AGDC fbmap/maxfb2. Then require iop_ok_h4 increasing and OLED desktop,
+while HDMI stays functional. New code is not yet runtime-tested. HDR remains unresolved SDR8-bit.
+Use `tools/890m/iop-map.c` + adjacent entitlements for the read-only map check; no debugserver needed.
+
 ## Latest override — Step53 foreign OLED presentation fix installed, reboot pending
 
 Current boot10:05:50: HDMI works1920x1080@144 on NVIDIA2.4.2. OLED retains boot console even though

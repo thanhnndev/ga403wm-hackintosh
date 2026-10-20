@@ -6,12 +6,12 @@ Step-by-step history: [890M trace](890M-TRACE.md).
 
 ## Current state
 
-**Latest: Step53 (2026-10-20)** — foreign OLED presentation fix **installed, reboot pending**.
-Current boot: NVIDIA2.4.2 HDMI works1080p144; OLED identity and1440x900 HiDPI@120 register, but OLED
-retains console because CoreDisplay has no display pipe for it. New NVAccel+NMXGPU opt-in bridge
-uses NVIDIA rendering and upstream foreign-head CPU-copy presentation into AMD DCN35. Other working
-binaries/policy retained. All six UUIDs in AuxKC. HDR remains unresolved. See
-[session handoff](890M-SESSION-HANDOFF.md) and final Step53 in [trace](890M-TRACE.md).
+**Latest: Step54 (2026-10-20)** — AGDC association fix **installed, reboot pending**.
+Step53 boot created the OLED kernel pipe but no frames reached it: AGDC/IOPresentment reported only
+HDMI. A helper-only reply simulation validated the missing second map entry. New NVRMAGDC/NVAccel/
+NMXGPU publish the OLED association and real timing before first map creation. Six UUIDs verified
+in AuxKC, HDMI session retained; actual OLED output still needs boot verification. HDR unresolved.
+See [session handoff](890M-SESSION-HANDOFF.md) and final Step54 in [trace](890M-TRACE.md).
 
 NEWEST (Step34, 2026-10-17, Linux): **login-window crash-loop root cause found and fixed from Linux**. The nvmtl
 allow list (`/Library/GPUBundles/nvmtl-allow.txt`) is only scanned until the first line that *decides*, so the

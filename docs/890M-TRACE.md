@@ -3198,3 +3198,72 @@ increasing debug.nvaccel_iop_ok_h4 and OLED visibly rendering desktop. Existing 
 working. Do not infer success from profiler identity alone. HDR controls/color correctness are
 not fixed by a display pipe: current framebuffers still expose SDR8-bit and this batch makes no
 HDR transport or color calibration claim. Preserve actual EDID, not synthesized HDR capability.
+
+
+## Step54 — OLED kernel pipe exists but AGDC omits its userland association (2026-10-20)
+
+Actual boot10:51:00 loaded all Step53 UUIDs correctly. OLED now black, HDMI still works. NVAccel
+reports foreign armed=true, heads_published/piped17(0x11), igpu1, iop1, nvaccelfb1. OLED has head4,
+shared dependent controller ID, IOAccelIndex1, IOAccelTypes pointing to NVAccel, real EDID/timing.
+Yet iop_ok_h4 stays0 and WS761 continuously reports unable to find pipe for OLED0x100000702.
+Timeline: OLED publishes10:51:22.681, family creates pipe1 at10:51:28.095, CPU-only scanout resource
+path executes, foreign armed10:51:28.106. Pipe0active1, pipe1active0; WS errors begin28.267. This is
+not proof of copy failure: no OLED frame reached the copy path at all. Evidence boot-display.log
+and nvaccel-boot.log in `out/890m-trace/step54/`.
+
+Fresh entitled IOPresentmentGetMap probe (separate process) reports only HDMI0x1000005df on NVAccel
+0x1000004ec, index0. AGDC fbmap n1/maxfb1. Source root cause: NVRMAGDC matches only
+NVRMNVDAFramebuffer under its NVIDIA PCI node, supports only physical0..3, drops holes. It never
+reports NMXGPUFB physically under AMD, regardless of the valid foreign kernel pipe. A fresh map
+also misses OLED, so stale WindowServer state alone does not explain the failure.
+
+Validated the association repair without another boot or live driver modification: a dylib loaded
+only into our helper intercepts its own IOConnectCallStructMethod reply0x980 (220bytes). It appends
+OLED registry ID as compact slot1, count/maxfb2, portMask6. Real IOPresentment then returns two
+entries: HDMIindex0 and OLEDindex1, both same nonzero NVAccel and AGDC. This directly validates
+cross-PCI association and compact-index format. It does not initialize WS presentation or prove
+rendering. Raw baseline in iop-map.txt/map-io.txt, simulated result in map-simulated-foreign.txt.
+No WindowServer injection, global DYLD setting or kernel reply change. LLDB was denied launching
+the helper, and no security settings were changed to overcome it. These are ordinary local
+helper/runtime observations, not REA provider output.
+
+Fix source:
+- NMX fork `0a07b49`: immutable display info gains normalized actual DRM sync polarity; only the
+  opted-in foreign OLED publishes a tagged thirteen-word K5 timing record from actual fInfo.
+  Clock Hz/milli-Hz, dimensions/sync totals/polarities come from the selected DRM mode, no EDID
+  fabrication or HDR flag. Separate display-info layout changed only for its two rebuilt callers;
+  old nmx_fb_info remains unchanged.
+- NVIDIA fork `287381a`: NVAccel declares NMXNvidiaRenderPCI at first framebuffer publication,
+  before open/first IOPresentment map; publishes actual NMXNvidiaPipeIndex after owned registration.
+  Scoped NVDAGDCLoader personality flag plus exact25G241 kernel enables foreign AGDC support.
+  Scan preserves native heads and appends exactly one marked foreign head4 in compact slot n,
+  requiring matching NVIDIA render PCI, dependent group, valid actual timing and (once published)
+  matching actual pipe index. Ambiguous candidates refused. AGDC max capacity5, original native
+  physical-head limit4 retained. First map may describe the published display before its pipe
+  is ready, matching normal NVIDIA discovery behavior; transaction readiness is not fabricated.
+- Hybrid0x980 rescans do not use the one-second throttle, which could omit a just-published OLED
+  from the first cached map. IOLock serializes table rescan/reply/K5 reads and startup/drop paths,
+  preserving retained-entry lifetime. Default profile keeps its previous behavior. Existing K5
+  link/SDR scaler capability path now has the OLED's real timing. New agdc_build.sh builds from
+  this checkout without unrelated hardcoded staging paths. Both source branches pushed.
+
+Built/installed three changed images; all six UUIDs verified in new AuxKC:
+| Image | SHA256 | UUID |
+|---|---|---|
+| NMXGPU | `3c081efc7419f36017cb98174fadf7997b45ec5c7e7007e0c687142c9aab3ba6` | `087D392A-8DEB-3F54-9F11-EF10E954130C` |
+| NVAccel | `004ea2508743ea85b3bae7b7cc69c39ffd9bfe30080eda5fa967b88572b2b931` | `23FB22FE-E38E-3A25-BA12-383B8DC6F2C7` |
+| NVRMAGDC | `9b8e19e3a20e18951519b1fd4c73dc39a3cb6e0658b330b8a6b4083fbb966a0a` | `22A5F5CA-AC89-325E-AA29-7DE6E3D15741` |
+
+NVRM/NVRMFB/NMXAccel binary hashes unchanged from Step53; plugin still1b61fcaf. Cached26 NVAccel
+and its SHA256SUMS updated. Release2.4.2 Info metadata retained for both NVIDIA candidates, with
+explicit opt-in on NVAccel and NVDAGDCLoader. `macos-nvidia-oled-map-install.sh` backs up/restores
+all three changed kexts, cached26 and AuxKC; final backup
+`/Library/NullMoth/oled-map-step54-9Nf905Py`. No live unload/load, WS restart, NVRAM/EFI/security
+change. Build/link/collection checks pass; no repeated unchanged GPU stress run.
+
+**Reboot pending.** Normal hybrid boot with HDMI. Confirm all three new live UUIDs, then AGDC
+fbmap/maxfb2 and a fresh map with both framebuffer IDs/nonzero NVAccel/indices0+1; only then
+check iop_ok_h4 increasing, errors gone and visible OLED desktop while HDMI stays working.
+Committed read-only tools/890m/iop-map.c and adjacent development entitlement enable this check.
+The previous scoped HiDPI helper already removed itself after success; existing real EDID/name/
+120Hz HiDPI settings preserved. This is not yet an OLED presentation pass and not an HDR fix.
