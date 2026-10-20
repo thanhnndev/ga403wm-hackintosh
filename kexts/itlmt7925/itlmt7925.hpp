@@ -169,6 +169,7 @@ private:
     void awdlSyncTx();
     uint8_t awdlFrame[256] = {};
     volatile uint32_t awdlFrameLen = 0;
+    uint32_t awdlAfSeq = 0;                                  // seq_ctrl counter of the AWDL action frames this driver sends
     volatile uint32_t awdlFrameSeq = 0, awdlFrameDone = 0;
     uint8_t awdlChannel = 6;
     uint32_t awdlDwellMs = 60;

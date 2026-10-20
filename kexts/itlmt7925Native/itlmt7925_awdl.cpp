@@ -23,6 +23,14 @@
 static const uint32_t kAwdlPsfPeriodMs = 440;
 static const uint32_t kAwdlPsfRocMs = 60;
 
+// The 802.11 + AWDL action header that the driver has to put in front of the Family's TLV blob (docs/ROADMAP-AWDL.md §10.11).
+// On Apple hardware the firmware writes it; here the interface builds it: 24-byte management/action header (broadcast DA, the
+// AWDL address as SA, the AWDL BSSID) followed by the 16-byte awdl_action (category 0x7f, Apple OUI 00:17:f2, type 8, version
+// 1.0, subtype PSF). Reference: OWL src/frame.h + src/tx.c, and the Family's own parser (actionFrameHasCorrectOUI compares the
+// same 0x17/0xf2/8 bytes at the same offsets). The sequence number and the two timestamps are stamped by the core per TX.
+static const uint32_t kAwdlAfHdrLen = 24 + 16;
+static const uint8_t kAwdlBssidDefault[6] = { 0x00, 0x25, 0x00, 0xff, 0x94, 0x73 };
+
 // -----------------------------------------------------------------------------------------------------------------------
 // The virtual interface: IO80211VirtualInterface with the AWDL BSD name prefix.
 //
@@ -141,6 +149,7 @@ private:
     uint32_t awdlAccepted = 0;                 // trace budget for the accepted (configure-handshake) slots
     uint32_t awdlSyncEnabled = 0;              // last setAWDL_SYNC_ENABLED value, answered back by getAWDL_SYNC_ENABLED
     uint8_t awdlBssid[6] = {};                 // last setAWDL_BSSID bytes (traced only: the layout is not public)
+    uint8_t awdlSelfAddr[6] = {};              // the AWDL interface address: SA of every frame sent on the AWDL channel
     uint32_t awdlElectionMetric = 0;           // last setAWDL_ELECTION_METRIC
     uint32_t awdlSyncFrameLen = 0;             // last setAWDL_SYNC_FRAME_TEMPLATE payload_len (phase 4: the PSF frame)
     uint32_t awdlSyncTxLogged = 0;             // trace budget for the core handoff
@@ -240,13 +249,32 @@ IOReturn itlmt7925AwdlInterface::setAWDL_SYNC_FRAME_TEMPLATE(apple80211_awdl_syn
     awdlSyncFrameLen = a1 ? *(const uint32_t *)((const uint8_t *)a1 + 4) : 0;
     const void *payload = a1 ? *(void *const *)((const uint8_t *)a1 + 8) : nullptr;
     itlmtTrace(getController(), "awdl:set SYNC_FRAME_TEMPLATE len=%u", (unsigned)awdlSyncFrameLen);
-    if (awdlSyncFrameLen >= 24 && awdlSyncFrameLen <= sizeof(awdlPsfFrame) && payload) {
-        memcpy(awdlPsfFrame, payload, awdlSyncFrameLen);
-        awdlPsfLen = awdlSyncFrameLen;
+    if (awdlSyncFrameLen >= 4 && awdlSyncFrameLen <= sizeof(awdlPsfFrame) - kAwdlAfHdrLen && payload) {
+        // The payload is the action frame *body*: TLVs only (its first byte is a TLV type - buildServiceParamTlv writes 6),
+        // never an 802.11 frame. The wrapper below is what Apple's firmware would have prepended (docs/ROADMAP-AWDL.md §10.11).
+        uint8_t *f = awdlPsfFrame;
+        memset(f, 0, kAwdlAfHdrLen);
+        f[0] = 0xd0;                                        // management, action
+        f[1] = 0x00;
+        memset(f + 4, 0xff, 6);                             // addr1 = DA: the PSF is a broadcast frame
+        memcpy(f + 10, awdlSelfAddr, 6);                    // addr2 = SA: the AWDL interface address
+        bool haveBssid = false;
+        for (int i = 0; i < 6; i++) haveBssid |= awdlBssid[i] != 0;
+        memcpy(f + 16, haveBssid ? awdlBssid : kAwdlBssidDefault, 6);   // addr3 = BSSID
+        // seq_ctrl (f+22) and phy_tx/target_tx (f+32/f+36) are stamped by the core on every transmit
+        f[24] = 0x7f;                                       // category: vendor specific
+        f[25] = 0x00; f[26] = 0x17; f[27] = 0xf2;           // Apple OUI
+        f[28] = 0x08;                                       // AWDL type
+        f[29] = 0x10;                                       // version 1.0
+        f[30] = 0x00;                                       // subtype: PSF (MIF = 3)
+        f[31] = 0x00;                                       // reserved
+        memcpy(f + kAwdlAfHdrLen, payload, awdlSyncFrameLen);   // the TLV blob
+        awdlPsfLen = awdlSyncFrameLen + kAwdlAfHdrLen;
         if (awdlSyncTxLogged < 8) {
             awdlSyncTxLogged++;
-            itlmtTrace(getController(), "awdl:psf armed len=%u type=%02x sub=%x",
-                       awdlPsfLen, awdlPsfFrame[0], (awdlPsfFrame[0] >> 4) & 0xf);
+            itlmtTrace(getController(), "awdl:psf armed tlv=%u frame=%u fc=%02x cat=%02x oui=%02x%02x%02x type=%02x sa=%02x%02x%02x%02x%02x%02x",
+                       (unsigned)awdlSyncFrameLen, awdlPsfLen, f[0], f[24], f[25], f[26], f[27], f[28],
+                       f[10], f[11], f[12], f[13], f[14], f[15]);
         }
         if (awdlSyncEnabled) awdlPsfStart();                 // a new template: start/restart the periodic transmit
     } else {
@@ -377,6 +405,7 @@ void itlmt7925AwdlInterface::freeAwdlRegistration()
 
 IOReturn itlmt7925AwdlInterface::registerAwdlInterface(const uint8_t *mac)
 {
+    if (mac) memcpy(awdlSelfAddr, mac, sizeof(awdlSelfAddr));   // SA of every frame this interface puts on the AWDL channel
     IOSkywalkPacketBufferPool::PoolOptions po;
     bzero(&po, sizeof(po));
     po.packets0 = po.packets1 = kAwdlPoolPackets;

@@ -693,6 +693,16 @@ void itlmt7925::awdlSyncTx()
     o.qidx = 0x10;                                           // MT_LMAC_ALTX0 (management)
     o.rateAdapt = false;                                     // fixed rate: the sync frame must go out as OFDM 6 Mb/s
     o.protect = false;
+    // Per-transmission fields of the AWDL action header the interface built (docs/ROADMAP-AWDL.md §10.11): seq_ctrl at +22
+    // and the two microsecond timestamps at +32/+36 (phy_tx / target_tx, both stamped with the send time, as OWL does).
+    if (len >= 40) {
+        uint32_t s = (awdlAfSeq++ & 0xfff) << 4;
+        awdlFrame[22] = (uint8_t)(s & 0xff);
+        awdlFrame[23] = (uint8_t)((s >> 8) & 0xff);
+        uint32_t us = nowMs() * 1000;
+        put32(awdlFrame + 32, us);
+        put32(awdlFrame + 36, us);
+    }
     bool ok = m3Tx(awdlFrame, len, 0, 13, o);                // type 0 (management), subtype 13 (action)
     m3Roc(false, ch);
     if (ok) awdlTxOk++;

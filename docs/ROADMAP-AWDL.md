@@ -541,3 +541,35 @@ The probe is now strict: duration 0, DA broadcast or unicast, TA and BSSID unica
 satisfies these, data frames found at a stray `0xd0` almost never do), the dump budget is 10 frames plus every frame that
 carries the Apple OUI at +25, and every 25th hit logs a one-line summary so a long run shows whether anything is arriving at
 all. Core `e756604c`.
+
+### 10.11 The transmit wrapper, from ground truth (not a guess)
+
+Two facts settled the format, and they agree with each other:
+
+1. The kernel. `IO80211AWDLPeerManager::actionFrameHasCorrectOUI` (0xffffff8002210200) compares three bytes of the frame
+   body at fixed offsets: `0x17`, `0xf2`, then `8` - the Apple OUI and the AWDL type, exactly where a vendor-specific action
+   frame puts them. `AppleBCMWLANNetAdapter::sendActionFrame` (0xffffff80015c511a) never writes an 802.11 header at all: it
+   builds a descriptor (`{addr, addr, len, ...}`) and the firmware frames it. So on Apple hardware the host never sees the
+   header, and no amount of kernel reading can produce it.
+2. OWL (the open AWDL implementation) has the wire format: `src/frame.h` / `src/tx.c`. The action frame is
+   `ieee80211_hdr{fc=0x00d0, dur=0, addr1=dst, addr2=src, addr3=AWDL_BSSID 00:25:00:ff:94:73, seq<<4}` followed by
+   `awdl_action{category=0x7f, oui=00:17:f2, type=8, version=0x10 (1.0), subtype=0 (PSF) / 3 (MIF), reserved,
+   phy_tx u32, target_tx u32}` and then the TLV blob. PSF is broadcast (`state->dst = ETHER_BROADCAST`), sent every 440 TU
+   when following a master - the same 440 ms the Family's log reports.
+
+That is now what the driver builds. `setAWDL_SYNC_FRAME_TEMPLATE` sees the Family's bytes for what they are (TLVs, first
+byte a TLV type) and prepends the 40-byte wrapper into `awdlPsfFrame` (broadcast DA, the AWDL interface address as SA, the
+AWDL BSSID - `setAWDL_BSSID`'s value when the Family provides one, the standard `00:25:00:ff:94:73` otherwise). The core
+stamps the per-transmission fields just before `m3Tx()`: `seq_ctrl` at +22 (incrementing, 12 bits) and the two microsecond
+timestamps at +32/+36.
+
+The earlier trace line proves how necessary this was: `awdl:psf armed len=110 type=06` - the first byte was TLV type 6
+(`buildServiceParamTlv`), so the previously transmitted MPDUs began with TLV bytes where the receiver expects addresses.
+`ok=1` only ever meant "the firmware accepted the descriptor". With the wrapper the frame is 153 bytes
+(24 + 16 + 113) and starts with `d0 00 00 00 ff ff ff ff ff ff de 56 7b 34 81 d4 00 25 00 ff 94 73 .. .. 7f 00 17 f2 08 10 00 00`.
+The new `awdl:psf armed` line prints the first bytes of exactly that, and the RX probe now looks for `0x7f / 00:17:f2 / 8`
+instead of the wrong `00:25:00` it checked before (which is the BSSID OUI, not the action OUI).
+
+Also observed in the same run: the Family re-sends `setAWDL_SYNC_FRAME_TEMPLATE` every few seconds with updated TLVs
+(110 -> 112 -> 113 bytes) - i.e. its state machine is alive and the sync parameters are changing (channel sequence, counters),
+so the cadence and the content both come from it.
