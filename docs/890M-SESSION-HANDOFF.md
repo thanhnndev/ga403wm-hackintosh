@@ -1,6 +1,24 @@
 # 890M port - session handoff (2026-10-18, written ~17:00)
 
-## Latest override — Step46, Oct 19 after 21:22 boot
+## Latest override — Step49, Oct 20 09:18 boot
+
+**Build15 is live**, UUID `304F821C-A6F0-323B-8328-DC580234D3AF`, SHA `c5dea0e0...`.
+The formerly failing sequential two-client case is **6/6 correct**. A separate simultaneous-client case
+holds VM1 alive while VM2 renders: **6/6 initial triangles + 5/5 VM1 probes correct**, both processes exit 0.
+Distinct PD/PASID/VMID3 and VMID4 are confirmed. **No GFX timeout/reset** in the recorded boot/test window.
+The b15 IB preparation hook executes (38 logged submissions). See final Step49 in `docs/890M-TRACE.md`.
+Do not rerun build14 stress or request another reboot for this result. This is a bounded regression pass,
+not a declaration of complete graphics reliability or fixed WindowServer CPU.
+
+The intervening Linux Step47/48 notes record an early TLB/IPI panic and a one-time stale attach-guard clear.
+This boot successfully attached after that recovery, but the early panic's cause is still unresolved. Preserve
+those notes and investigate attach/interrupt safety before calling general stability or widening WS exposure.
+
+Next milestone: NMXAccel still forces headless in its start path. Bind its display pipe/resources and
+presentation to native AMD OLED scan-out before granting WindowServer Metal access. Preserve the current
+working framebuffer; no StrixGOP re-enable or allow-list shortcut. No new kext was installed this turn.
+
+## Previous installation batch — Step46
 
 This block supersedes the older live/install and next-step sections below. Read Step46 at the end of
 `docs/890M-TRACE.md` first. Current macOS is **26.7.1 / 25G241**. NMXGPU owns DCN35 OLED scan-out

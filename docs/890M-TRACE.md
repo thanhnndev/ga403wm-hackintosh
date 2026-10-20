@@ -2887,3 +2887,46 @@ Verification still requires hardware: the next boot should actually enter NMXGPU
 park. A successful boot would show recovery from the stale guard, not proof that the TLB panic is fixed.
 If the early panic repeats, preserve the verbose stop/backtrace and NVRAM panic before another retry; do not
 automatically clear the guard on every boot or attribute it to Wi-Fi without evidence.
+
+
+## Step49 - build15 boot: second-client regression passes, including simultaneous VMs (2026-10-20)
+
+Boot 09:18:02 local, macOS 26.7.1. Loaded NMXGPU UUID is
+`304F821C-A6F0-323B-8328-DC580234D3AF`; installed SHA256 remains
+`c5dea0e09c96981cd186036831c6dd03ad3f81087156eea7820c1d5d198c61ee`. NMXAccel is loaded;
+StrixGOP/StrixAccel are not. This is the verified build15 from Step46, with no new installation or reboot request.
+
+One bounded pair of sequential processes, 3 triangles each: **6/6 correct** on the actual RADV STRIX1 Metal
+device. VM1 uses VMID1, VM2 uses VMID2 with the same reused PD/PASID, matching the formerly failing transition.
+All readbacks are `[255,128,64,255]`. Completion times are 1-2 ms except one 68 ms completion in VM2; this is
+not a desktop performance measurement. `ibprep b15` fires for actual submissions (outer IB 56 dwords,
+VA `ffff80010002b000`, first word `c0023f00`), proving the former dead preparation path now executes.
+
+One distinct coverage case then holds the first device/VM alive for 10 seconds and submits from the second
+process. Initial renders **6/6 correct**, plus **5/5 correct** probes from VM1 while/after VM2 runs. Both
+processes exit 0. Kernel traces establish distinct active clients, not merely PD reuse:
+- held client: VMID3, PASID32769, PD `87fafc001`;
+- second client: VMID4, PASID32770, PD `87faf2001`;
+- subsequent held-client work returns to VMID3 with pipeline sync.
+
+Across the recorded boot/test window: **0 GFX timeouts, 0 GPU reset-begin events**, 38 `ibprep b15` events.
+No repeated unchanged stress loops. These checks establish a pass for the old sequential/concurrent two-client
+reproducer; they do not establish arbitrary workload or long-duration GPU reliability. The preparation/kmap/
+flush change is the source-backed effective fix in this batch; the exact cache/alias mechanism and chained-IB
+visibility have not been isolated independently. Do not reopen the old VMID-programming hypothesis as fact.
+Private evidence: `out/890m-trace/step47/{two-vm.txt,concurrent-vm.txt,kernel.txt,result.json}`.
+
+WindowServer PID903 survives the checks; a single ps reading is 154.3% CPU, not a before/after benchmark.
+High CPU is not fixed by an app-only Metal pass. Source still hard-sets `gNvHeadless=1` and
+`NMXAccelHeadless=true` under `NMX_ACCEL` (`kexts/NVRM/accel/nvrm-accel.cpp`, around lines620-625), skipping
+framebuffer-watch/arming. The next milestone is the accelerator/display-pipe binding to the native AMD OLED
+framebuffer, including resource ownership and presentation; do not simply widen the Metal allow list or claim
+WindowServer acceleration. Existing AMD DC scan-out must be preserved. No WindowServer/headroom-hold allow-list
+or power/security setting was changed in this verification batch.
+
+
+Integration note: Step47/48 from the Linux recovery session arrived while these verification notes were being
+pushed and are preserved above. This successful attach demonstrates recovery after the one-time stale-guard
+clear; it does **not** resolve the separate early TLB/IPI panic. Keep that attach/interrupt investigation open
+before treating the machine as generally stable or widening WindowServer exposure. Step49 raw files retain
+`step47` in their local directory name because they were collected before the concurrent notes were fetched.
