@@ -450,3 +450,47 @@ len=110 ok=1` in the driver log once the link is up (the AWDL TX only runs while
 services the command). A second AirDrop device should then start seeing this Mac, even though reception (peer table) still
 needs the RX half: routing the AWDL action frames the firmware delivers during the ROC window up to
 `IO80211AWDLPeerManager`, plus the missing "AW start event" the peer manager keeps warning about.
+
+### 10.9 Round 2026-10-20 (same boot): the PSF leaves the radio - ROC works while associated
+
+Test after the 10.8 build (core `b155d936`, native `618de933`), `awdl0` created with `~/vif_create_test en5`, then the
+AirDrop window closed and reopened (the order matters: the vif must exist *before* the AirDrop session asks for AWDL,
+otherwise wifip2pd initialises the interface but never re-runs `doEnable` - the 10:13 boot stalled exactly there, trace
+ending at `getAWDL_SYNCHRONIZATION_CHANNEL_SEQUENCE` with `set SYNC_ENABLED` never called).
+
+With that order the configure handshake completes and the new transmit path runs:
+
+```
+awdl:set SYNC_FRAME_TEMPLATE len=110
+awdl:sync tx queued len=110 rc=0
+awdl:accept setAWDL_SYNC_PARAMS / setAWDL_SYNC_STATE / setAWDL_ELECTION_PARAMS
+```
+
+and in `m3-log` (the core's own ring, `ioreg -l | grep m3-log`):
+
+```
+roc_acquire rc=0 st=0
+roc event bss=0 tok=10 status=0
+awdl sync: tx ch=6 len=110 ok=1
+roc_abort rc=0 st=0
+```
+
+That answers the 10.8 open question: **the firmware grants UNI_ROC while the station is associated** (tok 10, 11, 12, ...,
+status 0), so the off-channel slot works as implemented - relax-on-`rocWant` was the right change and no infra
+disconnect is needed. Nine frames went out this way.
+
+**The finding: the Family does not hand the template over once per period.** It hands it over when it changes (four
+times in five minutes here), so the 10.8 note "The Family re-issues this template every sync period, so every call is one
+PSF transmission" was wrong: 9 frames in ~5 minutes is nowhere near the 440 ms PSF cadence the peer manager logs
+(`setSyncFramePeriod::Setting PSF period to 440`). The other device never saw the Mac because the sync frames were
+essentially absent, not because they were malformed.
+
+So the interface now owns the cadence: `setAWDL_SYNC_FRAME_TEMPLATE` copies the bytes (`awdlPsfFrame`, the Family's buffer
+is not ours to keep) and `awdlPsfStart()` arms an `IOTimerEventSource` on the interface's work loop; `awdlPsfTick()` hands
+one frame to the core every 440 ms with a 30 ms ROC window, and `setAWDL_SYNC_ENABLED=0` cancels the timer (AWDL off must
+mean nothing leaves the radio). The immediate on-template transmit is gone: the timer's first tick is the transmit.
+
+Still open after this round: the peer manager's `Did not get AW start event` warning (it wants
+`APPLE80211_M_AWDL_AVAILABILITY_WINDOW_START` posted per window; the numeric id has not been confirmed yet - the name table
+in the kernel points at 0x4f3 but the spacing of neighbouring ids makes that unverified), and the receive half - routing
+received AWDL action frames up to `IO80211AWDLPeerManager` so `peers:` leaves 0 and election can run.

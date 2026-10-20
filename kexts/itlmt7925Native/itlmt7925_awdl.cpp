@@ -12,8 +12,16 @@
 
 #include "../itlmt7925/io80211/IO80211AWDLProtocol.h"
 #include <IOKit/IOLib.h>
+#include <IOKit/IOTimerEventSource.h>
+#include <IOKit/IOWorkLoop.h>
 #include <pexpert/pexpert.h>
 #include <string.h>
+
+// The PSF (sync frame) cadence. The peer manager logs "setSyncFramePeriod::Setting PSF period to 440" and hands the template
+// over only when it changes, so the interface repeats the last one itself at that period. The ROC window only has to cover one
+// management frame (a few ms); 30 ms leaves room for the channel switch without keeping the AP's channel away for long.
+static const uint32_t kAwdlPsfPeriodMs = 440;
+static const uint32_t kAwdlPsfRocMs = 30;
 
 // -----------------------------------------------------------------------------------------------------------------------
 // The virtual interface: IO80211VirtualInterface with the AWDL BSD name prefix.
@@ -116,6 +124,12 @@ public:
     // Phase 3, step 2: the core's link thread transmits the PSF frame (ROC on the AWDL channel + a management TX). The core
     // service pointer comes from the vif-create handler, which runs in the infrastructure interface that owns it.
     void setNativeCore(IOService *c) { coreDev = c; }
+    // The PSF repeats once per sync period (440 ms), not once per template: the Family only hands the template over when it
+    // changes. awdlPsfStart() arms the timer, awdlPsfTick() submits one frame per period while AWDL is enabled.
+    void awdlPsfStart();
+    void awdlPsfTick();
+    static void awdlPsfTimerFired(OSObject *owner, IOTimerEventSource *sender);
+    void free() override;
 
     // Creates the pool and the (three) queues and registers the ifnet from a RegistrationInfo filled like
     // AppleBCMWLANCore::createProxInterface fills it. Keeps the objects for the interface's lifetime.
@@ -130,6 +144,10 @@ private:
     uint32_t awdlElectionMetric = 0;           // last setAWDL_ELECTION_METRIC
     uint32_t awdlSyncFrameLen = 0;             // last setAWDL_SYNC_FRAME_TEMPLATE payload_len (phase 4: the PSF frame)
     uint32_t awdlSyncTxLogged = 0;             // trace budget for the core handoff
+    IOTimerEventSource *awdlPsfTimer = nullptr; // repeats the PSF frame at the sync period
+    uint8_t awdlPsfFrame[256] = {};            // copy of the last template (the Family's buffer is not ours to keep)
+    uint32_t awdlPsfLen = 0;
+    uint32_t awdlPsfTicks = 0;                 // trace/metrics counter
     IOService *coreDev = nullptr;              // the core service (itlmt-native-awdl-sync-v1)
     IOSkywalkPacketBufferPool *awdlPool = nullptr;
     IOSkywalkPacketQueue *awdlQueues[3] = {};
@@ -176,6 +194,8 @@ IOReturn itlmt7925AwdlInterface::setAWDL_SYNC_ENABLED(apple80211_awdl_sync_enabl
 {
     awdlSyncEnabled = a1 ? *(const uint32_t *)((const uint8_t *)a1 + 8) : 1;
     itlmtTrace(getController(), "awdl:set SYNC_ENABLED=%u", (unsigned)awdlSyncEnabled);
+    if (awdlSyncEnabled) awdlPsfStart();                    // AWDL on: start repeating the sync frame
+    else if (awdlPsfTimer) awdlPsfTimer->cancelTimeout();    // AWDL off: nothing may leave the radio
     return kIOReturnSuccess;
 }
 
@@ -212,27 +232,83 @@ IOReturn itlmt7925AwdlInterface::setAWDL_ELECTION_METRIC(apple80211_awdl_electio
     return kIOReturnSuccess;
 }
 
-// apple80211_awdl_sync_frame_template { u32 version; u32 payload_len; void *payload } - the PSF/action frame body the
-// driver is expected to transmit on the AWDL channels (phase 4). Only the length is traced here.
+// apple80211_awdl_sync_frame_template { u32 version; u32 payload_len; void *payload } - the PSF/action frame body the driver
+// is expected to transmit on the AWDL channels. The Family hands it over when it changes, so the bytes are copied here and
+// repeated by the timer once per sync period (phase 3 transmit half).
 IOReturn itlmt7925AwdlInterface::setAWDL_SYNC_FRAME_TEMPLATE(apple80211_awdl_sync_frame_template *a1)
 {
     awdlSyncFrameLen = a1 ? *(const uint32_t *)((const uint8_t *)a1 + 4) : 0;
     const void *payload = a1 ? *(void *const *)((const uint8_t *)a1 + 8) : nullptr;
     itlmtTrace(getController(), "awdl:set SYNC_FRAME_TEMPLATE len=%u", (unsigned)awdlSyncFrameLen);
-    // Hand the frame to the core's link thread: it holds the radio on the AWDL social channel (ROC) and transmits it. The
-    // Family re-issues this template every sync period, so every call is one PSF transmission on the air.
-    if (coreDev && payload && awdlSyncFrameLen >= 24 && awdlSyncFrameLen <= 256) {
-        ItlNativeAwdlSync req = { 1, (const uint8_t *)payload, awdlSyncFrameLen, 6, 60 };
-        IOReturn r = coreDev->callPlatformFunction(ITL_NATIVE_AWDL_SYNC, false, &req, nullptr, nullptr, nullptr);
+    if (awdlSyncFrameLen >= 24 && awdlSyncFrameLen <= sizeof(awdlPsfFrame) && payload) {
+        memcpy(awdlPsfFrame, payload, awdlSyncFrameLen);
+        awdlPsfLen = awdlSyncFrameLen;
         if (awdlSyncTxLogged < 8) {
             awdlSyncTxLogged++;
-            itlmtTrace(getController(), "awdl:sync tx queued len=%u rc=%x", (unsigned)awdlSyncFrameLen, r);
+            itlmtTrace(getController(), "awdl:psf armed len=%u type=%02x sub=%x",
+                       awdlPsfLen, awdlPsfFrame[0], (awdlPsfFrame[0] >> 4) & 0xf);
         }
-    } else if (awdlSyncTxLogged < 8) {
-        awdlSyncTxLogged++;
-        itlmtTrace(getController(), "awdl:sync tx skipped core=%d len=%u", coreDev ? 1 : 0, (unsigned)awdlSyncFrameLen);
+        if (awdlSyncEnabled) awdlPsfStart();                 // a new template: start/restart the periodic transmit
+    } else {
+        awdlPsfLen = 0;                                      // empty template: stop repeating
+        if (awdlPsfTimer) awdlPsfTimer->cancelTimeout();
+        if (awdlSyncTxLogged < 8) {
+            awdlSyncTxLogged++;
+            itlmtTrace(getController(), "awdl:psf cleared core=%d len=%u", coreDev ? 1 : 0, (unsigned)awdlSyncFrameLen);
+        }
     }
     return kIOReturnSuccess;
+}
+
+// -----------------------------------------------------------------------------------------------------------------------
+// The sync period. The Family's AWDL state machine expects the PSF to be on the air every period (440 ms here); it hands the
+// frame over once, so the interface owns the cadence. Every tick is one handoff to the core, which does the real work: ROC on
+// the social channel, one management frame, back to the AP's channel (itlmt7925::awdlSyncTx).
+// -----------------------------------------------------------------------------------------------------------------------
+void itlmt7925AwdlInterface::awdlPsfTimerFired(OSObject *owner, IOTimerEventSource *)
+{
+    if (owner) ((itlmt7925AwdlInterface *)owner)->awdlPsfTick();
+}
+
+void itlmt7925AwdlInterface::awdlPsfStart()
+{
+    if (!awdlPsfTimer) {
+        IOWorkLoop *wl = getWorkLoop();
+        if (!wl) { itlmtTrace(getController(), "awdl:psf no workloop"); return; }
+        awdlPsfTimer = IOTimerEventSource::timerEventSource(this, awdlPsfTimerFired);
+        if (!awdlPsfTimer) return;
+        if (wl->addEventSource(awdlPsfTimer) != kIOReturnSuccess) {
+            awdlPsfTimer->release();
+            awdlPsfTimer = nullptr;
+            return;
+        }
+    }
+    awdlPsfTimer->cancelTimeout();
+    awdlPsfTimer->setTimeoutMS(kAwdlPsfPeriodMs);
+}
+
+void itlmt7925AwdlInterface::awdlPsfTick()
+{
+    if (awdlPsfLen >= 24 && coreDev && awdlSyncEnabled) {
+        ItlNativeAwdlSync req = { 1, awdlPsfFrame, awdlPsfLen, 6, kAwdlPsfRocMs };
+        IOReturn r = coreDev->callPlatformFunction(ITL_NATIVE_AWDL_SYNC, false, &req, nullptr, nullptr, nullptr);
+        awdlPsfTicks++;
+        if (awdlPsfTicks <= 5 || (awdlPsfTicks % 100) == 0)
+            itlmtTrace(getController(), "awdl:psf tick %u len=%u rc=%x", (unsigned)awdlPsfTicks, awdlPsfLen, r);
+    }
+    if (awdlPsfTimer && awdlSyncEnabled && awdlPsfLen) awdlPsfTimer->setTimeoutMS(kAwdlPsfPeriodMs);
+}
+
+void itlmt7925AwdlInterface::free()
+{
+    if (awdlPsfTimer) {
+        awdlPsfTimer->cancelTimeout();
+        IOWorkLoop *wl = getWorkLoop();
+        if (wl) wl->removeEventSource(awdlPsfTimer);
+        awdlPsfTimer->release();
+        awdlPsfTimer = nullptr;
+    }
+    IO80211AWDLProtocol::free();
 }
 
 // apple80211_awdl_peer_traffic_registration { u32 version; void *addr; u32 name_len; char name[152]; u32 active } packed -
