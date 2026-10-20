@@ -8,7 +8,9 @@
 #
 #     debug.nvaccelfb=1  ->  debug.nvaccel_iop=1  ->  debug.nvaccelfb=3  ->  killall WindowServer
 #
-# This runs that order (or ours, with --fb4) and prints the counters that decide it.
+# This runs that order (or ours, with --fb4) and prints the counters that decide it. On this fork
+# debug.nvaccelfb is a proc: level 3 sets the scanout gate and re-delivers the mode change but does not persist as
+# "3" (it reads back 1), so the part that can move anything here is the WindowServer restart.
 #
 #   sudo tools/890m/oled-arming.sh           luuumi order, then restart WindowServer
 #   sudo tools/890m/oled-arming.sh --fb4     nvaccelfb=1 -> iop=1 -> nvaccelfb=4, no WindowServer restart
@@ -63,9 +65,16 @@ case "$MODE" in
     if [ "$(id -u)" != 0 ]; then
         echo "  restart WindowServer needs root: sudo killall WindowServer"
     else
-        echo "  restarting WindowServer so it rebuilds its display pipes"
+        ws=$(pgrep -x WindowServer | head -1)
+        echo "  restarting WindowServer (pid ${ws:-?}) so it rebuilds its display pipes"
         killall WindowServer 2>/dev/null || true
-        sleep 6
+        for _ in 1 2 3 4 5 6; do sleep 1; [ "$(pgrep -x WindowServer | head -1)" != "$ws" ] && break; done
+        if [ "$(pgrep -x WindowServer | head -1)" = "$ws" ]; then
+            echo "  it ignored SIGTERM; hard restart"
+            killall -9 WindowServer 2>/dev/null || true
+            sleep 6
+        fi
+        echo "  WindowServer pid now $(pgrep -x WindowServer | head -1)"
     fi
     status "after"
     ;;
