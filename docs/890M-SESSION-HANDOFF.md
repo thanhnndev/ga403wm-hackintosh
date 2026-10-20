@@ -1,5 +1,37 @@
 # 890M port - session handoff (2026-10-18, written ~17:00)
 
+## Latest override — Step51 NVIDIA work path installed, reboot pending
+
+User requested HDMI/NVIDIA for work while AMD porting continues in hybrid. This supersedes
+Step50's pending AMD WindowServer trial. **Stay hybrid; ordinary reboot with HDMI connected.**
+
+- Latest upstream NVIDIA v2.4.2 (`272ccd9`) fetched into sibling `nvidia-hybrid-2.4.2`,
+  branch `research/ga403wm-hybrid-2.4.2`; reviewed plugin changes at `bb84efe` (pushed).
+  Original four NVIDIA release kexts + firmware installed, macOS26 NVAccel selected.
+- NMX fork `0fe144c` pushed: installed NMXAccel can opt out of its experimental WS pipe.
+  Installed personality has `NMXDisplayPipeEnabled=false`; AMD compute/Metal and native OLED
+  NMXGPU stay enabled. No source rollback. Step50 worktree remains `890m-ws-plugin`.
+- Plugin: WindowServer selects NVIDIA; other apps prefer NVIDIA when NVAccel exists.
+  Only dedicated probe names can force AMD via `NVMTL_TEST_GPU=amd`. One vendor per process.
+  AMD pool reuse is disabled after a real missing completion-witness failure; completed
+  submissions retire pools normally and still require the Vulkan fence. NVIDIA retains upstream reuse.
+- Actual deployed AMD Metal/IOSurface triangle: **both pixel views correct, 4 ms**.
+  Patched libdrm/RADV preserved byte-for-byte and saved overlay refreshed, preventing upstream
+  install from restoring stock AMD libraries. Six kext UUIDs verified in AuxKC.
+- Backup `/Library/NullMoth/hybrid-2.4.2-IGDgjBNc`; trace `out/890m-trace/step51/`.
+  NMXGPU `0456558e`, NMXAccel `3c0402c3`, plugin deployed `1b61fcaf`.
+  NVIDIA-eDP companion NVRMEdpBL parked in backup: old dependency 0.1 conflicts with 2.4.2;
+  its custom NV framebuffer caller is absent upstream, and hybrid OLED belongs to AMD.
+- NVIDIA guard previously held starts=2, blocking startup. Upstream fresh install reset the
+  NVIDIA guard only. NMX attach guard was absent and was not cleared. EFI/security unchanged.
+  Upstream one-shot fallback extended to restore wrapper-owned kexts/overlay matching its old AuxKC.
+
+**Still running the old kernel: no NVIDIA HDMI or WS acceleration pass claimed yet.** Next boot:
+verify all live UUIDs, native HDMI ownership, `debug.nvaccel_headless`/`debug.nvaccelfb`, and WS GPU.
+Then run an isolated forced-AMD pixel probe; do not benchmark/reboot unchanged code repeatedly.
+Kernel faults remain system-wide; this profile does not isolate iGPU panics. Full Step51 evidence
+and the two caught/rolled-back install issues are at the end of `890M-TRACE.md`.
+
 ## Latest override — Step50 native display batch installed, reboot pending
 
 New candidate is installed and both UUIDs are in AuxKC:

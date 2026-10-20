@@ -6,11 +6,12 @@ Step-by-step history: [890M trace](890M-TRACE.md).
 
 ## Current state
 
-**Latest: Step50 (2026-10-20)** — the native AMD display-pipe batch is **installed, reboot pending**.
-NMXGPU `0456558e`, NMXAccel `63026c11`, and rebuilt v2.3.1 plugin with the AMD owned-pipe gate; both new
-kernel UUIDs are verified in AuxKC. The deployed plugin passes Metal/IOSurface readback. WindowServer GPU use
-still requires the next boot; presentation currently copies to DCN scanout. Use the [session handoff](890M-SESSION-HANDOFF.md)
-and final Step50 in [trace](890M-TRACE.md). The separate early TLB/IPI panic remains open.
+**Latest: Step51 (2026-10-20)** — NVIDIA v2.4.2 hybrid work profile **installed, reboot pending**.
+WindowServer selects NVIDIA for the requested HDMI work path; NMXGPU/OLED and isolated AMD Metal probes
+remain enabled. Experimental AMD WS pipe is opted out for this boot. Deployed AMD Metal + IOSurface
+pixels pass (4 ms), patched AMD userland is preserved, all six kext UUIDs verified in AuxKC. Native NVIDIA
+HDMI and WS GPU use need next-boot verification. See [session handoff](890M-SESSION-HANDOFF.md) and final
+Step51 in [trace](890M-TRACE.md). Backup `/Library/NullMoth/hybrid-2.4.2-IGDgjBNc`.
 
 NEWEST (Step34, 2026-10-17, Linux): **login-window crash-loop root cause found and fixed from Linux**. The nvmtl
 allow list (`/Library/GPUBundles/nvmtl-allow.txt`) is only scanned until the first line that *decides*, so the

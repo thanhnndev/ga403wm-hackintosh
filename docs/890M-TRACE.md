@@ -3009,3 +3009,98 @@ If no arm, inspect `NMXDisplayBindError` and the exact FB/PCI association. If ar
 plugin gate and renderer initialization; if resource preparation fails, fix the real UMA allocation/mapping,
 never force prepare success. Keep the separate early TLB/IPI panic from Steps47/48 open; this batch does not
 claim to repair it. No automatic reboot benchmark or new launch job is armed.
+
+
+## Step51 — upstream NVIDIA 2.4.2 hybrid work profile (2026-10-20, macOS)
+
+User requested latest NVIDIA upstream installed before reboot, using HDMI for work while continuing
+AMD porting in hybrid. This deliberately pauses Step50's pending AMD WindowServer pipe trial;
+Step50 was never booted. Native AMD OLED scanout and the working IB preparation fixes stay installed.
+
+### Upstream and policy
+
+Fetched official `nullmoth/nvidia-macos-driver` main/tag v2.4.2, commit
+`272ccd9da04ff5de95c2791b902fe17a3fa77ce7`. Release:
+https://github.com/nullmoth/nvidia-macos-driver/releases/tag/v2.4.2 . The release fixes the missing
+NVIDIA display interface in 2.4/2.4.1; this does not establish the cause of our earlier failed starts.
+Release archive SHA256, matched to the GitHub asset digest:
+`6f2852d1d1a1f510c0cc11a7710bc35f016550b509dff93b7835f48d69874213`.
+Unmodified official installer verified every payload SHA256SUMS entry and runtime compatibility,
+preflight-linked the full auxiliary collection, selected macOS26 NVAccel, then installed all four
+original release kexts and firmware at `/Library/NullMoth/nvfw`.
+
+Separate worktree `../nvidia-hybrid-2.4.2`, branch `research/ga403wm-hybrid-2.4.2`:
+`634a204` retains the AMD owned-display gate, `fa734eb` selects NVIDIA for WindowServer/normal
+apps and allows `NVMTL_TEST_GPU=amd` only for dedicated probe names, `bb84efe` disables pool/page
+reuse on non-NVIDIA. Pushed to personal fork. The plugin still supports one Vulkan vendor per
+process, not simultaneous vendors in one process. Display/headless/armed gates remain real.
+NVIDIA retains its upstream reuse path. Allow-list order: `-strix-headroom-hold`, `!WindowServer`, `*`.
+The broad application policy is intentional for the requested NVIDIA work profile; the retired
+stress helper stays denied before the wildcard. No WindowServer restart or live kext unload/load.
+
+NMX fork `0fe144c` adds personality opt-out `NMXDisplayPipeEnabled=false` (missing defaults to
+Step50's existing behavior). Installed false pauses AMD WS binding, preserving native AMD OLED,
+NMXGPU and independent AMD Metal. No prior port commits reverted. Older `890m-ws-plugin` worktree
+and source branch are preserved for resuming the AMD display experiment.
+
+### Actual failures caught and fixed before reboot
+
+1. NVIDIA guard `nullmoth-nv-starts=%02` blocked this boot's NVRM; old `nullmoth-nv-ok=1` also existed.
+   NVAccel was waiting for NVRM then refusing startup. HDMI was physically plugged but not online
+   in the current profiler. The counter explains current blocking, not why earlier starts failed.
+   Fresh upstream installation clears only its NVIDIA guard flags; NMX attach guard absent and untouched.
+2. Saved `/Library/NullMoth/gpu-userland` contained stock libdrm/RADV while the active copies were
+   patched. Official updater overlays that saved tree, so an ordinary update would regress AMD.
+   Wrapper backs up both trees and refreshes the saved overlay from working active files before
+   upstream installation. Every saved active file hash is verified afterward. NVK does not link
+   against these AMD libdrm libraries; its Vulkan loader matched the existing loader.
+3. First collection preflight rejected GA403 NVRMEdpBL: its dependency NVRM 0.1 cannot link with
+   release 2.4.2. The wrapper restored the prior state. Both private imports still exist in NVRM,
+   but that does not certify the private `nv_state_t` ABI. The custom NV framebuffer AUX caller
+   is absent upstream. Parked the unused NVIDIA-eDP companion in the complete backup, preserving
+   its source on `ga403wm`; hybrid OLED belongs to AMD. No speculative version relabeling.
+4. Next installed plugin's real AMD triangle returned a command-buffer error after 1002 ms.
+   Kernel/user logs identify `completion witness missing`, after the Vulkan fence completed,
+   with no GFX timeout/reset observed in that submission window. Wrapper again restored the prior
+   installation. This does not prove the underlying witness coherency cause. Conservative AMD
+   fix: turn off pool/page reuse, retire each completed pool via the existing path, preserve fence
+   checks and propagate errors normally. Do not fabricate witness completion. Rebuilt/reinstalled
+   changed plugin, then both texture and IOSurface CPU pixel checks passed in 4 ms.
+
+`macos-nvidia-hybrid-install.sh` backs up all changed state, including old firmware, NMXAccel,
+NVRMEdpBL, userland overlay, collection, upstream recovery jobs and NVIDIA NVRAM flags. It rolls back
+on error. The upstream next-boot lastgood job is extended by `nvidia-hybrid-fallback.py` to restore
+wrapper-owned NMXAccel/NVRMEdpBL/overlay as well, keeping the previous AuxKC consistent with disk.
+The upstream lastgood job can restore its backup and reboot after two failed display starts;
+its desktop bootguard also marks a desktop that stays up as good. These are recovery mechanisms,
+not evidence of a working NVIDIA HDMI path.
+
+### Installed final batch and evidence
+
+Private logs/manifests `out/890m-trace/step51/`; complete final backup
+`/Library/NullMoth/hybrid-2.4.2-IGDgjBNc`. Upstream own backup
+`/Library/NullMoth/backup-20261020-095359.dYDE8l` (use the wrapper backup for full pre-batch state).
+
+| Image | SHA256 | UUID in AuxKC |
+|---|---|---|
+| NVRM | `713b55d2c766c98abd9a97602103a3986c7e82a04f5d7c43ce62c60301b86ce2` | `0952A192-ADE8-33CF-A282-02DD6DB40DF7` |
+| NVAccel26 | `4b2d68a1b129a4afb49d2aa68b90b710ae3d96a3b7361883c8c8fc87d5d247e5` | `B7BD2816-6458-3500-831B-69D9D2AADEDC` |
+| NVRMFB | `092f1caa5aaecf2faf999b5971ab61cf625d888596ad203e6d217cd137605eb3` | `5075BFAE-B0FE-3659-BEB6-D7AAEF8856C8` |
+| NVRMAGDC | `223a327f0b94ecd9a0ca321f5d69f149d8c4275b0a4e8f6be63d0c6266c6b2de` | `EF61483E-E558-3981-9EEF-4E26C7B14CC3` |
+| NMXGPU | `0456558e65a8109f020d9945c137280378a327ccf17129f5657082316c440edb` | `7FB0A912-7ECC-3597-B51F-55266CBA4F0C` |
+| NMXAccel | `3c0402c379d68d3eae25a179ab075eac1e708e6e933f8c64ce51a998b47d467d` | `0FA0421C-8585-35E5-B145-52113337C413` |
+
+Deployed hybrid plugin signed bundle SHA256
+`1b61fcafeadacdd113eb29459d80e9607d493682b46745187a0b51cb5fc19a44`.
+`codesign --verify` passes. No NVIDIA kernel binary modified from release payload. Patched active
+AMD libdrm `47dbb6f2783a1ddb...`, RADV `177d41a67558e3e8...`, AMDGPU libdrm
+`db7cddeef2781d36...` retained. Nine backend selection cases pass. Final unprivileged forced-AMD
+Metal triangle: RADV STRIX1, status4(completed), 4 ms, texture and IOSurface CPU `[64,128,255,255]`,
+both CORRECT. This validates the deployed plugin/userland against the still-running b15 kernel.
+
+**Reboot pending.** Stay hybrid with HDMI connected. Confirm live six UUIDs, NVAccel framebuffer
+armed/non-headless, NVIDIA native HDMI output and WindowServer Metal first; then run a separately
+forced AMD pixel probe. Current live kernel is still b15 and existing WS is still the old software
+session. No claim yet of NVIDIA HDMI working, AMD WS working, HDR correctness or full stability.
+iGPU kernel faults still affect the whole machine: separate per-process rendering is not panic
+isolation. The earlier attach/TLB/IPI panic remains unresolved.
