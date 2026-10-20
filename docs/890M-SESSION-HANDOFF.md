@@ -1,6 +1,31 @@
 # 890M port - session handoff (2026-10-18, written ~17:00)
 
-## Latest override — Step49, Oct 20 09:18 boot
+## Latest override — Step50 native display batch installed, reboot pending
+
+New candidate is installed and both UUIDs are in AuxKC:
+- NMXGPU `0456558e...`, UUID `7FB0A912-7ECC-3597-B51F-55266CBA4F0C`;
+- NMXAccel `63026c11...`, UUID `1043D6C4-4189-3A44-88AE-0C5DD4085A20`;
+- plugin v2.3.1 baseline with AMD owned-pipe gate, deployed SHA `d5ad4d06...`.
+
+Source: NMX fork `b5ce9e2` on `ga403wm-nmx`; plugin `2b2620c` on `research/890m-ws-plugin`
+(worktree `~/develop/projects/890m-ws-plugin`). Both pushed. Backup:
+`/Library/NullMoth/nmx-ws-20261020T023645Z` (both kexts, complete old plugin bundle, allow list and AuxKC).
+
+**Current kernel still build15; WindowServer acceleration is not verified.** Deployed new plugin passes a fresh
+unprivileged Metal -> BGRA IOSurface -> CPU pixel check. No WindowServer restart was performed. Policy now has
+`!WindowServer`, in addition to the selected GPU's Boolean owned-pipe gate; headroom-hold remains excluded.
+
+After reboot: verify both loaded UUIDs; `sysctl debug.nmxaccel_headless debug.nmxaccel_armed
+ debug.nmxaccel_iop_ok debug.nmxaccel_iop_fail`; inspect NMXDisplayPipeArmed/NMXDisplayBindError and WindowServer
+Metal/renderer plus family prepare/transaction logs. Registration alone is not GPU rendering proof. The
+presentation adapter currently copies RADV's IOSurface to DCN scanout; zero-copy/native flips remain unfinished.
+No forced prepare success or fake GPU mapping was added. Preserve the working display and real resource errors.
+
+Build: `scripts/macos-nmx-ws-build.sh <out>` (no fetch/install); its manifest feeds the transactional
+`scripts/macos-nmx-ws-install.sh` with administrator auth. The separate early TLB/IPI panic is still open.
+See Step50 at the end of `docs/890M-TRACE.md`. No automatic reboot tests are armed.
+
+## Previous verification — Step49, Oct 20 09:18 boot
 
 **Build15 is live**, UUID `304F821C-A6F0-323B-8328-DC580234D3AF`, SHA `c5dea0e0...`.
 The formerly failing sequential two-client case is **6/6 correct**. A separate simultaneous-client case

@@ -2930,3 +2930,82 @@ pushed and are preserved above. This successful attach demonstrates recovery aft
 clear; it does **not** resolve the separate early TLB/IPI panic. Keep that attach/interrupt investigation open
 before treating the machine as generally stable or widening WindowServer exposure. Step49 raw files retain
 `step47` in their local directory name because they were collected before the concurrent notes were fetched.
+
+
+## Step50 - native AMD display-pipe batch built and installed (2026-10-20)
+
+The Step49 multi-client pass is preserved. This batch addresses the next real blockers instead of repeating
+those renders: NMXAccel forced headless and never watched the native framebuffer; NMXGPUFB exposed no scanout
+query to the pipe; the existing plugin rejected **all** non-NVIDIA WindowServer devices before the allow list;
+NVIDIA device-cache/VRAM paths are not AMD memory management.
+
+### Changes
+
+NMX fork `b5ce9e2` (`ga403wm-nmx`):
+- NMXGPUFB exposes its existing, live DCN scanout to the display adapter using the frozen scanout request ABI.
+  It checks version/geometry/size and waits until IOFramebuffer open has assigned its controller. CPU physical
+  addresses are not advertised as NVIDIA VRAM or RADV GPU VAs: the query returns a CPU mapping, `phys=0`, no handle.
+- NMXAccel watches only NMXGPUFB on its **own PCI provider**. An asynchronous arm retries NotReady at 200 ms,
+  at most 30 seconds; driver matching never waits for WindowServer open. A pending reference and registration lock
+  cover callback/stop lifetime. It handles an already-created family pipe without allocating a duplicate.
+- The native path is gated to the exact reviewed 25G241 kernel string. It sets the family's UMA/system-memory
+  allocation bit and IOSurface type 0x80 instead of asking NVIDIA RM for a device cache. The family resource
+  `prepare()` remains real: **no forced success and no fabricated GPU page-table address** were added.
+- Only after exact framebuffer/pipe ownership is established does it publish `NMXDisplayPipeArmed=true` and clear
+  `NMXAccelHeadless`. Diagnostics are `debug.nmxaccel_{headless,armed,iop_ok,iop_fail}`.
+- Presentation accepts the existing BGRA IOSurface path and copies ordered rows into the native DCN scanout.
+  NVIDIA flip/page-off/VRAM paths are skipped for this adapter. **This is GPU rendering plus CPU transfer, not
+  zero-copy or a native AMD page-flip implementation.** Remaining copy cost is not claimed fixed.
+
+Plugin worktree `~/develop/projects/890m-ws-plugin`, branch `research/890m-ws-plugin`, commit `2b2620c`:
+- Kept the current **upstream 2.3.1 + GA403** source baseline (`805e77a`), rather than reverting the plugin to
+  NMX's older 2.0.4 tree or installing 2.3.6. Existing translate/air-runtime/codec/Vulkan/libdrm files are retained.
+- AMD WindowServer is eligible only when the **selected NMXAccel port** publishes a true Boolean owned-pipe gate.
+  NVIDIA keeps its own headless/sysctl policy; AMD readiness cannot arm NVIDIA and vice versa. The allow list
+  remains another required condition, including armed-only entries.
+- Eight host policy cases cover owned/unowned AMD, headless NVIDIA, cross-vendor isolation and unsupported vendors.
+  Both source commits are pushed to the owner's fork; no PR/issue was created.
+
+### Validation and install
+
+New BSD tool `tools/890m/metal-iosurface.swift` draws a real Metal triangle into a 64x64 BGRA IOSurface and checks
+both texture readback and the surface CPU memory. With the prior plugin: both `[64,128,255,255]` reads CORRECT,
+completed in 3 ms. After deployment of the rebuilt 2.3.1 plugin: a fresh **unprivileged** nvmtltest process on
+RADV STRIX1 returns both reads CORRECT in 4 ms. These are data-path checks, not performance benchmarks or proof
+of WindowServer GPU use. No unchanged multi-client stress was rerun.
+
+Context7 was consulted for the Metal/IOSurface API; it returned unrelated bindings rather than an official SDK
+entry. Used the installed SDK's MTLDevice.h declaration plus Apple's
+[makeTexture(descriptor:iosurface:plane:) reference](https://developer.apple.com/documentation/metal/mtldevice/maketexture(descriptor:iosurface:plane:))
+instead. The SDK header explicitly describes creating a texture from the given IOSurface plane.
+
+NMXAccel and the changed NMXGPU framebuffer TU compile/link successfully. The NMXGPU relink retains the existing
+successful build15 runtime/900-source objects and IB fix; it is **not** another full 900-source rebuild. The plugin
+build succeeds (existing protocol/deprecation warnings remain), is signed, and the installed bundle verifies.
+Added reproducible build/manifest and transactional installer scripts. The installer validates candidate hashes,
+backs up both kexts/plugin/allow list/AuxKC, tests the deployed plugin before changing kernels/policy, verifies
+both new UUIDs in AuxKC, and restores the whole batch on failure. It does not restart WindowServer, reboot,
+clear the attach guard, or change power/security/EFI settings. An existing attach marker causes refusal.
+
+Installed successfully; backup `/Library/NullMoth/nmx-ws-20261020T023645Z`:
+- NMXGPU SHA256 `0456558e65a8109f020d9945c137280378a327ccf17129f5657082316c440edb`,
+  UUID `7FB0A912-7ECC-3597-B51F-55266CBA4F0C`.
+- NMXAccel SHA256 `63026c11a410bbe5200216ac50d1b87f09cd9edb364557c306d6ef71ef76e02d`,
+  UUID `1043D6C4-4189-3A44-88AE-0C5DD4085A20`.
+- Deployed plugin SHA256 `d5ad4d06a3520c80eddde0d0043cf5da3889419c77770ae02185868347125347`,
+  UUID `BCC4C4B9-7EC7-3739-B5EA-0788C03FA501`. Bundle signing changes its staged file SHA.
+- Existing narrow process policy plus `!WindowServer`; no wildcard, headroom-hold or broader app permission added.
+
+Private evidence: `out/890m-trace/step50/` (build logs, baseline/deployed IOSurface checks, policy test,
+candidate/installed manifests and install log). Running kernel is still build15/NMXAccel's prior UUID, PID903
+WindowServer remains alive and headless=1. **Reboot pending; WindowServer acceleration is not verified.**
+
+### After the next boot
+
+First confirm both loaded UUIDs above. Read the native headless/armed/transaction counters and the NMXAccel
+registry properties. Then inspect WindowServer's Metal creation / render path and the family prepare/transaction
+logs. Pipe registration alone or a successful app triangle is not proof that WindowServer switched to the GPU.
+If no arm, inspect `NMXDisplayBindError` and the exact FB/PCI association. If armed but no transactions, inspect
+plugin gate and renderer initialization; if resource preparation fails, fix the real UMA allocation/mapping,
+never force prepare success. Keep the separate early TLB/IPI panic from Steps47/48 open; this batch does not
+claim to repair it. No automatic reboot benchmark or new launch job is armed.

@@ -6,11 +6,11 @@ Step-by-step history: [890M trace](890M-TRACE.md).
 
 ## Current state
 
-**Latest: Step49 (2026-10-20)** — build15 `c5dea0e0` is live. The old second-client hang reproducer
-passes **6/6 sequential renders**; two simultaneously alive VMs pass **6/6 renders + 5/5 probes**, with no
-GFX timeout/reset. NMXAccel still forces headless, so WindowServer CPU remains an open milestone. Use the
-[session handoff](890M-SESSION-HANDOFF.md) and final Step49 in [trace](890M-TRACE.md). The separate early TLB/IPI panic from Linux Steps47/48 remains unresolved. No further reboot needed
-for this verification; older reboot/install instructions below are historical.
+**Latest: Step50 (2026-10-20)** — the native AMD display-pipe batch is **installed, reboot pending**.
+NMXGPU `0456558e`, NMXAccel `63026c11`, and rebuilt v2.3.1 plugin with the AMD owned-pipe gate; both new
+kernel UUIDs are verified in AuxKC. The deployed plugin passes Metal/IOSurface readback. WindowServer GPU use
+still requires the next boot; presentation currently copies to DCN scanout. Use the [session handoff](890M-SESSION-HANDOFF.md)
+and final Step50 in [trace](890M-TRACE.md). The separate early TLB/IPI panic remains open.
 
 NEWEST (Step34, 2026-10-17, Linux): **login-window crash-loop root cause found and fixed from Linux**. The nvmtl
 allow list (`/Library/GPUBundles/nvmtl-allow.txt`) is only scanned until the first line that *decides*, so the
