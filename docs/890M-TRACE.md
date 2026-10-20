@@ -2856,3 +2856,34 @@ and previous-boot JSONL. No EFI, NVRAM or installed kext mutation was made in th
 boot with the guard still set can park NMXGPU and leave no display; that must not be mistaken for another
 driver attach attempt. Next diagnostic work needs persistent stage/CPU tracing through NMXGPU attach and the
 interrupt/critical-section paths, with a recoverable display plan, rather than another uninstrumented reboot.
+
+## Step48 - subsequent logo freezes confirmed as the stale attach guard; cleared once from Linux
+
+The next persisted logs (`175`/`176`) now establish the immediate cause of the repeated logo boots:
+
+* 21:53:24.338 +0700: `NullMoth GPU: the last attach of 1002:150E never returned ... this GPU stays with macOS`.
+* 21:56:17.019 +0700: the same guard message on another boot. Neither boot attempts amdgpu attach after that check.
+* NMXAccel waits for NMXGPU to claim 1002:150e; CoreDisplay reports `FB: 0 of 1 opened`, NVIDIA's remaining
+  IONDRVFramebuffer fails to open (`0xe00002c7`), and WindowServer asserts at `MappedDisplay.cpp:5509`.
+
+An on-disk `Kernel-2026-10-19-215321.panic` has now appeared. Its uptime `11627151386` matches the Step47
+NVRAM report exactly: the retained TLB/IPI panic was real, rather than a hypothetical missing-ROM failure.
+The filename records report processing on the subsequent boot; it does not establish the failed boot's start
+time. The captured blocked CPU is in VoodooI2C's interrupt/wakeup path, not the older amdgpu MES reset path.
+The original early panic's cause remains unresolved; clearing the guard does not repair that cause.
+
+Recovery applied on Oct20: copied the exact efivar to private evidence, then used administrator authentication
+(`pkexec`) to remove **only** `nullmoth-gpu-attaching-7c436110-ab2a-4bbb-a880-fe41995c9f82`, after verifying its
+payload was `1`. Linux's efivar immutable flag was cleared for that variable before deletion. Verified that
+the variable no longer exists. This is a one-time clear, not an OpenCore NVRAM/Delete entry: the driver can
+still set the marker and park a future failed attach. No panic variables or unrelated NVRAM were deleted.
+
+Live EFI also has `-v` added for visible early-boot diagnostics, with a private config backup and a passing
+ocvalidate 1.0.9 result. All other config values, the PCI `vbios`, `#display` identity, installed kexts and AuxKC
+are preserved. No build was performed because these changes affect an EFI variable and a boot argument.
+Private evidence is under `~/ga403-logs/boot-review-20261020/`.
+
+Verification still requires hardware: the next boot should actually enter NMXGPU attach rather than immediately
+park. A successful boot would show recovery from the stale guard, not proof that the TLB panic is fixed.
+If the early panic repeats, preserve the verbose stop/backtrace and NVRAM panic before another retry; do not
+automatically clear the guard on every boot or attribute it to Wi-Fi without evidence.
