@@ -6,12 +6,11 @@ Step-by-step history: [890M trace](890M-TRACE.md).
 
 ## Current state
 
-**Latest: Step51 (2026-10-20)** — NVIDIA v2.4.2 hybrid work profile **installed, reboot pending**.
-WindowServer selects NVIDIA for the requested HDMI work path; NMXGPU/OLED and isolated AMD Metal probes
-remain enabled. Experimental AMD WS pipe is opted out for this boot. Deployed AMD Metal + IOSurface
-pixels pass (4 ms), patched AMD userland is preserved, all six kext UUIDs verified in AuxKC. Native NVIDIA
-HDMI and WS GPU use need next-boot verification. See [session handoff](890M-SESSION-HANDOFF.md) and final
-Step51 in [trace](890M-TRACE.md). Backup `/Library/NullMoth/hybrid-2.4.2-IGDgjBNc`.
+**Latest: Step52 boot / Step53 in progress (2026-10-20)** — NVIDIA2.4.2 HDMI works at1080p144.
+OLED name/real EDID/1440x900 HiDPI@120 now register correctly, but OLED retains the boot console.
+WindowServer reports missing display pipe for NMXGPUFB: the hybrid work profile needs a foreign
+presentation bridge. NMXGPU live `5c218117`, other Step51 binaries unchanged. See the
+[session handoff](890M-SESSION-HANDOFF.md) and final Step52 in [trace](890M-TRACE.md).
 
 NEWEST (Step34, 2026-10-17, Linux): **login-window crash-loop root cause found and fixed from Linux**. The nvmtl
 allow list (`/Library/GPUBundles/nvmtl-allow.txt`) is only scanned until the first line that *decides*, so the

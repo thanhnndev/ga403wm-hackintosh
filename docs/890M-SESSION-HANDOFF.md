@@ -1,5 +1,24 @@
 # 890M port - session handoff (2026-10-18, written ~17:00)
 
+## Latest override — Step52 boot verified identity, Step53 OLED presentation fix in progress
+
+Boot 2026-10-20 10:05:50 loaded all six expected kexts. NVIDIA 2.4.2 owns working Mi Monitor HDMI
+1920x1080@144; NVAccel non-headless and armed. OLED has real EDID and correct name Samsung
+ATNA40CU05-0, 1440x900 logical /2880x1800 backing @120. One-shot HiDPI helper succeeded and removed
+its LaunchAgent. **OLED still shows the boot console: identity/mode success is not presentation success.**
+WindowServer repeatedly reports `Unable to find display pipe` for NMXGPUFB regID 0x10000058d.
+NMXAccel is headless/unarmed by Step51 policy; missing foreign presentation bridge must be fixed.
+
+Step52 source NMX fork `4811103` (pushed), GPU SHA `5c218117...`, UUID
+`5CFA9F52-9045-3977-BC83-A90FA32D7FC6`. Other Step51 binaries unchanged.
+Display override now names the real Samsung panel, retains the native HiRes entry, removes synthesized
+EDID whose color primaries differed from the actual panel. Real DRM connector93 eDP EDID256 checksum
+valid, SHA `c018efb7...`, physical300x190mm; all DDC blocks handed to macOS intact. Profile appearance
+and color correctness still need verification; no custom ICC calibration or HDR support was claimed.
+Backup `/Library/NullMoth/display-step52-jZGHZean`; evidence `out/890m-trace/step52/`, current failure
+logs `out/890m-trace/step53/`. NVIDIA fallback extended to restore the matching NMXGPU as well.
+Keep HDMI working. Do not restart WindowServer or revert EDID/HiDPI to hide the missing display pipe.
+
 ## Latest override — Step51 NVIDIA work path installed, reboot pending
 
 User requested HDMI/NVIDIA for work while AMD porting continues in hybrid. This supersedes

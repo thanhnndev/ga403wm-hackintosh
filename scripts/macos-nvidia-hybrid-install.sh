@@ -21,7 +21,7 @@ PY
 BK=$(mktemp -d /Library/NullMoth/hybrid-2.4.2-XXXXXXXX)
 chmod 700 "$BK"
 printf '%s\n' "$BK" > "$TRACE/backup.txt"
-PATHS=(Library/Extensions/NVRM.kext Library/Extensions/NVAccel.kext Library/Extensions/NVRMEdpBL.kext
+PATHS=(Library/Extensions/NMXGPU.kext Library/Extensions/NVRM.kext Library/Extensions/NVAccel.kext Library/Extensions/NVRMEdpBL.kext
  Library/Extensions/NVRMFB.kext Library/Extensions/NVRMAGDC.kext Library/Extensions/NMXAccel.kext
  Library/GPUBundles/NVMTLDriver.bundle Library/GPUBundles/NVIDIAShared.bundle
  Library/GPUBundles/nvmtl Library/GPUBundles/nvmtl-allow.txt

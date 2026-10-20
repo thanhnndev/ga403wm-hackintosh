@@ -3104,3 +3104,42 @@ forced AMD pixel probe. Current live kernel is still b15 and existing WS is stil
 session. No claim yet of NVIDIA HDMI working, AMD WS working, HDR correctness or full stability.
 iGPU kernel faults still affect the whole machine: separate per-process rendering is not panic
 isolation. The earlier attach/TLB/IPI panic remains unresolved.
+
+
+## Step52 — real OLED identity/HiRes installed; boot exposes missing hybrid pipe (2026-10-20)
+
+Read real eDP connector93 through read-only DRM getters: Samsung `ATNA40CU05-0`, vendor4c83/product419c,
+300x190mm, EDID256, checksums0/0, DisplayID extension0x70, SHA256
+`c018efb7498d1f643af2f0eaea4113806de42635c899da98c655793561af1749`.
+The old override carried synthesized EDID with different color primaries (real chroma bytes
+`cfd1ae513eb6230b5054`, old `ee91a3544c99260f5054`). Removed only that EDID key, retained HiDPI/IOGFlags,
+renamed display Samsung ATNA40CU05-0 (OLED). No guessed ICC installed; supplying real EDID is the basis
+for macOS profile generation, not proof of accurate calibration or HDR transport.
+
+NMXGPU source `4811103`: copies the chosen DRM modeset connector's immutable EDID/physical size/internal
+flag while holding client->modeset_mutex then mode_config.mutex (same order as DRM probing), validates
+complete bounded EDID/header/extensions/checksums, hands DDC blocks to IODisplay, accepts NULL-output
+HLDDC capability probes, reports built-in flag and real millimetres. Adds ValidForHiRes to the existing
+native mode and connection flags. No scanout timing change, no old nmx_fb_info layout change. New
+separate identity API avoids stale compiled callers. Focused EDID validator cases and changed-TU
+build/link passed; no unchanged GPU stress loop. Source pushed to NMX fork.
+
+`macos-nmx-display-install.sh` installed GPU SHA
+`5c21811761b91734b548870d9b0de41cf9e51f302237f846dcae60287ddc6d1d`, UUID
+`5CFA9F52-9045-3977-BC83-A90FA32D7FC6`; verified all six UUIDs in new AuxKC and unchanged other five
+kernel binary hashes. Backup `/Library/NullMoth/display-step52-jZGHZean`. The upstream recovery job
+now also restores saved NMXGPU to match its saved old AuxKC. Current-session WS/mode untouched during
+installation. Scoped next-login helper chooses only vendor4c83/product419c built-in panel, exact
+1440x900 logical /2880x1800 backing @120, usable desktop mode, permanent CoreGraphics transaction;
+refuses any raster change or ambiguous panel, exits bounded, removes its agent only on confirmation.
+HDMI untouched. Artifacts/manifests in `out/890m-trace/step52/`.
+
+**Actual boot 10:05:50:** all six live UUIDs match. NVIDIA HDMI working Mi Monitor1920x1080@144,
+NVAccel headless0/armed1. OLED is correctly identified, EDID256,1440x900 HiDPI@120 in profiler;
+helper logs success and its agent is gone. User photograph: OLED retains verbose boot console, not
+an active desktop. `WindowServer`739 repeatedly logs `Unable to find display pipe` for NMXGPUFB
+regID0x10000058d, while NMXAccel headless1/armed0. This is a presentation failure despite the successful
+identity/HiDPI patch. IOVersatile dependency messages in the photo do not establish the graphics cause.
+Step51's AMD pipe opt-out omitted a required foreign display pipe once WS uses NVIDIA. Investigate
+and adapt upstream NVAccel's existing head4 foreign-iGPU CPU-copy path (currently watches NMIntelFB)
+for NMXGPUFB. Preserve working NVIDIA HDMI and AMD's real identity; do not fake HDR or remove modes.
