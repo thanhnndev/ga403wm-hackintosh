@@ -161,11 +161,23 @@ private:
     int  m3Edca();                           // per-AC contention parameters from the AP's WMM element (after every BSS_INFO)
     int  m3Sta(uint8_t state, bool newly, uint16_t aid);
     int  m3StaBss();                         // STA_REC_UPDATE for the BSS wcid (19): what mt76 sends on BSS_CHANGED_ASSOC
-    int  m3Roc(bool acquire);
+    int  m3Roc(bool acquire, int channel = -1);
+    // AWDL PSF sync frame handoff (docs/ROADMAP-AWDL.md phase 3): awdlSubmit() copies one frame from the native interface's
+    // setAWDL_SYNC_FRAME_TEMPLATE into this mailbox and awdlSyncTx() runs on the link thread, pushing it out during a ROC
+    // window on the AWDL channel (the firmware has no AWDL channel sequencing of its own).
+    int  awdlSubmit(const uint8_t *frame, uint32_t len, uint8_t channel, uint32_t dwellMs);
+    void awdlSyncTx();
+    uint8_t awdlFrame[256] = {};
+    volatile uint32_t awdlFrameLen = 0;
+    volatile uint32_t awdlFrameSeq = 0, awdlFrameDone = 0;
+    uint8_t awdlChannel = 6;
+    uint32_t awdlDwellMs = 60;
+    uint32_t awdlTxTry = 0, awdlTxOk = 0, awdlTxRocFail = 0;
     void m3Pump(uint32_t ms);
     void m3Event(const uint8_t *ev, uint32_t len);
     void m3ParseAp();
     volatile bool rocGrant = false;
+    volatile bool rocWant = false;                  // a ROC grant is expected (set by m3Roc); the event is parsed after link up too
     uint8_t rocTok = 0, rocStatus = 0xff;
     uint8_t m3cipher = 0;                    // 0 = open, 4 = CCMP (BSS_INFO sec TLV)
     uint8_t apSupp = 0, apBasic = 0;         // OFDM rate bitmaps (6,9,12,18,24,36,48,54 -> bit 0..7)
@@ -399,7 +411,7 @@ private:
     void note(const char *fmt, uint32_t a = 0, uint32_t b = 0, uint32_t c = 0);
 
     // ---- runtime control: command mailbox, supervisor loop, status for the menu bar app (itlmt7925_uc.cpp) ----
-    enum { CMD_SCAN = 1, CMD_JOIN = 2, CMD_DISCONNECT = 4 };
+    enum { CMD_SCAN = 1, CMD_JOIN = 2, CMD_DISCONNECT = 4, CMD_AWDL_SYNC = 8 };
     // hasPmk: `pmk` is the ready pairwise master key (native Wi-Fi: userland's supplicant derived it), psk is empty then
     struct Net { char ssid[33]; char psk[72]; bool hasPmk; bool native; uint8_t pmk[32]; };
     IOLock *cmdLock = nullptr;

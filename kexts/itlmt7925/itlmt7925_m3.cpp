@@ -156,8 +156,9 @@ void itlmt7925::m3Event(const uint8_t *ev, uint32_t len)
         t[k] = 0;
         m3log("fw: %s", t);
     }
-    if (!m3On || m3linkUp || len < 55) return;       // after link up the data path owns the rings; later events are not ROC grants
-    if (ev[36] == UNI_ROC) {                  // ROC grant: TLV at 48 {tag, len, bss_idx, tokenid, status}
+    if (!m3On || len < 55) return;
+    if (ev[36] == UNI_ROC && (rocWant || !m3linkUp)) {   // ROC grant: TLV at 48 {tag, len, bss_idx, tokenid, status}
+        rocWant = false;
         rocTok = ev[53];
         rocStatus = ev[54];
         rocGrant = true;
@@ -610,37 +611,92 @@ int itlmt7925::m3StaBss()
 // ---------------------------------------------------------------------------------------------
 // ROC (remain on channel) to be allowed to transmit auth / assoc on the AP's channel
 // ---------------------------------------------------------------------------------------------
-int itlmt7925::m3Roc(bool acquire)
+int itlmt7925::m3Roc(bool acquire, int channel)
 {
     uint8_t req[4 + 24];
     bzero(req, sizeof(req));
     uint8_t *t = req + 4;
+    // The AWDL sync path holds the radio on its own channel while the infrastructure link stays on tgtCh; channel <= 0 keeps
+    // the join path's behaviour (the AP's channel).
+    uint8_t ch = channel > 0 ? (uint8_t)channel : tgtCh;
     if (acquire) {
         rocGrant = false;
         rocStatus = 0xff;
         rocTok++;
+        rocWant = true;                                      // m3Event parses UNI_ROC even after link up while this is set
         put16(t + 0, 0);                                     // UNI_ROC_ACQUIRE
         put16(t + 2, 24);
         t[4] = M3_BSS_IDX;
         t[5] = rocTok;
-        t[6] = tgtCh;                                        // control_channel
+        t[6] = ch;                                           // control_channel
         t[7] = 0;                                            // sco
-        t[8] = tgtCh > 14 ? 2 : 1;                           // band
+        t[8] = ch > 14 ? 2 : 1;                              // band
         t[9] = 0;                                            // bw 20 MHz
-        t[10] = tgtCh;                                       // center_chan
+        t[10] = ch;                                          // center_chan
         t[12] = 0;                                           // bw_from_ap
-        t[13] = tgtCh;                                       // center_chan_from_ap
+        t[13] = ch;                                          // center_chan_from_ap
         t[15] = 0;                                           // reqtype JOIN
         put32(t + 16, 5000);                                 // maxinterval (ms)
         t[20] = 0xff;                                        // dbdcband: auto
-        return m3Cmd(UNI_ROC, req, sizeof(req), "roc_acquire");
+        int rc = m3Cmd(UNI_ROC, req, sizeof(req), "roc_acquire");
+        if (rc) rocWant = false;
+        return rc;
     }
+    rocWant = false;
     put16(t + 0, 1);                                         // UNI_ROC_ABORT
     put16(t + 2, 12);
     t[4] = M3_BSS_IDX;
     t[5] = rocTok;
     t[6] = 0xff;                                             // dbdcband
     return m3Cmd(UNI_ROC, req, 4 + 12, "roc_abort");
+}
+
+// ---------------------------------------------------------------------------------------------
+// AWDL PSF sync frame (docs/ROADMAP-AWDL.md phase 3). The Family's AWDL state machine hands the driver one sync frame per
+// period (setAWDL_SYNC_FRAME_TEMPLATE) and expects it on the air from the AWDL channel; this firmware has no AWDL channel
+// sequencing, so the frame is transmitted inside a ROC window on the social channel and the link returns to the AP's channel
+// afterwards. awdlSubmit() runs on the caller's thread (the Family's work queue) and only fills the mailbox.
+// ---------------------------------------------------------------------------------------------
+int itlmt7925::awdlSubmit(const uint8_t *frame, uint32_t len, uint8_t channel, uint32_t dwellMs)
+{
+    if (!frame || len < 24 || len > sizeof(awdlFrame)) return ITL_EINVAL;
+    if (cmdLock) IOLockLock(cmdLock);
+    memcpy(awdlFrame, frame, len);
+    awdlFrameLen = len;
+    awdlChannel = channel ? channel : 6;
+    awdlDwellMs = dwellMs ? dwellMs : 60;
+    __atomic_add_fetch(&awdlFrameSeq, 1, __ATOMIC_RELEASE);
+    if (cmdLock) IOLockUnlock(cmdLock);
+    __atomic_or_fetch(&cmdBits, CMD_AWDL_SYNC, __ATOMIC_RELEASE);
+    return 0;
+}
+
+void itlmt7925::awdlSyncTx()
+{
+    uint32_t seq = __atomic_load_n(&awdlFrameSeq, __ATOMIC_ACQUIRE);
+    if (seq == awdlFrameDone) return;
+    uint32_t len = awdlFrameLen;
+    uint8_t ch = awdlChannel;
+    awdlFrameDone = seq;                                     // one attempt per submission (a missed ROC is not retried forever)
+    if (!len || len > sizeof(awdlFrame) || !txData.n) return;
+    awdlTxTry++;
+    m3Roc(true, ch);
+    for (int i = 0; i < 80 && rocWant && !rocGrant; i++) m3Pump(1);   // bounded: the link loop must keep servicing the AP
+    if (!rocGrant || rocStatus) {
+        awdlTxRocFail++;
+        if (awdlTxRocFail <= 8)
+            m3log("awdl sync: roc fail ch=%u grant=%d status=%u", ch, rocGrant ? 1 : 0, rocStatus);
+        m3Roc(false, ch);
+        return;
+    }
+    M3TxOpt o;
+    o.qidx = 0x10;                                           // MT_LMAC_ALTX0 (management)
+    o.rateAdapt = false;                                     // fixed rate: the sync frame must go out as OFDM 6 Mb/s
+    o.protect = false;
+    bool ok = m3Tx(awdlFrame, len, 0, 13, o);                // type 0 (management), subtype 13 (action)
+    m3Roc(false, ch);
+    if (ok) awdlTxOk++;
+    if (awdlTxTry <= 10) m3log("awdl sync: tx ch=%u len=%u ok=%d", ch, len, ok ? 1 : 0);
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -1640,6 +1696,11 @@ void itlmt7925::m3Link()
             cmdTake(CMD_SCAN, nullptr);
             wifiScan();
             wifiState("connected", "");
+            now = nowMs();
+        }
+        if (cmdPending(CMD_AWDL_SYNC)) {                     // AWDL PSF frame: one ROC window on the social channel, then back
+            cmdTake(CMD_AWDL_SYNC, nullptr);
+            awdlSyncTx();
             now = nowMs();
         }
         if (cmdPending(CMD_JOIN | CMD_DISCONNECT)) {         // another network, or off: m3Supervise() takes it from here

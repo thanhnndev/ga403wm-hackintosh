@@ -15,6 +15,19 @@ struct ItlNativeTx { const uint8_t *bytes; uint32_t length; int result; };
 #define ITL_NATIVE_TX "itlmt-native-tx-v1"
 #define ITL_NATIVE_MAC "itlmt-native-mac-v1"
 
+// ITL_NATIVE_AWDL_SYNC, p1 = ItlNativeAwdlSync*: hand one AWDL PSF (sync) frame to the core's link thread. It holds the radio
+// on `channel` (a UNI_ROC window), hands the frame to the firmware, and returns to the infrastructure channel afterwards.
+// The firmware has no AWDL channel sequencing of its own, so this off-channel slot is the driver's half of the AWDL sync
+// (docs/ROADMAP-AWDL.md phase 3). The call only copies the frame into the core's mailbox; it never blocks on the chip.
+struct ItlNativeAwdlSync {
+    uint32_t version;
+    const uint8_t *frame;     // complete 802.11 frame (the Family's sync frame template)
+    uint32_t len;
+    uint8_t channel;          // AWDL channel; 6 is the 2.4 GHz social channel
+    uint32_t dwellMs;         // ROC window that covers the transmission
+};
+#define ITL_NATIVE_AWDL_SYNC "itlmt-native-awdl-sync-v1"
+
 // ---- scan / join control (all calls come from the interface's work queue; none blocks on the chip) -------------------------
 // Information elements are kept whole-element up to this many bytes (a beacon's own IEs; the rest is cut at an element boundary).
 #define ITL_NATIVE_IE_MAX 512

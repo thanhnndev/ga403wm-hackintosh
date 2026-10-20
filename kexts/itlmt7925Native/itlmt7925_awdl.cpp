@@ -113,6 +113,10 @@ public:
     /* 568 */ IOReturn setAWDL_CONFIG(apple80211_awdl_config_request*a1) override { return awdlAccept("setAWDL_CONFIG"); }
     /* 569 */ IOReturn setAWDL_RTG_PEER_STATS_CONFIG(apple80211_rtg_peer_stats_cfg*a1) override { return awdlAccept("setAWDL_RTG_PEER_STATS_CONFIG"); }
 
+    // Phase 3, step 2: the core's link thread transmits the PSF frame (ROC on the AWDL channel + a management TX). The core
+    // service pointer comes from the vif-create handler, which runs in the infrastructure interface that owns it.
+    void setNativeCore(IOService *c) { coreDev = c; }
+
     // Creates the pool and the (three) queues and registers the ifnet from a RegistrationInfo filled like
     // AppleBCMWLANCore::createProxInterface fills it. Keeps the objects for the interface's lifetime.
     IOReturn registerAwdlInterface(const uint8_t *mac);
@@ -125,6 +129,8 @@ private:
     uint8_t awdlBssid[6] = {};                 // last setAWDL_BSSID bytes (traced only: the layout is not public)
     uint32_t awdlElectionMetric = 0;           // last setAWDL_ELECTION_METRIC
     uint32_t awdlSyncFrameLen = 0;             // last setAWDL_SYNC_FRAME_TEMPLATE payload_len (phase 4: the PSF frame)
+    uint32_t awdlSyncTxLogged = 0;             // trace budget for the core handoff
+    IOService *coreDev = nullptr;              // the core service (itlmt-native-awdl-sync-v1)
     IOSkywalkPacketBufferPool *awdlPool = nullptr;
     IOSkywalkPacketQueue *awdlQueues[3] = {};
 };
@@ -211,7 +217,21 @@ IOReturn itlmt7925AwdlInterface::setAWDL_ELECTION_METRIC(apple80211_awdl_electio
 IOReturn itlmt7925AwdlInterface::setAWDL_SYNC_FRAME_TEMPLATE(apple80211_awdl_sync_frame_template *a1)
 {
     awdlSyncFrameLen = a1 ? *(const uint32_t *)((const uint8_t *)a1 + 4) : 0;
+    const void *payload = a1 ? *(void *const *)((const uint8_t *)a1 + 8) : nullptr;
     itlmtTrace(getController(), "awdl:set SYNC_FRAME_TEMPLATE len=%u", (unsigned)awdlSyncFrameLen);
+    // Hand the frame to the core's link thread: it holds the radio on the AWDL social channel (ROC) and transmits it. The
+    // Family re-issues this template every sync period, so every call is one PSF transmission on the air.
+    if (coreDev && payload && awdlSyncFrameLen >= 24 && awdlSyncFrameLen <= 256) {
+        ItlNativeAwdlSync req = { 1, (const uint8_t *)payload, awdlSyncFrameLen, 6, 60 };
+        IOReturn r = coreDev->callPlatformFunction(ITL_NATIVE_AWDL_SYNC, false, &req, nullptr, nullptr, nullptr);
+        if (awdlSyncTxLogged < 8) {
+            awdlSyncTxLogged++;
+            itlmtTrace(getController(), "awdl:sync tx queued len=%u rc=%x", (unsigned)awdlSyncFrameLen, r);
+        }
+    } else if (awdlSyncTxLogged < 8) {
+        awdlSyncTxLogged++;
+        itlmtTrace(getController(), "awdl:sync tx skipped core=%d len=%u", coreDev ? 1 : 0, (unsigned)awdlSyncFrameLen);
+    }
     return kIOReturnSuccess;
 }
 
@@ -434,6 +454,7 @@ IOReturn itlmt7925WifiInterface::setVIRTUAL_IF_CREATE(apple80211_virt_if_create_
 
     vif->registerService(kIOServiceAsynchronous);
     vif->setRunningState(false);
+    vif->setNativeCore(core);
     ctl->setAwdlInterface(vif);
     awdlVif = vif;
     vif->deferBSDAttach(false);

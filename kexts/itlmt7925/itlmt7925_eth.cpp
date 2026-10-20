@@ -288,6 +288,12 @@ IOReturn itlmt7925::callPlatformFunction(const OSSymbol *name, bool wait, void *
         nativeNets(n);
         return kIOReturnSuccess;
     }
+    if (name->isEqualTo(ITL_NATIVE_AWDL_SYNC)) {   // AWDL PSF frame: copied into the link thread's mailbox, never blocks here
+        ItlNativeAwdlSync *a = (ItlNativeAwdlSync *)p1;
+        if (!nativeMode || !a || a->version != 1) return kIOReturnBadArgument;
+        if (!a->frame || a->len < 24 || a->len > 256) return kIOReturnBadArgument;
+        return awdlSubmit(a->frame, a->len, a->channel, a->dwellMs) ? kIOReturnError : kIOReturnSuccess;
+    }
     if (name->isEqualTo(ITL_NATIVE_STATUS)) {
         ItlNativeStatus *s = (ItlNativeStatus *)p1;
         if (!nativeMode || !s) return kIOReturnBadArgument;

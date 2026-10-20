@@ -412,3 +412,41 @@ payload}, `apple80211_awdl_peer_traffic_registration` {version, addr, name_len, 
 out-of-band request slots (548/557/563) and the LLW/companion path (562/564) still answer unsupported - they expect a
 response or a second interface, not just a parameter handshake. No RF work is done by these slots: the point is to let
 `configure()` finish so the next missing piece (the channel sequence, then the PSF/ROC path) shows up in the trace.
+
+### 10.8 Round 2026-10-20: the PSF frame reaches the driver - first AWDL transmit path
+
+With the configure handshake in place the Family's AWDL state machine runs end to end: the trace shows the sync frame
+template being handed to the driver over and over, and the state dump reports AWDL up with no peers because the radio
+never transmits anything:
+
+```
+awdl:set SYNC_FRAME_TEMPLATE len=110
+awdl:accept setAWDL_SYNC_PARAMS / setAWDL_SYNC_STATE / setAWDL_ELECTION_PARAMS
+setSyncFramePeriod::Setting PSF period to 440
+AWDLStateDump: AWDL up time: 29 Secs, DE:56:7B:34:81:D4 peers:0, cached:0(0), rtg(0)
+AWDLStateDump: PSFDwell Support/Active: 1/0 {0ms 0ms}
+IO80211AWDLPeerManager::monitorAWEvents WARNING: Did not get AW start event ...
+```
+
+`netstat -I awdl0` = 0 TX / 0 RX: nothing ever leaves the box, which is why a second Mac/iPhone with AirDrop open cannot
+see it. The firmware has no AWDL channel sequencing of its own, so the driver has to provide the off-channel slot.
+
+What this round adds (phase 3 transmit half):
+
+* `ItlNativeAwdlSync` (`ITL_NATIVE_AWDL_SYNC`, itl_native_bridge.h) - the native interface hands one complete 802.11 frame
+  plus the channel and dwell to the core. `itlmt7925::awdlSubmit()` only copies it into a mailbox under `cmdLock` and sets
+  `CMD_AWDL_SYNC`; nothing blocks on the chip in the caller's context (the Family's work queue).
+* `itlmt7925::awdlSyncTx()` runs on the link thread next to the scan command: `m3Roc(true, channel)` (UNI_ROC on the AWDL
+  channel, bounded to 80 ms of pumping so the AP keeps being serviced), `m3Tx(frame, len, 0, 13, ...)` (management, action,
+  fixed OFDM 6 Mb/s, ALT X0 queue), then `m3Roc(false, channel)` back to the infrastructure channel.
+* ROC grants are now parsed after link up as well (`rocWant`, set by m3Roc and cleared by the grant or the abort). The old
+  early return assumed no ROC event can arrive while associated; off-channel AWDL needs exactly that.
+* `setAWDL_SYNC_FRAME_TEMPLATE` (slot 549) queues the frame the Family builds every PSF period (110 bytes on this build,
+  social channel 6, 60 ms ROC window). The core service pointer is handed to the vif by the vif-create handler
+  (`setNativeCore`).
+
+What to expect on the next boot: `awdl:sync tx queued len=110 rc=0` in the interface trace and `awdl sync: tx ch=6
+len=110 ok=1` in the driver log once the link is up (the AWDL TX only runs while associated - the link thread is what
+services the command). A second AirDrop device should then start seeing this Mac, even though reception (peer table) still
+needs the RX half: routing the AWDL action frames the firmware delivers during the ROC window up to
+`IO80211AWDLPeerManager`, plus the missing "AW start event" the peer manager keeps warning about.
