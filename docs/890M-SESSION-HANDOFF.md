@@ -1,5 +1,34 @@
 # 890M port - session handoff (2026-10-18, written ~17:00)
 
+## Latest override — Step53 foreign OLED presentation fix installed, reboot pending
+
+Current boot10:05:50: HDMI works1920x1080@144 on NVIDIA2.4.2. OLED retains boot console even though
+its real Samsung identity, EDID256,1440x900 HiDPI@120 are correct. Root cause in logs: WS cannot find
+OLED display pipe. Step51 opted out of the direct AMD pipe without replacing it with an NVIDIA
+foreign pipe. This is not proven to be the IOVersatile messages visible in the user's photo.
+
+**New fix is installed; do not repeat the unchanged failed boot.**
+- NMX fork `f6689a6`: opt-in AMD OLED becomes foreign head4 and joins upstream NVRMFB/NMIntelFB
+  IOFBDependentID0x4E56524D00000001; native scanout/EDID/HiDPI remain intact.
+- NVIDIA fork code `49af2cc`: scoped, exact-kernel-gated watcher binds that OLED after scanout/open
+  readiness and primary NVIDIA arming, using the existing upstream foreign-iGPU CPU-copy path.
+  No AMD addresses masquerade as NVIDIA VRAM. Direct AMD WS pipe remains off; AMD Metal probe
+  selection remains available; NVIDIA remains WS render backend.
+- Installed NMXGPU SHA `a11d6043...`, UUID `0A0B9BE3-025D-3903-ACAD-D8309B0E0B98`;
+  NVAccel SHA `956bcfc1...`, UUID `C43DC1F8-EC92-379F-9D4C-C6F3EC9F7CCA`.
+  Other four kernel binaries + plugin unchanged. Six UUIDs verified in AuxKC; cached macOS26
+  NVAccel updated too. Build/collection checks pass; **new pipe has not run yet**.
+- Final transaction backup `/Library/NullMoth/oled-bridge-step53-bCdWZFVn` contains an intermediate
+  unbooted candidate. For the known pre-Step53 state (this HDMI-working boot), use original backup
+  `/Library/NullMoth/oled-bridge-step53-qUGbDJ4s` (both kexts, cached26, AuxKC).
+  Evidence `out/890m-trace/step53/`; installer `macos-nvidia-oled-bridge-install.sh`.
+
+Next: normal hybrid reboot with HDMI connected. Verify both new UUIDs, NMXGPUFB head4/dependent
+controller group, `NVAccelForeignDisplayArmed=true`, heads_piped bit4 and increasing iop_ok_h4,
+then OLED desktop visually. Keep the current HDMI path intact. No WS restart or live kext swap was
+performed. HDR is still unresolved (current framebuffer path advertises SDR8-bit), so don't call
+this HDR/profile-color correctness fixed or reintroduce synthetic EDID HDR claims.
+
 ## Latest override — Step52 boot verified identity, Step53 OLED presentation fix in progress
 
 Boot 2026-10-20 10:05:50 loaded all six expected kexts. NVIDIA 2.4.2 owns working Mi Monitor HDMI

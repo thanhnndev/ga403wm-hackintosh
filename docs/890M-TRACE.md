@@ -3143,3 +3143,58 @@ identity/HiDPI patch. IOVersatile dependency messages in the photo do not establ
 Step51's AMD pipe opt-out omitted a required foreign display pipe once WS uses NVIDIA. Investigate
 and adapt upstream NVAccel's existing head4 foreign-iGPU CPU-copy path (currently watches NMIntelFB)
 for NMXGPUFB. Preserve working NVIDIA HDMI and AMD's real identity; do not fake HDR or remove modes.
+
+
+## Step53 — fix missing NVIDIA-to-AMD OLED presentation pipe (2026-10-20)
+
+User photo after10:05:50 boot: HDMI works, OLED retains kernel verbose frame; Settings controls/HDR
+appear absent. Actual profiler/registry: OLED real EDID256 Samsung ATNA40CU05-0,1440x900 logical with
+2880x1800 backing @120; next-login HiDPI helper succeeded and removed itself. All six live UUIDs
+match Step52. NVIDIA owns Mi Monitor1920x1080@144, nvaccel_headless0/nvaccelfb1; heads_piped=1,
+igpu=0. NMXAccel headless1/armed0. CoreDisplay continuously reports `Unable to find display pipe`
+for NMXGPUFB0x10000058d. That missing presentation pipe explains the stuck console despite correct
+identity/mode registration. Photo's IOVersatile dependency errors do not establish a graphics cause.
+Step51's direct-AMD-pipe opt-out omitted the required foreign-presentation replacement for an
+NVIDIA-rendered WS. No EDID/HiDPI revert and no unchanged-code stress/reboot loop.
+
+Read upstream v2.4.2's already implemented NMIntelFB foreign head4 path: same dependent controller
+ID0x4E56524D00000001 as NVRMFB; explicit head registration; CPU-only scanout (`kva` nonzero,
+`phys`0); `initFramebufferResource` deliberately returns no NVIDIA VRAM resource; presentation skips
+NVIDIA page flips and copies IOSurface into foreign scanout. Reused that path for AMD OLED rather
+than pretending RADV and NVK can coexist in WS's single Vulkan device.
+
+NMX fork `f6689a6`: only opt-in NMXGPUAMD personality `NMXNvidiaDisplayBridge=true`, internal native
+2880x1800, publishes head4, shared NVIDIA dependent controller ID and bridge marker. Default
+remains head0. Real EDID, millimetres, HiRes and timing unchanged.
+NVIDIA fork `49af2cc`: opt-in NVAccel `NMXForeignDisplayEnabled=true`, exact reviewed25G241 kernel,
+watch only marked NMXGPUFB head4. Retained deferred call and registration lock wait for opened
+scanout AND primary NVIDIA arming (<=300x200ms); validate CPU-only fields, native geometry,
+pitch and allocation bounds before allowing head4. Existing registration verifies exact pipe/FB
+ownership and handles gaps between NV head0 and foreign head4. Registration re-delivers mode
+change. Read-only armed property and existing per-head counters expose success; no fabricated
+resource prepare or mapping. Stop removes notifier/cancels retained callback. Existing NVIDIA
+flip/copy behavior remains. No direct AMD WS pipe enabled. Builds use current installed SDK;
+accel_build.sh now handles an absent RM compile_cmds/empty Bash3 array safely. Both forks pushed.
+
+Installed final candidate, six UUIDs verified in newly built AuxKC:
+- NMXGPU SHA256 `a11d60431d96b8e601981c75620ad6aa2fc3f5791f63968eef7ac59dd89f88ea`, UUID
+  `0A0B9BE3-025D-3903-ACAD-D8309B0E0B98`.
+- NVAccel SHA256 `956bcfc1d33ca3eb5199626a9a4c2aa01f4d056c809a72a556363e833c88490c`, UUID
+  `C43DC1F8-EC92-379F-9D4C-C6F3EC9F7CCA`; installed and cached macOS26 bundle match, cache manifest updated.
+- NVRM/NVRMFB/NVRMAGDC/NMXAccel hashes retained exactly from Step52, plugin unchanged `1b61fcaf...`.
+  NVAccel candidate Info uses release2.4.2 metadata plus scoped opt-in, not stale source0.1 metadata.
+
+`macos-nvidia-oled-bridge-install.sh` backs up both changed kexts, cached26 and old AuxKC, rolls
+back failure; no live kext replacement, WS restart, boot-arg edit or NVRAM clear. Final transaction
+backup `/Library/NullMoth/oled-bridge-step53-bCdWZFVn` holds intermediate unbooted head4 candidate;
+original `/Library/NullMoth/oled-bridge-step53-qUGbDJ4s` holds the known pre-Step53 boot state
+(working HDMI + correctly identified but frozen OLED). Prefer original for pre-Step53 recovery.
+The upstream lastgood job still restores its full pre-2.4.2 state including matching saved NMXGPU.
+Artifacts/manifests/logs in `out/890m-trace/step53/`.
+
+**Reboot pending; new code has not run.** Normal hybrid boot with HDMI plugged. Verify new live
+UUIDs; NMXGPUFB dependent index4/controller group; NVAccelForeignDisplayArmed; heads_piped bit4;
+increasing debug.nvaccel_iop_ok_h4 and OLED visibly rendering desktop. Existing HDMI must keep
+working. Do not infer success from profiler identity alone. HDR controls/color correctness are
+not fixed by a display pipe: current framebuffers still expose SDR8-bit and this batch makes no
+HDR transport or color calibration claim. Preserve actual EDID, not synthesized HDR capability.
