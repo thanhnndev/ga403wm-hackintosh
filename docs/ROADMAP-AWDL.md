@@ -723,3 +723,31 @@ awdl stat: try=100 tx=97 rocfail=3 rocframes=86 onch=.. bcn=.. af=0 ch=.. fc=../
 the next step is the firmware sniffer path (`MCU_UNI_CMD(SNIFFER)` / `UNI_SNIFFER_ENABLE`), the only documented way to make
 an mt7925 hand every frame to the host.
 `onch = 0` → ROC is a no-op on this firmware and the AWDL channel has to be changed the hard way.
+
+### 10.17 Following the reference implementation: the sniffer, not the station RX filter
+
+Everything so far assumed the station path could be made to deliver another device's action frame. It cannot: `10.13` and
+`10.16` show beacons and data arriving inside the ROC window and never a single management frame from a foreign BSS, on
+three different channels. The one public MT7925 AWDL implementation (§4) does not work that way either - it runs the radio
+as a monitor/sniffer, which is exactly why it needs the AP link on a social channel (6/44/149) in its "shared" mode.
+
+The receive half therefore now opens the firmware sniffer for the duration of the ROC window, and only for it:
+
+```
+ROC on the social channel (grant, status 0)
+  MCU_UNI_CMD(SNIFFER) / UNI_SNIFFER_ENABLE  = 1
+  MCU_UNI_CMD(SNIFFER) / UNI_SNIFFER_CONFIG  (band, 20 MHz, control = centre = that channel, drop_err)
+  ...frames arrive, the RX ring is drained, awdlPollRx hands them to the peer manager...
+  MCU_UNI_CMD(SNIFFER) / UNI_SNIFFER_ENABLE  = 0
+ROC back to the AP channel
+```
+
+This keeps the infrastructure link: the radio is already parked off-channel for the window, so nothing is taken away from
+it that the ROC had not already taken, and the station is back on the AP channel 60 ms later. `awdl stat` (`onch`, `fc`,
+`af`) stays as the verdict: if `fc` now shows action frames and `af` moves, the receive path is open and the remaining work
+is the Family's own advertise path; if the histogram does not change, the firmware ignores the sniffer while the interface
+is a station and the next attempt is a real monitor vif.
+
+Second documented blocker that this does not solve: an iPhone only starts AWDL after a BLE advertisement from the sender
+(§2), and this machine's BT scan-filter offload `0x1812` fails. A test against an iPhone therefore measures the BLE wake-up
+path too; two Macs (or an iPad whose AirDrop sheet is open) are the cleaner RX test.

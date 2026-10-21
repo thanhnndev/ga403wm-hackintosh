@@ -688,6 +688,9 @@ void itlmt7925::awdlSyncTx()
     awdlRocActive = 1;
     m3Roc(true, ch);
     for (int i = 0; i < 80 && rocWant && !rocGrant; i++) m3Pump(1);   // bounded: the link loop must keep servicing the AP
+    if (rocGrant && !rocStatus) m3Sniffer(true, ch);                  // station-mode RX only carries our own BSS: ask the
+                                                                     // firmware for everything while we are off-channel
+    for (int i = 0; i < 8; i++) m3Pump(1);                           // let the frames that were just admitted arrive
     awdlRocActive = 0;
     if (!rocGrant || rocStatus) {
         awdlTxRocFail++;
@@ -711,6 +714,7 @@ void itlmt7925::awdlSyncTx()
         put32(awdlFrame + 36, us);
     }
     bool ok = m3Tx(awdlFrame, len, 0, 13, o);                // type 0 (management), subtype 13 (action)
+    m3Sniffer(false, ch);
     m3Roc(false, ch);
     if (ok) awdlTxOk++;
     if (awdlTxTry <= 10) m3log("awdl sync: tx ch=%u len=%u ok=%d", ch, len, ok ? 1 : 0);
@@ -718,6 +722,36 @@ void itlmt7925::awdlSyncTx()
         m3log("awdl stat: try=%u tx=%u rocfail=%u rocframes=%u onch=%u bcn=%u af=%u ch=%u fc=%u/%u/%u/%u/%u", awdlTxTry, awdlTxOk,
               awdlTxRocFail, awdlRocFrames, awdlRocOnCh, awdlBcn, awdlAfSeen, awdlRocCh,
               awdlRxFc[0], awdlRxFc[1], awdlRxFc[2], awdlRxFc[3], awdlRxFc[4]);
+}
+
+// The firmware sniffer (MCU_UNI_CMD(SNIFFER), UNI_SNIFFER_ENABLE/UNI_SNIFFER_CONFIG, mt7925_mcu_set_sniffer /
+// mt7925_mcu_config_sniffer). This is the mechanism the one public MT7925 AWDL implementation uses to see AWDL at all: in
+// station mode the chip hands the host its own BSS (plus beacons), so an action frame from another device never arrives,
+// however the MAC80211 RX filter is programmed. Sniffer mode is therefore turned on only for the duration of the ROC window
+// - frames arrive while it is on, and the station keeps the AP link because the radio is already parked off-channel.
+void itlmt7925::m3Sniffer(bool on, uint8_t ch)
+{
+    M3Msg m;
+    m.init(4);                                               // band_idx + rsv[3]
+    m.b[0] = 0;
+    uint8_t *t = m.tlv(0, 8);                                // UNI_SNIFFER_ENABLE { enable, pad[3] }
+    t[4] = on ? 1 : 0;
+    m3Cmd(0x24, m.b, m.n, on ? "sniffer on" : "sniffer off");
+    if (!on) return;
+    M3Msg c;
+    c.init(4);
+    c.b[0] = 0;
+    uint8_t *u = c.tlv(1, 16);                               // UNI_SNIFFER_CONFIG
+    uint8_t *v = u + 4;                                      // aid, band, bw, control, sco, center, center2, drop_err
+    put16(v + 0, 0);                                         // aid: not a station context
+    v[2] = ch > 14 ? 2 : 1;                                  // band: 1 = 2.4 GHz, 2 = 5 GHz
+    v[3] = 0;                                                // 20 MHz
+    v[4] = ch;                                               // control channel
+    v[5] = 0;                                                // sco
+    v[6] = ch;                                               // center channel
+    v[7] = 0;                                                // center channel 2
+    v[8] = 1;                                                // drop_err: no FCS-failed frames
+    m3Cmd(0x24, c.b, c.n, "sniffer cfg");
 }
 
 // BAND_CONFIG / UNI_BAND_CONFIG_SET_MAC80211_RX_FILTER (mt7925_mcu_set_rxfilter). The station's RX filter defaults to "only

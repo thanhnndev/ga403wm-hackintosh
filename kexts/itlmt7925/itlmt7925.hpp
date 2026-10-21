@@ -169,6 +169,7 @@ private:
     void awdlSyncTx();
     int  awdlRxFetch(uint8_t *out, uint32_t cap, uint32_t *outLen);
     void m3RxFilter(uint32_t fif);
+    void m3Sniffer(bool on, uint8_t ch);
     uint32_t awdlRocFrames = 0, awdlBcn = 0;      // frames / beacons heard while the radio was parked on the social channel
     uint32_t awdlRocOnCh = 0;                     // of those, the ones whose RXD channel really is the parked channel
     uint32_t awdlRxFc[5] = {};                    // heard during a ROC window: beacons / probe / action / other mgmt / data
