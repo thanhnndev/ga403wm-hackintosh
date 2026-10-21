@@ -630,3 +630,39 @@ awdl stat: try=.. tx=.. rocfail=.. rocframes=.. bcn=.. af=..
 `rocframes` counts every frame parsed while a ROC window is open and `bcn` the beacons among them. If `rocframes` grows but
 `af` stays 0, the radio is healthy and simply no AWDL peer is on the air; if `rocframes` stays 0, the filter is still not
 letting frames through and the next step is the chip-side promiscuous path, not the AWDL code.
+
+### 10.14 The receive half works - but only on the channel we park on
+
+With the RX filter in place (10.13) the counters finally answer the question that had been open for days:
+
+```
+rx_filter rc=0 st=0
+awdl stat: try=50 tx=49 rocfail=1 rocframes=90 bcn=9 af=0
+```
+
+`rocframes` counts every frame parsed while a ROC window is open, `bcn` the beacons among them. Ninety frames in fifty
+windows of 60 ms prove the radio really is listening off-channel, the RX ring is delivering, and the parser runs. `af = 0`
+then means exactly one thing: **no AWDL action frame was on the air on channel 6** while we were there.
+
+That is not a receive bug. The interface was transmitting (and therefore listening) on channel 6 unconditionally -
+`ItlNativeAwdlSync req = { 1, awdlPsfFrame, awdlPsfLen, 6, kAwdlPsfRocMs }` - while `setAWDL_SYNCHRONIZATION_CHANNEL_SEQUENCE`
+(slot 542) was answered by `awdlAccept()` and its contents thrown away. Apple's AWDL spreads the sync frame over a channel
+sequence (2.4 GHz social channel 6, 5 GHz 44/149), and the Family's `AppleBCMWLANProximityInterface::buildAWDLChanSequence()`
+builds that sequence from the struct we were ignoring. A peer whose sync tree sits on 44 or 149 is simply inaudible to a
+radio that only ever parks on 6, in both directions.
+
+The setter is now parsed (layout taken from `buildAWDLChanSequence`, 25G241, plus a raw hex trace so a wrong guess is
+visible instead of silently parking the radio somewhere odd): master channel first, then the sequence entries at +0x10
+(12 bytes each, channel in byte 0), then the default social set {6, 44, 149} as a union. The PSF cadence walks that list
+round-robin, one channel per 440 ms period, so every channel is visited about once a second - which is what discovery
+needs until the sync tree we hear tells us where the master actually is. `awdl stat` and the AF log now carry the channel,
+so the next run attributes every frame to the channel it was heard on:
+
+```
+awdl:psf tick 100 len=153 ch=44 rc=0
+awdl stat: try=50 tx=49 rocfail=1 rocframes=90 bcn=9 af=0 ch=149
+```
+
+Still open: `getAWDL_DEVICE_CAPABILITIES` (slot 523) answers unsupported, so the Family may keep building a 2.4 GHz-only
+sequence - the union above is what makes discovery possible in the meantime, and reporting dual-band capabilities properly
+is the clean fix once the struct layout is confirmed.

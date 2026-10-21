@@ -100,7 +100,7 @@ public:
     /* 539 */ IOReturn setAWDL_ELECTION_ID(apple80211_awdl_election_id*a1) override { return awdlAccept("setAWDL_ELECTION_ID"); }
     /* 540 */ IOReturn setAWDL_BSSID(apple80211_awdl_bssid*a1) override;
     /* 541 */ IOReturn setAWDL_ELECTION_METRIC(apple80211_awdl_election_metric*a1) override;
-    /* 542 */ IOReturn setAWDL_SYNCHRONIZATION_CHANNEL_SEQUENCE(apple80211_awdl_sync_channel_sequence*a1) override { return awdlAccept("setAWDL_SYNCHRONIZATION_CHANNEL_SEQUENCE"); }
+    /* 542 */ IOReturn setAWDL_SYNCHRONIZATION_CHANNEL_SEQUENCE(apple80211_awdl_sync_channel_sequence*a1) override;
     /* 543 */ IOReturn setAWDL_MASTER_CHANNEL(apple80211_awdl_master_channel*a1) override { return awdlAccept("setAWDL_MASTER_CHANNEL"); }
     /* 544 */ IOReturn setAWDL_SYNC_STATE(apple80211_awdl_sync_state*a1) override { return awdlAccept("setAWDL_SYNC_STATE"); }
     /* 545 */ IOReturn setAWDL_ELECTION_RSSI_THRESHOLDS(apple80211_awdl_election_rssi_thresholds*a1) override { return awdlAccept("setAWDL_ELECTION_RSSI_THRESHOLDS"); }
@@ -161,6 +161,14 @@ private:
     uint8_t awdlPsfFrame[256] = {};            // copy of the last template (the Family's buffer is not ours to keep)
     uint32_t awdlPsfLen = 0;
     uint32_t awdlPsfTicks = 0;                 // trace/metrics counter
+    // The channels the sync frame is repeated on. Apple's AWDL spreads the PSF over a channel sequence (2.4 GHz social channel 6,
+    // 5 GHz 44/149) and the Family hands that sequence down through setAWDL_SYNCHRONIZATION_CHANNEL_SEQUENCE. Until it does - and
+    // on this driver, which cannot yet report dual-band device capabilities, it may only ever hand ch6 over - the default set is
+    // used, because a peer that sits on 44/149 is otherwise inaudible: the firmware only ever hands us frames from the channel we
+    // park on (docs/ROADMAP-AWDL.md §10.13, §10.14).
+    uint8_t awdlChans[8] = { 6, 44, 149, 0, 0, 0, 0, 0 };
+    uint8_t awdlChanN = 3;
+    uint8_t awdlChanIdx = 0;                   // round-robin cursor over awdlChans, advanced by every PSF tick
     uint32_t awdlRxFrames = 0, awdlRxLogged = 0;   // action frames handed to the peer manager / trace budget
     IOService *coreDev = nullptr;              // the core service (itlmt-native-awdl-sync-v1)
     IOSkywalkPacketBufferPool *awdlPool = nullptr;
@@ -234,6 +242,52 @@ IOReturn itlmt7925AwdlInterface::setAWDL_BSSID(apple80211_awdl_bssid *a1)
                    awdlBssid[0], awdlBssid[1], awdlBssid[2], awdlBssid[3], awdlBssid[4], awdlBssid[5]);
     } else {
         itlmtTrace(getController(), "awdl:set BSSID (null)");
+    }
+    return kIOReturnSuccess;
+}
+
+// apple80211_awdl_sync_channel_sequence - the channels the Family wants the sync frame repeated on. Field offsets are the ones
+// the Family's own AppleBCMWLANProximityInterface::buildAWDLChanSequence() reads (25G241): {u32 version; u8 ; u8 count; u8 flag;
+// u8 ; u8 ; u8 masterChannel (0xff = none); pad; entries[] at +0x10}, one entry per 12 bytes with the channel in byte 0 (the
+// band/width flags live at entry+4: 0x8 2.4 GHz, 0x10 5 GHz). The raw bytes are traced as well, so a wrong guess shows up in the
+// log instead of silently parking the radio on a nonsense channel.
+IOReturn itlmt7925AwdlInterface::setAWDL_SYNCHRONIZATION_CHANNEL_SEQUENCE(apple80211_awdl_sync_channel_sequence *a1)
+{
+    const uint8_t *s = (const uint8_t *)a1;
+    if (!s) return kIOReturnBadArgument;
+    uint32_t n = s[5];
+    uint8_t master = s[9];
+    if (n > 8) n = 8;
+    uint8_t list[8];
+    uint32_t len = 0;
+    if (master >= 1 && master <= 196) list[len++] = master;   // the master channel first: it is where the sync tree lives
+    for (uint32_t i = 0; i < n; i++) {
+        uint8_t ch = s[0x10 + 12 * i];
+        if (ch < 1 || ch > 196) continue;
+        bool dup = false;
+        for (uint32_t j = 0; j < len; j++) if (list[j] == ch) dup = true;
+        if (!dup && len < 8) list[len++] = ch;
+    }
+    // Union with the social channels this driver falls back to. The point is discovery: a peer that sits on 44 or 149 cannot be
+    // heard while the radio only parks on ch6, and (because getAWDL_DEVICE_CAPABILITIES still answers unsupported) the sequence
+    // the Family hands over may be 2.4 GHz only.
+    const uint8_t fallback[3] = { 6, 44, 149 };
+    for (int i = 0; i < 3; i++) {
+        bool dup = false;
+        for (uint32_t j = 0; j < len; j++) if (list[j] == fallback[i]) dup = true;
+        if (!dup && len < 8) list[len++] = fallback[i];
+    }
+    if (len) {
+        memcpy(awdlChans, list, len);
+        awdlChanN = (uint8_t)len;
+        if (awdlChanIdx >= awdlChanN) awdlChanIdx = 0;
+    }
+    if (awdlAccepted < 96) {
+        awdlAccepted++;
+        itlmtTrace(getController(),
+                   "awdl:set CHANSEQ n=%u master=%u hop=%u,%u,%u,%u,%u raw=%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x",
+                   (unsigned)n, (unsigned)master, awdlChans[0], awdlChans[1], awdlChans[2], awdlChans[3], awdlChans[4],
+                   s[0], s[1], s[2], s[3], s[4], s[5], s[6], s[7], s[8], s[9], s[10], s[11], s[12], s[13], s[14], s[15]);
     }
     return kIOReturnSuccess;
 }
@@ -324,11 +378,13 @@ void itlmt7925AwdlInterface::awdlPsfTick()
 {
     if (coreDev && awdlSyncEnabled) awdlPollRx();            // frames heard during the previous window go up first
     if (awdlPsfLen >= 24 && coreDev && awdlSyncEnabled) {
-        ItlNativeAwdlSync req = { 1, awdlPsfFrame, awdlPsfLen, 6, kAwdlPsfRocMs };
+        uint8_t ch = awdlChans[awdlChanIdx];                 // one channel per period, round-robin over the sequence
+        awdlChanIdx = (uint8_t)((awdlChanIdx + 1) % (awdlChanN ? awdlChanN : 1));
+        ItlNativeAwdlSync req = { 1, awdlPsfFrame, awdlPsfLen, ch, kAwdlPsfRocMs };
         IOReturn r = coreDev->callPlatformFunction(ITL_NATIVE_AWDL_SYNC, false, &req, nullptr, nullptr, nullptr);
         awdlPsfTicks++;
         if (awdlPsfTicks <= 5 || (awdlPsfTicks % 100) == 0)
-            itlmtTrace(getController(), "awdl:psf tick %u len=%u rc=%x", (unsigned)awdlPsfTicks, awdlPsfLen, r);
+            itlmtTrace(getController(), "awdl:psf tick %u len=%u ch=%u rc=%x", (unsigned)awdlPsfTicks, awdlPsfLen, ch, r);
     }
     if (awdlPsfTimer && awdlSyncEnabled && awdlPsfLen) awdlPsfTimer->setTimeoutMS(kAwdlPsfPeriodMs);
 }

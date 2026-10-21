@@ -684,6 +684,7 @@ void itlmt7925::awdlSyncTx()
         awdlRxFilterDone = 1;
         m3RxFilter(0x80000040u);                             // BIT(31) enable | BIT(6) other BSS (mt7925 filter bits)
     }
+    awdlRocCh = ch;
     awdlRocActive = 1;
     m3Roc(true, ch);
     for (int i = 0; i < 80 && rocWant && !rocGrant; i++) m3Pump(1);   // bounded: the link loop must keep servicing the AP
@@ -714,8 +715,8 @@ void itlmt7925::awdlSyncTx()
     if (ok) awdlTxOk++;
     if (awdlTxTry <= 10) m3log("awdl sync: tx ch=%u len=%u ok=%d", ch, len, ok ? 1 : 0);
     if ((awdlTxTry % 50) == 0)                               // never evicted from the ring: tells RX from TX failures apart
-        m3log("awdl stat: try=%u tx=%u rocfail=%u rocframes=%u bcn=%u af=%u", awdlTxTry, awdlTxOk, awdlTxRocFail,
-              awdlRocFrames, awdlBcn, awdlAfSeen);
+        m3log("awdl stat: try=%u tx=%u rocfail=%u rocframes=%u bcn=%u af=%u ch=%u", awdlTxTry, awdlTxOk, awdlTxRocFail,
+              awdlRocFrames, awdlBcn, awdlAfSeen, awdlRocCh);
 }
 
 // BAND_CONFIG / UNI_BAND_CONFIG_SET_MAC80211_RX_FILTER (mt7925_mcu_set_rxfilter). The station's RX filter defaults to "only

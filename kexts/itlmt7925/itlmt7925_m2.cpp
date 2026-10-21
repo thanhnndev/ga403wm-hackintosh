@@ -255,8 +255,8 @@ void itlmt7925::rxParseFrame(const uint8_t *p, uint32_t len)
             uint32_t n = len - off; if (n > 48) n = 48;
             for (uint32_t i = 0; i < n; i++) snprintf(hex + i * 3, 4, "%02x ", p[off + i]);
             hex[n ? n * 3 - 1 : 0] = 0;
-            m3log("awdl af rx len=%u awdl=%d cat=%02x type=%02x sub=%02x sa=%02x%02x%02x%02x%02x%02x %s",
-                  len - off, awdlAf ? 1 : 0, p[off + 24], p[off + 28], p[off + 30],
+            m3log("awdl af rx len=%u awdl=%d ch=%u cat=%02x type=%02x sub=%02x sa=%02x%02x%02x%02x%02x%02x %s",
+                  len - off, awdlAf ? 1 : 0, awdlRocCh, p[off + 24], p[off + 28], p[off + 30],
                   a2[0], a2[1], a2[2], a2[3], a2[4], a2[5], hex);
         } else if ((awdlAfSeen % 25) == 0) {
             m3log("awdl af seen=%u (last awdl=%d cat=%02x type=%02x)", awdlAfSeen, awdlAf ? 1 : 0, p[off + 24], p[off + 28]);

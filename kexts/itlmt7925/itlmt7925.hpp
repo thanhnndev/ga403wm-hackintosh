@@ -171,6 +171,7 @@ private:
     void m3RxFilter(uint32_t fif);
     uint32_t awdlRocFrames = 0, awdlBcn = 0;      // frames / beacons heard while the radio was parked on the social channel
     volatile uint8_t awdlRocActive = 0;           // set while a ROC window is open (see awdlSyncTx / rxParseFrame)
+    volatile uint8_t awdlRocCh = 0;               // channel that window is parked on (attribution in the AF log)
     uint8_t awdlRxFilterDone = 0;                 // the "pass other BSS" RX filter is programmed once per link
     uint8_t awdlFrame[256] = {};
     volatile uint32_t awdlFrameLen = 0;
