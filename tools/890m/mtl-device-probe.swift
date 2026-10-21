@@ -11,6 +11,7 @@ var failures = 0
 
 func fail(_ s: String) { print("FAIL \(s)"); failures += 1 }
 
+print("probe env NVMTL_PREFER_VENDOR=\(String(cString: getenv("NVMTL_PREFER_VENDOR") ?? UnsafeMutablePointer<Int8>(mutating: ("<nil>" as NSString).utf8String!)) )")
 let devices = MTLCopyAllDevices()
 print("devices: \(devices.count)")
 for d in devices {

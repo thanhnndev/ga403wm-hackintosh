@@ -9,7 +9,11 @@
 set -euo pipefail
 [[ $EUID == 0 ]] || { echo 'run with administrator privileges (sudo)'; exit 1; }
 REPO=$(cd "$(dirname "$0")/.." && pwd)
-PLUGIN_SRC=${PLUGIN_SRC:-$HOME/develop/projects/890m-ws-plugin}
+# This runs as root (osascript/sudo), so $HOME is /var/root: the sources and the Vulkan headers belong to the
+# console account, not to root.
+OWNER_HOME=$(dscl . -read "/Users/$(stat -f %Su /dev/console)" NFSHomeDirectory | awk '{print $2}')
+PLUGIN_SRC=${PLUGIN_SRC:-$OWNER_HOME/develop/projects/890m-ws-plugin}
+VULKAN_INC=${VULKAN_INC:-$OWNER_HOME/Vulkan-Headers/include}
 OUT=${OUT:-$REPO/out/890m-trace/nvmtl-vendor-pref}
 BUNDLE=/Library/GPUBundles/NVMTLDriver.bundle
 BIN=$BUNDLE/Contents/MacOS/NVMTLDriver
@@ -20,9 +24,11 @@ mkdir -p "$OUT" "$BACKUP"
 
 echo "== build plugin from $PLUGIN_SRC"
 (cd "$PLUGIN_SRC/plugin" && xcrun clang -arch x86_64 -bundle -fobjc-arc -O1 -DNVMTL_RELEASE=1 \
-    -Wno-protocol -Wno-incomplete-implementation -I"$HOME/Vulkan-Headers/include" \
+    -Wno-protocol -Wno-incomplete-implementation -I"$VULKAN_INC" \
     -o "$OUT/NVMTLDriver" NVMTLDevice.m -framework Foundation -framework Metal -framework IOSurface -framework IOKit) 2>&1 | tail -3
-strings -a "$OUT/NVMTLDriver" | grep -q NVMTL_PREFER_VENDOR || { echo 'build is missing the vendor preference'; exit 1; }
+# grep -q closes the pipe early, and pipefail then reports strings' SIGPIPE as a failure: check a file, not a pipe.
+strings -a "$OUT/NVMTLDriver" > "$OUT/strings.txt"
+grep -q NVMTL_PREFER_VENDOR "$OUT/strings.txt" || { echo 'build is missing the vendor preference'; exit 1; }
 
 echo "== build probe"
 xcrun swiftc -O -o "$OUT/mtl-device-probe" "$REPO/tools/890m/mtl-device-probe.swift"
