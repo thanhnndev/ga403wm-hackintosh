@@ -168,9 +168,24 @@ void itlmt7925::rxParseFrame(const uint8_t *p, uint32_t len)
 {
     if (awdlRocActive) {                                     // diagnostics for the AWDL receive half (docs §10.13)
         awdlRocFrames++;
+        if (p[13] == awdlRocCh) awdlRocOnCh++;               // RXD3 CH_FREQ says the radio really was on the parked channel
+        // What the firmware actually hands the host inside a ROC window, by frame class. The question this answers is not
+        // "did we hear an AWDL frame" but "does this firmware forward management frames from other devices at all" - if the
+        // histogram is beacons and data only, no amount of AWDL work will ever see a peer.
+        uint8_t fcSeen = 0;
+        bool haveFc = false;
         for (uint32_t off = 32; off + 24 <= len && off < 160; off++) {
-            if (p[off] == 0x80 && p[off + 1] == 0 && memcmp(p + off + 10, p + off + 16, 6) == 0) { awdlBcn++; break; }
+            uint8_t fc = p[off];
+            if ((fc & 0x3) != 0 || p[off + 1] != 0) continue;            // protocol version 0, duration 0
+            const uint8_t *a2 = p + off + 10;
+            if ((a2[0] & 1) || !(a2[0] | a2[1] | a2[2] | a2[3] | a2[4] | a2[5])) continue;
+            fcSeen = fc; haveFc = true;
+            break;
         }
+        if (haveFc && fcSeen == 0x80) { awdlBcn++; awdlRxFc[0]++; }
+        else if (haveFc && ((fcSeen & 0xf0) == 0x40 || (fcSeen & 0xf0) == 0x50)) awdlRxFc[1]++;
+        else if (haveFc && (fcSeen & 0x0c) == 0) awdlRxFc[fcSeen == 0xd0 ? 2 : 3]++;
+        else awdlRxFc[4]++;
     }
     if (txPool && len >= 8 && (le32(p) >> 27) == 6) { m3TxFree(p, len); return; }           // TXRX_NOTIFY: buffers the firmware is done with
     if (m3dataOn && m3RxData(p, len)) return;

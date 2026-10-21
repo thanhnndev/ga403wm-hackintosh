@@ -715,8 +715,9 @@ void itlmt7925::awdlSyncTx()
     if (ok) awdlTxOk++;
     if (awdlTxTry <= 10) m3log("awdl sync: tx ch=%u len=%u ok=%d", ch, len, ok ? 1 : 0);
     if ((awdlTxTry % 50) == 0)                               // never evicted from the ring: tells RX from TX failures apart
-        m3log("awdl stat: try=%u tx=%u rocfail=%u rocframes=%u bcn=%u af=%u ch=%u", awdlTxTry, awdlTxOk, awdlTxRocFail,
-              awdlRocFrames, awdlBcn, awdlAfSeen, awdlRocCh);
+        m3log("awdl stat: try=%u tx=%u rocfail=%u rocframes=%u onch=%u bcn=%u af=%u ch=%u fc=%u/%u/%u/%u/%u", awdlTxTry, awdlTxOk,
+              awdlTxRocFail, awdlRocFrames, awdlRocOnCh, awdlBcn, awdlAfSeen, awdlRocCh,
+              awdlRxFc[0], awdlRxFc[1], awdlRxFc[2], awdlRxFc[3], awdlRxFc[4]);
 }
 
 // BAND_CONFIG / UNI_BAND_CONFIG_SET_MAC80211_RX_FILTER (mt7925_mcu_set_rxfilter). The station's RX filter defaults to "only

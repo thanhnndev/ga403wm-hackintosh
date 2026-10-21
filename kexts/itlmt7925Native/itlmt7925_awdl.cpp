@@ -196,6 +196,9 @@ void itlmt7925AwdlInterface::_unnamedPure490() {}
 // way to see which slots the Family and the AWDL peer manager actually call, in what order.
 IOReturn itlmt7925AwdlInterface::awdlProto(const char *name)
 {
+    // Called once a second by the Family while it waits for an answer it will never get; tracing it once was enough and the
+    // repeats evicted every useful line from the NVRAM ring.
+    if (!strcmp(name, "setAWDL_OOB_AUTO_REQUEST")) return kIOReturnUnsupported;
     if (awdlProtoLogged < 96) {
         awdlProtoLogged++;
         itlmtTrace(getController(), "awdl:proto %s", name);

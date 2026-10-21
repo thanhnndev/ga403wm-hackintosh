@@ -689,3 +689,37 @@ The entry layout is confirmed by the raw bytes of that first set - `01 00 00 00 
 version 1, count 0x10, master 0xff (none), and entry 0 starting at +0x0c with `version = 1`, i.e. `apple80211_channel`
 entries at +0x0c (channel in the low byte of +4, band flags at +8), exactly what `buildAWDLChanSequence` reads. The parse
 now uses that offset and traces the first three entries with their flags.
+
+### 10.16 What the firmware hands the host inside a ROC window
+
+With the hop in place the trace shows the whole transmit half working on every channel:
+
+```
+awdl:psf tick 1 len=150 ch=6 rc=0
+awdl:psf tick 2 len=150 ch=44 rc=0
+awdl:psf tick 3 len=150 ch=149 rc=0
+awdl sync: tx ch=6 len=150 ok=1 / ch=44 ok=1 / ch=149 ok=1
+awdl stat: try=100 tx=97 rocfail=3 rocframes=86 bcn=7 af=0 ch=6
+```
+
+Still `af = 0`: over 100 periods, ~5 s of listening spread over the three social channels, not one action frame - not
+even a non-AWDL one, which a busy 2.4 GHz band normally supplies (802.11v BSS transition frames are everywhere). Two
+explanations remain, and they need different fixes:
+
+* the firmware only forwards beacons and data to the host in station mode, so management frames from other devices never
+  reach the RX ring at all - the AWDL code cannot fix that, the chip's RX path has to be opened up;
+* the ROC grant is real but the radio never actually leaves the AP's channel, so every "off-channel" window is spent
+  listening to the infrastructure channel.
+
+`awdl stat` now separates them without another guess: `onch` counts the frames whose RXD3 channel field (p[13]) really is
+the parked channel, and `fc` is a class histogram of everything heard inside a window (beacons / probe / action / other
+management / data):
+
+```
+awdl stat: try=100 tx=97 rocfail=3 rocframes=86 onch=.. bcn=.. af=0 ch=.. fc=../../../../..
+```
+
+`onch ≈ rocframes` and `fc` beacons+data only → the radio is switching and the firmware is filtering management frames:
+the next step is the firmware sniffer path (`MCU_UNI_CMD(SNIFFER)` / `UNI_SNIFFER_ENABLE`), the only documented way to make
+an mt7925 hand every frame to the host.
+`onch = 0` → ROC is a no-op on this firmware and the AWDL channel has to be changed the hard way.
