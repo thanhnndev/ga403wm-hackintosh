@@ -16,11 +16,15 @@ kernel void fma3(device const float *a [[buffer(0)]], device const float *b [[bu
     out[i] = a[i] * 3.0f + b[i];
 }
 """
-var delayMs = 0, maxAttempts = 4
-{ let a = CommandLine.arguments; var i = 1
-  while i < a.count { if a[i] == "--delay-ms", i+1 < a.count { delayMs = Int(a[i+1]) ?? 0; i += 1 }
-                     if a[i] == "--attempts", i+1 < a.count { maxAttempts = Int(a[i+1]) ?? 4; i += 1 }
-                     i += 1 } }
+var delayMs = 0
+var maxAttempts = 4
+let argv = CommandLine.arguments
+var ai = 1
+while ai < argv.count {
+    if argv[ai] == "--delay-ms", ai + 1 < argv.count { delayMs = Int(argv[ai + 1]) ?? 0; ai += 1 }
+    else if argv[ai] == "--attempts", ai + 1 < argv.count { maxAttempts = Int(argv[ai + 1]) ?? 4; ai += 1 }
+    ai += 1
+}
 if delayMs > 0 { usleep(UInt32(delayMs) * 1000) }
 guard let dev = MTLCopyAllDevices().first else { print("FAIL no device"); exit(1) }
 guard let lib = try? dev.makeLibrary(source: src, options: nil), let fn = lib.makeFunction(name: "fma3"),
