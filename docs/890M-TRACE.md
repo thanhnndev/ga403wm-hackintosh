@@ -3445,3 +3445,36 @@ pipe (`debug.nmxaccel_headless` must read 0, which is why their NVMTL patch chec
 forward, both real work: give the pipe plane/gamma capabilities by moving NVDisplayPipe onto IOAccelDisplayPipe
 (smaller, unproven), or let NMXAccel own the OLED's pipe so the display GPU and the accelerator are the same GPU
 (the reference model, larger). Display arrangement was restored to HDMI main; no presentation claim.
+
+
+## Step58 — hand the OLED's pipe to the accelerator that shares its GPU (2026-10-21)
+
+Read the roadmap again before touching anything: M2 was already closed by build15 (Step49: second client passes,
+including simultaneous VMs, 0 GFX timeouts), so the open milestone is M3 — a non-headless accelerator for the panel
+— and the hybrid bridge is not on the roadmap at all. Step57b had already proved why: CoreDisplay refuses to present
+a GPU's panel through another GPU's pipe.
+
+The port already contains the owned path; it was switched off in two plists:
+- `NMXAccel`'s personality carries `NMXDisplayPipeEnabled = false`, so `nmxArm()` never runs and
+  `debug.nmxaccel_headless` reads 1.
+- `NMXGPU`'s personality carries `NMXNvidiaDisplayBridge = true`, so `nmx_fb.cpp` publishes the panel as the NVIDIA
+  card's foreign head 4.
+
+Code change (NMX fork `f83041d`, one function): `nmx_fb.cpp::start()` now distinguishes the hybrid bridge from
+ownership. With `NMXOwnsDisplay` on the provider and no bridge key, the framebuffer sets its own dependent group
+(`IOFBDependentID` 0x4E4D5847_00000001) before `IOFramebuffer::start`, publishes `IOFBDependentIndex` 0, stays
+`built-in`, and keeps the real DRM timing record. The bridge branch is unchanged and still selected by its key.
+
+Build: NMXGPU `756903d2ec015b2f` (out-b19). Staged with both plist edits in `out/890m-trace/step58/`; installer
+`scripts/macos-nmx-owns-oled-install.sh` backs up NMXGPU/NMXAccel/AuxKC, verifies that neither the bridge key nor
+the disabled pipe survives in the staged plists, rebuilds the auxiliary collection and asserts both kext UUIDs are
+in it before replacing it, with the same rollback trap as the bridge installer.
+
+Install did not run: the `do shell script` password dialog went unanswered (no backup directory, installed NMXGPU
+still `acc8770e`, collection still 12:00). Waiting on the owner to run the one-liner and reboot.
+
+What the next boot must show if the switch is right: `debug.nmxaccel_headless` 0, `NMXDisplayPipeArmed` true,
+NMXGPUFB at `IOFBDependentIndex` 0 with `IOAccelTypes` naming NMXAccel, one NMXAccel display pipe driving that
+framebuffer, and no `Fallback GPU Display Pipe transaction submission failed` in WindowServer's log. If the pipe is
+registered but frames still do not arrive, the copy path is now on the supported side, so `trx:`/`iop:` on NMXAccel
+name the next step directly. The NVIDIA bridge remains one plist key away for comparison.
