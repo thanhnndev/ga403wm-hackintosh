@@ -8,7 +8,9 @@
 import CoreGraphics
 import Foundation
 
-let stateFile = "/tmp/890m-arrangement.json"
+// Survives a reboot: the restore path must work after the arrangement change has been made permanent.
+let stateDir = FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent("Library/Application Support/890m")
+let stateFile = stateDir.appendingPathComponent("arrangement.json").path
 
 func online() -> [CGDirectDisplayID] {
     var ids = [CGDirectDisplayID](repeating: 0, count: 16)
@@ -31,6 +33,8 @@ func list(_ tag: String) {
     for id in online() { print("  " + describe(id)) }
 }
 
+var permanent = false
+
 func apply(_ moves: [(CGDirectDisplayID, Int32, Int32)]) -> Bool {
     var cfg: CGDisplayConfigRef?
     guard CGBeginDisplayConfiguration(&cfg) == .success, let cfg else { return false }
@@ -38,16 +42,20 @@ func apply(_ moves: [(CGDirectDisplayID, Int32, Int32)]) -> Bool {
         let r = CGConfigureDisplayOrigin(cfg, id, x, y)
         if r != .success { print("  origin 0x\(String(id, radix: 16)) refused: \(r.rawValue)"); CGCancelDisplayConfiguration(cfg); return false }
     }
-    let r = CGCompleteDisplayConfiguration(cfg, .forSession)
+    // .forSession is undone by a reboot, which is the safety net for a compositor that never comes back;
+    // .permanently is what the next WindowServer start reads, i.e. which GPU owns the main display.
+    let r = CGCompleteDisplayConfiguration(cfg, permanent ? .permanently : .forSession)
     if r != .success { print("  configuration refused: \(r.rawValue)"); return false }
     return true
 }
 
+let action = CommandLine.arguments.dropFirst().first ?? "list"
+permanent = CommandLine.arguments.dropFirst(2).first == "permanent"
 let ids = online()
 let builtin = ids.filter { CGDisplayIsBuiltin($0) != 0 }
 let external = ids.filter { CGDisplayIsBuiltin($0) == 0 }
 
-switch CommandLine.arguments.dropFirst().first ?? "list" {
+switch action {
 case "list":
     list("online displays")
 case "main":
@@ -55,6 +63,7 @@ case "main":
         print("need one built-in and one external display"); exit(2)
     }
     let before = Dictionary(uniqueKeysWithValues: ids.map { (String($0), CGDisplayBounds($0).origin) })
+    try? FileManager.default.createDirectory(at: stateDir, withIntermediateDirectories: true)
     if let data = try? JSONSerialization.data(withJSONObject: before.mapValues { ["x": Int($0.x), "y": Int($0.y)] }) {
         try? data.write(to: URL(fileURLWithPath: stateFile))
     }
@@ -72,5 +81,5 @@ case "restore":
     }
     if apply(moves) { list("restored") } else { exit(3) }
 default:
-    print("usage: list | main | restore"); exit(2)
+    print("usage: list | main [permanent] | restore [permanent]"); exit(2)
 }
