@@ -3412,3 +3412,36 @@ head4's three `trx:` lines are still unspent: change the display arrangement (OL
 with HDMI) and watch for the first `trx: ... head 4` line; if it appears, WindowServer's condition is "main
 display", if not, instrument the pipe client open (`newUserClient` types above the 40-line cap) next boot.
 No claim of OLED presentation; HDMI session untouched.
+
+### Step57b — WindowServer's own log names the failure: "Fallback GPU Display Pipe transaction submission failed"
+
+`sudo log show --last 6m --predicate 'process == "WindowServer"'` is readable (the non-root query returns nothing on
+this build). Making the built-in panel the main display (`CGBeginDisplayConfiguration` + origins 0,0 / 1440,0,
+reverted afterwards) produced **no** head4 transaction, but the attempt itself made WindowServer try to present, and
+CoreDisplay logged the failure it has been hiding:
+
+    [ERROR] - Attempting to get capabilities from plane with no gamma            (8466 in 6 min)
+    [ERROR] - Fallback GPU Display Pipe transaction submission failed            (881 in 6 min)
+    [ERROR] - Transaction Target State ... Plane Index: 0
+              DisplaySurface Size: (2880x1800) Format:BGRA
+              Display Pipe Operations: Dirty Fetch - Pipe, Scale/Rotate/Linearize/CSC None,
+              System Gamma - Unknown, Regamma - None, EOTF - GPU
+    SkyLight: transaction 902 timed out
+
+So WindowServer does build a 2880x1800 BGRA transaction for the OLED, ~2.5 per second, and it never reaches
+NVAccel's pipe (no `trx:`/validate line). Two facts explain why:
+
+- `NVDisplayPipe` derives from **IOAccelLegacyDisplayPipe** (`nvaccel_stubs.h:142`), whose header has no plane or
+  gamma API at all; the modern `IOAccelDisplayPipe` (0x318 bytes, declared with `copyCapabilities()` in
+  `iofam/IOAccelDisplayPipe.h`) is what carries plane capabilities. The family has no
+  `IOAccelDisplayPipeGammaTable2` instance, which is exactly what "plane with no gamma" reports.
+- The display belongs to the AMD GPU while its accelerator is NVAccel on the NVIDIA GPU, so CoreDisplay takes its
+  cross-GPU "fallback GPU display pipe" path, asks the plane for capabilities, gets none, and the submission fails
+  before any NVAccel entry point runs.
+
+That reframes the route: the current hybrid asks macOS to present an AMD panel through an NVIDIA pipe, and macOS's
+fallback path refuses it. The 780M repo's model is the opposite one -- the display's own GPU accelerator owns the
+pipe (`debug.nmxaccel_headless` must read 0, which is why their NVMTL patch checks it; ours reads 1). Two ways
+forward, both real work: give the pipe plane/gamma capabilities by moving NVDisplayPipe onto IOAccelDisplayPipe
+(smaller, unproven), or let NMXAccel own the OLED's pipe so the display GPU and the accelerator are the same GPU
+(the reference model, larger). Display arrangement was restored to HDMI main; no presentation claim.
