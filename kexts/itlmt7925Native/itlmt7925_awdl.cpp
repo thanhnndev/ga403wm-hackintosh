@@ -104,11 +104,11 @@ public:
     /* 543 */ IOReturn setAWDL_MASTER_CHANNEL(apple80211_awdl_master_channel*a1) override;
     /* 544 */ IOReturn setAWDL_SYNC_STATE(apple80211_awdl_sync_state*a1) override;
     /* 545 */ IOReturn setAWDL_ELECTION_RSSI_THRESHOLDS(apple80211_awdl_election_rssi_thresholds*a1) override { return awdlAccept("setAWDL_ELECTION_RSSI_THRESHOLDS"); }
-    /* 546 */ IOReturn setAWDL_PRESENCE_MODE(apple80211_awdl_presence_mode*a1) override { return awdlAccept("setAWDL_PRESENCE_MODE"); }
+    /* 546 */ IOReturn setAWDL_PRESENCE_MODE(apple80211_awdl_presence_mode*a1) override;
     /* 547 */ IOReturn setPEER_CACHE_CONTROL(apple80211_peer_cache_control*a1) override { return awdlAccept("setPEER_CACHE_CONTROL"); }
     /* 548 */ IOReturn setAWDL_OOB_REQUEST(apple80211_awdl_oob_request*a1) override { return awdlProto("setAWDL_OOB_REQUEST"); }
     /* 549 */ IOReturn setAWDL_SYNC_FRAME_TEMPLATE(apple80211_awdl_sync_frame_template*a1) override;
-    /* 550 */ IOReturn setAWDL_ELECTION_PARAMS(apple80211_awdl_election_params*a1) override { return awdlAccept("setAWDL_ELECTION_PARAMS"); }
+    /* 550 */ IOReturn setAWDL_ELECTION_PARAMS(apple80211_awdl_election_params*a1) override;
     /* 551 */ IOReturn setAWDL_PEER_TRAFFIC_REGISTRATION(apple80211_awdl_peer_traffic_registration*a1) override;
     /* 552 */ IOReturn setAWDL_SECONDARY_MASTER_CHANNEL(apple80211_awdl_secondary_master_channel*a1) override { return awdlAccept("setAWDL_SECONDARY_MASTER_CHANNEL"); }
     /* 553 */ IOReturn setAWDL_AF_TX_MODE(apple80211_awdl_af_tx_mode*a1) override { return awdlAccept("setAWDL_AF_TX_MODE"); }
@@ -117,7 +117,8 @@ public:
     /* 556 */ IOReturn setAWDL_ENCRYPTION_TYPE(apple80211_encrypt*a1) override { return awdlAccept("setAWDL_ENCRYPTION_TYPE"); }
     /* 557 */ IOReturn setAWDL_OOB_AUTO_REQUEST(apple80211_awdl_oob_request*a1) override { return awdlProto("setAWDL_OOB_AUTO_REQUEST"); }
     /* 558 */ IOReturn setAWDL_TXCAL_PERIOD(apple80211_awdl_txcal_period*a1) override { return awdlAccept("setAWDL_TXCAL_PERIOD"); }
-    /* 559 */ IOReturn setAWDL_AWDL_ADVERTISERS(awdl_peer_advert_add*a1) override { return awdlAccept("setAWDL_AWDL_ADVERTISERS"); }
+    /* 559 */ IOReturn setAWDL_AWDL_ADVERTISERS(awdl_peer_advert_add*a1) override;
+    /* 473 */ void setAwdlCurrentChannelSequenceIndex(uint32_t a1) override;
     /* 560 */ IOReturn setAWDL_DFSP_CONFIG(apple80211_awdl_dfsp_config*a1) override { return awdlAccept("setAWDL_DFSP_CONFIG"); }
     /* 561 */ IOReturn setAWDL_DFSP_UCSA_CONFIG(apple80211_awdl_dfsp_ucsa_config*a1) override { return awdlAccept("setAWDL_DFSP_UCSA_CONFIG"); }
     /* 562 */ IOReturn setCOMPANION_SKYWALK_IF_CREATE(apple80211_companion_skywalk_if_create*a1) override;
@@ -151,6 +152,7 @@ public:
 private:
     uint32_t awdlProtoLogged = 0;              // trace budget for the AWDL protocol stubs
     uint32_t awdlAccepted = 0;                 // trace budget for the accepted (configure-handshake) slots
+    uint32_t awdlAdvertLogged = 0;             // trace budget for the advertise parameters (service request / MIF source)
     uint32_t awdlSyncEnabled = 0;              // last setAWDL_SYNC_ENABLED value, answered back by getAWDL_SYNC_ENABLED
     uint8_t awdlBssid[6] = {};                 // last setAWDL_BSSID bytes (traced only: the layout is not public)
     uint8_t awdlSelfAddr[6] = {};              // the AWDL interface address: SA of every frame sent on the AWDL channel
@@ -169,6 +171,8 @@ private:
     uint8_t awdlChans[8] = { 6, 44, 149, 0, 0, 0, 0, 0 };
     uint8_t awdlChanN = 3;
     uint8_t awdlChanIdx = 0;                   // round-robin cursor over awdlChans, advanced by every PSF tick
+    uint32_t awdlSeqIndex = 0;                 // channel-sequence index the Family is currently on (slot 473)
+    bool awdlSeqIndexSet = false;              // the Family has begun driving the index: follow it instead of rotating
     // The four AWDL state structs whose layout is not public are stored verbatim when the Family sets them and echoed back when
     // it reads them. Returning unsupported to the read-back is what kept configure from ever reaching the sync template.
     uint8_t awdlRawSeq[0xd0] = {};             // setAWDL_SYNCHRONIZATION_CHANNEL_SEQUENCE / get...
@@ -383,6 +387,57 @@ IOReturn itlmt7925AwdlInterface::getAWDL_SYNC_STATE(apple80211_awdl_sync_state *
     return kIOReturnSuccess;
 }
 
+// IO80211VirtualInterface::setAwdlCurrentChannelSequenceIndex (slot 473) is an empty hook in the base class, i.e. it exists
+// for the driver: the Family announces which entry of the synchronisation channel sequence the AWDL cluster is on, and the
+// driver is expected to be there. Following it beats the free round-robin used for discovery, because it is the same index
+// the peer manager schedules its availability windows around.
+void itlmt7925AwdlInterface::setAwdlCurrentChannelSequenceIndex(uint32_t a1)
+{
+    awdlSeqIndex = a1;
+    if (!awdlSeqIndexSet) {
+        awdlSeqIndexSet = true;
+        itlmtTrace(getController(), "awdl:seq index %u -> ch=%u (n=%u)", (unsigned)a1,
+                   awdlChans[a1 % (awdlChanN ? awdlChanN : 1)], (unsigned)awdlChanN);
+    }
+}
+
+// The advertise parameters. On Broadcom hardware the firmware builds the service-request / master-indication action frames
+// from this payload, so this is where the driver has to take them from now that there is no firmware to do it. The struct
+// (awdl_peer_advert_add) is not public: the first bytes are traced so the layout can be read off a real AirDrop-open boot
+// instead of guessed at, and the call is accepted either way.
+IOReturn itlmt7925AwdlInterface::setAWDL_AWDL_ADVERTISERS(awdl_peer_advert_add *a1)
+{
+    const uint8_t *p = (const uint8_t *)a1;
+    if (!p) return kIOReturnBadArgument;
+    if (awdlAdvertLogged < 4) {
+        awdlAdvertLogged++;
+        itlmtTrace(getController(), "awdl:set ADVERTISERS %02x%02x%02x%02x %02x%02x%02x%02x %02x%02x%02x%02x %02x%02x%02x%02x",
+                   p[0], p[1], p[2], p[3], p[4], p[5], p[6], p[7], p[8], p[9], p[10], p[11], p[12], p[13], p[14], p[15]);
+    }
+    return kIOReturnSuccess;
+}
+
+IOReturn itlmt7925AwdlInterface::setAWDL_PRESENCE_MODE(apple80211_awdl_presence_mode *a1)
+{
+    if (a1 && awdlAdvertLogged < 8) {
+        awdlAdvertLogged++;
+        itlmtTrace(getController(), "awdl:set PRESENCE_MODE %08x %08x", *(const uint32_t *)a1,
+                   *(const uint32_t *)((const uint8_t *)a1 + 4));
+    }
+    return kIOReturnSuccess;
+}
+
+IOReturn itlmt7925AwdlInterface::setAWDL_ELECTION_PARAMS(apple80211_awdl_election_params *a1)
+{
+    if (a1 && awdlAdvertLogged < 12) {
+        awdlAdvertLogged++;
+        itlmtTrace(getController(), "awdl:set ELECTION_PARAMS %08x %08x %08x %08x", *(const uint32_t *)a1,
+                   *(const uint32_t *)((const uint8_t *)a1 + 4), *(const uint32_t *)((const uint8_t *)a1 + 8),
+                   *(const uint32_t *)((const uint8_t *)a1 + 12));
+    }
+    return kIOReturnSuccess;
+}
+
 // apple80211_awdl_election_metric { u32 version; u32 metric }.
 IOReturn itlmt7925AwdlInterface::setAWDL_ELECTION_METRIC(apple80211_awdl_election_metric *a1)
 {
@@ -469,8 +524,13 @@ void itlmt7925AwdlInterface::awdlPsfTick()
 {
     if (coreDev && awdlSyncEnabled) awdlPollRx();            // frames heard during the previous window go up first
     if (awdlPsfLen >= 24 && coreDev && awdlSyncEnabled) {
-        uint8_t ch = awdlChans[awdlChanIdx];                 // one channel per period, round-robin over the sequence
-        awdlChanIdx = (uint8_t)((awdlChanIdx + 1) % (awdlChanN ? awdlChanN : 1));
+        uint8_t ch;
+        if (awdlSeqIndexSet) {                               // the Family says which sequence entry the cluster is on
+            ch = awdlChans[awdlSeqIndex % (awdlChanN ? awdlChanN : 1)];
+        } else {                                             // discovery: walk the sequence ourselves, one entry per period
+            ch = awdlChans[awdlChanIdx];
+            awdlChanIdx = (uint8_t)((awdlChanIdx + 1) % (awdlChanN ? awdlChanN : 1));
+        }
         ItlNativeAwdlSync req = { 1, awdlPsfFrame, awdlPsfLen, ch, kAwdlPsfRocMs };
         IOReturn r = coreDev->callPlatformFunction(ITL_NATIVE_AWDL_SYNC, false, &req, nullptr, nullptr, nullptr);
         awdlPsfTicks++;

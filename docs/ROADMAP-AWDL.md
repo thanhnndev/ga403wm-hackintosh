@@ -751,3 +751,24 @@ is a station and the next attempt is a real monitor vif.
 Second documented blocker that this does not solve: an iPhone only starts AWDL after a BLE advertisement from the sender
 (§2), and this machine's BT scan-filter offload `0x1812` fails. A test against an iPhone therefore measures the BLE wake-up
 path too; two Macs (or an iPad whose AirDrop sheet is open) are the cleaner RX test.
+
+### 10.18 What the Family actually needs from the driver (and what it cannot send itself)
+
+A full symbol scan of IO80211Family settles a question that was still open in `10.12`: the Family never transmits an AWDL
+action frame itself. There is no `outputActionFrame` and no `sendActionFrame` on `IO80211Controller` or on the virtual
+interface - the only transmit-shaped symbol on the AWDL path is `IO80211VirtualInterface::sendToBpfTap`, and the AF thread
+(`IO80211AWDLPeerManager::actionFrameProcessThread`) does nothing but tap the frame to BPF, account for it and release its
+buffer. On Broadcom hardware the service-request / master-indication frames are built *by the firmware* from the parameters
+the Family hands over: `setAWDL_AWDL_ADVERTISERS` (`awdl_peer_advert_add`), `setAWDL_PRESENCE_MODE`,
+`setAWDL_ELECTION_PARAMS`, `setAWDL_AF_TX_MODE`, `setAWDL_SYNC_PARAMS`, `setAWDL_SYNCHRONIZATION_CHANNEL_SEQUENCE`.
+Those are the frames we still have to build ourselves, and their layouts are exactly what the driver was ignoring with
+`awdlAccept()`.
+
+Confirmed while reading the same vtable: `IO80211VirtualInterface::setAwdlCurrentChannelSequenceIndex` (slot 473) is an
+*empty* function in the base class - a hook the driver is expected to fill. It is the Family telling the driver which entry
+of the synchronisation channel sequence the cluster is on. The interface now follows that index instead of rotating on its
+own, and only free-runs the sequence when the Family never drives one (discovery).
+
+`setAWDL_AWDL_ADVERTISERS`, `setAWDL_PRESENCE_MODE` and `setAWDL_ELECTION_PARAMS` are now traced (first bytes / first four
+words, bounded) instead of silently accepted, so the next AirDrop-open boot yields the layout of the advertise payload that
+the service-request frame has to be built from.
