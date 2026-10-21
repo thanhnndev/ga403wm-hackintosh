@@ -772,3 +772,26 @@ own, and only free-runs the sequence when the Family never drives one (discovery
 `setAWDL_AWDL_ADVERTISERS`, `setAWDL_PRESENCE_MODE` and `setAWDL_ELECTION_PARAMS` are now traced (first bytes / first four
 words, bounded) instead of silently accepted, so the next AirDrop-open boot yields the layout of the advertise payload that
 the service-request frame has to be built from.
+
+### 10.19 The sniffer works - the frame is not at offset 32
+
+With the sniffer on, the ROC window delivers 1686 frames per 100 periods instead of 86: the receive path is open. But the
+`af` hits it produced were false positives, and the class histogram filled with "other management" (1681 of 1686) - the RX
+buffer layout changed under the parser.
+
+`mt7925_mac_fill_rx()` says why: after the 32 bytes of RXD the firmware appends optional groups depending on RXD1/RXD2, and
+the frame starts after them (`mt76_connac2_mac.h`):
+
+```
+off = 32
+    + 16 if RXD1.GROUP_4 (BIT 14)   fc/seq of the frame
+    + 16 if RXD1.GROUP_1 (BIT 11)   IV
+    + 16 if RXD1.GROUP_2 (BIT 12)   timestamp
+    + 16 if RXD1.GROUP_3 (BIT 13)   P-RXV  (+24 more if GROUP_5, C-RXV)
+    + RXD2.HDR_OFFSET (bits 15:14)
+```
+
+Station-mode frames carry no group, which is why the fixed 32 was right for the data and beacon paths since the first RX
+work - but the sniffer sets GROUP_4, so offset 32 lands on `d0 00 00 00 ...`, the group, not the action frame. The AWDL
+paths (action-frame probe, beacon probe, class histogram) now compute the offset with that formula; the group bits are
+dumped once per boot (`awdl rx hdr off=.. rxd=..`) so the layout can be verified against real traffic instead of assumed.

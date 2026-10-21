@@ -164,17 +164,49 @@ int itlmt7925::uniSend(uint8_t cid, const void *payload, size_t plen, bool query
 // ---------------------------------------------------------------------------------------------
 // Beacon / probe response parsing
 // ---------------------------------------------------------------------------------------------
+// Where the 802.11 frame starts inside an RX buffer. The firmware prepends 32 bytes of RXD and then, depending on the flags
+// in RXD1/RXD2, the optional groups: GROUP_4 (fc/seq), GROUP_1 (IV), GROUP_2 (timestamp), GROUP_3 (P-RXV) each 16 bytes,
+// GROUP_5 (C-RXV, only with GROUP_3) another 24, plus RXD2.HDR_OFFSET (mt76_connac2_mac.h MT_RXD1_NORMAL_GROUP_*, and
+// mt7925_mac_fill_rx(), which pulls exactly these). In station mode the firmware sends frames without any group, which is why
+// a fixed offset of 32 was right for the data and beacon paths - but with the sniffer on, GROUP_4 shows up and a fixed 32
+// lands on the group instead of the frame (docs/ROADMAP-AWDL.md §10.19).
+static uint32_t rxHdrOff(const uint8_t *p, uint32_t len)
+{
+    if (len < 32) return len;
+    uint32_t rxd1 = (uint32_t)p[4] | ((uint32_t)p[5] << 8) | ((uint32_t)p[6] << 16) | ((uint32_t)p[7] << 24);
+    uint32_t rxd2 = (uint32_t)p[8] | ((uint32_t)p[9] << 8) | ((uint32_t)p[10] << 16) | ((uint32_t)p[11] << 24);
+    uint32_t off = 32;
+    if (rxd1 & (1u << 14)) off += 16;                       // GROUP_4
+    if (rxd1 & (1u << 11)) off += 16;                       // GROUP_1
+    if (rxd1 & (1u << 12)) off += 16;                       // GROUP_2
+    if (rxd1 & (1u << 13)) {                                // GROUP_3
+        off += 16;
+        if (rxd1 & (1u << 15)) off += 24;                   // GROUP_5 (C-RXV)
+    }
+    off += (rxd2 >> 14) & 3;                                // HDR_OFFSET
+    return off <= len ? off : 32;
+}
+
 void itlmt7925::rxParseFrame(const uint8_t *p, uint32_t len)
 {
     if (awdlRocActive) {                                     // diagnostics for the AWDL receive half (docs §10.13)
         awdlRocFrames++;
         if (p[13] == awdlRocCh) awdlRocOnCh++;               // RXD3 CH_FREQ says the radio really was on the parked channel
+        if (awdlRxDumped < 3) {                              // one descriptor dump per boot: verifies the group bits
+            awdlRxDumped++;
+            uint32_t o = rxHdrOff(p, len);
+            m3log("awdl rx hdr off=%u rxd=%08x %08x %08x %08x | %02x%02x%02x%02x %02x%02x%02x%02x %02x%02x%02x%02x",
+                  o, le32(p), le32(p + 4), le32(p + 8), le32(p + 12),
+                  p[o], p[o + 1], p[o + 2], p[o + 3], p[o + 4], p[o + 5], p[o + 6], p[o + 7],
+                  p[o + 8], p[o + 9], p[o + 10], p[o + 11]);
+        }
         // What the firmware actually hands the host inside a ROC window, by frame class. The question this answers is not
         // "did we hear an AWDL frame" but "does this firmware forward management frames from other devices at all" - if the
         // histogram is beacons and data only, no amount of AWDL work will ever see a peer.
+        uint32_t hdr = rxHdrOff(p, len);
         uint8_t fcSeen = 0;
         bool haveFc = false;
-        for (uint32_t off = 32; off + 24 <= len && off < 160; off++) {
+        for (uint32_t off = hdr; off + 24 <= len && off < hdr + 8; off++) {
             uint8_t fc = p[off];
             if ((fc & 0x3) != 0 || p[off + 1] != 0) continue;            // protocol version 0, duration 0
             const uint8_t *a2 = p + off + 10;
@@ -213,7 +245,7 @@ void itlmt7925::rxParseFrame(const uint8_t *p, uint32_t len)
     // so look for "FC=beacon/probe-resp, addr2 == addr3" instead of decoding the group flags.
     if (len < 32 + 36 + 2) return;
     uint32_t chfreq = p[13];                           // RXD3 CH_FREQ
-    for (uint32_t off = 32; off + 36 + 2 <= len && off < 160; off++) {
+    for (uint32_t off = rxHdrOff(p, len); off + 36 + 2 <= len && off < rxHdrOff(p, len) + 8; off++) {
         uint8_t fc = p[off];
         if ((fc != 0x80 && fc != 0x50) || p[off + 1] != 0) continue;
         if (memcmp(p + off + 10, p + off + 16, 6) != 0) continue;     // TA == BSSID for an AP
@@ -244,7 +276,7 @@ void itlmt7925::rxParseFrame(const uint8_t *p, uint32_t len)
     // An AWDL action frame is 24-byte header + the awdl_action prefix: category 0x7f, Apple OUI 00:17:f2, type 8, version 1.0,
     // subtype 0 (PSF) / 3 (MIF), then TLVs (OWL src/frame.h, and the Family's parser checks the same 0x17/0xf2/8). The header
     // is validated first because data frames contain 0xd0 too.
-    for (uint32_t off = 32; off + 40 <= len && off < 160; off++) {
+    for (uint32_t off = rxHdrOff(p, len); off + 40 <= len && off < rxHdrOff(p, len) + 8; off++) {
         if (p[off] != 0xd0 || p[off + 1] != 0) continue;
         const uint8_t *a1 = p + off + 4, *a2 = p + off + 10, *a3 = p + off + 16;
         if ((a1[0] & 1) && (a1[0] & a1[1] & a1[2] & a1[3] & a1[4] & a1[5]) != 0xff) continue;

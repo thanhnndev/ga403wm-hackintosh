@@ -173,6 +173,7 @@ private:
     uint32_t awdlRocFrames = 0, awdlBcn = 0;      // frames / beacons heard while the radio was parked on the social channel
     uint32_t awdlRocOnCh = 0;                     // of those, the ones whose RXD channel really is the parked channel
     uint32_t awdlRxFc[5] = {};                    // heard during a ROC window: beacons / probe / action / other mgmt / data
+    uint32_t awdlRxDumped = 0;                    // trace budget for the RX descriptor dump (verifies the group layout)
     volatile uint8_t awdlRocActive = 0;           // set while a ROC window is open (see awdlSyncTx / rxParseFrame)
     volatile uint8_t awdlRocCh = 0;               // channel that window is parked on (attribution in the AF log)
     uint8_t awdlRxFilterDone = 0;                 // the "pass other BSS" RX filter is programmed once per link
