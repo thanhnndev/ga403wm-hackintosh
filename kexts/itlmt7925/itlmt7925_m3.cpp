@@ -680,8 +680,14 @@ void itlmt7925::awdlSyncTx()
     awdlFrameDone = seq;                                     // one attempt per submission (a missed ROC is not retried forever)
     if (!len || len > sizeof(awdlFrame) || !txData.n) return;
     awdlTxTry++;
+    if (!awdlRxFilterDone) {                                 // once per link: let the firmware pass frames from other BSS
+        awdlRxFilterDone = 1;
+        m3RxFilter(0x80000040u);                             // BIT(31) enable | BIT(6) other BSS (mt7925 filter bits)
+    }
+    awdlRocActive = 1;
     m3Roc(true, ch);
     for (int i = 0; i < 80 && rocWant && !rocGrant; i++) m3Pump(1);   // bounded: the link loop must keep servicing the AP
+    awdlRocActive = 0;
     if (!rocGrant || rocStatus) {
         awdlTxRocFail++;
         if (awdlTxRocFail <= 8)
@@ -707,6 +713,27 @@ void itlmt7925::awdlSyncTx()
     m3Roc(false, ch);
     if (ok) awdlTxOk++;
     if (awdlTxTry <= 10) m3log("awdl sync: tx ch=%u len=%u ok=%d", ch, len, ok ? 1 : 0);
+    if ((awdlTxTry % 50) == 0)                               // never evicted from the ring: tells RX from TX failures apart
+        m3log("awdl stat: try=%u tx=%u rocfail=%u rocframes=%u bcn=%u af=%u", awdlTxTry, awdlTxOk, awdlTxRocFail,
+              awdlRocFrames, awdlBcn, awdlAfSeen);
+}
+
+// BAND_CONFIG / UNI_BAND_CONFIG_SET_MAC80211_RX_FILTER (mt7925_mcu_set_rxfilter). The station's RX filter defaults to "only
+// my own BSS", so frames from other devices never reached the host at all - which is why no AWDL action frame was ever seen,
+// on the infrastructure channel or on the social one. BIT(31) enables filtering, BIT(6) lets other-BSS frames through
+// (MT7925_FILTER_ENABLE / MT7925_FILTER_OTHER_BSS in the vendor driver); mode 0 replaces the whole filter.
+void itlmt7925::m3RxFilter(uint32_t fif)
+{
+    M3Msg m;
+    m.init(4);                                               // band_idx + rsv[3]
+    m.b[0] = 0;
+    uint8_t *t = m.tlv(0x0c, 68);                            // UNI_BAND_CONFIG_SET_MAC80211_RX_FILTER
+    uint8_t *v = t + 4;                                      // mode, rsv[3], fif, bit_map, bit_op, pad[51]
+    v[0] = 0;
+    put32(v + 4, fif);
+    put32(v + 8, 0);
+    v[12] = 0;
+    m3Cmd(0x08, m.b, m.n, "rx_filter");
 }
 
 // Pops one AWDL action frame the RX path queued (docs/ROADMAP-AWDL.md phase 3, receive half). Returns 1 when a frame was

@@ -166,6 +166,12 @@ int itlmt7925::uniSend(uint8_t cid, const void *payload, size_t plen, bool query
 // ---------------------------------------------------------------------------------------------
 void itlmt7925::rxParseFrame(const uint8_t *p, uint32_t len)
 {
+    if (awdlRocActive) {                                     // diagnostics for the AWDL receive half (docs §10.13)
+        awdlRocFrames++;
+        for (uint32_t off = 32; off + 24 <= len && off < 160; off++) {
+            if (p[off] == 0x80 && p[off + 1] == 0 && memcmp(p + off + 10, p + off + 16, 6) == 0) { awdlBcn++; break; }
+        }
+    }
     if (txPool && len >= 8 && (le32(p) >> 27) == 6) { m3TxFree(p, len); return; }           // TXRX_NOTIFY: buffers the firmware is done with
     if (m3dataOn && m3RxData(p, len)) return;
     if (m3dataOn && lvl >= 1 && m3RxCtl(p, len)) return;                                     // Block Ack action frame / BlockAckReq

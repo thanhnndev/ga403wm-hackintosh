@@ -168,6 +168,10 @@ private:
     int  awdlSubmit(const uint8_t *frame, uint32_t len, uint8_t channel, uint32_t dwellMs);
     void awdlSyncTx();
     int  awdlRxFetch(uint8_t *out, uint32_t cap, uint32_t *outLen);
+    void m3RxFilter(uint32_t fif);
+    uint32_t awdlRocFrames = 0, awdlBcn = 0;      // frames / beacons heard while the radio was parked on the social channel
+    volatile uint8_t awdlRocActive = 0;           // set while a ROC window is open (see awdlSyncTx / rxParseFrame)
+    uint8_t awdlRxFilterDone = 0;                 // the "pass other BSS" RX filter is programmed once per link
     uint8_t awdlFrame[256] = {};
     volatile uint32_t awdlFrameLen = 0;
     uint32_t awdlAfSeq = 0;                                  // seq_ctrl counter of the AWDL action frames this driver sends

@@ -604,3 +604,29 @@ The trace tells the two possible outcomes apart on the next run:
   next observable is `IO80211AWDLPeerManager` state in the unified log (peers, election, sync).
 * nothing at all - the firmware is not delivering other-BSS management frames to the host while parked on the social channel.
   Then the RX filter (chip side), not the parser, is the next thing to change.
+
+### 10.13 Why nothing was ever received: the RX filter only passed our own BSS
+
+The receive half was wired up (10.12) and still nothing arrived - not one `awdl:rx`, not one `awdl af rx` - while the transmit
+half kept running (`psf tick 200 len=153`, `awdl sync: tx ... ok=1`). That rules out the parser and the AWDL channel: the
+frames were never handed to the host in the first place.
+
+The vendor driver programs the station's RX filter explicitly. `mt7925_configure_filter` (mt7925/main.c) maps mac80211's
+filter flags onto `MT7925_FILTER_ENABLE` (BIT(31)), `MT7925_FILTER_OTHER_BSS` (BIT(6)), `MT7925_FILTER_CONTROL` (BIT(5)) and
+sends them with `mt7925_mcu_set_rxfilter()`, i.e. a `MCU_UNI_CMD(BAND_CONFIG)` message whose TLV is
+`UNI_BAND_CONFIG_SET_MAC80211_RX_FILTER` (0x0c), value layout `{mode, rsv[3], fif, bit_map, bit_op, pad[51]}`; `mode = 0`
+replaces the whole filter with `fif`. This driver never sent that message, so the firmware kept its default - our own BSS
+only. Frames from another device (an AWDL action frame carries `addr3 = 00:25:00:ff:94:73`, not our AP's BSSID) were dropped
+in the firmware, on the infrastructure channel as much as inside a ROC window. That is also why the probe saw four *data*
+frames earlier and never a management one.
+
+`awdlSyncTx()` now programs `fif = BIT(31) | BIT(6)` once per link, right before the first ROC window, and the trace gained a
+line that separates the two possible failures from now on:
+
+```
+awdl stat: try=.. tx=.. rocfail=.. rocframes=.. bcn=.. af=..
+```
+
+`rocframes` counts every frame parsed while a ROC window is open and `bcn` the beacons among them. If `rocframes` grows but
+`af` stays 0, the radio is healthy and simply no AWDL peer is on the air; if `rocframes` stays 0, the filter is still not
+letting frames through and the next step is the chip-side promiscuous path, not the AWDL code.
