@@ -2,7 +2,9 @@
 // Build15's two-client check showed the second client failing at 252 ms with a different VMID and no GCVM fault.
 // If the first dispatch in a process writes nothing and a retry in the SAME process works, the job ran before the
 // new VMID's page table was live; if retries keep failing, the problem is elsewhere.
-//   NVMTL_PREFER_VENDOR=0x1002 build/metal-first-job
+//   NVMTL_PREFER_VENDOR=0x1002 build/metal-first-job [--delay-ms N] [--attempts N]
+// A delay before the first submission separates "the job ran before the new VMID's page table was live" (the delay
+// makes it pass) from a broken command stream (the delay changes nothing).
 import Foundation
 import Metal
 
@@ -14,12 +16,18 @@ kernel void fma3(device const float *a [[buffer(0)]], device const float *b [[bu
     out[i] = a[i] * 3.0f + b[i];
 }
 """
+var delayMs = 0, maxAttempts = 4
+{ let a = CommandLine.arguments; var i = 1
+  while i < a.count { if a[i] == "--delay-ms", i+1 < a.count { delayMs = Int(a[i+1]) ?? 0; i += 1 }
+                     if a[i] == "--attempts", i+1 < a.count { maxAttempts = Int(a[i+1]) ?? 4; i += 1 }
+                     i += 1 } }
+if delayMs > 0 { usleep(UInt32(delayMs) * 1000) }
 guard let dev = MTLCopyAllDevices().first else { print("FAIL no device"); exit(1) }
 guard let lib = try? dev.makeLibrary(source: src, options: nil), let fn = lib.makeFunction(name: "fma3"),
       let pso = try? dev.makeComputePipelineState(function: fn) else { print("FAIL pipeline"); exit(1) }
 let n = 256
 var attempts: [String] = []
-for attempt in 1...4 {
+for attempt in 1...maxAttempts {
     guard let ba = dev.makeBuffer(length: n * 4, options: .storageModeShared),
           let bb = dev.makeBuffer(length: n * 4, options: .storageModeShared),
           let bo = dev.makeBuffer(length: n * 4, options: .storageModeShared) else {
@@ -47,4 +55,4 @@ for attempt in 1...4 {
     attempts.append(String(format: "a%d:%@", attempt, bad == 0 ? "ok" : "\(bad)bad"))
     if bad == 0 { break }
 }
-print(attempts.joined(separator: " "), "->", attempts.contains { $0.hasSuffix(":ok") } ? "pass" : "fail")
+print("delay \(delayMs)ms:", attempts.joined(separator: " "), "->", attempts.contains { $0.hasSuffix(":ok") } ? "pass" : "fail")
