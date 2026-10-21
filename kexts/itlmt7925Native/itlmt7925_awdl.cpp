@@ -74,10 +74,10 @@ public:
     /* 513 */ IOReturn getAWDL_EXTENSION_STATE_MACHINE_PARAMETERS(apple80211_awdl_extension_state_machine_parameter*a1) override { return awdlProto("getAWDL_EXTENSION_STATE_MACHINE_PARAMETERS"); }
     /* 514 */ IOReturn getAWDL_ELECTION_ID(apple80211_awdl_election_id*a1) override { return awdlProto("getAWDL_ELECTION_ID"); }
     /* 515 */ IOReturn getAWDL_ELECTION_METRIC(apple80211_awdl_election_metric*a1) override { return awdlProto("getAWDL_ELECTION_METRIC"); }
-    /* 516 */ IOReturn getAWDL_SYNCHRONIZATION_CHANNEL_SEQUENCE(apple80211_awdl_sync_channel_sequence*a1) override { return awdlProto("getAWDL_SYNCHRONIZATION_CHANNEL_SEQUENCE"); }
+    /* 516 */ IOReturn getAWDL_SYNCHRONIZATION_CHANNEL_SEQUENCE(apple80211_awdl_sync_channel_sequence*a1) override;
     /* 517 */ IOReturn getPEER_CACHE_MAXIMUM_SIZE(apple80211_peer_cache_maximum_size*a1) override { return awdlProto("getPEER_CACHE_MAXIMUM_SIZE"); }
-    /* 518 */ IOReturn getAWDL_MASTER_CHANNEL(apple80211_awdl_master_channel*a1) override { return awdlProto("getAWDL_MASTER_CHANNEL"); }
-    /* 519 */ IOReturn getAWDL_SYNC_STATE(apple80211_awdl_sync_state*a1) override { return awdlProto("getAWDL_SYNC_STATE"); }
+    /* 518 */ IOReturn getAWDL_MASTER_CHANNEL(apple80211_awdl_master_channel*a1) override;
+    /* 519 */ IOReturn getAWDL_SYNC_STATE(apple80211_awdl_sync_state*a1) override;
     /* 520 */ IOReturn getAWDL_ELECTION_RSSI_THRESHOLDS(apple80211_awdl_election_rssi_thresholds*a1) override { return awdlProto("getAWDL_ELECTION_RSSI_THRESHOLDS"); }
     /* 521 */ IOReturn getAWDL_PRESENCE_MODE(apple80211_awdl_presence_mode*a1) override { return awdlProto("getAWDL_PRESENCE_MODE"); }
     /* 522 */ IOReturn getAWDL_ELECTION_PARAMS(apple80211_awdl_election_params*a1) override { return awdlProto("getAWDL_ELECTION_PARAMS"); }
@@ -101,8 +101,8 @@ public:
     /* 540 */ IOReturn setAWDL_BSSID(apple80211_awdl_bssid*a1) override;
     /* 541 */ IOReturn setAWDL_ELECTION_METRIC(apple80211_awdl_election_metric*a1) override;
     /* 542 */ IOReturn setAWDL_SYNCHRONIZATION_CHANNEL_SEQUENCE(apple80211_awdl_sync_channel_sequence*a1) override;
-    /* 543 */ IOReturn setAWDL_MASTER_CHANNEL(apple80211_awdl_master_channel*a1) override { return awdlAccept("setAWDL_MASTER_CHANNEL"); }
-    /* 544 */ IOReturn setAWDL_SYNC_STATE(apple80211_awdl_sync_state*a1) override { return awdlAccept("setAWDL_SYNC_STATE"); }
+    /* 543 */ IOReturn setAWDL_MASTER_CHANNEL(apple80211_awdl_master_channel*a1) override;
+    /* 544 */ IOReturn setAWDL_SYNC_STATE(apple80211_awdl_sync_state*a1) override;
     /* 545 */ IOReturn setAWDL_ELECTION_RSSI_THRESHOLDS(apple80211_awdl_election_rssi_thresholds*a1) override { return awdlAccept("setAWDL_ELECTION_RSSI_THRESHOLDS"); }
     /* 546 */ IOReturn setAWDL_PRESENCE_MODE(apple80211_awdl_presence_mode*a1) override { return awdlAccept("setAWDL_PRESENCE_MODE"); }
     /* 547 */ IOReturn setPEER_CACHE_CONTROL(apple80211_peer_cache_control*a1) override { return awdlAccept("setPEER_CACHE_CONTROL"); }
@@ -169,6 +169,14 @@ private:
     uint8_t awdlChans[8] = { 6, 44, 149, 0, 0, 0, 0, 0 };
     uint8_t awdlChanN = 3;
     uint8_t awdlChanIdx = 0;                   // round-robin cursor over awdlChans, advanced by every PSF tick
+    // The four AWDL state structs whose layout is not public are stored verbatim when the Family sets them and echoed back when
+    // it reads them. Returning unsupported to the read-back is what kept configure from ever reaching the sync template.
+    uint8_t awdlRawSeq[0xd0] = {};             // setAWDL_SYNCHRONIZATION_CHANNEL_SEQUENCE / get...
+    uint16_t awdlRawSeqLen = 0;
+    uint8_t awdlRawMaster[16] = {};            // setAWDL_MASTER_CHANNEL / getAWDL_MASTER_CHANNEL
+    uint8_t awdlRawMasterLen = 0;
+    uint8_t awdlRawState[16] = {};             // setAWDL_SYNC_STATE / getAWDL_SYNC_STATE
+    uint8_t awdlRawStateLen = 0;
     uint32_t awdlRxFrames = 0, awdlRxLogged = 0;   // action frames handed to the peer manager / trace budget
     IOService *coreDev = nullptr;              // the core service (itlmt-native-awdl-sync-v1)
     IOSkywalkPacketBufferPool *awdlPool = nullptr;
@@ -246,31 +254,34 @@ IOReturn itlmt7925AwdlInterface::setAWDL_BSSID(apple80211_awdl_bssid *a1)
     return kIOReturnSuccess;
 }
 
-// apple80211_awdl_sync_channel_sequence - the channels the Family wants the sync frame repeated on. Field offsets are the ones
-// the Family's own AppleBCMWLANProximityInterface::buildAWDLChanSequence() reads (25G241): {u32 version; u8 ; u8 count; u8 flag;
-// u8 ; u8 ; u8 masterChannel (0xff = none); pad; entries[] at +0x10}, one entry per 12 bytes with the channel in byte 0 (the
-// band/width flags live at entry+4: 0x8 2.4 GHz, 0x10 5 GHz). The raw bytes are traced as well, so a wrong guess shows up in the
-// log instead of silently parking the radio on a nonsense channel.
+// apple80211_awdl_sync_channel_sequence - the channels the Family wants the sync frame repeated on. Layout as the Family's own
+// AppleBCMWLANProximityInterface::buildAWDLChanSequence() reads it (25G241): {u32 version; u8 ; u8 count; u8 ; u8 ; u8 ;
+// u8 masterChannel (0xff = none); u16 pad; entries[] at +0x0c}, where each entry is a plain apple80211_channel
+// {u32 version; u32 channel; u32 flags} - the builder takes the low byte of entry+4 as the channel and tests entry+8 for the
+// band bits (0x8 2.4 GHz, 0x10 5 GHz). Count is clamped and every read stays inside the struct, and the raw bytes are traced
+// so a wrong guess shows up in the log instead of silently parking the radio somewhere odd.
 IOReturn itlmt7925AwdlInterface::setAWDL_SYNCHRONIZATION_CHANNEL_SEQUENCE(apple80211_awdl_sync_channel_sequence *a1)
 {
     const uint8_t *s = (const uint8_t *)a1;
     if (!s) return kIOReturnBadArgument;
+    memcpy(awdlRawSeq, s, sizeof(awdlRawSeq));           // answered back verbatim by the getter below
+    awdlRawSeqLen = sizeof(awdlRawSeq);
     uint32_t n = s[5];
+    if (n > 16) n = 16;
     uint8_t master = s[9];
-    if (n > 8) n = 8;
     uint8_t list[8];
     uint32_t len = 0;
     if (master >= 1 && master <= 196) list[len++] = master;   // the master channel first: it is where the sync tree lives
     for (uint32_t i = 0; i < n; i++) {
-        uint8_t ch = s[0x10 + 12 * i];
+        uint8_t ch = s[0xc + 12 * i + 4];
         if (ch < 1 || ch > 196) continue;
         bool dup = false;
         for (uint32_t j = 0; j < len; j++) if (list[j] == ch) dup = true;
         if (!dup && len < 8) list[len++] = ch;
     }
-    // Union with the social channels this driver falls back to. The point is discovery: a peer that sits on 44 or 149 cannot be
-    // heard while the radio only parks on ch6, and (because getAWDL_DEVICE_CAPABILITIES still answers unsupported) the sequence
-    // the Family hands over may be 2.4 GHz only.
+    // Union with the social channels this driver falls back to. This is about discovery: a peer sitting on 44 or 149 cannot be
+    // heard while the radio only parks on ch6, and the sequence the Family hands over may be built from capabilities this
+    // driver still reports as unsupported (getAWDL_DEVICE_CAPABILITIES, slot 523).
     const uint8_t fallback[3] = { 6, 44, 149 };
     for (int i = 0; i < 3; i++) {
         bool dup = false;
@@ -285,10 +296,87 @@ IOReturn itlmt7925AwdlInterface::setAWDL_SYNCHRONIZATION_CHANNEL_SEQUENCE(apple8
     if (awdlAccepted < 96) {
         awdlAccepted++;
         itlmtTrace(getController(),
-                   "awdl:set CHANSEQ n=%u master=%u hop=%u,%u,%u,%u,%u raw=%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x",
+                   "awdl:set CHANSEQ n=%u master=%u hop=%u,%u,%u,%u,%u e0=%u/%03x e1=%u/%03x e2=%u/%03x",
                    (unsigned)n, (unsigned)master, awdlChans[0], awdlChans[1], awdlChans[2], awdlChans[3], awdlChans[4],
-                   s[0], s[1], s[2], s[3], s[4], s[5], s[6], s[7], s[8], s[9], s[10], s[11], s[12], s[13], s[14], s[15]);
+                   (unsigned)s[0x10], (unsigned)(s[0x14] | (s[0x15] << 8) | (s[0x16] << 16)),
+                   n > 1 ? (unsigned)s[0x1c] : 0, n > 1 ? (unsigned)(s[0x20] | (s[0x21] << 8) | (s[0x22] << 16)) : 0,
+                   n > 2 ? (unsigned)s[0x28] : 0, n > 2 ? (unsigned)(s[0x2c] | (s[0x2d] << 8) | (s[0x2e] << 16)) : 0);
     }
+    return kIOReturnSuccess;
+}
+
+// The Family reads the AWDL state structs back after setting them; answering kIOReturnUnsupported there stopped the configure
+// sequence right after setAWDL_SYNCHRONIZATION_CHANNEL_SEQUENCE and the sync template was never handed over. The payloads are
+// echoed verbatim (the layouts are not public, so a verbatim copy is the only truthful answer), with a valid default sequence
+// when nothing has been set yet.
+IOReturn itlmt7925AwdlInterface::getAWDL_SYNCHRONIZATION_CHANNEL_SEQUENCE(apple80211_awdl_sync_channel_sequence *a1)
+{
+    if (!a1) return kIOReturnBadArgument;
+    uint8_t *b = (uint8_t *)a1;
+    if (!awdlRawSeqLen) {
+        memset(b, 0, sizeof(awdlRawSeq));
+        b[0] = 1;                                        // version
+        b[5] = 1;                                        // one channel
+        b[9] = 0xff;                                     // no master channel
+        b[0x0c] = 1;                                     // entry.version
+        b[0x10] = 6;                                     // entry.channel
+        b[0x14] = 0x0a;                                  // entry.flags: 2.4 GHz | 20 MHz
+        return kIOReturnSuccess;
+    }
+    memcpy(b, awdlRawSeq, awdlRawSeqLen);
+    return kIOReturnSuccess;
+}
+
+// apple80211_awdl_master_channel / apple80211_awdl_sync_state: stored and echoed, never guessed at.
+IOReturn itlmt7925AwdlInterface::setAWDL_MASTER_CHANNEL(apple80211_awdl_master_channel *a1)
+{
+    if (a1) {
+        memcpy(awdlRawMaster, a1, sizeof(awdlRawMaster));
+        awdlRawMasterLen = sizeof(awdlRawMaster);
+    }
+    if (awdlAccepted < 96) {
+        awdlAccepted++;
+        itlmtTrace(getController(), "awdl:set MASTER_CHANNEL %02x%02x%02x%02x %02x%02x%02x%02x",
+                   awdlRawMaster[0], awdlRawMaster[1], awdlRawMaster[2], awdlRawMaster[3],
+                   awdlRawMaster[4], awdlRawMaster[5], awdlRawMaster[6], awdlRawMaster[7]);
+    }
+    return kIOReturnSuccess;
+}
+
+IOReturn itlmt7925AwdlInterface::getAWDL_MASTER_CHANNEL(apple80211_awdl_master_channel *a1)
+{
+    if (!a1) return kIOReturnBadArgument;
+    uint8_t *b = (uint8_t *)a1;
+    if (!awdlRawMasterLen) {
+        memset(b, 0, sizeof(awdlRawMaster));
+        *(uint32_t *)b = 1;                              // version
+        b[4] = 6;                                        // channel
+    } else {
+        memcpy(b, awdlRawMaster, awdlRawMasterLen);
+    }
+    return kIOReturnSuccess;
+}
+
+IOReturn itlmt7925AwdlInterface::setAWDL_SYNC_STATE(apple80211_awdl_sync_state *a1)
+{
+    if (a1) {
+        memcpy(awdlRawState, a1, sizeof(awdlRawState));
+        awdlRawStateLen = sizeof(awdlRawState);
+    }
+    if (awdlAccepted < 96) {
+        awdlAccepted++;
+        itlmtTrace(getController(), "awdl:set SYNC_STATE %02x%02x%02x%02x %02x%02x%02x%02x",
+                   awdlRawState[0], awdlRawState[1], awdlRawState[2], awdlRawState[3],
+                   awdlRawState[4], awdlRawState[5], awdlRawState[6], awdlRawState[7]);
+    }
+    return kIOReturnSuccess;
+}
+
+IOReturn itlmt7925AwdlInterface::getAWDL_SYNC_STATE(apple80211_awdl_sync_state *a1)
+{
+    if (!a1) return kIOReturnBadArgument;
+    if (!awdlRawStateLen) memset((void *)a1, 0, sizeof(awdlRawState));
+    else memcpy((void *)a1, awdlRawState, awdlRawStateLen);
     return kIOReturnSuccess;
 }
 

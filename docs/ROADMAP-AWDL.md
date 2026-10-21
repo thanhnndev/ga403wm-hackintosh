@@ -666,3 +666,26 @@ awdl stat: try=50 tx=49 rocfail=1 rocframes=90 bcn=9 af=0 ch=149
 Still open: `getAWDL_DEVICE_CAPABILITIES` (slot 523) answers unsupported, so the Family may keep building a 2.4 GHz-only
 sequence - the union above is what makes discovery possible in the meantime, and reporting dual-band capabilities properly
 is the clean fix once the struct layout is confirmed.
+
+### 10.15 The channel sequence read-back stopped configure before the sync template
+
+The hop change worked as far as it could - `awdl:set CHANSEQ n=8 master=255 hop=6,44,149,0,0` - but nothing followed it:
+no `SYNC_FRAME_TEMPLATE`, no `SYNC_ENABLED`, no PSF tick. The trace ring held the whole boot (46 lines), and it ended on
+
+```
+awdl:proto getAWDL_SYNCHRONIZATION_CHANNEL_SEQUENCE
+```
+
+i.e. the Family sets the sequence and then *reads it back*, and `awdlProto()` answered `kIOReturnUnsupported`. That answer
+aborted the configure sequence before the step that hands the driver the sync frame, so the interface had nothing to
+transmit and nothing to listen for - the hop list was never used.
+
+The read-back is not a query the driver may fail: the payloads whose layout is not public are now stored verbatim when the
+Family sets them and echoed back when it reads them (`set/get AWDL_SYNCHRONIZATION_CHANNEL_SEQUENCE`, `MASTER_CHANNEL`,
+`SYNC_STATE`), with a valid default sequence (version 1, one entry, 2.4 GHz ch6) when nothing has been set yet. Echoing is
+also the only truthful answer: guessing a layout would hand the caller numbers the radio never used.
+
+The entry layout is confirmed by the raw bytes of that first set - `01 00 00 00 | 00 10 00 03 | 00 ff 00 00 | 01 00 00 00`:
+version 1, count 0x10, master 0xff (none), and entry 0 starting at +0x0c with `version = 1`, i.e. `apple80211_channel`
+entries at +0x0c (channel in the low byte of +4, band flags at +8), exactly what `buildAWDLChanSequence` reads. The parse
+now uses that offset and traces the first three entries with their flags.
