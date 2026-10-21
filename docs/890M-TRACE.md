@@ -3478,3 +3478,43 @@ NMXGPUFB at `IOFBDependentIndex` 0 with `IOAccelTypes` naming NMXAccel, one NMXA
 framebuffer, and no `Fallback GPU Display Pipe transaction submission failed` in WindowServer's log. If the pipe is
 registered but frames still do not arrive, the copy path is now on the supported side, so `trx:`/`iop:` on NMXAccel
 name the next step directly. The NVIDIA bridge remains one plist key away for comparison.
+
+### Step58 result (boot 13:17:12): the OLED's pipe now lives on the GPU that owns the panel; WindowServer looks for it and does not find it
+
+Installed and loaded NMXGPU `756903d2ec015b2f` with `NMXOwnsDisplay`, NMXAccel's personality with
+`NMXDisplayPipeEnabled = true`. The switch did what it was written to do:
+
+- NMXGPUFB is head 0 of its own group: `IOFBDependentID` 0x4E4D5847_00000001, `IOFBDependentIndex` 0,
+  `built-in` Yes, `IOAccelIndex` 0, and `IOAccelTypes` now names **NMXAccel** (before: NVAccel).
+- NMXAccel: `debug.nmxaccel_headless` 0 (was 1), `debug.nmxaccel_armed` 1, `NMXDisplayPipeArmed` Yes,
+  `NMXPresentationPath` RADV-IOSurface-copy-to-DCN35, `IOAccelDisplayPipeCapabilities` set by `nmxArm`.
+- NVAccel lost the panel: heads 0x1/0x1/0x1, `iop_ok_h4` 0, HDMI still copied (`iop_ok_h0` rising).
+- Kernel log: `NMXAccel: registerFramebuffer(1): framebuffer count before = 1` then
+  `NMX display pipe armed on owned native framebuffer` at 13:17:30.413.
+
+And the failure changed with it. WindowServer (new pid 773) since 13:17:00:
+
+| message | count |
+|---|---|
+| `Fallback GPU Display Pipe transaction submission failed` | **0** (was 437 in 10 min) |
+| `Unable to find display pipe for IOFB service / regID: 0x13803 / 0x100000598` | 44164 |
+| `plane with no gamma` | 330 |
+
+So the cross-GPU fallback that refused the hybrid is gone: the display and the pipe are on the same GPU now. What
+remains is that CoreDisplay cannot *find* the pipe: 0x100000598 is NMXGPUFB's registry ID, and NMXAccel's pipe for
+it exists (`NMXDisplayPipeArmed` Yes, machine framebuffer count 1). WindowServer opened its display-pipe clients
+(type 4) only on NVAccel (13:17:30.294, 13:17:43.98); NMXAccel received types 5/6/2/33 and never a type 4.
+
+Re-selecting the panel's current mode through CoreGraphics (a supported mode change, no timing change) did not make
+WindowServer look again: `debug.nmxaccel_iop_ok` stayed 0 and no type-4 client appeared on NMXAccel.
+
+The two accelerators differ in exactly one relevant way: NVAccel is the accelerator of the GPU WindowServer
+composites on, NMXAccel is a second accelerator that owns a display but renders nothing for WindowServer. That
+points at the roadmap's M3(c), not at the pipe: WindowServer must composite on the iGPU for macOS to treat that
+pipe as its own. The gate for that already exists in the Metal plugin (`nvmtl_vk_vendor() == 0x1002 &&
+!debug.nmxaccel_headless`), and `debug.nmxaccel_headless` now reads 0 — but WindowServer's compositor GPU is
+chosen from the main display, which is still the HDMI monitor on the NVIDIA card.
+
+Next experiment, recoverable by one reboot (the arrangement change is `.forSession`): make the built-in panel the
+main display while NMXAccel is non-headless, and watch `debug.nmxaccel_iop_ok` plus whether WindowServer creates a
+type-4 client on NMXAccel. No claim of presentation; HDMI session untouched.
