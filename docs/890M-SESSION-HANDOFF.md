@@ -1,5 +1,23 @@
 # 890M port - session handoff (2026-10-18, written ~17:00)
 
+## Latest override — Step57: the display information is complete; WindowServer never submits on head 4
+
+Boot 12:07:37 (2026-10-21), services healthy again. NVAccel build18 is the loaded image (UUID
+`9B78ADDD-039A-3F38-AAC2-D1EF958834BB`, same as `/Library/Extensions` and the AuxKC) but its three new sysctls
+never registered -- use `log show --predicate 'senderImagePath CONTAINS "NVAccel"'` for `ALOG` instead (`dmesg`
+does not exist on this build). Do not rebuild for the counters; they are unnecessary.
+
+Live state: OLED online at 2880x1800 / 1440x900 @ 120 Hz Internal under AMD 0x150e; `heads` 0x17/0x17/0x17,
+`iop_ok_h0` rising, `iop_ok_h4` 0, `iop_fail` 0; two `IOAccelDisplayPipeUserClient2` owned by WindowServer (722)
+under NVAccel; NMXGPU `pipe:` shows open/mode/scanout ok. `trx:` shows **only head 0**, and head4's three-line log
+budget is unspent, so WindowServer never enters the pipe for head 4. Level 3 (`debug.nvaccelfb=3`) written twice
+with no effect; `killall WindowServer` (SIGTERM) is ignored here, and SIGKILL stays forbidden.
+
+Reference repo settled: PhxFB (236 lines) publishes *less* than NMXGPUFB (no EDID, no timing, one 60 Hz mode), so
+"kext does not load enough display information" is refuted. Next, with no rebuild: change the display arrangement
+(OLED as main, then mirror with HDMI) and watch for the first `trx: ... head 4`; if it never appears, instrument
+the pipe-client open (`newUserClient` above its 40-line cap). No presentation claim; HDMI session untouched.
+
 ## Latest override — Step56 build17: controller order + pipe/transaction traces, reboot pending
 
 Boot16:05 (Step55) proves the AGDC handshake is no longer the blocker: 0x2001 accepted, fbmap n2, client_set12, no

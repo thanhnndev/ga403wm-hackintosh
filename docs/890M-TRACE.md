@@ -3357,3 +3357,58 @@ Build17 (`out-b17`), source only beyond the ordering/console bits:
 Reboot pending. After boot run tools/890m/oled-arming.sh (luuumi order) and read `pipe:`/`trx:` with iop_ok_h4 and
 iop_fail. If the pipe still never activates, the trace already names the next question (which entry point WS reaches,
 which framebuffer the pipe resolves to); another map test would not. No claim of OLED presentation.
+
+
+## Step57 — WindowServer holds the OLED pipe but never submits on it (2026-10-21)
+
+Boot 12:07:37, the first boot after the 11:50 session damage. opendirectoryd/trustd/LaunchServices came back
+(`whoami` -> user, `sudo` prompts, `do shell script` works, DNS resolves). NVAccel build18 (SHA256
+`cc3f88a8...`, UUID `9B78ADDD-039A-3F38-AAC2-D1EF958834BB`) is the loaded image -- the on-disk binary, the AuxKC
+entry and `kmutil showloaded` agree -- yet **none of its three new sysctls exist** (`debug.nvaccel_trx_h0`,
+`_trx_h4`, `_iop_force_copy` are unknown OIDs, 58 `debug.nvaccel*` entries, same as build17). No explanation was
+found and none was needed once kext logging turned out to work again:
+
+    log show --last 40m --style compact --predicate 'senderImagePath CONTAINS "NVAccel"'
+
+returns every `ALOG`/`IOLog` line. `dmesg` does not exist on this build. Head4's `trx:` budget is untouched (the
+cap is three per head), so any head4 call would have been logged.
+
+What the live boot says (12:07-12:26):
+
+- `system_profiler SPDisplaysDataType`: Samsung ATNA40CU05-0 (OLED), 2880x1800, UI 1440x900 @ 120 Hz,
+  `Online: Yes`, `Connection Type: Internal`, under AMD 0x150e with `Metal: Supported`; "Mi Monitor" 1920x1080
+  @ 144 Hz stays the main display. macOS has the panel's full identity and mode.
+- Counters: `iop_ok_h0` 22.7k -> 23.1k, `iop_ok_h4` 0, `iop_fail` 0, `copy_skip` 1.7k, `iop_blank` 56,
+  `heads_published/registered/piped` all 0x17, AGDC `fbmap n=2` (slot1 = NMXGPUFB 0x10000058b), `client_set` 12.
+- `trx:`: only `-> fb NVRMNVDAFramebuffer head 0 surface yes resource yes` (three, then the cap). **WindowServer
+  never enters NVAccel's pipe for head 4.** A skipped frame cannot explain ok_h4 = 0 either: the copy path
+  reproduces the last good frame after five held frames, so a submitting WS would have produced ok_h4 > 0.
+- NMXGPU `pipe:`: `open`, `getAttribute wsrv`, `setDisplayMode`, `scanout ok (foreign 1 head 4) 0xb40 0x2d00`
+  at 12:08:07 (WindowServer's own bring-up) and again at 12:13:02; NMXGPUFB publishes EDID 256 B from the DRM
+  connector, `NVRMTiming`, 652.264 MHz, dependent index 4, `IOAccelIndex` 1, `display0/AppleDisplay`.
+- `ioreg`: two `IOAccelDisplayPipeUserClient2`, both `IOUserClientCreator = "pid 722, WindowServer"`, both
+  children of NVAccel; `heads_piped` 0x11 says the head4 pipe exists and its +0x98 points back at NMXGPUFB.
+- Arming `debug.nvaccelfb=3` was written twice (12:13:02, 12:24:32): "scanout-backed display pipe ENABLED,
+  re-delivering the mode change" both times, no change in ok_h4.
+- `killall WindowServer` (SIGTERM) is ignored here: pid 722 survived 20 s. The 780M repo's last arming step
+  therefore cannot be reproduced without SIGKILL, which stays forbidden after 11:50 broke opendirectoryd/trustd
+  (loginwindow restart). WindowServer CPU fell 52% -> 7% across the attempt, nothing else moved.
+
+Reference repo check (luuumi-dev/amd-rdna3-macos-driver, read this boot): `src/phxaccel/accel/phxfb.cpp` is 236
+lines and publishes *less* display information than NMXGPUFB -- one mode, `refreshRate 60 << 16`, a 16.67 ms
+`thread_call` VBL timer, `appleTimingID = kIOTimingIDInvalid`, no EDID, no `IOFBTimingRange`, SCANOUT = console
+kva + `phys 0` + `actualSize 0`. Our NMXGPUFB already overrides the same thirty IOFramebuffer methods and
+publishes strictly more (EDID, NVRMTiming, pixel clock, dependent index/ID before `start`). **"The kext does not
+load enough information for the display" is therefore refuted as the cause**; the reference expects the
+accelerator's display pipe to do the presenting, which is exactly the part that never runs here. What still
+transfers from that repo: its arm order ends with a WindowServer restart (blocked, see above), and the
+`NVMTLDevice.m` WindowServer-on-AMD-panel gate -- only needed when WindowServer must run on the AMD GPU, which is
+not this route (WindowServer already runs on NVAccel), plus the MES/VM notes for later.
+
+Open question, stated exactly: WindowServer holds an NVAccel display-pipe client for the OLED's framebuffer, the
+framebuffer is in the display machine (count grew on `found_framebuffer`), the panel is online at 120 Hz, and yet
+no transaction ever reaches `NVDisplayPipe::performTransaction` for head 4. Next probes need no rebuild because
+head4's three `trx:` lines are still unspent: change the display arrangement (OLED as main display, then mirror
+with HDMI) and watch for the first `trx: ... head 4` line; if it appears, WindowServer's condition is "main
+display", if not, instrument the pipe client open (`newUserClient` types above the 40-line cap) next boot.
+No claim of OLED presentation; HDMI session untouched.
