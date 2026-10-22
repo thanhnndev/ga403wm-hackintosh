@@ -193,14 +193,14 @@ void itlmt7925::rxParseFrame(const uint8_t *p, uint32_t len)
     if (awdlRocActive) {                                     // diagnostics for the AWDL receive half (docs §10.13)
         awdlRocFrames++;
         if (p[13] == awdlRocCh) awdlRocOnCh++;               // RXD3 CH_FREQ says the radio really was on the parked channel
-        if (awdlRxDumped < 3) {                              // one descriptor dump per boot: verifies the group bits
+        if (awdlRxDumped < 6 && (awdlRocFrames <= 3 || (awdlRocFrames % 100) == 1)) {   // periodic, so the last one survives in the m3-log ring
             uint32_t o = rxHdrOff(p, len);
             if (o + 12 <= len) {
                 awdlRxDumped++;
-                m3log("awdl rx hdr off=%u rxd=%08x %08x %08x %08x | %02x%02x%02x%02x %02x%02x%02x%02x %02x%02x%02x%02x",
+                m3log("awdl rx hdr off=%u rxd=%08x %08x %08x %08x | %02x%02x%02x%02x %02x%02x%02x%02x %02x%02x%02x%02x (roc=%u)",
                       o, le32(p), le32(p + 4), le32(p + 8), le32(p + 12),
                       p[o], p[o + 1], p[o + 2], p[o + 3], p[o + 4], p[o + 5], p[o + 6], p[o + 7],
-                      p[o + 8], p[o + 9], p[o + 10], p[o + 11]);
+                      p[o + 8], p[o + 9], p[o + 10], p[o + 11], awdlRocFrames);
             }
         }
         // What the firmware actually hands the host inside a ROC window, by frame class. The question this answers is not
