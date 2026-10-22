@@ -3588,3 +3588,115 @@ What the next boot must show, and what each outcome decides:
 Next gate: one boot with the current arrangement (HDMI + OLED, rung 1 allow list); this batch changes no allow list,
 boot argument, display mode or plugin. WindowServer acceleration and OLED presentation remain exactly as Step58 left
 them, and no presentation claim is attached to this step.
+
+## Step60 — with the pipe finally on NMXAccel, the login session cannot get a GPU address (2026-10-22)
+
+**Status: MEASURED — boot `FC20AA10`, decoded offline from the unified log. Nothing was built or installed from this
+analysis; the patch it ends with has not been compiled.**
+
+This is the boot the owner reported as "the login prompt appears, then the panel goes black". Step58's blocker is gone
+in it: CoreDisplay finds the pipe, and WindowServer opens display-pipe clients on NMXAccel — the type-4 clients that
+never appeared on 2026-10-21. What remains is one failure, repeated once per frame, with one cause.
+
+Timeline (seconds from boot; boot `FC20AA10D6954C45878D6A19D4E6DB4D`, 135.5 s of records):
+
+| t | event |
+|---|---|
+| 10.965 | `NVRMFB: driver off - the firmware framebuffer 0x880000000 (+20736000) is not in this card's windows, not starting` — no hybrid head 4 this boot |
+| 11.393 | NMXAccel starts on NMXGPU's claim: `AMD display adapter: native framebuffer watch enabled` |
+| 14.325 | `newDisplayPipe`; `NVDisplayPipe::initFramebufferResource(index 0): scanout gate CLOSED ... frames are copied` |
+| 14.384 | `registerFramebuffer(1): framebuffer count before = 1`; `NMX display pipe armed on owned native framebuffer`; `scanout ok (foreign 0 head 0) 0xB40 0x2D00` |
+| 14.786 | first `newUserClient(type 4)` on NMXAccel (`IOAccelDisplayPipeUserClient2`) |
+| 31.972 | second WindowServer, pid 755 |
+| 32.668 | its `type 4` client on NMXAccel |
+| 33.127 | first `IOAccelResource2::prepare()` failure, 7073 of them until 113.902 (87.6/s) |
+
+Counts for the whole boot: `failed to allocate GPU virtual address` **7073**, `failed to alloc GART space` **7073**,
+`NVTask::allocate: RM refused` 14146 (two log channels per failure), `nvAccelRmHandles: framebuffer gave no kapi
+device` 16, `Surface mode contains bad bits` 8, `Fallback GPU Display Pipe transaction submission failed` **0**,
+`Unable to find display pipe` **0**.
+
+The four lines, in the order the family emits them:
+
+    NMXAccel: nvAccelRmHandles: framebuffer gave no kapi device (ret 0xFFFFFFFFE00002C7, kapiDevice 0)
+    NMXAccel: NVTask::allocate: RM refused 20738048 bytes (align 0) -- no GPU address
+    IOAccelTask::freeToAllocGPUAddress: failed to alloc GART space at segment 0. Needed 20738048 bytes, used 0,
+        size 1099510583296. vram=0
+    IOAccelResource2::prepare(): failed to allocate GPU virtual address for mapping. resType=0x40
+
+Each fact rules something out:
+
+* 20738048 = 2880 x 1800 x 4 (20736000) + 2048. It is the panel-sized surface, not a stray small allocation.
+* `used 0, size 1099510583296` = 2^40 - 0xFF000, the task's own nearly empty range. Space is not the limit; the
+  allocator was never asked successfully, so no "GART full" reading applies. `freeToAllocGPUAddress` only reclaims
+  and calls the task's `allocate` twice — the failure is there, not in the size.
+* `vram=0` = the family took the system-memory (UMA) branch of `IOAccelResource2::allocMemory`.
+* ret `0xE00002C7` is `kIOReturnUnsupported` and `kapiDevice 0` means the framebuffer *refused* the `nvRmHandles`
+  call. 16 lines is `nvAccelRmHandles`' 8-message cap through both `kprintf` and `IOLog`; the handle is never obtained,
+  so every later allocation fails the same way without further logging.
+* 7073 failures over 80.775 s is 87.6/s: from 33.1 s the login session's WindowServer retries the same mapping
+  continuously and never gets an address.
+
+**The earlier "flags regressed to 0x30a44300" reading is wrong, and reverting it would bring back Step18.**
+`populateAccelConfig` writes `0x30a44300` under `#ifdef NMX_ACCEL` (`kexts/NVRM/accel/nvrm-accel.cpp:213`) but its
+`ALOG` on line 230 prints a hard-coded `flags=0x30844300`, so that log line is not evidence of the value on disk. The
+two values differ only in bit 21 (`0x200000`), the bit Step18 identified as "resources allocate as GPU-addressable
+system memory" and *added*; Step23 measured what happens without it — a `VidMemory` of length 0, logged as
+`Needed 0 bytes`. This boot logs `Needed 20738048` with `vram=0`: bit 21 is in effect and working. What fails is the
+virtual address handed to that memory, which is a different subsystem.
+
+**Root cause.** `nvAccelGpuVaAlloc()` needs a `NvKmsKapiDevice` (`nvrm-accel.cpp:1907`) from `nvAccelRmHandles()`,
+which calls `NVRM_GPUVA_FN_HANDLES` (`"nvRmHandles"`) on the framebuffer NMXAccel registered. Only the NVIDIA
+framebuffers answer that symbol (`kexts/NVRMFB/fb/nvrm-fb.cpp:2845`, `kexts/NVRM/fb/nvrm-fb.cpp:1371`); NMXGPUFB
+answers `NVRM_VRAM_FN_SCANOUT` and forwards everything else to `IOFramebuffer::callPlatformFunction`
+(`gpu-port/xkpi/xnu/nmx_fb.cpp:172-192`) — exactly the `kIOReturnUnsupported` in the log. Nothing on the AMD side can
+answer it instead: `NvKmsKapiDevice` exists only in the NVIDIA code, NMXGPU constructs none, and
+`nvrm_kapi_dev_handles()` only reads handles out of such a device. In this boot NVRMFB had refused to start
+(10.965), so the registered framebuffer was NMXGPUFB and the accelerator could never resolve an RM handle.
+
+Which resource is it? `resType=0x40` is a device-cache resource, not the 0x80 IOSurface type the driver returns
+(`nvrm-accel.cpp:237`), so it comes from another constructor, i.e. the surface buffers WindowServer allocates for the
+login session. Against this route it changes nothing: both types end in the same `prepare()` -> `task->allocate`.
+
+**Fix direction: give the task its own address range, because no page table is behind this panel.**
+`NMXPresentationPath` is `RADV-IOSurface-copy-to-DCN35`: `initFramebufferResource` deliberately returns no
+framebuffer resource and the pipe copies the IOSurface into the DCN raster on the CPU; RADV executes with its own
+AMD page tables. The address the family asks for is therefore bookkeeping only — the same shape StrixAccel already
+runs on this machine, whose task is "only an address-space bookkeeping object (AppleParavirtTask recipe)" with its own
+`IORangeAllocator` and one page reserved (`kexts/StrixAccel/StrixAccel.cpp`, `StrixTask::setup`), and whose comment
+states it outright: "Our pipe presents by copying the IOSurface ... and never reads a resource's GPU address".
+Step24 measured that shape working (`Res,Prepare` 3371, `Res,Forced` 0, zero GART failures).
+
+Patch: `patches/nmx/0001-accel-task-private-va.patch` (applies to the `ga403wm-nmx` worktree). It
+(a) wires the task's `fVa` range to the family's own 1 TiB allocator, locked, shared per device; (b) falls back to that
+range when `nvAccelGpuVaAlloc` refuses, recording the result on the map; (c) reports a private-VA map as committed in
+`commitIntoGPUPageTable()` instead of demanding an `NVVidMemory` handle; (d) frees the range in `deallocate`.
+`nvaccelprivateva=0` restores the RM-only path for an A/B boot.
+
+Build it on macOS (there is no CI for this source: the `ga403wm` workflow builds only the Strix*/itlmt kexts, and
+`build/nmxaccel_build.sh` needs the local `~/ogkm610` NVIDIA headers):
+
+    cd ~/develop/projects/nmx-src-2.0.4
+    git apply ~/develop/projects/ga403wm-hackintosh/patches/nmx/0001-accel-task-private-va.patch
+    bash build/nmxaccel_build.sh kexts/NVRM out/nmxaccel-step60
+
+    T=~/develop/projects/ga403wm-hackintosh/out/890m-trace/step60
+    mkdir -p "$T/accel" "$T/gpu"
+    ditto out/nmxaccel-step60/NMXAccel.kext "$T/accel/NMXAccel.kext"
+    ditto /Library/Extensions/NMXGPU.kext "$T/gpu/NMXGPU.kext"
+    sudo bash ~/develop/projects/ga403wm-hackintosh/scripts/macos-nmx-owns-oled-install.sh "$T"
+
+(`out/890m-trace/step60` is the installer's stage directory; the arguments must be absolute.)
+
+What the next boot must show, and what each outcome decides:
+
+* zero `nvAccelRmHandles` / `RM refused` / `freeToAllocGPUAddress` / `failed to allocate GPU virtual address`, plus a
+  few `-> private VA 0x...` and `MM commit: private VA ... nothing to map` lines (capped at 12 and 8) — the mapping
+  path is satisfied and the login session's surfaces prepare.
+* `RM refused` still present: the fallback did not run — check the boot argument, and whether `newGPUTask` is the path
+  that created this task (`fVa` null would skip the fallback silently in release logging).
+* panel lit but the image wrong or frozen: the pipe is a copy path, so read `debug.nmxaccel_iop_ok` /
+  `debug.nmxaccel_iop_fail` and the `trx:` budget next; the VA change is not in that path.
+
+Not changed by this step: boot arguments, the allow list, the Metal plugin, the arrangement. No presentation claim.
+The day's Wi-Fi panics (AWDL pool flush) are a separate branch and are not this failure.
