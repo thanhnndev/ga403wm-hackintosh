@@ -298,7 +298,8 @@ IOReturn itlmt7925::callPlatformFunction(const OSSymbol *name, bool wait, void *
         ItlNativeAwdlRx *r = (ItlNativeAwdlRx *)p1;
         if (!nativeMode || !r || r->version != 1 || !r->buf) return kIOReturnBadArgument;
         r->len = 0;
-        if (!awdlRxFetch(r->buf, r->cap, &r->len)) return kIOReturnNoResources;   // queue empty
+        r->channel = 0;
+        if (!awdlRxFetch(r->buf, r->cap, &r->len, &r->channel)) return kIOReturnNoResources;   // queue empty
         return kIOReturnSuccess;
     }
     if (name->isEqualTo(ITL_NATIVE_STATUS)) {

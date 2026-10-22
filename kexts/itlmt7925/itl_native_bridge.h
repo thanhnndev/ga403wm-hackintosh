@@ -37,6 +37,7 @@ struct ItlNativeAwdlRx {
     uint8_t *buf;
     uint32_t cap;
     uint32_t len;             // out
+    uint32_t channel;         // out: the social channel the frame was heard on
 };
 #define ITL_NATIVE_AWDL_RX "itlmt-native-awdl-rx-v1"
 

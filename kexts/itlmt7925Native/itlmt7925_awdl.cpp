@@ -11,6 +11,7 @@
 #include "itlmt7925_iface.h"
 
 #include "../itlmt7925/io80211/IO80211AWDLProtocol.h"
+#include "io80211_buffer_min.h"
 #include <IOKit/IOLib.h>
 #include <IOKit/IOTimerEventSource.h>
 #include <IOKit/IOWorkLoop.h>
@@ -30,6 +31,41 @@ static const uint32_t kAwdlPsfRocMs = 100;
 // same 0x17/0xf2/8 bytes at the same offsets). The sequence number and the two timestamps are stamped by the core per TX.
 static const uint32_t kAwdlAfHdrLen = 24 + 16;
 static const uint8_t kAwdlBssidDefault[6] = { 0x00, 0x25, 0x00, 0xff, 0x94, 0x73 };
+
+// The AWDL action category (0x7f, vendor specific). The peer manager checks it against the category byte of the frame
+// (IO80211AWDLPeerManager::actionFrameHasCorrectOUI compares the bytes 00:17:f2 / 08 / 00 that follow it).
+static const uint64_t kAwdlCategory = 0x7f;
+
+// apple80211_act_frm_hdr: the 802.11 header the Family's AWDL peer manager expects next to the AWDL action body. The layout
+// is not public, so it was taken from the way IO80211Family 25G241 uses the struct (docs/ROADMAP-AWDL.md 10.23):
+//   +0x00  the sender's address - IO80211PeerManager::findPeer() looks the peer up with it and
+//          IO80211AWDLPeerManager::addAWDLPeer() copies its six bytes into IO80211AWDLPeer::withAddressAndManager()
+//   +0x10  the channel the frame was heard on - updateAFStats() compares it with 14 (2.4 GHz vs 5 GHz) and with the
+//          channel the cluster is on, determinePeerReachability() uses the same split
+//   +0x2c  a timestamp - compared with the peer manager's own AWDL time
+// Everything else is left zero.
+struct AwdlActFrmHdr {
+    uint8_t  sa[6];             // +0x00  the sender (the peer)
+    uint8_t  da[6];             // +0x06  the receiver
+    uint8_t  rsvd1[4];          // +0x0c
+    uint32_t channel;           // +0x10
+    uint8_t  rsvd2[0x18];       // +0x14
+    uint32_t timestamp;         // +0x2c
+    uint8_t  rsvd3[8];          // +0x30
+};
+
+// The receive buffers handed to the peer manager. They come from the Family's own pool machinery
+// (IO80211Buffer::allocBufferSingle) and are reused round-robin instead of being freed right after the call: the Family
+// copies the payload out, but its peer bookkeeping may still look at the buffer, and freed memory would turn that into a
+// use-after-free. A ring of eight keeps the memory valid and only overwrites a frame that is several frames old.
+static const uint32_t kAwdlRxBufRing = 8;
+static const uint32_t kAwdlRxBufCap = 2048;      // an AWDL action frame is well below 512 bytes
+
+// Little-endian 32-bit read (the AWDL action header carries the two microsecond timestamps in that order).
+static inline uint32_t le32(const uint8_t *p)
+{
+    return (uint32_t)p[0] | ((uint32_t)p[1] << 8) | ((uint32_t)p[2] << 16) | ((uint32_t)p[3] << 24);
+}
 
 // -----------------------------------------------------------------------------------------------------------------------
 // The virtual interface: IO80211VirtualInterface with the AWDL BSD name prefix.
@@ -141,7 +177,9 @@ public:
     // Phase 3 receive half: action frames the radio heard on the social channel are queued by the core and handed to the
     // Family's io80211 peer manager here, which is what turns them into peers / sync / service requests.
     void awdlPollRx();
-    void awdlDeliverRx(const uint8_t *frame, uint32_t len);
+    void awdlDeliverRx(const uint8_t *frame, uint32_t len, uint32_t channel);
+    // One of the receive buffers, with the AWDL action body written into it (docs/ROADMAP-AWDL.md §10.23).
+    IO80211Buffer *awdlRxBuffer(const uint8_t *body, uint32_t len);
     void free() override;
 
     // Creates the pool and the (three) queues and registers the ifnet from a RegistrationInfo filled like
@@ -182,6 +220,10 @@ private:
     uint8_t awdlRawState[16] = {};             // setAWDL_SYNC_STATE / getAWDL_SYNC_STATE
     uint8_t awdlRawStateLen = 0;
     uint32_t awdlRxFrames = 0, awdlRxLogged = 0;   // action frames handed to the peer manager / trace budget
+    IO80211Buffer *awdlRxBufs[kAwdlRxBufRing] = {};   // the ring of Family buffers the peer manager is handed
+    IO80211BufferPool *awdlRxPools[kAwdlRxBufRing] = {};
+    uint32_t awdlRxBufIdx = 0;
+    uint32_t awdlRxBufFail = 0;                  // times the Family's pool could not give a buffer
     IOService *coreDev = nullptr;              // the core service (itlmt-native-awdl-sync-v1)
     IOSkywalkPacketBufferPool *awdlPool = nullptr;
     IOSkywalkPacketQueue *awdlQueues[3] = {};
@@ -554,19 +596,42 @@ void itlmt7925AwdlInterface::awdlPollRx()
 {
     for (int i = 0; i < 4; i++) {
         uint8_t buf[512];
-        ItlNativeAwdlRx req = { 1, buf, sizeof(buf), 0 };
+        ItlNativeAwdlRx req = { 1, buf, sizeof(buf), 0, 0 };
         IOReturn r = coreDev->callPlatformFunction(ITL_NATIVE_AWDL_RX, false, &req, nullptr, nullptr, nullptr);
         if (r != kIOReturnSuccess || !req.len) return;
-        awdlDeliverRx(buf, req.len);
+        awdlDeliverRx(buf, req.len, req.channel);
     }
 }
 
-void itlmt7925AwdlInterface::awdlDeliverRx(const uint8_t *frame, uint32_t len)
+// One of the receive buffers with the AWDL action body written into it (docs/ROADMAP-AWDL.md §10.23). The buffer comes from
+// the Family's own pool machinery, so it is a real IO80211Buffer with a working vtable.
+IO80211Buffer *itlmt7925AwdlInterface::awdlRxBuffer(const uint8_t *body, uint32_t len)
+{
+    if (len > kAwdlRxBufCap) return nullptr;
+    uint32_t i = awdlRxBufIdx++ % kAwdlRxBufRing;
+    if (!awdlRxBufs[i]) {
+        IO80211BufferPool *pool = nullptr;
+        IO80211Buffer *b = IO80211Buffer::allocBufferSingle(kAwdlRxBufCap, 0, &pool, "itlmt-awdl-rx");
+        if (!b) {
+            if (pool) pool->free();
+            awdlRxBufFail++;
+            if (awdlRxBufFail <= 4) itlmtTrace(getController(), "awdl:rx no buffer from the Family's pool");
+            return nullptr;
+        }
+        awdlRxBufs[i] = b;
+        awdlRxPools[i] = pool;
+    }
+    IO80211Buffer *b = awdlRxBufs[i];
+    b->writeBytes(0, body, len);
+    b->setLength(len);
+    return b;
+}
+
+void itlmt7925AwdlInterface::awdlDeliverRx(const uint8_t *frame, uint32_t len, uint32_t channel)
 {
     // Two offsets from the KernelCollection (this build): IO80211SkywalkInterface::getPeerManager() is [[this+0x120]+0x28],
     // and IO80211AWDLPeerManager::actionFrameInput(IO80211Buffer*, uint len, void*, uint) is virtual slot 73, i.e. the entry
-    // 0x238 bytes into the object's vptr (slot 73 of the table minus its two header words). The argument is a plain
-    // {data, len} pair, the same layout the Family's own readers use for an IO80211Buffer.
+    // 0x238 bytes into the object's vptr (slot 73 of the table minus its two header words).
     void *pm = *(void **)((uint8_t *)this + 0x120);
     if (pm) pm = *(void **)((uint8_t *)pm + 0x28);
     if (!pm) {
@@ -587,17 +652,36 @@ void itlmt7925AwdlInterface::awdlDeliverRx(const uint8_t *frame, uint32_t len)
         }
         return;
     }
-    struct { const uint8_t *data; uint64_t len; } b = { frame, len };
     typedef int (*AfInput)(void *, void *, uint32_t, void *, unsigned long);
     AfInput fn = (AfInput)fnAF;
     if (!fn) return;
+
+    // The peer manager wants the AWDL action *body* (the 16-byte action header - category 0x7f, Apple's OUI, type 8, version,
+    // subtype - plus the TLVs) in an IO80211Buffer, and the 802.11 header of the frame next to it. The buffer has to be a real
+    // object: the Family calls getLength()/getBytesNoCopy()/getCursor() on it, and a {data, len} pair made it call through
+    // the frame bytes as if they were a vtable - a kernel panic in sendToBpfTap (Kernel-2026-10-22-124437).
+    if (len < 24 + 16) return;
+    const uint8_t *body = frame + 24;                   // the AWDL action header and the TLVs
+    uint32_t bodyLen = len - 24;
+
+    IO80211Buffer *buf = awdlRxBuffer(body, bodyLen);
+    if (!buf) return;
+
+    AwdlActFrmHdr hdr;
+    bzero(&hdr, sizeof(hdr));
+    memcpy(hdr.sa, frame + 10, 6);                     // addr2: the sender, i.e. the peer
+    memcpy(hdr.da, frame + 4, 6);                      // addr1: the receiver
+    hdr.channel = channel;                             // the social channel the frame was heard on
+    hdr.timestamp = le32(body + 8);                    // phy_tx: the sender's clock, in microseconds
+
     awdlRxFrames++;
     if (awdlRxLogged < 6) {
         awdlRxLogged++;
-        itlmtTrace(getController(), "awdl:rx af len=%u n=%u pm=%p fn=%p sub=%02x", len, (unsigned)awdlRxFrames, pm,
-                   (void *)fn, len > 30 ? frame[30] : 0);
+        itlmtTrace(getController(), "awdl:rx af len=%u body=%u n=%u ch=%u sa=%02x:%02x:%02x:%02x:%02x:%02x sub=%02x ts=%u",
+                   len, bodyLen, (unsigned)awdlRxFrames, hdr.channel, hdr.sa[0], hdr.sa[1], hdr.sa[2], hdr.sa[3], hdr.sa[4],
+                   hdr.sa[5], body[6], hdr.timestamp);
     }
-    fn(pm, &b, len, nullptr, 0);
+    fn(pm, buf, bodyLen, &hdr, kAwdlCategory);
 }
 
 void itlmt7925AwdlInterface::free()

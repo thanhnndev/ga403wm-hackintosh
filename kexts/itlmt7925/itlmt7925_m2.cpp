@@ -361,6 +361,7 @@ void itlmt7925::rxParseFrame(const uint8_t *p, uint32_t len)
                 uint32_t n = len - off; if (n > sizeof(s.data)) n = sizeof(s.data);
                 memcpy(s.data, p + off, n);
                 s.len = n;
+                s.ch = awdlRocCh;                          // the channel the frame was heard on
                 __atomic_store_n(&awdlRxHead, head + 1, __ATOMIC_RELEASE);
             }
         }

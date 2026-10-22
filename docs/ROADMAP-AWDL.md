@@ -886,3 +886,55 @@ For the record, the channel rotation is not the problem it looks like. AWDL's av
 peer sends a PSF in every window, on the channel of the slot it is in; with three social channels that is one AW per
 82.5 ms, which a 100 ms dwell always covers. The phase between our 1320 ms rotation and the peer's 440 ms period is
 therefore harmless: a window is always caught.
+
+### 10.23 The AWDL receive path works - and panics the kernel in the last step
+
+The four panics of 2026-10-22 (10:35, 11:33, 12:20, 12:44) have the same backtrace, and it is the best news in this whole
+project:
+
+```
+0xffffff801693112a com.apple.iokit.IO80211Family : IO80211VirtualInterface::sendToBpfTap(IO80211Buffer*, uint, void*, ulong) + 0x2a
+0xffffff801680e87d com.apple.iokit.IO80211Family : IO80211AWDLPeerManager::actionFrameInput(IO80211Buffer*, uint, void*, ulong) + 0x6cf
+0xffffff8018bcc2de com.itlmt7925.native          : itlmt7925AwdlInterface::awdlDeliverRx(unsigned char const*, unsigned int) + 0xde
+0xffffff8018bcc08e com.itlmt7925.native          : itlmt7925AwdlInterface::awdlPollRx() + 0x8e
+0xffffff8018bcbe7b com.itlmt7925.native          : itlmt7925AwdlInterface::awdlPsfTick() + 0x2b
+```
+
+The driver reached `IO80211AWDLPeerManager::actionFrameInput` with a **real AWDL action frame**. The receive half works: the
+firmware does deliver AWDL frames, the signature probe recognises them and they are queued and handed up. The `af=0` in the
+statistics was read before the first frame arrived.
+
+**The panic was our own fault.** `actionFrameInput` takes an `IO80211Buffer*`, and the driver passed a
+`{const uint8_t *data; uint64_t len;}` pair pretending to be one. The Family calls virtual methods on it:
+
+```c
+// IO80211VirtualInterface::sendToBpfTap, IO80211Family 25G241
+mov      rax, qword ptr [r13]        ; r13 = the "buffer" -> our data pointer
+mov      rdi, r13
+call     qword ptr [rax + 0x130]     ; IO80211Buffer::getLength() - through the frame bytes!
+```
+
+`0x130` is slot 38 of `IO80211Buffer`'s vtable (`getLength`). Calling through the *frame bytes* jumps into garbage: a general
+protection fault, and with it the machine. The same call exists in `IO80211AWDLPeerManager::actionFrameProcessInput` and in
+`isValidAF`, which is where the peer manager reads the frame through `getCursor()`.
+
+**What the peer manager actually wants** (all of this read out of IO80211Family 25G241):
+
+| argument | what it is |
+|---|---|
+| 1. `IO80211Buffer*` | the **AWDL action body**: category `0x7f`, Apple's OUI `00:17:f2`, type `8`, version, subtype, the two timestamps and the TLVs - i.e. the frame *without* the 24-byte 802.11 header. `getCursor()` starts at the buffer's first byte and `actionFrameHasCorrectOUI` compares `00:17:f2 / 08 / 00` at offsets 1..5, i.e. the category is at offset 0 |
+| 2. `uint len` | the length of that body |
+| 3. `void* param` | a pointer to `apple80211_act_frm_hdr`, the 802.11 header of the frame. `findPeer()` looks the peer up with it and `addAWDLPeer()` copies its first six bytes into `IO80211AWDLPeer::withAddressAndManager()` - so **the sender's address is at offset 0**. Offset `0x10` is the channel (`updateAFStats` compares it with 14 to tell 2.4 GHz from 5 GHz), offset `0x2c` a timestamp |
+| 4. `uint64 category` | the expected category byte, `0x7f` (`isValidAF` rejects anything `<= 0x47` and hands the low byte to `actionFrameHasCorrectOUI`) |
+
+**The fix.** The buffer is now a real `IO80211Buffer`, taken from the Family's own pool machinery
+(`IO80211Buffer::allocBufferSingle(size, flags, &pool, name)`, exported by IO80211Family), with the body written into it
+(`writeBytes`/`setLength`). The buffers are kept in a ring of eight and reused round-robin instead of being freed right after
+the call: the Family copies the payload out, but its peer bookkeeping may still look at the buffer, and freeing it would turn
+that into a use-after-free.
+
+The header the peer manager wants next to it is built as `apple80211_act_frm_hdr` with the sender's address at offset 0, the
+channel at `0x10` and the sender's clock (the AWDL `phy_tx` timestamp) at `0x2c`; the fields the Family never reads are zero.
+
+The core now also hands the channel the frame was heard on up to the interface (`ItlNativeAwdlRx::channel`), so the peer
+manager gets the right channel instead of a guess.
