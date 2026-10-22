@@ -281,7 +281,10 @@ void itlmt7925::rxParseFrame(const uint8_t *p, uint32_t len)
     // An AWDL action frame is 24-byte header + the awdl_action prefix: category 0x7f, Apple OUI 00:17:f2, type 8, version 1.0,
     // subtype 0 (PSF) / 3 (MIF), then TLVs (OWL src/frame.h, and the Family's parser checks the same 0x17/0xf2/8). The header
     // is validated first because data frames contain 0xd0 too.
-    for (uint32_t off = rxHdrOff(p, len); off + 40 <= len && off < rxHdrOff(p, len) + 8; off++) {
+    // The frame is searched for by signature rather than by a computed offset: the sniffer buffer's layout (groups, padding)
+    // is not yet pinned down, and a wrong offset silently discards every real AWDL frame. A match requires the full AWDL
+    // signature, so group words and data frames cannot masquerade as action frames.
+    for (uint32_t off = 32; off + 40 <= len && off < 160; off++) {
         if (p[off] != 0xd0 || p[off + 1] != 0) continue;
         const uint8_t *a1 = p + off + 4, *a2 = p + off + 10, *a3 = p + off + 16;
         if ((a1[0] & 1) && (a1[0] & a1[1] & a1[2] & a1[3] & a1[4] & a1[5]) != 0xff) continue;
@@ -290,8 +293,9 @@ void itlmt7925::rxParseFrame(const uint8_t *p, uint32_t len)
         if (p[off + 2] != 0 || p[off + 3] != 0) continue;
         bool awdlAf = p[off + 24] == 0x7f && p[off + 25] == 0x00 && p[off + 26] == 0x17 && p[off + 27] == 0xf2 &&
                       p[off + 28] == 0x08;
+        if (!awdlAf) continue;                           // only real AWDL frames count and get queued
         awdlAfSeen++;
-        if (awdlAf) {                                    // queued for the peer manager (the AWDL interface drains this ring)
+        {                                    // queued for the peer manager (the AWDL interface drains this ring)
             uint32_t head = awdlRxHead;
             if ((head - __atomic_load_n(&awdlRxTail, __ATOMIC_ACQUIRE)) < 4) {
                 AwdlRxSlot &s = awdlRxRing[head & 3];
@@ -301,17 +305,15 @@ void itlmt7925::rxParseFrame(const uint8_t *p, uint32_t len)
                 __atomic_store_n(&awdlRxHead, head + 1, __ATOMIC_RELEASE);
             }
         }
-        if (awdlAfDumped < 10 || awdlAf) {
+        if (awdlAfDumped < 10) {
             awdlAfDumped++;
             char hex[3 * 48 + 1];
             uint32_t n = len - off; if (n > 48) n = 48;
             for (uint32_t i = 0; i < n; i++) snprintf(hex + i * 3, 4, "%02x ", p[off + i]);
             hex[n ? n * 3 - 1 : 0] = 0;
-            m3log("awdl af rx len=%u awdl=%d ch=%u cat=%02x type=%02x sub=%02x sa=%02x%02x%02x%02x%02x%02x %s",
-                  len - off, awdlAf ? 1 : 0, awdlRocCh, p[off + 24], p[off + 28], p[off + 30],
+            m3log("awdl af rx len=%u awdl=1 ch=%u cat=%02x type=%02x sub=%02x sa=%02x%02x%02x%02x%02x%02x %s",
+                  len - off, awdlRocCh, p[off + 24], p[off + 28], p[off + 30],
                   a2[0], a2[1], a2[2], a2[3], a2[4], a2[5], hex);
-        } else if ((awdlAfSeen % 25) == 0) {
-            m3log("awdl af seen=%u (last awdl=%d cat=%02x type=%02x)", awdlAfSeen, awdlAf ? 1 : 0, p[off + 24], p[off + 28]);
         }
         return;
     }

@@ -813,3 +813,7 @@ Two lessons, both now encoded:
    probe costs a diagnostic counter.
 
 The descriptor dump (`awdl rx hdr off=.. rxd=..`) stays, and its read is bounds-checked.
+
+### 10.21 RX probe: search by signature instead of by offset
+
+The computed offset is still not trusted (the descriptor dump that would pin it down is evicted from the m3-log ring before it can be read), and every narrow window built on it either missed real frames or, worse, counted group words as action frames. The probe now scans 32..160 and requires the full AWDL signature (`0xd0 00` action header, protocol version 0, sane addresses, then `7f 00 17 f2 08` at +24) before anything is counted or queued. Group words and data frames cannot satisfy that, so `af` now means "real AWDL action frames heard" and the peer manager only ever receives genuine frames. The descriptor dump (`awdl rx hdr off=.. rxd=..`) stays for the first three frames of the boot.
