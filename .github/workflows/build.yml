@@ -50,7 +50,7 @@ jobs:
       - name: Build kexts
         run: bash scripts/build.sh
 
-      - name: Fan-curve decoding test
+- name: Fan-curve decoding test
         run: bash scripts/test-rogcontrol.sh
 
       - name: Build apps and the CPU policy daemon
@@ -60,6 +60,18 @@ jobs:
           bash scripts/build-tapguard.sh
           bash scripts/build-amdcppc-policy.sh
           file build/RogControl.app/Contents/MacOS/RogControl build/AmdCppcPolicy
+
+      - name: Build StrixMetalGate (ESP-injected, explicit target)
+        run: bash scripts/build.sh StrixMetalGate
+
+      - name: Build StrixGOP (ESP-injected, explicit target)
+        run: bash scripts/build.sh StrixGOP
+
+      - name: Build StrixAccel (ESP-injected, explicit target)
+        run: bash scripts/build.sh StrixAccel
+
+      - name: Build StrixHeadroom (ESP-injected Lilu plugin, explicit target)
+        run: bash scripts/build.sh StrixHeadroom
 
       - name: Package
         run: |

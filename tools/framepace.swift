@@ -2,7 +2,7 @@
 // either moves it every display tick ("move", like dragging) or animates a layer inside it ("anim").
 // Prints the app-side tick intervals and the NVRMFB flip counters (debug.nvrmfb_flip_*) over the run.
 // Read-only apart from the window it opens. Build: swiftc -O tools/framepace.swift -o /tmp/framepace
-// Run:   /tmp/framepace move 5    |   /tmp/framepace anim 5   |   /tmp/framepace idle 5
+// Run:   /tmp/framepace <move|anim|idle> <secs> [shadow|noshadow] [titled|borderless] [w] [h]
 import AppKit
 import QuartzCore
 
@@ -19,6 +19,10 @@ struct Flips { let n, us, max, miss, drop: Int64
 let args = CommandLine.arguments
 let mode = args.count > 1 ? args[1] : "move"
 let secs = args.count > 2 ? Double(args[2]) ?? 5 : 5
+let shadow = args.count > 3 ? args[3] == "shadow" : true
+let titled = args.count > 4 ? args[4] == "titled" : true
+let ww = args.count > 5 ? Double(args[5]) ?? 600 : 600
+let hh = args.count > 6 ? Double(args[6]) ?? 400 : 400
 
 final class App: NSObject, NSApplicationDelegate {
     var win: NSWindow!
@@ -29,9 +33,9 @@ final class App: NSObject, NSApplicationDelegate {
     var origin = NSPoint.zero
     func applicationDidFinishLaunching(_ n: Notification) {
         let scr = NSScreen.main!
-        let r = NSRect(x: 200, y: 200, width: 600, height: 400)
-        win = NSWindow(contentRect: r, styleMask: [.titled], backing: .buffered, defer: false)
-        win.title = "framepace \(mode)"
+        let r = NSRect(x: 200, y: 200, width: ww, height: hh)
+        win = NSWindow(contentRect: r, styleMask: titled ? [.titled] : [.borderless], backing: .buffered, defer: false)
+        win.title = "framepace \(mode)"; win.hasShadow = shadow
         let v = NSView(frame: NSRect(origin: .zero, size: r.size)); v.wantsLayer = true
         v.layer!.backgroundColor = NSColor.systemTeal.cgColor
         if mode == "anim" {

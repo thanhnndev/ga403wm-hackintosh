@@ -74,6 +74,13 @@ Details live in [ASUSCTL-MACOS.md](ASUSCTL-MACOS.md), [CPU-POWER.md](CPU-POWER.m
 * **Standardisation rule**: no cleanup or renaming of a component before it passes the stability gate (14 days of daily use, a second
   machine, a baseline). The clock for the components fixed on 2026-10-12 started that day. See the roadmap.
 
+## Radeon 890M research continuation (2026-10-13)
+
+For the Cobalt64/890M work on branch `research/890m-cobalt64`, read
+[890M macOS handoff](890M-MACOS-HANDOFF.md) and [step trace](890M-TRACE.md).
+Step01 passed against real VFCT/VBIOS/EDID. Next: macOS build of StrixProbe and
+symbol review; no probe installation or GPU initialization has been performed.
+
 ## Machine and boot chain
 
 * ASUS ROG Zephyrus G14 GA403WM, Ryzen AI 9 HX 370 (Strix Point), RTX 5060 Laptop (GB206), MT7925 Wi-Fi/BT,

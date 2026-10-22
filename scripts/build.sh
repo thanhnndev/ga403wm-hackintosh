@@ -33,13 +33,17 @@ mkdir -p "$OBJ"
 # Bundle layout: build/<name>.kext/Contents/{Info.plist,MacOS/<name>}
 build_kext() {
   local name="$1" dir="$2"; shift 2
-  local out="build/$name.kext" objs=()
+  local out="build/$name.kext" objs=() extra_cxx=()
+  case "$name" in StrixProbe|StrixGOP|StrixMetalGate) extra_cxx+=(-fno-c++-static-destructors -Wall -Wextra -Werror -MMD) ;; esac
+  # StrixAccel subclasses the IOAcceleratorFamily2 private classes through a generated header: its hidden-overload
+  # and tag warnings are noise, everything else stays on.
+  case "$name" in StrixAccel) extra_cxx+=(-fno-c++-static-destructors -Wall -Wextra -Wno-unused-parameter -Wno-overloaded-virtual -Wno-mismatched-tags -MMD) ;; esac
   rm -rf "$out"; mkdir -p "$out/Contents/MacOS"
   cp "$dir/Info.plist" "$out/Contents/Info.plist"
   for src in "$@"; do
     local o="$OBJ/${name}_$(basename "${src%.*}").o"
     case "$src" in
-      *.cpp) clang++ $COMMON $CXXFLAGS -I"$dir" -c "$dir/$src" -o "$o" ;;
+      *.cpp) clang++ $COMMON $CXXFLAGS ${extra_cxx[@]+"${extra_cxx[@]}"} -I"$dir" -c "$dir/$src" -o "$o" ;;
       *.c)   clang   $COMMON -I"$dir" -c "$dir/$src" -o "$o" ;;
     esac
     objs+=("$o")
@@ -89,5 +93,29 @@ if want BtLeDlFix "${TARGETS[@]+"${TARGETS[@]}"}"; then
   echo "built build/BtLeDlFix.kext"
   echo "--- undefined symbols (BtLeDlFix)"
   nm -um build/BtLeDlFix.kext/Contents/MacOS/BtLeDlFix | head -40 || true
+fi
+# Research probe is explicit-only, excluded from the default production build.
+if [ ${#TARGETS[@]} -gt 0 ] && want StrixProbe "${TARGETS[@]}"; then
+  build_kext StrixProbe kexts/StrixProbe kmod_info.c StrixProbe.cpp
+fi
+if [ ${#TARGETS[@]} -gt 0 ] && want StrixMetalGate "${TARGETS[@]}"; then
+  build_kext StrixMetalGate kexts/StrixMetalGate kmod_info.c StrixMetalGate.cpp
+fi
+if [ ${#TARGETS[@]} -gt 0 ] && want StrixGOP "${TARGETS[@]}"; then
+  build_kext StrixGOP kexts/StrixGOP kmod_info.c StrixGOP.cpp
+fi
+if [ ${#TARGETS[@]} -gt 0 ] && want StrixAccel "${TARGETS[@]}"; then
+  build_kext StrixAccel kexts/StrixAccel kmod_info.c StrixAccel.cpp
+fi
+# Lilu plugin: needs the Lilu headers + plugin_start.cpp (cloned like MacKernelSDK); Lilu symbols stay undefined and are
+# resolved at load through OSBundleLibraries as.vit9696.Lilu.
+if [ ${#TARGETS[@]} -gt 0 ] && want StrixHeadroom "${TARGETS[@]}"; then
+  LILU_DIR="${LILU_DIR:-build/Lilu}"
+  [ -d "$LILU_DIR" ] || git clone --depth 1 https://github.com/acidanthera/Lilu "$LILU_DIR"
+  mkdir -p build/obj
+  cp "$LILU_DIR/Lilu/Library/plugin_start.cpp" kexts/StrixHeadroom/plugin_start.cpp
+  trap 'rm -f kexts/StrixHeadroom/plugin_start.cpp' EXIT
+  COMMON="$COMMON -I$LILU_DIR/Lilu -DPRODUCT_NAME=StrixHeadroom -DMODULE_VERSION=0.1.0 -DLILU_KEXTPATCH=1 -Wno-unknown-warning-option -Wno-vla"
+  build_kext StrixHeadroom kexts/StrixHeadroom kmod_info.c StrixHeadroom.cpp plugin_start.cpp
 fi
 exit 0
