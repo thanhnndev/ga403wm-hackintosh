@@ -455,6 +455,10 @@ IOReturn itlmt7925AwdlInterface::setAWDL_SYNC_FRAME_TEMPLATE(apple80211_awdl_syn
     const void *payload = a1 ? *(void *const *)((const uint8_t *)a1 + 8) : nullptr;
     itlmtTrace(getController(), "awdl:set SYNC_FRAME_TEMPLATE len=%u", (unsigned)awdlSyncFrameLen);
     if (awdlSyncFrameLen >= 4 && awdlSyncFrameLen <= sizeof(awdlPsfFrame) - kAwdlAfHdrLen && payload) {
+        const uint8_t *pl = (const uint8_t *)payload;
+        itlmtTrace(getController(), "awdl:tpl %02x%02x%02x%02x %02x%02x%02x%02x %02x%02x%02x%02x %02x%02x%02x%02x %02x%02x%02x%02x %02x%02x%02x%02x",
+                   pl[0], pl[1], pl[2], pl[3], pl[4], pl[5], pl[6], pl[7], pl[8], pl[9], pl[10], pl[11], pl[12], pl[13], pl[14], pl[15],
+                   pl[16], pl[17], pl[18], pl[19], pl[20], pl[21], pl[22], pl[23]);
         // The payload is the action frame *body*: TLVs only (its first byte is a TLV type - buildServiceParamTlv writes 6),
         // never an 802.11 frame. The wrapper below is what Apple's firmware would have prepended (docs/ROADMAP-AWDL.md §10.11).
         uint8_t *f = awdlPsfFrame;
