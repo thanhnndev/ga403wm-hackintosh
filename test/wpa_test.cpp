@@ -23,7 +23,7 @@ int main()
     itl_wpa_pmk(pass, v_ssid, sizeof(v_ssid), pmk);
     CHECK(!memcmp(pmk, v_pmk, 32), "pbkdf2 pmk");
     itl_ptk ptk;
-    itl_wpa_ptk(pmk, v_aa, v_spa, v_an, v_sn, &ptk);
+    itl_wpa_ptk(pmk, v_aa, v_spa, v_an, v_sn, &ptk, false);     // the vector is a CCMP (384-bit) PTK
     CHECK(!memcmp(&ptk, v_ptk, 48), "ptk prf");
     uint8_t out[64];
     CHECK(itl_aes128_unwrap(v_kek, v_wrapped, sizeof(v_wrapped), out) == 0 && !memcmp(out, v_unwrapped, sizeof(v_unwrapped)),
