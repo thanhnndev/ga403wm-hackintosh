@@ -1007,3 +1007,9 @@ the `if (pool) pool->free()` in our error branch was removed: it could only ever
 The lesson for the rest of the Family API: the mangled name fixes the *types* but says nothing about the *meaning* of the
 arguments. `j`/`m` told us `uint` and `ulong`, and the natural reading - `(size, flags)` - was wrong. Every Family entry point
 used from here on has to be read out of the KernelCollection, not guessed from its signature.
+
+The entry a kernel collection hands a disassembler is not a standalone Mach-O: its load commands keep the file offsets of the
+`.kc` file, so Ghidra (and lldb) reject or misread it. `tools/kc_extract.py` now rebases them (segments, sections, symtab,
+dysymtab, dyld info, linkedit data, encryption info) while keeping the vmaddrs. The extracted 25G241 IO80211Family is then a
+normal Mach-O and can be read with REA/Ghidra (`GHIDRA_INSTALL_DIR`, `rea decompile <macho> <mangled symbol>`), e.g.
+`__ZN13IO80211Buffer17allocBufferSingleEjmPP17IO80211BufferPoolPKc`.
