@@ -183,7 +183,8 @@ static uint32_t rxHdrOff(const uint8_t *p, uint32_t len)
         off += 16;
         if (rxd1 & (1u << 15)) off += 24;                   // GROUP_5 (C-RXV)
     }
-    off += (rxd2 >> 14) & 3;                                // HDR_OFFSET
+    off += 2 * ((rxd2 >> 14) & 3);                          // HDR_OFFSET, in 2-byte units (mt7925_mac_fill_rx: hdr_gap =
+                                                            // rxd - skb->data + 2 * remove_pad)
     return off <= len ? off : 32;
 }
 
@@ -193,12 +194,14 @@ void itlmt7925::rxParseFrame(const uint8_t *p, uint32_t len)
         awdlRocFrames++;
         if (p[13] == awdlRocCh) awdlRocOnCh++;               // RXD3 CH_FREQ says the radio really was on the parked channel
         if (awdlRxDumped < 3) {                              // one descriptor dump per boot: verifies the group bits
-            awdlRxDumped++;
             uint32_t o = rxHdrOff(p, len);
-            m3log("awdl rx hdr off=%u rxd=%08x %08x %08x %08x | %02x%02x%02x%02x %02x%02x%02x%02x %02x%02x%02x%02x",
-                  o, le32(p), le32(p + 4), le32(p + 8), le32(p + 12),
-                  p[o], p[o + 1], p[o + 2], p[o + 3], p[o + 4], p[o + 5], p[o + 6], p[o + 7],
-                  p[o + 8], p[o + 9], p[o + 10], p[o + 11]);
+            if (o + 12 <= len) {
+                awdlRxDumped++;
+                m3log("awdl rx hdr off=%u rxd=%08x %08x %08x %08x | %02x%02x%02x%02x %02x%02x%02x%02x %02x%02x%02x%02x",
+                      o, le32(p), le32(p + 4), le32(p + 8), le32(p + 12),
+                      p[o], p[o + 1], p[o + 2], p[o + 3], p[o + 4], p[o + 5], p[o + 6], p[o + 7],
+                      p[o + 8], p[o + 9], p[o + 10], p[o + 11]);
+            }
         }
         // What the firmware actually hands the host inside a ROC window, by frame class. The question this answers is not
         // "did we hear an AWDL frame" but "does this firmware forward management frames from other devices at all" - if the
@@ -243,9 +246,11 @@ void itlmt7925::rxParseFrame(const uint8_t *p, uint32_t len)
     }
     // 802.11 mgmt header (24) + beacon fixed fields (12) + at least one IE; the frame sits after the RXD groups,
     // so look for "FC=beacon/probe-resp, addr2 == addr3" instead of decoding the group flags.
+    // The scan path must keep the plain station-mode offset: this is the live link's scan/associate path and a frame that
+    // is missed here costs the association (docs/ROADMAP-AWDL.md §10.20). Only the AWDL probes use rxHdrOff().
     if (len < 32 + 36 + 2) return;
     uint32_t chfreq = p[13];                           // RXD3 CH_FREQ
-    for (uint32_t off = rxHdrOff(p, len); off + 36 + 2 <= len && off < rxHdrOff(p, len) + 8; off++) {
+    for (uint32_t off = 32; off + 36 + 2 <= len && off < 160; off++) {
         uint8_t fc = p[off];
         if ((fc != 0x80 && fc != 0x50) || p[off + 1] != 0) continue;
         if (memcmp(p + off + 10, p + off + 16, 6) != 0) continue;     // TA == BSSID for an AP

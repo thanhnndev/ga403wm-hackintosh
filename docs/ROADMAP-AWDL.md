@@ -795,3 +795,21 @@ Station-mode frames carry no group, which is why the fixed 32 was right for the 
 work - but the sniffer sets GROUP_4, so offset 32 lands on `d0 00 00 00 ...`, the group, not the action frame. The AWDL
 paths (action-frame probe, beacon probe, class histogram) now compute the offset with that formula; the group bits are
 dumped once per boot (`awdl rx hdr off=.. rxd=..`) so the layout can be verified against real traffic instead of assumed.
+
+### 10.20 Regression: the offset formula broke the scan path (and the HDR_OFFSET unit)
+
+The first boot with §10.19 came up with no Wi-Fi at all: `scan:delivered 0 of 0`, no beacons, no association. The cause was
+not the sniffer - it was applying `rxHdrOff()` to the *scan* probe. That probe feeds `rxBeacons`/`m3Capture`/`apSeen`, i.e.
+the live link's scan and associate path, and it had been correct at a fixed offset of 32 since the first RX work.
+
+Two lessons, both now encoded:
+
+1. **`HDR_OFFSET` is in 2-byte units.** `mt7925_mac_fill_rx()` computes
+   `hdr_gap = (u8 *)rxd - skb->data + 2 * remove_pad;` with `remove_pad = FIELD_GET(MT_RXD2_NORMAL_HDR_OFFSET, rxd2)`.
+   Adding the raw field (what §10.19 did) leaves the offset 2-6 bytes short, which is enough to miss every beacon. Group
+   sizes confirmed against the same function: GROUP_4/GROUP_1/GROUP_2/GROUP_3 are 16 bytes each and GROUP_5 is 24.
+2. **Only the AWDL probes may use the computed offset.** The scan/associate path keeps the plain station-mode offset of 32,
+   and the data/control/deauth paths keep it too. A frame missed on the scan path costs the link; a frame missed on the AWDL
+   probe costs a diagnostic counter.
+
+The descriptor dump (`awdl rx hdr off=.. rxd=..`) stays, and its read is bounds-checked.
