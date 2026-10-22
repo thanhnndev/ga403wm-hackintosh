@@ -694,17 +694,18 @@ void itlmt7925::awdlSyncTx()
     // so a filter set once per link was gone by the time the radio parked on the next social channel. All four bits the chip
     // defines are set (docs/ROADMAP-AWDL.md §10.22).
     m3RxFilter(0x80000064u);                                 // BIT(31) enable | BIT(6) other BSS | BIT(5) control | BIT(2) FCS-fail
-    m3Sniffer(true, ch);
+    m3SnifferEnable(true);                                   // promiscuous mode before the radio leaves the AP's channel
     m3Roc(true, ch);
     for (int i = 0; i < 80 && rocWant && !rocGrant; i++) m3Pump(1);   // bounded: the link loop must keep servicing the AP
     if (rocGrant && !rocStatus) {
+        m3SnifferConfig(ch);                                 // the sniffer follows the radio to the social channel
         for (uint32_t ms = 0; ms < awdlDwellMs; ms++) m3Pump(1);      // the whole dwell, receiving
     }
     if (!rocGrant || rocStatus) {
         awdlTxRocFail++;
         if (awdlTxRocFail <= 8)
             m3log("awdl sync: roc fail ch=%u grant=%d status=%u", ch, rocGrant ? 1 : 0, rocStatus);
-        m3Sniffer(false, ch);
+        m3SnifferEnable(false);
         m3Roc(false, ch);
         awdlQuiet = 0;
         awdlRocActive = 0;
@@ -725,7 +726,7 @@ void itlmt7925::awdlSyncTx()
         put32(awdlFrame + 36, us);
     }
     bool ok = m3Tx(awdlFrame, len, 0, 13, o);                // type 0 (management), subtype 13 (action)
-    m3Sniffer(false, ch);
+    m3SnifferEnable(false);
     m3Roc(false, ch);
     awdlQuiet = 0;
     awdlRocActive = 0;
@@ -747,13 +748,26 @@ void itlmt7925::awdlSyncTx()
 // - frames arrive while it is on, and the station keeps the AP link because the radio is already parked off-channel.
 void itlmt7925::m3Sniffer(bool on, uint8_t ch)
 {
+    m3SnifferEnable(on);
+    if (on) m3SnifferConfig(ch);
+}
+
+// The promiscuous mode itself (UNI_SNIFFER_ENABLE).
+void itlmt7925::m3SnifferEnable(bool on)
+{
     M3Msg m;
     m.init(4);                                               // band_idx + rsv[3]
     m.b[0] = 0;
     uint8_t *t = m.tlv(0, 8);                                // UNI_SNIFFER_ENABLE { enable, pad[3] }
     t[4] = on ? 1 : 0;
     m3Cmd(0x24, m.b, m.n, on ? "sniffer on" : "sniffer off");
-    if (!on) return;
+}
+
+// The sniffer's channel configuration (UNI_SNIFFER_CONFIG). It carries the channel the promiscuous mode listens on, so it has
+// to be re-sent *after* the radio has been parked: the reference implementation updates it when the channel context changes
+// (mt7925_change_chanctx -> mt7925_mcu_config_sniffer), not before (docs/ROADMAP-AWDL.md §10.22).
+void itlmt7925::m3SnifferConfig(uint8_t ch)
+{
     M3Msg c;
     c.init(4);
     c.b[0] = 0;

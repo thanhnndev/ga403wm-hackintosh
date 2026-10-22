@@ -875,3 +875,14 @@ a window and then every 250th frame.
 The reference layout this all follows is the one the public AWDL implementation uses (`t4t5/owly`, `crates/owly-awdl/src/frame.rs`):
 24-byte 802.11 header (`fc = 0x00d0`, broadcast DA, peer SA, BSSID `00:25:00:ff:94:73`) + 16-byte action header
 (`7f` category, `00:17:f2` OUI, type `08`, version `0x10`, subtype `0` = PSF / `3` = MIF, two microsecond timestamps) + TLVs.
+
+**5. The sniffer's channel configuration was sent before the radio moved.** `UNI_SNIFFER_CONFIG` carries the channel the
+promiscuous mode listens on, and the reference implementation updates it when the channel context changes
+(`mt7925_change_chanctx` -> `mt7925_mcu_config_sniffer`), i.e. *after* the radio is on the new channel. The enable and the
+config are now separate commands (`m3SnifferEnable` / `m3SnifferConfig`): the mode is switched on before the ROC, and the
+config is re-sent with the social channel once the ROC grant came in.
+
+For the record, the channel rotation is not the problem it looks like. AWDL's availability window is 16 TU (16.4 ms) and the
+peer sends a PSF in every window, on the channel of the slot it is in; with three social channels that is one AW per
+82.5 ms, which a 100 ms dwell always covers. The phase between our 1320 ms rotation and the peer's 440 ms period is
+therefore harmless: a window is always caught.
