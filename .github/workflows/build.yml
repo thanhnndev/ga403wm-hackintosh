@@ -50,7 +50,7 @@ jobs:
       - name: Build kexts
         run: bash scripts/build.sh
 
-- name: Fan-curve decoding test
+      - name: Fan-curve decoding test
         run: bash scripts/test-rogcontrol.sh
 
       - name: Build apps and the CPU policy daemon
