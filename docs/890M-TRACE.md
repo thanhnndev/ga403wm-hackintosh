@@ -3717,3 +3717,40 @@ What the next boots must show, and what each outcome decides:
 
 Not changed by this step: boot arguments, the allow list, the Metal plugin, the arrangement. No presentation claim.
 The day's Wi-Fi panics (AWDL pool flush) are a separate branch and are not this failure.
+
+## Step61 — the VA fix landed; what is left is the compositor, not the pipe (2026-10-22 17:0x)
+
+Boot 2 (16:29, `boot_uuid 7BAE672F…`) confirms Step60 end to end: `nvAccelRmHandles … kapiDevice 0` 12 (the
+non-blocking leftovers), `RM refused` 0, `failed to alloc GART` 0, `failed to allocate GPU virtual address` 0,
+12× `-> private VA 0x100000/0x14C7000/0x288E000` and 12× `MM commit: private VA … nothing to map`. The pipe arms at
+15.214, `scanout ok (foreign 0 head 0)`, seven `display_change_handler` events, `Fallback GPU Display Pipe
+transaction submission failed` 0 and `plane with no gamma` 0. The panel therefore has a pipe, a mode and a scanout,
+and WindowServer never puts a frame through it.
+
+The reason is one level up: **no process has a Metal device, so nothing is composited at all.**
+
+- pid 205 (login-window WindowServer, root), 15.135: `headless GPU: no device for WindowServer (it composites on
+  the GPU that owns the display)`. `plugin/NVMTLDevice.m:322` refuses whenever `nvmtl_vk_vendor() != 0x10de`; the
+  panel's accelerator is NMXAccel, vendor 0x1002.
+- pid 726 (session WindowServer), 30.527: `vk: zero physical devices through this ICD … (uid 0 euid 88)` at the same
+  instant as `Sandbox: WindowServer(726) deny(1) file-write-data /dev/dri/renderD128` and `… /dev/dri/card0`.
+- The profile behind that denial is readable on the System volume:
+  `/System/Library/Sandbox/Profiles/com.apple.WindowServer.sb` allows `file-write-data` only for `/dev/console`,
+  `/private/var/db/.com.apple.iokit.graphics` and `/private/var/run/com.apple.WindowServer.didRunThisBoot`, and its
+  `file-issue-extension` rules cover only WindowServer's own cache. A sandbox extension cannot widen it either.
+  RADV reaches the GPU through libdrm on `/dev/dri` (BSD nodes), so WindowServer-on-AMD cannot work by flipping the
+  plugin gate alone; an IOKit-backed command path would be needed (the StrixAccel-era path never needed this because
+  WindowServer composited on the dGPU and only the AMD display pipe copied frames).
+
+Why there is no dGPU compositor either: **NVRM is parked by its own boot guard.** `NVRM::probe` returns NULL when
+`nvrm_driver_off()` is true (`NVRM.cpp:373`), and that is true when `nullmoth-nv-starts >= NVRM_GUARD_LIMIT` (2).
+The EFI variable held `"2"`, the boot has not one `NVRM:` line, and NVRMFB fell back to `NVRMBootFB`, which refuses
+to start because the firmware framebuffer is the panel's (`0x880000000` +20736000 B = 2880x1800x4), not in the
+NVIDIA card's windows (`0xD8000000`, `0xDC084000`, `0x892000000`, `0x1000`, `0xDC000000`). That is the HDMI black.
+
+Action taken from Linux, no boot-args or kexts touched: removed the guard counter
+`nullmoth-nv-starts-7c436110-ab2a-4bbb-a880-fe41995c9f82` through efivarfs (`nullmoth-nv-ok=1` kept). Next boot NVRM
+probes and starts again and counts one start; with the HDMI monitor attached NVRMFB should light head 0 and clear the
+counter, which restores both the HDMI output and the dGPU Metal device WindowServer needs. Then the OLED question is
+finally measurable: `debug.nmxaccel_iop_ok`, the `trx:` budget, and whether CoreDisplay still answers `plane with no
+gamma` (the legacy `IOAccelLegacyDisplayPipe` base of `NVDisplayPipe`) for the cross-GPU present.
