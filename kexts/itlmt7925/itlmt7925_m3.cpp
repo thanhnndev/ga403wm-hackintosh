@@ -682,7 +682,7 @@ void itlmt7925::awdlSyncTx()
     awdlTxTry++;
     if (!awdlRxFilterDone) {                                 // once per link: let the firmware pass frames from other BSS
         awdlRxFilterDone = 1;
-        m3RxFilter(0x80000040u);                             // BIT(31) enable | BIT(6) other BSS (mt7925 filter bits)
+        m3RxFilter(0x80000064u);                             // BIT(31) enable | BIT(6) other BSS | BIT(5) control | BIT(2) FCS-fail (mt7925 filter bits; all bits, diagnostic)
     }
     awdlRocCh = ch;
     awdlRocActive = 1;
@@ -750,7 +750,7 @@ void itlmt7925::m3Sniffer(bool on, uint8_t ch)
     v[5] = 0;                                                // sco
     v[6] = ch;                                               // center channel
     v[7] = 0;                                                // center channel 2
-    v[8] = 1;                                                // drop_err: no FCS-failed frames
+    v[8] = 0;                                                // drop_err: accept FCS-failed frames too (diagnostic)
     m3Cmd(0x24, c.b, c.n, "sniffer cfg");
 }
 

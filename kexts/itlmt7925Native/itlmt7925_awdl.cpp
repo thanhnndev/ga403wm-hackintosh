@@ -21,7 +21,7 @@
 // over only when it changes, so the interface repeats the last one itself at that period. The ROC window only has to cover one
 // management frame (a few ms); 30 ms leaves room for the channel switch without keeping the AP's channel away for long.
 static const uint32_t kAwdlPsfPeriodMs = 440;
-static const uint32_t kAwdlPsfRocMs = 60;
+static const uint32_t kAwdlPsfRocMs = 100;
 
 // The 802.11 + AWDL action header that the driver has to put in front of the Family's TLV blob (docs/ROADMAP-AWDL.md §10.11).
 // On Apple hardware the firmware writes it; here the interface builds it: 24-byte management/action header (broadcast DA, the
