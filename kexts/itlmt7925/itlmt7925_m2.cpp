@@ -188,6 +188,17 @@ static uint32_t rxHdrOff(const uint8_t *p, uint32_t len)
     return off <= len ? off : 32;
 }
 
+// Searches a buffer for a byte pattern. Used by the AWDL RX forensics: the question "is there an AWDL frame in this buffer, and
+// where" has to be answered by the content, not by a computed offset (docs/ROADMAP-AWDL.md §10.22).
+static bool rxFind(const uint8_t *p, uint32_t len, const uint8_t *pat, uint32_t n, uint32_t *off)
+{
+    if (!p || len < n) return false;
+    for (uint32_t i = 0; i + n <= len; i++) {
+        if (memcmp(p + i, pat, n) == 0) { if (off) *off = i; return true; }
+    }
+    return false;
+}
+
 void itlmt7925::rxParseFrame(const uint8_t *p, uint32_t len)
 {
     if (awdlRocActive) {                                     // diagnostics for the AWDL receive half (docs §10.13)
@@ -221,6 +232,40 @@ void itlmt7925::rxParseFrame(const uint8_t *p, uint32_t len)
         else if (haveFc && ((fcSeen & 0xf0) == 0x40 || (fcSeen & 0xf0) == 0x50)) awdlRxFc[1]++;
         else if (haveFc && (fcSeen & 0x0c) == 0) awdlRxFc[fcSeen == 0xd0 ? 2 : 3]++;
         else awdlRxFc[4]++;
+
+        // Forensics: does the buffer the firmware handed us contain an AWDL frame at all? The classifier above can only say
+        // "some frame with fc 0xd0 arrived", which a false positive in a data payload also satisfies. These three patterns are
+        // unambiguous: Apple's OUI (00:17:f2) anywhere, the AWDL action header (7f 00 17 f2 08) and AWDL's BSSID
+        // (00:25:00:ff:94:73). If the OUI shows up but the header does not, the frame is there and the offset is wrong; if
+        // neither shows up, the firmware is not delivering AWDL frames on this interface at all.
+        {
+            static const uint8_t kOui[3] = { 0x00, 0x17, 0xf2 };
+            static const uint8_t kSig[5] = { 0x7f, 0x00, 0x17, 0xf2, 0x08 };
+            static const uint8_t kBss[6] = { 0x00, 0x25, 0x00, 0xff, 0x94, 0x73 };
+            uint32_t oOui = 0, oSig = 0, oBss = 0;
+            bool hOui = rxFind(p, len, kOui, sizeof(kOui), &oOui);
+            bool hSig = rxFind(p, len, kSig, sizeof(kSig), &oSig);
+            bool hBss = rxFind(p, len, kBss, sizeof(kBss), &oBss);
+            if (hOui) awdlOuiHits++;
+            if (hSig) awdlSigHits++;
+            if (hBss) awdlBssidHits++;
+            if ((awdlForensics < 4 || (awdlRocFrames % 250) == 1) && (hOui || hSig || hBss || awdlForensics < 4)) {
+                awdlForensics++;
+                m3log("awdl rx fx len=%u hdr=%u oui=%u@%u sig=%u@%u bss=%u@%u", len, hdr, hOui ? 1 : 0, oOui,
+                      hSig ? 1 : 0, oSig, hBss ? 1 : 0, oBss);
+                char h1[3 * 24 + 1];
+                uint32_t n1 = len - hdr; if (n1 > 24) n1 = 24;
+                for (uint32_t i = 0; i < n1; i++) snprintf(h1 + i * 3, 4, "%02x ", p[hdr + i]);
+                h1[n1 ? n1 * 3 - 1 : 0] = 0;
+                m3log("awdl fx hdr@%u: %s", hdr, h1);
+                if (hSig && oSig + 32 <= len) {
+                    char h2[3 * 32 + 1];
+                    for (uint32_t i = 0; i < 32; i++) snprintf(h2 + i * 3, 4, "%02x ", p[oSig + i]);
+                    h2[32 * 3 - 1] = 0;
+                    m3log("awdl fx sig@%u: %s", oSig, h2);
+                }
+            }
+        }
     }
     if (txPool && len >= 8 && (le32(p) >> 27) == 6) { m3TxFree(p, len); return; }           // TXRX_NOTIFY: buffers the firmware is done with
     if (m3dataOn && m3RxData(p, len)) return;
@@ -283,8 +328,9 @@ void itlmt7925::rxParseFrame(const uint8_t *p, uint32_t len)
     // is validated first because data frames contain 0xd0 too.
     // The frame is searched for by signature rather than by a computed offset: the sniffer buffer's layout (groups, padding)
     // is not yet pinned down, and a wrong offset silently discards every real AWDL frame. A match requires the full AWDL
-    // signature, so group words and data frames cannot masquerade as action frames.
-    for (uint32_t off = 32; off + 40 <= len && off < 160; off++) {
+    // signature, so group words and data frames cannot masquerade as action frames. The whole buffer is scanned, not just the
+    // first 160 bytes: the sniffer adds RXD groups and the frame can sit behind them (docs/ROADMAP-AWDL.md §10.22).
+    for (uint32_t off = 32; off + 40 <= len; off++) {
         if (p[off] != 0xd0 || p[off + 1] != 0) continue;
         const uint8_t *a1 = p + off + 4, *a2 = p + off + 10, *a3 = p + off + 16;
         if ((a1[0] & 1) && (a1[0] & a1[1] & a1[2] & a1[3] & a1[4] & a1[5]) != 0xff) continue;
@@ -293,7 +339,20 @@ void itlmt7925::rxParseFrame(const uint8_t *p, uint32_t len)
         if (p[off + 2] != 0 || p[off + 3] != 0) continue;
         bool awdlAf = p[off + 24] == 0x7f && p[off + 25] == 0x00 && p[off + 26] == 0x17 && p[off + 27] == 0xf2 &&
                       p[off + 28] == 0x08;
-        if (!awdlAf) continue;                           // only real AWDL frames count and get queued
+        if (!awdlAf) {
+            // A vendor-specific action frame that is not AWDL's: dump it, so a near miss can be recognised (a Block Ack request
+            // from the AP, a vendor frame of the infra BSS, or an AWDL frame whose header is not where we think it is).
+            awdlNearMiss++;
+            if (awdlNearMiss <= 6) {
+                char hex[3 * 40 + 1];
+                uint32_t n = len - off; if (n > 40) n = 40;
+                for (uint32_t i = 0; i < n; i++) snprintf(hex + i * 3, 4, "%02x ", p[off + i]);
+                hex[n ? n * 3 - 1 : 0] = 0;
+                m3log("awdl af near miss off=%u sa=%02x%02x%02x%02x%02x%02x %s", off, a2[0], a2[1], a2[2], a2[3], a2[4],
+                      a2[5], hex);
+            }
+            continue;
+        }
         awdlAfSeen++;
         {                                    // queued for the peer manager (the AWDL interface drains this ring)
             uint32_t head = awdlRxHead;

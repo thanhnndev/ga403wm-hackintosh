@@ -817,3 +817,61 @@ The descriptor dump (`awdl rx hdr off=.. rxd=..`) stays, and its read is bounds-
 ### 10.21 RX probe: search by signature instead of by offset
 
 The computed offset is still not trusted (the descriptor dump that would pin it down is evicted from the m3-log ring before it can be read), and every narrow window built on it either missed real frames or, worse, counted group words as action frames. The probe now scans 32..160 and requires the full AWDL signature (`0xd0 00` action header, protocol version 0, sane addresses, then `7f 00 17 f2 08` at +24) before anything is counted or queued. Group words and data frames cannot satisfy that, so `af` now means "real AWDL action frames heard" and the peer manager only ever receives genuine frames. The descriptor dump (`awdl rx hdr off=.. rxd=..`) stays for the first three frames of the boot.
+
+### 10.22 The ROC window was 90% dead, and "no AWDL frame" was never proven
+
+Two boot-long mysteries (`af=0`, "the firmware does not deliver AWDL frames") turned out to rest on a measurement bug, and
+the measurement itself was never sound. Both are fixed here.
+
+**1. The sniffer was on for ~8 ms out of every ~110 ms window.** `awdlSyncTx()` enabled the promiscuous mode *after* the
+ROC grant and turned it off again a handful of milliseconds later, right before our own transmission:
+
+```
+m3Roc(true, ch);                    // park on the social channel
+for (i < 80 && !rocGrant) m3Pump(1);// wait for the grant
+m3Sniffer(true, ch);                // <- promiscuous mode starts HERE
+for (i < 8) m3Pump(1);              // <- 8 ms of receiving
+...TX...
+m3Sniffer(false, ch);               // <- and it ends here
+```
+
+In station mode the chip only hands the host its own BSS; the promiscuous mode is the *only* reason a peer's PSF/MIF can
+reach the host at all. A peer's frame arrives at an arbitrary point inside its availability window, so listening for 8 ms
+out of a 440 ms period throws away ~98% of the window - and the "no AWDL frames on the air" conclusion was drawn from it.
+`awdlDwellMs` (the dwell the native interface asks for, currently 100 ms) was stored and never used at all. The sniffer is
+now enabled *before* the ROC and stays on for the whole dwell, which is also the only way the `awdl stat` numbers mean
+anything.
+
+**2. The RX filter was programmed once per link.** `m3RxFilter()` (the "pass frames from other BSS" band-config TLV) ran
+only when the link came up; the firmware resets it when the channel changes, so by the time the radio parked on the next
+social channel it was gone. It is now reprogrammed in every window, with all four bits the chip defines
+(`0x80000064` = ENABLE | OTHER_BSS | CONTROL | FCSFAIL).
+
+**3. The RX classifier could not tell an AWDL frame from a coincidence.** The histogram and the probe matched the first
+byte of the buffer against `0xd0`, which a data payload satisfies easily; the result was a histogram full of phantom
+"action frames" (`1164` other-management frames over 2574 frames is not a real air). Three unambiguous patterns are now
+counted per buffer instead:
+
+| counter | pattern | meaning |
+|---|---|---|
+| `oui`  | `00 17 f2`        | Apple's OUI is in the buffer somewhere |
+| `sig`  | `7f 00 17 f2 08`  | the AWDL action header is in the buffer |
+| `bss`  | `00 25 00 ff 94 73` | AWDL's BSSID is in the buffer |
+
+`sig > 0` means the firmware does deliver AWDL frames and the probe's offset is wrong. `oui > 0, sig == 0` means the frames
+are there but not where the probe looks. `oui == 0` means the firmware delivers no AWDL frame on this interface at all, and
+the next step is a different interface type (the only public mt7925 AWDL implementation listens through a *monitor* vif, not
+through an AWDL one - see the risk below).
+
+The probe now scans the whole buffer (not just the first 160 bytes: the sniffer's RXD groups push the frame further out),
+and a `fc == 0xd0` frame that fails the signature check is dumped as a *near miss* instead of being dropped silently, so a
+frame that is nearly AWDL can be recognised.
+
+**4. The diagnostics were evicted before they could be read.** The ROC fires five logged commands per period; the m3-log
+ring holds ~258 lines, so the descriptor dump was gone within seconds. The ROC/sniffer command logging is now suppressed
+while an AWDL window is open (failures are still reported), and the forensics dump is emitted for the first four frames of
+a window and then every 250th frame.
+
+The reference layout this all follows is the one the public AWDL implementation uses (`t4t5/owly`, `crates/owly-awdl/src/frame.rs`):
+24-byte 802.11 header (`fc = 0x00d0`, broadcast DA, peer SA, BSSID `00:25:00:ff:94:73`) + 16-byte action header
+(`7f` category, `00:17:f2` OUI, type `08`, version `0x10`, subtype `0` = PSF / `3` = MIF, two microsecond timestamps) + TLVs.

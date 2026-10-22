@@ -114,7 +114,10 @@ int itlmt7925::m3Cmd(uint8_t cid, const void *payload, size_t plen, const char *
     static uint8_t ev[512];
     uint32_t evl = 0;
     int rc = uniSend(cid, payload, plen, false, ev, sizeof(ev), &evl, 3000);
-    m3log("%s rc=%d st=%d", name, rc, evl >= 52 ? (int)le32(ev + 48) : -1);
+    // The AWDL ROC fires five commands per 440 ms period; logging every one of them evicts the RX diagnostics from the log
+    // ring within seconds (docs/ROADMAP-AWDL.md §10.22). Only failures are reported while the AWDL window is running.
+    if (!awdlQuiet || rc)
+        m3log("%s rc=%d st=%d", name, rc, evl >= 52 ? (int)le32(ev + 48) : -1);
     return rc;
 }
 
@@ -162,7 +165,7 @@ void itlmt7925::m3Event(const uint8_t *ev, uint32_t len)
         rocTok = ev[53];
         rocStatus = ev[54];
         rocGrant = true;
-        m3log("roc event bss=%u tok=%u status=%u", ev[52], ev[53], ev[54]);
+        if (!awdlQuiet) m3log("roc event bss=%u tok=%u status=%u", ev[52], ev[53], ev[54]);
     }
 }
 
@@ -680,23 +683,31 @@ void itlmt7925::awdlSyncTx()
     awdlFrameDone = seq;                                     // one attempt per submission (a missed ROC is not retried forever)
     if (!len || len > sizeof(awdlFrame) || !txData.n) return;
     awdlTxTry++;
-    if (!awdlRxFilterDone) {                                 // once per link: let the firmware pass frames from other BSS
-        awdlRxFilterDone = 1;
-        m3RxFilter(0x80000064u);                             // BIT(31) enable | BIT(6) other BSS | BIT(5) control | BIT(2) FCS-fail (mt7925 filter bits; all bits, diagnostic)
-    }
     awdlRocCh = ch;
     awdlRocActive = 1;
+    // The sniffer has to be on for the WHOLE window. In station mode the firmware only hands the host its own BSS, so the
+    // promiscuous mode is what makes a peer's PSF/MIF arrive at all; and a peer's frame shows up at an arbitrary point inside
+    // its availability window. Leaving the sniffer on only for the few milliseconds between the ROC grant and our own
+    // transmission threw away ~90% of the window, which is why no AWDL frame was ever decoded (docs/ROADMAP-AWDL.md §10.22).
+    awdlQuiet = 1;
+    // The "pass frames from other BSS" filter is reprogrammed in every window: the firmware resets it when the channel changes,
+    // so a filter set once per link was gone by the time the radio parked on the next social channel. All four bits the chip
+    // defines are set (docs/ROADMAP-AWDL.md §10.22).
+    m3RxFilter(0x80000064u);                                 // BIT(31) enable | BIT(6) other BSS | BIT(5) control | BIT(2) FCS-fail
+    m3Sniffer(true, ch);
     m3Roc(true, ch);
     for (int i = 0; i < 80 && rocWant && !rocGrant; i++) m3Pump(1);   // bounded: the link loop must keep servicing the AP
-    if (rocGrant && !rocStatus) m3Sniffer(true, ch);                  // station-mode RX only carries our own BSS: ask the
-                                                                     // firmware for everything while we are off-channel
-    for (int i = 0; i < 8; i++) m3Pump(1);                           // let the frames that were just admitted arrive
-    awdlRocActive = 0;
+    if (rocGrant && !rocStatus) {
+        for (uint32_t ms = 0; ms < awdlDwellMs; ms++) m3Pump(1);      // the whole dwell, receiving
+    }
     if (!rocGrant || rocStatus) {
         awdlTxRocFail++;
         if (awdlTxRocFail <= 8)
             m3log("awdl sync: roc fail ch=%u grant=%d status=%u", ch, rocGrant ? 1 : 0, rocStatus);
+        m3Sniffer(false, ch);
         m3Roc(false, ch);
+        awdlQuiet = 0;
+        awdlRocActive = 0;
         return;
     }
     M3TxOpt o;
@@ -716,12 +727,17 @@ void itlmt7925::awdlSyncTx()
     bool ok = m3Tx(awdlFrame, len, 0, 13, o);                // type 0 (management), subtype 13 (action)
     m3Sniffer(false, ch);
     m3Roc(false, ch);
+    awdlQuiet = 0;
+    awdlRocActive = 0;
     if (ok) awdlTxOk++;
     if (awdlTxTry <= 10) m3log("awdl sync: tx ch=%u len=%u ok=%d", ch, len, ok ? 1 : 0);
-    if ((awdlTxTry % 50) == 0)                               // never evicted from the ring: tells RX from TX failures apart
+    if ((awdlTxTry % 50) == 0) {                              // never evicted from the ring: tells RX from TX failures apart
         m3log("awdl stat: try=%u tx=%u rocfail=%u rocframes=%u onch=%u bcn=%u af=%u ch=%u fc=%u/%u/%u/%u/%u", awdlTxTry, awdlTxOk,
               awdlTxRocFail, awdlRocFrames, awdlRocOnCh, awdlBcn, awdlAfSeen, awdlRocCh,
               awdlRxFc[0], awdlRxFc[1], awdlRxFc[2], awdlRxFc[3], awdlRxFc[4]);
+        m3log("awdl rxstat: oui=%u sig=%u bss=%u nm=%u fx=%u", awdlOuiHits, awdlSigHits, awdlBssidHits, awdlNearMiss,
+              awdlForensics);
+    }
 }
 
 // The firmware sniffer (MCU_UNI_CMD(SNIFFER), UNI_SNIFFER_ENABLE/UNI_SNIFFER_CONFIG, mt7925_mcu_set_sniffer /

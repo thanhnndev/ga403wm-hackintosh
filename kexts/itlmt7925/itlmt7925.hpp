@@ -174,6 +174,14 @@ private:
     uint32_t awdlRocOnCh = 0;                     // of those, the ones whose RXD channel really is the parked channel
     uint32_t awdlRxFc[5] = {};                    // heard during a ROC window: beacons / probe / action / other mgmt / data
     uint32_t awdlRxDumped = 0;                    // trace budget for the RX descriptor dump (verifies the group layout)
+    // Forensics counters (docs/ROADMAP-AWDL.md §10.22): what the firmware actually hands the host while the radio is parked on
+    // the social channel. awdlOuiHits counts buffers that carry Apple's OUI anywhere, awdlSigHits the ones that carry the AWDL
+    // action header (7f 00 17 f2 08) and awdlBssidHits the ones that carry AWDL's BSSID (00:25:00:ff:94:73). Together they
+    // answer "does the firmware deliver AWDL at all, and where in the buffer does it sit" without guessing an offset.
+    uint32_t awdlOuiHits = 0, awdlSigHits = 0, awdlBssidHits = 0;
+    uint32_t awdlNearMiss = 0;                    // fc == 0xd0 frames whose action header is not AWDL's
+    uint32_t awdlForensics = 0;                   // trace budget for the buffer forensics dump
+    uint8_t awdlQuiet = 0;                        // suppress the per-command ROC/sniffer logging (it evicts the diagnostics)
     volatile uint8_t awdlRocActive = 0;           // set while a ROC window is open (see awdlSyncTx / rxParseFrame)
     volatile uint8_t awdlRocCh = 0;               // channel that window is parked on (attribution in the AF log)
     uint8_t awdlRxFilterDone = 0;                 // the "pass other BSS" RX filter is programmed once per link
