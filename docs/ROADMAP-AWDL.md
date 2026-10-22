@@ -928,7 +928,8 @@ protection fault, and with it the machine. The same call exists in `IO80211AWDLP
 | 4. `uint64 category` | the expected category byte, `0x7f` (`isValidAF` rejects anything `<= 0x47` and hands the low byte to `actionFrameHasCorrectOUI`) |
 
 **The fix.** The buffer is now a real `IO80211Buffer`, taken from the Family's own pool machinery
-(`IO80211Buffer::allocBufferSingle(size, flags, &pool, name)`, exported by IO80211Family), with the body written into it
+(`IO80211Buffer::allocBufferSingle(type, size, &pool, name)`, exported by IO80211Family - the argument order was wrong in
+this round and is what panicked next, see §10.24), with the body written into it
 (`writeBytes`/`setLength`). The buffers are kept in a ring of eight and reused round-robin instead of being freed right after
 the call: the Family copies the payload out, but its peer bookkeeping may still look at the buffer, and freeing it would turn
 that into a use-after-free.
@@ -938,3 +939,71 @@ channel at `0x10` and the sender's clock (the AWDL `phy_tx` timestamp) at `0x2c`
 
 The core now also hands the channel the frame was heard on up to the interface (`ItlNativeAwdlRx::channel`), so the peer
 manager gets the right channel instead of a guess.
+
+### 10.24 The panic in 10.23: `allocBufferSingle` was called with its arguments swapped
+
+The next round (Kernel-2026-10-22-131442) panicked on the first AWDL frame that reached `awdlRxBuffer`:
+
+```
+IO80211StaticBufferPool::flushPool+0x2b          CR2=0x8, RAX=0
+IO80211StaticBufferPool::free+0x1c
+IO80211StaticBufferPool::withOptions+0x6b
+IO80211BufferPool::withOptions(IO80211BufferPoolOptions*, bool)+0x94
+IO80211Buffer::allocBufferSingle(uint, ulong, IO80211BufferPool**, char const*)+0x7a
+itlmt7925AwdlInterface::awdlRxBuffer+0x6b
+```
+
+This is not a race and not a Family bug: **we passed the two first arguments the wrong way round.** The 25G241
+IO80211Family (extracted from `BootKernelExtensions.kc`, the same `xnu-12377.161.15.700.19~2` build the panic came from):
+
+`IO80211Buffer::allocBufferSingle` (0xffffff800233b71e) builds `IO80211BufferPoolOptions` on the stack like this:
+
+```
+mov  qword ptr [rdi], 1              ; options+0x00 = 1
+mov  qword ptr [rdi+8], rsi          ; options+0x08 = SECOND argument  <-- the buffer size
+mov  qword ptr [rdi+0x18], rcx       ; options+0x18 = name
+mov  dword ptr [rdi+0x28], r13d      ; options+0x28 = FIRST argument   <-- the allocator type
+mov  word  ptr [rdi+0x38], 0
+xor  esi, esi
+call IO80211BufferPool::withOptions ; bool = false -> the static pool path
+```
+
+`IO80211StaticBufferPool::initWithOptions` (0xffffff80021889ee) validates `options+0x08` **before** it links anything:
+
+```
+mov  rax, qword ptr [r14+8]          ; the size
+mov  qword ptr [rcx+0x38], rax       ; ivars+0x38
+test rax, rax
+je   0xffffff8002188d99              ; size == 0 -> return false
+...
+mov  qword ptr [rcx], rcx            ; (only now) list anchors get linked
+```
+
+The driver called `allocBufferSingle(kAwdlRxBufCap /*2048*/, 0, &pool, "itlmt-awdl-rx")`, so the Family got
+**size = 0** (the second argument) and 2048 as the allocator type (the first). `initWithOptions` returned false with the
+0x110-byte `kalloc_type` IVars still zeroed. `IO80211StaticBufferPool::withOptions` then takes its failure path
+(`call qword ptr [rax+0x28]` = `free()`), `free()` calls `flushPool()` through vtable slot 0x128, and `flushPool` does:
+
+```
+mov  rcx, qword ptr [rbx+0x10]       ; ivars
+mov  rdi, qword ptr [rcx+0x48]       ; 0, nothing to kfree
+mov  rax, qword ptr [rcx]            ; list anchor = 0 (zeroed memory)
+cmp  rcx, rax                        ; not the anchor -> treat it as a buffer
+mov  rdx, qword ptr [rax+8]          ; <-- fault, CR2=0x8
+```
+
+The registers in the panic are exactly that state: `RBX` = the new pool, `RCX` = the zeroed IVars, `RAX`/`RDI`/`R14` = 0,
+`R13` = 0x800 (our first argument, preserved in `allocBufferSingle`), `R12` = 0 (our second argument: the size).
+`R14` in `flushPool` is zeroed just before the fault, which is why it is 0 and not the loop counter the pre-25G241 code had.
+
+**The fix.** Call it as the Family does: `allocBufferSingle(0, kAwdlRxBufCap, &pool, name)`. Apple's own callers confirm the
+order in the same build: `IO80211LQMCrashTracer::initLQMRingBuffer` passes `(0, size)`, `IO80211IOUCEventPipe::initWithClient`
+passes `(0x10003, pageRoundedSize)` and `(0x10003, 0xc)`. The allocator type goes into the slab options at `+0x20` and from
+there to the kalloc call, so 0 (what the LQM ring buffer uses) is the plain case.
+
+`allocBufferSingle` also already frees and releases the pool on its own failure paths and only writes `*pool` on success, so
+the `if (pool) pool->free()` in our error branch was removed: it could only ever have been a second free.
+
+The lesson for the rest of the Family API: the mangled name fixes the *types* but says nothing about the *meaning* of the
+arguments. `j`/`m` told us `uint` and `ulong`, and the natural reading - `(size, flags)` - was wrong. Every Family entry point
+used from here on has to be read out of the KernelCollection, not guessed from its signature.

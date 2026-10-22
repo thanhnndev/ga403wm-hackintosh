@@ -603,17 +603,21 @@ void itlmt7925AwdlInterface::awdlPollRx()
     }
 }
 
-// One of the receive buffers with the AWDL action body written into it (docs/ROADMAP-AWDL.md §10.23). The buffer comes from
-// the Family's own pool machinery, so it is a real IO80211Buffer with a working vtable.
+// One of the receive buffers with the AWDL action body written into it (docs/ROADMAP-AWDL.md §10.23, §10.24). The buffer
+// comes from the Family's own pool machinery, so it is a real IO80211Buffer with a working vtable.
 IO80211Buffer *itlmt7925AwdlInterface::awdlRxBuffer(const uint8_t *body, uint32_t len)
 {
     if (len > kAwdlRxBufCap) return nullptr;
     uint32_t i = awdlRxBufIdx++ % kAwdlRxBufRing;
     if (!awdlRxBufs[i]) {
+        // The arguments are (allocator type, size): allocBufferSingle stores the second one as the buffer size and the first
+        // one as the allocator type for the slab. Passing the size first made the Family build a zero-sized pool, whose
+        // failure path calls free()/flushPool() on an uninitialised pool and faults at NULL+8 (Kernel-2026-10-22-131442).
         IO80211BufferPool *pool = nullptr;
-        IO80211Buffer *b = IO80211Buffer::allocBufferSingle(kAwdlRxBufCap, 0, &pool, "itlmt-awdl-rx");
+        IO80211Buffer *b = IO80211Buffer::allocBufferSingle(0, kAwdlRxBufCap, &pool, "itlmt-awdl-rx");
         if (!b) {
-            if (pool) pool->free();
+            // allocBufferSingle frees and releases the pool itself when it cannot hand a buffer back (and only stores it in
+            // *pool on success), so there is nothing to clean up here - touching the pool would be a double free.
             awdlRxBufFail++;
             if (awdlRxBufFail <= 4) itlmtTrace(getController(), "awdl:rx no buffer from the Family's pool");
             return nullptr;
