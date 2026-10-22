@@ -221,7 +221,7 @@ private:
     uint8_t awdlRawStateLen = 0;
     uint32_t awdlRxFrames = 0, awdlRxLogged = 0;   // action frames handed to the peer manager / trace budget
     IO80211Buffer *awdlRxBufs[kAwdlRxBufRing] = {};   // the ring of Family buffers the peer manager is handed
-    IO80211BufferPool *awdlRxPools[kAwdlRxBufRing] = {};
+    IO80211DynamicBufferPool *awdlRxPool = nullptr;   // created on the first frame, keeps the ring's memory alive
     uint32_t awdlRxBufIdx = 0;
     uint32_t awdlRxBufFail = 0;                  // times the Family's pool could not give a buffer
     IOService *coreDev = nullptr;              // the core service (itlmt-native-awdl-sync-v1)
@@ -604,22 +604,37 @@ void itlmt7925AwdlInterface::awdlPollRx()
 }
 
 // One of the receive buffers with the AWDL action body written into it (docs/ROADMAP-AWDL.md §10.23). The buffer comes from
-// the Family's own pool machinery, so it is a real IO80211Buffer with a working vtable.
+// a Family dynamic buffer pool, so it is a real IO80211Buffer with a working vtable - the peer manager calls
+// getLength()/getBytesNoCopy()/getCursor() on it.
 IO80211Buffer *itlmt7925AwdlInterface::awdlRxBuffer(const uint8_t *body, uint32_t len)
 {
     if (len > kAwdlRxBufCap) return nullptr;
+    if (!awdlRxPool) {
+        // The pool allocates its slabs itself (IO80211BufferSlab::withOptions) and builds plain IO80211Buffers through
+        // IO80211Buffer::allocBuffer(), so unlike allocBufferSingle() it needs nothing from the controller. See
+        // io80211_buffer_min.h for why the static pool cannot be used from here.
+        IO80211BufferPoolOptions opts = {};
+        opts.count = kAwdlRxBufRing;
+        opts.size = kAwdlRxBufCap;
+        opts.name = "itlmt-awdl-rx";
+        awdlRxPool = IO80211DynamicBufferPool::withOptions(&opts);
+        if (!awdlRxPool) {
+            awdlRxBufFail++;
+            if (awdlRxBufFail <= 4) itlmtTrace(getController(), "awdl:rx the Family's dynamic buffer pool failed");
+            return nullptr;
+        }
+        itlmtTrace(getController(), "awdl:rx buffer pool ready (%u x %u)", (unsigned)kAwdlRxBufRing,
+                   (unsigned)kAwdlRxBufCap);
+    }
     uint32_t i = awdlRxBufIdx++ % kAwdlRxBufRing;
     if (!awdlRxBufs[i]) {
-        IO80211BufferPool *pool = nullptr;
-        IO80211Buffer *b = IO80211Buffer::allocBufferSingle(kAwdlRxBufCap, 0, &pool, "itlmt-awdl-rx");
+        IO80211Buffer *b = awdlRxPool->getBuffer();
         if (!b) {
-            if (pool) pool->free();
             awdlRxBufFail++;
             if (awdlRxBufFail <= 4) itlmtTrace(getController(), "awdl:rx no buffer from the Family's pool");
             return nullptr;
         }
         awdlRxBufs[i] = b;
-        awdlRxPools[i] = pool;
     }
     IO80211Buffer *b = awdlRxBufs[i];
     b->writeBytes(0, body, len);
@@ -675,13 +690,13 @@ void itlmt7925AwdlInterface::awdlDeliverRx(const uint8_t *frame, uint32_t len, u
     hdr.timestamp = le32(body + 8);                    // phy_tx: the sender's clock, in microseconds
 
     awdlRxFrames++;
+    int accepted = fn(pm, buf, bodyLen, &hdr, kAwdlCategory);
     if (awdlRxLogged < 6) {
         awdlRxLogged++;
-        itlmtTrace(getController(), "awdl:rx af len=%u body=%u n=%u ch=%u sa=%02x:%02x:%02x:%02x:%02x:%02x sub=%02x ts=%u",
+        itlmtTrace(getController(), "awdl:rx af len=%u body=%u n=%u ch=%u sa=%02x:%02x:%02x:%02x:%02x:%02x sub=%02x ts=%u ok=%d",
                    len, bodyLen, (unsigned)awdlRxFrames, hdr.channel, hdr.sa[0], hdr.sa[1], hdr.sa[2], hdr.sa[3], hdr.sa[4],
-                   hdr.sa[5], body[6], hdr.timestamp);
+                   hdr.sa[5], body[6], hdr.timestamp, accepted);
     }
-    fn(pm, buf, bodyLen, &hdr, kAwdlCategory);
 }
 
 void itlmt7925AwdlInterface::free()

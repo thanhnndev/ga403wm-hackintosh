@@ -938,3 +938,44 @@ channel at `0x10` and the sender's clock (the AWDL `phy_tx` timestamp) at `0x2c`
 
 The core now also hands the channel the frame was heard on up to the interface (`ItlNativeAwdlRx::channel`), so the peer
 manager gets the right channel instead of a guess.
+
+### 10.24 Which buffer pool the driver may use (Kernel-2026-10-22-131442)
+
+The first attempt at 10.23 asked the Family for a buffer through `IO80211Buffer::allocBufferSingle(size, segment, &pool, name)`
+and the machine panicked in the Family's own error path:
+
+```
+IO80211StaticBufferPool::flushPool + 0x2b          page fault, CR2 = 0x8
+IO80211StaticBufferPool::free + 0x1c
+IO80211StaticBufferPool::withOptions + 0x6b
+IO80211BufferPool::withOptions + 0x94
+IO80211Buffer::allocBufferSingle + 0x7a
+itlmt7925AwdlInterface::awdlRxBuffer + 0x6b
+```
+
+`allocBufferSingle` is not a general-purpose entry point. It fills `IO80211BufferPoolOptions` with `count = 1`, the name, a
+size at `+0x28` and **its second argument at `+0x08`** - and for the static pool that field is the **DMA segment** Apple's
+driver owns (`initWithOptions` does `rivars[0x38] = opts[8]; test rax, rax; je <fail>`). With a zero there the pool fails, and
+`IO80211StaticBufferPool::withOptions` then calls the object's release slot on a half-built object, whose `flushPool` walks a
+null list. That is a Family bug, but it is reachable only by calling that entry point without a segment.
+
+The pools, and what each needs:
+
+| pool | needs | usable here |
+|---|---|---|
+| `IO80211StaticBufferPool` | `opts[8]` = Apple's mapped DMA segment | no |
+| `IO80211MallocBufferPool` | nothing, but its buffers only override `getLength`/`setLength`/`readBytes` - the base `writeBytes` would read the slab at `+0x10`, which a `IO80211MallocBuffer` does not have (its state is at `+0x18`) | no |
+| `IO80211DynamicBufferPool` | `opts[0]` = count, `opts[8]` = bytes per buffer, `opts[0x18]` = name | **yes** |
+
+The dynamic pool allocates its own memory: `getBuffer()` -> `allocateSlab()` -> `IO80211BufferSlab::withOptions()` ->
+`IOBufferMemoryDescriptor::inTaskWithGuardPages()`, then `allocateBufferFromSlab()` -> `IO80211Buffer::allocBuffer()`, which
+builds a plain `IO80211Buffer` (state at `+0x10`, `getLength` at `slab[0x20]`). Those buffers support the base
+`writeBytes(offset, data, len)` and `setLength(len)`, which is exactly what the receive path needs.
+
+So the receive path creates one `IO80211DynamicBufferPool` (8 buffers x 2048 bytes) on the first AWDL frame and takes the
+ring's buffers from it; the pool stays alive for the lifetime of the interface, so nothing the peer manager still looks at is
+ever freed.
+
+`IO80211BufferPool::withOptions(opts, bool)` is not used: apart from the `bool` (which selects the malloc pool) it decides
+between static and dynamic on a boot-arg (`dynamic_buffer`), not on the caller's wish, and it panics when the chosen pool
+fails to build.
