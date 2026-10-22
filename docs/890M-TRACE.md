@@ -3518,3 +3518,73 @@ chosen from the main display, which is still the HDMI monitor on the NVIDIA card
 Next experiment, recoverable by one reboot (the arrangement change is `.forSession`): make the built-in panel the
 main display while NMXAccel is non-headless, and watch `debug.nmxaccel_iop_ok` plus whether WindowServer creates a
 type-4 client on NMXAccel. No claim of presentation; HDMI session untouched.
+
+## Step59 — the driver's own view of a submission: every ring, sixteen deep, and a sysctl that registers (2026-10-22)
+
+**Status: INSTALLED — reboot pending; the b22 trace has measured nothing yet.**
+
+Why this came before more probes: with Step58's pipe on NMXAccel, the open M2 question is still "why does the first
+submission of a *new process* fail about half the time and succeed on every later one in the same process" (fail
+returns at ~250 ms; a hang parks the process in `?NE`). Every candidate — VMID allocation, flush ordering, TLB/HDP
+ordering, a watchdog that never fires — is decided by one fact nobody could read: what the driver decided for *that*
+submission. A kext `printf` is not a dependable channel on this machine (the same NMXGPU/NVAccel lines appear or
+vanish depending on the boot), and the answer is needed inside the probe process's lifetime, so the trace lives in
+`debug.nmx_*` sysctls and is read around each run.
+
+What was built, in three attempts that each removed a defect the previous one hid:
+
+* **b20** (`cf58b30d`, UUID `87DB4113`): eight scalar sysctls (`jobs`, `jobs_flushed`, `jobs_no_flush`, `timeouts`,
+  `last_vmid/pasid/flags/pd`) plus hooks in `amdgpu_vm_flush()` and `amdgpu_job_timedout()`. Two defects, found before
+  trusting it: the `amdgpu_vm_flush` hook filtered on `AMDGPU_RING_TYPE_GFX`, so a dispatch scheduled on `comp_1.x`
+  would never appear; and `flags` was already ANDed with `job->vm_pd_addr != AMDGPU_BO_INVALID_OFFSET`, so
+  "needs_flush false" and "pd invalid" were the same reading.
+* **b21** (`407bc56a`, UUID `30DD9240`): a 16-entry ring covering **every** ring type, `seq` for ordering, the raw
+  `job->vm_needs_flush` kept apart from the flush the call actually emits, the gds bit added, and a timeout recorded as
+  ring `TIME` so it is never mistaken for a submission. Installed and booted — and `sysctl debug.nmx_trace` still
+  answered `unknown oid`, although the linked binary carried `sysctl__debug_nmx_trace` and its description string.
+* **b22** (`e47373de`, UUID `00F9957A`): the registration fix below. Installed, AuxKC rebuilt, six UUIDs unchanged
+  (NVRM/NVAccel/NVRMFB/NVRMAGDC/NMXAccel untouched, NMXGPU's `NMXOwnsDisplay` and NMXAccel's
+  `NMXDisplayPipeEnabled` plists preserved), backup `/Library/NullMoth/nmx-owns-oled-1aQoO8ck`.
+
+Root cause of the missing OIDs, two independent faults:
+
+1. **A kext never auto-registers its `SYSCTL_*` entries.** `bsd/sys/sysctl.h` says it outright: the linker set
+   registers at kernel init, "UNLESS they are defined in I-O-Kit. In this case, you have to call `sysctl_register_oid()`
+   manually - just like in a KEXT." NMXAccel has always done that (`nvaccelInstallSysctl()`); NMXGPU did not, so the
+   OIDs existed in the image and nowhere in the kernel's tree.
+2. **`bsdcompat/src/nmx_sysctl.c` defined `sysctl__debug_children`** for the port's own in-memory sysctl tree. With
+   that definition in the link, even a registered NMXGPU OID would hang off a private, empty list instead of the
+   kernel's `debug` list. The port never adds a node under `_debug` (grep over `kpi/`, `bsdcompat/`, `xkpi/`: zero
+   uses), so the definition is removed; the symbol is now undefined in the kext and the loader binds the kernel's.
+   `nm -m` on b22 confirms the shape NMXAccel has: `_sysctl__debug_children` and `_sysctl_register_oid` are both
+   `(undefined) external (dynamically looked up)`.
+
+Patch set: `patches/series` is 15 (`amdgpu-job-timeout-hook.patch` is new; `amdgpu-vmflush-trace.patch` now carries the
+all-ring hook). Replay on vendor HEAD `c16de0f9fa` is zero-fuzz and idempotent; runtime 76/76, driver 900/900, 0 failed.
+
+Upstream check in the same session, recorded because it closes the "install a newer AMD driver" route: nullmoth
+**v2.5.2** (2026-10-22) is NVIDIA-only. Commit `a7f16b0` (2026-10-16) deleted the whole `gpu-port` — NMXGPU, NMXAccel,
+the NPU and the audio driver, 51,693 lines — into a separate, non-public repository. So there is no newer public AMD
+driver to install; this fork is the newest AMD line. The 2.5.2 payload was downloaded and hash-verified
+(`b3c01bbd…`) and extracted to `out/nullmoth-2.5.2/pkgroot`, deliberately **not** installed: it replaces the NVIDIA
+core 610→615 plus the plugin, and cannot change M2.
+
+What the next boot must show, and what each outcome decides:
+
+* `sysctl debug.nmx_trace` exists, header `seq ring type vmid pasid pd needs_flush flush pasid_map pipe_sync
+  gpu_reset gds`; `debug.nmx_timeouts` counts scheduler timeouts; a timeout row reads ring `TIME`.
+* `bash scripts/890m-m2-probe.sh 10` immediately after login (the failure window is the first minutes after boot; each
+  probe is capped at 8 s and the loop stops at the first hang). It prints, per one-dispatch process, `pass/fail/hang`
+  and exactly the trace rows that process produced.
+
+| Reading | Conclusion | Where the fix goes |
+|---|---|---|
+| failing first job has `needs_flush 0` | the VMID ran without its page table being reprogrammed | `amdgpu_vmid_grab` / `amdgpu_vm_flush` ordering |
+| `needs_flush 1`, `flush 1`, `pd != 0` | PT base written, but the CP read the old table: TLB/HDP ordering | `emit_flush_gpu_tlb` / `PFP_SYNC_ME` barrier |
+| rows on a `comp_*` ring | the failing job is a compute-queue submission, not gfx | the compute-ring path, not the gfx trace |
+| ring `TIME` / `timeouts` grows while the process hangs | the watchdog fires and recovery does not free the job | `amdgpu_gpu_recover` / `amdgpu_ring_soft_recovery` |
+| `timeouts` stays 0 while a job hangs | the `drm_sched` timeout never runs in this port | the scheduler timeout/timer path |
+
+Next gate: one boot with the current arrangement (HDMI + OLED, rung 1 allow list); this batch changes no allow list,
+boot argument, display mode or plugin. WindowServer acceleration and OLED presentation remain exactly as Step58 left
+them, and no presentation claim is attached to this step.
