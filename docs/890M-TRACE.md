@@ -3591,8 +3591,10 @@ them, and no presentation claim is attached to this step.
 
 ## Step60 — with the pipe finally on NMXAccel, the login session cannot get a GPU address (2026-10-22)
 
-**Status: MEASURED — boot `FC20AA10`, decoded offline from the unified log. Nothing was built or installed from this
-analysis; the patch it ends with has not been compiled.**
+**Status: BUILT AND INSTALLED — boot `FC20AA10` measured offline; the fix was compiled by CI (run 39751051561,
+NMXAccel `LC_UUID DAB8184D-D77B-310A-A437-AB58A6102935`, sha256 `f72a82a1…`) and written into the Data volume from
+Linux. Two boots pending: the first runs the previously collected accelerator and relinks the auxiliary collection,
+the second loads this build.**
 
 This is the boot the owner reported as "the login prompt appears, then the panel goes black". Step58's blocker is gone
 in it: CoreDisplay finds the pipe, and WindowServer opens display-pipe clients on NMXAccel — the type-4 clients that
@@ -3673,26 +3675,41 @@ range when `nvAccelGpuVaAlloc` refuses, recording the result on the map; (c) rep
 `commitIntoGPUPageTable()` instead of demanding an `NVVidMemory` handle; (d) frees the range in `deallocate`.
 `nvaccelprivateva=0` restores the RM-only path for an A/B boot.
 
-Build it on macOS (there is no CI for this source: the `ga403wm` workflow builds only the Strix*/itlmt kexts, and
-`build/nmxaccel_build.sh` needs the local `~/ogkm610` NVIDIA headers):
+**It builds on CI.** The accelerator source lives in the `nvidia-macos-driver` fork, whose `ga403wm-nmx` branch had no
+workflow; branch `ci/nmxaccel` adds `.github/workflows/build-nmxaccel.yml` on top of the patch. The job runs on
+`macos-14`, fetches NVIDIA's public `open-gpu-kernel-modules` tag **610.57.04** (the same version as the local
+`~/ogkm610`) for the headers, builds `kexts/NVRM` with `build/nmxaccel_build.sh` and `NM_TAHOE=1`, inserts
+`NMXDisplayPipeEnabled` (the local installer's one plist change, which `nmxArm()` requires and the source plist does
+not carry), prints the hash and `LC_UUID`, and uploads `NMXAccel.kext`. Run
+<https://github.com/thanhnndev/nvidia-macos-driver/actions/runs/39751051561> took 19 s total. `ga403wm`'s own workflow
+still builds only the Strix*/itlmt kexts.
 
-    cd ~/develop/projects/nmx-src-2.0.4
-    git apply ~/develop/projects/ga403wm-hackintosh/patches/nmx/0001-accel-task-private-va.patch
-    bash build/nmxaccel_build.sh kexts/NVRM out/nmxaccel-step60
+**It is installed from Linux.** `kmutil` only exists on macOS, so the write and the relink are split:
 
-    T=~/develop/projects/ga403wm-hackintosh/out/890m-trace/step60
-    mkdir -p "$T/accel" "$T/gpu"
-    ditto out/nmxaccel-step60/NMXAccel.kext "$T/accel/NMXAccel.kext"
-    ditto /Library/Extensions/NMXGPU.kext "$T/gpu/NMXGPU.kext"
-    sudo bash ~/develop/projects/ga403wm-hackintosh/scripts/macos-nmx-owns-oled-install.sh "$T"
+* `pkexec scripts/linux-install-nmxaccel.sh <artifact>/NMXAccel.kext` unmounts every mount of the APFS container,
+  remounts the Data volume `-o readwrite` (this module accepts `readwrite`, silently ignores `rw`), backs up
+  `/Library/Extensions/NMXAccel.kext` and the auxiliary collection to
+  `/Library/NullMoth/nmx-step60-20261022T085951Z`, writes the new bundle `root:wheel` (dirs 755, files 644,
+  executable 755), arms `scripts/nmx-relink/` as `/Library/StrixGraphicsFix/nmx-relink.sh` +
+  `com.itlmt7925.nmx-relink.plist`, and remounts read-only.
+* At the next boot the daemon waits 20 s, runs the same `kmutil create -n aux … --repository /Library/Extensions -A`
+  the macOS installer runs, asserts both NMXGPU's and NMXAccel's `LC_UUID` are in the new collection, replaces
+  `AuxiliaryKernelExtensions.kc`, refreshes `/Library/NullMoth/kexts/26/NMXAccel.kext`, writes
+  `/Library/StrixGraphicsFix/nmx-relink.status` and disables itself. This boot keeps running the *old* accelerator —
+  a loaded kext cannot be replaced — so it behaves like the boot that produced this step.
 
-(`out/890m-trace/step60` is the installer's stage directory; the arguments must be absolute.)
+The manual route on macOS stays available and does the same in one boot:
+`git apply patches/nmx/0001-… && bash build/nmxaccel_build.sh kexts/NVRM out/nmxaccel` then
+`sudo scripts/macos-nmx-owns-oled-install.sh <staged trace dir>`.
 
-What the next boot must show, and what each outcome decides:
+What the next boots must show, and what each outcome decides:
 
-* zero `nvAccelRmHandles` / `RM refused` / `freeToAllocGPUAddress` / `failed to allocate GPU virtual address`, plus a
-  few `-> private VA 0x...` and `MM commit: private VA ... nothing to map` lines (capped at 12 and 8) — the mapping
-  path is satisfied and the login session's surfaces prepare.
+* boot 1 (old accelerator): `/Library/StrixGraphicsFix/nmx-relink.status` appears within a minute and
+  `nmx-relink.log` ends with `RELINKED`; the collection's mtime matches the boot. If it says
+  `RELINK_FAILED kmutil=… assert=…`, the old collection was kept — read the log before rebooting again.
+* boot 2 (this build): zero `nvAccelRmHandles` / `RM refused` / `freeToAllocGPUAddress` / `failed to allocate GPU
+  virtual address`, plus a few `-> private VA 0x...` and `MM commit: private VA ... nothing to map` lines (capped at
+  12 and 8) — the mapping path is satisfied and the login session's surfaces prepare.
 * `RM refused` still present: the fallback did not run — check the boot argument, and whether `newGPUTask` is the path
   that created this task (`fVa` null would skip the fallback silently in release logging).
 * panel lit but the image wrong or frozen: the pipe is a copy path, so read `debug.nmxaccel_iop_ok` /
