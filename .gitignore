@@ -15,3 +15,6 @@ config.*.plist
 !efi/OC/config.plist
 ITLLOG.BIN
 nv*.txt
+
+# local tool binaries (fetched by tools/get-ipsw.sh)
+tools/bin/

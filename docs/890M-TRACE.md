@@ -3881,3 +3881,49 @@ display it can render on, and the panel is not one of them.** Two ways forward, 
 
 Neither is a plugin knob. Not changed in this step: boot arguments, kexts, allow list, arrangement. The new plugin
 (`fee5790b…`) stays; it is what makes the HDMI desktop exist at all.
+
+
+## Step64 — direction 2, read from the other side: the panel is not in IOPresentment's map because the 890M has no AGDC service (2026-10-23 14:xx, offline)
+
+Method: CoreDisplay and IOPresentment extracted from the Tahoe dyld cache (`tools/get-ipsw.sh`, `tools/dsc-extract.sh`,
+output in `ref/macos-26.7.1/`, `llvm-objdump --macho` for x86_64), cross-checked against the decoded unified log of
+boots `9B0BCBC7` / `9D08B76C`. No reboot, no change on the machine.
+
+What CoreDisplay does (macOS 26.7.1):
+
+* `Display::Display` (the constructor reached from `_CoreDisplay_CreateDisplayForCGXDisplayDevice`) asks the display for
+  its IOFB service, runs `FindDisplayPipeForService(service)` and stores the result in `[dev+0x14c]`; then it calls
+  `CreateMetalDevice(acceleratorID)`. If that throws, the `catch` logs "Failed to create MetalDevice for accelerator" and
+  **only asserts (line 0xC9C) when `[dev+0x14c] == 1`**, i.e. when the display has a display pipe. A display without a
+  pipe is tolerated silently. That is why the panel-only boot (10:55) survived and the HDMI display aborted (Step62).
+* `FindDisplayPipeForService` is only a cache lookup in `gEntryIDs`; the pipes come from `InitializeDisplayPipes`, which
+  walks `IOPresentmentGetMap()` (a CFArray of {pipe, service} pairs). "System set to use IOP but no display pipes are
+  present" clears `useIOP` for the whole system.
+* `UseIOPresentment()` stays true only while every GPU vendor present (bitmask from the IOFramebuffer list) has its
+  `useIOP_on{IG,NVIDIA,AMD,APV}` default set. `Display::GetNextSurface` (pool + `DisplaySurface`) is gated on
+  `UseIOPresentment()` and `displaySurfaceUsesIOSurface`, not on the Metal device. So a Metal device is not what builds the
+  display surface.
+
+What decides the map (`IOPresentment`, `ioPresentmentCreateAssociationMap` → `ioPresentmentFindAGDCMatch`): it iterates
+the `AppleGraphicsDeviceControl` services, opens each, asks for `kAGDCVendorInfo`, and associates accelerator,
+IOFramebuffer and AGDC by their display-class PCI parent. A GPU without an AGDC service gets no node, no map entry, no
+pipe (this is the Step06 finding for StrixAccel, unchanged).
+
+Evidence on the current stack: the only AGDC in the log is NVIDIA's —
+`NVRM-agdc: AGDC: UP on PEGP — 1 framebuffer slot(s)` (boots 9B0BCBC7 and 9D08B76C). There is no AGDC line for the 890M, and
+`NMXGPU`/`NMXAccel` contain none (`nmx_fb.cpp` only borrows the AGDC K5 timing format; the AGDC object exists only in
+`kexts/NVRM/agdc/nvrm-agdc.cpp`, class `NVDADeviceControl`). StrixAccel's `StrixDeviceControl` is off by design
+(`-strixaccoff`). Consistent with Step63: `NVAccel` receives eight `newUserClient(type 4)` (its pipe is in the map),
+`NMXAccel` receives none (its pipe is not), and the log has a 2880x1800 `iosurface=1` render target on the NVIDIA Metal
+device, i.e. WindowServer does render the panel's backing store but has no pipe to hand it to.
+
+Conclusion: the missing piece for direction 2 is not a CoreDisplay condition and not the Metal device, it is an AGDC
+service for the 890M that answers like Step06's `StrixDeviceControl` (cmd 1 vendor info AMD/class 2, 0x980 GPU capability
+with slot 0 = the NMX framebuffer, 0x921 link config from the real DRM timing, 0x711 type 0x10, 0x2001 accepted). The
+PCI node must also carry a display `class-code` (it does now: the DeviceProperties entry has only `name #display`).
+This matches roadmap M3(b), "arm the owned display like the NVIDIA path".
+
+Next (not done): `NMXDeviceControl : AppleGraphicsDeviceControl` in the NMX fork, reusing `kexts/StrixAccel/StrixAgdc.h`
+and `nvrm-agdc.cpp`, attached to the 890M IOPCIDevice when `nmxArm()` runs; dependency
+`com.apple.AppleGraphicsDeviceControl`. Verify with an entitled `iop-getmap` probe (map contains the 890M node and
+`IOAccelerator != 0`), `NMXAccel: newUserClient(type 4)` > 0, then the first `trx:` on the AMD pipe.
