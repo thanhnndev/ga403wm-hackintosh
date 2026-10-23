@@ -4117,3 +4117,25 @@ after the pipe opened, so the log tail after the `armed` line is the next thing 
 
 Left for the mini build (NMXGPU): `nmx_fb.cpp` `trace()` caps at 40 lines, all spent on `scanout NOT READY`, so `open` never
 shows; count the NOT READY lines separately and keep the cap for the rest.
+
+## Step69 — the Step68 fix works but arms 2 ms too late; publish the scanout before open() (2026-10-23 22:xx, macOS)
+
+Live boot 22:01 (NMXAccel 11f899e + NMXAGDC Step66 + NMXGPU 0340b057), read with `log show --start`:
+
+- `NMX display bind: scanout ready after 152 attempt(s) (2880x1800 pitch 11520)` at 46.677 and `NMX display pipe armed on owned native
+  framebuffer`: the polling fix does what it says. No freeze, no panic.
+- But WindowServer opens the FB at 46.48-46.50 and CoreDisplay asks for the pipe at 46.679: `Unable to find display pipe for IOFB service
+  / regID: 0xd803 / 0x100000562`, `MPAccessSurfaceForDisplayDevice: Failed to set up surface for page flip mode`. The arm is a
+  consequence of that same open(), so it always loses the race by milliseconds. Counters: `nmxaccel_pipe_initfb 3`, `validate 0`,
+  `perform 0`, `complete 0`, `iop_ok 0`; WindowServer still ~700% CPU (NVIDIA NVMTL render + CPU readback/copy).
+- AGDC: `0x2001` accepted (4 times, value 1), `0x3` and `0x941` (48 B in) answered Unsupported, `PerfPowerServices` blocked by AGDCC.
+  Nothing is freezing on AGDC now.
+
+Fix (nmx_fb.cpp, NMXGPU 7efe25b8): the scanout callPlatformFunction no longer requires `fPowerRegistered` (it only guards the
+IOFramebuffer power driver, which needs open(); the scanout data - kva/width/height/pitch - does not). The pipe now arms ~10 s into the
+boot, long before WindowServer. `scanout NOT READY` is counted apart (first 3 then every 100th) so the 40-line trace cap stays for
+`open`, `setDisplayMode`, etc. Risk: if arming before open touches IOFramebuffer state, expect the Step28-style power-state panic; the
+previous kext is saved at `~/efi-audit/nmxgpu-0340b057` (restore: replace /Library/Extensions/NMXGPU.kext with it, rebuild AuxKC).
+
+Next boot verifies: `scanout ready after N attempt(s)` at ~10-15 s; no `Unable to find display pipe`; `debug.nmxaccel_pipe_validate/
+perform/complete` > 0 and `iop: K6`; whether the machine survives the first `performTransaction` (the Step65 freeze point).
