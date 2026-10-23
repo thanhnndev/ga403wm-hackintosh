@@ -4066,10 +4066,14 @@ reaches NMXGPUFB, so none of the Step66 pipe counters exist in it: `drmn0` fails
 Across the 33 decoded macOS boots amdgpu initialises (`SMU is initialized successfully`) in 30; the failures are
 `44BCEA21` (10-21 13:14, 1 ucode failure), `1F4A2989` (10-22 13:14, failure + Fatal) and this one. The working Step65 boot
 (`891AFB44`) shows `Seamless boot condition check passed`, `Display Core initialized`, ring tests passing and `NMXGPUFB published`.
-So the black OLED here is not the pipe wall: there is no GPU at all. The previous OS before this boot was Linux, whose
-amdgpu already owns the 890M (`lsmod`: amdgpu 46 users), so the PSP/SMU may still hold Linux's state (sOS alive, SMU mailbox busy)
-when the macOS port runs the cold-start firmware sequence. Not proven (the same hand-over succeeded for `891AFB44`).
+So the black OLED here is not the pipe wall: there is no GPU at all. Linux's amdgpu owns the 890M too, but "previous OS = Linux" does
+not explain it: `journalctl --list-boots` shows Linux ran 14:38-15:59 and macOS then initialised fine twice (16:01, 16:03), and
+`44BCEA21`/`1F4A2989` followed macOS boots, not Linux. Treat it as an intermittent PSP/SMU failure (~3 of 33 boots) that needs the
+NMXGPU kext to recover itself (it is built on the mini from drm-kmod; nothing in this repo or CI can rebuild it).
 
-Next: (1) boot macOS twice in a row (macOS -> macOS warm) and see whether `SMU is initialized` returns; (2) if it does, make the
-NMXGPU init handle a live PSP (check `MP0_SMN_C2PMSG_81` sign-of-life and do a mode-1 reset / wait for the SMU mailbox before
-LOAD_IP_FW) instead of assuming a cold PSP; (3) only then read the `debug.nmxaccel_pipe_*` counters for the OLED pipe.
+Next: (1) NMXGPU: on `Fatal error during GPU init` do a PSP/SMU reset and retry once (needs the mini build); (2) every boot where
+init succeeds, run `scripts/trace-last-boot.sh` (about a minute after the first run) and read the `debug.nmxaccel_pipe_*` counters
+for the OLED pipe; the freeze after `newUserClient(type 4)` is the target.
+
+Tooling: `scripts/trace-last-boot.sh [boots] [persist_files]` stages only the newest Persist files, decodes the newest boot and prints
+a verdict (GPU init, PSP failures, NMXGPUFB / AGDC / type-4 pipe / K6, last lines before a freeze) to `~/ga403-logs/last-boot.txt`.
