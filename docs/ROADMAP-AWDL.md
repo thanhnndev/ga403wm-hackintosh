@@ -996,10 +996,14 @@ The registers in the panic are exactly that state: `RBX` = the new pool, `RCX` =
 `R13` = 0x800 (our first argument, preserved in `allocBufferSingle`), `R12` = 0 (our second argument: the size).
 `R14` in `flushPool` is zeroed just before the fault, which is why it is 0 and not the loop counter the pre-25G241 code had.
 
-**The fix.** Call it as the Family does: `allocBufferSingle(0, kAwdlRxBufCap, &pool, name)`. Apple's own callers confirm the
+**The first fix (superseded by 10.25).** Call it as the Family does: `allocBufferSingle(0, kAwdlRxBufCap, &pool, name)`. Apple's own callers confirm the
 order in the same build: `IO80211LQMCrashTracer::initLQMRingBuffer` passes `(0, size)`, `IO80211IOUCEventPipe::initWithClient`
 passes `(0x10003, pageRoundedSize)` and `(0x10003, 0xc)`. The allocator type goes into the slab options at `+0x20` and from
 there to the kalloc call, so 0 (what the LQM ring buffer uses) is the plain case.
+
+That fixed the panic (the 22 Oct 17:45 boot is clean), but it is not enough for the static pool: `options+0x08` is the
+controller's DMA segment (see 10.25), which this driver does not own. The receive path therefore takes its buffers from an
+`IO80211DynamicBufferPool` instead.
 
 `allocBufferSingle` also already frees and releases the pool on its own failure paths and only writes `*pool` on success, so
 the `if (pool) pool->free()` in our error branch was removed: it could only ever have been a second free.
@@ -1013,3 +1017,43 @@ The entry a kernel collection hands a disassembler is not a standalone Mach-O: i
 dysymtab, dyld info, linkedit data, encryption info) while keeping the vmaddrs. The extracted 25G241 IO80211Family is then a
 normal Mach-O and can be read with REA/Ghidra (`GHIDRA_INSTALL_DIR`, `rea decompile <macho> <mangled symbol>`), e.g.
 `__ZN13IO80211Buffer17allocBufferSingleEjmPP17IO80211BufferPoolPKc`.
+### 10.25 Which buffer pool the driver may use (Kernel-2026-10-22-131442)
+
+The first attempt at 10.23 asked the Family for a buffer through `IO80211Buffer::allocBufferSingle(size, segment, &pool, name)`
+and the machine panicked in the Family's own error path:
+
+```
+IO80211StaticBufferPool::flushPool + 0x2b          page fault, CR2 = 0x8
+IO80211StaticBufferPool::free + 0x1c
+IO80211StaticBufferPool::withOptions + 0x6b
+IO80211BufferPool::withOptions + 0x94
+IO80211Buffer::allocBufferSingle + 0x7a
+itlmt7925AwdlInterface::awdlRxBuffer + 0x6b
+```
+
+`allocBufferSingle` is not a general-purpose entry point. It fills `IO80211BufferPoolOptions` with `count = 1`, the name, a
+size at `+0x28` and **its second argument at `+0x08`** - and for the static pool that field is the **DMA segment** Apple's
+driver owns (`initWithOptions` does `rivars[0x38] = opts[8]; test rax, rax; je <fail>`). With a zero there the pool fails, and
+`IO80211StaticBufferPool::withOptions` then calls the object's release slot on a half-built object, whose `flushPool` walks a
+null list. That is a Family bug, but it is reachable only by calling that entry point without a segment.
+
+The pools, and what each needs:
+
+| pool | needs | usable here |
+|---|---|---|
+| `IO80211StaticBufferPool` | `opts[8]` = Apple's mapped DMA segment | no |
+| `IO80211MallocBufferPool` | nothing, but its buffers only override `getLength`/`setLength`/`readBytes` - the base `writeBytes` would read the slab at `+0x10`, which a `IO80211MallocBuffer` does not have (its state is at `+0x18`) | no |
+| `IO80211DynamicBufferPool` | `opts[0]` = count, `opts[8]` = bytes per buffer, `opts[0x18]` = name | **yes** |
+
+The dynamic pool allocates its own memory: `getBuffer()` -> `allocateSlab()` -> `IO80211BufferSlab::withOptions()` ->
+`IOBufferMemoryDescriptor::inTaskWithGuardPages()`, then `allocateBufferFromSlab()` -> `IO80211Buffer::allocBuffer()`, which
+builds a plain `IO80211Buffer` (state at `+0x10`, `getLength` at `slab[0x20]`). Those buffers support the base
+`writeBytes(offset, data, len)` and `setLength(len)`, which is exactly what the receive path needs.
+
+So the receive path creates one `IO80211DynamicBufferPool` (8 buffers x 2048 bytes) on the first AWDL frame and takes the
+ring's buffers from it; the pool stays alive for the lifetime of the interface, so nothing the peer manager still looks at is
+ever freed.
+
+`IO80211BufferPool::withOptions(opts, bool)` is not used: apart from the `bool` (which selects the malloc pool) it decides
+between static and dynamic on a boot-arg (`dynamic_buffer`), not on the caller's wish, and it panics when the chosen pool
+fails to build.
