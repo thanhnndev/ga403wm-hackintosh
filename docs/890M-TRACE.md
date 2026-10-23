@@ -4027,3 +4027,24 @@ Next live boot, only after deliberately re-enabling the NMX stack, capture the e
 `debug.nmxaccel_pipe_*` counters. The first `iop: TRACE` line reached before a freeze determines the next target; a
 `performTransaction` entry with no K6 narrows it further. Do not call the freeze fixed until a live boot survives this
 path.
+
+### Step66 install — staged for the next hardware boot (2026-10-23 17:47)
+
+The Step66 artifacts were installed into `/Library/Extensions` and a fresh Auxiliary Kernel Collection was built.
+The installer backed up the previous NMXAGDC, NMXAccel, cached NMXAccel, and AuxKC at
+`/Library/NullMoth/nmx-step66-20261023T104744Z`; its log is
+`/Library/NullMoth/nmx-step66-install-20261023T104744Z.log`.
+
+Post-install verification:
+
+```text
+NMXAGDC sha256 a825b953eab7e500287f07459e5e02b3a06bc752832e96e11085323779fd8533
+UUID 90C7A833-82AA-3769-9F9A-5AD9D382548D
+
+NMXAccel sha256 c4b4b17c7220d5936086314e422b7bd95fc4267bc1608659e6b6a8bd5a8020f0
+UUID 6869C77E-E1DA-32B8-98BF-5B2A08D59CBA
+```
+
+`kmutil inspect` confirms the rebuilt AuxKC contains `com.nullmoth.NMXGPU`, `com.nullmoth.NMXAccel`, and
+`com.ga403wm.NMXAGDC`. The currently running kernel still uses the previous boot's collection. `nmxamd=1` remains
+disabled, so this installation by itself does not arm the 890M path; enable it only for the deliberate hardware test.
