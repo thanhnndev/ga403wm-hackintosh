@@ -3754,3 +3754,79 @@ probes and starts again and counts one start; with the HDMI monitor attached NVR
 counter, which restores both the HDMI output and the dGPU Metal device WindowServer needs. Then the OLED question is
 finally measurable: `debug.nmxaccel_iop_ok`, the `trx:` budget, and whether CoreDisplay still answers `plane with no
 gamma` (the legacy `IOAccelLegacyDisplayPipe` base of `NVDisplayPipe`) for the cross-GPU present.
+
+## Step62 — the compositor crash is the vendor claim, not the pipe: CoreDisplay aborts on a display whose Metal device came back nil (2026-10-23 1x:xx)
+
+Three boots were logged after the guard patch (`01cb`–`01d0`, decoded from the Data volume with the uuidtext tree
+and `dsc/` in place — the logarchive provider wants `Persist/<n>.tracev3`, two-hex-digit uuidtext directories and a
+top-level `dsc/`, not a flattened tree). The iGPU side did not regress: NMXGPU 1.0.0 + NMXAccel 0.1 (AuxKC 17:34
+Oct 22) still publish `NMXGPUFB`, arm the DCN35 pipe, set 2880x1800@120 and reach `scanout ok (foreign 0 head 0)`.
+What changed is the dGPU: the guard patch lets NVRM 2.5.2 run, and NVRM-fb now owns the HDMI head.
+
+| boot | HDMI | NVRM-fb | WindowServer |
+|---|---|---|---|
+| 10:50 `388439D2` | attached, `dpy 0/4 0x100 connected 1 edid 256 B` | starts, `boot raster 1920x1080 pitch 7680` at 15.71, `NVRMFramebuffer published` 15.74 | 13 processes in 143 s, each dead 0.3 s after launch |
+| 10:55 `6B9DAEEC` | absent, `connected 0 edid 0 B` | `kapiInit failed -- refusing to start` 15.92 | pid 1020 runs 348 s, no crash |
+| 11:03 `68B018B0` | attached | `boot raster 1920x1080` 17.27 | 6 processes, every 10 s, dead 0.3 s after launch |
+
+The crash is new and not the old `CGXMappedDisplayStart`: four reports at 10:50:56/10:51:01 fault in
+`CoreDisplay_CreateDisplayForCGXDisplayDevice` and abort. The binary is not on the System volume (Tahoe keeps it in
+the dyld shared cache); the OS cryptex `Cryptexes/OS` on the Preboot volume carries
+`cryptex1/current/os.dmg` (APFS), and loop-mounting it gives `System/Library/dyld/dyld_shared_cache_x86_64h`. The
+crash frame is `__TEXT 0x7FF805347000 + 289801` = `0x7FF80538DC09` (`symbolLocation` 2972 from `0x7FF80538D06D`), and
+the bytes there are the assert tail:
+
+```
+7ff80538dbb8  cmpl $0x0,-0x140(%rbp)
+7ff80538dbbf  lea  "null"      (0x7FF805452AE7)
+7ff80538dbc6  lea  "non-null"  (0x7FF805452ADE)
+7ff80538dbcd  cmove %rax,%rcx
+7ff80538dbd1  lea  "Failed to create MetalDevice (%s)" (0x7FF805452ABC)
+7ff80538dbe9  call snprintf
+7ff80538dbf5  lea  "Display"   (0x7FF805452AEC)
+7ff80538dbfc  mov  $0xc9c,%edx
+7ff80538dc04  call CoreDisplay::Assert
+7ff80538dc09  ud2
+```
+
+So Tahoe's CoreDisplay requires a **Metal device per display**, and aborts when the display's accelerator advertises
+`MetalPluginName` and the plugin answers nil. That is exactly the state the logs show, and it is a plugin ordering
+bug, not a pipe bug:
+
+* every WindowServer launch logs two tries, both refused with `headless GPU: no device for WindowServer` (16.87 and
+  19.21 in pid 205; once per later pid). `plugin/NVMTLDevice.m:323` refuses whenever `nvmtl_vk_vendor() != 0x10de`;
+* `nvmtl_vk_set_accelerator` is first-wins (`if (v && !g_vendor) g_vendor = v;`), and WindowServer asks the
+  accelerators in registry order — the built-in AMD panel (`NMXAccel`, 0x1002) first, the NVIDIA one (`NVAccel`,
+  0x10de) second. The first request claims `g_vendor = 0x1002`, so the second is refused by the same vendor gate;
+* nothing then supplies a device for the NVIDIA framebuffer that NVRM-fb just published, and CoreDisplay asserts on
+  it ~0.3 s later. Without HDMI there is no NVIDIA display at all (`NVRM-fb` refuses to start), the AMD-only display
+  is tolerated (pid 1020 lives 348 s), and the panel simply never receives a frame.
+
+Fix, no boot-args and no kext changes: WindowServer may not let a non-0x10de accelerator claim the process when an
+`NVAccel` exists. The NVIDIA display's accelerator then gets the claim, NVK reaches the card over IOKit (the
+WindowServer sandbox allows IOKit, which is why RADV on `/dev/dri` can never work there), and the AMD panel keeps
+presenting through its display pipe; apps still get whichever accelerator they ask. The claim deferral is
+WindowServer-only.
+
+The plugin is a single translation unit (`plugin/NVMTLDevice.m` `#include`s `plugin/nvmtl_vk.c`), so CI builds it
+next to the kext: `macos-26-intel` (the macOS 14 SDK on `macos-14` has no `MTLResidencySet`/`MTLShaderValidation`),
+Khronos Vulkan headers, `-bundle -fobjc-arc -O1`, `-framework Foundation Metal IOSurface IOKit CoreFoundation` (IOKit
+is needed by the vendor lookup), ad-hoc `codesign`, artifact `NVMTLDriver`.
+
+Installed from Linux into the Data volume, old binary kept:
+
+```
+/Library/GPUBundles/NVMTLDriver.bundle/Contents/MacOS/NVMTLDriver
+  was aa16ed89e19cd5c4308af9fdbb51899754b58c8feb52ca86188ce43fa747b018
+  now fee5790b5d490f5a244a01336ccd5524f4e56f5ba141e7e6ec7675f9b6800988
+/Library/NullMoth/nvmtl-backup-20261023/NVMTLDriver.aa16ed89  (backup)
+```
+
+Rollback is copying the backup back; the kexts, the allow list and the boot arguments are untouched.
+
+What the next HDMI boot must show: no `CoreDisplay_CreateDisplayForCGXDisplayDevice` abort and no 10 s WindowServer
+respawn; instead one WindowServer that lives, `WindowServer: the 1002 accelerator does not claim this process` and
+`GPU vendor 10de` in its log, `debug.nvaccel_headless` 0, `debug.nvaccelfb` 1. If the abort is gone and the HDMI
+desktop appears, the next question is the panel: `debug.nmxaccel_iop_ok` / `debug.nmxaccel_iop_fail`, the `trx:`
+budget, and whether the cross-GPU present reaches `NVDisplayPipe` (still an `IOAccelLegacyDisplayPipe`, so `plane
+with no gamma` is the expected wall when WindowServer starts pushing the OLED as a second display).
