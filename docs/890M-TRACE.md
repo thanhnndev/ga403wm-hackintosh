@@ -3830,3 +3830,54 @@ respawn; instead one WindowServer that lives, `WindowServer: the 1002 accelerato
 desktop appears, the next question is the panel: `debug.nmxaccel_iop_ok` / `debug.nmxaccel_iop_fail`, the `trx:`
 budget, and whether the cross-GPU present reaches `NVDisplayPipe` (still an `IOAccelLegacyDisplayPipe`, so `plane
 with no gamma` is the expected wall when WindowServer starts pushing the OLED as a second display).
+
+## Step63 — the compositor lives on the dGPU now; the panel is never given a frame (2026-10-23 13:2x–13:3x)
+
+Two boots with the new plugin (`boot_uuid 9D08B76C`, `9B0BCBC74197`; HDMI attached, EDID 256 B). The Step62 fix does
+what it was meant to do and nothing crashes:
+
+* `WindowServer: the 1002 accelerator does not claim this process`, then
+  `accelerator vendor 1002, but this process runs Metal on 10de: no second device` for the panel's accelerator, then
+  `GPU vendor 10de (NVIDIA, NVK)` / `allow-listed: WindowServer` / `UP in this Metal process — "NVIDIA GeForce RTX 5060
+  Laptop GPU (NVK GB206-B)"` for the NVIDIA one. One Metal device, on the dGPU, through IOKit.
+* WindowServer is stable: login server 205 hands over at ~25 s, session server 790 lives 328 s, 719 lives 406 s. No
+  `WindowServer-*.ips` after 11:04, no `CoreDisplay_CreateDisplayForCGXDisplayDevice` abort.
+* The HDMI display presents continuously: `NVAccel: surfvram pageoff … 8355840 B` reaches `ok 11264` by 418 s. The
+  rate between counter prints is 18–28 fps (55 s for the first 1024, then 37–43 s per 1024).
+* The shader path works and caches: `/var/folders/zz/…/C/WindowServer/nvmtl-mesa` grows to `139.8 MiB in 544 files`,
+  later boots log `cache hit` for `ViewportToNDC`/`TextureCopy`/`ColorFill`/`UberComposite*`. Translation costs are
+  2–17 ms per function, not seconds.
+
+The system nevertheless feels unusable, and the two spindumps say why:
+
+* `Terminal_2026-10-23-133654….hang` (73 s window): WindowServer's `com.apple.coreanimation.pipelines` thread is in
+  `CA::OGL::MetalContext::create_pipeline_state → create_fragment_shader → NVMTLLibrary newFunctionWithDescriptor →
+  nvmtl_translate_with_fc → metal2vulkan::translate_one` in **9 of 11 samples** — every new function-constant variant
+  of CoreAnimation's shaders is compiled on that one thread, and the desktop stops until it returns. The main thread's
+  display pass also waits inside `CoreDisplay::DisplaySurface::AccessComplete → NVMTLCommandBuffer
+  commitAndWaitUntilSubmitted → waitUntilCompleted` (2 of 11), so each frame is a synchronous GPU round trip.
+
+The OLED gets **zero** frames, and that is not a copy-path failure:
+
+* `NullMoth display: pipe: scanout ok (foreign 0 head 0) 0xB40 0x2D00` at 15.84 — the panel is armed at 2880x1800 and
+  scanning out;
+* `NMXAccel: NVDisplayPipe::initFramebufferResource(head 0, index 0): CPU-only scanout … frames are copied` and
+  `NMX display pipe armed on owned native framebuffer; GPU renders through RADV, present copies IOSurface` — the CPU
+  copy path is in place;
+* but WindowServer never opens the pipe: `NMXAccel: newUserClient(type 4)` = **0** (no `IOAccelDisplayPipeUserClient2`),
+  while `NVAccel` gets 8 of them. Across 330–430 s there is not one `trx:`/present/copy on the AMD pipe, and no
+  2880x1800 `shapeSurface`. CoreDisplay sets the mode (`DM displayModeWillChange/DidChange`), gives the panel a
+  `new2DContext`, and stops there: without a Metal device for that display it never builds a display surface, so the
+  pipe has nothing to display and the raster keeps what the firmware left in it. The "flicker" is the mode/pipe
+  delivery happening twice (15.6 and 26.1) on an otherwise empty raster.
+
+So the remaining wall is the same one Step61 named, now measured from the other side: **WindowServer composites the
+display it can render on, and the panel is not one of them.** Two ways forward, both a step change:
+
+1. give WindowServer a Metal device that belongs to the panel's accelerator (RADV inside the WindowServer sandbox —
+   blocked on `/dev/dri`, so it needs an IOKit-backed command path, or the sandbox rule widened), or
+2. find the condition under which SkyLight/CoreDisplay builds a display surface for a display whose accelerator has
+   no Metal device, and make the panel satisfy it so the existing `NVDisplayPipe` copy gets a surface to page in.
+
+Neither is a plugin knob. Not changed in this step: boot arguments, kexts, allow list, arrangement. The new plugin
+(`fee5790b…`) stays; it is what makes the HDMI desktop exist at all.
