@@ -3961,6 +3961,69 @@ Rollback applied from Linux so the machine boots again: `nmxamd=1` removed from 
 (backup `config.plist.step66-pre-20261023-161400`). Without `nmxamd` NMXGPU declines the 890M, so no NMXGPUFB, no NMX pipe
 and NMXAGDC idles. Re-enable with `+nmxamd=1` once the freeze is understood.
 
-Next: (1) answer 0x711 / 0x925 / 0x2001 properly instead of Unsupported (compare with StrixDeviceControl's replies in
-`StrixAgdc.h`); (2) find what blocks after the NMX pipe opens, with `sysctl debug.nmxagdc*` read from a still-alive session
-or by opening the pipe with WindowServer unlaunched; (3) check whether the 29.29 SIGKILL is the macOS-side agent.
+Next: (1) acknowledge only the proven passive `0x2001` client declaration contract (exact 4-byte input, zero output);
+keep `0x711` limited to the verified K5/type `0x10` reply and leave `0x925` Unsupported until its semantics are known;
+(2) add low-volume entry counters/logs around the display-pipe callbacks so the next boot can distinguish a freeze before
+`performTransaction` from one inside it; (3) check whether the 29.29 SIGKILL is the macOS-side agent.
+
+## Step66 — exact AGDC 0x2001 ack + first-pipe observability (2026-10-23 17:xx, offline)
+
+Work was done only in the isolated NMX worktree
+`/Users/thanhnndev/develop/projects/nmx-agdc-investigate-20261023`, branch
+`codex/nmx-agdc-clientset-trace`; the dirty development checkout was not reset or overwritten. No kext was installed,
+`nmxamd=1` remains removed, and there was no reboot.
+
+The Step65 log does **not** justify returning success for every AGDC command. Historical Step07 already showed that
+blindly accepting non-type-`0x10` `0x711` breaks the pipe. The only safe contract established here is `0x2001`: the
+known NVRMAGDC implementation decodes exactly 4 input bytes into a `uint32_t`, requires zero output bytes, accepts
+unaligned input, records the value, and returns success. NMXAGDC now mirrors that exact passive declaration only.
+Malformed/null/short/oversized input or non-zero output returns `kIOReturnBadArgument`. `0x711` behavior is unchanged
+(K5 answers only the verified scaler/type-`0x10` form); `0x925` remains Unsupported. New read-only counters are
+`debug.nmxagdc_client_set` and `debug.nmxagdc_client_set_value`.
+
+A small host-side contract test (`tools/test_nmxagdc_client_set.c`) covers values 1/0, unaligned input, null pointers,
+short/oversized input and non-zero output. It passes with `cc -std=c11 -Wall -Wextra -Werror`. NMXAGDC also builds
+cleanly:
+
+```text
+NMXAGDC md5 fc55fee665f29ad087ba4395811f6192, 55912 B
+sha256 a825b953eab7e500287f07459e5e02b3a06bc752832e96e11085323779fd8533
+UUID 90C7A833-82AA-3769-9F9A-5AD9D382548D (x86_64)
+```
+
+The Step65 freeze happened after `newUserClient(type 4)` but before any `iop: K6` line, so NMXAccel now has
+low-volume entry observability without changing transaction results. Each callback increments a counter and logs at
+most the first eight entries:
+
+* `debug.nmxaccel_pipe_initfb` — `initFramebufferResource`;
+* `debug.nmxaccel_pipe_validate` — `validateTransaction`;
+* `debug.nmxaccel_pipe_complete` — `isTransactionComplete`;
+* `debug.nmxaccel_pipe_perform` — `performTransaction` entry, before the existing gate/K6 logic.
+
+NMXAccel builds successfully with the tracing patch:
+
+```text
+NMXAccel md5 f1864410c706c613e605cfca4361388c, 233576 B
+sha256 c4b4b17c7220d5936086314e422b7bd95fc4267bc1608659e6b6a8bd5a8020f0
+UUID 6869C77E-E1DA-32B8-98BF-5B2A08D59CBA (x86_64)
+Apple clang 21.0.0
+```
+
+`strings` on that Mach-O contains all four `iop: TRACE ... entry` messages and all four `nmxaccel_pipe_*` sysctl
+names. REA MCP independently opened the same artifact as Mach-O x86_64 and reported the same SHA-256. Deeper REA
+queries are currently unavailable because no native analysis provider is configured: Ghidra has no
+`GHIDRA_INSTALL_DIR` and no Java runtime, the configured Hopper launcher is missing, and IDA/Kuna are not configured.
+This is a tooling limit only; it is not runtime evidence about the driver.
+
+The latest luuumi `amd-rdna3-macos-driver` worktree is still at
+`cbb08ddf517c009255a74ad0fbc2cd7e0d6fa339` (`phxboot: keep background neural networks off the GPU, reboot on a GPU
+hang`). Its Phoenix stack has the same display-pipe callback shape and still leaves `0x2001` unsupported, so it is
+useful for lifecycle comparison but does not supply a proven replacement for this contract. No wholesale Phoenix port
+was taken.
+
+Next live boot, only after deliberately re-enabling the NMX stack, capture the existing AGDC counters plus
+`debug.nmxagdc_client_set`, `debug.nmxagdc_client_set_value`, `debug.nmxagdc_refused`,
+`debug.nmxagdc_last_refused`, `debug.nmxaccel_armed`, `debug.nmxaccel_iop_ok`, `debug.nmxaccel_iop_fail` and all four
+`debug.nmxaccel_pipe_*` counters. The first `iop: TRACE` line reached before a freeze determines the next target; a
+`performTransaction` entry with no K6 narrows it further. Do not call the freeze fixed until a live boot survives this
+path.
