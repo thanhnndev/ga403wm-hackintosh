@@ -4077,3 +4077,43 @@ for the OLED pipe; the freeze after `newUserClient(type 4)` is the target.
 
 Tooling: `scripts/trace-last-boot.sh [boots] [persist_files]` stages only the newest Persist files, decodes the newest boot and prints
 a verdict (GPU init, PSP failures, NMXGPUFB / AGDC / type-4 pipe / K6, last lines before a freeze) to `~/ga403-logs/last-boot.txt`.
+
+## Step68 — OLED boot is laggy because the NMX display pipe never arms: the retry window closes before WindowServer opens the panel (2026-10-23 22:xx)
+
+Two boots decoded from Linux with `scripts/trace-last-boot.sh 2 8` (both: `drmn0: SMU is initialized successfully`, no PSP
+failure, so the Step67 amdgpu failure did not happen this time). Boot A (131 s) was force-restarted at the login window;
+boot B (566 s) reached the desktop but was unusable.
+
+Boot B, in order:
+
+| t | event |
+|---|---|
+| 10.04 | `NMXGPUFB published`, `NullMoth display: pipe: scanout NOT READY (foreign 0 head 0) 0x1 0x1` every 200 ms (`fPowerRegistered` is only set by `open()`; the 40-line trace cap is used up by these by ~18 s) |
+| 41.47 | `NMXAccel: NMX display bind refused: query 0xFFFFFFFFE00002D8 after 150 attempts` (boot A: 43.34) — `nmxArm` retried 150 × 200 ms = 30 s and gave up |
+| 44.01 | WindowServer 1006 spawned |
+| 45.18 | WindowServer creates and opens the FB (`Creating FB 1 of 1`), `initFramebufferResource` gate 0 → NULL, `IOFBSetDisplayModeAndDepth` mode 0 fails, `Interface creation error: 0x2002` |
+| 45.37 | `Unable to find display pipe for IOFB service / regID: 0xde03 / 0x100000550` |
+| 45.43 | `MPAccessSurfaceForDisplayDevice: Failed to set up surface for page flip mode` |
+| 45.4 → end | 2485 × `IOAccelLegacySurface::set_shape_backing_length_ext: Bad frame buffer index`, 50 `timed out fence`; no `validate/perform/complete` trace, no `iop: K6`, no `IOP:` line |
+
+So the pipe is **not** broken, it is never armed: `nmxArm` needs `NMXGPUFB::open()` (it is what sets `fPowerRegistered`, and
+that open is WindowServer's), and WindowServer now comes up at ~44 s (the AuxKC/relink boots are slow), 3-4 s after the 30 s
+window closed. Without `gNvScanout`/`registerFramebufferLocked(1)` there is no display pipe for the panel, CoreDisplay and
+IOPresentment have nothing to hand the surface to, and WindowServer (rendering on the NVIDIA NVMTL device) reads every frame
+back and writes it into the framebuffer with the CPU: that is the lag. The earlier boot in this file (`scanout ok` at 14.4 s)
+armed because the framebuffer was opened early; that is a timing accident, not a design.
+
+Not the cause (checked in the same boot): `ReportCrash` is quiet after the first minute (one cloud-docs error loop of 9.6k
+lines in minute 1, memory-limit reports of `dock.extra` / `BiomeAgent` are non-fatal); `launchd` respawn churn is the usual
+boot burst (361 spawns in minute 0, ~15/min later); the `IOVersatile` kext retry is 210 lines in the first 2 minutes.
+
+Fix (nmx-ci `ci/nmxaccel` 11f899e, on top of the Step66 branch): `nmxArm` keeps polling — 200 ms for the first 30 s, then
+1 s up to 15 minutes — and logs `NMX display bind: scanout ready after N attempt(s)`. Install with
+`scripts/linux-install-nmxaccel.sh`, reboot twice (relink, then load). Expected on the next boot: that log line shortly after
+`Created FB 1 of 1`, `NMX display pipe armed on owned native framebuffer`, `NVDisplayPipe::initFramebufferResource ... CPU-only
+scanout ... frames are copied`, then `iop:` TRACE `validate/perform` lines, `Unable to find display pipe` 0 and no more
+`Bad frame buffer index`. Risk: this is the first time the pipe arms with the Step66 AGDC; the Step65 freeze happened right
+after the pipe opened, so the log tail after the `armed` line is the next thing to read.
+
+Left for the mini build (NMXGPU): `nmx_fb.cpp` `trace()` caps at 40 lines, all spent on `scanout NOT READY`, so `open` never
+shows; count the NOT READY lines separately and keep the cap for the rest.
