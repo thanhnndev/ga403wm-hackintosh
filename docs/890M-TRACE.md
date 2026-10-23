@@ -3927,3 +3927,17 @@ Next (not done): `NMXDeviceControl : AppleGraphicsDeviceControl` in the NMX fork
 and `nvrm-agdc.cpp`, attached to the 890M IOPCIDevice when `nmxArm()` runs; dependency
 `com.apple.AppleGraphicsDeviceControl`. Verify with an entitled `iop-getmap` probe (map contains the 890M node and
 `IOAccelerator != 0`), `NMXAccel: newUserClient(type 4)` > 0, then the first `trx:` on the AMD pipe.
+
+## Step65 — NMXAGDC: an AGDC service for the 890M (installed, not yet booted)
+
+Step64 found that IOPresentment's device map has no AMD pipe because the 890M has no `AppleGraphicsDeviceControl`
+service. `NMXDeviceControl` (nmx-ci `kexts/NMXAGDC`, commit 503ad77, CI job `agdc`) is that service: derived from
+NVRMAGDC, vendor AMD 0x1002 class 2, slot table from `NMXGPUFB` (`IOFBDependentIndex`), 0x980 / 0x921 / 0x711 answered
+from the framebuffer's `NVRMTiming` (K5 on by default), starts by itself once `NMXGPUFB` exists (retries every 500 ms for
+2 min). Sysctls `debug.nmxagdc*`. Installed from Linux with `scripts/linux-install-nmxagdc.sh` (backup
+`/Library/NullMoth/nmx-step65-20261023T070831Z`, sha256 074b3b8d…db11); the one-shot relink daemon now also asserts
+NMXAGDC is in the new aux collection.
+
+Boot 1 relinks the collection; boot 2 loads NMXAGDC. Check after boot 2: `log show | grep NMX-agdc` ("AGDC: UP"),
+`sysctl debug.nmxagdc debug.nmxagdc_cmds debug.nmxagdc_fbmap`, an entitled `iop-getmap` probe (AMD node, accelerator
+non-zero), `NMXAccel: newUserClient(type 4)` > 0, then the first `trx:` on the AMD pipe.

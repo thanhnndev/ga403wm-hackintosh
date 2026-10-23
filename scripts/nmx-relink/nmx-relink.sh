@@ -35,7 +35,7 @@ if not kc_path.exists():
     sys.exit(1)
 kc = kc_path.read_bytes()
 ok = True
-for name in ('NMXGPU', 'NMXAccel'):
+for name in ('NMXGPU', 'NMXAccel', 'NMXAGDC'):
     b = f'/Library/Extensions/{name}.kext/Contents/MacOS/{name}'
     out = subprocess.run(['/usr/bin/otool', '-l', b], capture_output=True, text=True).stdout
     m = re.search(r'LC_UUID\s+cmdsize \d+\s+uuid ([0-9A-F-]{36})', out)
