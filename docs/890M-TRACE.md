@@ -3941,3 +3941,26 @@ NMXAGDC is in the new aux collection.
 Boot 1 relinks the collection; boot 2 loads NMXAGDC. Check after boot 2: `log show | grep NMX-agdc` ("AGDC: UP"),
 `sysctl debug.nmxagdc debug.nmxagdc_cmds debug.nmxagdc_fbmap`, an entitled `iop-getmap` probe (AMD node, accelerator
 non-zero), `NMXAccel: newUserClient(type 4)` > 0, then the first `trx:` on the AMD pipe.
+
+### Step65 result — boot 2 (2026-10-23 16:03): AGDC works, the machine freezes ~3 s after the panel pipe opens
+
+Decoded from Linux (unified log of boot `891AFB44`, 32.6 s long; the macOS `wifi.log` stops at the same second, so it is a
+real full-system freeze, no panic record, two force reboots).
+
+What worked: `NMX-agdc: AGDC: UP on VGA`, WindowServer lists `agdc /NMXDeviceControl` for gpu 1002.150e, and for the first
+time `NMXAccel: newUserClient(type 4)` (IOAccelDisplayPipeUserClient2) > 0 at 29.58, followed by `IOP: 0x1002:0x400`.
+IOPresentment now opens the AMD pipe. Step64's cause (no AGDC service, so no pipe) is confirmed.
+
+What did not: WindowServer 205 (running on NVMTL/NVIDIA only, no NMX pipe client) was SIGKILLed at 29.29 (`exit reason
+namespace=2 code=9`, no crash report); the respawned 809 opened the NMX pipe at 29.58, `NMX-agdc` got 0x2001, 0x925 and
+28x 0x711, all answered `Unsupported` (the K5 answer only covers type 0x10, 0x711 here asks for more), and no NMX `iop: K6
+transaction` ever appeared (the NVAccel/HDMI pipe prints them). The log ends 3 s later (SecurityAgent up) with nothing from
+the kernel. Earlier panic (`preemption_level -1`, Spotlight, 16:01, before the relink) is from the old kexts, not NMXAGDC.
+
+Rollback applied from Linux so the machine boots again: `nmxamd=1` removed from the boot-args in `/boot/EFI/OC/config.plist`
+(backup `config.plist.step66-pre-20261023-161400`). Without `nmxamd` NMXGPU declines the 890M, so no NMXGPUFB, no NMX pipe
+and NMXAGDC idles. Re-enable with `+nmxamd=1` once the freeze is understood.
+
+Next: (1) answer 0x711 / 0x925 / 0x2001 properly instead of Unsupported (compare with StrixDeviceControl's replies in
+`StrixAgdc.h`); (2) find what blocks after the NMX pipe opens, with `sysctl debug.nmxagdc*` read from a still-alive session
+or by opening the pipe with WindowServer unlaunched; (3) check whether the 29.29 SIGKILL is the macOS-side agent.
