@@ -4165,3 +4165,19 @@ Not done, on purpose: letting WindowServer use the 890M. The gfx ring hangs on t
 screen. Next real blocker is the amdgpu/RADV gfx hang itself (first job: pipeline `fixed_frag_lpf_cpf`, 1216x706 BGRA target):
 read the DRM side (`drmn0: Dumping IP State` lines) and test with `tools/890m/vk-compute-min.c` / `render-stress.sh` before any
 WindowServer allow-list change.
+
+## Step71 — with the pipe armed before WindowServer, WindowServer aborts for want of a Metal device (2026-10-24 17:2x)
+
+Two boots with NMXGPU 7efe25b8 (Step69) + nvmtl-allow without `*` (Step70). Boot A (55 s of log): `scanout ready after 0 attempt(s)` and
+`pipe armed` at 12.0 s, `NullMoth display: pipe: open` and `initFramebufferResource gate 1 … CPU-only scanout … frames are copied` at 45.96,
+`newUserClient(type 4)` 45.99, AGDC `0x711` (6508 B in) Unsupported 28×, then `NVMTL: headless GPU: no device for WindowServer` 46.04 and
+`Setting offline display` / `Corpse allowed` for pid 1050 at 46.04; ReportCrash 46.40: `Assertion failed: (Failed to create MetalDevice
+(non-null)), function Display` (the CoreDisplay line Step64 found: a display that has a pipe must get a Metal device). WindowServer was
+spawned once (205 at 6.6 s, 1050 at 45.4 s) and not again: no desktop. Boot B: `drmn0: flip_done timed out` 22.47, NMXGPUFB/pipe armed 22.47,
+log ends 31.83 s before WindowServer started (unified log loses the last seconds of a hard freeze, so the freeze point is unknown).
+
+Fix (nmx-ci `ci/nmxaccel` d783aac, `plugin/NVMTLDevice.m`): WindowServer is refused only while `debug.nmxaccel_armed` is 0 or
+`debug.nmxaccel_headless` is 1; once NMXAccel owns the display it gets the RADV device (log line `WindowServer: this GPU owns the display`).
+Installed with `scripts/linux-install-nvmtl.sh` (plugin sha256 39769b66…, backup `/Library/NullMoth/nvmtl-backup-20261024T173108Z`); one
+reboot, no relink. Risk: Step70's gfx-ring hang on an app's first render job can now hit WindowServer (black screen / GPU reset). Next boot
+reads: `WindowServer: this GPU owns the display`, `vk: UP`, any `ring gfx_0.0.0 timeout`, `iop: TRACE validate/perform`, `iop: K6`.
