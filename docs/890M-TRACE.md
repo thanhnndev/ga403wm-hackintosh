@@ -4139,3 +4139,29 @@ previous kext is saved at `~/efi-audit/nmxgpu-0340b057` (restore: replace /Libra
 
 Next boot verifies: `scanout ready after N attempt(s)` at ~10-15 s; no `Unable to find display pipe`; `debug.nmxaccel_pipe_validate/
 perform/complete` > 0 and `iop: K6`; whether the machine survives the first `performTransaction` (the Step65 freeze point).
+
+## Step70 — why Terminal and osascript dialogs do not come up: the 890M gfx ring hangs on the first app render job (2026-10-24, Linux)
+
+Boot of 16:26 (357 s; NMXAccel 11f899e, old NMXGPU 0340b057 — Step69's NMXGPU was installed afterwards). Decoded with
+`EXTRA_PROCS=Terminal,osascript,tccd,... scripts/trace-last-boot.sh 1 8` (new `EXTRA_PROCS` knob keeps more processes).
+
+* The pipe still arms late: `Unable to find display pipe` 47.97, `scanout ready after 155 attempt(s)` 48.20 (Step69's NMXGPU fixes that).
+* **WindowServer has no Metal device.** `NVMTL: GPU vendor 1002 (AMD, RADV)` / `headless GPU: no device for WindowServer` /
+  `not allow-listed` at 47.83 (`plugin/NVMTLDevice.m` `nvmtl_process_is_allowed`: WindowServer is refused whenever the Vulkan vendor
+  is not 0x10de). No NVIDIA GPU is up in an OLED-only boot, so WindowServer composites in software: ~700% CPU, `Bad frame buffer
+  index` 15597×, 113 fence timeouts. This is the lag, on top of the missing pipe.
+* **Apps do get the AMD device (allow-list `*`) and the first render job kills it.** Terminal: `vk: UP … RADV STRIX1` 102.74, first
+  submit `vk: fence wait -> -13 after 253 ms … disabling backend` 104.74 (`Metal failed to build render pipeline … Vulkan is not up
+  in this process`), then `drmn0: ring gfx_0.0.0 timeout, signaled seq=16, emitted seq=19` 113.02, `MES failed to respond to
+  msg=RESET`, `GPU reset begin` 115.03, `MODE2 reset` / `GPU reset succeeded` 117.78. A Terminal or osascript window needs a Metal
+  layer; with the backend disabled it never draws. loginwindow and Finder brought Vulkan up too (no render job logged yet).
+* Not the cause: tccd/runningboardd/UserEventAgent volume is churn from the failed UI, `cs_blob` lines are boot-time, ReportCrash quiet.
+
+Mitigation applied from Linux (reversible): `/Library/GPUBundles/nvmtl-allow.txt` has `*` commented out (backup
+`/Library/NullMoth/nvmtl-allow-step70-20261024T094731Z.txt`), so ordinary apps get no Metal device and draw in software like
+WindowServer; `mtlprobe`/`nvmtltest`/`nvmtlrender` stay allowed by name. Also installed: NMXGPU 7efe25b8 (Step69, `scripts/linux-install-nmxgpu.sh`).
+
+Not done, on purpose: letting WindowServer use the 890M. The gfx ring hangs on the first render job, so that would be a black
+screen. Next real blocker is the amdgpu/RADV gfx hang itself (first job: pipeline `fixed_frag_lpf_cpf`, 1216x706 BGRA target):
+read the DRM side (`drmn0: Dumping IP State` lines) and test with `tools/890m/vk-compute-min.c` / `render-stress.sh` before any
+WindowServer allow-list change.

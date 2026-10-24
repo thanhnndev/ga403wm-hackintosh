@@ -1,7 +1,7 @@
 #!/bin/bash
 # Decode ONLY the newest macOS boot(s) from the APFS volume, from Linux, in ~1 minute (not the whole 14 GB archive).
 #
-#   scripts/trace-last-boot.sh [boots=1] [persist_files=6]        # asks for pkexec itself
+#   [EXTRA_PROCS=Terminal,osascript,tccd] scripts/trace-last-boot.sh [boots=1] [persist_files=6]   # asks for pkexec itself
 #
 # Output (kernel / WindowServer / launchd / loginwindow / anything mentioning NMX, noise dropped):
 #   ~/ga403-logs/last-boot.txt        "SECONDS-SINCE-BOOT process message"
@@ -30,10 +30,10 @@ pkexec bash -c "
 
 F=$(mktemp -u); mkfifo "$F"; trap 'rm -f "$F"' EXIT
 python3 -I - "$F" "$BOOTS" "$OUT/last-boot.txt" <<'PY' &
-import sys, json, re, collections
+import sys, os, json, re, collections
 fifo, nboots, out = sys.argv[1], int(sys.argv[2]), sys.argv[3]
 noise = re.compile(r'armwatch|Failed to get|getPixelInformation|surf\+|NVRM-xnu|NVMTL|Found class|childPublished|duplicate reports')
-keep = {'kernel', 'WindowServer', 'launchd', 'loginwindow', 'kernelmanagerd', 'ReportCrash'}
+keep = {'kernel', 'WindowServer', 'launchd', 'loginwindow', 'kernelmanagerd', 'ReportCrash'} | set(filter(None, os.environ.get('EXTRA_PROCS', '').split(',')))
 rows = []
 for l in open(fifo):
     try: d = json.loads(l)
