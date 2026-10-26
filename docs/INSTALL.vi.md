@@ -55,7 +55,8 @@ Chọn một:
   bash scripts/build.sh            # build mọi kext vào build/*.kext
   ```
 
-Các kext: `itlmt7925` (Wi-Fi), `ItlXhciKick` (USB, **bắt buộc**), `AsusWmi`, `AmdCppc`, `MtkBtFw`, `BtLeDlFix`, tùy chọn `ItlDiag`.
+Các kext: `ItlXhciKick` (USB, **bắt buộc**), `AsusWmi`, `AmdCppc`, `MtkBtFw`, `BtLeDlFix`, tùy chọn `ItlDiag`. Kext Wi-Fi (`itlmt7925`, `itlmt7925Native`) lấy ở
+[mt7925-macos-wifi](https://github.com/thanhnndev/mt7925-macos-wifi/releases).
 Từng cái làm gì: [COMPONENTS.md](COMPONENTS.md).
 
 ### 2b. Kext bên thứ ba
@@ -112,39 +113,15 @@ Sửa `config.plist` (bằng `tools/occonfig.py`, ProperTree hoặc OpenCore Con
 
 ## 4. Wi-Fi: inject mạng
 
-> **Có hai chế độ.** Mặc định (mục này) là chế độ legacy của `itlmt7925.kext`: Wi-Fi hiện là Ethernet và mạng được inject như bên dưới.
-> Chế độ native tuỳ chọn (`itlmt7925Native.kext` + boot-args `itlmt_native=1 itlmt_native_if=1 itlmt_native_dp=1 itlmt_fast=6`) cho
-> giao diện Wi-Fi thật, không cần inject; chạy được nhưng vẫn đang test. Cách bật, kiểm tra và quay lại:
-> [WIFI-DRIVERS.md](WIFI-DRIVERS.md#tiếng-việt).
+Driver Wi-Fi MT7925 giờ nằm ở repo riêng: **[mt7925-macos-wifi](https://github.com/thanhnndev/mt7925-macos-wifi)**. Tải `itlmt7925.kext` (và `itlmt7925Native.kext` để có
+menu Wi-Fi thật) ở [releases](https://github.com/thanhnndev/mt7925-macos-wifi/releases) và làm theo [hướng dẫn cài](https://github.com/thanhnndev/mt7925-macos-wifi/blob/main/docs/GUIDE.vi.md):
 
-macOS chưa có Wi-Fi gốc cho card này: phải "dặn" `itlmt7925.kext` biết mạng. Cho tới khi
-[Wi-Fi gốc](ROADMAP.md) xong, SSID và mật khẩu nằm trong `Info.plist` của kext, **dạng chữ thường**, và driver tự kết nối sau khi
-boot (boot-args `itlmt_m2=1 itlmt_m3=1`). Tối đa **4 mạng**, thứ tự = ưu tiên.
+* **Native** (nên dùng sau khi đã cài macOS): menu Wi-Fi, kết nối từ System Settings, không để mật khẩu trong kext. Boot-args
+  `itlmt_native=1 itlmt_native_if=1 itlmt_native_dp=1 itlmt_fast=6` ([hướng dẫn §4](https://github.com/thanhnndev/mt7925-macos-wifi/blob/main/docs/GUIDE.vi.md#4-chế-độ-native-khuyên-dùng)).
+* **Legacy** (mặc định của EFI tham chiếu, tiện lúc cài macOS): Wi-Fi hiện là Ethernet, mạng được nhét vào `Info.plist` của kext
+  ([hướng dẫn §5](https://github.com/thanhnndev/mt7925-macos-wifi/blob/main/docs/GUIDE.vi.md#5-chế-độ-legacy-kiểu-ethernet)). Boot-args ở §3 là của legacy.
 
-**Windows (đọc profile Wi-Fi đã lưu trên PC, PowerShell chạy quyền admin):**
-
-```powershell
-.\scripts\inject-creds.ps1 -Kext 'E:\EFI\OC\Kexts\itlmt7925.kext' -Ssid 'WifiNha','Hotspot-dien-thoai'
-```
-
-**macOS (PlistBuddy) hoặc editor bất kỳ:** các key `itl_ssid`, `itl_psk`, `itl_ssid2`, `itl_psk2`, ..., `itl_ssid4`, `itl_psk4` nằm trong
-personality `itlmt7925` của `itlmt7925.kext/Contents/Info.plist`:
-
-```bash
-P=itlmt7925.kext/Contents/Info.plist
-/usr/libexec/PlistBuddy -c "Set :IOKitPersonalities:itlmt7925:itl_ssid 'WifiNha'" \
-                        -c "Set :IOKitPersonalities:itlmt7925:itl_psk  'mat khau'" "$P"
-```
-
-Quy tắc và giới hạn:
-
-* Chỉ WPA2-PSK (mạng WPA2/WPA3 hỗn hợp chạy qua phía WPA2). Không có mạng mở, WPA3-only, doanh nghiệp, 6 GHz. Hotspot điện thoại đặt
-  WPA2, 2,4 hoặc 5 GHz là mạng đầu tiên dễ nhất.
-* Đừng commit hay chia sẻ kext đã inject. `*.kext` nằm trong `.gitignore` vì lý do này.
-* Wi-Fi hiện trong System Settings → Network là **Ethernet**, không phải Wi-Fi. Đó là bình thường.
-* Sau khi cài macOS có thể dùng app **ItlWiFi** trên thanh menu để quét và kết nối thêm mạng
-  ([COMPONENTS.md](COMPONENTS.md#itlwifi-itlwifiapp-the-stop-gap-wi-fi-menu)); kết nối đầu tiên vẫn đến từ thông tin đã inject.
-* Link chạy ở tốc độ tối đa (xem [WIFI.md](WIFI.md)). Với bộ cài macOS 16 GB vẫn nên dùng bộ cài offline hoặc USB Ethernet / tethering.
+Với bộ cài macOS 16 GB vẫn nên dùng bộ cài offline hoặc USB LAN / tethering.
 
 ## 5. Boot lần đầu và cài macOS
 
@@ -213,7 +190,6 @@ Không có Xcode: dùng app và daemon build sẵn trong release ([SCRIPTS.vi.md
 xcode-select --install
 git clone https://github.com/thanhnndev/ga403wm-hackintosh && cd ga403wm-hackintosh
 bash scripts/build-rogcontrol.sh --install     # ROG Control: profile, quạt, giới hạn sạc, đèn
-bash scripts/build-itlwifi.sh    --install     # menu Wi-Fi
 bash scripts/build-tapguard.sh   --install     # chặn tap touchpad khi gõ (cần quyền Accessibility)
 ```
 
@@ -255,7 +231,7 @@ System Settings.
 | Đen màn hình sau logo | picker → *Start once without NVIDIA driver*; kiểm tra MUX = Ultimate; xem [NULLMOTH.md](NULLMOTH.md) |
 | Kernel panic lúc boot | boot với `-v`, chụp màn hình panic, bỏ kext vừa đổi gần nhất khỏi `config.plist` |
 | Phím lặp / nhả trễ | thiếu hoặc tắt `ItlXhciKick.kext` ([USB-XHCI-LAG.md](USB-XHCI-LAG.md)) |
-| Không có Wi-Fi | đã inject mật khẩu chưa? boot-args `itlmt_m1/m2/m3`? `ioreg -rc itlmt7925 -d1 \| grep wifi-` |
+| Không có Wi-Fi | xem [bảng sửa lỗi Wi-Fi](https://github.com/thanhnndev/mt7925-macos-wifi/blob/main/docs/GUIDE.vi.md#8-sửa-lỗi) |
 | Touchpad chết | từng chết một lần trên máy tham chiếu (2026-10-10) và hoạt động lại từ 2026-10-12; chưa ghi lại nguyên nhân. Thử xả hết điện (rút sạc, giữ nút nguồn 40 giây) và mở issue ([HANDOFF](HANDOFF.md)) |
 | Mất entry Linux/Windows | [DUAL-BOOT.md](DUAL-BOOT.md) |
 | Cần log | [DEBUGGING.md](DEBUGGING.md), `scripts/linux-collect-logs.sh`; che serial, MAC, SSID trước khi đăng |

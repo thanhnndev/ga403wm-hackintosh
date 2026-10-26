@@ -1,6 +1,0 @@
-# 0xffffff8002226d0e __ZN17IO80211Controller15createWorkQueueEv
-ffffff8002226d0e: push     rbp
-ffffff8002226d0f: mov      rbp, rsp
-ffffff8002226d12: xor      eax, eax
-ffffff8002226d14: pop      rbp
-ffffff8002226d15: ret      

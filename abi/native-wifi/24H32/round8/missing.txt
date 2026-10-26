@@ -1,8 +1,0 @@
-__ZN26IOSkywalkTxSubmissionQueue8initWithPool: no symbol
-__ZN25IOSkywalkNetworkInterface5start: no symbol
-__ZN25IOSkywalkNetworkInterface13registerInterface: no symbol
-__ZN25IOSkywalkNetworkInterface18initBSDInterface: no symbol
-__ZN25IOSkywalkNetworkInterface20setInterfaceFeatures: no symbol
-__ZN18IOSkywalkInterface5start: no symbol
-__ZN18IOSkywalkInterface8register: no symbol
-__ZN18IOSkywalkInterface12registerNexus: no symbol

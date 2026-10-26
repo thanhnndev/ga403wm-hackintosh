@@ -1,6 +1,0 @@
-# 0xffffff80021f6bde __Z29apple80211getASSOCIATE_RESULTP23IO80211SkywalkInterfacePv
-ffffff80021f6bde: push     rbp
-ffffff80021f6bdf: mov      rbp, rsp
-ffffff80021f6be2: mov      eax, 0xe082280e
-ffffff80021f6be7: pop      rbp
-ffffff80021f6be8: ret      

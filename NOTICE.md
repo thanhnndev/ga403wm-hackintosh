@@ -4,11 +4,11 @@ Author and maintainer of this repository: thanhnndev, <https://github.com/thanhn
 
 Everything under `kexts/`, `macos/`, `scripts/`, `test/`, `tools/`, `docs/` is licensed under the [Clear BSD License](LICENSE).
 The items below are not covered by that license, or carry attribution requirements of their own.
+The MT7925 Wi-Fi driver (with its `mt76`-derived hardware layer and the Wi-Fi firmware) moved to
+[mt7925-macos-wifi](https://github.com/thanhnndev/mt7925-macos-wifi); its notices are in that repository's `NOTICE.md`.
 
 | Item | Where | Origin | License |
 |---|---|---|---|
-| MT7925 hardware layer (register map, WFDMA ring setup, MCU/UNI command framing, firmware download sequence, TXD/RXD layouts, STA_REC/BSS_INFO TLVs) | `kexts/itlmt7925/itlmt7925_m1.cpp`, `_m2.cpp`, `_m3.cpp`, `mt7925_regs.h` | Re-implemented from the Linux `mt76` driver (`drivers/net/wireless/mediatek/mt76/mt7925`, `mt76_connac_mcu.c`, `mt792x_*.c`), Copyright (C) 2020, 2023 MediaTek Inc. | BSD-3-Clause-Clear (SPDX header of each upstream file) |
-| MT7925 firmware (`WIFI_MT7925_PATCH_MCU_1_1_hdr.bin`, `WIFI_RAM_CODE_MT7925_1_1.bin`) | `fw/`, embedded into `itlmt7925.kext` | `linux-firmware`, `mediatek/mt7925/` (see `fw/README.md` for version and SHA-256) | MediaTek firmware license, `fw/LICENCE.mediatek`. Redistribution is permitted for use with devices containing MediaTek chipsets. **These files are not under the Clear BSD License.** |
 | OpenCore patch (`patches/opencore/fix-zen5-fsb.diff`) | applied to `OcCpuLib` at build time | Patch against acidanthera/OpenCorePkg | OpenCorePkg is BSD-3-Clause; the patch is offered under the same terms as this repository |
 | Base OpenCore configuration (`efi/OC/config.plist`, `efi/OC/ACPI/*.aml`) | `efi/` | Derived from the configuration published at <https://github.com/nullmoth/1401>, adapted to this laptop | That repository is under the **PolyForm Noncommercial License 1.0.0**. `efi/` is **not** offered under the Clear BSD License; treat it as derived work with the origin's terms (noncommercial use, license notice passed on) until the author says otherwise. See `efi/README.md` |
 | NVIDIA driver for macOS (not included; `efi/OC/config.plist` carries its boot-args and SIP value) | not in this repository | <https://github.com/nullmoth/nvidia-macos-driver>, installed inside macOS | PolyForm Noncommercial 1.0.0 (its `LICENSE`); includes NVIDIA, Mesa and other third-party parts under their own licenses |

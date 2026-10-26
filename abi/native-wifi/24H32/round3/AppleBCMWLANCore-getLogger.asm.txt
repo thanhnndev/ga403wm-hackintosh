@@ -1,7 +1,0 @@
-# 0xffffff800159ce4a __ZNK16AppleBCMWLANCore9getLoggerEv
-ffffff800159ce4a: push     rbp
-ffffff800159ce4b: mov      rbp, rsp
-ffffff800159ce4e: mov      rax, qword ptr [rdi + 0x128]
-ffffff800159ce55: mov      rax, qword ptr [rax + 0x3748]
-ffffff800159ce5c: pop      rbp
-ffffff800159ce5d: ret      

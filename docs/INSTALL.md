@@ -55,8 +55,9 @@ Pick one:
   bash scripts/build.sh            # builds every kext into build/*.kext
   ```
 
-Which kexts: `itlmt7925` (Wi-Fi), `ItlXhciKick` (USB, **mandatory**), `AsusWmi`, `AmdCppc`, `MtkBtFw`, `BtLeDlFix`, optionally
-`ItlDiag`. What each does: [COMPONENTS.md](COMPONENTS.md).
+Which kexts: `ItlXhciKick` (USB, **mandatory**), `AsusWmi`, `AmdCppc`, `MtkBtFw`, `BtLeDlFix`, optionally
+`ItlDiag`. What each does: [COMPONENTS.md](COMPONENTS.md). The Wi-Fi kexts (`itlmt7925`, `itlmt7925Native`) come from
+[mt7925-macos-wifi](https://github.com/thanhnndev/mt7925-macos-wifi/releases).
 
 ### 2b. Third-party kexts
 
@@ -113,40 +114,17 @@ Do **not** run NullMoth's "1401 Build" on a config you edited by hand: it overwr
 
 ## 4. Wi-Fi: inject your network
 
-> **Two modes exist.** The default (this section) is the legacy mode of `itlmt7925.kext`: Wi-Fi appears as Ethernet and the
-> network is injected below. The optional native mode (`itlmt7925Native.kext` + boot-args `itlmt_native=1 itlmt_native_if=1
-> itlmt_native_dp=1 itlmt_fast=6`) gives a real Wi-Fi interface and needs no injection; it works but is still being tested.
-> What to set, how to check and how to go back: [WIFI-DRIVERS.md](WIFI-DRIVERS.md).
+The MT7925 Wi-Fi driver now lives in its own repository: **[mt7925-macos-wifi](https://github.com/thanhnndev/mt7925-macos-wifi)**. Get `itlmt7925.kext` (and
+`itlmt7925Native.kext` for the real Wi-Fi menu) from its [releases](https://github.com/thanhnndev/mt7925-macos-wifi/releases) and follow its
+[install guide](https://github.com/thanhnndev/mt7925-macos-wifi/blob/main/docs/GUIDE.md):
 
-In legacy mode `itlmt7925.kext` has to be told the network (native mode joins from the Wi-Fi menu instead,
-[WIFI-DRIVERS.md](WIFI-DRIVERS.md)). In legacy mode the SSID and password live in the kext's `Info.plist`, **in plain text**, and the driver
-connects by itself after boot (boot-args `itlmt_m2=1 itlmt_m3=1`). Up to **4 networks**, in priority order.
+* **Native mode** (recommended once macOS is installed): the Wi-Fi menu and System Settings join, no password in the kext.
+  Boot-args `itlmt_native=1 itlmt_native_if=1 itlmt_native_dp=1 itlmt_fast=6` ([guide §4](https://github.com/thanhnndev/mt7925-macos-wifi/blob/main/docs/GUIDE.md#4-native-mode-recommended)).
+* **Legacy mode** (the reference EFI's default, handy during the installation): Wi-Fi appears as Ethernet and the network is
+  injected into the kext's `Info.plist` ([guide §5](https://github.com/thanhnndev/mt7925-macos-wifi/blob/main/docs/GUIDE.md#5-legacy-mode-ethernet-style)). The boot-args in §3
+  are the legacy ones.
 
-**Windows (reads the profiles saved on the PC, elevated PowerShell):**
-
-```powershell
-.\scripts\inject-creds.ps1 -Kext 'E:\EFI\OC\Kexts\itlmt7925.kext' -Ssid 'HomeWifi','Phone-hotspot'
-```
-
-**macOS (PlistBuddy) or any editor:** the keys `itl_ssid`, `itl_psk`, `itl_ssid2`, `itl_psk2`, ..., `itl_ssid4`, `itl_psk4` sit in
-the `itlmt7925` personality of `itlmt7925.kext/Contents/Info.plist`:
-
-```bash
-P=itlmt7925.kext/Contents/Info.plist
-/usr/libexec/PlistBuddy -c "Set :IOKitPersonalities:itlmt7925:itl_ssid 'HomeWifi'" \
-                        -c "Set :IOKitPersonalities:itlmt7925:itl_psk  'my password'" "$P"
-```
-
-Rules and limits:
-
-* WPA2-PSK only (WPA2/WPA3 mixed networks work through the WPA2 side). No open networks, WPA3-only, enterprise or 6 GHz.
-  A phone hotspot set to WPA2, 2.4 or 5 GHz, is the easiest first network.
-* Never commit or share a kext you injected into. `*.kext` is in `.gitignore` for that reason.
-* The Wi-Fi shows up in System Settings → Network as **Ethernet**, not Wi-Fi. That is expected.
-* After macOS is installed you can use the **ItlWiFi** menu bar app to scan and join further networks
-  ([COMPONENTS.md](COMPONENTS.md#itlwifi-itlwifiapp-the-stop-gap-wi-fi-menu)); the first connection still comes from the
-  injected credentials.
-* The link runs at full speed (see [WIFI.md](WIFI.md)). For the 16 GB macOS installer prefer an offline installer or USB Ethernet / tethering anyway.
+For the 16 GB macOS installer an offline installer or USB Ethernet / tethering is still the safer choice.
 
 ## 5. First boot and installing macOS
 
@@ -220,7 +198,6 @@ Without Xcode: use the prebuilt apps and daemon from the release ([SCRIPTS.md §
 xcode-select --install
 git clone https://github.com/thanhnndev/ga403wm-hackintosh && cd ga403wm-hackintosh
 bash scripts/build-rogcontrol.sh --install     # ROG Control: profiles, fans, charge limit, lighting
-bash scripts/build-itlwifi.sh    --install     # Wi-Fi menu
 bash scripts/build-tapguard.sh   --install     # touchpad tap guard (needs Accessibility permission)
 ```
 
@@ -237,7 +214,7 @@ Check it works:
 ```bash
 sysctl debug.asuswmi.status            # profile, charge limit, MUX ... (AsusWmi)
 sysctl debug.amdcppc.freq              # clock of every CPU (AmdCppc)
-ioreg -rc itlmt7925 -d1 | grep wifi-  # Wi-Fi state, SSID, signal
+ioreg -rc itlmt7925 -d1 | grep wifi-  # Wi-Fi state, SSID, signal (driver: mt7925-macos-wifi)
 ioreg -rc MtkBtFw -l | grep -E '"bt-state"|"bt-log"'    # Bluetooth firmware loader
 /Applications/RogControl.app/Contents/MacOS/RogControl --bench 20   # runs the profiles under load
 ```
@@ -263,7 +240,7 @@ System Settings.
 | Black screen after the logo | picker → *Start once without NVIDIA driver*; confirm MUX = Ultimate; see [NULLMOTH.md](NULLMOTH.md) |
 | Kernel panic at boot | boot with `-v`, photograph the panic, remove the most recently changed kext from `config.plist` |
 | Keys repeat / release late | `ItlXhciKick.kext` missing or disabled ([USB-XHCI-LAG.md](USB-XHCI-LAG.md)) |
-| No Wi-Fi | credentials injected? `itlmt_m1/m2/m3` boot-args? `ioreg -rc itlmt7925 -d1 \| grep wifi-` |
+| No Wi-Fi | see the [Wi-Fi troubleshooting table](https://github.com/thanhnndev/mt7925-macos-wifi/blob/main/docs/GUIDE.md#8-troubleshooting) |
 | Touchpad dead | it died once on the reference unit (2026-10-10) and works again since 2026-10-12; the cause is not documented yet. Try a full power drain (unplug AC, hold the power button 40 s) and open an issue ([HANDOFF](HANDOFF.md)) |
 | Linux/Windows entry gone | [DUAL-BOOT.md](DUAL-BOOT.md) |
 | Need logs | [DEBUGGING.md](DEBUGGING.md), `scripts/linux-collect-logs.sh`; redact serials, MACs, SSIDs before posting |

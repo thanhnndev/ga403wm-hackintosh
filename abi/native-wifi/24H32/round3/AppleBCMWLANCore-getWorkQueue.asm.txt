@@ -1,7 +1,0 @@
-# 0xffffff800159203c __ZNK16AppleBCMWLANCore12getWorkQueueEv
-ffffff800159203c: push     rbp
-ffffff800159203d: mov      rbp, rsp
-ffffff8001592040: mov      rax, qword ptr [rdi + 0x128]
-ffffff8001592047: mov      rax, qword ptr [rax + 0x7898]
-ffffff800159204e: pop      rbp
-ffffff800159204f: ret      

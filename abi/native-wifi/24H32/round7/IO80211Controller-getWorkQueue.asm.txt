@@ -1,6 +1,0 @@
-# 0xffffff8002226d16 __ZNK17IO80211Controller12getWorkQueueEv
-ffffff8002226d16: push     rbp
-ffffff8002226d17: mov      rbp, rsp
-ffffff8002226d1a: xor      eax, eax
-ffffff8002226d1c: pop      rbp
-ffffff8002226d1d: ret      

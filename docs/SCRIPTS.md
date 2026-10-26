@@ -24,27 +24,26 @@ built (x86_64; the apps and the daemon are ad-hoc signed, the kexts are unsigned
 ```bash
 git clone https://github.com/thanhnndev/ga403wm-hackintosh && cd ga403wm-hackintosh
 (cd ~/Downloads && shasum -a 256 -c SHA256SUMS.txt)    # files you did not download are reported as missing; that is fine
-mkdir -p build && for z in ~/Downloads/*.kext.zip; do ditto -x -k "$z" build/; done      # build/itlmt7925.kext ...
+mkdir -p build && for z in ~/Downloads/*.kext.zip; do ditto -x -k "$z" build/; done      # build/AsusWmi.kext ...
 ditto -x -k ~/Downloads/AmdCppcPolicy.zip build/ && chmod +x build/AmdCppcPolicy
-for a in RogControl ItlWiFi TapGuard; do
+for a in RogControl TapGuard; do
   ditto -x -k ~/Downloads/$a.app.zip /Applications/
   xattr -dr com.apple.quarantine /Applications/$a.app       # ad-hoc signed, not notarised: Gatekeeper blocks it otherwise
 done
 ```
 
 Then use the same scripts as for a local build: `scripts/macos-install-kext.sh <name>` (kexts), `scripts/macos-amdcppc-policy-install.sh`
-(daemon). Wi-Fi credentials must be injected into `itlmt7925.kext` **before** installing it ([section 3](#3-wi-fi-credentials)).
-Apps unzipped into `/Applications` do not start at login by themselves: RogControl and ItlWiFi have "Open at login" in their
+(daemon). The Wi-Fi kexts come from [mt7925-macos-wifi](https://github.com/thanhnndev/mt7925-macos-wifi/releases) ([section 3](#3-wi-fi-credentials)).
+Apps unzipped into `/Applications` do not start at login by themselves: RogControl has "Open at login" in its
 settings; TapGuard only gets a login item through `scripts/build-tapguard.sh --install` from a source build.
 
 ## 2. Build and install
 
 | Script | Where | Root | What it does | Undo |
 |---|---|---|---|---|
-| `scripts/build.sh [kext...]` | 🍎 | no | builds `itlmt7925`, `ItlXhciKick`, `ItlDiag`, `AmdCppc`, `MtkBtFw`, `AsusWmi`, `BtLeDlFix` into `build/*.kext` (Xcode CLT; clones MacKernelSDK and, for `BtLeDlFix`, Lilu into `build/`) | delete `build/` |
+| `scripts/build.sh [kext...]` | 🍎 | no | builds `ItlXhciKick`, `ItlDiag`, `AmdCppc`, `MtkBtFw`, `AsusWmi`, `BtLeDlFix` into `build/*.kext` (Xcode CLT; clones MacKernelSDK and, for `BtLeDlFix`, Lilu into `build/`) | delete `build/` |
 | `scripts/macos-install-kext.sh <name>` | 🍎 | sudo (asks) | copies `build/<name>.kext` into the booted ESP's `EFI/OC/Kexts`, old one to `EFI/OC/Kexts-backup/`; keeps Wi-Fi credentials for `itlmt7925`. `config.plist` is not touched: the kext must already be listed | `--undo <name>` |
 | `scripts/build-rogcontrol.sh [--install]` | 🍎 | no | builds `RogControl.app`; `--install` copies to `/Applications` and starts it at login | quit app, delete it, `~/Library/LaunchAgents/com.itlmt7925.RogControl.plist` |
-| `scripts/build-itlwifi.sh [--install]` | 🍎 | no | same for `ItlWiFi.app` | same pattern |
 | `scripts/build-tapguard.sh [--install]` | 🍎 | no | same for `TapGuard.app` (Accessibility permission) | same pattern |
 | `scripts/build-amdcppc-policy.sh` | 🍎 | no | builds the `AmdCppcPolicy` daemon into `build/` | |
 | `scripts/macos-amdcppc-policy-install.sh [--undo]` | 🍎 | **root** (osascript / sudo) | installs `/Library/PrivilegedHelperTools/com.itlmt7925.AmdCppcPolicy` and its LaunchDaemon; keeps a backup of the old binary | `--undo` (CPPC stays enabled until reboot) |
@@ -55,15 +54,10 @@ Check after installing: `sysctl debug.asuswmi.status`, `sysctl debug.amdcppc.fre
 
 ## 3. Wi-Fi credentials
 
-There is no native Wi-Fi yet, so the SSID and password are written into the kext ([INSTALL.md §4](INSTALL.md#4-wi-fi-inject-your-network)).
-
-| Script | Where | What | Notes |
-|---|---|---|---|
-| `scripts/inject-creds.ps1 -Kext <path> [-Ssid a,b]` | 🪟 elevated PowerShell | reads the saved Wi-Fi profiles of the PC (`netsh wlan ... key=clear`) and fills `itl_ssid`/`itl_psk` (up to 4 networks) in the kext's `Info.plist` | passwords are never printed, but end up in **plain text** in the kext. Without `-Ssid` it uses the connected profile |
-| PlistBuddy one-liner | 🍎 | same keys by hand, see INSTALL.md | |
-| `ItlWiFi.app` | 🍎 | scan/join after boot; saved networks in `~/Library/Application Support/ItlWiFi/networks.json` (0600) | the first connection still needs injected credentials |
-
-To remove credentials: re-install the clean kext from the release/CI artifact (empty keys).
+The MT7925 Wi-Fi driver, `inject-creds.ps1`, `ItlWiFi.app` and the native Wi-Fi test helper moved to
+**[mt7925-macos-wifi](https://github.com/thanhnndev/mt7925-macos-wifi)**. Native mode needs no credentials in the kext; for legacy mode see its
+[guide §5](https://github.com/thanhnndev/mt7925-macos-wifi/blob/main/docs/GUIDE.md#5-legacy-mode-ethernet-style). `scripts/macos-install-kext.sh itlmt7925` and
+`scripts/linux-install-kext.sh itlmt7925` here still keep the injected credentials of the installed kext when you replace it.
 
 ## 4. HiDPI ("looks like 1440 x 900"), step by step
 

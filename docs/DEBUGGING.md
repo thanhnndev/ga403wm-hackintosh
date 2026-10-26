@@ -35,7 +35,7 @@ From macOS: `nvram -p | grep itl`. From Linux: `/sys/firmware/efi/efivars/<name>
 | `itln0`..`itln4` | ItlDiag | copy of the connect (M3) log; `itln4` = one-line result (`hs-ok tgt=1 ch=44 ...`) |
 | `itlk0`..`itlk7` | itlmt7925 | the connect log written by the kext itself, 380 characters per variable, in order |
 | `itls0` | itlmt7925 | data path counters: `up=145s rxd=5905 eapol=2 eth=5903 drop=0 tx=4698 fail=0 rxpk=8552` |
-| `itlb0`..`itlb2` | itlmt7925 | fast-mode / Block Ack log (`itlmt_fast`), see [WIFI.md](WIFI.md#reading-the-result-of-a-test); in `fast` mode `itls0` also carries `L<level> uni=.. ba=.. reo=.. txf=.. am=..`; `itlb*` also holds the `rxd`, `amsdu ok/BAD` and `fast feat` diagnostics |
+| `itlb0`..`itlb2` | itlmt7925 | fast-mode / Block Ack log (`itlmt_fast`), see [WIFI.md](https://github.com/thanhnndev/mt7925-macos-wifi/blob/main/docs/WIFI.md#reading-the-result-of-a-test); in `fast` mode `itls0` also carries `L<level> uni=.. ba=.. reo=.. txf=.. am=..`; `itlb*` also holds the `rxd`, `amsdu ok/BAD` and `fast feat` diagnostics |
 | `itlmt7925-log` | itlmt7925 | the last log line, useful for a hang |
 | `itlt0`, `itlt1` | ItlDiag | timer probe: `mach/cal/tsc` per 100 ms sleep, and the mach vs. wall-clock ratio |
 | `itli0` | ItlDiag | xHCI interrupter register state per controller |

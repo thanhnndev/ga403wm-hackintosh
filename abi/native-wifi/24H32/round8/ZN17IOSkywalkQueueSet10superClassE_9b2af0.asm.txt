@@ -1,3 +1,0 @@
-# 0xffffff80029b2af0 __ZN17IOSkywalkQueueSet10superClassE
-ffffff80029b2af0: enter    0x23ed, 1
-ffffff80029b2af4: add      byte ptr [rax], al
