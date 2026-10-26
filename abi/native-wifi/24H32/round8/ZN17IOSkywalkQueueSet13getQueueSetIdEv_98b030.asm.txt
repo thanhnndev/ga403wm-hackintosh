@@ -1,6 +1,0 @@
-# 0xffffff800298b030 __ZN17IOSkywalkQueueSet13getQueueSetIdEv
-ffffff800298b030: push     rbp
-ffffff800298b031: mov      rbp, rsp
-ffffff800298b034: mov      rax, qword ptr [rdi + 0x50]
-ffffff800298b038: pop      rbp
-ffffff800298b039: ret      

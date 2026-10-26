@@ -1,6 +1,0 @@
-# 0xffffff800298aeec __ZN17IOSkywalkQueueSet14configQueueSetEPNS_14QueueSetInfo_sE
-ffffff800298aeec: push     rbp
-ffffff800298aeed: mov      rbp, rsp
-ffffff800298aef0: xor      eax, eax
-ffffff800298aef2: pop      rbp
-ffffff800298aef3: ret      

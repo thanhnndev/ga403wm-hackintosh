@@ -18,15 +18,15 @@ git clone https://github.com/thanhnndev/ga403wm-hackintosh && cd ga403wm-hackint
 (cd ~/Downloads && shasum -a 256 -c SHA256SUMS.txt)      # file chưa tải sẽ báo thiếu, bỏ qua được
 mkdir -p build && for z in ~/Downloads/*.kext.zip; do ditto -x -k "$z" build/; done
 ditto -x -k ~/Downloads/AmdCppcPolicy.zip build/ && chmod +x build/AmdCppcPolicy
-for a in RogControl ItlWiFi TapGuard; do
+for a in RogControl TapGuard; do
   ditto -x -k ~/Downloads/$a.app.zip /Applications/
   xattr -dr com.apple.quarantine /Applications/$a.app    # ký ad-hoc, chưa notarize: không gỡ quarantine thì Gatekeeper chặn
 done
 ```
 
 Sau đó dùng đúng các script như khi tự build: `scripts/macos-install-kext.sh <tên>` cho kext, `scripts/macos-amdcppc-policy-install.sh`
-cho daemon. **Inject Wi-Fi vào `itlmt7925.kext` trước khi cài** ([INSTALL.vi.md §4](INSTALL.vi.md#4-wi-fi-inject-mạng)).
-RogControl và ItlWiFi có mục "Open at login" trong cài đặt; TapGuard chỉ có login item khi build từ nguồn bằng `scripts/build-tapguard.sh --install`.
+cho daemon. Kext Wi-Fi lấy ở [mt7925-macos-wifi](https://github.com/thanhnndev/mt7925-macos-wifi/releases) ([mục 3](#3-thông-tin-wi-fi)).
+RogControl có mục "Open at login" trong cài đặt; TapGuard chỉ có login item khi build từ nguồn bằng `scripts/build-tapguard.sh --install`.
 
 ## 2. Build và cài
 
@@ -35,20 +35,17 @@ RogControl và ItlWiFi có mục "Open at login" trong cài đặt; TapGuard ch�
 | `scripts/build.sh [kext...]` | 🍎 | không | build 7 kext vào `build/*.kext` (cần Xcode CLT) | xóa `build/` |
 | `scripts/macos-install-kext.sh <tên>` | 🍎 | sudo | chép `build/<tên>.kext` vào ESP đang boot, bản cũ vào `EFI/OC/Kexts-backup/`; giữ thông tin Wi-Fi của `itlmt7925`. Kext phải có sẵn trong `config.plist` | `--undo <tên>` |
 | `scripts/build-rogcontrol.sh [--install]` | 🍎 | không | build `RogControl.app`; `--install` chép vào `/Applications` và chạy khi đăng nhập | xóa app + LaunchAgent |
-| `scripts/build-itlwifi.sh [--install]`, `scripts/build-tapguard.sh [--install]` | 🍎 | không | tương tự cho ItlWiFi, TapGuard | tương tự |
+| `scripts/build-tapguard.sh [--install]` | 🍎 | không | tương tự cho TapGuard | tương tự |
 | `scripts/build-amdcppc-policy.sh` | 🍎 | không | build daemon `AmdCppcPolicy` | |
 | `scripts/macos-amdcppc-policy-install.sh [--undo]` | 🍎 | **root** | cài daemon vào `/Library/PrivilegedHelperTools` + LaunchDaemon | `--undo` (CPPC vẫn bật đến khi reboot) |
 | `scripts/test-rogcontrol.sh` | 🍎 | không | test giải mã đường cong quạt, không ghi phần cứng | |
 
 ## 3. Thông tin Wi-Fi
 
-| Cách | Nơi | Ghi chú |
-|---|---|---|
-| `scripts/inject-creds.ps1 -Kext <đường dẫn> [-Ssid a,b]` | 🪟 PowerShell admin | đọc profile Wi-Fi đã lưu trên PC, điền `itl_ssid*/itl_psk*` (tối đa 4 mạng). Mật khẩu nằm **chữ thường** trong kext |
-| PlistBuddy | 🍎 | xem [INSTALL.vi.md](INSTALL.vi.md#4-wi-fi-inject-mạng) |
-| `ItlWiFi.app` | 🍎 | quét/kết nối sau khi boot; kết nối đầu tiên vẫn cần thông tin đã inject |
-
-Muốn xóa mật khẩu: cài lại kext sạch từ release/CI (key để trống).
+Driver Wi-Fi MT7925, `inject-creds.ps1`, `ItlWiFi.app` và script test Wi-Fi native đã chuyển sang **[mt7925-macos-wifi](https://github.com/thanhnndev/mt7925-macos-wifi)**.
+Chế độ native không cần nhét mật khẩu vào kext; chế độ legacy xem [hướng dẫn §5](https://github.com/thanhnndev/mt7925-macos-wifi/blob/main/docs/GUIDE.vi.md#5-chế-độ-legacy-kiểu-ethernet).
+`scripts/macos-install-kext.sh itlmt7925` / `scripts/linux-install-kext.sh itlmt7925` ở repo này vẫn giữ lại thông tin Wi-Fi đã nhét
+trong kext đang cài khi thay kext mới.
 
 ## 4. HiDPI ("looks like 1440 x 900"), từng bước
 

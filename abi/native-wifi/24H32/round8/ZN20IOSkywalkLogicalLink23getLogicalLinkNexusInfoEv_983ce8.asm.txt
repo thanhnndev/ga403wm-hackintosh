@@ -1,6 +1,0 @@
-# 0xffffff8002983ce8 __ZN20IOSkywalkLogicalLink23getLogicalLinkNexusInfoEv
-ffffff8002983ce8: push     rbp
-ffffff8002983ce9: mov      rbp, rsp
-ffffff8002983cec: mov      rax, qword ptr [rdi + 0x20]
-ffffff8002983cf0: pop      rbp
-ffffff8002983cf1: ret      

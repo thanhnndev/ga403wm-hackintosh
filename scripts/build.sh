@@ -4,11 +4,12 @@
 # Builds every kext of this repo on macOS without an Xcode project. Needs the Xcode command line tools.
 # Kernel headers/libs come from acidanthera/MacKernelSDK (cloned into build/ on first use, or set MACKERNELSDK).
 #
-#   scripts/build.sh            build itlmt7925, ItlXhciKick, ItlDiag into build/*.kext
-#   scripts/build.sh itlmt7925  build only the named kext(s)
+#   scripts/build.sh            build every kext into build/*.kext
+#   scripts/build.sh AsusWmi    build only the named kext(s)
 #
-# The MediaTek firmware in fw/ is embedded into itlmt7925 with .incbin (kexts/itlmt7925/fw_blob.c), so this script must
+# The MediaTek Bluetooth firmware in fw/ is embedded into MtkBtFw with .incbin (kexts/MtkBtFw/fw_blob.c), so this script must
 # run with the repo root as working directory (it does: it cd's there).
+# The MT7925 Wi-Fi kexts (itlmt7925, itlmt7925Native) moved to https://github.com/thanhnndev/mt7925-macos-wifi.
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
@@ -55,19 +56,6 @@ build_kext() {
 want() { local n="$1"; shift; [ $# -eq 0 ] && return 0; for a in "$@"; do [ "$a" = "$n" ] && return 0; done; return 1; }
 TARGETS=("$@")
 
-# io80211check: compile-only (not part of the default set, never linked): the generated IO80211 headers must build with
-# the kext flags and keep Apple's instance sizes (static_assert).
-for t in "${TARGETS[@]+"${TARGETS[@]}"}"; do
-  if [ "$t" = io80211check ]; then
-    clang++ $COMMON $CXXFLAGS -Ikexts/itlmt7925 -fsyntax-only kexts/itlmt7925/io80211_compile_check.cpp
-    echo "io80211check: ok"
-  fi
-done
-
-want itlmt7925 "${TARGETS[@]+"${TARGETS[@]}"}" && build_kext itlmt7925 kexts/itlmt7925 \
-  kmod_info.c itlmt7925.cpp itlmt7925_m1.cpp itlmt7925_m2.cpp itlmt7925_m3.cpp itlmt7925_pwr.cpp itlmt7925_ctl.cpp itlmt7925_eth.cpp itlmt7925_ba.cpp itlmt7925_uc.cpp itl_wpa.cpp itl_caps.cpp itl_ba.cpp fw_blob.c
-# Native IO80211 front end (stage 1 controller + stage 2 interface; idle unless boot-arg itlmt_native=1, interface only with itlmt_native_if=1). Needs com.itlmt7925.kext loaded first.
-want itlmt7925Native "${TARGETS[@]+"${TARGETS[@]}"}" && build_kext itlmt7925Native kexts/itlmt7925Native kmod_info.c itlmt7925_wifi.cpp itlmt7925_iface.cpp
 want ItlXhciKick "${TARGETS[@]+"${TARGETS[@]}"}" && build_kext ItlXhciKick kexts/ItlXhciKick kmod_info.c ItlXhciKick.cpp
 want ItlDiag "${TARGETS[@]+"${TARGETS[@]}"}" && build_kext ItlDiag kexts/ItlDiag kmod_info.c ItlDiag.cpp
 want AmdCppc "${TARGETS[@]+"${TARGETS[@]}"}" && build_kext AmdCppc kexts/AmdCppc kmod_info.c AmdCppc.cpp

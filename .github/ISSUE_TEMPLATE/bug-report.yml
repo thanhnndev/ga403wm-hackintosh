@@ -5,12 +5,12 @@ body:
   - type: markdown
     attributes:
       value: |
-        Please read the warning in the README: kexts run in the kernel. Redact serials, MACs, SSIDs and passwords from anything you paste.
+        Please read the warning in the README: kexts run in the kernel. Wi-Fi (MT7925) problems go to https://github.com/thanhnndev/mt7925-macos-wifi/issues. Redact serials, MACs, SSIDs and passwords from anything you paste.
   - type: dropdown
     id: component
     attributes:
       label: Component
-      options: [itlmt7925, ItlXhciKick, AsusWmi, AmdCppc / AmdCppcPolicy, MtkBtFw, BtLeDlFix, RogControl, ItlWiFi, TapGuard, EFI / config.plist, scripts, docs, other]
+      options: [ItlXhciKick, AsusWmi, AmdCppc / AmdCppcPolicy, MtkBtFw, BtLeDlFix, RogControl, TapGuard, EFI / config.plist, scripts, docs, other]
     validations:
       required: true
   - type: input

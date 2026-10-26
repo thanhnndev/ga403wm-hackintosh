@@ -1,5 +1,5 @@
 {
-  "note": "Third-party kexts used on the reference machine (SHA-256 of the executable); they are not redistributed. itlmt7925, ItlXhciKick and ItlDiag are built from this repository.",
+  "note": "Third-party kexts used on the reference machine (SHA-256 of the executable); they are not redistributed. ItlXhciKick and ItlDiag are built from this repository; itlmt7925 comes from https://github.com/thanhnndev/mt7925-macos-wifi.",
   "kexts": [
     {
       "path": "Kexts/AMFIPass.kext",

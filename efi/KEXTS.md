@@ -11,7 +11,7 @@ VoodooI2CServices before VoodooI2C, VoodooI2CHID last.
 
 | Kext | Bundle id | Role | Needed |
 |---|---|---|---|
-| `itlmt7925.kext` | `com.itlmt7925.kext` | MT7925 Wi-Fi: firmware, scan, WPA2-PSK, Ethernet interface (`docs/WIFI.md`) | for Wi-Fi |
+| `itlmt7925.kext` (+ `itlmt7925Native.kext`) | `com.itlmt7925.kext` | MT7925 Wi-Fi, from **[mt7925-macos-wifi](https://github.com/thanhnndev/mt7925-macos-wifi/releases)** ([guide](https://github.com/thanhnndev/mt7925-macos-wifi/blob/main/docs/GUIDE.md)) | for Wi-Fi |
 | `ItlXhciKick.kext` | `com.itlmt7925.xhcikick` | services the second xHCI event ring of single-vector AMD controllers (`docs/USB-XHCI-LAG.md`) | **yes**, without it USB keyboards/mice lag ~2 s |
 | `ItlDiag.kext` | `com.itlmt7925.diag` | boot diagnostics, NVRAM digest, optional USB-stick log (`docs/DEBUGGING.md`); **disabled** in the reference config | no |
 | `AsusWmi.kext` | `com.itlmt7925.asuswmi` | ASUS WMI/EC/HID: profiles, fan curves, charge limit, keyboard light, Slash (`docs/ASUSCTL-MACOS.md`) | for RogControl |

@@ -1,6 +1,0 @@
-# 0xffffff80021f76ca __Z33apple80211getLAST_BCAST_SCAN_TIMEP23IO80211SkywalkInterfacePv
-ffffff80021f76ca: push     rbp
-ffffff80021f76cb: mov      rbp, rsp
-ffffff80021f76ce: mov      eax, 0xe082280e
-ffffff80021f76d3: pop      rbp
-ffffff80021f76d4: ret      

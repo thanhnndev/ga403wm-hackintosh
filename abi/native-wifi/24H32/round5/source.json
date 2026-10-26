@@ -1,6 +1,0 @@
-{
-  "sha256": "cd013c14a7f21dbb8181fb06c44e079de8646b6a674abe21f6e47f42e8979af3",
-  "tool": "tools/dump_native_wifi_round5.py",
-  "classes": 2,
-  "functions": 7
-}
