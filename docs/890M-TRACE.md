@@ -4181,3 +4181,31 @@ Fix (nmx-ci `ci/nmxaccel` d783aac, `plugin/NVMTLDevice.m`): WindowServer is refu
 Installed with `scripts/linux-install-nvmtl.sh` (plugin sha256 39769b66…, backup `/Library/NullMoth/nvmtl-backup-20261024T173108Z`); one
 reboot, no relink. Risk: Step70's gfx-ring hang on an app's first render job can now hit WindowServer (black screen / GPU reset). Next boot
 reads: `WindowServer: this GPU owns the display`, `vk: UP`, any `ring gfx_0.0.0 timeout`, `iop: TRACE validate/perform`, `iop: K6`.
+
+## Step72 — WindowServer still refused: "!WindowServer" reads NVIDIA's debug.nvaccelfb; 780M plugin fixes ported (2026-10-26, Linux)
+
+Boot after Step71 (84.7 s, decoded with `EXTRA_PROCS=Terminal,osascript scripts/trace-last-boot.sh 1 8`):
+
+* Pipe arms early as intended: `scanout ready after 0 attempt(s) (2880x1800 pitch 11520)` and `display pipe armed` at 10.13.
+* WindowServer 43.6 / 54.1 / 64.4 (respawned every 10 s): `WindowServer: this GPU owns the display (NMX pipe armed)` (d783aac works),
+  then `'WindowServer' is armed-only and debug.nvaccelfb reads 0 -- no device`, then ReportCrash `Failed to create MetalDevice (non-null)`.
+* Cause: `nvmtl_accel_armed()` reads `debug.nvaccelfb`. NMXAccel built with `NMX_ACCEL` registers only `debug.nmxaccel_*`
+  (`nvrm-accel.cpp` sysctl install), so beside NVIDIA's NVAccel that OID is the RTX 5060's, which is never armed in an OLED boot.
+  The 780M repo (luuumi-dev/amd-rdna3-macos-driver, now "nullarc") does register `debug.nvaccelfb` from its NMXAccel because it has no
+  NVIDIA kext; that is why the same allow-list line works there.
+* Fix nmx-ci cef446e: the armed-only check accepts `debug.nmxaccel_armed` or `debug.nvaccelfb`.
+
+The first gfx hang (boot1 82.81, `ring gfx_0.0.0 timeout seq 45/48`) re-read: `FAULT_ADDR 0`, `PFLT_STATUS 0` -- no VM fault; CP rptr
+stops on the RELEASE_MEM after the IB, i.e. the draw never retires (shader/export hang). The SQC `[gfxhub] page fault` at address 0
+(92.23) comes only after the MODE2 reset.
+
+780M reference (cbb08dd, 2026-10-21): WindowServer composites on the 780M at 120 Hz with the same NullMoth 2.4.1 plugin base plus 13
+AMD commits in `src/nmplugin`. Ported onto ours with `git am -3 -p3 --directory=plugin` (branch nmx-ci `ci/amd-plugin-port`, CI run
+40259037403 green): zero-copy IOSurface images (host import, AMD only, `NVMTL_NO_SURFACE_HOST`), host-buffer memory types, static
+sampler fallback, points/lines on AMD, lod clamps, WindowServer linear sampling (`fixed_frag_lpf_cpf` -- our first hung pipeline),
+page-aligned BOs, descriptor set layout in ascending binding order (RADV mutable lists), mipmapped CA images, surface backing keep,
+`extendedDynamicState` enabled (RADV PS epilog cache), tiled copy bounds. Skipped: 0006 (tracing only, conflicted).
+
+Installed plugin `2b8595ce...` (backup `/Library/NullMoth/nvmtl-backup-20261026T092638Z`, previous `39769b66...`); allow-list unchanged
+(`#*`, `!WindowServer`). One reboot. Fallback if the desktop hangs on the 890M: remove `nvaccel=1` from boot-args (NMXAccel does not
+start, back to the software desktop) or copy the backup plugin back.
