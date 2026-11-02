@@ -7,17 +7,19 @@ there so you can reproduce the exact setup).
 `Kernel > Add` order matters: Lilu first, then VirtualSMC, then everything that depends on them; VoodooInput/VoodooGPIO/
 VoodooI2CServices before VoodooI2C, VoodooI2CHID last.
 
-## From this repository
+## From this repository and its sibling repositories
+
+`ItlXhciKick` and `ItlDiag` are built here; `AsusWmi`, `AmdCppc`, `MtkBtFw` and `BtLeDlFix` come from the releases of the sibling repositories (links in the Role column), with the same bundle ids.
 
 | Kext | Bundle id | Role | Needed |
 |---|---|---|---|
-| `itlmt7925.kext` (+ `itlmt7925Native.kext`) | `com.itlmt7925.kext` | MT7925 Wi-Fi, from **[mt7925-macos-wifi](https://github.com/thanhnndev/mt7925-macos-wifi/releases)** ([guide](https://github.com/thanhnndev/mt7925-macos-wifi/blob/main/docs/GUIDE.md)) | for Wi-Fi |
+| `itlmt7925.kext` (+ `itlmt7925Native.kext`) | `com.itlmt7925.kext` | MT7925 Wi-Fi, from **[mt7925-macos](https://github.com/thanhnndev/mt7925-macos/releases)** ([guide](https://github.com/thanhnndev/mt7925-macos/blob/main/docs/GUIDE.md)) | for Wi-Fi |
 | `ItlXhciKick.kext` | `com.itlmt7925.xhcikick` | services the second xHCI event ring of single-vector AMD controllers (`docs/USB-XHCI-LAG.md`) | **yes**, without it USB keyboards/mice lag ~2 s |
 | `ItlDiag.kext` | `com.itlmt7925.diag` | boot diagnostics, NVRAM digest, optional USB-stick log (`docs/DEBUGGING.md`); **disabled** in the reference config | no |
-| `AsusWmi.kext` | `com.itlmt7925.asuswmi` | ASUS WMI/EC/HID: profiles, fan curves, charge limit, keyboard light, Slash (`docs/ASUSCTL-MACOS.md`) | for RogControl |
-| `AmdCppc.kext` | `com.itlmt7925.amdcppc` | Zen 5 CPPC/boost/EPP control, clocks, Tctl, RAPL (`docs/CPU-POWER.md`) | for full CPU speed |
-| `MtkBtFw.kext` | `com.itlmt7925.mtkbtfw` | loads the MT7925 Bluetooth firmware over USB (`docs/BLUETOOTH.md`) | for Bluetooth |
-| `BtLeDlFix.kext` | `com.itlmt7925.btledlfix` | Lilu plugin: BLE mice with `bluetoothd` (`docs/BLUETOOTH.md`) | experimental |
+| `AsusWmi.kext` | `com.itlmt7925.asuswmi` | ASUS WMI/EC/HID: profiles, fan curves, charge limit, keyboard light, Slash ([docs](https://github.com/thanhnndev/rog-control-macos/blob/main/docs/ASUSCTL-MACOS.md), built in [rog-control-macos](https://github.com/thanhnndev/rog-control-macos)) | for RogControl |
+| `AmdCppc.kext` | `com.itlmt7925.amdcppc` | Zen 5 CPPC/boost/EPP control, clocks, Tctl, RAPL ([docs](https://github.com/thanhnndev/rog-control-macos/blob/main/docs/CPU-POWER.md), built in [rog-control-macos](https://github.com/thanhnndev/rog-control-macos)) | for full CPU speed |
+| `MtkBtFw.kext` | `com.itlmt7925.mtkbtfw` | loads the MT7925 Bluetooth firmware over USB ([docs](https://github.com/thanhnndev/mt7925-macos/blob/main/docs/BLUETOOTH.md), built in [mt7925-macos](https://github.com/thanhnndev/mt7925-macos)) | for Bluetooth |
+| `BtLeDlFix.kext` | `com.itlmt7925.btledlfix` | Lilu plugin: BLE mice with `bluetoothd` ([docs](https://github.com/thanhnndev/mt7925-macos/blob/main/docs/BLUETOOTH.md), built in [mt7925-macos](https://github.com/thanhnndev/mt7925-macos)) | experimental |
 
 ## Third-party
 

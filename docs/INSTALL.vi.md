@@ -55,8 +55,8 @@ Chọn một:
   bash scripts/build.sh            # build mọi kext vào build/*.kext
   ```
 
-Các kext: `ItlXhciKick` (USB, **bắt buộc**), `AsusWmi`, `AmdCppc`, `MtkBtFw`, `BtLeDlFix`, tùy chọn `ItlDiag`. Kext Wi-Fi (`itlmt7925`, `itlmt7925Native`) lấy ở
-[mt7925-macos-wifi](https://github.com/thanhnndev/mt7925-macos-wifi/releases).
+Các kext: `ItlXhciKick` (USB, **bắt buộc**), tùy chọn `ItlDiag`. Kext Wi-Fi (`itlmt7925`, `itlmt7925Native`) lấy ở
+[mt7925-macos](https://github.com/thanhnndev/mt7925-macos/releases).
 Từng cái làm gì: [COMPONENTS.md](COMPONENTS.md).
 
 ### 2b. Kext bên thứ ba
@@ -113,13 +113,13 @@ Sửa `config.plist` (bằng `tools/occonfig.py`, ProperTree hoặc OpenCore Con
 
 ## 4. Wi-Fi: inject mạng
 
-Driver Wi-Fi MT7925 giờ nằm ở repo riêng: **[mt7925-macos-wifi](https://github.com/thanhnndev/mt7925-macos-wifi)**. Tải `itlmt7925.kext` (và `itlmt7925Native.kext` để có
-menu Wi-Fi thật) ở [releases](https://github.com/thanhnndev/mt7925-macos-wifi/releases) và làm theo [hướng dẫn cài](https://github.com/thanhnndev/mt7925-macos-wifi/blob/main/docs/GUIDE.vi.md):
+Driver Wi-Fi MT7925 giờ nằm ở repo riêng: **[mt7925-macos](https://github.com/thanhnndev/mt7925-macos)**. Tải `itlmt7925.kext` (và `itlmt7925Native.kext` để có
+menu Wi-Fi thật) ở [releases](https://github.com/thanhnndev/mt7925-macos/releases) và làm theo [hướng dẫn cài](https://github.com/thanhnndev/mt7925-macos/blob/main/docs/GUIDE.vi.md):
 
 * **Native** (nên dùng sau khi đã cài macOS): menu Wi-Fi, kết nối từ System Settings, không để mật khẩu trong kext. Boot-args
-  `itlmt_native=1 itlmt_native_if=1 itlmt_native_dp=1 itlmt_fast=6` ([hướng dẫn §4](https://github.com/thanhnndev/mt7925-macos-wifi/blob/main/docs/GUIDE.vi.md#4-chế-độ-native-khuyên-dùng)).
+  `itlmt_native=1 itlmt_native_if=1 itlmt_native_dp=1 itlmt_fast=6` ([hướng dẫn §4](https://github.com/thanhnndev/mt7925-macos/blob/main/docs/GUIDE.vi.md#4-chế-độ-native-khuyên-dùng)).
 * **Legacy** (mặc định của EFI tham chiếu, tiện lúc cài macOS): Wi-Fi hiện là Ethernet, mạng được nhét vào `Info.plist` của kext
-  ([hướng dẫn §5](https://github.com/thanhnndev/mt7925-macos-wifi/blob/main/docs/GUIDE.vi.md#5-chế-độ-legacy-kiểu-ethernet)). Boot-args ở §3 là của legacy.
+  ([hướng dẫn §5](https://github.com/thanhnndev/mt7925-macos/blob/main/docs/GUIDE.vi.md#5-chế-độ-legacy-kiểu-ethernet)). Boot-args ở §3 là của legacy.
 
 Với bộ cài macOS 16 GB vẫn nên dùng bộ cài offline hoặc USB LAN / tethering.
 
@@ -189,26 +189,18 @@ Không có Xcode: dùng app và daemon build sẵn trong release ([SCRIPTS.vi.md
 ```bash
 xcode-select --install
 git clone https://github.com/thanhnndev/ga403wm-hackintosh && cd ga403wm-hackintosh
-bash scripts/build-rogcontrol.sh --install     # ROG Control: profile, quạt, giới hạn sạc, đèn
 bash scripts/build-tapguard.sh   --install     # chặn tap touchpad khi gõ (cần quyền Accessibility)
 ```
 
 Mọi script, quyền root và cách hoàn tác: [SCRIPTS.vi.md](SCRIPTS.vi.md). Cài các kext khác lên ESP bằng `scripts/macos-install-kext.sh <tên>` (tự backup bản cũ và giữ thông tin Wi-Fi đã inject). Daemon
 boost CPU (cần quyền administrator):
 
-```bash
-bash scripts/build-amdcppc-policy.sh
-sudo bash scripts/macos-amdcppc-policy-install.sh        # --undo để gỡ
-```
+Daemon CPU, `AsusWmi` và RogControl: xem [rog-control-macos](https://github.com/thanhnndev/rog-control-macos#readme). Bluetooth (`MtkBtFw`, `BtLeDlFix`) ở [mt7925-macos](https://github.com/thanhnndev/mt7925-macos/releases/tag/bt-v1.0).
 
 Kiểm tra:
 
 ```bash
-sysctl debug.asuswmi.status            # profile, giới hạn sạc, MUX ... (AsusWmi)
-sysctl debug.amdcppc.freq              # xung của từng CPU (AmdCppc)
 ioreg -rc itlmt7925 -d1 | grep wifi-  # trạng thái Wi-Fi, SSID, tín hiệu
-ioreg -rc MtkBtFw -l | grep -E '"bt-state"|"bt-log"'    # nạp firmware Bluetooth
-/Applications/RogControl.app/Contents/MacOS/RogControl --bench 20   # chạy các profile dưới tải
 ```
 
 ## 8b. Tùy chọn: HiDPI ("looks like 1440 x 900")
@@ -231,7 +223,7 @@ System Settings.
 | Đen màn hình sau logo | picker → *Start once without NVIDIA driver*; kiểm tra MUX = Ultimate; xem [NULLMOTH.md](NULLMOTH.md) |
 | Kernel panic lúc boot | boot với `-v`, chụp màn hình panic, bỏ kext vừa đổi gần nhất khỏi `config.plist` |
 | Phím lặp / nhả trễ | thiếu hoặc tắt `ItlXhciKick.kext` ([USB-XHCI-LAG.md](USB-XHCI-LAG.md)) |
-| Không có Wi-Fi | xem [bảng sửa lỗi Wi-Fi](https://github.com/thanhnndev/mt7925-macos-wifi/blob/main/docs/GUIDE.vi.md#8-sửa-lỗi) |
+| Không có Wi-Fi | xem [bảng sửa lỗi Wi-Fi](https://github.com/thanhnndev/mt7925-macos/blob/main/docs/GUIDE.vi.md#8-sửa-lỗi) |
 | Touchpad chết | từng chết một lần trên máy tham chiếu (2026-10-10) và hoạt động lại từ 2026-10-12; chưa ghi lại nguyên nhân. Thử xả hết điện (rút sạc, giữ nút nguồn 40 giây) và mở issue ([HANDOFF](HANDOFF.md)) |
 | Mất entry Linux/Windows | [DUAL-BOOT.md](DUAL-BOOT.md) |
 | Cần log | [DEBUGGING.md](DEBUGGING.md), `scripts/linux-collect-logs.sh`; che serial, MAC, SSID trước khi đăng |
