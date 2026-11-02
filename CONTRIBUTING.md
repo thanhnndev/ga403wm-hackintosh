@@ -55,7 +55,7 @@ environment (Recovery or installed) you tested on, and attach the redacted `itlk
 
 ## Releasing (maintainers)
 
-1. Run the `build-kexts` workflow by hand (Actions → Run workflow) on `main` and check that kexts, apps and `AmdCppcPolicy` build.
+1. Run the `build-kexts` workflow by hand (Actions → Run workflow) on `main` and check that the kexts and the TapGuard app build.
    Run `opencore` too if the patch changed.
 2. Update [.github/release-body.md](.github/release-body.md) (known problems, what changed).
 3. `git tag v1 && git push origin v1`: the `build-kexts` workflow rebuilds everything, builds the patched OpenCore, adds the

@@ -1,8 +1,8 @@
 name: build-kexts
 
-# Builds every kext (ItlXhciKick, ItlDiag, AsusWmi, AmdCppc, MtkBtFw, BtLeDlFix).
-# The MT7925 Wi-Fi kexts and ItlWiFi.app moved to https://github.com/thanhnndev/mt7925-macos (own CI and releases).
-# Also builds the menu bar apps (RogControl, TapGuard) and the CPU policy daemon, ad-hoc signed.
+# Builds the kexts ItlXhciKick and ItlDiag and the TapGuard app, ad-hoc signed.
+# Moved out, with their own CI and releases: Wi-Fi and Bluetooth (https://github.com/thanhnndev/mt7925-macos) and the ROG
+# Control Center, AsusWmi, AmdCppc (https://github.com/thanhnndev/rog-control-macos).
 # A tag "v*" (for example v1) additionally publishes everything as a GitHub release: kexts, apps, patched OpenCore,
 # the sanitized reference EFI, SHA256SUMS.txt. See .github/release-body.md for the release text.
 # A tag "kext-v*" (for example kext-v1.1) publishes only the kexts, apps and checksums: no OpenCore build, no reference EFI
@@ -33,27 +33,18 @@ jobs:
       - name: Build kexts
         run: bash scripts/build.sh
 
-      - name: Fan-curve decoding test
-        run: bash scripts/test-rogcontrol.sh
-
-      - name: Build apps and the CPU policy daemon
+      - name: Build the app
         run: |
-          bash scripts/build-rogcontrol.sh
           bash scripts/build-tapguard.sh
-          bash scripts/build-amdcppc-policy.sh
-          file build/RogControl.app/Contents/MacOS/RogControl build/AmdCppcPolicy
+          file build/TapGuard.app/Contents/MacOS/TapGuard
 
       - name: Package
         run: |
           mkdir -p dist
-          for k in ItlXhciKick ItlDiag AsusWmi AmdCppc MtkBtFw BtLeDlFix; do
+          for k in ItlXhciKick ItlDiag; do
             ditto -c -k --keepParent "build/$k.kext" "dist/$k.kext.zip"
           done
-          for a in RogControl TapGuard; do
-            ditto -c -k --keepParent "build/$a.app" "dist/$a.app.zip"
-          done
-          zip -j -q dist/AmdCppcPolicy.zip build/AmdCppcPolicy
-          cp fw/LICENCE.mediatek dist/LICENCE.mediatek
+          ditto -c -k --keepParent build/TapGuard.app dist/TapGuard.app.zip
           cp LICENSE dist/LICENSE
           (cd dist && shasum -a 256 * > SHA256SUMS.txt && cat SHA256SUMS.txt)
 

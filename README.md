@@ -33,7 +33,7 @@ This repository holds the OpenCore EFI, the install guides and a few small fixes
 | **[strix-890m-macos](https://github.com/thanhnndev/strix-890m-macos)** | Radeon 890M research: boot-display kexts, tooling and traces. Not a finished driver |
 | this repository | `efi/` (OpenCore), install and recovery docs, `ItlXhciKick` (USB lag), `TapGuard`, `ItlDiag` |
 
-The sources of the first three are still present here until their first releases are out; development continues in the new repositories.
+Their sources were removed from this repository; history stays here, and development continues in the new repositories.
 
 ## Compatibility
 
@@ -74,10 +74,10 @@ Checked items are verified on the reference machine. Unchecked items are unrelia
 Follow **[INSTALL.md](docs/INSTALL.md)**. The main steps:
 
 1. Back up the disk. Set BIOS MUX to **Ultimate**, Above 4G Decoding **ON**, CSM **OFF**, Secure Boot **OFF**.
-2. Download the [v1 release](https://github.com/thanhnndev/ga403wm-hackintosh/releases): kexts, apps, CPU daemon, patched OpenCore, reference EFI and checksums. Or build on a Mac with `bash scripts/build.sh`. Add the [third-party kexts](efi/KEXTS.md).
+2. Download the [v1 release](https://github.com/thanhnndev/ga403wm-hackintosh/releases): `ItlXhciKick`, `ItlDiag`, TapGuard, patched OpenCore, reference EFI and checksums. Or build on a Mac with `bash scripts/build.sh`. Add the [third-party kexts](efi/KEXTS.md).
 3. Assemble the [EFI](efi/README.md), generate **your own SMBIOS**, and use the patched OpenCore (`fix-zen5-fsb.diff` fixes timers firing ~10× early).
 4. Wi-Fi: install `itlmt7925.kext` (+ `itlmt7925Native.kext` for the Wi-Fi menu) from **[mt7925-macos](https://github.com/thanhnndev/mt7925-macos/releases)** following its [guide](https://github.com/thanhnndev/mt7925-macos/blob/main/docs/GUIDE.md), or use USB tethering.
-5. Install macOS 15, then the [NVIDIA driver from the fork](docs/INSTALL.md#7-nvidia-driver-rtx-5060--the-oled), apps and CPU policy daemon. An offline installer is recommended; the 16 GB online installer is not suited to the current Wi-Fi path.
+5. Install macOS 15, then the [NVIDIA driver from the fork](docs/INSTALL.md#7-nvidia-driver-rtx-5060--the-oled), then `AsusWmi` / RogControl / the CPU daemon from [rog-control-macos](https://github.com/thanhnndev/rog-control-macos/releases) and Bluetooth from [mt7925-macos](https://github.com/thanhnndev/mt7925-macos/releases/tag/bt-v1.0). An offline installer is recommended; the 16 GB online installer is not suited to the current Wi-Fi path.
 
 Release usage, install scripts, diagnostics and HiDPI setup: **[SCRIPTS.md](docs/SCRIPTS.md)**.
 
@@ -89,17 +89,14 @@ Release usage, install scripts, diagnostics and HiDPI setup: **[SCRIPTS.md](docs
 
 Driver and app details, including `ItlDiag` boot diagnostics: **[COMPONENTS.md](docs/COMPONENTS.md)**.
 
-| RogControl | Fan curves |
-|---|---|
-| ![RogControl window](docs/images/rogcontrol-window.png) | ![Fan curves](docs/images/fan-curves.png) |
+Screenshots of the ROG Control app: [rog-control-macos](https://github.com/thanhnndev/rog-control-macos#screenshots).
 
-[Popover](docs/images/rogcontrol-popover.png) · [About This Mac](docs/images/about-this-mac.png) · [Screenshot notes](docs/images/README.md)
+[About This Mac](docs/images/about-this-mac.png) · [Screenshot notes](docs/images/README.md)
 
 ```text
 efi/                OpenCore reference config, SSDTs, third-party kext list
-kexts/              USB, ASUS controls, CPU, Bluetooth, diagnostics
-macos/              RogControl, TapGuard, AmdCppcPolicy daemon
-fw/                 MT7925 firmware from linux-firmware and its license
+kexts/              ItlXhciKick (USB lag), ItlDiag (diagnostics)
+macos/              TapGuard
 patches/opencore/   Zen 5 patch
 scripts/            Build, install, credential injection, logs, EFI export/privacy check
 tools/              Kernel-collection reader and display/CPU probes
@@ -117,6 +114,6 @@ Maintained by [thanhnndev](https://github.com/thanhnndev). GA403WM owners: use t
 
 Thanks to [NullMoth](https://github.com/nullmoth/1401) for the EFI base and NVIDIA driver, Acidanthera for OpenCore/Lilu/VirtualSMC/AppleALC, and Linux `mt76`, `btmtk`, `asus-wmi` and `asusctl` for design references. Full credits and licenses: [NOTICE.md](NOTICE.md).
 
-Code uses the [Clear BSD License](LICENSE), including reimplementations of MediaTek's Linux `mt76` (BSD-3-Clause-Clear). Firmware has [MediaTek's license](fw/LICENCE.mediatek). **The EFI derives from `nullmoth/1401` and uses PolyForm Noncommercial 1.0.0: noncommercial use only.** The OLED brightness patches are in the `ga403wm` fork and have not been upstreamed.
+Code uses the [Clear BSD License](LICENSE), including reimplementations of MediaTek's Linux `mt76` (BSD-3-Clause-Clear).  **The EFI derives from `nullmoth/1401` and uses PolyForm Noncommercial 1.0.0: noncommercial use only.** The OLED brightness patches are in the `ga403wm` fork and have not been upstreamed.
 
 Not affiliated with ASUS, Apple, NVIDIA, MediaTek, AMD or NullMoth. Trademarks belong to their owners; users are responsible for complying with Apple's macOS license terms.

@@ -24,29 +24,21 @@ built (x86_64; the apps and the daemon are ad-hoc signed, the kexts are unsigned
 ```bash
 git clone https://github.com/thanhnndev/ga403wm-hackintosh && cd ga403wm-hackintosh
 (cd ~/Downloads && shasum -a 256 -c SHA256SUMS.txt)    # files you did not download are reported as missing; that is fine
-mkdir -p build && for z in ~/Downloads/*.kext.zip; do ditto -x -k "$z" build/; done      # build/AsusWmi.kext ...
-ditto -x -k ~/Downloads/AmdCppcPolicy.zip build/ && chmod +x build/AmdCppcPolicy
-for a in RogControl TapGuard; do
-  ditto -x -k ~/Downloads/$a.app.zip /Applications/
-  xattr -dr com.apple.quarantine /Applications/$a.app       # ad-hoc signed, not notarised: Gatekeeper blocks it otherwise
-done
+mkdir -p build && for z in ~/Downloads/*.kext.zip; do ditto -x -k "$z" build/; done      # build/ItlXhciKick.kext ...
+ditto -x -k ~/Downloads/TapGuard.app.zip /Applications/
+xattr -dr com.apple.quarantine /Applications/TapGuard.app       # ad-hoc signed, not notarised: Gatekeeper blocks it otherwise
 ```
 
-Then use the same scripts as for a local build: `scripts/macos-install-kext.sh <name>` (kexts), `scripts/macos-amdcppc-policy-install.sh`
-(daemon). The Wi-Fi kexts come from [mt7925-macos](https://github.com/thanhnndev/mt7925-macos/releases) ([section 3](#3-wi-fi-credentials)).
-Apps unzipped into `/Applications` do not start at login by themselves: RogControl has "Open at login" in its
-settings; TapGuard only gets a login item through `scripts/build-tapguard.sh --install` from a source build.
+Then use the same scripts as for a local build: `scripts/macos-install-kext.sh <name>` (kexts). The Wi-Fi kexts come from [mt7925-macos](https://github.com/thanhnndev/mt7925-macos/releases) ([section 3](#3-wi-fi-credentials)).
+Apps unzipped into `/Applications` do not start at login by themselves: TapGuard only gets a login item through `scripts/build-tapguard.sh --install` from a source build.
 
 ## 2. Build and install
 
 | Script | Where | Root | What it does | Undo |
 |---|---|---|---|---|
-| `scripts/build.sh [kext...]` | 🍎 | no | builds `ItlXhciKick`, `ItlDiag`, `AmdCppc`, `MtkBtFw`, `AsusWmi`, `BtLeDlFix` into `build/*.kext` (Xcode CLT; clones MacKernelSDK and, for `BtLeDlFix`, Lilu into `build/`) | delete `build/` |
+| `scripts/build.sh [kext...]` | 🍎 | no | builds `ItlXhciKick`, `ItlDiag` into `build/*.kext` (Xcode CLT; clones MacKernelSDK and, for `BtLeDlFix`, Lilu into `build/`) | delete `build/` |
 | `scripts/macos-install-kext.sh <name>` | 🍎 | sudo (asks) | copies `build/<name>.kext` into the booted ESP's `EFI/OC/Kexts`, old one to `EFI/OC/Kexts-backup/`; keeps Wi-Fi credentials for `itlmt7925`. `config.plist` is not touched: the kext must already be listed | `--undo <name>` |
-| `scripts/build-rogcontrol.sh [--install]` | 🍎 | no | builds `RogControl.app`; `--install` copies to `/Applications` and starts it at login | quit app, delete it, `~/Library/LaunchAgents/com.itlmt7925.RogControl.plist` |
 | `scripts/build-tapguard.sh [--install]` | 🍎 | no | same for `TapGuard.app` (Accessibility permission) | same pattern |
-| `scripts/build-amdcppc-policy.sh` | 🍎 | no | builds the `AmdCppcPolicy` daemon into `build/` | |
-| `scripts/macos-amdcppc-policy-install.sh [--undo]` | 🍎 | **root** (osascript / sudo) | installs `/Library/PrivilegedHelperTools/com.itlmt7925.AmdCppcPolicy` and its LaunchDaemon; keeps a backup of the old binary | `--undo` (CPPC stays enabled until reboot) |
 | `scripts/test-rogcontrol.sh` | 🍎 | no | fan-curve decoder test with real firmware samples; never writes hardware | |
 | `scripts/linux-install-kext.sh <name>` | 🐧 | no (after `setup-linux-access.sh`) | installs a kext built on macOS into the ESP from Linux (needed while an old `ItlDiag` held the ESP open). **Author-specific paths** (`/mnt/macos-vol0`) | `--undo <name>` |
 

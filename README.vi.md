@@ -33,7 +33,7 @@ Repo này giữ EFI OpenCore, hướng dẫn cài đặt và vài bản sửa nh
 | **[strix-890m-macos](https://github.com/thanhnndev/strix-890m-macos)** | Nghiên cứu Radeon 890M: kext màn hình khởi động, công cụ và trace. Chưa phải driver hoàn chỉnh |
 | repo này | `efi/` (OpenCore), tài liệu cài và khôi phục, `ItlXhciKick` (lag USB), `TapGuard`, `ItlDiag` |
 
-Mã nguồn của ba repo đầu vẫn còn ở đây cho tới khi chúng có release đầu tiên; việc phát triển tiếp tục ở các repo mới.
+Mã nguồn của ba repo đầu đã gỡ khỏi repo này; lịch sử vẫn còn ở đây và việc phát triển tiếp tục ở các repo mới.
 
 ## Tương thích
 
@@ -74,10 +74,10 @@ Mục đã đánh dấu được kiểm chứng trên máy tham chiếu. Mục c
 Làm theo **[INSTALL.vi.md](docs/INSTALL.vi.md)**. Các bước chính:
 
 1. Backup ổ đĩa. Trong BIOS: MUX **Ultimate**, Above 4G Decoding **ON**, CSM **OFF**, Secure Boot **OFF**.
-2. Tải [release v1](https://github.com/thanhnndev/ga403wm-hackintosh/releases): kext, app, daemon CPU, OpenCore đã vá, EFI tham khảo và checksum. Hoặc build trên Mac bằng `bash scripts/build.sh`. Thêm [kext bên thứ ba](efi/KEXTS.md).
+2. Tải [release v1](https://github.com/thanhnndev/ga403wm-hackintosh/releases): `ItlXhciKick`, `ItlDiag`, TapGuard, OpenCore đã vá, EFI tham khảo và checksum. Hoặc build trên Mac bằng `bash scripts/build.sh`. Thêm [kext bên thứ ba](efi/KEXTS.md).
 3. Ghép [EFI](efi/README.md), **tự tạo SMBIOS**, dùng OpenCore đã vá (`fix-zen5-fsb.diff` sửa timer chạy sớm ~10 lần).
 4. Wi-Fi: cài `itlmt7925.kext` (+ `itlmt7925Native.kext` để có menu Wi-Fi) từ **[mt7925-macos](https://github.com/thanhnndev/mt7925-macos/releases)** theo [hướng dẫn](https://github.com/thanhnndev/mt7925-macos/blob/main/docs/GUIDE.vi.md), hoặc dùng USB tethering.
-5. Cài macOS 15, rồi cài [driver NVIDIA từ fork](docs/INSTALL.vi.md#7-driver-nvidia-rtx-5060--oled), app và daemon CPU. Nên dùng bộ cài offline; bộ cài online 16 GB không phù hợp với driver Wi-Fi hiện tại.
+5. Cài macOS 15, rồi cài [driver NVIDIA từ fork](docs/INSTALL.vi.md#7-driver-nvidia-rtx-5060--oled), rồi `AsusWmi` / RogControl / daemon CPU từ [rog-control-macos](https://github.com/thanhnndev/rog-control-macos/releases) và Bluetooth từ [mt7925-macos](https://github.com/thanhnndev/mt7925-macos/releases/tag/bt-v1.0). Nên dùng bộ cài offline; bộ cài online 16 GB không phù hợp với driver Wi-Fi hiện tại.
 
 Cách dùng release, script cài đặt, chẩn đoán và HiDPI: **[SCRIPTS.vi.md](docs/SCRIPTS.vi.md)**.
 
@@ -89,17 +89,14 @@ Cách dùng release, script cài đặt, chẩn đoán và HiDPI: **[SCRIPTS.vi.
 
 Chi tiết driver và app, gồm công cụ chẩn đoán boot `ItlDiag`: **[COMPONENTS.md](docs/COMPONENTS.md)**.
 
-| RogControl | Đường cong quạt |
-|---|---|
-| ![Cửa sổ RogControl](docs/images/rogcontrol-window.png) | ![Đường cong quạt](docs/images/fan-curves.png) |
+Ảnh chụp app ROG Control: [rog-control-macos](https://github.com/thanhnndev/rog-control-macos#ảnh-chụp).
 
-[Popover](docs/images/rogcontrol-popover.png) · [About This Mac](docs/images/about-this-mac.png) · [Ghi chú ảnh](docs/images/README.md)
+[About This Mac](docs/images/about-this-mac.png) · [Ghi chú ảnh](docs/images/README.md)
 
 ```text
 efi/                Config OpenCore tham khảo, SSDT, danh sách kext bên thứ ba
-kexts/              USB, điều khiển ASUS, CPU, Bluetooth, chẩn đoán
-macos/              RogControl, TapGuard, daemon AmdCppcPolicy
-fw/                 Firmware MT7925 từ linux-firmware và license
+kexts/              ItlXhciKick (lag USB), ItlDiag (chẩn đoán)
+macos/              TapGuard
 patches/opencore/   Bản vá Zen 5
 scripts/            Build, cài đặt, inject mạng, log, export EFI/kiểm tra riêng tư
 tools/              Đọc kernel collection, kiểm tra màn hình và CPU
@@ -117,6 +114,6 @@ Tác giả và người duy trì: [thanhnndev](https://github.com/thanhnndev). C
 
 Cảm ơn [NullMoth](https://github.com/nullmoth/1401) cho nền EFI và driver NVIDIA, Acidanthera cho OpenCore/Lilu/VirtualSMC/AppleALC, cùng Linux `mt76`, `btmtk`, `asus-wmi` và `asusctl` cho thiết kế tham khảo. Ghi công và giấy phép đầy đủ: [NOTICE.md](NOTICE.md).
 
-Mã dùng [Clear BSD License](LICENSE), gồm phần viết lại từ Linux `mt76` của MediaTek (BSD-3-Clause-Clear). Firmware dùng [license MediaTek](fw/LICENCE.mediatek). **EFI dẫn xuất từ `nullmoth/1401`, dùng PolyForm Noncommercial 1.0.0: chỉ sử dụng phi thương mại.** Bản vá độ sáng OLED nằm trong fork nhánh `ga403wm`, chưa gửi upstream.
+Mã dùng [Clear BSD License](LICENSE), gồm phần viết lại từ Linux `mt76` của MediaTek (BSD-3-Clause-Clear).  **EFI dẫn xuất từ `nullmoth/1401`, dùng PolyForm Noncommercial 1.0.0: chỉ sử dụng phi thương mại.** Bản vá độ sáng OLED nằm trong fork nhánh `ga403wm`, chưa gửi upstream.
 
 Không liên kết với ASUS, Apple, NVIDIA, MediaTek, AMD hay NullMoth. Nhãn hiệu thuộc chủ sở hữu tương ứng; người dùng tự chịu trách nhiệm tuân thủ giấy phép macOS của Apple.

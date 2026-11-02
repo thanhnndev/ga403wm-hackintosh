@@ -55,9 +55,8 @@ Pick one:
   bash scripts/build.sh            # builds every kext into build/*.kext
   ```
 
-Which kexts: `ItlXhciKick` (USB, **mandatory**), `AsusWmi`, `AmdCppc`, `MtkBtFw`, `BtLeDlFix`, optionally
-`ItlDiag`. What each does: [COMPONENTS.md](COMPONENTS.md). The Wi-Fi kexts (`itlmt7925`, `itlmt7925Native`) come from
-[mt7925-macos](https://github.com/thanhnndev/mt7925-macos/releases).
+Which kexts: `ItlXhciKick` (USB, **mandatory**), optionally `ItlDiag`. What each does: [COMPONENTS.md](COMPONENTS.md). The Wi-Fi kexts (`itlmt7925`, `itlmt7925Native`) come from
+[mt7925-macos](https://github.com/thanhnndev/mt7925-macos/releases), together with Bluetooth (`MtkBtFw`, `BtLeDlFix`, release `bt-v1.0`). `AsusWmi`, `AmdCppc` and RogControl come from [rog-control-macos](https://github.com/thanhnndev/rog-control-macos/releases).
 
 ### 2b. Third-party kexts
 
@@ -197,26 +196,16 @@ Without Xcode: use the prebuilt apps and daemon from the release ([SCRIPTS.md §
 ```bash
 xcode-select --install
 git clone https://github.com/thanhnndev/ga403wm-hackintosh && cd ga403wm-hackintosh
-bash scripts/build-rogcontrol.sh --install     # ROG Control: profiles, fans, charge limit, lighting
 bash scripts/build-tapguard.sh   --install     # touchpad tap guard (needs Accessibility permission)
 ```
 
 Every script, its root needs and its undo: [SCRIPTS.md](SCRIPTS.md). Install the other kexts to the ESP with `scripts/macos-install-kext.sh <name>` (it backs up the old one and keeps your injected
-Wi-Fi credentials). CPU boost daemon (administrator rights needed):
-
-```bash
-bash scripts/build-amdcppc-policy.sh
-sudo bash scripts/macos-amdcppc-policy-install.sh        # --undo removes it
-```
+Wi-Fi credentials). The CPU boost daemon, `AsusWmi` and RogControl: see [rog-control-macos](https://github.com/thanhnndev/rog-control-macos#readme).
 
 Check it works:
 
 ```bash
-sysctl debug.asuswmi.status            # profile, charge limit, MUX ... (AsusWmi)
-sysctl debug.amdcppc.freq              # clock of every CPU (AmdCppc)
 ioreg -rc itlmt7925 -d1 | grep wifi-  # Wi-Fi state, SSID, signal (driver: mt7925-macos)
-ioreg -rc MtkBtFw -l | grep -E '"bt-state"|"bt-log"'    # Bluetooth firmware loader
-/Applications/RogControl.app/Contents/MacOS/RogControl --bench 20   # runs the profiles under load
 ```
 
 ## 8b. Optional: HiDPI ("looks like 1440 x 900")

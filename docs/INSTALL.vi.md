@@ -55,7 +55,7 @@ Chọn một:
   bash scripts/build.sh            # build mọi kext vào build/*.kext
   ```
 
-Các kext: `ItlXhciKick` (USB, **bắt buộc**), `AsusWmi`, `AmdCppc`, `MtkBtFw`, `BtLeDlFix`, tùy chọn `ItlDiag`. Kext Wi-Fi (`itlmt7925`, `itlmt7925Native`) lấy ở
+Các kext: `ItlXhciKick` (USB, **bắt buộc**), tùy chọn `ItlDiag`. Kext Wi-Fi (`itlmt7925`, `itlmt7925Native`) lấy ở
 [mt7925-macos](https://github.com/thanhnndev/mt7925-macos/releases).
 Từng cái làm gì: [COMPONENTS.md](COMPONENTS.md).
 
@@ -189,26 +189,18 @@ Không có Xcode: dùng app và daemon build sẵn trong release ([SCRIPTS.vi.md
 ```bash
 xcode-select --install
 git clone https://github.com/thanhnndev/ga403wm-hackintosh && cd ga403wm-hackintosh
-bash scripts/build-rogcontrol.sh --install     # ROG Control: profile, quạt, giới hạn sạc, đèn
 bash scripts/build-tapguard.sh   --install     # chặn tap touchpad khi gõ (cần quyền Accessibility)
 ```
 
 Mọi script, quyền root và cách hoàn tác: [SCRIPTS.vi.md](SCRIPTS.vi.md). Cài các kext khác lên ESP bằng `scripts/macos-install-kext.sh <tên>` (tự backup bản cũ và giữ thông tin Wi-Fi đã inject). Daemon
 boost CPU (cần quyền administrator):
 
-```bash
-bash scripts/build-amdcppc-policy.sh
-sudo bash scripts/macos-amdcppc-policy-install.sh        # --undo để gỡ
-```
+Daemon CPU, `AsusWmi` và RogControl: xem [rog-control-macos](https://github.com/thanhnndev/rog-control-macos#readme). Bluetooth (`MtkBtFw`, `BtLeDlFix`) ở [mt7925-macos](https://github.com/thanhnndev/mt7925-macos/releases/tag/bt-v1.0).
 
 Kiểm tra:
 
 ```bash
-sysctl debug.asuswmi.status            # profile, giới hạn sạc, MUX ... (AsusWmi)
-sysctl debug.amdcppc.freq              # xung của từng CPU (AmdCppc)
 ioreg -rc itlmt7925 -d1 | grep wifi-  # trạng thái Wi-Fi, SSID, tín hiệu
-ioreg -rc MtkBtFw -l | grep -E '"bt-state"|"bt-log"'    # nạp firmware Bluetooth
-/Applications/RogControl.app/Contents/MacOS/RogControl --bench 20   # chạy các profile dưới tải
 ```
 
 ## 8b. Tùy chọn: HiDPI ("looks like 1440 x 900")
