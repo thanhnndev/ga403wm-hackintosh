@@ -4383,3 +4383,44 @@ Backup: /Library/NullMoth/nmx-rcu-20261102T170256Z (NMXGPU, AuxKC). The relink i
 
 Source fix for the mini build: in linux_rcu.c, store the record in the task at lock time (or use a single record with a lock), not
 `DPCPU_GET` at unlock.
+
+## Step78 — panic 40 s after login: preemption_level -1 in WindowServer (mutex unlocked while free)
+
+Boot AF86A8DB (2026-11-03): Step77 worked. The password was accepted, loginwindow switched to the session at 49.4 s, then the
+whole log stopped at 52.7 s. Nothing from the Mac's logs named the cause. The panic report is in NVRAM (`AAPL,PanicInfo000*`, readable
+from Linux in efivars: skip the 4-byte attribute header, then unpack the 7-bit LSB-first stream):
+
+```
+panic: thread_invoke: preemption_level -1, possible cause: unlocking an unlocked mutex or spinlock
+process: WindowServer (pid 1083), uptime 88 s
+  lck_mtx_lock_slow -> thread_block
+  IOMemoryDescriptor::createMappingInTask
+  nmx_xnu_map_pages <- vmap <- ttm_bo_kmap <- amdgpu_bo_kmap
+  amdgpu_cs_patch_jobs+0x345 (b15 nmx_cs_prepare_ibs, kmaps every GFX IB) <- amdgpu_cs_ioctl
+```
+
+The stack only shows where the damage was detected. On x86 xnu, `lck_mtx_unlock` of a mutex that is not held is handled as the
+release of a mutex held in spin mode, so it calls `enable_preemption`. The preemption level drops to -1, and the next `thread_block`
+on that thread panics. Here that is a kmap blocking on a VM mutex. The same panic was seen once before (Step65, Spotlight, 10-23),
+so it is a latent xkpi bug and the RCU patch did not introduce it. More GPU work after login makes it frequent.
+
+xkpi's FreeBSD `struct mtx` records the owner (`+0x20`, set only by `nmx_mtx_lock`/`trylock`, also on the release/reacquire paths
+of `nmx_lock.c`). So `nmx_mtx_unlock` with no owner is always a bogus unlock.
+
+Guard (NMXGPU, binary): `nmx_mtx_unlock` (0x6d8850) jumps to a copy of itself in `dce_v6_0_crtc_disable` (0x156ef0, SI display
+only, never runs on the 890M; `scripts/nmx-mtxguard/cave.s`). The copy reuses the original `lck_spin_unlock`,
+`ml_set_interrupts_enabled` and `lck_mtx_unlock` call sites, so no relocation moves. An unlock with no owner does not touch the
+xnu lock and prints, through the tail `jmp printf` in `atom_op_beep`:
+
+    NullMoth xkpi: unlock of unlocked mutex <name> (<mtx>) from <caller>
+
+`pkexec scripts/linux-patch-nmx-mtxguard.sh`:
+
+| kext | before | after |
+|---|---|---|
+| NMXGPU | 02a336b4… | 9ea37786… |
+
+Backup: /Library/NullMoth/nmx-mtxguard-20261102T174508Z. The relink is armed.
+
+Next boot: grep the log for `unlock of unlocked mutex`. The caller address names the code with the unbalanced unlock, which then
+gets a proper fix. Not covered: unbalanced `lck_spin_unlock`/`IOLockUnlock` outside the xkpi mutex.
