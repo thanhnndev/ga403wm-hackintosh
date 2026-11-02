@@ -5,7 +5,7 @@ body:
   - type: markdown
     attributes:
       value: |
-        Please read the warning in the README: kexts run in the kernel. Wi-Fi (MT7925) problems go to https://github.com/thanhnndev/mt7925-macos-wifi/issues. Redact serials, MACs, SSIDs and passwords from anything you paste.
+        Please read the warning in the README: kexts run in the kernel. Wi-Fi (MT7925) problems go to https://github.com/thanhnndev/mt7925-macos/issues. Redact serials, MACs, SSIDs and passwords from anything you paste.
   - type: dropdown
     id: component
     attributes:

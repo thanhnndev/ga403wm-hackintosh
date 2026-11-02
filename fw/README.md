@@ -7,7 +7,7 @@ directory `mediatek/mt7925/`, unchanged. It is compiled into `MtkBtFw.kext` (`ke
 |---|---|---|
 | `BT_RAM_CODE_MT7925_1_1_hdr.bin` | 20260813113236 | `be7c18e37221e277baaef853be3a0ba930138ee879f336ff7b185e79ab09a5c9` |
 
-The Wi-Fi firmware moved with the Wi-Fi driver to [mt7925-macos-wifi](https://github.com/thanhnndev/mt7925-macos-wifi).
+The Wi-Fi firmware moved with the Wi-Fi driver to [mt7925-macos](https://github.com/thanhnndev/mt7925-macos).
 
 License: [`LICENCE.mediatek`](LICENCE.mediatek) (copied verbatim from `LICENSES/LICENCE.mediatek` of linux-firmware). It permits
 redistribution for use with devices containing MediaTek chipsets, provided the files are not combined into something that

@@ -5,7 +5,7 @@ Author and maintainer of this repository: thanhnndev, <https://github.com/thanhn
 Everything under `kexts/`, `macos/`, `scripts/`, `test/`, `tools/`, `docs/` is licensed under the [Clear BSD License](LICENSE).
 The items below are not covered by that license, or carry attribution requirements of their own.
 The MT7925 Wi-Fi driver (with its `mt76`-derived hardware layer and the Wi-Fi firmware) moved to
-[mt7925-macos-wifi](https://github.com/thanhnndev/mt7925-macos-wifi); its notices are in that repository's `NOTICE.md`.
+[mt7925-macos](https://github.com/thanhnndev/mt7925-macos); its notices are in that repository's `NOTICE.md`.
 
 | Item | Where | Origin | License |
 |---|---|---|---|

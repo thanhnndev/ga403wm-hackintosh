@@ -14,7 +14,7 @@ Kexts run in the kernel.
 
 | Kext | Version | State | What it does today | Boot-args / knobs | Doc |
 |---|---|---|---|---|---|
-| **itlmt7925**, **itlmt7925Native** | - | ✅ | MT7925 Wi-Fi (legacy Ethernet mode + native Wi-Fi front end): **moved to [mt7925-macos-wifi](https://github.com/thanhnndev/mt7925-macos-wifi)** with its own guide, roadmap and releases |
+| **itlmt7925**, **itlmt7925Native** | - | ✅ | MT7925 Wi-Fi (legacy Ethernet mode + native Wi-Fi front end): **moved to [mt7925-macos](https://github.com/thanhnndev/mt7925-macos)** with its own guide, roadmap and releases |
 | **ItlXhciKick** | 0.1.0 | ✅ | Services the second xHCI event ring of single-vector AMD controllers every 1 ms. Fixes USB keyboards/mice releasing keys ~2 s late. Nothing is patched or written | `itlkick=0` off, `itlkick=<us>` period | [USB-XHCI-LAG.md](USB-XHCI-LAG.md) |
 | **AsusWmi** | 0.1.0 | ✅ | ASUS ATKD/WMI from the kernel (Linux `asus-wmi` calling convention): performance profile (Silent/Performance/Turbo), PPT limits SPL/SPPT/FPPT (AC/battery ranges for the GA403WM), fan curves read/write, fan RPM, battery charge limit, GPU MUX state (read only), battery EC readout fix, panel brightness query, **keyboard backlight** and **Slash lighting** (HID reports sent from the kernel), hotkeys through `_WED` (Fn+F2/F3/F4/F5). Registry/sysctl interface `debug.asuswmi.*` for the RogControl app | `sysctl debug.asuswmi.status` | [ASUSCTL-MACOS.md](ASUSCTL-MACOS.md) |
 | **AmdCppc** | 0.2.1 | ✅ | CPU performance control for Zen 5 (macOS has none): reads/changes CPPC, boost, EPP on all 24 CPUs; per-CPU effective clock (APERF/MPERF), Tctl and RAPL package power for RogControl; PAT diagnostics. Writes only through root sysctls | `sysctl debug.amdcppc.*` | [CPU-POWER.md](CPU-POWER.md) |
@@ -50,7 +50,7 @@ boost / temperature target / TGP writes, panel overdrive (not in this BIOS), per
 
 ### ItlWiFi (`ItlWiFi.app`)
 
-Moved to [mt7925-macos-wifi](https://github.com/thanhnndev/mt7925-macos-wifi) together with the Wi-Fi driver.
+Moved to [mt7925-macos](https://github.com/thanhnndev/mt7925-macos) together with the Wi-Fi driver.
 
 ### TapGuard (`TapGuard.app`)
 

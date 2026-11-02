@@ -57,7 +57,7 @@ Pick one:
 
 Which kexts: `ItlXhciKick` (USB, **mandatory**), `AsusWmi`, `AmdCppc`, `MtkBtFw`, `BtLeDlFix`, optionally
 `ItlDiag`. What each does: [COMPONENTS.md](COMPONENTS.md). The Wi-Fi kexts (`itlmt7925`, `itlmt7925Native`) come from
-[mt7925-macos-wifi](https://github.com/thanhnndev/mt7925-macos-wifi/releases).
+[mt7925-macos](https://github.com/thanhnndev/mt7925-macos/releases).
 
 ### 2b. Third-party kexts
 
@@ -114,14 +114,14 @@ Do **not** run NullMoth's "1401 Build" on a config you edited by hand: it overwr
 
 ## 4. Wi-Fi: inject your network
 
-The MT7925 Wi-Fi driver now lives in its own repository: **[mt7925-macos-wifi](https://github.com/thanhnndev/mt7925-macos-wifi)**. Get `itlmt7925.kext` (and
-`itlmt7925Native.kext` for the real Wi-Fi menu) from its [releases](https://github.com/thanhnndev/mt7925-macos-wifi/releases) and follow its
-[install guide](https://github.com/thanhnndev/mt7925-macos-wifi/blob/main/docs/GUIDE.md):
+The MT7925 Wi-Fi driver now lives in its own repository: **[mt7925-macos](https://github.com/thanhnndev/mt7925-macos)**. Get `itlmt7925.kext` (and
+`itlmt7925Native.kext` for the real Wi-Fi menu) from its [releases](https://github.com/thanhnndev/mt7925-macos/releases) and follow its
+[install guide](https://github.com/thanhnndev/mt7925-macos/blob/main/docs/GUIDE.md):
 
 * **Native mode** (recommended once macOS is installed): the Wi-Fi menu and System Settings join, no password in the kext.
-  Boot-args `itlmt_native=1 itlmt_native_if=1 itlmt_native_dp=1 itlmt_fast=6` ([guide §4](https://github.com/thanhnndev/mt7925-macos-wifi/blob/main/docs/GUIDE.md#4-native-mode-recommended)).
+  Boot-args `itlmt_native=1 itlmt_native_if=1 itlmt_native_dp=1 itlmt_fast=6` ([guide §4](https://github.com/thanhnndev/mt7925-macos/blob/main/docs/GUIDE.md#4-native-mode-recommended)).
 * **Legacy mode** (the reference EFI's default, handy during the installation): Wi-Fi appears as Ethernet and the network is
-  injected into the kext's `Info.plist` ([guide §5](https://github.com/thanhnndev/mt7925-macos-wifi/blob/main/docs/GUIDE.md#5-legacy-mode-ethernet-style)). The boot-args in §3
+  injected into the kext's `Info.plist` ([guide §5](https://github.com/thanhnndev/mt7925-macos/blob/main/docs/GUIDE.md#5-legacy-mode-ethernet-style)). The boot-args in §3
   are the legacy ones.
 
 For the 16 GB macOS installer an offline installer or USB Ethernet / tethering is still the safer choice.
@@ -214,7 +214,7 @@ Check it works:
 ```bash
 sysctl debug.asuswmi.status            # profile, charge limit, MUX ... (AsusWmi)
 sysctl debug.amdcppc.freq              # clock of every CPU (AmdCppc)
-ioreg -rc itlmt7925 -d1 | grep wifi-  # Wi-Fi state, SSID, signal (driver: mt7925-macos-wifi)
+ioreg -rc itlmt7925 -d1 | grep wifi-  # Wi-Fi state, SSID, signal (driver: mt7925-macos)
 ioreg -rc MtkBtFw -l | grep -E '"bt-state"|"bt-log"'    # Bluetooth firmware loader
 /Applications/RogControl.app/Contents/MacOS/RogControl --bench 20   # runs the profiles under load
 ```
@@ -240,7 +240,7 @@ System Settings.
 | Black screen after the logo | picker → *Start once without NVIDIA driver*; confirm MUX = Ultimate; see [NULLMOTH.md](NULLMOTH.md) |
 | Kernel panic at boot | boot with `-v`, photograph the panic, remove the most recently changed kext from `config.plist` |
 | Keys repeat / release late | `ItlXhciKick.kext` missing or disabled ([USB-XHCI-LAG.md](USB-XHCI-LAG.md)) |
-| No Wi-Fi | see the [Wi-Fi troubleshooting table](https://github.com/thanhnndev/mt7925-macos-wifi/blob/main/docs/GUIDE.md#8-troubleshooting) |
+| No Wi-Fi | see the [Wi-Fi troubleshooting table](https://github.com/thanhnndev/mt7925-macos/blob/main/docs/GUIDE.md#8-troubleshooting) |
 | Touchpad dead | it died once on the reference unit (2026-10-10) and works again since 2026-10-12; the cause is not documented yet. Try a full power drain (unplug AC, hold the power button 40 s) and open an issue ([HANDOFF](HANDOFF.md)) |
 | Linux/Windows entry gone | [DUAL-BOOT.md](DUAL-BOOT.md) |
 | Need logs | [DEBUGGING.md](DEBUGGING.md), `scripts/linux-collect-logs.sh`; redact serials, MACs, SSIDs before posting |

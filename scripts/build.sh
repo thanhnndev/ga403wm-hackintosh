@@ -9,7 +9,7 @@
 #
 # The MediaTek Bluetooth firmware in fw/ is embedded into MtkBtFw with .incbin (kexts/MtkBtFw/fw_blob.c), so this script must
 # run with the repo root as working directory (it does: it cd's there).
-# The MT7925 Wi-Fi kexts (itlmt7925, itlmt7925Native) moved to https://github.com/thanhnndev/mt7925-macos-wifi.
+# The MT7925 Wi-Fi kexts (itlmt7925, itlmt7925Native) moved to https://github.com/thanhnndev/mt7925-macos.
 set -euo pipefail
 cd "$(dirname "$0")/.."
 

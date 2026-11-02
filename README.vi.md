@@ -16,11 +16,24 @@ Repo để trống `itl_ssid*/itl_psk*` và dùng SMBIOS giữ chỗ `CHANGE_ME_
 macOS Sequoia trên **ASUS ROG Zephyrus G14 (2025)** — Ryzen AI 9 HX 370 + RTX 5060 Laptop.
 EFI OpenCore, driver và tiện ích dành cho máy này.
 
-[English](README.md) · [Cài đặt](docs/INSTALL.vi.md) · [**Driver Wi-Fi MT7925**](https://github.com/thanhnndev/mt7925-macos-wifi) · [Release](https://github.com/thanhnndev/ga403wm-hackintosh/releases) · [Roadmap](docs/ROADMAP.md)
+[English](README.md) · [Cài đặt](docs/INSTALL.vi.md) · [**Driver Wi-Fi MT7925**](https://github.com/thanhnndev/mt7925-macos) · [Release](https://github.com/thanhnndev/ga403wm-hackintosh/releases) · [Roadmap](docs/ROADMAP.md)
 
 <p align="center">
   <img src="docs/images/hero.jpg" alt="RogControl và About This Mac trên GA403WM" width="720">
 </p>
+
+## Các repo
+
+Repo này giữ EFI OpenCore, hướng dẫn cài đặt và vài bản sửa nhỏ. Các phần lớn nằm ở repo riêng:
+
+| Repo | Nội dung |
+|---|---|
+| **[mt7925-macos](https://github.com/thanhnndev/mt7925-macos)** | Wi-Fi MediaTek MT7925 (menu Wi-Fi native, chế độ Ethernet cũ, việc AWDL) và Bluetooth (`MtkBtFw`, `BtLeDlFix`) |
+| **[rog-control-macos](https://github.com/thanhnndev/rog-control-macos)** | ROG Control Center: kext `AsusWmi` và `AmdCppc`, app thanh menu RogControl, daemon chính sách CPU |
+| **[strix-890m-macos](https://github.com/thanhnndev/strix-890m-macos)** | Nghiên cứu Radeon 890M: kext màn hình khởi động, công cụ và trace. Chưa phải driver hoàn chỉnh |
+| repo này | `efi/` (OpenCore), tài liệu cài và khôi phục, `ItlXhciKick` (lag USB), `TapGuard`, `ItlDiag` |
+
+Mã nguồn của ba repo đầu vẫn còn ở đây cho tới khi chúng có release đầu tiên; việc phát triển tiếp tục ở các repo mới.
 
 ## Tương thích
 
@@ -29,7 +42,7 @@ EFI OpenCore, driver và tiện ích dành cho máy này.
 | Yêu cầu | Chi tiết |
 |---|---|
 | macOS | Chỉ **15 Sequoia**. Phát triển trên 15.6.1; đang dùng hằng ngày trên **15.8.1 (24H32)** |
-| Chế độ GPU | **Ultimate / MUX chỉ dùng dGPU**. Radeon 890M không có driver và bị ẩn khỏi macOS |
+| Chế độ GPU | **Ultimate / MUX chỉ dùng dGPU**. Radeon 890M không có driver và bị ẩn khỏi macOS (nghiên cứu: [strix-890m-macos](https://github.com/thanhnndev/strix-890m-macos)) |
 | Driver đồ họa | NullMoth **1.14.2** với hai bản vá riêng; dùng [fork GA403WM](https://github.com/thanhnndev/nvidia-macos-driver/tree/ga403wm) để có độ sáng OLED |
 | Bootloader | OpenCore **1.0.9** với bản vá timer Zen 5 |
 
@@ -45,13 +58,13 @@ Mục đã đánh dấu được kiểm chứng trên máy tham chiếu. Mục c
 - [x] **Độ sáng OLED / HiDPI:** Thanh trượt hệ thống và phím độ sáng điều khiển panel qua `NVRMEdpBL`. HiDPI **2×**, “looks like 1440 × 900”; không hỗ trợ tỉ lệ lẻ. [Độ sáng](docs/OLED-BRIGHTNESS-DPCD.md) · [Cài HiDPI](docs/SCRIPTS.vi.md#4-hidpi-looks-like-1440-x-900-từng-bước)
 - [x] **Phím, chuột USB, webcam:** `ItlXhciKick` sửa lỗi nhả phím trễ 2 giây. USB map đã test sẽ đi kèm EFI chuẩn. [USB](docs/USB-XHCI-LAG.md)
 - [x] **Touchpad:** I2C `093a:3011`; sửa xong ngày 2026-10-12. [Ghi chép test](docs/HANDOFF.md)
-- [x] **Wi-Fi MT7925:** đã tách sang repo riêng **[mt7925-macos-wifi](https://github.com/thanhnndev/mt7925-macos-wifi)**: Wi-Fi native (menu Wi-Fi, kết nối từ System Settings) trên macOS 15 và 26, chế độ legacy kiểu Ethernet, hướng dẫn, roadmap và release. [Hướng dẫn cài](https://github.com/thanhnndev/mt7925-macos-wifi/blob/main/docs/GUIDE.vi.md)
-- [x] **Bluetooth MT7925:** Tai nghe classic và chuột BLE qua `MtkBtFw` + `BtLeDlFix`. [Bluetooth](docs/BLUETOOTH.md)
-- [x] **Điều khiển ROG / đèn:** Profile, quạt, giới hạn sạc, đèn bàn phím và Slash qua `AsusWmi` + RogControl. [Điều khiển ROG](docs/ASUSCTL-MACOS.md)
+- [x] **Wi-Fi MT7925:** đã tách sang repo riêng **[mt7925-macos](https://github.com/thanhnndev/mt7925-macos)**: Wi-Fi native (menu Wi-Fi, kết nối từ System Settings) trên macOS 15 và 26, chế độ legacy kiểu Ethernet, hướng dẫn, roadmap và release. [Hướng dẫn cài](https://github.com/thanhnndev/mt7925-macos/blob/main/docs/GUIDE.vi.md)
+- [x] **Bluetooth MT7925:** Tai nghe classic và chuột BLE qua `MtkBtFw` + `BtLeDlFix`, nay ở **[mt7925-macos](https://github.com/thanhnndev/mt7925-macos/blob/main/docs/BLUETOOTH.md)** ([release bt-v1.0](https://github.com/thanhnndev/mt7925-macos/releases/tag/bt-v1.0)).
+- [x] **Điều khiển ROG / đèn:** Profile, quạt, giới hạn sạc, đèn bàn phím và Slash qua `AsusWmi` + RogControl, nay ở **[rog-control-macos](https://github.com/thanhnndev/rog-control-macos)**.
 - [ ] **Sleep / wake:** Chưa có deep sleep ổn định; wake chậm và thiếu ổn định. Chu kỳ hoàn tất khôi phục được chính sách CPU. Đừng trông cậy vào sleep hay đóng nắp.
 - [ ] **Các phím Fn khác:** Độ sáng và đèn bàn phím hoạt động; phần lớn phím còn lại chưa map.
 - [ ] **Âm thanh / đầu đọc SD / % pin:** EFI có AppleALC layout 33, Sinetek-rtsx và SMCBatteryManager; chưa kiểm chứng hoạt động.
-- [ ] **AirDrop / AWDL / Continuity:** chưa chạy; đang làm ở [mt7925-macos-wifi](https://github.com/thanhnndev/mt7925-macos-wifi/blob/main/docs/ROADMAP-AWDL.md) (nhánh `dev/awdl`)
+- [ ] **AirDrop / AWDL / Continuity:** chưa chạy; đang làm ở [mt7925-macos](https://github.com/thanhnndev/mt7925-macos/blob/main/docs/ROADMAP-AWDL.md) (nhánh `dev/awdl`)
 
 
 ## Cài đặt
@@ -63,15 +76,15 @@ Làm theo **[INSTALL.vi.md](docs/INSTALL.vi.md)**. Các bước chính:
 1. Backup ổ đĩa. Trong BIOS: MUX **Ultimate**, Above 4G Decoding **ON**, CSM **OFF**, Secure Boot **OFF**.
 2. Tải [release v1](https://github.com/thanhnndev/ga403wm-hackintosh/releases): kext, app, daemon CPU, OpenCore đã vá, EFI tham khảo và checksum. Hoặc build trên Mac bằng `bash scripts/build.sh`. Thêm [kext bên thứ ba](efi/KEXTS.md).
 3. Ghép [EFI](efi/README.md), **tự tạo SMBIOS**, dùng OpenCore đã vá (`fix-zen5-fsb.diff` sửa timer chạy sớm ~10 lần).
-4. Wi-Fi: cài `itlmt7925.kext` (+ `itlmt7925Native.kext` để có menu Wi-Fi) từ **[mt7925-macos-wifi](https://github.com/thanhnndev/mt7925-macos-wifi/releases)** theo [hướng dẫn](https://github.com/thanhnndev/mt7925-macos-wifi/blob/main/docs/GUIDE.vi.md), hoặc dùng USB tethering.
+4. Wi-Fi: cài `itlmt7925.kext` (+ `itlmt7925Native.kext` để có menu Wi-Fi) từ **[mt7925-macos](https://github.com/thanhnndev/mt7925-macos/releases)** theo [hướng dẫn](https://github.com/thanhnndev/mt7925-macos/blob/main/docs/GUIDE.vi.md), hoặc dùng USB tethering.
 5. Cài macOS 15, rồi cài [driver NVIDIA từ fork](docs/INSTALL.vi.md#7-driver-nvidia-rtx-5060--oled), app và daemon CPU. Nên dùng bộ cài offline; bộ cài online 16 GB không phù hợp với driver Wi-Fi hiện tại.
 
 Cách dùng release, script cài đặt, chẩn đoán và HiDPI: **[SCRIPTS.vi.md](docs/SCRIPTS.vi.md)**.
 
 ## Tiện ích và mã nguồn
 
-- **RogControl:** thanh menu và cửa sổ cho profile Silent / Performance / Turbo / Manual, giới hạn SPL/SPPT/FPPT, nhiệt độ/công suất CPU, tốc độ và đường cong quạt firmware, giới hạn sạc 60/80/100%, đèn bàn phím và Slash. Cài đặt AC/pin riêng, áp lại khi đăng nhập hoặc đổi nguồn; đèn áp lại sau wake. Turbo tắt khi dùng pin. MUX chỉ đọc; chưa có Aura từng phím hay overdrive panel. Có `--bench`.
-- **ItlWiFi** (app thanh menu cho chế độ Wi-Fi kiểu Ethernet) đã chuyển sang [mt7925-macos-wifi](https://github.com/thanhnndev/mt7925-macos-wifi).
+- **RogControl** (nay phát triển ở [rog-control-macos](https://github.com/thanhnndev/rog-control-macos)): thanh menu và cửa sổ cho profile Silent / Performance / Turbo / Manual, giới hạn SPL/SPPT/FPPT, nhiệt độ/công suất CPU, tốc độ và đường cong quạt firmware, giới hạn sạc 60/80/100%, đèn bàn phím và Slash. Cài đặt AC/pin riêng, áp lại khi đăng nhập hoặc đổi nguồn; đèn áp lại sau wake. Turbo tắt khi dùng pin. MUX chỉ đọc; chưa có Aura từng phím hay overdrive panel. Có `--bench`.
+- **ItlWiFi** (app thanh menu cho chế độ Wi-Fi kiểu Ethernet) đã chuyển sang [mt7925-macos](https://github.com/thanhnndev/mt7925-macos).
 - **TapGuard:** bỏ qua tap touchpad khi đang gõ.
 
 Chi tiết driver và app, gồm công cụ chẩn đoán boot `ItlDiag`: **[COMPONENTS.md](docs/COMPONENTS.md)**.

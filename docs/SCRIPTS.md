@@ -33,7 +33,7 @@ done
 ```
 
 Then use the same scripts as for a local build: `scripts/macos-install-kext.sh <name>` (kexts), `scripts/macos-amdcppc-policy-install.sh`
-(daemon). The Wi-Fi kexts come from [mt7925-macos-wifi](https://github.com/thanhnndev/mt7925-macos-wifi/releases) ([section 3](#3-wi-fi-credentials)).
+(daemon). The Wi-Fi kexts come from [mt7925-macos](https://github.com/thanhnndev/mt7925-macos/releases) ([section 3](#3-wi-fi-credentials)).
 Apps unzipped into `/Applications` do not start at login by themselves: RogControl has "Open at login" in its
 settings; TapGuard only gets a login item through `scripts/build-tapguard.sh --install` from a source build.
 
@@ -55,8 +55,8 @@ Check after installing: `sysctl debug.asuswmi.status`, `sysctl debug.amdcppc.fre
 ## 3. Wi-Fi credentials
 
 The MT7925 Wi-Fi driver, `inject-creds.ps1`, `ItlWiFi.app` and the native Wi-Fi test helper moved to
-**[mt7925-macos-wifi](https://github.com/thanhnndev/mt7925-macos-wifi)**. Native mode needs no credentials in the kext; for legacy mode see its
-[guide §5](https://github.com/thanhnndev/mt7925-macos-wifi/blob/main/docs/GUIDE.md#5-legacy-mode-ethernet-style). `scripts/macos-install-kext.sh itlmt7925` and
+**[mt7925-macos](https://github.com/thanhnndev/mt7925-macos)**. Native mode needs no credentials in the kext; for legacy mode see its
+[guide §5](https://github.com/thanhnndev/mt7925-macos/blob/main/docs/GUIDE.md#5-legacy-mode-ethernet-style). `scripts/macos-install-kext.sh itlmt7925` and
 `scripts/linux-install-kext.sh itlmt7925` here still keep the injected credentials of the installed kext when you replace it.
 
 ## 4. HiDPI ("looks like 1440 x 900"), step by step

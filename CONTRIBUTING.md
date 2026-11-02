@@ -1,7 +1,7 @@
 # Contributing
 
 Reports and patches are welcome, especially: results on other Zephyrus G14 / Strix Point laptops (`ItlXhciKick`, the EFI),
-other MT7925 machines (the Wi-Fi driver now lives in [mt7925-macos-wifi](https://github.com/thanhnndev/mt7925-macos-wifi)), and the open items in [docs/ROADMAP.md](docs/ROADMAP.md).
+other MT7925 machines (the Wi-Fi driver now lives in [mt7925-macos](https://github.com/thanhnndev/mt7925-macos)), and the open items in [docs/ROADMAP.md](docs/ROADMAP.md).
 
 > This project is vibe-coded (written mostly by an AI, tested on one laptop). Pull requests written with AI help are fine;
 > say so, and say what you tested on real hardware.

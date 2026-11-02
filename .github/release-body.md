@@ -24,7 +24,7 @@ First public build. "v1" is the version of this bundle; the kexts carry their ow
 
 Third-party kexts (Lilu, VirtualSMC, VoodooI2C, ...) are **not** included: see `efi/KEXTS.md`.
 
-**Wi-Fi (MT7925):** not included: `itlmt7925.kext` / `itlmt7925Native.kext` come from [mt7925-macos-wifi](https://github.com/thanhnndev/mt7925-macos-wifi/releases) ([guide](https://github.com/thanhnndev/mt7925-macos-wifi/blob/main/docs/GUIDE.md)).
+**Wi-Fi (MT7925):** not included: `itlmt7925.kext` / `itlmt7925Native.kext` come from [mt7925-macos](https://github.com/thanhnndev/mt7925-macos/releases) ([guide](https://github.com/thanhnndev/mt7925-macos/blob/main/docs/GUIDE.md)).
 
 **NVIDIA (RTX 5060 + the OLED):** not included either. Use [NullMoth's driver](https://github.com/nullmoth/nvidia-macos-driver) through our fork, branch [`ga403wm`](https://github.com/thanhnndev/nvidia-macos-driver/tree/ga403wm) (upstream 1.14.7 + OLED brightness over eDP AUX + faster VRAM clear, source only, PolyForm Noncommercial). Steps: [INSTALL.md §7](https://github.com/thanhnndev/ga403wm-hackintosh/blob/main/docs/INSTALL.md#7-nvidia-driver-rtx-5060--the-oled).
 
@@ -35,7 +35,7 @@ Third-party kexts (Lilu, VirtualSMC, VoodooI2C, ...) are **not** included: see `
 2. Unzip the kexts and `AmdCppcPolicy` into `build/` of a clone so the install scripts find them
    (`scripts/macos-install-kext.sh <name>` reads `build/<name>.kext`). Apps: unzip into `/Applications`, then
    `xattr -dr com.apple.quarantine /Applications/RogControl.app` (same for the others): they are ad-hoc signed, not notarised.
-3. Wi-Fi: install the kexts from [mt7925-macos-wifi](https://github.com/thanhnndev/mt7925-macos-wifi/releases).
+3. Wi-Fi: install the kexts from [mt7925-macos](https://github.com/thanhnndev/mt7925-macos/releases).
 
 Known limits: sleep/wake, audio, SD reader and battery % are not verified. Full list: [docs/ROADMAP.md](https://github.com/thanhnndev/ga403wm-hackintosh/blob/main/docs/ROADMAP.md).
 
