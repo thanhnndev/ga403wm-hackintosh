@@ -4325,3 +4325,21 @@ Expect, after the relink boot:
 - `initFramebufferResource ... -> vidmem ... over the LIVE SCANOUT phys 0x87c000000`
 - `iop: K6 transaction #1 ... on the panel`
 - no `Fallback GPU Display Pipe transaction submission failed`
+
+## Step76: the two boots after Step75 never ran the Step75 code (2026-11-02)
+
+| boot | what happened |
+|---|---|
+| 46B679A1 | The relink boot. It still runs the old AuxKC: `CPU-only scanout -- no framebuffer resource`, then `Fallback GPU Display Pipe transaction submission failed`. Black screen, as expected. kmutil wrote the new AuxKC. |
+| E00F313D | Loads the new AuxKC: NMXAccel uuid F4797484-…, the CI build, and the AuxKC holds the patched NMXGPU bytes. amdgpu fails first: `failed to load ucode SDMA_CTX`, `PSP LOAD_IP_FW 0x63`, `amdgpu_device_ip_init failed`, `Fatal error during GPU init`, SMU busy. No NMXAMDFB, NMXAccel never starts, NMXAGDC polls "no framebuffer". |
+
+E00F313D is the intermittent PSP/SMU init failure of Step67/Step73. It appears after a reboot that is not a cold start. The Step75 pipe
+code never ran.
+
+The relink did not reboot by itself because `nmx-relink.sh` ran `launchctl bootout` on its own job before the reboot check. That
+kills the script, so the reboot never ran and `nmx-relink.reboot` stayed on disk. The log ends at the bootout, then shows `already-done`
+from the next start. Fixed: the reboot check now runs before the bootout.
+
+Next: a cold boot (shut down, then power on) with the installed Step75 kexts. Read the log for:
+- `initFramebufferResource ... LIVE SCANOUT phys 0x87c000000`
+- `iop: K6 transaction`

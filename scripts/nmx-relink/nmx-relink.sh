@@ -54,14 +54,15 @@ if [[ $rc == 0 && $assert_rc == 0 ]]; then
     ditto /Library/Extensions/NMXAccel.kext /Library/NullMoth/kexts/26/NMXAccel.kext
     date -u >"$ROOT/nmx-relink.done"
     echo "RELINKED: the next boot loads the NMXAccel from $BK's sibling build" | tee "$ROOT/nmx-relink.status"
-    /bin/launchctl bootout "system/$LABEL" 2>/dev/null
     /bin/launchctl disable "system/$LABEL" 2>/dev/null
     /bin/rm -f "/Library/LaunchDaemons/$LABEL.plist"
     # Armed from Linux when this boot's WindowServer cannot come up (no desktop to reboot from): load the new
-    # collection without hands.
+    # collection without hands. Before the bootout: booting out our own job kills this script (2026-11-02, the reboot
+    # never ran and the flag stayed).
     if [ -f "$ROOT/nmx-relink.reboot" ]; then
         rm -f "$ROOT/nmx-relink.reboot"; sync; /sbin/reboot
     fi
+    /bin/launchctl bootout "system/$LABEL" 2>/dev/null
 else
     rm -f "$NEW"
     echo "RELINK_FAILED kmutil=$rc assert=$assert_rc (old collection kept)" | tee "$ROOT/nmx-relink.status"
