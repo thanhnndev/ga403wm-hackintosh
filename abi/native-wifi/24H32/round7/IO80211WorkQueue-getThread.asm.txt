@@ -1,6 +1,0 @@
-# 0xffffff80022591fa __ZNK16IO80211WorkQueue9getThreadEv
-ffffff80022591fa: push     rbp
-ffffff80022591fb: mov      rbp, rsp
-ffffff80022591fe: xor      eax, eax
-ffffff8002259200: pop      rbp
-ffffff8002259201: ret      

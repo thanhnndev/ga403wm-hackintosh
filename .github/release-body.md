@@ -9,7 +9,6 @@ First public build. "v1" is the version of this bundle; the kexts carry their ow
 
 | File | What | Install |
 |---|---|---|
-| `itlmt7925.kext.zip` | MT7925 Wi-Fi (credentials **empty**: inject yours) | ESP `EFI/OC/Kexts` |
 | `ItlXhciKick.kext.zip` | USB lag fix, **required** | ESP |
 | `AsusWmi.kext.zip` | ROG profiles, fans, charge limit, lights | ESP |
 | `AmdCppc.kext.zip` | Zen 5 CPPC / boost / EPP | ESP |
@@ -17,7 +16,6 @@ First public build. "v1" is the version of this bundle; the kexts carry their ow
 | `BtLeDlFix.kext.zip` | BLE mouse fix (Lilu plugin) | ESP |
 | `ItlDiag.kext.zip` | boot diagnostics (debug only) | ESP, optional |
 | `RogControl.app.zip` | ROG Control: menu bar + window | `/Applications` |
-| `ItlWiFi.app.zip` | Wi-Fi menu: scan, join, speed test | `/Applications` |
 | `TapGuard.app.zip` | ignore touchpad taps while typing | `/Applications` |
 | `AmdCppcPolicy.zip` | CPU policy launch daemon (binary) | `scripts/macos-amdcppc-policy-install.sh` |
 | `OpenCore-1.0.9-zen5-fsb.zip` | OpenCore 1.0.9 with the Zen 5 timer patch (if the build step succeeded) | ESP |
@@ -25,6 +23,8 @@ First public build. "v1" is the version of this bundle; the kexts carry their ow
 | `SHA256SUMS.txt`, `LICENSE`, `LICENCE.mediatek` | checksums, licenses | |
 
 Third-party kexts (Lilu, VirtualSMC, VoodooI2C, ...) are **not** included: see `efi/KEXTS.md`.
+
+**Wi-Fi (MT7925):** not included: `itlmt7925.kext` / `itlmt7925Native.kext` come from [mt7925-macos-wifi](https://github.com/thanhnndev/mt7925-macos-wifi/releases) ([guide](https://github.com/thanhnndev/mt7925-macos-wifi/blob/main/docs/GUIDE.md)).
 
 **NVIDIA (RTX 5060 + the OLED):** not included either. Use [NullMoth's driver](https://github.com/nullmoth/nvidia-macos-driver) through our fork, branch [`ga403wm`](https://github.com/thanhnndev/nvidia-macos-driver/tree/ga403wm) (upstream 1.14.7 + OLED brightness over eDP AUX + faster VRAM clear, source only, PolyForm Noncommercial). Steps: [INSTALL.md §7](https://github.com/thanhnndev/ga403wm-hackintosh/blob/main/docs/INSTALL.md#7-nvidia-driver-rtx-5060--the-oled).
 
@@ -35,8 +35,8 @@ Third-party kexts (Lilu, VirtualSMC, VoodooI2C, ...) are **not** included: see `
 2. Unzip the kexts and `AmdCppcPolicy` into `build/` of a clone so the install scripts find them
    (`scripts/macos-install-kext.sh <name>` reads `build/<name>.kext`). Apps: unzip into `/Applications`, then
    `xattr -dr com.apple.quarantine /Applications/RogControl.app` (same for the others): they are ad-hoc signed, not notarised.
-3. Inject your Wi-Fi network into `itlmt7925.kext` before copying it to the ESP.
+3. Wi-Fi: install the kexts from [mt7925-macos-wifi](https://github.com/thanhnndev/mt7925-macos-wifi/releases).
 
-Known limits: Wi-Fi shows up as Ethernet (native Wi-Fi is being ported), WPA2-PSK only; sleep/wake, audio, SD reader and battery % are not verified. Full list: [docs/ROADMAP.md](https://github.com/thanhnndev/ga403wm-hackintosh/blob/main/docs/ROADMAP.md).
+Known limits: sleep/wake, audio, SD reader and battery % are not verified. Full list: [docs/ROADMAP.md](https://github.com/thanhnndev/ga403wm-hackintosh/blob/main/docs/ROADMAP.md).
 
 ---

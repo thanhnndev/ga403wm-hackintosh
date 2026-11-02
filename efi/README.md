@@ -33,9 +33,11 @@ projects; the versions are listed in `KEXTS.md`, the OpenCore patch is built by 
 2. **CPU core count.** The four `Force cpuid_cores_per_package to constant` kernel patches contain the core count in their
    `Replace` bytes: `0x0c` = 12 cores (Ryzen AI 9 HX 370). Change it for another CPU.
 3. **Assemble the folder.** `EFI/OC/` = this `config.plist` + `ACPI/` + the kexts of `KEXTS.md` in `Kexts/` + `Drivers/`
-   (`HfsPlus.efi`, `OpenRuntime.efi`, `ResetNvramEntry.efi`) + the patched `OpenCore.efi`. Add the three kexts of this
-   repository (`itlmt7925`, `ItlXhciKick`, optionally `ItlDiag`) from a release or from `scripts/build.sh`.
-4. **Wi-Fi credentials** go into the personality of `itlmt7925.kext` (`docs/WIFI.md`). They are stored in plain text on the
+   (`HfsPlus.efi`, `OpenRuntime.efi`, `ResetNvramEntry.efi`) + the patched `OpenCore.efi`. Add the kexts of this
+   repository (`ItlXhciKick`, optionally `ItlDiag`) from a release or from `scripts/build.sh`, and `itlmt7925.kext` (Wi-Fi) from
+   [mt7925-macos-wifi](https://github.com/thanhnndev/mt7925-macos-wifi/releases).
+4. **Wi-Fi credentials** (legacy mode, the reference default) go into the personality of `itlmt7925.kext`
+   ([guide §5](https://github.com/thanhnndev/mt7925-macos-wifi/blob/main/docs/GUIDE.md#5-legacy-mode-ethernet-style)); native mode needs none ([guide §4](https://github.com/thanhnndev/mt7925-macos-wifi/blob/main/docs/GUIDE.md#4-native-mode-recommended)). They are stored in plain text on the
    stick; do not share the stick or that plist.
 5. Validate with `ocvalidate` from the same OpenCore release. It will complain about the placeholders until you replace them.
 
@@ -73,7 +75,7 @@ Bring-up extras (not in the config): `-v debug=0x100 keepsyms=1 msgbuf=1048576`,
 | `ipc_control_port_options=0` | with AMFI relaxed, hardened apps such as Firefox crash at launch on their task control port; NullMoth setup 1.11 adds it |
 | `-nvrmnobootscreen` | NullMoth driver: skip the 15-19 s boot-screen copy (`docs/NULLMOTH.md`) |
 | `nvrmacpibl=1` | NullMoth driver: use the ACPI/NBCI backlight tables (opt-in since 1.14.1) |
-| `itlmt_m1=0 itlmt_m2=1 itlmt_m3=1 itlmt_fast=6` | legacy `itlmt7925.kext`: start at once, scan, connect, fast path (`docs/WIFI.md`) |
+| `itlmt_m1=0 itlmt_m2=1 itlmt_m3=1 itlmt_fast=6` | legacy `itlmt7925.kext`: start at once, scan, connect, fast path ([mt7925-macos-wifi](https://github.com/thanhnndev/mt7925-macos-wifi/blob/main/docs/GUIDE.md#12-boot-arg-reference)) |
 | `itldiag=90 itlxr=2` | (bring-up only) ItlDiag diagnostics and xHCI event-ring sampler (`docs/DEBUGGING.md`) |
 | `msgbuf=1048576` | (bring-up only) larger kernel message buffer, so the kext logs are not truncated |
 | `itlkick=<us>` (not set) | ItlXhciKick period; default 1000 µs, `0` disables (`docs/USB-XHCI-LAG.md`) |

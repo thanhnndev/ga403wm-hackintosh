@@ -1,1 +1,0 @@
-# No MetaClass constructor symbol in this collection

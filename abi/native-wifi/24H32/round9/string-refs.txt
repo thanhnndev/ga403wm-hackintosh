@@ -1,2 +1,0 @@
-strings: ['0xffffff80029a535f']
-functions: [('0xffffff80029777c6', '__ZN25IOSkywalkNetworkBSDClient5startEP9IOService'), ('0xffffff8002983458', '__ZN25IOSkywalkNetworkInterface14deferBSDAttachEb')]

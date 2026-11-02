@@ -39,6 +39,7 @@ update (`docs/NULLMOTH.md`). Why Tahoe: last macOS for Intel/x86, so its ABI is 
 3. **Wi-Fi native:** new IO80211/Skywalk dumps (`abi/native-wifi/<build>/`), regenerate headers
    (`tools/gen_io80211_header.py`), re-check every 24H32 address/layout comment in `kexts/itlmt7925Native/*`, then lift
    `MaxKernel`. Skywalk legacy-Ethernet shim: re-verify.
+   **Done** (2026-10-16/17: native Wi-Fi works on 25G241). The Wi-Fi driver now lives in [mt7925-macos-wifi](https://github.com/thanhnndev/mt7925-macos-wifi).
 4. **Rest:** BtLeDlFix (bluetoothd byte pattern is 24H32), BlueToolFixup/MtkBtFw, AppleALC + RogAudio/StrixAmp, AsusWmi,
    AmdCppc, VoodooI2C/TapGuard, USBToolBox map, sleep/wake, battery.
 5. **890M port (the real work), on Tahoe:** milestones 4..10 of `docs/890M-COBALT64-PORT-RESEARCH.md`

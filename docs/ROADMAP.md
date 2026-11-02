@@ -27,7 +27,7 @@ States: ✅ done · 🔧 in progress (someone is on it now) · 🟡 implemented,
 | **M0** | Alpha: boots and is usable on the author's unit | internal-disk install, GPU, USB, Wi-Fi, BT, ROG controls | ✅ |
 | **M1** | **Stable macOS 15 for GA403WM** (public beta) | a second owner reproduces the install from this repo; published USB map and the standard EFI in the release; clean (non-debug) EFI; sleep/wake, audio, SD reader, battery % verified. Release **v1** (prebuilt kexts + apps) comes first, as the starting point for those testers | 🔧 |
 | **M1.5** | **Standardise the codebase** (cleanup, common call conventions) | only per component, only after it is proven stable (see [Codebase standardisation](#codebase-standardisation)); never before M1 for the Wi-Fi driver | ⚪ gated |
-| **M2** | Native Wi-Fi | `IO80211Controller` port: Wi-Fi menu, System Settings pane, no credentials in the kext | 🔧 works (28-36 MB/s), opt-in, still testing; AirDrop is next |
+| **M2** | Native Wi-Fi | `IO80211Controller` port: Wi-Fi menu, System Settings pane, no credentials in the kext | ✅ works on macOS 15 and 26; moved to [mt7925-macos-wifi](https://github.com/thanhnndev/mt7925-macos-wifi) |
 | **M3** | Evaluate macOS 26 | only after M1 holds for a few weeks on 15.x; needs a NVIDIA driver and OpenCore support for 26 | 🧊 not planned yet |
 
 ## Workstreams
@@ -40,10 +40,7 @@ States: ✅ done · 🔧 in progress (someone is on it now) · 🟡 implemented,
 | 1 | **Install experience** (README, INSTALL, release assets, issue templates) | 🔧 | `main` | this page, publish first release (kexts + apps zip) | [INSTALL.md](INSTALL.md) |
 | 2 | **Standard EFI**: the author's tested EFI uploaded to the release (**coming**); **EFI hygiene**: published USB map, drop debug boot-args / `IOPCIMSIMode` leftovers / ItlDiag, verbose off | 🔧 | `main` (`efi/`) | 2026-10-13: `efi/OC` refreshed (UTBMap enabled, debug boot-args and `Misc.Debug` off, legacy Wi-Fi default, installer-safe NVIDIA values); `IOPCIMSIMode` leftover still there; release not tagged yet | [efi/README.md](../efi/README.md) |
 | 3 | **Touchpad** (I2C-HID `ASUP1208`, `093a:3011`) | ✅ | `main` | works again since 2026-10-12 (it died on 2026-10-10). Cause (owner-reported): it is dead after a **warm reboot from Windows into macOS**; a **full shutdown and power on** brings it back. Boot macOS from a cold start (or shut down after Windows) | [HANDOFF](HANDOFF.md) |
-| 4 | **Wi-Fi throughput** (`itlmt7925`) | ✅ | `main` (`kexts/itlmt7925`) | reaches the full link speed (HE, 160 MHz) since 2026-10-12. Record a LAN `iperf3` result with AP model, band and distance in [WIFI.md](WIFI.md) | [WIFI.md](WIFI.md) |
-| 5 | **Wi-Fi app** (ItlWiFi) and runtime control | ✅ | `main` (`macos/ItlWiFi`) | scan / join / reconnect / speed test; becomes optional once native Wi-Fi exists | [WIFI.md](WIFI.md#runtime-control-itlwifi-menu-bar-app) |
-| 6 | **Native Wi-Fi** (`IO80211Controller` subclass, Skywalk) | 🔧 | `main` (`kexts/itlmt7925Native`) | scan, WPA2-PSK join from System Settings, link events, data path through the core; 28-36 MB/s (A-MSDU off). Clean-room, no GPL `itlwm` code. Still to verify: sleep/wake, a chip recovery, long uptime; known gaps: WPA3, upload speed. Opt-in, the reference EFI stays legacy: [WIFI-DRIVERS.md](WIFI-DRIVERS.md) | [WIFI-AS-WIFI.md](WIFI-AS-WIFI.md), [IO80211-ABI.md](IO80211-ABI.md) |
-| 7 | **Wi-Fi gaps**: WPA3-SAE, open networks, 6 GHz, power save, regulatory domain, MSI instead of polling | ⚪ | `main` | after throughput | [WIFI.md](WIFI.md) |
+| 4-7 | **Wi-Fi** (`itlmt7925`, `itlmt7925Native`, ItlWiFi, AWDL) | ➡️ | [mt7925-macos-wifi](https://github.com/thanhnndev/mt7925-macos-wifi) | moved to its own repository on 2026-10-26: native Wi-Fi works on macOS 15 and 26. Its [roadmap](https://github.com/thanhnndev/mt7925-macos-wifi/blob/main/docs/ROADMAP.md) tracks throughput, WPA3, sleep/wake and AirDrop | [GUIDE.md](https://github.com/thanhnndev/mt7925-macos-wifi/blob/main/docs/GUIDE.md) |
 | 8 | **Bluetooth** (`MtkBtFw`, `BtLeDlFix`) | ✅ | `main` | classic and BLE devices connect (confirmed 2026-10-12). Left: treat "no answer to the first PATCH_DWNLD query" on warm reboot as success; pattern table for `BtLeDlFix` per macOS build | [BLUETOOTH.md](BLUETOOTH.md) |
 | 9 | **ROG Control** (`AsusWmi`, `RogControl`) | ✅ | `main` (`kexts/AsusWmi`, `macos/RogControl`) | everything works (confirmed 2026-10-12). Nice to have: Aura effects beyond brightness, GPU MUX stays read-only | [ASUSCTL-MACOS.md](ASUSCTL-MACOS.md), [rog-control-design.md](rog-control-design.md) |
 | 10 | **CPU power** (`AmdCppc`, `AmdCppcPolicy`) | ✅ | `main` | ~4.9 GHz all-core, sleep/wake restore. Next: soak over days, battery-life comparison | [CPU-POWER.md](CPU-POWER.md) |
@@ -61,7 +58,7 @@ States: ✅ done · 🔧 in progress (someone is on it now) · 🟡 implemented,
 | 22 | **Sleep / wake fix** (idle sleep, lid close, wake, hibernate/deep sleep) | ❌ | `main` (EFI, `AmdCppcPolicy`, drivers) | no working deep sleep. Known from `pmset -g log`: wake is slow in `NVRMFramebuffer` (SetState, ~0.3 s) and `AppleHDADriver` (~0.5 s), and `wifip2pd` times out (30 s) on the sleep notification. Plan: a reproducible 5-cycle test (log wake reason, per-driver delays), find what blocks or breaks wake (NVIDIA driver power state, USB/xHCI, I2C touchpad, Wi-Fi/BT firmware), then `pmset` `hibernatemode` / `standby` policy. Do not test with the lid closed until a cycle survives with the lid open | [HANDOFF.md](HANDOFF.md) |
 | 23 | **Fn keys and keybinds** (map every key of the GA403WM keyboard) | ⚪ | `main` (`kexts/AsusWmi`, `macos/RogControl`) | works today: brightness (Fn+F7/F8), keyboard backlight (0xC4/0xC5), Fn+F4 (0xB3), Fn+F5 (0xAE). To do: press every special key and Fn combination on the keyboard (F1-F12 row, the ROG / Armoury key and any others the owner finds), record the code each one sends in `asus-log` ("key xx"), write the table (key, code, intended macOS action), implement the missing ones in `AsusWmi` and show the mapping in RogControl | [ASUSCTL-MACOS.md](ASUSCTL-MACOS.md) |
 | 24 | **Battery life** (not tested; no promise) | ⚪ | - | measure idle and light use drain on battery with `pmset -g batt` over time; compare Silent profile, charge limit; document what the always-on RTX 5060 costs. Realistically the dGPU-only MUX mode sets a floor that software cannot fix | [CPU-POWER.md](CPU-POWER.md) |
-| 25 | **Other fixes** (everything left that is not listed above) | ⚪ | - | native Wi-Fi (row 6), audio / SD / webcam verification (row 16), CI app build (row 17), EFI hygiene and the published USB map (row 2); anything new found while using the machine plugged in with HDMI goes here first | |
+| 25 | **Other fixes** (everything left that is not listed above) | ⚪ | - | audio / SD / webcam verification (row 16), CI app build (row 17), EFI hygiene and the published USB map (row 2); anything new found while using the machine plugged in with HDMI goes here first | |
 
 ## Codebase standardisation
 
@@ -91,7 +88,7 @@ A component is "proven stable" when all of these hold (the 14-day clock for the 
 | 4 | `AsusWmi` and `RogControl` | **one ABI header** shared by kext and app (versioned, documented), one way to evaluate ACPI/WMI methods, one place for retry/validation rules; remove `probe`/`dumpacpi`-style debug entry points or hide them behind a boot-arg; split `RogControl.swift` (1100 lines) into driver access, state, views; share the IOKit user-client wrapper with ItlWiFi | gate passed; fan-curve and charge-limit writes verified |
 | 5 | `MtkBtFw`, `BtLeDlFix` | same helpers; treat "no answer to the first PATCH_DWNLD query" correctly; pattern table for `BtLeDlFix` per macOS build | BLE and pairing verified |
 | 6 | **EFI / `config.plist`** | no debug boot-args, no `IOPCIMSIMode`, no `ItlDiag`, explicit comments per patch, published USB map | M1 |
-| 7 | **`itlmt7925`** (last: biggest and the least finished) | rename `_m1/_m2/_m3/_pwr/_eth/_ba/_uc` to what they do; separate hardware layer from 802.11 logic; one TX/RX path instead of the legacy + fast levels; remove `itlmt_fast` levels that proved useless; credentials out of the `Info.plist`; keep host tests green | throughput and reconnect proven; after (or together with) native Wi-Fi |
+| 7 | **`itlmt7925`** (moved to [mt7925-macos-wifi](https://github.com/thanhnndev/mt7925-macos-wifi)) | rename `_m1/_m2/_m3/_pwr/_eth/_ba/_uc` to what they do; separate hardware layer from 802.11 logic; one TX/RX path instead of the legacy + fast levels; remove `itlmt_fast` levels that proved useless; credentials out of the `Info.plist`; keep host tests green | throughput and reconnect proven; after (or together with) native Wi-Fi |
 | 8 | **Bundle ids and names** (`com.itlmt7925.*`, `Itl*`) | rename to the project's name only at a major version, with a migration note, because `config.plist`, LaunchAgents and the auxiliary kernel collection refer to them | v2 |
 
 ### How a standardisation change is done
@@ -133,23 +130,11 @@ A component is "proven stable" when all of these hold (the 14-day clock for the 
 
 ### `itlmt7925` (Wi-Fi)
 
-Speed: link at HE / 160 MHz, 2 streams (PHY ~2.4 Gb/s). The throughput work is **done** (owner-confirmed 2026-10-12: the driver reaches the
-full link speed); the earlier 8 Mb/s measurements in [HANDOFF.md](HANDOFF.md) are history. The native front end (workstream 6) now reaches 28-36 MB/s as well. **Next: keep testing the native mode (sleep/wake, recovery, uptime) and AirDrop (AWDL, [ROADMAP-AWDL.md](ROADMAP-AWDL.md), phases 0 and 1).**
-
-- [ ] **LAN baseline**: `iperf3` between the Hackintosh and a wired machine, recorded in [WIFI.md](WIFI.md) with AP model, band, distance (the numbers behind "full speed" are not written down yet).
-- [ ] TX path at the lower fast levels: track `TXFREE` instead of waiting per packet.
-- [ ] A-MSDU on transmit, more than one TID, smarter ADDBA policy.
-- [ ] EHT (Wi-Fi 7), 6 GHz, 80+80 MHz.
-- [ ] WPA3-SAE, open networks, regulatory domain from configuration.
-- [ ] Group re-key, power save, interrupts (MSI) instead of the polled worker.
-- [ ] Load the firmware from a file when a filesystem is available.
-- [ ] Credentials out of the kext (read from a root-only file or a user-client call) so a kext can be shared safely.
-- [ ] Native Wi-Fi (`IO80211Controller`), see workstream 6.
+Moved to [mt7925-macos-wifi](https://github.com/thanhnndev/mt7925-macos-wifi); its open items are in [its roadmap](https://github.com/thanhnndev/mt7925-macos-wifi/blob/main/docs/ROADMAP.md).
 
 ### Apps
 
 - [ ] RogControl: Aura effects beyond brightness, localisation (VI).
-- [ ] ItlWiFi: hidden networks, forget-all, better error messages; becomes optional once native Wi-Fi exists.
 - [ ] Notarised / properly signed builds (today ad-hoc: users must strip the quarantine attribute, every rebuild is a new identity).
 
 ### Docs and project

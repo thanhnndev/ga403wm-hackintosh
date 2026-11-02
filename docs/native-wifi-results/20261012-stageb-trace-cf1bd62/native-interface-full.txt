@@ -1,6 +1,0 @@
-+-o itlmt7925WifiInterface  <class itlmt7925WifiInterface, id 0x10000033b, !registered, !matched, active, busy 0, retain 4>
-    {
-      "IO80211InterfaceRole" = "LowLatency"
-    }
-    
-

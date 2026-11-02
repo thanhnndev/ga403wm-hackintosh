@@ -1,7 +1,7 @@
 # Contributing
 
 Reports and patches are welcome, especially: results on other Zephyrus G14 / Strix Point laptops (`ItlXhciKick`, the EFI),
-other MT7925 machines (the Wi-Fi driver), and the open items in [docs/ROADMAP.md](docs/ROADMAP.md).
+other MT7925 machines (the Wi-Fi driver now lives in [mt7925-macos-wifi](https://github.com/thanhnndev/mt7925-macos-wifi)), and the open items in [docs/ROADMAP.md](docs/ROADMAP.md).
 
 > This project is vibe-coded (written mostly by an AI, tested on one laptop). Pull requests written with AI help are fine;
 > say so, and say what you tested on real hardware.
@@ -24,8 +24,7 @@ Current state, open issues and how to collect data: [docs/HANDOFF.md](docs/HANDO
 
 * **macOS:** `bash scripts/build.sh` builds `build/*.kext` locally (needs Xcode command line tools).
 * **Linux / Windows:** the kexts cannot be built there (they need the macOS SDK). Push the branch and let CI build it:
-  `gh workflow run build.yml --ref <branch>`, then `gh run download <run-id> -n kexts` (artifacts carry empty Wi-Fi
-  credentials; inject yours locally with `scripts/inject-creds.ps1`).
+  `gh workflow run build.yml --ref <branch>`, then `gh run download <run-id> -n kexts`.
 * The per-machine state (which kext is on the ESP, current boot-args, bisect notes) lives outside the repo; the
   `efi/` tree is the sanitized reference configuration.
 
@@ -40,7 +39,7 @@ Current state, open issues and how to collect data: [docs/HANDOFF.md](docs/HANDO
 ## Building and testing
 
 ```bash
-cd test && clang++ -std=c++17 -I../kexts/itlmt7925 wpa_test.cpp ../kexts/itlmt7925/itl_wpa.cpp -o wpa_test && ./wpa_test
+python3 test/occonfig_test.py && python3 test/pat_wc_test.py
 bash scripts/build.sh            # macOS with Xcode command line tools
 ```
 

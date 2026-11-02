@@ -1,6 +1,0 @@
-# 0xffffff80021fb1b8 __Z33apple80211getSTATUS_FOR_SCAN_UUIDP23IO80211SkywalkInterfaceP23apple80211StatusForUUID
-ffffff80021fb1b8: push     rbp
-ffffff80021fb1b9: mov      rbp, rsp
-ffffff80021fb1bc: mov      eax, 0xe082280e
-ffffff80021fb1c1: pop      rbp
-ffffff80021fb1c2: ret      

@@ -1,11 +1,12 @@
 name: build-kexts
 
-# Builds every kext (itlmt7925, itlmt7925Native, ItlXhciKick, ItlDiag, AsusWmi, AmdCppc, MtkBtFw, BtLeDlFix) with empty Wi-Fi credentials (credentials are injected locally, never in CI).
-# Also builds the menu bar apps (RogControl, ItlWiFi, TapGuard) and the CPU policy daemon, ad-hoc signed.
+# Builds every kext (ItlXhciKick, ItlDiag, AsusWmi, AmdCppc, MtkBtFw, BtLeDlFix).
+# The MT7925 Wi-Fi kexts and ItlWiFi.app moved to https://github.com/thanhnndev/mt7925-macos-wifi (own CI and releases).
+# Also builds the menu bar apps (RogControl, TapGuard) and the CPU policy daemon, ad-hoc signed.
 # A tag "v*" (for example v1) additionally publishes everything as a GitHub release: kexts, apps, patched OpenCore,
 # the sanitized reference EFI, SHA256SUMS.txt. See .github/release-body.md for the release text.
 # A tag "kext-v*" (for example kext-v1.1) publishes only the kexts, apps and checksums: no OpenCore build, no reference EFI
-# (release text: .github/release-kexts-body.md).
+# (same release text, .github/release-body.md).
 on:
   push:
     branches: [main]
@@ -29,24 +30,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Host crypto test (WPA2 PMK / PTK / MIC / key unwrap)
-        run: |
-          cd test
-          clang++ -std=c++17 -I../kexts/itlmt7925 wpa_test.cpp ../kexts/itlmt7925/itl_wpa.cpp -o wpa_test
-          ./wpa_test
-
-      - name: Host capability test (HT / VHT parsing, channel width, advertised elements)
-        run: |
-          cd test
-          clang++ -std=c++17 -Wall -I../kexts/itlmt7925 caps_test.cpp ../kexts/itlmt7925/itl_caps.cpp -o caps_test
-          ./caps_test
-
-      - name: Host Block Ack test (reorder buffer, ADDBA / DELBA / BAR frames)
-        run: |
-          cd test
-          clang++ -std=c++17 -Wall -I../kexts/itlmt7925 ba_test.cpp ../kexts/itlmt7925/itl_ba.cpp -o ba_test
-          ./ba_test
-
       - name: Build kexts
         run: bash scripts/build.sh
 
@@ -56,7 +39,6 @@ jobs:
       - name: Build apps and the CPU policy daemon
         run: |
           bash scripts/build-rogcontrol.sh
-          bash scripts/build-itlwifi.sh
           bash scripts/build-tapguard.sh
           bash scripts/build-amdcppc-policy.sh
           file build/RogControl.app/Contents/MacOS/RogControl build/AmdCppcPolicy
@@ -64,10 +46,10 @@ jobs:
       - name: Package
         run: |
           mkdir -p dist
-          for k in itlmt7925 itlmt7925Native ItlXhciKick ItlDiag AsusWmi AmdCppc MtkBtFw BtLeDlFix; do
+          for k in ItlXhciKick ItlDiag AsusWmi AmdCppc MtkBtFw BtLeDlFix; do
             ditto -c -k --keepParent "build/$k.kext" "dist/$k.kext.zip"
           done
-          for a in RogControl ItlWiFi TapGuard; do
+          for a in RogControl TapGuard; do
             ditto -c -k --keepParent "build/$a.app" "dist/$a.app.zip"
           done
           zip -j -q dist/AmdCppcPolicy.zip build/AmdCppcPolicy
@@ -135,12 +117,11 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           if [[ "$GITHUB_REF_NAME" == kext-v* ]]; then
-            TITLE="$GITHUB_REF_NAME: kexts only (native Wi-Fi front end, A-MSDU off)"
-            NOTES=.github/release-kexts-body.md
+            TITLE="$GITHUB_REF_NAME: kexts only"
           else
-            TITLE="$GITHUB_REF_NAME: first public build"
-            NOTES=.github/release-body.md
+            TITLE="$GITHUB_REF_NAME"
           fi
+          NOTES=.github/release-body.md
           gh release create "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" \
             --title "$TITLE" \
             --notes-file "$NOTES" --generate-notes \

@@ -14,7 +14,7 @@ Kexts run in the kernel.
 
 | Kext | Version | State | What it does today | Boot-args / knobs | Doc |
 |---|---|---|---|---|---|
-| **itlmt7925** | 0.1.0 | ✅ | MediaTek MT7925 Wi-Fi from scratch: firmware load, scan, WPA2-PSK (CCMP), DHCP, up to 4 saved networks. Rate control with HT/VHT/HE, Block Ack, A-MSDU RX, 160 MHz (`itlmt_fast`). User client + supervisor for the ItlWiFi app (scan, join, disconnect, reconnect with back-off). Exposes itself as Ethernet `itlmt7925Eth`. Reaches the full link speed. **Missing:** native Wi-Fi class (port in progress), WPA3, 6 GHz, open networks, power save, re-key | `itlmt_m1=0 itlmt_m2=1 itlmt_m3=1 itlmt_fast=6` | [WIFI.md](WIFI.md) |
+| **itlmt7925**, **itlmt7925Native** | - | ✅ | MT7925 Wi-Fi (legacy Ethernet mode + native Wi-Fi front end): **moved to [mt7925-macos-wifi](https://github.com/thanhnndev/mt7925-macos-wifi)** with its own guide, roadmap and releases |
 | **ItlXhciKick** | 0.1.0 | ✅ | Services the second xHCI event ring of single-vector AMD controllers every 1 ms. Fixes USB keyboards/mice releasing keys ~2 s late. Nothing is patched or written | `itlkick=0` off, `itlkick=<us>` period | [USB-XHCI-LAG.md](USB-XHCI-LAG.md) |
 | **AsusWmi** | 0.1.0 | ✅ | ASUS ATKD/WMI from the kernel (Linux `asus-wmi` calling convention): performance profile (Silent/Performance/Turbo), PPT limits SPL/SPPT/FPPT (AC/battery ranges for the GA403WM), fan curves read/write, fan RPM, battery charge limit, GPU MUX state (read only), battery EC readout fix, panel brightness query, **keyboard backlight** and **Slash lighting** (HID reports sent from the kernel), hotkeys through `_WED` (Fn+F2/F3/F4/F5). Registry/sysctl interface `debug.asuswmi.*` for the RogControl app | `sysctl debug.asuswmi.status` | [ASUSCTL-MACOS.md](ASUSCTL-MACOS.md) |
 | **AmdCppc** | 0.2.1 | ✅ | CPU performance control for Zen 5 (macOS has none): reads/changes CPPC, boost, EPP on all 24 CPUs; per-CPU effective clock (APERF/MPERF), Tctl and RAPL package power for RogControl; PAT diagnostics. Writes only through root sysctls | `sysctl debug.amdcppc.*` | [CPU-POWER.md](CPU-POWER.md) |
@@ -48,14 +48,9 @@ Design notes: [rog-control-design.md](rog-control-design.md).
 **Not in RogControl yet:** GPU MUX switching and dGPU disable (deliberately read only: the NVIDIA driver is running), dynamic
 boost / temperature target / TGP writes, panel overdrive (not in this BIOS), per-key Aura effects.
 
-### ItlWiFi (`ItlWiFi.app`): the stop-gap Wi-Fi menu
+### ItlWiFi (`ItlWiFi.app`)
 
-`bash scripts/build-itlwifi.sh --install`. Menu bar popover for `itlmt7925`: current network and signal, scan list (stable
-order), join with an inline password, right-click menu (Connect, Connect with a different password, Forget, Copy name),
-saved networks in `~/Library/Application Support/ItlWiFi/networks.json` (mode 0600), auto-join, disconnect, open at login,
-and a **speed test** (curl bound to the Wi-Fi interface; several providers). State: ✅. It exists because the driver is not a real
-Wi-Fi device, so macOS has no Wi-Fi menu for it. The driver still needs credentials injected for the first connection
-([INSTALL.md](INSTALL.md#4-wi-fi-inject-your-network)).
+Moved to [mt7925-macos-wifi](https://github.com/thanhnndev/mt7925-macos-wifi) together with the Wi-Fi driver.
 
 ### TapGuard (`TapGuard.app`)
 
@@ -87,7 +82,6 @@ Every script, with where to run it, root needs and undo: **[SCRIPTS.md](SCRIPTS.
 
 | Path | Use |
 |---|---|
-| `scripts/inject-creds.ps1` | put SSID/password(s) into `itlmt7925.kext` (Windows) |
 | `scripts/macos-install-kext.sh` | install a built kext on the ESP, with backup and `--undo` |
 | `scripts/export-efi.py`, `scripts/check-efi-privacy.py` | write `efi/` from a working EFI with placeholders; fail if real SMBIOS slipped in |
 | `scripts/linux-collect-logs.sh`, `scripts/setup-linux-access.sh` | collect OpenCore logs, `ITLLOG.BIN`, panic reports from Linux |

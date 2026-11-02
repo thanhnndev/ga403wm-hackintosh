@@ -11,11 +11,11 @@ The numbered "Open issues" below are the 2026-10-11 investigation log. As of 202
 |---|---|---|
 | 1. Trackpad (I2C `ASUP1208`) | **works** | cause (owner-reported 2026-10-12): it is dead after a **warm reboot from Windows into macOS**; a **full shutdown and cold power on** fixes it. Boot macOS from cold, or shut down after Windows |
 | 7. HiDPI | **works, 2x** ("looks like 1440 x 900", like Windows 200 % scaling) | [SCRIPTS.md §4](SCRIPTS.md#4-hidpi-looks-like-1440-x-900-step-by-step); fractional scales are not supported |
-| 10. Wi-Fi throughput (`itlmt7925`) | **full link speed** (HE, 160 MHz) | the owner measured it at the maximum speed; the numbers (`iperf3`, AP model, band, distance) will be supplied by the owner later for comparison: [WIFI.md](WIFI.md). Not measured by the agent |
+| 10. Wi-Fi throughput (`itlmt7925`) | **full link speed** (HE, 160 MHz) | the owner measured it at the maximum speed; the numbers (`iperf3`, AP model, band, distance) will be supplied by the owner later for comparison: [WIFI.md](https://github.com/thanhnndev/mt7925-macos-wifi/blob/main/docs/WIFI.md). Not measured by the agent |
 | 13. Bluetooth, BLE mouse | **works** (`MtkBtFw` + `BtLeDlFix`) | [BLUETOOTH.md](BLUETOOTH.md) |
 | ROG controls | **all working**: profiles, power limits, fan curves/speeds, charge limit, keyboard light, Slash, RogControl | section "ASUS controls" below |
 | OLED brightness | **works** (`NVRMEdpBL`, DPCD AUX) | [OLED-BRIGHTNESS-DPCD.md](OLED-BRIGHTNESS-DPCD.md) (checklist results recorded 2026-10-12); the software dimmer was removed from RogControl (2026-10-12) |
-| 4. Wi-Fi shows as Ethernet | **native port in progress** | [WIFI-AS-WIFI.md](WIFI-AS-WIFI.md); `itlmt7925` stays as the fallback |
+| 4. Wi-Fi shows as Ethernet | **native port in progress** | [WIFI-AS-WIFI.md](https://github.com/thanhnndev/mt7925-macos-wifi/blob/main/docs/WIFI-AS-WIFI.md); `itlmt7925` stays as the fallback |
 
 Still open: sleep/wake (broad testing), audio, SD reader, battery %, a second owner reproducing the install, the USB map and the
 standard EFI in the release, upstreaming the NullMoth patch (AUX backlight; the VRAM clear was dropped 2026-10-13). Plan: [ROADMAP.md](ROADMAP.md).
@@ -27,7 +27,7 @@ reads a gap as a pass.
 
 | Item | Status | Why / what is needed |
 |---|---|---|
-| Wi-Fi throughput numbers (`iperf3`, latency, loss) | **skipped by the owner** | the link is at full speed (HE, 160 MHz) per the owner; the figures are supplied later and go into [WIFI.md](WIFI.md) with AP model, band and distance |
+| Wi-Fi throughput numbers (`iperf3`, latency, loss) | **skipped by the owner** | the link is at full speed (HE, 160 MHz) per the owner; the figures are supplied later and go into [WIFI.md](https://github.com/thanhnndev/mt7925-macos-wifi/blob/main/docs/WIFI.md) with AP model, band and distance |
 | Battery drain / battery life | **skipped by the owner** | no promise is made ([ROADMAP.md](ROADMAP.md) row 24); the short on-battery bench (40 %, Silent / Performance) is in [ASUSCTL-MACOS.md](ASUSCTL-MACOS.md) and is not a drain test |
 | Sleep / wake, 5 cycles | **skipped by the owner** | sleep/wake is a known ❌ and roadmap row 22; the machine is used plugged in, without deep sleep |
 | Clean-up of the **live** ESP boot-args | **skipped by the owner** | the live config keeps its debug and `itlmt_native*` experiment arguments. Only the **exported release EFI** (made by `scripts/export-efi.py`, outside the repo) is cleaned: there `debug=0x100 keepsyms=1 msgbuf=1048576` and `itlmt_native=1 itlmt_native_if=1` are removed, `itlmt_m2=1 itlmt_m3=1 itlmt_fast=6` added (`itlmt_m1=0` kept), `itlmt7925Native.kext` disabled; `ocvalidate` clean, privacy check clean. The cleaned config has **not been booted** |

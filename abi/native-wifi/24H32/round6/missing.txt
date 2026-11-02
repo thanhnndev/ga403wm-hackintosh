@@ -1,3 +1,0 @@
-IONetworkController-initialize: __ZN19IONetworkController10initializeEv not found; similar: 
-IOEthernetController-start: __ZN18IOEthernetController5startEP9IOService not found; similar: 
-AppleBCMWLANCore-initWithProvider: __ZN16AppleBCMWLANCore16initWithProviderEP9IOService not found; similar: 
