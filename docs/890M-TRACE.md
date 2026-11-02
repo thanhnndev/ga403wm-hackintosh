@@ -4288,3 +4288,40 @@ Backup: /Library/NullMoth/nmx-amdfb-patch-20261102T104204Z (three kexts + AuxKC)
 Next boot (relink, ~2 min, reboots itself), then the boot after it should show: CoreDisplay vendor 4 for the panel, no
 `transient surface ... not found`, and the display on CompositorMetal. If GPUWrangler still reports no accelerator for the framebuffer
 (the 780M's second issue, 98e9c7b: GPUWrangler probed before the accelerator), a busy hold on the framebuffer until NMXAccel arms is next.
+
+## Step75: WindowServer and loginwindow are up but no frame reaches the panel: the display pipe is never active (2026-11-02)
+
+Boot 8550F017 (first boot with NMXAMDFB): the Step74 fix holds. No `push_surface` asserts, `Metal compositor activated` at 46.68 s,
+loginwindow is front process at 47.3 s. The panel still shows nothing because every frame fails:
+`[ERROR] - Fallback GPU Display Pipe transaction submission failed` appears 1752 times, and there is not one
+`iop: TRACE performTransaction` line in the kernel log. The transactions die in IOAcceleratorFamily before they reach NMXAccel.
+
+Cause: NMXAMDFB answered the scanout query (`NVRM_VRAM_FN_SCANOUT`) with `phys = 0`. NMXAccel's `initFramebufferResource` then
+takes its "CPU-only scanout (another GPU's panel) -- no framebuffer resource" branch and returns NULL. The family marks a display
+pipe active only once it has a framebuffer resource (`init_framebuffer_resource` sets +0x298), so every transaction ends NotReady.
+This is the 780M's M2 bug: nullarc 676445d, where PhxAMDFB reports the scanout physical address. The 780M also adds an
+l10r (ARGB2101010) to XRGB narrowing in performTransaction in the same commit, because WindowServer switches the display surface to
+10-bit once colour management is up.
+
+Fix (nvidia-macos-driver 30237fd on ci/nmxaccel-arm-late and ci/nmxaccel):
+- `nmx_fb.cpp`: `r->phys = fInfo.phys`, the scanout in the 890M BAR, 0x87C000000 here.
+- `nvrm-accel.cpp`: `nmxArm` no longer refuses a non-zero phys. It used to: `|| q.phys`, from b5ce9e2.
+- `nvrm-accel.cpp`: l10r frames are narrowed while copied.
+
+Install: `pkexec scripts/linux-patch-nmx-scanout.sh <CI NMXAccel>` does three things:
+- Rewrites 24 bytes in the installed NMXGPU (NMXGPU has no CI build). In `NMXGPUFB::callPlatformFunction`, `movq $0,0x18(%rcx)`
+  becomes `movq 0x1e8(%rdi),%r10; movq %r10,0x18(%rcx)`. `fInfo.phys` is at this+0x1e8.
+- Installs the CI NMXAccel. Run 41463278138 is reproducible: the previous 3 runs all gave e111043f.
+- Re-arms the self-rebooting AuxKC relink.
+
+| kext | before | after |
+|---|---|---|
+| NMXGPU | e75bb84b… | 401c4e4c… |
+| NMXAccel | 5020e9cd… | d1083a46… (CI) |
+
+Backup: /Library/NullMoth/nmx-scanout-20261102T143700Z (NMXGPU, NMXAccel, AuxKC).
+
+Expect, after the relink boot:
+- `initFramebufferResource ... -> vidmem ... over the LIVE SCANOUT phys 0x87c000000`
+- `iop: K6 transaction #1 ... on the panel`
+- no `Fallback GPU Display Pipe transaction submission failed`
