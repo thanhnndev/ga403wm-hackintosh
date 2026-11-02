@@ -4244,3 +4244,47 @@ proxy user client in NMXAccel for the DRM calls (780M model).
 
 Tooling: Linux apfs now mounts read-only with plain `rw` ("experimental writes disabled"); install scripts use `readwrite`.
 The unifiedlog parser cache under ~/.cache/ga403 had been cleared and was rebuilt.
+
+## Step74 — boot loop after Step73: the OLED gets the software compositor because the framebuffer class is not "AMD" (2026-11-02, Linux)
+
+Step73 worked: WindowServer now gets the 890M Metal device (`initWithAcceleratorPort`, `vk: UP ... RADV STRIX1`,
+`Metal compositor activated`). Three boots after it (BA955BE9, 120D2065, 4107D7F0) never reached the login window, with or without
+HDMI: WindowServer aborts about 10 s after each start, twice per boot, then the session dies.
+
+Crash (WindowServer-2026-11-02-1707*.ips, -171147.ips): `CA::OGL::Context::push_surface` assert `found != slist->end()` (line
+1186), logged as `context(N) transient surface ... not found`, on 5 parallel CA SW contexts. Main thread:
+`CGXUpdateDisplay -> WS::Updater::UpdateDisplays -> CDDisplay::render_update -> CompositorSW::CompositeLayersToDestination ->
+layer_blit_* -> CGLayerKitFetch -> CARenderOGLRender`. Read from the dyld cache (no macOS host: own cache reader plus
+LC_SYMTAB of each image in the shared __LINKEDIT, objdump on the extracted __TEXT):
+
+- QuartzCore: `FlattenNode::retain_surface -> FlattenManager::flattened_cache_retain_surface` calls ctx->create_surface_from_iosurface.
+  `MetalContext` tracks that surface (`Context::track_surface`); `SWContext::create_surface_from_iosurface` ->
+  `create_surface_from_data` does not, so `push_surface` cannot find it. Software compositing plus the flatten cache (active
+  because a Metal device exists) asserts on every start.
+- SkyLight: `CDDisplay::compositor()` = `WSGetCompositorForAccelerator(accelerator())`; with the Metal compositor on it returns
+  CompositorSW only when the display's accelerator is 0, else `CompositorMetal::new_compositor`, which matches
+  `-[MTLDevice acceleratorPort]` (our device's port is the right one).
+- CoreDisplay: `CGXMappedDisplayStart` takes the accelerator from `IOAccelFindAccelerator` (framebuffer `IOAccelTypes`/`IOAccelIndex`,
+  set by `IOAccelDisplayPipe::init` when NMXAccel calls found_framebuffer, 11 s into the boot), and `Framebuffer::Framebuffer` stores
+  `GetGPUVendorForFramebufferService` at +0x1f0: it looks for "Intel" (2), "AMD" (4), "AppleParavirt" (0x10) in the framebuffer's
+  class name, anything else is 1. The 780M hit exactly this (nullarc 6688143, "PhxAMDFB": vendor 1 turns IOPresentment off and
+  leaves the panel on the software compositor with the Metal compositor up). Our class is `NMXGPUFB`.
+
+Fix: the class is `NMXAMDFB` (nvidia-macos-driver 616f00e on ci/nmxaccel-arm-late: nmx_fb.cpp, NMXAccel's match/metaCast, NMXAGDC).
+The installed kexts are unsigned and the name is one `NMXGPUFB\0` C string in each, so `scripts/linux-patch-nmx-amdfb.sh` rewrote
+it in place (3 bytes each; symbols keep the old name) and armed the AuxKC relink, which now reboots by itself when
+`nmx-relink.reboot` is present (no desktop to reboot from):
+
+| kext | before | after |
+|---|---|---|
+| NMXGPU | 7efe25b8… | e75bb84b… |
+| NMXAccel | e111043f… | 5020e9cd… |
+| NMXAGDC | a825b953… | 37a390a5… |
+
+Backup: /Library/NullMoth/nmx-amdfb-patch-20261102T104204Z (three kexts + AuxKC). Undo from Linux:
+`pkexec scripts/linux-patch-nmx-amdfb.sh undo`. Also seen, not fatal: plugin `vkCreateImage(buffer texture) -> -1000158000`
+(DRM modifier plane layout) and host-pointer import refused for memory type 5, both falling back to copies.
+
+Next boot (relink, ~2 min, reboots itself), then the boot after it should show: CoreDisplay vendor 4 for the panel, no
+`transient surface ... not found`, and the display on CompositorMetal. If GPUWrangler still reports no accelerator for the framebuffer
+(the 780M's second issue, 98e9c7b: GPUWrangler probed before the accelerator), a busy hold on the framebuffer until NMXAccel arms is next.

@@ -57,6 +57,11 @@ if [[ $rc == 0 && $assert_rc == 0 ]]; then
     /bin/launchctl bootout "system/$LABEL" 2>/dev/null
     /bin/launchctl disable "system/$LABEL" 2>/dev/null
     /bin/rm -f "/Library/LaunchDaemons/$LABEL.plist"
+    # Armed from Linux when this boot's WindowServer cannot come up (no desktop to reboot from): load the new
+    # collection without hands.
+    if [ -f "$ROOT/nmx-relink.reboot" ]; then
+        rm -f "$ROOT/nmx-relink.reboot"; sync; /sbin/reboot
+    fi
 else
     rm -f "$NEW"
     echo "RELINK_FAILED kmutil=$rc assert=$assert_rc (old collection kept)" | tee "$ROOT/nmx-relink.status"

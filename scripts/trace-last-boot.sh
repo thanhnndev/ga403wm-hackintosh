@@ -55,6 +55,6 @@ echo "== $(wc -l < "$L") lines -> $L   (boot lasted $(tail -1 "$L" | awk '{print
 g() { grep -m1 -E "$1" "$L" || echo "  (none)"; }
 echo "-- amdgpu init:";            g 'SMU is initialized successfully|Fatal error during GPU init'
 echo "-- PSP firmware failures:";  grep -c 'failed to load ucode' "$L" || true
-echo "-- NMXGPUFB / AGDC / pipe:"; g 'NMXGPUFB published'; g 'AGDC: UP'; g 'newUserClient\(type 4'; g 'iop: K6 transaction'
+echo "-- NMXGPUFB / AGDC / pipe:"; g 'NMX(GPU|AMD)FB published'; g 'AGDC: UP'; g 'newUserClient\(type 4'; g 'iop: K6 transaction'
 echo "-- display seen by NVIDIA:"; g 'NVAccel: headless check'
 echo "-- last 6 lines (a freeze = the log just stops):"; tail -6 "$L" | cut -c1-200
