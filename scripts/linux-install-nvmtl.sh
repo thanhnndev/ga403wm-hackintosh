@@ -19,9 +19,9 @@ DST=$MNT/Library/GPUBundles/NVMTLDriver.bundle/Contents/MacOS/NVMTLDriver
 
 mkdir -p "$MNT"
 if ! mountpoint -q "$MNT"; then
-    mount -t apfs -o rw,uid=0,gid=0,vol=0 "$DEV" "$MNT"
+    mount -t apfs -o readwrite,uid=0,gid=0,vol=0 "$DEV" "$MNT"
 fi
-mount | grep -q " $MNT .* rw" || mount -o remount,rw "$MNT"
+mount | grep -q " $MNT .* rw" || mount -o remount,readwrite "$MNT"
 [ -f "$DST" ] || { echo "no bundle at $DST -- install the driver payload first" >&2; exit 4; }
 
 STAMP=$(date +%Y%m%dT%H%M%SZ)

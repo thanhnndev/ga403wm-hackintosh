@@ -24,7 +24,7 @@ mountpoint -q "$MP" && { echo "could not unmount $MP (cd out of it?)"; exit 1; }
 
 echo "== 2. mount the Data volume read-write =="
 mkdir -p "$MP"
-if ! mount -t apfs -o rw,readwrite,vol=0 "$APFS_DEV" "$MP"; then
+if ! mount -t apfs -o readwrite,readwrite,vol=0 "$APFS_DEV" "$MP"; then
   echo "rw mount failed (volume not cleanly unmounted, or no write support). dmesg:"; dmesg | tail -5
   mount -t apfs -o ro,vol=0,uid="${SUDO_UID:-1000}",gid="${SUDO_GID:-1000}" "$APFS_DEV" "$MP"
   echo "NOTHING was changed. Boot macOS once and shut it down cleanly, then retry."

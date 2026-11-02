@@ -34,7 +34,7 @@ finish() {
 # linux-apfs-rw requires one mount of the container while writing.
 while IFS= read -r target; do umount "$target"; done < <(findmnt -rn -S "$DEV" -o TARGET)
 trap finish EXIT
-mount -t apfs -o rw,readwrite,vol=0 "$DEV" "$MP"
+mount -t apfs -o readwrite,vol=0 "$DEV" "$MP"
 findmnt -rn -T "$MP" -o OPTIONS | tr ',' '\n' | grep -qx rw
 [[ -d "$MP/Library/Extensions" && -d "$MP/private/var/db/diagnostics" ]]
 

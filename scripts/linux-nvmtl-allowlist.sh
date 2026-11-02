@@ -63,7 +63,7 @@ for _ in 1 2 3 4 5 6 7 8; do
     while IFS= read -r t; do [ -n "$t" ] && umount "$t" || true; done <<< "$targets"
 done
 echo "mounting $DEV rw at $MP ..."
-mount -t apfs -o rw,readwrite,vol=0 "$DEV" "$MP"
+mount -t apfs -o readwrite,vol=0 "$DEV" "$MP"
 opts=$(findmnt -rn -T "$MP" -o OPTIONS 2>/dev/null || true)
 if ! printf '%s\n' "$opts" | tr ',' '\n' | grep -qx rw; then
     echo "FATAL: $MP came up as '$opts' (need rw). Another mount of the container is probably still there:"

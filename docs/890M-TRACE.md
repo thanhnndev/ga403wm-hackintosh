@@ -4209,3 +4209,38 @@ page-aligned BOs, descriptor set layout in ascending binding order (RADV mutable
 Installed plugin `2b8595ce...` (backup `/Library/NullMoth/nvmtl-backup-20261026T092638Z`, previous `39769b66...`); allow-list unchanged
 (`#*`, `!WindowServer`). One reboot. Fallback if the desktop hangs on the 890M: remove `nvaccel=1` from boot-args (NMXAccel does not
 start, back to the software desktop) or copy the backup plugin back.
+
+## Step73 — WindowServer's sandbox keeps RADV off /dev/dri: zero GPUs, no Metal device (2026-11-02, Linux)
+
+Boots since Step72 (per-boot summary over the staged Persist files):
+
+| boot | time (+07) | GPU init | WindowServer |
+|---|---|---|---|
+| B3DB718A | 10-29 13:47 | SMU ok, pipe armed 12 s | `allow-listed: WindowServer` (Step72 fix works), then 4x `Failed to create MetalDevice` |
+| 6D70212A | 10-29 13:49 | same | same, 3x |
+| 96874556 | 10-29 13:51 | **PSP LOAD_IP_FW fails (5 ucode), SMU busy, Fatal error during GPU init** | no NMXGPUFB at all (Step67's intermittent failure, after two crash-loop warm reboots) |
+
+Why the device still fails (B3DB718A 48.05):
+
+    NVMTL: vk: zero physical devices through this ICD -- vkEnumeratePhysicalDevices -> VkResult 0, count 0, in WindowServer (uid 0 euid 88)
+    NVMTL:   NVK did not come up in this process - refusing to be the Metal device for WindowServer
+    kernel: Sandbox: WindowServer(1089) deny(1) file-write-data /dev/dri/renderD128
+    kernel: Sandbox: WindowServer(1089) deny(1) file-write-data /dev/dri/card0
+
+NullMoth's RADV reaches amdgpu through libdrm and `/dev/dri/*`. `/System/Library/Sandbox/Profiles/com.apple.WindowServer.sb`
+(`deny default`) allows file reads everywhere but no file writes or `file-ioctl` under /dev (system.sb: ioctl only on
+/dev/dtracehelper); its GPU access is IOKit only (`iokit-open` for `IOAccel*`, `IOFramebuffer*`, `IOSurface*`). The NVIDIA path
+works because NVRM is reached through IOKit; loginwindow and Terminal are not under this profile, so they enumerate the 890M.
+The 780M stack meets the same wall with IOKit (its Mesa 0005 opens PhxBringup through an NMXAccel proxy client).
+
+Fix now (no kext rebuild): add `(allow file-read* file-write* file-ioctl (subpath "/dev/dri"))` to the WindowServer profile on the
+system volume and bless a new snapshot, as OCLP does; `csr-active-config` 0x0A43 already includes CSR_ALLOW_UNAUTHENTICATED_ROOT.
+`scripts/ws-sandbox/ws-sandbox-dri.sh` runs once from LaunchDaemon `com.itlmt7925.ws-sandbox-dri` (installed from Linux,
+`scripts/linux-install-ws-sandbox.sh`): mounts the system volume at /System/Volumes/Update/mnt1, backs the profile up to
+/Library/NullMoth/ws-sandbox-<stamp>, refuses unless the patched profile compiles like the original under sandbox-exec,
+`bless --create-snapshot`, reboots. Log/status in /Library/StrixGraphicsFix/ws-sandbox-dri.{log,status}. Undo:
+`sudo /Library/StrixGraphicsFix/ws-sandbox-dri-undo.sh` (last sealed snapshot). Long-term, sealed-system-free route: an IOAccel*
+proxy user client in NMXAccel for the DRM calls (780M model).
+
+Tooling: Linux apfs now mounts read-only with plain `rw` ("experimental writes disabled"); install scripts use `readwrite`.
+The unifiedlog parser cache under ~/.cache/ga403 had been cleared and was rebuilt.
