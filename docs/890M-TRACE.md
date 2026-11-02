@@ -4343,3 +4343,43 @@ from the next start. Fixed: the reboot check now runs before the bootout.
 Next: a cold boot (shut down, then power on) with the installed Step75 kexts. Read the log for:
 - `initFramebufferResource ... LIVE SCANOUT phys 0x87c000000`
 - `iop: K6 transaction`
+
+## Step77: login window on the OLED; WindowServer hangs after the password (2026-11-02)
+
+Boots C562F754 and 26592254 run the Step75 kexts. `initFramebufferResource ... over the LIVE SCANOUT phys 0x87C...` and
+`iop: K6 transaction #0..` show up, and the login window is on the panel. After the password (26592254: ReturnFromAuthCopy at 73.1 s,
+Dock and SystemUIServer at 73.8 s, WS `timed out fence` at 74.1 s) the WS main thread logs nothing more. watchdogd kills WindowServer
+("main thread unresponsive, 40 s since last checkin"), and the verbose console comes back.
+
+The watchdog spin dumps (~/ga403-logs/step77, identical in both boots) show:
+
+| thread | where |
+|---|---|
+| WS main (`ws_main_thread`) | SkyLight → NVMTL plugin → blocked on a turnstile owned by `nvmtl.execution` |
+| `nvmtl.execution` | RADV → libdrm ioctl → NMXGPU `drm_ioctl` → `drm_ioctl_kernel` → `linux_synchronize_rcu` → `ck_epoch_synchronize_wait`, spinning (cpu 5.5 s of 5.5 s) |
+| `linuxkpi_irq_wq` | `linux_rcu_cleaner_func` → `linux_synchronize_rcu` → `ck_epoch_synchronize_wait`, also spinning |
+
+The cause is that an RCU epoch record stays active forever. `linux_rcu_read_lock` takes the record of `curcpu`, and
+`linux_rcu_read_unlock` takes the record of `curcpu` again. FreeBSD pins the reader in between. On xnu `sched_pin` only counts (see
+the nmx_kernel.c note: a real pin kept interrupts off and caused TLB-shootdown panics), so a reader that migrates ends its epoch on
+another CPU's record. Its own record keeps `active != 0`, and every later `synchronize_rcu` waits on it. The other record's
+counters and TAILQ tail are also corrupted. Before login the load is light and readers rarely migrate. After login (Dock, SystemUIServer,
+apps, much more GPU work) it happens within a second.
+
+Fix (NMXGPU, no CI build: binary rewrite of both functions in place, `scripts/nmx-rcu/rcu.s`, 416 bytes at 0x6c4e00):
+- Every reader uses the CPU-0 record of its RCU type. ck_epoch sections make a shared record make progress, the same way FreeBSD's
+  per-CPU record is shared by preempted readers on that CPU.
+- A spinlock in record 0's padding (+0xf8; the struct ends at 0xd8) serializes the record and TAILQ updates across CPUs. It is held
+  only inside the existing critical section (interrupts off), and only around `_ck_epoch_addref`/`_ck_epoch_delref` and the list ops.
+- No relocations fall in the range. Only `linux_rcu_runtime_init` and these two functions touch `nmx_dpcpu_linux_epoch_record`.
+
+`pkexec scripts/linux-patch-nmx-rcu.sh`:
+
+| kext | before | after |
+|---|---|---|
+| NMXGPU | 401c4e4c… | 02a336b4… |
+
+Backup: /Library/NullMoth/nmx-rcu-20261102T170256Z (NMXGPU, AuxKC). The relink is armed and reboots by itself.
+
+Source fix for the mini build: in linux_rcu.c, store the record in the task at lock time (or use a single record with a lock), not
+`DPCPU_GET` at unlock.
