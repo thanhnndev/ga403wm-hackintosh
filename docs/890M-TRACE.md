@@ -5119,3 +5119,72 @@ What to read after the boot:
   or rare.
 - No `[gfxhub] page fault`, no ring timeout, no wsdeath. Content must be right: window contents update, with no
   stale or garbled tiles. A stale page would show as a window that does not repaint.
+
+## Step93: IB prepare per submit made opt-in; NVMTL from source with the cached memtype and a surface keep that holds pools (2026-11-03, macOS)
+
+### Step92 boot
+Userptr works: WindowServer's IOSurfaces render in place ("its own pages"), and `nvmtlSurfaceIn/Out` copies are gone from
+`sample`. WindowServer dropped from ~72 % to ~50 % CPU, and the owner reports a smoother desktop. What is left in the samples:
+
+1. **Import/free churn.** `nvmtl_surface_keep` evicted every backing whose IOSurface retain count was ≤ 1 at each insert.
+   Clients' rotating surface pools were therefore re-imported (userptr BO + image) every frame.
+2. **Per-submit IB prepare.** `amdgpu_cs_patch_jobs` (fork patch `amdgpu-zz-ibprepare-b15`, inlined) does this for every GFX IB:
+   find_mapping, `amdgpu_bo_kmap` (vmap → `IOMemoryDescriptor::createMappingInTask`), clflush of the IB, mfence, a
+   96-dword snapshot for ibprobe, and a `printf("NullMoth ibprep b15: ...")`. That is ~83 log lines/s on an idle desktop.
+   The same kmap path was where the Step65/Step90 unlock-of-unlocked panic surfaced.
+3. Some pins fail with -14 (EFAULT from `prepare()`). This step does not address it.
+4. Not GPU: syncobj waits (mostly sleeping), the NMXAccel K6 copy (0.59 s per 8 s), and XHCI interrupt threads.
+
+### Why b15 is no longer needed
+b15 cured IB corruption that had two sources, and both are fixed:
+- dirty write-back aliases of WC pool pages (Step84: `pmap_zero_page` flushes);
+- un-snooped GTT (Step88: cached TTs are snooped; USWC IBs are WC with no dirty alias).
+
+b15 also covered only outer IBs.
+
+### Fix (NMXGPU binary, `scripts/nmx-ibprep/step93_patch.py`, 40 bytes)
+- **0x13f7a** `je 0x14140` (the GFX-ring branch into the prepare loop) becomes `jmp 0x5ab740`. The cave at 0x5ab740 sits after the Step92
+  cave, still in `si_initialize_smc_cac_tables`, where there are no relocations. The cave does three things:
+  - if the ring is not GFX, it resumes at 0x13f80;
+  - if `test byte [nmx_wbinvd_before_submit], 2` (0x9ba204, `__common`, sysctl `debug.nmx_wbinvd`) is clear, it resumes at 0x13f80;
+  - otherwise it jumps to 0x14140.
+- **0x14357** `cmp dword [rax],0` → `test byte [rax],1`. Bit 0 keeps the whole-cache invalidate after the loop. Before,
+  any non-zero value did it.
+- With the default `debug.nmx_wbinvd` = 0, no prepare runs. `sysctl -w debug.nmx_wbinvd=2` turns b15 back on at run time for a
+  hang hunt, with no reboot. The ibprobe snapshot is only taken in that mode.
+- No relocations in any patched range (`otool -r` scan). The dry run on a copy changed exactly 40 bytes.
+
+Installed with `scripts/macos-patch-nmx-step93.sh` (`--undo`; from Linux `scripts/linux-undo-nmx-step93.sh`):
+- NMXGPU sha256 `89969711…5f66d6`;
+- backup `/Library/NullMoth/nmx-step93-20261103T143817Z`;
+- AuxKC relinked in place, with all 3 probes present.
+
+### NVMTL plugin from source (fork `ci/amd-plugin-890m` 76c1614)
+The plugin is built from the fork's source, not the Step91 binary patch:
+- `memtype()` prefers HOST_CACHED, non-DEVICE_LOCAL for host-visible memory. This is Step91 in source; `NVMTL_HOST_WC=1` opts out.
+- `nvmtl_surface_keep` keeps unheld host-import backings for `NVMTL_KEEP_MS` (3000 ms) after their last use, capped at
+  `NVMTL_KEEP_IDLE` (48) idle entries, oldest evicted first. Cache hits touch the entry and log `surface keep: hit #N`.
+
+Installed with `scripts/macos-nvmtl-plugin-install.sh` (`--undo`):
+- the bundle is copied, ad-hoc signed and swapped in by rename;
+- binary `b95c708c…`;
+- backup `/Library/NullMoth/nvmtl-plugin-20261103T143758Z` (the Step91 binary `f7b81401…`).
+
+Tests on the new plugin (run as `/tmp/nvd/bin/nvmtltest`) all came back CORRECT:
+- metal-render;
+- metal-compute (1M values);
+- metal-iosurface (GPU and CPU pixel);
+- metal-readback (getBytes ~2.4 ms after the first iteration, 0 wrong pixels).
+
+WindowServer loads the new plugin on its next start.
+
+What to read after the boot:
+- WindowServer CPU (`top -l 2 -stats pid,command,cpu`) and a `sample` of it, using `tools/890m/sample-chains.py` to find who
+  still allocates (`nvmtl_surface_image_create`, `amdgpu_bo_alloc`);
+- `log show --last 1m | grep -c "ibprep b15"` should be 0;
+- `surface keep: hit` lines in WindowServer's log;
+- `debug.nmx_timeouts` stays 0, with no ring timeout and no IB-corruption hang.
+
+New tools:
+- `tools/890m/sample-chains.py` prints the ancestor chains of `sample` call-graph nodes that match a regex.
+- `tools/890m/nmx-disasm.py` is a capstone disassembler with NMXGPU symbol names.
