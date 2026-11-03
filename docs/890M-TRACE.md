@@ -5613,3 +5613,28 @@ After the boot, in this order, one step at a time:
 - NMXAccel is unchanged;
 - `macos-install-step98.sh` now carries the same shas;
 - undo is still `macos-install-step98.sh --undo`.
+
+## Step98b boot (2026-11-04 00:25): page flips work (mode 2)
+
+- The boot was clean again: NMXGPU da129846, 0 "CS rejected", 48 read-only userptr retries, no irqwatch or mmfix
+  lines.
+- Flips off, 10 s on an idle desktop (`tools/890m/present-rate.sh 10`): 82.7 fps. Per frame: beam wait 2.36 ms,
+  K6 copy 3.44 ms, fence 4.19 ms.
+- `sysctl -w debug.nmxaccel_flip=2`:
+  - The cave logged `NMX flip: API up` and `chain of 3`. NMXAccel logged `flip API present: caps 0x105` and
+    `3 of 3 buffers usable`.
+  - The buffers are home (phys 0x87c000000, gpu 0x801c000000) plus 0x864000000 (gpu 0x8004000000) and 0x867c39000
+    (gpu 0x8007c39000), all pitch 11520.
+  - Every latch reads back the flipped buffer's address from HUBP0 (`HUBP0 addr 0x8004000000` after a flip to
+    handle 1, `0x801c000000` after a flip home). The display really scans the buffer that was flipped to.
+- Flips on, 10 s: **99.3 fps** (from 82.7). The beam wait is gone (0.00 ms) and the K6 paced copy is gone. The copy
+  into the back buffer is now unpaced and not in the beam counters. The latch wait is 3.86 ms on average, off the
+  serial path (async completion). Fence wait was 3.64 ms.
+- 30 s more: 2321 submitted = 2321 latched. Tripped, timeouts, fallback, drop and hw_mismatch were all 0. The fps over
+  those 30 s was 77.4, because the desktop drew fewer frames.
+- The `debug.nmxaccel_flip` setting returns to 0 at every boot.
+
+Next:
+1. Make flips the default at boot.
+2. Mode 1, zero copy: scan the IOSurface itself (DC with GPU VM, its own boot). It removes the remaining CPU copy.
+3. A descriptor-set cache in NVMTL, for WindowServer's CPU.
