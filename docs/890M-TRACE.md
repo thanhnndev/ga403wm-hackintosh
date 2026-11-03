@@ -4482,3 +4482,37 @@ Source fix for the mini build: in linux_idr.c, keep the `lic` pointer from `idr_
 instead of `DPCPU_GET` in `idr_preload_end`.
 
 Still open: 2DEFF732's missing sdma interrupts after a failed PSP-init boot.
+
+## Step80 — desktop works, WindowServer dies after about a minute: syncobj wait timeout returned ETIMEDOUT, not ETIME
+
+After Step79 the desktop came up and was usable, with some tearing. About a minute later the screen went to the verbose console
+(boot 0577C74D, 266 s). There was no panic, no GPU fault, no ring timeout. WindowServer logged:
+
+```
+266.47 NVMTL: vk: fence wait -> -13 after 295 ms (budget 5000 ms); disabling backend without retiring in-flight resources
+266.47 Detected command buffer completion failure.  Error code = 0x1
+266.47 loginwindow: Window Server exited, closing down the session immediately
+```
+
+-13 is `VK_ERROR_UNKNOWN`. NVMTL waits on each fence in 250 ms slices (`vkWaitForFences(…, 250 ms)`) and loops on `VK_TIMEOUT`.
+Mesa (17ca6174, `vk_drm_syncobj.c`) returns `VK_TIMEOUT` only if `errno == ETIME`. On macOS that is 101. NMXGPU's
+`drm_syncobj_array_wait_timeout` returns `-0x3c` (FreeBSD linuxkpi defines `ETIME` as `ETIMEDOUT`, 60). So every syncobj wait that
+times out is a hard error. This was the first fence in the session that took longer than 250 ms. The log also has 31 `STALE fence read
+on sdma0` and 9 on `mes_3.0.0`, and 16 `timed out fence`.
+
+Fix (`scripts/linux-patch-nmx-etime.sh`, NMXGPU binary): `movq $-0x3c,%r15` at 0x437ba6 (the timeout path of
+`drm_syncobj_array_wait_timeout`) becomes `movq $-0x65,%r15`, the macOS ETIME. Only `drm_syncobj_wait_ioctl` and
+`drm_syncobj_timeline_wait_ioctl` call it, and both return the value unchanged. linux_file_ioctl only rewrites
+EINTR/ERESTART(SYS).
+
+| kext | before | after |
+|---|---|---|
+| NMXGPU | c2979d9b… | 1e0e1524… |
+
+Backup: /Library/NullMoth/nmx-etime-20261103T024332Z. The relink is armed.
+
+Source fix for the mini build: in the xnu linuxkpi errno.h, define `ETIME 101`, or remap it in the ioctl return.
+
+Still open:
+- Tearing: K6 transactions scan out straight from the IOSurface, and no flip/vblank sync is visible in the log.
+- Slow fences (stale sdma/MES fence reads, the missing-interrupt pattern of 2DEFF732).
