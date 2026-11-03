@@ -4516,3 +4516,28 @@ Source fix for the mini build: in the xnu linuxkpi errno.h, define `ETIME 101`, 
 Still open:
 - Tearing: K6 transactions scan out straight from the IOSurface, and no flip/vblank sync is visible in the log.
 - Slow fences (stale sdma/MES fence reads, the missing-interrupt pattern of 2DEFF732).
+
+## Step81 — WindowServer died ~20 s after login; nullmoth-wsreset kills WindowServer on every boot; record WindowServer deaths
+
+Boot 44707127 (Step80, ETIME fix relinked). Timeline:
+
+- 51 s: `nullmoth-wsreset` (the NVIDIA flicker stopgap; it gates on `com.nullmoth.NVAccel`, which still loads for the RTX 5060)
+  SIGTERM/SIGKILLs the first WindowServer at the login window (`wsreset.log`: "restarted WindowServer once" 03:28:06). It does
+  this on every boot (also 09:31:49 the boot before). On the 890M it only tears down live GPU contexts.
+- 80.5 s: login on the second WindowServer (pid 988).
+- ~93 s: WindowServer's render side goes silent (no NVMTL / process-state lines; "pid … failed to act on a ping"); only
+  "Invalid display" and new-connection lines from other threads continue. That is the render thread blocked in a fence wait.
+- 101.3 s: last log line on disk (every process). display-trace sees pid 988 gone at 03:29:02 (up 107 s), then nothing.
+
+No panic, no .ips, no "unlock of unlocked". `STALE fence read` (31) is already handled (fence_process clflushes and uses the
+memory value), and no `fence fallback` line: IRQs are arriving. Most likely NVMTL's 5000 ms fence budget ran out on a GPU job that
+did not finish (after Step80 a slow fence no longer kills it at 250 ms), but the lines that would say which (NVMTL "fence wait",
+drm_sched) were in the last ~6 s that logd never persisted before the power-off.
+
+Fix (`scripts/linux-install-wsdeath.sh`):
+- `/Library/NullMoth/no-wsreset`: wsreset exits, no more WindowServer kill at boot.
+- `com.nullmoth.wsdeath` (`scripts/wsdeath/`): polls WindowServer every second; when its pid goes away it writes
+  `log show --last 3m` (WindowServer, kernel, loginwindow, ReportCrash, watchdogd; ibprep spam dropped) to
+  `/Library/NullMoth/wsdeath/<time>-ws<pid>.log` and syncs. The next death is on disk even if the machine is powered off.
+
+Still open: which GPU job stalls >5 s (read from the next wsdeath log), tearing, PSP init retry.
