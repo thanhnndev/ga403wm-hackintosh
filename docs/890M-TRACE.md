@@ -4996,3 +4996,55 @@ and reboots by itself.
 What to read after the boot:
 - wsdeath: `keep witness … NOT seen` and `upload FAILED` should be gone; no `[gfxhub] page fault … address 0x0`.
 - WindowServer %CPU (Step89's goal) should stay low. Watch mmap latency if big WC surfaces show up in `sample`.
+
+## Step91: the Step90 boot works; WindowServer's CPU is now readback out of uncached memory: Step88's nmx_umap_cache=2 means WC, and NVMTL picks the WC type (2026-11-03, macOS)
+
+### The Step90 boot
+NMXGPU `c9bf8730` (Step90) and NMXAccel `11c9a392` (Step89) are loaded. The desktop works. No new wsdeath log, and
+`debug.nmx_timeouts` = 0. WindowServer still runs at ~100 % CPU. `sample` (`~/ga403-logs/step91/`):
+* The Step89 cost is gone. GEM_CREATE ioctls drop from 4165 samples to ~130 for all ioctls, so TTM order 0 works.
+* The new hot spot is 4710 of ~6000 samples in `_platform_memmove` ← `nvmtl_vk_image_read` (the "copied out" half of
+  NVMTL's private surface images). The spindump kernel frames under it are only timer interrupts, so it is not
+  page faults: the copy itself is slow.
+
+`tools/890m/metal-readback.swift`, run as `nvmtltest`, measures it: the GPU clears a shared 2880×1800 rgba8 texture,
+`getBytes` reads all of it, and `replaceRegion` writes it back, with every pixel checked. **getBytes took 190 ms
+(108 MB/s)**, while replaceRegion took 2–3 ms. That is the read speed of uncached/WC memory.
+
+### Two causes, both needed for the fix
+1. **NVMTL asks for a WC type for every host-visible buffer.** The log line is `vk: buffers (host_visible=1) take memory type 2
+   flags 0x6`. `nvmtl_vk_buffer_create` (0x3dd5) and `nvmtl_vk_heap_create` (0x1fc89) compute
+   `want = host_visible * 5 + 1` and look for an exact match on `(flags & (want ^ 1)) == want`. With want = 0x6, CACHED
+   is not compared, so the match is RADV's USWC GTT type.
+2. **Step88's `nmx_umap_cache = 2` forces WC, not "follow pgprot".** In the fork source (`nmx_umap_insert`):
+   0 = the driver's own attribute, 1 = UC, 2 = WC. The disassembly agrees: 1 → memattr 0, 2 → memattr 1, anything
+   else → from the pgprot. So since Step88 every user mmap of a GEM BO has been WC, including cached GTT. Patching NVMTL
+   alone still gave 190 ms, with type 5 flags 0xe. Before Step90 the multi-range WC maps were silently write-back
+   (Step90's page-attribute stomping), which hid this.
+
+### Fixes
+* `scripts/macos-nvmtl-cached-host-patch.sh` (Step91, `--undo`): both sites now compute `want = host_visible * 13 + 1`
+  = 0xE (HOST_VISIBLE | HOST_COHERENT | HOST_CACHED). The changes are `43 8d 04 bf` → `41 6b c7 0d` and `8d 04 80` → `6b c0 0d`,
+  each followed by the existing `incl %eax`. The bundle is re-signed ad hoc and swapped in by rename, so the running
+  WindowServer keeps its mapped pages. Installed 13:57Z: NVMTLDriver `f7b81401…` (binary `3e3f9d92…`), backup
+  `/Library/NullMoth/nvmtl-cachedhost-20261103T135713Z`. New processes log `take memory type 5 flags 0xe`.
+* `debug.nmx_umap_cache=0` set live. `scripts/macos-patch-nmx-step91.sh` (`--undo`) makes it the default
+  (`__DATA` 0x9264d0, 2 → 0) and relinks the AuxKC from macOS. NMXGPU `b13ca867…`, backup
+  `/Library/NullMoth/nmx-step91-20261103T140041Z`.
+
+### Result (new processes, this boot)
+| test | before | after |
+|---|---|---|
+| metal-readback getBytes 20 MB | 190 ms (108 MB/s) | **1.9 ms median (~11 GB/s)**, 40 iterations, 0 wrong pixels |
+| replaceRegion 20 MB | 2–3 ms | ~2 ms |
+| metal-render / metal-compute / metal-iosurface | CORRECT | CORRECT |
+
+Coherence: a cached GTT page is write-back on the CPU and snooped by the GPU (Step88), so GPU writes followed by CPU
+reads are correct. The 40-iteration check covers that.
+
+WindowServer still runs the old NVMTL and keeps its old mappings until it restarts, so it gets the gain on the next boot.
+
+What to read after the boot:
+- `sysctl debug.nmx_umap_cache` = 0. WindowServer's log says `take memory type 5 flags 0xe`.
+- WindowServer %CPU. `sample` should show no `memmove` ← `nvmtl_vk_image_read` at the top.
+- wsdeath: no `keep witness … NOT seen`, no `upload FAILED`, no `[gfxhub] page fault`.
