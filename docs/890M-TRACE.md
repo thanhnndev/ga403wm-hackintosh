@@ -5048,3 +5048,74 @@ What to read after the boot:
 - `sysctl debug.nmx_umap_cache` = 0. WindowServer's log says `take memory type 5 flags 0xe`.
 - WindowServer %CPU. `sample` should show no `memmove` ← `nvmtl_vk_image_read` at the top.
 - wsdeath: no `keep witness … NOT seen`, no `upload FAILED`, no `[gfxhub] page fault`.
+
+## Step92: the Step91 boot is smoother; WindowServer's CPU is now IOSurface copies, because NMXGPU has no userptr (2026-11-03, macOS)
+
+### Step91 boot (21:05 local)
+- `debug.nmx_umap_cache` = 0. WindowServer logs `vk: buffers (host_visible=1) take memory type 5 flags 0xe heap 0`.
+  The owner reports the desktop is much less laggy.
+- WindowServer is at ~72% CPU (top, 6 × 2 s), down from 100%+. kernel_task is at ~25%: NMXDisplayPipe (the K6
+  copy) 0.43 s per 8 s, and the four AppleUSBXHCIPCI interrupt threads ~1.1 s per 8 s (MMIO reads in the XHCI
+  handler, not the GPU; noted only).
+- `sample` WindowServer (8 s): the top work is `-[NVMTLTexture nvmtlSurfaceIn]` → `nvmtl_vk_image_write`
+  (~1100 of 6246 samples on the compositing thread) and `nvmtlSurfaceOut` → `nvmtl_vk_image_read` → memmove
+  (~600). The rest is waiting (`drmSyncobjWait`, mach_msg). The 190 ms WC readbacks are gone.
+
+### Cause
+Every IOSurface goes through a private VkImage: NVMTL copies the surface in when its seed changes and copies it
+out after the GPU writes it. The zero-copy path (from the 780M port, `nvmtl_surface_image_create`: "-> its own pages
+(host import, no copies)") imports the surface's allocation with VK_EXT_external_memory_host. On the 890M every
+import fails: `vk: vkAllocateMemory refused the imported host pointer 0x183150000 (20828160 bytes, memory type 5)`.
+
+RADV's import is `DRM_AMDGPU_GEM_USERPTR`. The NMXGPU build has no `CONFIG_HMM_MIRROR` / `CONFIG_DRM_AMDGPU_USERPTR`:
+`amdgpu_hmm_register` is the stub that logs `HMM_MIRROR kernel config option is not enabled` (seen at 21:05:58) and
+returns -ENODEV. In the binary the compiler kept only `create BO; set_userptr; -ENODEV` in
+`amdgpu_gem_userptr_ioctl` (0x5a790). The submit path has stubs that cannot succeed either:
+- `amdgpu_cs_parser_bos`: any userptr entry → `.cold.1` → `-EPERM`.
+- `amdgpu_cs_submit`: `!amdgpu_ttm_tt_get_user_pages_done()` → `-EAGAIN`.
+
+xkpi already pins user pages (`lkpi_get_user_pages` → `nmx_user_pages_pin`, an IOMemoryDescriptor wiring on the
+task, dropped by the last `put_page`). amdgpu just never called it.
+
+### Fix: userptr without HMM (`scripts/nmx-userptr`, `scripts/macos-patch-nmx-step92.sh`)
+The pages are pinned once when the BO is made and held for its lifetime. There is no MMU notifier, so the submit path
+never re-fetches. NVMTL keeps the surface alive while its texture lives, so the pinned pages are the surface's.
+
+The cave is C, `cave.c`, built with clang for ELF and placed at 0x5ab300 by `elflink2.py`: .text + .rodata, PC32 only,
+1080 bytes. It sits in the dead SI dpm code, after the Step90 cave. Its entries are +0, +8 and +16.
+
+| site | was | now |
+|---|---|---|
+| ioctl 0x5a7c8 | `mov r14,rsi; add rdi,-0x10` | jmp to +0: the same two instructions, plus filp kept at `[rbp-0x60]` (the frame's free slot at rsp) |
+| ioctl 0x5a86b | `mov eax,-ENODEV` (inlined hmm stub) | jmp to +8: `userptr_tail(tbo, args, filp)`, then back to 0x5a893 (the object put) |
+| cs_parser_bos 0x1390c | `jne .cold.1` (userptr → -EPERM) | nop6 |
+| cs_parser_bos 0x13bb4 | `jne` usermm ≠ current->mm → -EPERM | nop6 |
+| cs_submit 0x14842 | `jne` → -EAGAIN for userptr lists | nop6 |
+| unpopulate 0x943e9 | inlined `set_user_pages(ttm, NULL)` | `call +16` (`userptr_release`: put each page, then NULL) |
+
+`userptr_tail` does the following:
+- `lkpi_get_user_pages(addr, num_pages, write unless READONLY, ttm->pages)`. It pins even without VALIDATE, because
+  nothing else fills the array.
+- With VALIDATE (RADV always sets it): `amdgpu_bo_reserve`, placement GTT, `ttm_bo_validate`, unreserve.
+- `drm_gem_handle_create`, then `args->handle`.
+- On a failure before the BO is bound, it puts the pages itself.
+- It logs up to 24 lines `NMX userptr: pinned/... FAILED addr .. size .. -> n` (the budget is the now-unused
+  `amdgpu_hmm_register.__print_once` byte).
+
+The TT is cached (Step88 `nmx_gtt_wc=0`), so the GART PTEs are snooped and the pages stay coherent with
+WindowServer's write-back mapping. Binding uses the existing `amdgpu_ttm_tt_pin_userptr`, which builds an sg table
+from `ttm->pages`.
+
+Installed 14:21Z from macOS: NMXGPU `01ecc7bc…` (from Step91 `b13ca867…`), AuxKC relinked, and all three KC probes
+present. Backup: `/Library/NullMoth/nmx-step92-20261103T142109Z`. Undo:
+- on macOS: `sudo scripts/macos-patch-nmx-step92.sh --undo`;
+- from Linux: `pkexec scripts/linux-undo-nmx-step92.sh` (restores the kext and arms nmx-relink).
+
+What to read after the boot:
+- `log show --predicate 'eventMessage CONTAINS "NMX userptr"'`: `pinned` lines, and no `FAILED`.
+- WindowServer: `-> its own pages (host import, no copies)` and `imported the caller's pages as device memory`.
+  There should be no new `refused the imported host pointer`.
+- WindowServer %CPU and a `sample`: `nvmtlSurfaceIn`/`nvmtl_vk_image_write` and `nvmtl_vk_image_read` should be gone
+  or rare.
+- No `[gfxhub] page fault`, no ring timeout, no wsdeath. Content must be right: window contents update, with no
+  stale or garbled tiles. A stale page would show as a window that does not repaint.
