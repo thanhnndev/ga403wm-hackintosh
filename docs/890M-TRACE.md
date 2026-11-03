@@ -5546,3 +5546,45 @@ After the reboot, check:
 - `log show --last boot --predicate 'sender == "NMXGPU"' | grep -E 'NMX (mmfix|irqwatch)'`
 - no `p1_bo_handles -> -1` or "CS rejected" lines, and the login is reached
 - fps (~75 at Step96)
+
+## Step98: page flips, mode 2 (VRAM swap chain + vblank-latched flips), installed with Step97 for the same boot
+
+The owner asked for flips in this boot rather than one boot later. So Step98 goes in together with Step97/97b, and
+flips stay **off** until they are switched on by hand.
+
+**NMXGPU flip API** (`scripts/nmx-flip`). The NMXGPU half that `docs/890M-FLIPS.md` section 5 asks for, as a cave:
+the installed NMXGPU is the 2026-10-23 source build plus ~15 binary steps, so a source rebuild would drop those steps.
+- Hook: 0x6e3b23 in `NMXGPUFB::callPlatformFunction`, the `je` taken when the name is not `nvScanoutInfo`. The cave
+  compares the name against the six `nmxFlip*` names (OSSymbol `isEqualTo(const char *)`, vtable +0x158, as the
+  original code does). Anything else continues to `IOFramebuffer::callPlatformFunction` exactly as before.
+- Cave: 3792 bytes at 0x507190..0x508060 (`kv_dpm_sw_fini` .. `kv_dpm_set_power_state`, Kaveri-only dpm code). The
+  only relocations around it are at 0x507187 and 0x50822b. State: 0xe8 bytes of dead CI dpm ratelimit words at
+  0x9270a0.
+- Struct offsets come from the real headers: a probe compiled with the xkpi `cc.sh` flags, checked against the binary
+  (`fb->buffer` +0x78, `amdgpu_bo.tbo` +0x48, `pin_count` +0x23c).
+- What it does:
+  - `nmxFlipCaps`: SUBMIT | VRAM_CHAIN | XRGB8888, no IMPORT. Mode 1 (zero copy) needs DC with GPU VM on, which is a
+    boot-critical change for its own boot.
+  - `nmxFlipBuffers`: home (handle 0) + 2 more XRGB8888 buffers from the bridge's DRM client
+    (`drm_client_framebuffer_create`). All three are pinned in VRAM (`amdgpu_bo_pin`) and never unpinned, mapped and
+    checked to be physically contiguous. amdgpu GEM has no `.pin`, so without this the home buffer would be
+    evictable while another buffer is on screen, under the kva that IOFramebuffer and the K6 copy publish.
+  - `nmxFlipSubmit`: non-blocking atomic commit that only changes the primary plane's fb (DC fast update, latched at
+    vblank). It holds a reference on the CRTC's `drm_crtc_commit`. Busy while the previous flip is pending.
+  - `nmxFlipStatus`: never sleeps. Latched = that commit's `flip_done`. If the plane's fb is not the one last latched,
+    the bridge committed home itself (restore, hotplug, display power): generation goes up.
+  - `nmxFlipRelease`: busy while on screen or pending, otherwise success (chain buffers stay).
+- NMXGPU c2326f22 -> 2d9102d8.
+
+**NMXAccel**: CI `ci/nmxaccel-flip` 37493db (bf7c7ea8), the live a24692f fence build plus the flip path.
+`debug.nmxaccel_flip` stays 0 at boot, so NMXAccel never calls the API.
+
+Install: `scripts/macos-install-step98.sh` (backup /Library/NullMoth/step98-bk-20261103T171105Z, `--undo`, or
+`pkexec scripts/linux-undo-step98.sh`; Step97's backup still holds the Step96 NMXGPU).
+
+After the boot, in this order, one step at a time:
+1. Step97 checks: desktop reached, no "CS rejected", `NMX (mmfix|irqwatch)` lines, fps.
+2. `sudo sysctl -w debug.nmxaccel_flip=2`, then read `log show --last 2m | grep -E "NMX flip|iop: flip"` and the
+   `debug.nmxaccel_flip_*` counters. Expected: "API up", a chain of 3, `latched` growing with `submitted`, and
+   `fallback`, `timeouts` and `tripped` at 0.
+3. If anything looks wrong: `sudo sysctl -w debug.nmxaccel_flip=0`. The next frame copies home and flips home.
