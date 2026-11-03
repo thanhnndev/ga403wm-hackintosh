@@ -5290,3 +5290,58 @@ Installed with `scripts/macos-install-step95.sh <CI NMXAccel.kext>` (`--undo`; f
 2. Check WindowServer CPU and the main thread's `waitUntilCompleted` share in `sample`, tearing and stale frames, and the fps headroom.
 3. `log show --predicate 'sender == "NMXGPU"' | grep cs-trace`, from normal use first.
    - If it is empty, run metal-iosurface **once at a time** and stop at the first rejection.
+
+## Step96 (2026-11-03): Step95 boot results, commit-thread submit-ahead, read-only userptr retry
+
+Step95 boot (NMXGPU 4e856bbb, NMXAccel 1b9c7b9f, NVMTL 1706da17), first ~10 minutes of normal use:
+
+- **Fence-ordered swap works.** `debug.nmxaccel_fence_frames` 2586, `_waited` 2503, `_wait_us` 1769768 (about
+  0.7 ms per frame, IODelay spin in performTransaction), `_timeouts` 0. WindowServer logged
+  "fence-ordered swap ON". No tearing or stale frames seen.
+- **No CS rejections.** The ioctl -EPERM hook logged nothing. The only trace hits were
+  `userptr_tail -> -14` (37 times). That is the GEM_USERPTR import, not CS: our Step92 pin
+  (`get_user_pages` -> `IOMemoryDescriptor::prepare`) failed with -EFAULT.
+- **Why the pin fails:** `vmmap -v` of WindowServer at the failed addresses shows read-only mappings. Most are
+  client CoreAnimation surfaces mapped `r--/r--` SM=SHM, and one is a read-only mapped file (DarkAqua.car).
+  libdrm always asks for a writable userptr, so wiring for write fails. Those surfaces fall back to CPU copies.
+- **WindowServer main thread** (sample, 6 s): 723 of 3892 samples were still blocked, now in
+  `-[NVMTLCommandBuffer waitUntilScheduled]` called by `CoreDisplay::DisplayPipe::RunFullDisplayPipe`. The
+  plugin's single execution worker runs the submit-ahead pass only between blocking `WaitForFences`
+  (309 samples). So a buffer committed while the worker waited for the previous one was scheduled only once that
+  one completed. The fence swap had moved the wait, not removed it.
+
+Fixes:
+
+1. **NVMTL 899c64f** (fork): the ahead pass also runs in `nvmtl_pump_buffers` on the committing thread. A part
+   the worker submits itself is held (`_syncHold`), so the ahead pass never submits it twice or out of order.
+   `vkQueueSubmit` was already serialized by `nvmtl_submit_mutex`. `NVMTL_COMMIT_AHEAD=0` turns it off.
+   `tools/890m/metal-sched.swift` commits a ~1.7 ms buffer A, then a small buffer B, and times B's
+   `waitUntilScheduled`:
+   - off: p50 0.12 ms, p90 1.66 ms, max 1.90 ms;
+   - on: max 0.02 ms;
+   - ORDER OK both ways.
+
+   metal-latency and metal-fence (40/40 CORRECT) are unchanged. Installed as a22865a4 (signed); backup
+   /Library/NullMoth/nvmtl-plugin-20261103T154812Z. WindowServer loads it on the next boot.
+2. **NMXGPU Step96** (`scripts/macos-install-step96.sh`): the cs-trace cave's thunk for the userptr_tail call
+   goes through `userptr_ro`. On -EFAULT without READONLY, it sets `args.flags |= READONLY` and
+   `gtt->userflags |= 1` (ttm+0x58, the bit `amdgpu_ttm_tt_is_readonly` and `amdgpu_ttm_tt_pte_flags` test, so
+   the PTEs get no WRITEABLE bit), then pins again without FOLL_WRITE. Logs "NMX cs-trace: userptr_ro_retry -> 0".
+   - To fit the cave (it ends at 0x5abe62, limit 0x5abe80), thunks align with `push rax`/`pop rcx` instead of a
+     frame, and name rows are 18 bytes.
+   - All 31 thunk targets and site ids were re-verified on a patched copy.
+   - cave.bin 9ececcea, NMXGPU 44c7e552.
+   - Input is the Step93 NMXGPU from step95-bk-20261103T152156Z.
+   - Undo: `--undo`, or `scripts/linux-undo-step96.sh`.
+
+After the next boot:
+- `log show --predicate 'sender == "NMXGPU"' | grep -E "cs-trace|NMX userptr"`: expect "userptr_ro_retry -> 0"
+  and no "pin FAILED" left unretried.
+- WindowServer log "submit-ahead on the committing thread ON".
+- Sample WindowServer: the `waitUntilScheduled` share should drop from ~19% of the main thread.
+- Fence counters: with WindowServer returning earlier, NMXAccel may spin longer in IODelay. If `_wait_us` per
+  frame grows a lot, the next NMXAccel change is to sleep instead of spinning.
+- Other leads from this sample:
+  - per-frame IOSurface import/free churn: `nvmtlNewSurfaceTexture` -> `amdgpu_create_bo_from_user_mem`
+    85 samples, `bo_free` 44;
+  - managed-buffer prologue uploads, ~200 KB per submit.
