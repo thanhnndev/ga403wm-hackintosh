@@ -4753,3 +4753,67 @@ Reading the output (`NullMoth ibprobe` lines in the wsdeath log):
 * A breaks where the CP broke: the IB is corrupt in memory. This is (a).
   * A ≠ B somewhere means a write-back alias holds different data, so look for the CPU writer.
   * A = B means the corruption was written coherently, so look at userland and the BO's history.
+
+## Step87 — review of Steps 33c–86, the 780M driver and xkpi: force-WC GTT is the leading suspect (2026-11-03, Linux)
+
+### The Step86 probe ran, but its output is unreadable
+On hang seq 44981/2 (ws205 died at up=312 s), the probe ran. The two lines right after `ringdump hw rptr` read
+`<compose failure [UUID]>`. The uuidtext for NMXGPU (591E7D5A…) holds only `__cstring` (0x6feb20–0x76b3fd), and the
+probe's format strings sit in `__text` at 0x5aa5a0, so logd cannot resolve them. There were only two lines (F_HEAD and F_BO),
+which means `limit` was 0 and the probe returned before parsing. Any later probe has to print through a `%s` format
+that already exists in `__cstring` (0x7001ed `"%s\n"`), with the text built by `scnprintf`. Logs are copied to
+`~/ga403-logs/step88/`.
+
+### CP state at every hang (decoded with gc_11_5_0_sh_mask.h)
+| hang | IB1 CMD_BUFSZ / left | PFP hdr | ME hdr | CP_BUSY_STAT |
+|---|---|---|---|---|
+| Step82 | 0x1978 / 0 | c0065800 | c0064900 RELEASE_MEM | 0x48080 |
+| Step84 | 0x1420 / 0 | 0 | c0065800 ACQUIRE_MEM | 0x80 |
+| Step86 b1 | 0x5008 / 0xac8 | 0 | c0055000 DMA_DATA | 0x8080 |
+| Step86 b2 | 0x1f0 / 0 (illegal reg) | 1f810080 | c0016900 SET_CONTEXT_REG | 0x20580 |
+| Step88 | 0x2cd0 / 0 | 0 | c0055000 DMA_DATA | 0x8080 |
+
+- `GRBM_STATUS2` 0x5000000c: EA, UTCL2, TCP and CPAXI are all idle, so no memory request is outstanding.
+- `CP_BUSY_STAT` 0x8080: only PFP_PARSING and GFX_CONTEXT_BUSY are set. The ME is idle, and the ME header is just its
+  last packet. The PFP is the stuck unit, with a header of 0.
+- `CPF_STALLED_STAT1` RING_FETCHING_DATA is back-pressure, not a fetch stall.
+- The ipdump `GCVM_L2_PROTECTION_FAULT_STATUS` is read at the 11.0 offset (it shows PFLT_CNTL 0x3ffffffc). Trust the
+  `vmregs` line instead.
+
+### What the 780M driver (nullarc cbb08dd) does differently
+- **System-memory PTE:** every PTE is `0x77 | 4<<48`, i.e. SNOOPED with MTYPE 4 (C_RW_S). This includes RADV "VRAM" BOs.
+- **CPU mapping:** write-back only, with no WC or UC alias of system memory.
+- **No per-submit flush:** `phxbos_flush` is 0.
+- **Power gating:** GFXOFF and gfx PG/CG are never enabled.
+- **Background compute:** mediaanalysisd, photoanalysisd and Spotlight are denied Metal, because background ML
+  compute hung their GPU within seconds.
+- Upstream nullmoth/nvidia-macos-driver moved NMXGPU/xkpi out of the repo at df2cff0. It has no newer coherency commits
+  than ours.
+
+### What NMXGPU does (source plus the installed binary)
+- **GTT is forced write-combined:** `nmx_gtt_wc` = 1 (0x9255b0, from `amdgpu-ttm-force-wc.patch`, 14d736b). Every TT is
+  `ttm_write_combined`, including userptr and SG imports.
+  - `amdgpu_ttm_tt_pde_flags` (0x92f10) sets SNOOPED only for cached TTs, so no system page is snooped.
+  - The default MTYPE is NC.
+- **Every page keeps its write-back alias** (`nmx_kva`). Writers through that alias:
+  - `ttm_kmap_iter_tt_map_local` (0x601360) returns the WB view for WC pages without a flush. `ttm_move_memcpy`
+    uses it whenever the SDMA move is unavailable, for example after a reset.
+  - Userptr/host-imported pages (VK_EXT_external_memory_host from the plugin, `NVMTL_GSUB_HOSTPTR_LIFT=1`) stay WB in
+    the process, while the GPU reads them unsnooped.
+  - The CPU has no self-snoop, so dirty WB lines are written back over GPU data, and the GPU reads stale DRAM.
+- **The detector behind force-WC is racy:** the "STALE fence read" check (`amdgpu_fence.c:117`, binary 0x6e8875) reads the
+  WC-mapped `adev->wb`. N→N+1 only means the GPU wrote between the two reads. Step40's "GPU writes are not snooped",
+  the premise for force-WC, was never proven with a race-free test.
+- **GFXOFF is on:** `amdgpu_pp_feature_mask` = 0xfff7bfff (0x8f6b54) has PP_GFXOFF_MASK set, and 11.5.0 has full PG/CG.
+  The trace never examined it.
+
+### Ranked causes
+1. **Force-WC GTT**, a departure from upstream (APU GTT is cached + snooped) and from nullarc. It leaves userptr
+   pages and the WB alias incoherent with the GPU. The fix is to go back to the upstream coherence model
+   (`nmx_gtt_wc` = 0): WB plus SNOOPED, with no alias hazard. Optionally MTYPE C_RW_S, as nullarc uses.
+2. **GFXOFF / gfx power gating** under xkpi timing. The PFP stalls with nothing outstanding, and then MES does not answer
+   RESET.
+3. **A buffer reused while the GPU still reads it** (Step86 b2's garbage header, Step82's permission fault).
+   Most of it reduces to cause 1.
+4. **Background ML compute**, as on the 780M.
+5. MES firmware, stale TLB, IOMMU and TMZ are low (no faults, EA idle, IOMMU off, flush logic as upstream).
