@@ -4817,3 +4817,29 @@ that already exists in `__cstring` (0x7001ed `"%s\n"`), with the text built by `
    Most of it reduces to cause 1.
 4. **Background ML compute**, as on the 780M.
 5. MES firmware, stale TLB, IOMMU and TMZ are low (no faults, EA idle, IOMMU off, flush logic as upstream).
+
+## Step88: GTT back on upstream's snooped, write-back model (installed, not yet booted)
+The Step87 review found two divergences from upstream and from nullarc. `scripts/linux-patch-nmx-snoopgtt.sh` changes
+two `__DATA` defaults in NMXGPU (in `__DATA` the file offset equals the vmaddr):
+
+- **`nmx_gtt_wc` (0x9255b0): 1 → 0.** At 0x92d17/0x92e11, `amdgpu_ttm_tt_create` then gives `ttm_cached`, unless the BO
+  set `AMDGPU_GEM_CREATE_CPU_GTT_USWC` (bit 2 of bo+0x258), in which case it gives WC. This matches stock
+  `amdgpu_ttm.c`. `amdgpu_ttm_tt_pde_flags` (0x92f10) then sets `AMDGPU_PTE_SNOOPED` for cached TTs, so the GPU snoops
+  the CPU caches. The WB `nmx_kva` alias and userptr pages are then coherent with the GPU.
+- **`nmx_umap_cache` (0x9264d0): 1 → 2.** In `nmx_umap_insert` (0x6cf420), 2 makes user mmaps follow the pgprot that
+  TTM asks for (stock): WB for cached BOs, WC for USWC BOs. The old value 1 forced UC, which would leave a UC user alias
+  next to the WB kernel alias of a cached page.
+- **`vmap` already follows `prot`** (`linux_page.c` vmap), so a cached BO's kernel map is WB.
+
+Dry run on a copy: only those 8 bytes change. Installed 2026-11-03 10:38Z.
+- Backup: `/Library/NullMoth/nmx-snoopgtt-20261103T103804Z`.
+- NMXGPU sha256: `3dbc47cc8a857e7725787df63a3e233bd2724de72f40d60efd1350826b5baf00`.
+- Relink armed.
+
+The ibprobe hook is still in. It only prints unresolvable lines on a hang. GFXOFF stays on, so only one variable has
+changed.
+
+What to read after the boot:
+- `sysctl compat.linuxkpi.nmx_wc` should read 0.
+- Whether the hang returns.
+- Whether "STALE fence read" changes. With a WB `adev->wb`, the clflush re-read is meaningful again.
