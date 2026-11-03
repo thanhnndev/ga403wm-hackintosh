@@ -4697,3 +4697,59 @@ These are SMN addresses through 00:00.0 config 0x60/0x64, checked against Linux 
 Source: rog-control-macos branch `diag/psp-snapshot`, built by CI. Installed 2026-11-03 to `/boot/EFI/OC/Kexts/AmdCppc.kext` with
 `scripts/linux-install-amdcppc-psp.sh`, backup `/boot/EFI/OC/Backup/AmdCppc.kext-20261103T083255Z`. This repository's
 `kexts/AmdCppc` copy is stale (the kext moved to rog-control-macos), so the same edit here was reverted.
+
+## Step86 — GFX ring timeout after login (WindowServer back to console): what is ruled out, and an IB probe at the hang
+
+Symptom: the session comes up and runs for a while, then the GFX ring times out and WindowServer dies back to the console.
+wsdeath logs `20261103T091549Z-ws3813.log` and `20261103T091808Z-ws2830.log` give the dumps:
+
+| Boot | CP_IB1 | CMD_BUFSZ | Left | PFP header | ME header | Other |
+|---|---|---|---|---|---|---|
+| 1 | 0x8001_090a0000 | 0x5008 | 0xac8 | 0 | c0055000 | PFLT_STATUS 0 |
+| 2 | 0x8001_08e85000 | 0x1f0 | — | 0x1f810080 | c0016900 | "Illegal register access in command stream" |
+
+The CP is inside a WindowServer IB. On boot 2 the PFP is decoding a type-0 header, which no user IB contains. Step84
+(zeroflush) did not cure it.
+
+Ruled out against the binary (NMXGPU after Step84):
+* User mmap of GEM BOs: `nmx_umap_cache` defaults to 1, which is cache index 0 (kIOInhibitCache, UC). Table 0x899694, `nmx_umap_insert` 0x6cf420.
+* Kernel vmap of WC BOs: `ttm_prot_from_caching` WC → memattr 1 → `nmx_xnu_map_pages` table 0x899828 maps it to 0x401 (WC).
+* dma_fence callbacks run in FIFO order (add_tail, walk in order).
+* VM TLB flush: `amdgpu_vm_tlb_flush`, the `tlb_seq` callback (vm+0x4c0) and the `vmid_grab` flushed_updates check match upstream.
+* A stale user mapping after a BO move:
+  * `lkpi_unmap_mapping_range` is empty and `zap_vma_ptes` returns 0.
+  * The cdev mmap path pins the BO (`nmx_ttm_pin` → `ttm_bo_pin`), and `umap_populate` refills its page array after the pin, so a mapped BO never moves.
+* Page zeroing:
+  * Pool pages are zeroed through the flushing `pmap_zero_page` (Step84).
+  * Fresh pages are bzeroed through the write-back view, then `pmap_page_set_memattr` flushes them, because the attribute changes.
+* userptr: not used on that boot (nvmtl.log shows only COPIED).
+
+One thing matters for any further cache theory. This CPU (Ryzen AI 9 HX 370) has no self-snoop (no `ss` in cpuinfo), so a
+write-back alias and a UC/WC alias of the same page are not kept coherent by hardware. Every GTT page keeps its
+write-back physmap alias (`page+8`). If a dirty line exists there, a clflush or wbinvd at submit (b15, `debug.nmx_wbinvd`)
+writes the stale data over the IB, so those knobs cannot tell the causes apart.
+
+What is left:
+* (a) The IB really is wrong in memory: an unfound CPU writer through the write-back alias, for example `ttm_move_memcpy` → `kmap_local_page_prot`, or a userland race.
+* (b) Memory is right and the GPU fetched something else (GL2 or a stale TLB).
+
+The probe (`scripts/linux-patch-nmx-ibprobe.sh`, source `scripts/nmx-ibprobe/cave.s`):
+* Hook: the 7 bytes at 0x17a8c in `amdgpu_coredump`, right after the ringdump printf, jump to a cave over `si_initialize_smc_cac_tables` (0x5aa5a0, SI dpm only, no relocations inside).
+* Finding the IB:
+  * va = IB1_BASE & 0xffffffffffff; vm = `xa_load(adev->vm_manager.pasids, job->pasid)` under its mutex.
+  * mapping = `amdgpu_vm_bo_lookup_mapping(vm, va >> 12)`; bo = `mapping->bo_va->bo`; offset = `mapping->offset + va - mapping->start * 4096`.
+  * Limit = min(CP_IB1_CMD_BUFSZ, rest of the mapping, rest of the BO).
+* It reads the IB two ways:
+  * A: through the BO's cached vmap (bo+0x280), i.e. what memory holds.
+  * B: TT BOs only, through each page's write-back alias.
+* For each view it:
+  * parses PM4 (type 3 with count+2, type 2 and 0xffff1000 as 1 dword, anything else stops);
+  * counts the dwords where A ≠ B;
+  * prints 16 dwords of A and B around the A parse stop, the first difference and the CP fetch position (cmd − left).
+* It only reads: no flush and no new kmap.
+
+Reading the output (`NullMoth ibprobe` lines in the wsdeath log):
+* A parses clean to the limit, and the dwords at the fetch position are sane while the CP still choked: the GPU did not fetch what memory holds. This is (b).
+* A breaks where the CP broke: the IB is corrupt in memory. This is (a).
+  * A ≠ B somewhere means a write-back alias holds different data, so look for the CPU writer.
+  * A = B means the corruption was written coherently, so look at userland and the BO's history.
