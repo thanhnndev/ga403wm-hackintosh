@@ -5389,3 +5389,132 @@ Next, in priority order:
    snapshot.
 4. **NVMTL backend-down:** WindowServer aborts on a nil pipeline. With slow fences, a 5 s budget then "disable
    backend" turns a slow GPU into a crash loop.
+
+## Step97 (lost-interrupt watch): detect, log and survive the boot-time IRQ loss (2026-11-03, macOS, not installed)
+
+The 23:09 boot lost GPU interrupts about 1 s after NMXGPU loaded (H2, see the Step96 boot results). This is a binary
+cave for the installed NMXGPU (`scripts/nmx-irqwatch`). It keeps the desktop alive in that state and logs the evidence
+for the root cause. It does not fix the root cause.
+
+### What it does
+- **Detect** (fence fallback timer callback): the loss is declared when two timer-completed fallbacks happen in a row
+  with `nmx_irq_dispatched` unchanged between them, while `adev->irq.installed` and `ih.enabled` are set.
+  - A healthy boot cannot meet this: a fence that completes raises an EOP interrupt within µs.
+- **Evidence**, logged once per episode for the first 4 episodes, as `NMX irqwatch:` lines in the kernel log:
+  - ring name, last_seq/sync_seq, `nmx_irq_dispatched`, and the count of real handler runs;
+  - IH ring 0 software state: enabled, rptr, ptr_mask, ring_size, use_doorbell/index, use_bus_addr;
+  - the wptr write-back word **before and after a clflush** (H1 for the IH ring), the rptr write-back word;
+  - `adev->irq.installed/irq/msi_enabled`, and the 8 dwords of the IV at rptr (after a flush);
+  - 25 IH registers. All have BASE_IDX 0 in `osssys_6_1_0_offset.h`. The base is taken at runtime from the ring's own
+    `ih_regs.ih_rb_cntl - 0x80`, after checking that rptr = cntl+1 and wptr = cntl+2:
+    RB_CNTL 0x80, RB_RPTR 0x81, RB_WPTR 0x82, RB_BASE 0x83, RB_BASE_HI 0x84, RB_WPTR_ADDR_HI 0x85,
+    RB_WPTR_ADDR_LO 0x86, DOORBELL_RPTR 0x87, VERSION 0xa5, CNTL 0xa8, CLK_CTRL 0xa9, RETRY_INT_CAM_CNTL 0xac,
+    MEM_POWER_CTRL 0xad, CNTL2 0xc1, STATUS 0xc2, INT_FLOOD_CNTL 0xd5, INT_FLOOD_STATUS 0xd9, INT_FLAGS 0xdc,
+    COOKIE_REC_VIOLATION_LOG 0xe4, CREDIT_STATUS 0xe5, MMHUB_ERROR 0xe6, MSI_STORM_CTRL 0xf1, CLIENT_CFG 0x184,
+    CHICKEN 0x18d, INT_DROP_CNTL 0x18f.
+    - Reads use `amdgpu_device_rreg(adev, reg, NO_KIQ)`, the same call `ih_v6_1_get_wptr` (0x4eb8b0) makes.
+    - IH_STATUS bits worth checking: RB_OVERFLOW 0x20, BIF_INTERRUPT_LINE 0x400, ZSTATES_FENCE 0x100000,
+      IH_BUFFER_MEM_POWER_GATED 0x200000.
+    - IH_RB_CNTL bits: ENABLE_INTR 0x20000, RPTR_REARM 0x200000, WPTR_OVERFLOW_CLEAR 0x80000000.
+  - PCI config, through `pci_read_config`/`pci_find_cap` on `adev->pdev->dev.bsddev`: command (INTx disable 0x400),
+    status, the MSI capability (control, enable bit 0x1, address, data), MSI-X control, pdev irq/msi_enabled.
+  - Every entry of nmx_bus.c's `intrs` list: irqno, plus the IOInterruptEventSource's `enabled`, `intIndex`,
+    `producerCount`, `consumerCount`, `autoDisable` and `explicitDisable`. The offsets come from the macOS 26 SDK
+    header, compiled with offsetof: 0x28 / 0x50 / 0x54 / 0x58 / 0x5c / 0x5d. How to read them:
+    - producer frozen: the MSI does not reach the CPU;
+    - producer > consumer: the work loop is not running the source;
+    - both moving with handler runs but no dispatches: the handler runs but sees no new wptr.
+- **Self-heal (degraded mode):**
+  - Every fence fallback timer is armed for 2 ms (hz/500) instead of 500 ms. All three arming sites go through
+    `fb_arm`.
+  - Each expiry flushes the wptr write-back line, processes IH ring 0 through the guard below, and re-arms while the
+    ring has unsignalled fences (`last_seq != sync_seq`). It does not poll or re-arm while `adev->shutdown` is set or
+    the IH is disabled.
+  - The per-expiry "Fence fallback timer expired" warnings are suppressed while degraded.
+  - It leaves degraded mode when the *real* handler dispatches an IV again. A status line every 2048 polls (≤32 lines)
+    and one at exit give the ms in degraded mode, polls, poll/IRQ dispatch counts, handler runs, timer completions,
+    and IH rptr/wptr/STATUS.
+  - Budgets: evidence for 4 episodes; ON/OFF lines for 16 episodes.
+
+### Hooks (all `call rel32`, 5 bytes; original bytes, targets and the absence of nearby relocations verified)
+| site | in | original callee | now |
+|---|---|---|---|
+| 0x652f5 | amdgpu_irq_handler | amdgpu_ih_process 0x64cf0 | ih_guarded 0x509100 |
+| 0x6e898c | amdgpu_fence_fallback | amdgpu_fence_process 0x6e8840 | fb_process 0x5091d0 |
+| 0x586b7 | amdgpu_fence_enable_signaling | mod_timer 0x6b6bb0 | fb_arm 0x509190 |
+| 0x58791 | amdgpu_job_fence_enable_signaling | mod_timer 0x6b6bb0 | fb_arm 0x509190 |
+| 0x6e8905 | amdgpu_fence_process (re-arm) | mod_timer 0x6b6bb0 | fb_arm 0x509190 |
+
+- At each site rsp ≡ 0 mod 16 at the call: 3 pushes in irq_handler, fallback (+0x10), and enable_signaling; 6 pushes
+  + 0x18 in fence_process.
+- The cave entries are ordinary C ABI functions with the original callee's signature, so callee-saved registers and
+  return values (`al` for the bool, `eax` for the rest) are what the callers expect.
+- External calls from the cave go only to: amdgpu_ih_process, amdgpu_fence_process, mod_timer, nmx_jiffies,
+  amdgpu_device_rreg, pci_read_config, pci_find_cap, and the `jmp _snprintf` 0x8789e / `jmp _printf` 0xbc46e sites.
+- The only data the cave references is: borrowed ST words 0x927010..0x92708f, `nmx_irq_dispatched` 0x9b9950,
+  `hz` 0x925e30, `intrs` 0x925af0, and "%s\n" 0x7001ed.
+
+### Cave range and dead-code proof
+- Cave: 0x509100..0x50a442 (4930 bytes). It is written inside 0x509100..0x50a630, which is `kv_dpm_enable` plus
+  `kv_populate_vce/samu/acp_table` (KV legacy dpm). That range has no relocations, external or local.
+  - The earlier choice, CI dpm `ci_initialize_mc_reg_table` (0xcd3d0..0xcde30), was too small. `ci_init_smc_table`
+    contains `_log`/`___bzero` relocations, so it cannot be used.
+- Why the range is never executed on Strix:
+  1. No code outside the range branches into it except `kv_dpm_hw_init+0x4e` and `kv_dpm_resume+0x5a` (calls to
+     `kv_dpm_enable`). No data word in __DATA points into it. The kv_populate_* functions are called only from inside
+     kv_dpm_enable.
+  2. `kv_dpm_hw_init` and `kv_dpm_resume` are reached only through `kv_dpm_ip_funcs` (+0x30, +0x58). That table is
+     reached only through `kv_smu_ip_block` (+0x10). The block is referenced only by `cik_set_ip_blocks` (+0x77, +0x1c9).
+  3. `cik_set_ip_blocks` is called only from `amdgpu_device_init+0x1ace`, on the asic_type 5..9 branch
+     (Bonaire/Kaveri/Kabini/Hawaii/Mullins). Strix is CHIP_IP_DISCOVERY (> 0x12) and takes the discovery path.
+- Original bytes sha256 of 0x509100..0x50a630: `405a5f93…`. The patch script refuses any other content.
+- State: 16 u64 words at 0x927010.., inside 0x927010..0x927100. These are `ci_init_smc_table.__ratelimited.15`..`.43`,
+  which are referenced only by `ci_init_smc_table`. That function is reached only via `ci_smu_funcs+0x88`.
+  `ci_smu_funcs` is referenced only from `hwmgr_early_init+0x13c`, the family-CI (0x78) switch arm. Step95's
+  0x926fe0/0x926fe4 are not touched.
+
+### Execution context and why the serialization is safe
+- The fallback timer is a LinuxKPI timer_list, which is an xkpi callout. All callouts run on the single "nmx softclock"
+  kernel thread (bsdcompat nmx_task.c).
+  - The thread runs the callback with no spin lock held and is preemptible. It *could* block, but blocking would stall
+    every driver timer, so the cave never blocks or spins.
+  - All fb_process calls are therefore serialized with each other.
+- The real handler runs on the IRQ's IOWorkLoop thread (NMXIrq, one per vector).
+- **Guard** on IH ring 0: a request counter in ST[3].
+  - A caller does a `lock xadd`. If the counter was 0, the caller is the owner. The owner runs `amdgpu_ih_process`,
+    then `lock cmpxchg`es the counter from its snapshot back to 0, and runs again if a request came in meanwhile.
+  - A non-owner returns at once (IRQ_HANDLED); the owner processes its work.
+  - So `amdgpu_ih_process(ih)` never runs twice at once, nobody waits, and no request is lost.
+  - Ring 0 has no other caller: the other three references process ih1, ih2 and ih_soft.
+- Deadlock check: IV handlers run on the softclock thread while degraded. They use non-sync `timer_delete`/`mod_timer`
+  only. The fallback timer is drained (`timer_delete_sync`) only in fence driver fini, not from any IRQ handler.
+- Healthy-boot cost:
+  - fallback: one compare, plus one store when it completed fences;
+  - timer arm: one compare, then a tail jump to mod_timer;
+  - IRQ handler: one plain increment, one `lock xadd`, one `lock cmpxchg`. This is slightly more than "one compare",
+    but the guard has to cover both paths always to be race-free.
+
+### Results on a scratch copy
+- Input: the installed NMXGPU `44c7e55201a3bcfb…` (Step93 + Step95/96 cs-trace cave).
+- `build.sh` checks every symbol address. The build is reproducible: cave.bin `51cd5c3f8f94cb05e47b76abfd459ac39be3e23e9e94b651146b39b79da5d391`.
+- `step97_patch.py <NMXGPU>` gives `d534cc334c9dcec682aedb9f3faf9f3dbf0e3abb3590d1ec89978cb6896db908`.
+  - Only the cave range and the 5 rel32 fields change (checked with cmp).
+  - It is idempotent ("already has Step97").
+  - It refuses a modified site.
+- `--check-kc` probes: the cave head and tail, plus a ±0x10 window at each site. All 7 unpatched windows occur exactly
+  once in the current AuxKC, so kmutil carries them verbatim.
+- The installer will be the combined Step97 one written by the main session.
+
+### Risks
+- Offsets are taken from this binary's disassembly. Only the IES offsets come from the SDK header (ABI-stable).
+- The `intrs` walk is done without `bus_mtx`. The list changes only at attach/detach.
+- An IV handler that sleeps would now do so on the softclock thread. None should, since they are written for hard-irq
+  context.
+- If the root cause is a stale cached wptr *and* the clflush does not help, the IH poll finds nothing. Fences still
+  complete through the 2 ms fallback.
+- A degraded-mode timer re-armed during fence-driver fini could fire once after `timer_delete_sync`. Fini waits for
+  the ring to go empty first, and re-arm needs `last_seq != sync_seq`.
+- A false-positive episode costs only 2 ms polling until the next real dispatch.
+
+### After the boot
+`log show --predicate 'sender == "NMXGPU"' | grep "NMX irqwatch"`. On a healthy boot it should be empty.
