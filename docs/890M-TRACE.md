@@ -4565,3 +4565,31 @@ Ruled out: CPU-written page tables (`amdgpu_vm_update_mode` = -1 → mode 2, CPU
 `amdgpu_noretry` = 1. The fault report's "pid 34005" is not a real pid (task_info is not filled on xnu).
 
 Open: which BO was at that VA (unmapped/evicted while in use, or a fresh mapping whose SDMA PT update had not run), tearing.
+
+## Step83 — tearing: the K6 copy now trails the display scan
+
+Cause: NMXAccel's K6 path (`NVDisplayPipe::performTransaction`, NMX build) copies each 2880×1800 frame (~20 MB, l10r narrowed
+to XRGB) straight into the live scanout at phys 0x87C000000 while DCN scans it out. There is no second buffer and no flip, and
+the copy ignored the scan, so a refresh shows the top of one frame over the bottom of the last.
+
+Fix (nvidia-macos-driver b5d7a79 on ci/nmxaccel, CI run 41586784851, NMXAccel 99a11fb3…): the copy is written in 48-row bands.
+A band is written only after the scan has passed it (+8 rows) in the refresh being scanned, and the whole copy has to land before
+the scan comes back to it in the next refresh. Every refresh then shows one complete frame (the old one or the new one). If the
+copy starts too late in a refresh to finish ahead of the next one (judged from the measured copy length in scan lines), it trails
+the next refresh instead. The scan line is `OTG_STATUS_POSITION` read over BAR5 (DCN 3.5: segment 2 base 0x34C0,
+OTG stride 0x80, V_TOTAL 0x1b2f, V_BLANK_START_END 0x1b38, CONTROL 0x1b43, STATUS_POSITION 0x1b4a). These were checked live on
+Linux on this machine: OTG0 is the only enabled timing generator, vtotal 1824, active lines 16–1815, and the counter advances.
+A timing generator that does not match the frame (active rows ≠ height), or `debug.nmxaccel_beam=0`, falls back to the old
+unpaced copy. A simulation of the algorithm (scratch `beamsim.py`) shows no torn refresh at copy speeds from 0.05 to 1.9 scan
+lines per row, except the first frame before the copy length is measured.
+
+Cost: up to about one refresh (8.3 ms at 120 Hz) of waiting per frame in performTransaction. It is counted.
+
+Counters: `debug.nmxaccel_beam_{ok,lapped,off,wait_us,copy_us}`. Log: `iop: beam: register BAR5 mapped`, then
+`iop: beam: OTG0 vtotal 1824 active 16-1816: copy … us, waited … us, copy ~N lines`.
+
+Install: `pkexec scripts/linux-install-nmx-beam.sh <CI NMXAccel>`. Installed 2026-11-03, backup /Library/NullMoth/nmx-beam-20261103T060033Z, relink armed.
+
+| kext | before | after |
+|---|---|---|
+| NMXAccel | d1083a46… (CI 41463278138) | 99a11fb3… (CI 41586784851) |
