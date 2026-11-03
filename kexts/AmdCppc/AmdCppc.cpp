@@ -17,15 +17,12 @@
 //   sysctl debug.amdcppc.sensors        (read, cheap, for the RogControl app) "tctl=<m°C> pkg_mw=<mW>": Tctl as above and the
 //                                      package power from the RAPL energy counter (MSR 0xC001029B, unit from 0xC0010299) averaged
 //                                      since the previous read of this sysctl (0 on the first read)
-//   sysctl debug.amdcppc.psp           (read) the 890M's PSP ring/sign-of-life and SMU mailbox over SMN, and the FCH reset
-//                                      status; the same line is logged once at start ("psp at start")
 //   sysctl debug.amdcppc.epp=<0..255>  CPPC request on every CPU: max = highest perf, min = lowest non-linear, desired = 0
 //                                      (autonomous), EPP = value (0 performance .. 128 balanced .. 255 power save). Only when
 //                                      CPPC is enabled.
 // Every MSR access goes through rdmsr_carefully / a #GP-safe write path only for registers that were read successfully first.
 #include <IOKit/IOService.h>
 #include <IOKit/IOLib.h>
-#include <IOKit/IOMemoryDescriptor.h>
 #include <IOKit/pci/IOPCIDevice.h>
 #include <sys/sysctl.h>
 #include <i386/proc_reg.h>
@@ -218,36 +215,6 @@ static bool smnRead(uint32_t addr, uint32_t *val)
     *val = gRoot->configRead32(0x64);
     return true;
 }
-// The 890M's PSP and SMU as the previous OS left them. AmdCppc starts about 8 s before NMXGPU touches the GPU, so on a boot
-// where amdgpu's PSP LOAD_IP_FW fails this line says whether the PSP still held the last session's KM ring (C2PMSG_69/70/71
-// non-zero: no reset in between) and how the platform was reset (FCH S5_RESET_STATUS, the bits Linux prints at boot).
-// SMN addresses are the MMIO offsets of IP discovery's MP0/MP1 segment 0 (0x16000 dwords), checked against Linux amdgpu.
-static const struct { const char *name; uint32_t smn; } kPspRegs[] = {
-    { "psp35", 0x0005818c }, { "psp64", 0x00058200 }, { "ring_lo", 0x00058214 }, { "ring_hi", 0x00058218 },
-    { "ring_sz", 0x0005821c }, { "sol81", 0x00058244 }, { "smu_msg", 0x00058a08 }, { "smu_arg", 0x00058a48 },
-    { "smu_resp", 0x00058a68 },
-};
-#define FCH_PM_S5_RESET_STATUS 0xFED803C0ull
-static char gPsp[384];
-static void buildPsp()
-{
-    size_t n = 0;
-    uint32_t rst = ~0u;
-    if (IOMemoryDescriptor *md = IOMemoryDescriptor::withPhysicalAddress(FCH_PM_S5_RESET_STATUS, 4, kIODirectionIn)) {
-        if (IOMemoryMap *m = md->map(kIOMapInhibitCache)) {
-            rst = *(volatile uint32_t *)m->getVirtualAddress();
-            m->release();
-        }
-        md->release();
-    }
-    n += snprintf(gPsp + n, sizeof(gPsp) - n, "reset=%08x", rst);
-    for (const auto &r : kPspRegs) {
-        uint32_t v = 0;
-        if (!smnRead(r.smn, &v)) { snprintf(gPsp + n, sizeof(gPsp) - n, " no host bridge"); return; }
-        n += snprintf(gPsp + n, sizeof(gPsp) - n, " %s=%08x", r.name, v);
-        if (n >= sizeof(gPsp)) return;
-    }
-}
 static char gTemp[256];
 static void buildTemp()
 {
@@ -314,15 +281,6 @@ static int temp_sysctl SYSCTL_HANDLER_ARGS
     return e;
 }
 
-static int psp_sysctl SYSCTL_HANDLER_ARGS
-{
-    if (gLock) IOLockLock(gLock);
-    buildPsp();
-    int e = SYSCTL_OUT(req, gPsp, strlen(gPsp) + 1);
-    if (gLock) IOLockUnlock(gLock);
-    return e;
-}
-
 static int freq_sysctl SYSCTL_HANDLER_ARGS
 {
     if (gLock) IOLockLock(gLock);
@@ -353,7 +311,6 @@ SYSCTL_PROC(_debug_amdcppc, OID_AUTO, report, CTLTYPE_STRING | CTLFLAG_RD | CTLF
 SYSCTL_PROC(_debug_amdcppc, OID_AUTO, freq, CTLTYPE_STRING | CTLFLAG_RD | CTLFLAG_LOCKED, nullptr, 0, freq_sysctl, "A", "effective clock");
 SYSCTL_PROC(_debug_amdcppc, OID_AUTO, temp, CTLTYPE_STRING | CTLFLAG_RD | CTLFLAG_LOCKED, nullptr, 0, temp_sysctl, "A", "Tctl");
 SYSCTL_PROC(_debug_amdcppc, OID_AUTO, sensors, CTLTYPE_STRING | CTLFLAG_RD | CTLFLAG_LOCKED, nullptr, 0, sensors_sysctl, "A", "Tctl + package power");
-SYSCTL_PROC(_debug_amdcppc, OID_AUTO, psp, CTLTYPE_STRING | CTLFLAG_RD | CTLFLAG_LOCKED, nullptr, 0, psp_sysctl, "A", "890M PSP/SMU mailbox + FCH reset status");
 SYSCTL_PROC(_debug_amdcppc, OID_AUTO, pstate, CTLTYPE_INT | CTLFLAG_RW | CTLFLAG_LOCKED, nullptr, W_PSTATE, write_sysctl, "I", "request P-state");
 SYSCTL_PROC(_debug_amdcppc, OID_AUTO, boost, CTLTYPE_INT | CTLFLAG_RW | CTLFLAG_LOCKED, nullptr, W_BOOST, write_sysctl, "I", "1 = boost allowed");
 SYSCTL_PROC(_debug_amdcppc, OID_AUTO, cppc, CTLTYPE_INT | CTLFLAG_RW | CTLFLAG_LOCKED, nullptr, W_CPPC_EN, write_sysctl, "I", "1 = enable CPPC");
@@ -370,13 +327,6 @@ OSDefineMetaClassAndStructors(AmdCppc, IOService)
 bool AmdCppc::start(IOService *provider)
 {
     if (!IOService::start(provider)) return false;
-    // first, before anything else on the boot touches the GPU; the host bridge may not be published yet this early
-    for (int i = 0; i < 40; i++) {
-        buildPsp();
-        if (!strstr(gPsp, "no host bridge")) break;
-        IOSleep(250);
-    }
-    IOLog("AmdCppc: psp at start: %s\n", gPsp);
     gSelf = this;
     gLock = IOLockAlloc();
     refresh();
@@ -386,7 +336,6 @@ bool AmdCppc::start(IOService *provider)
     sysctl_register_oid(&sysctl__debug_amdcppc_freq);
     sysctl_register_oid(&sysctl__debug_amdcppc_temp);
     sysctl_register_oid(&sysctl__debug_amdcppc_sensors);
-    sysctl_register_oid(&sysctl__debug_amdcppc_psp);
     sysctl_register_oid(&sysctl__debug_amdcppc_pstate);
     sysctl_register_oid(&sysctl__debug_amdcppc_boost);
     sysctl_register_oid(&sysctl__debug_amdcppc_cppc);
@@ -401,7 +350,6 @@ void AmdCppc::stop(IOService *provider)
     sysctl_unregister_oid(&sysctl__debug_amdcppc_cppc);
     sysctl_unregister_oid(&sysctl__debug_amdcppc_boost);
     sysctl_unregister_oid(&sysctl__debug_amdcppc_pstate);
-    sysctl_unregister_oid(&sysctl__debug_amdcppc_psp);
     sysctl_unregister_oid(&sysctl__debug_amdcppc_sensors);
     sysctl_unregister_oid(&sysctl__debug_amdcppc_temp);
     sysctl_unregister_oid(&sysctl__debug_amdcppc_freq);
