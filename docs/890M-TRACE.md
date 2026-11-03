@@ -5188,3 +5188,49 @@ What to read after the boot:
 New tools:
 - `tools/890m/sample-chains.py` prints the ancestor chains of `sample` call-graph nodes that match a regex.
 - `tools/890m/nmx-disasm.py` is a capstone disassembler with NMXGPU symbol names.
+
+## Step94: trace of the Step93 boot. WindowServer waits for GPU completion every frame; the K6 CPU copy is still the scanout path (2026-11-03, macOS)
+
+### Step93 boot
+- NMXGPU `89969711` and the source-built NVMTL are both live.
+- 0 `ibprep b15` lines.
+- `surface keep: hit` lines from WindowServer ("own pages").
+- `debug.nmx_timeouts` = 0.
+- WindowServer is at ~35 % CPU at 3 min uptime (Step92: ~50 %), even with mds_stores and softwareupdated busy after boot.
+
+Logs are in `~/ga403-logs/step93/`: `ws.sample` (8 s) and `spin.txt` (6 s).
+
+### Where the frame time goes (55 fps on the 120 Hz panel)
+- **WindowServer main thread** (2.1 s CPU in 6 s). 2051 of 6457 samples are in
+  `CompositorMetal::composite` → `MetalContext::Flush` → `-[NVMTLCommandBuffer commitAndWaitUntilSubmitted]` →
+  `waitUntilCompleted`.
+  - NVMTL deliberately waits for **completion** in WindowServer. The source comment says the display-pipe swap that follows can't be ordered after a GPU
+    fence.
+  - That is ~4.6 ms per frame of blocked compositor on top of ~6 ms of CPU work, more than the 8.3 ms budget at 120 Hz.
+  - The `nvmtl.execution` pump threads show the same time inside `drmSyncobjWait`. The ioctls in the sample are these waits, not CPU.
+- **GPU** (`tools/890m/metal-latency.swift`, run as nvmtltest):
+
+  | measurement | wall time | GPU time |
+  |---|---|---|
+  | tiny job round trip | 0.15 ms | — |
+  | 2880×1800 bgr10a2 sample+draw, private VRAM | 0.50 ms | 0.33 ms |
+  | same, IOSurface → IOSurface (host-imported system memory) | 1.29 ms | 1.02 ms |
+  | IOSurface → private | 0.70 ms | 0.52 ms |
+  | private → IOSurface | 1.10 ms | 0.83 ms |
+
+  - The fence path is fast.
+  - A side probe (a tiny job every 3 ms, 800 runs) waited > 1 ms in 28 % of runs, up to 5.5 ms. So WindowServer's composites are several
+    full-screen passes (layers and blurs on system-memory IOSurfaces), ~4–5 ms of real GPU work.
+- **kernel_task** (1.68 s CPU in 6 s):
+  - NMXDisplayPipe takes 0.49 s. That is the K6 copy, 4.7 ms per frame by `debug.nmxaccel_beam_copy_us`, plus 3.4 ms of (now sleeping) beam wait.
+  - The four AppleUSBXHCIPCI threads take 0.18–0.23 s each, ~13 % in all. Not GPU.
+
+### Next (the frame path, not more CPU trimming)
+1. **Swap ordered after the fence in the kernel.**
+   - NVMTL returns from `commitAndWaitUntilSubmitted` once the work is submitted.
+   - NMXAccel's `performTransaction` waits (sleeping) for that surface's GPU work before the K6 copy or flip.
+   - This frees the WindowServer main thread for ~4.6 ms per frame.
+2. **Real flips instead of the K6 CPU copy.**
+   - DCN scans out a GPU-written buffer, with the surface address latched at vblank.
+   - There is an existing `debug.nvaccel_iop_flip` path from the NVIDIA build to start from.
+   - This removes 4.7 ms of CPU copy and the beam wait per frame.
