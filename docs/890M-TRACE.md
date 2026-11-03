@@ -4916,3 +4916,83 @@ What to read after the boot:
   during animation.
 - `debug.nmxaccel_beam_lapped` should stay near 0, and there should be no tearing.
 - If a GFX hang comes back: `NullMoth ibprobe` lines in the wsdeath log, now readable.
+
+## Step90: the Step89 boot crash-loops WindowServer; multi-range WC/UC mappings, split per contiguous range (2026-11-03, Linux)
+
+### The Step89 boot
+Black screen, WindowServer crash loop (wsdeath 20261103T1104*–1107*). Every WindowServer instance logs
+`NVMTL: vk: keep witness 1 NOT seen after 1000 ms (slot holds 0)`, then `completion witness missing; disabling
+backend`, then `G13 surface-in: upload FAILED`. No ring timeout follows the first job. Later:
+`[gfxhub] page fault … vmid:3 pasid:32769 … address 0x0 … SQC (data) … PERMISSION_FAULTS 0x3` and at 18:04:45
+`ring gfx_0.0.0 timeout, but soft recovered`. The ibsnapshot holds valid PM4: SET_SH_REG loads the user SGPR pointer
+0x800100016000, a RADV 32-bit-range upload BO (USWC → WC GTT). So the GPU read the descriptors as zero, and the CPU
+read the witness as zero. In the Step88 logs the witness was missing only after a GPU reset.
+
+Ruled out for Step89: order-0 zeroing (`linux_alloc_pages` maps M_ZERO to VM_ALLOC_ZERO, `vm_page_alloc_noobj` bzeroes,
+pat_mode WB), the TTM order code, `amdgpu_vm_map_gart` and the SDMA PTE copy (upstream), the Step84 zeroflush, the
+ibprobe cave overwriting live code, dma mapping (identity), and kernel vmaps of cached multi-range BOs (IB tests and
+kernel jobs work).
+
+### Root cause: physical page attributes in xnu
+Order 0 makes every multi-page BO physically discontiguous: `vm_page_alloc_noobj` pops 4 KB pages in descending order,
+so even a fresh TT has no adjacent pages. `nmx_xnu_map_user` (mmap ioctl) and `nmx_xnu_map_pages` (vmap) put the page
+list in ONE `kIOMemoryTypePhysical64` descriptor and map it with `cache_option(cache)`. xnu (IOMemoryDescriptor.cpp,
+vm_object.c, vm_resident.c, device_vm.c, i386 pmap_common.c) handles that descriptor differently depending on the
+range count:
+- One range: `dp.pagerContig`, `DEVICE_PAGER_CONTIGUOUS`, the object is `phys_contiguous`. `memoryReferenceMap` sets the
+  object's wimg (MAP_MEM_ONLY on an empty memq: only `object->wimg_bits`). The fault block-maps the entry:
+  `pmap_map_block` → `pmap_enter(…, attr = object wimg)`. The cache mode goes into the PTE; the page itself is not
+  touched. This is what every Step88 mapping was (order 10 chunks).
+- Several ranges: a non-contiguous device pager. `populateDevicePager` → `device_pager_populate_object` →
+  `vm_object_populate_with_private` inserts one private vm_page per page. `vm_page_insert_internal` then runs
+  `PMAP_SET_CACHE_ATTR` → `pmap_set_cache_attributes(phys page, object wimg)`, which stores the mode in
+  `pmap_phys_attributes[page]` and rewrites the cache bits of EVERY existing PTE of that page
+  (`pmap_update_cache_attributes_locked` walks the pv list). The fault path enters PTEs with flags 0, so it takes
+  whatever the physical attribute holds. When such an object dies, `vm_page_remove` (`set_cache_attr`) resets the
+  page to 0 = write-back, again across all of its mappings.
+
+So with order 0, whichever mapping of a WC page was made or torn down last decides the mode of all its mappings. A
+`vunmap`, a second process's mapping of a shared surface going away, or a write-back map anywhere turns RADV's WC
+mapping write-back. This CPU has no self-snoop, so CPU stores sit in the cache while the GPU reads memory unsnooped
+(zero descriptors, SQC fault at VA 0), and CPU reads hit stale lines while the GPU wrote memory (witness 0).
+Setting the cache mode on the descriptor itself does not help: the per-page insert still writes the physical attribute.
+
+### Fix: one contiguous mapping per range for WC/UC (`scripts/nmx-wcsplit/cave.s`)
+A cave at 0x5aac00 (after the Step89 ibprobe cave, inside `si_initialize_smc_cac_tables`, SI dpm only, no relocations)
+replaces `nmx_xnu_map_user`, `nmx_xnu_unmap_user`, `nmx_xnu_map_pages` and `nmx_xnu_unmap` (a `jmp` at each entry).
+- Single range, or the default cache (cached GTT, which is most BOs since Step88): unchanged, one mapping.
+- WC/UC/WT with more than one range: reserve the whole size, then map one single-range descriptor per contiguous range
+  over it with `kIOMapOverwrite`. Every piece is block-mapped with its mode, and no vm_page of the BO exists, so the
+  physical attributes are never written. The handle is `(split *) | 1` = {IOFree size, reservation map, count,
+  maps[count]}. Release drops the reservation first (that deallocates the range; overwrite maps never deallocate),
+  then the pieces.
+- Reservation, user task: a read-only map of one NMXGPU text page repeated, faulted lazily (only public bytes if a
+  thread touches it before the overwrite). Kernel: IOKit prefaults kernel maps, and a repeated page would add a pv
+  entry per page while every insert walks that list with TLB shootdowns (O(n²)). The kernel reservation is therefore
+  one contiguous read-only uncached range of the size, starting at the first range. It creates no vm_page and changes
+  no attribute; UC is never read speculatively; the overwrite maps replace it before anything uses it.
+- External calls go through the relocated call sites of the replaced bodies, each followed by a `ret` (stubs at
+  0x6e2550 IOMalloc, 0x6e25d8 withAddressRanges, 0x6e25e6 IOFree, 0x6e2644 current_task, 0x6e265f
+  createMappingInTask, 0x6e26ab task_reference, 0x6e2727 get_task_map, 0x6e2737 vm_deallocate, 0x6e2740
+  task_deallocate). The cave calls them with rsp = 8 mod 16, so the callee sees a normal frame. No Mach-O tables
+  change.
+- `scripts/nmx-wcsplit/emu_test.py` runs the patched binary under unicorn with fake IOKit calls. 18 cases: split and
+  single mappings for user and kernel, fixed and anywhere, reservation first on release, IOFree sizes, no leaked
+  descriptor/map/allocation, failure of every createMapping, stack alignment, callee-saved registers.
+
+The cost is one descriptor and one map per contiguous range of a WC/UC BO, paid once per mmap/vmap. Cached BOs (the
+WindowServer CPU of Step89) are not affected.
+
+| | sha256 |
+|---|---|
+| NMXGPU before (Step89) | 47eec16d… |
+| NMXGPU after | c9bf8730c975d1c1aa5974b316329955eb0cdce7f2cc1995c09bd8796b5bf693 |
+| cave.bin | 087a7687d33062872db3d3df01ac67a447c9b1a7b59b3a7a6c3837ce98060736 |
+
+Installed 2026-11-03 11:44Z from Linux (`pkexec scripts/linux-patch-nmx-step90.sh`). Backup:
+`/Library/NullMoth/nmx-step90-20261103T114414Z` (NMXGPU.kext + AuxKC). Relink armed: the first boot relinks the AuxKC
+and reboots by itself.
+
+What to read after the boot:
+- wsdeath: `keep witness … NOT seen` and `upload FAILED` should be gone; no `[gfxhub] page fault … address 0x0`.
+- WindowServer %CPU (Step89's goal) should stay low. Watch mmap latency if big WC surfaces show up in `sample`.
