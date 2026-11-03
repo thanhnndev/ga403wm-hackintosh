@@ -4541,3 +4541,27 @@ Fix (`scripts/linux-install-wsdeath.sh`):
   `/Library/NullMoth/wsdeath/<time>-ws<pid>.log` and syncs. The next death is on disk even if the machine is powered off.
 
 Still open: which GPU job stalls >5 s (read from the next wsdeath log), tearing, PSP init retry.
+
+## Step82 — 7 minutes of desktop, then a GPU page fault hung a job; wsdeath recorded it
+
+Boot after Step81 (wsreset off): the desktop ran 7 min (WindowServer 205, 05:33:53Z → 05:40:54Z). `wsdeath/20261103T054054Z-ws205.log`:
+
+```
+12:40:48.858 WindowServer  Tracking override 'set_mesh_warp'          (window animation, Edge became frontmost)
+12:40:48.917 kernel drmn0: [gfxhub] page fault (src_id:0 ring:24 vmid:1 pasid:32769)
+             in page starting at address 0x0000800102e4d000 from client 10
+             GCVM_L2_PROTECTION_FAULT_STATUS:0x00101031  UTCL2 client TCP (0x8), MORE_FAULTS 1, PERMISSION_FAULTS 0x3,
+             MAPPING_ERROR 0, RW 0 (read)
+12:40:53.944 NVMTL: vk: fence wait -> 2 after 5029 ms (budget 5000 ms); disabling backend
+12:40:53.945 SkyLight: Detected command buffer completion failure.  Error code = 0x1  -> loginwindow: Window Server exited
+```
+
+A shader texture read (TCP) hit a PTE that is not valid (permission fault, not a walker or mapping error) at the high VA
+0xffff800102e4d000 (RADV high range, same range as the IBs at 0xffff80010002b000), 60 ms after a window animation began sampling
+window surfaces. The job never completed, and NVMTL gave up after its 5 s budget. The respawned WindowServers (8240, 8427) abort in
+`CoreDisplay::DisplaySurface::GetMTLTexture` (the device is gone) — secondary. This is the first page fault in all saved logs.
+
+Ruled out: CPU-written page tables (`amdgpu_vm_update_mode` = -1 → mode 2, CPU only for compute VMs; gfx VMs use SDMA).
+`amdgpu_noretry` = 1. The fault report's "pid 34005" is not a real pid (task_info is not filled on xnu).
+
+Open: which BO was at that VA (unmapped/evicted while in use, or a fresh mapping whose SDMA PT update had not run), tearing.
