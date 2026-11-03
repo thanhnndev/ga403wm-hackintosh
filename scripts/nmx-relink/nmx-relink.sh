@@ -54,7 +54,7 @@ if [[ $rc == 0 && $assert_rc == 0 ]]; then
     ditto /Library/Extensions/NMXAccel.kext /Library/NullMoth/kexts/26/NMXAccel.kext
     date -u >"$ROOT/nmx-relink.done"
     echo "RELINKED: the next boot loads the NMXAccel from $BK's sibling build" | tee "$ROOT/nmx-relink.status"
-    /bin/launchctl disable "system/$LABEL" 2>/dev/null
+    # no "launchctl disable": launchd keeps that in disabled.plist and skips the next install's plist (Step78).
     /bin/rm -f "/Library/LaunchDaemons/$LABEL.plist"
     # Armed from Linux when this boot's WindowServer cannot come up (no desktop to reboot from): load the new
     # collection without hands. Before the bootout: booting out our own job kills this script (2026-11-02, the reboot

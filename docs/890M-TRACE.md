@@ -4424,3 +4424,16 @@ Backup: /Library/NullMoth/nmx-mtxguard-20261102T174508Z. The relink is armed.
 
 Next boot: grep the log for `unlock of unlocked mutex`. The caller address names the code with the unbalanced unlock, which then
 gets a proper fix. Not covered: unbalanced `lck_spin_unlock`/`IOLockUnlock` outside the xkpi mutex.
+
+### Step78b — the guard never loaded: launchd kept nmx-relink disabled
+
+The next two boots (04651B8C, D074E24E) panicked the same way (`preemption_level -1`, WindowServer, `amdgpu_cs_ioctl →
+amdgpu_cs_parser_fini → drm_exec_fini → free → kmem → lck_mtx_lock`, uptime 89 s), and no `unlock of unlocked mutex` line was
+logged. The AuxKC was still the 00:14 one and contained no cave bytes, and the relink had left no log or status. The Step77 relink
+had run `launchctl disable system/com.itlmt7925.nmx-relink`. launchd keeps that in
+`/private/var/db/com.apple.xpc.launchd/disabled.plist` and ignored the reinstalled plist.
+
+- `nmx-relink.sh` no longer disables its label. The `.done` file and the plist removal already make it one-shot.
+- `linux-patch-nmx-mtxguard.sh` removes the label from `disabled.plist`. It was rerun: the patch was already in, and the relink is
+  armed again.
+- The other `linux-patch-nmx-*.sh` scripts have the same gap if they are rerun.

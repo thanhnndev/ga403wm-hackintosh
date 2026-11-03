@@ -58,6 +58,14 @@ S="$MNT/Library/StrixGraphicsFix"
 install -o 0 -g 0 -m 755 "$HERE/nmx-relink/nmx-relink.sh" "$S/nmx-relink.sh"
 install -o 0 -g 0 -m 644 "$HERE/nmx-relink/com.itlmt7925.nmx-relink.plist" "$MNT/Library/LaunchDaemons/com.itlmt7925.nmx-relink.plist"
 rm -f "$S/nmx-relink.done" "$S/nmx-relink.status" "$S/nmx-relink.log"
+# An earlier relink ran "launchctl disable", and launchd skips a disabled label even with its plist back (Step78).
+python3 -I - "$MNT/private/var/db/com.apple.xpc.launchd/disabled.plist" <<'PY2'
+import plistlib, sys
+p = sys.argv[1]
+d = plistlib.load(open(p, 'rb'))
+if d.pop('com.itlmt7925.nmx-relink', None) is not None:
+    plistlib.dump(d, open(p, 'wb')); print('nmx-relink: enabled again in launchd')
+PY2
 date -u >"$S/nmx-relink.reboot"
 sync
 umount "$MNT"
