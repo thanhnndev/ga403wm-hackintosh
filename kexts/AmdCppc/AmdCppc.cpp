@@ -229,7 +229,7 @@ static const struct { const char *name; uint32_t smn; } kPspRegs[] = {
 };
 #define FCH_PM_S5_RESET_STATUS 0xFED803C0ull
 static char gPsp[384];
-static bool buildPsp()
+static void buildPsp()
 {
     size_t n = 0;
     uint32_t rst = ~0u;
@@ -240,14 +240,13 @@ static bool buildPsp()
         }
         md->release();
     }
-    n += (size_t)snprintf(gPsp + n, sizeof(gPsp) - n, "reset=%08x", rst);
+    n += snprintf(gPsp + n, sizeof(gPsp) - n, "reset=%08x", rst);
     for (const auto &r : kPspRegs) {
         uint32_t v = 0;
-        if (!smnRead(r.smn, &v)) { snprintf(gPsp + n, sizeof(gPsp) - n, " no host bridge"); return false; }
-        n += (size_t)snprintf(gPsp + n, sizeof(gPsp) - n, " %s=%08x", r.name, v);
-        if (n >= sizeof(gPsp)) break;
+        if (!smnRead(r.smn, &v)) { snprintf(gPsp + n, sizeof(gPsp) - n, " no host bridge"); return; }
+        n += snprintf(gPsp + n, sizeof(gPsp) - n, " %s=%08x", r.name, v);
+        if (n >= sizeof(gPsp)) return;
     }
-    return true;
 }
 static char gTemp[256];
 static void buildTemp()
@@ -372,7 +371,11 @@ bool AmdCppc::start(IOService *provider)
 {
     if (!IOService::start(provider)) return false;
     // first, before anything else on the boot touches the GPU; the host bridge may not be published yet this early
-    for (int i = 0; i < 40 && !buildPsp(); i++) IOSleep(250);
+    for (int i = 0; i < 40; i++) {
+        buildPsp();
+        if (!strstr(gPsp, "no host bridge")) break;
+        IOSleep(250);
+    }
     IOLog("AmdCppc: psp at start: %s\n", gPsp);
     gSelf = this;
     gLock = IOLockAlloc();
