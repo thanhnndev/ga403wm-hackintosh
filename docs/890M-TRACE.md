@@ -5234,3 +5234,59 @@ Logs are in `~/ga403-logs/step93/`: `ws.sample` (8 s) and `spin.txt` (6 s).
    - DCN scans out a GPU-written buffer, with the surface address latched at vblank.
    - There is an existing `debug.nvaccel_iop_flip` path from the NVIDIA build to start from.
    - This removes 4.7 ms of CPU copy and the beam wait per frame.
+
+## Step95: WindowServer killed by intermittent CS rejections; CS trace and the fence-ordered swap installed for one boot (2026-11-03, macOS)
+
+### What happened (22:05–22:10)
+- I ran the IOSurface tests (metal-fence, metal-iosurface) back to back on the live desktop. About a third of the runs failed with
+  RADV `The CS has been rejected (-1)`, and the rate went up over time.
+  - Only tests with IOSurfaces failed, i.e. submits that carry userptr BOs. metal-render and metal-compute passed every run.
+  - Wired memory did not grow from run to run.
+- At 22:08:00 WindowServer 205 got `vk: queue submit -> -4; disabling backend` (RADV turns the rejected CS into device lost).
+  - `commandBuffer` then returned nil, and SkyLight recursed `RenderEncoder` ↔ `SetScissor` until the stack overflowed (SIGSEGV, stack guard).
+  - Each new WindowServer hit `submit -> -4` again within seconds. The kernel state stayed bad until a forced reboot.
+- Rule from now on: no back-to-back GPU test loops on the live desktop. Run one test at a time and stop at the first rejection.
+
+### What the -1 is
+- xkpi passes the Linux errno through unchanged (`linux_file_ioctl` negates the return; `nmx_drm_node_ioctl`'s -1 only means
+  "not ours"). So this is a real -EPERM.
+- The upstream `usermm != current->mm` check in `amdgpu_cs_parser_bos` was already removed (Step92, 0x13bb4), and the HMM
+  page-fetch stub (`parser_bos.cold.1`, the one direct `push -1`) is only reachable through the jump Step92 nop'd at 0x1390c.
+- `amdgpu_ttm_backend_bind`'s "failed to pin userptr" would have logged, and it never did.
+- So the source is outside the code that can be read statically. The NMX userptr log was silent too: its 24-line budget had gone on successful pins.
+
+### Step95a: CS trace (NMXGPU binary, `scripts/nmx-cstrace`)
+- 31 call sites go through thunks in a C cave at 0x5ab760..0x5abdf0 (dead SI dpm code, after the Step93 cave):
+  - every stage of `amdgpu_cs_ioctl`: pass1 parts, `ib_get`, `parser_bos`, `patch_jobs`, `vm_handling`, `sync_rings`, `submit`;
+  - the calls inside `parser_bos`: list get/create, lock_pd, prepare_obj ×2, the userptr `ttm_bo_validate`, vm_validate, bo_validate, alloc_gart;
+  - the calls inside `vm_handling`: clear_freed, bo_update ×3, handle_moved, update_pdes;
+  - the calls inside `sync_rings`: wait_prev_fence, sync_resv;
+  - the Step92 cave's `userptr_tail`.
+- A failing callee logs `NMX cs-trace: <site> -> <errno>`, with the innermost site first. -EDEADLK, -ERESTARTSYS and -EINTR are skipped.
+- `linux_file_ioctl`'s return (0x6b5ccc) logs every -EPERM as `ioctl -> -1`.
+- Budgets live in `ci_init_smc_table.__ratelimited` (0x926fe0, CI dpm only): 96 lines for EPERM and 48 for other errors.
+- Checks: every site's target and site id were checked in the patched copy, no relocations fall in the patched ranges, and no site passes stack arguments.
+
+### Step95b: fence-ordered swap
+- NMXAccel `ci/nmxaccel-fence` a24692f (CI run 41659964136, `1b9c7b9f…`). `performTransaction` sleeps in 100 µs `IODelay`
+  steps, capped at 100 ms, until the surface's `NMXFenceDone` ≥ `NMXFencePending`. It reads them with `IOSurface::copyValue`, the kernel
+  side of `IOSurfaceSetValue`.
+  - Sysctls: `debug.nmxaccel_fence_wait` (kill switch) and `debug.nmxaccel_fence_{frames,waited,wait_us,timeouts}`.
+- NVMTL (fork f3563a8, installed `1706da17…`) marks each surface WindowServer writes:
+  - pending at commit, done after completion and surface publish;
+  - `IOSurfaceSetValue` costs 5.5 µs and leaves the seed alone;
+  - commitAndWaitUntilSubmitted then waits only for submission;
+  - the sysctl is read per commit, so `sysctl -w debug.nmxaccel_fence_wait=0` brings the old wait back at once.
+- `tools/890m/metal-fence.swift` (NVMTL_NMX_FENCE=2): 40/40 frames have pending set at commit, done == pending after the wait, and correct pixels.
+
+Installed with `scripts/macos-install-step95.sh <CI NMXAccel.kext>` (`--undo`; from Linux `scripts/linux-undo-step95.sh`):
+- backup `/Library/NullMoth/step95-bk-20261103T152156Z`;
+- NMXGPU `4e856bbb…`, NMXAccel `1b9c7b9f…`;
+- AuxKC relinked, with all probes present.
+
+### After the boot
+1. `sysctl debug.nmxaccel_fence_frames debug.nmxaccel_fence_waited debug.nmxaccel_fence_wait_us debug.nmxaccel_fence_timeouts`.
+   WindowServer's log should say `fence-ordered swap ON`.
+2. Check WindowServer CPU and the main thread's `waitUntilCompleted` share in `sample`, tearing and stale frames, and the fps headroom.
+3. `log show --predicate 'sender == "NMXGPU"' | grep cs-trace`, from normal use first.
+   - If it is empty, run metal-iosurface **once at a time** and stop at the first rejection.
