@@ -51,7 +51,6 @@ extern u64 VBLANK_COUNT_AND_TIME(char *crtc, s64 *ns);
 // layout from the real headers (scripts/nmx-flip/offsets.txt)
 #define FB_BUFFER 120
 #define FB_INFO 152
-#define INFO_OK 0
 #define INFO_W 4
 #define INFO_H 8
 #define INFO_PITCH 12
@@ -147,7 +146,8 @@ static int init(void)
 {
     if (S->inited) return 1;
     char *nfb = P(FBS, 8);                            // fbs[0].fb
-    if (!nfb || !U32(nfb, FB_INFO + INFO_OK) || !P(nfb, FB_BUFFER)) return 0;
+    // fb->info.ok stays 0: nmx_fb_open sets ok on its caller's copy after storing fb->info. kva and size are set.
+    if (!nfb || !U64(nfb, FB_INFO + INFO_KVA) || !U64(nfb, FB_INFO + INFO_SIZE) || !P(nfb, FB_BUFFER)) return 0;
     char *ms = P(nfb, CLIENT_MODESETS), *crtc = 0;
     for (int i = 0; ms && P(ms, MS_CRTC) && i < 8; i++, ms += MS_SIZE)
         if (P(ms, MS_MODE)) { crtc = P(ms, MS_CRTC); break; }

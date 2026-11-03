@@ -5588,3 +5588,28 @@ After the boot, in this order, one step at a time:
    `debug.nmxaccel_flip_*` counters. Expected: "API up", a chain of 3, `latched` growing with `submitted`, and
    `fallback`, `timeouts` and `tripped` at 0.
 3. If anything looks wrong: `sudo sysctl -w debug.nmxaccel_flip=0`. The next frame copies home and flips home.
+
+## Step98 boot (2026-11-04 00:16) and Step98b
+
+**Step97 results: the login crash loop is gone.**
+- The desktop came up, with 0 "CS rejected" lines and 48 read-only userptr retries.
+- There were no `NMX mmfix` lines. The mm mismatch did not happen on this boot, so the check never had to allow a CS.
+- There were no `NMX irqwatch` lines: interrupts were not lost.
+
+**Baseline with flips off** (10 s on an idle desktop): 84.4 fps, beam wait 4.05 ms, K6 copy 5.26 ms and fence wait
+2.05 ms per frame, WindowServer at 71% CPU.
+
+**Flips: the API answered, but every call came back NotReady.**
+- `debug.nmxaccel_flip=2` logged `NMXGPU flip API MISSING ... (0xe00002d8)`.
+- 0xe00002d8 is the cave's NotReady. So the hook and the name dispatch work, but `init()` refused.
+- The cause: `init()` waited for `fb->info.ok`. `nmx_fb_open` copies `*out` into `fb->info` (`rep movsq` at 0x6cd5f5)
+  and only then sets `out->ok = 1` on the caller's copy (0x6cd60c), so `fb->info.ok` is always 0.
+- NMXAccel asks for caps only once per boot (`flip_api` is read-only), so flips need another boot. Flips were set
+  back to 0.
+
+**Step98b** (`scripts/macos-install-step98b.sh`):
+- the cave checks `fb->info.kva` and `fb->info.size` instead (cave.bin f446ceca, 3800 bytes);
+- NMXGPU is rebuilt from the Step97 build in the Step98 backup: da129846;
+- NMXAccel is unchanged;
+- `macos-install-step98.sh` now carries the same shas;
+- undo is still `macos-install-step98.sh --undo`.

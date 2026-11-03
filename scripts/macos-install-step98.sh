@@ -18,8 +18,8 @@ A=/Library/Extensions/NMXAccel.kext
 KC=/Library/KernelCollections/AuxiliaryKernelExtensions.kc
 STEP97=c2326f228e774181
 ACCEL_LIVE=1b9c7b9f002962aa
-FLIP_CAVE_SHA=90f1302ec24e7254ce6bd9782b892bd3534b47c04439d6ec9bfbfc26fe874f2a
-RESULT=2d9102d8a5c6c297b21b72ec6d3c2a68fa2c8dc93bc834a18c605eca2f57e0ae
+FLIP_CAVE_SHA=f446ceca1b89bf76aa524b03ba6de4e7f772f188f1709a0195573b6771f2e964
+RESULT=da12984634097e2d597ba283cbb5ac259a496eed4d03ff3bb9ef650081bb5195
 ACCEL_SRC=${ACCEL_SRC:-/Users/thanhnndev/ga403-logs/step97/ci/NMXAccel.kext}
 ACCEL_FLIP=bf7c7ea8c233d22a89ecc6395ddc8508fbdcbd9bc77865c657eff1ab38247944
 exec > >(tee -a "/Library/NullMoth/step98-$TS.log") 2>&1
