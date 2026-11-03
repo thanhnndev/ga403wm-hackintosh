@@ -5345,3 +5345,47 @@ After the next boot:
   - per-frame IOSurface import/free churn: `nvmtlNewSurfaceTexture` -> `amdgpu_create_bo_from_user_mem`
     85 samples, `bo_free` 44;
   - managed-buffer prologue uploads, ~200 KB per submit.
+
+### Step96 boot results (2026-11-03 23:09 and 23:14 boots)
+
+**23:09 boot: lost GPU interrupts (H2 from 2026-10-18), WindowServer crash chain, forced reboot at ~23:14.**
+
+From 23:10:03, about 1 s after NMXGPU started, every fence completed only through amdgpu's 0.5 s fallback timer.
+- The log showed "NullMoth: fence fallback on sdma0 ... irqs so far 45"; `nmx_irq_dispatched` stayed frozen at 45.
+- "Fence fallback timer expired" lines per minute: 45 / 120 / 119 / 91, until the reboot.
+
+At that time only the kernel's own SDMA jobs were running: no WindowServer, no CS ioctl, no userptr. So Step96 (the
+userptr retry and CS thunks) is not implicated. Consequences:
+- WindowServer 205 had Vulkan down by 23:11:20 ("pipeline: Vulkan is not up in this process"), then SkyLight
+  aborted in `MetalShader::CopyPipelineState` (23:12:08).
+- WindowServer 2635 took 7 s to open the Vulkan device and was killed by the watchdog (23:13:08).
+- WindowServer 3723 hit "fence wait -> 2 after 5033 ms; disabling backend".
+- `last` shows no shutdown, so the machine was force-rebooted at ~23:14.
+
+No earlier boot today shows a fallback line. So this is intermittent, per boot.
+
+**23:14 boot: clean, and Step96 works.**
+- NMXGPU 44c7e552, NMXAccel 1b9c7b9f, NVMTL "submit-ahead on the committing thread ON".
+- `userptr_ro_retry -> 0` 49 times. 3 "pin FAILED" lines remain; their retry also failed (likely ranges that were
+  unmapped or partially mapped).
+- WindowServer main thread (6 s sample): `waitUntilScheduled`/`waitUntilCompleted` went from 723 samples to 1.
+  The main thread is now ~47% idle in mach_msg and ~45% in the frame update (CPU encoding).
+  - Hot spot: per-draw descriptor snapshots, `nvmtlBindSamplerPipeline` -> `nvmtl_snapshot_set_c/md` ->
+    `radv_UpdateDescriptorSets`, ~474 samples.
+  - The commit-thread submit costs ~250 samples.
+- **75.5 fps** (from ~55). Per frame in NMXAccel: fence wait 4.0 ms (GPU still compositing), beam wait 2.2 ms,
+  K6 copy 3.2 ms. That is ~9.4 ms of serial present path per frame, the cap below 120 Hz. kernel_task ~28% CPU is
+  mostly the copy.
+- WindowServer CPU 41-63% (top).
+- metal-latency: tiny submit 0.10 ms, p90 frames ~5 ms while WindowServer is busy.
+
+Next, in priority order:
+1. **Interrupt loss (H2), in the NMXGPU source.** When the fallback timer sees fence progress with
+   `nmx_irq_dispatched` flat, dump IH_RB_RPTR/WPTR/CNTL, IH status, PCI command (INTx disable) and MSI control.
+   Then self-heal: run `amdgpu_ih_process` from a short (1-2 ms) poll timer until interrupts come back, so the
+   desktop survives while the root cause is found.
+2. **Real flips** (removes the beam wait and K6 copy, ~5.4 ms/frame) with the flip ordered on the fence.
+3. **Encode cost:** cache descriptor sets per bound-resource state, or use push descriptors, for the per-draw
+   snapshot.
+4. **NVMTL backend-down:** WindowServer aborts on a nil pipeline. With slow fences, a 5 s budget then "disable
+   backend" turns a slow GPU into a crash loop.
