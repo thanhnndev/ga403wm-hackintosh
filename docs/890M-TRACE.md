@@ -4593,3 +4593,60 @@ Install: `pkexec scripts/linux-install-nmx-beam.sh <CI NMXAccel>`. Installed 202
 | kext | before | after |
 |---|---|---|
 | NMXAccel | d1083a46… (CI 41463278138) | 99a11fb3… (CI 41586784851) |
+
+## Step84 — GFX hang after minutes of use: TTM pool pages zeroed through the cached view and never flushed
+
+Boot after Step83: no more tearing. About 2 minutes later (13:20:59, screen saver and lock started at 120 s idle) WindowServer
+205 waited 5094 ms on a fence, NVMTL disabled the backend, and WindowServer exited. wsdeath recorded three deaths
+(`~/ga403-logs/step84/`): 205 at 13:21:04, the respawned 9653 at 13:21:18 and 9851 at 13:21:28. The user then hard-rebooted.
+
+Kernel, 13:21:09.7 (10 s job timeout): `ring gfx_0.0.0 timeout, signaled seq=73260, emitted seq=73261`. The ring reset
+failed (`MES failed to respond to msg=RESET`, then `REMOVE_QUEUE`, `failed to halt cp gfx`). A MODE2 reset reported
+success at 13:21:14.98. The GPU then completed nothing: WindowServer 9851's first submit never wrote its keep witness
+(`keep witness 1 NOT seen after 1000 ms`, backend disabled), and CoreDisplay threw in `GetMTLTexture`, as after Step82.
+Fault registers were clean (`PFLT_STATUS 0`, `FAULT_ADDR 0`, noretry), so this hang was not a VM fault.
+
+Where the CP stopped (GC 11.5 field names):
+* `GRBM_STATUS 0xa800302c`: GUI/CP active. SPI, SC, PA, DB, CB, TA and GE idle: no shader work.
+* `CP_BUSY_STAT 0x80`: only PFP_PARSING_PACKETS. `CP_CPF_STATUS` shows the ring and IB1 ROQs busy, IB2 not.
+* `CP_IB1 0x8001_00055000` (0x1420 dw) and `CP_IB2 0x8001_00015000` (0xf0 dw) were fetched completely (`BUFSZ 0`).
+  The ring rptr 0x412 sits on that job's FRAME_CONTROL/RELEASE_MEM tail.
+* **`CP_PFP_HEADER_DUMP 0x00000000`**, `CP_ME_HEADER_DUMP 0xc0065800` (ACQUIRE_MEM). The idle state of other boots reads
+  `c0001700/c0001700`.
+
+So the PFP was stopped inside the IB on a packet header of zero, a dword that RADV never writes into an IB. The memory
+the CP read held zeros where commands should have been.
+
+Mechanism, read from the installed NMXGPU (step77 disassembly, same code today):
+* All GTT memory is write-combined (`amdgpu-ttm-force-wc`): PTEs are not snooped, user and vmap mappings are WC.
+* When a WC page goes back to the TTM pool, `ttm_pool_free_range` (inlined `ttm_pool_type_give`, call at 0x5fe42b) clears
+  it with `pmap_zero_page`, which is `bzero(m->nmx_kva, 4096)`. `nmx_kva` is the kernel's **write-back** view, so the
+  page's zeros sit in the CPU cache as dirty lines.
+* The pool later hands the page to a new buffer with no flush. `pmap_page_set_memattr` flushes only when the attribute
+  changes, and a pool page is already WC.
+* The new owner (an IB, a descriptor or address page, a texture) writes through WC, or the GPU writes it without snooping.
+  The aliased dirty zero lines are written back over that data whenever they are evicted.
+* Linux does not have this alias, because `set_pages_array_wc` makes the direct map WC as well.
+
+This one bug explains several observations:
+* Random 64-byte zeros, at a random later time, in buffers the GPU reads.
+* It gets more likely the longer the session runs, because more allocations come from recycled pool pages.
+* Step82's TCP read through an invalid address (a zeroed descriptor or address table).
+* This header-0 hang.
+* Why b15's clflush of the IB at submit seemed to cure IB corruption (Step46/49): it pushes the aliased lines out
+  before the CP reads, but only for the outer IBs. Chained IBs, IB2s and data buffers are not covered.
+
+Fix, `scripts/linux-patch-nmx-zeroflush.sh` (NMXGPU binary, no CI build):
+* `pmap_zero_page` (0x6dda90, 32 bytes) now zeroes the page with `rep stosb` and tail-jumps to
+  `pmap_invalidate_cache_range` (0x6dd980), which does clflush per line and then mfence.
+* The `jmp _bzero` at 0x6dda9e keeps its bytes, because its external relocation (the only one in 0x6dd900–0x6ddb00) is
+  still applied when the AuxKC is linked. The new code jumps around it.
+* The script refuses to patch if the original bytes, the caller or the target do not match.
+
+Cost: 64 clflush per freed page.
+
+Not fixed by this: recovery after a GPU reset (MES does not answer, and the MODE2-reset GPU runs no job). With the source of the
+corruption gone, that path should no longer be reached; it stays open.
+
+Installed 2026-11-03 13:39 (UTC 06:39): NMXGPU sha256 `0a6c745a…2da2bda0`, backup `/Library/NullMoth/nmx-zeroflush-20261103T063918Z`,
+nmx-relink armed (the first macOS boot relinks the AuxKC and reboots by itself).
