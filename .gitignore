@@ -18,3 +18,4 @@ nv*.txt
 
 # local tool binaries (fetched by tools/get-ipsw.sh)
 tools/bin/
+scripts/nmx-cstrace/cave.o
