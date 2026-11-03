@@ -4907,6 +4907,9 @@ bytes and both UUIDs. `--undo` puts the backup back.
 | NMXGPU | 3dbc47cc… (Step88) | 47eec16d… |
 | NMXAccel | 99a11fb3… (CI 41586784851) | 11c9a392… (CI 41623695878) |
 
+Installed 2026-11-03 11:01Z from macOS. Backup: `/Library/NullMoth/nmx-step89-20261103T110111Z`. The AuxKC was relinked in
+place, so no relink boot is needed: the next normal reboot loads it.
+
 What to read after the boot:
 - `sample`: `amdgpu_bo_alloc` should be gone from the top of WindowServer's stacks, and WindowServer's %CPU should drop.
 - `debug.nmxaccel_beam_wait_us` keeps counting (it is wall time). Check `top`: kernel_task and WindowServer CPU
