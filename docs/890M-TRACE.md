@@ -5518,3 +5518,31 @@ for the root cause. It does not fix the root cause.
 
 ### After the boot
 `log show --predicate 'sender == "NMXGPU"' | grep "NMX irqwatch"`. On a healthy boot it should be empty.
+
+## Step97b: login crash loop = CS -EPERM from a stale xkpi mm (fix installed with Step97)
+
+The boot after Step96 looped at the login window: WindowServer aborted on "CS rejected (-1)", loginwindow showed
+the lock screen again, the password led to another crash. The -1 is not the Step95/96 userptr path. It comes from
+`amdgpu_bo_list_create` (0xeb04): `__lkpi_current()->mm != usermm` -> -EPERM for every userptr BO in the list.
+
+Root cause in xkpi: transient per-syscall thread records get their mm through `proc->p_lkpi_mm`.
+`linux_mm_dtor` (0x6b8db0) frees the mm but clears `p_lkpi_mm` only when `curthread->td_proc` owns it. When the last
+reference is dropped from a kernel worker, the pointer stays dangling and the next mm for that process can be a
+different object. The userptr BOs that were created under the old mm then never match.
+
+Fix (scripts/nmx-mmfix, cave 0x50a730..0x50a858 in dead `kv_enable_didt`, budget word 0x926ff8):
+- `linux_mm_dtor`'s tail call to `uma_zfree_arg` (0x6b8def) becomes `ret`, so the mm is never freed (a small leak per
+  process exit, nothing is reused under a stale pointer).
+- The CS check calls the cave, which logs up to 64 `NMX mmfix: CS userptr BO mm ... != current mm ...` lines and
+  allows the CS.
+- Proper fix still to do in the xkpi source: remove the process record on exit and make the dtor clear the
+  owner's pointer.
+
+Installed with Step97 by `scripts/macos-install-step97.sh` (NMXGPU 44c7e552 -> c2326f22, both patches in either
+order give the same bytes). Backup in /Library/NullMoth/step97-bk-*; undo with `--undo` or
+`pkexec scripts/linux-undo-step97.sh`.
+
+After the reboot, check:
+- `log show --last boot --predicate 'sender == "NMXGPU"' | grep -E 'NMX (mmfix|irqwatch)'`
+- no `p1_bo_handles -> -1` or "CS rejected" lines, and the login is reached
+- fps (~75 at Step96)
