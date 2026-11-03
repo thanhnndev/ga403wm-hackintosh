@@ -4437,3 +4437,48 @@ had run `launchctl disable system/com.itlmt7925.nmx-relink`. launchd keeps that 
 - `linux-patch-nmx-mtxguard.sh` removes the label from `disabled.plist`. It was rerun: the patch was already in, and the relink is
   armed again.
 - The other `linux-patch-nmx-*.sh` scripts have the same gap if they are rerun.
+
+## Step79 — idr_preload/idr_preload_end lock and unlock different CPUs' mutexes (the real Step78 cause)
+
+The relink with the mtx guard ran (C2D75D9D, 09:04). Then 3 boots:
+
+| boot | what happened |
+|---|---|
+| B0BE89DF | Login, desktop transition at 51 s. WindowServer killed by the userspace watchdog twice (09:06:44 and 09:07:24, both "main thread unresponsive"). |
+| AF54DC1A | PSP firmware load failed, `Fatal error during GPU init` (the known intermittent init failure). |
+| 2DEFF732 | WindowServer connected only at 117 s. 105× `Fence fallback timer expired on ring sdma0` (no GPU interrupts), `flip_done timed out`, WindowServer abort in `CoreDisplay::DisplaySurface::GetMTLTexture`. |
+
+No `unlock of unlocked mutex` line was logged and no panic was recorded.
+
+Both watchdog stackshots (B0BE89DF) show the same thing. A WindowServer thread in `drm_syncobj_create_ioctl → drm_syncobj_get_handle →
+idr_preload → nmx_mtx_lock` is blocked on a kernel mutex "owned by thread 6698", and that thread no longer exists anywhere in the
+stackshot.
+
+`idr_preload` locks `linux_idr_cache[nmx_curcpu()]`, and `idr_preload_end` unlocks `linux_idr_cache[nmx_curcpu()]` again (FreeBSD
+linux_idr.c, which relies on `sched_pin`, a counter on xnu, the same fault as Step77). A caller that migrates between the two calls
+unlocks the wrong CPU's mutex:
+- If that mutex is free, `lck_mtx_unlock` of an unheld mutex drops the preemption level to -1, which caused the Step78 panics
+  (08:39 and 09:03 reports, D074E24E/AF86A8DB). The guard catches this case now.
+- If another thread holds it, that thread's mutex is stolen. Either way the caller's own CPU's mutex stays locked forever after
+  the thread returns or exits, and the next `idr_preload` on that CPU (`drm_syncobj_create` from RADV) hangs WindowServer.
+
+Fix (`scripts/linux-patch-nmx-idr.sh`, NMXGPU binary): the 6 `call nmx_curcpu` that index `linux_idr_cache` (in `idr_preload`,
+`idr_preload_end`, and both reserve paths in `idr_get_new_locked` and `idr_get_new_above_locked`) become `xor eax,eax; nopl`, so
+there is one cache and one mutex for all CPUs. All are internal rel32 calls, with no relocations. `idr_preload_init`/`uninit` still
+set up every CPU's cache (unused).
+
+The other `nmx_curcpu` users were checked:
+- `lkpi_kernel_fpu_*` runs inside a critical section with interrupts off.
+- `tasklet_schedule` computes the pointer once.
+- RCU was fixed in Step77.
+
+| kext | before | after |
+|---|---|---|
+| NMXGPU | 9ea37786… | c2979d9b… |
+
+Backup: /Library/NullMoth/nmx-idr-20261103T022425Z. The relink is armed.
+
+Source fix for the mini build: in linux_idr.c, keep the `lic` pointer from `idr_preload` in the task (or use one global cache)
+instead of `DPCPU_GET` in `idr_preload_end`.
+
+Still open: 2DEFF732's missing sdma interrupts after a failed PSP-init boot.
