@@ -4650,3 +4650,50 @@ corruption gone, that path should no longer be reached; it stays open.
 
 Installed 2026-11-03 13:39 (UTC 06:39): NMXGPU sha256 `0a6c745a…2da2bda0`, backup `/Library/NullMoth/nmx-zeroflush-20261103T063918Z`,
 nmx-relink armed (the first macOS boot relinks the AuxKC and reboots by itself).
+
+## Step85 — intermittent PSP LOAD_IP_FW failure at init: what is known, and a snapshot of the PSP before NMXGPU starts
+
+Failing boots on record: E00F313D, F4A73646 (every load 0x11) and 9E6328B3 (mostly 0x63). Older ones are 96874556,
+AF54DC1A, 44BCEA21, 1F4A2989 and AB5C9F81. On 9E6328B3 the blobs with no signature (CP_MES_DATA, RLC_RESTORE_LIST_GPM_MEM,
+RLC_P) load and every signed one fails. The SMU line that follows is a consequence, not a cause:
+`I'm not done with your previous command: SMN_C2PMSG_66:0x16 SMN_C2PMSG_82:0x1` is `PPSMC_MSG_EnableGfxImu` with
+argument 1. smu_hw_init sent it on that same boot, after the PSP failures, and it never answers because GC has no firmware.
+
+Ruled out (each was checked against the binary or the hardware):
+* VRAM aperture, TMR and GART table placement: VRAM is 0x860000000–0x87FFFFFFF, the TMR is 0x870000000–0x878900000, and the GART table is at 0x87FB00000. No dGPU BAR or xnu RAM overlaps them.
+* The setup of the fw_buf pages:
+  * `vm_page_alloc_noobj` zeroes the page through the write-back view with attribute 6.
+  * `lkpi_set_pages_attr(WC)` then goes through `pmap_page_set_memattr`, which flushes each line with clflush and then mfences, because the attribute changes.
+  * Pool pages are zeroed by the Step84 `pmap_zero_page`, which flushes.
+  * `amdgpu_gart_invalidate_tlb` mfences before it flushes HDP and the TLBs.
+* The shutdown path exists and is complete:
+  * `NMXGPU::systemWillShutdown` → `nmx_port_shutdown` → `nmx_bus_call_children("device_shutdown")` → `linux_pci_shutdown` → `amdgpu_pci_shutdown`.
+  * `amdgpu_pci_shutdown` sets mp1_state = UNLOAD (2) and calls `amdgpu_device_ip_suspend`, so smu_v14_0_0 sends PrepareMp1ForUnload.
+* Late loading of NMXGPU: TMR is reserved 9–11 s after boot on both good and failing boots.
+
+Leading explanation (not yet proven on this machine):
+* AMD says the PSP accepts firmware only once per power cycle or hard reset (amd-gfx "amdgpu vs kexec", June 2025, Christian König). On an APU it is worse, because the PSP is shared with the CPU.
+* For GFX11+ APUs, Linux relies on PrepareMp1ForUnload at driver unload (see the `amdgpu_device_ip_fini_early` comment). After that message, PMFW resets GC and the next load is accepted.
+* A session that ends without that message leaves the next warm-reset boot unable to load firmware:
+  * a failed init, which has no SMU hw and fails DESTROY_TMR;
+  * a panic;
+  * a watchdog;
+  * a reboot that skips the shutdown callbacks.
+* This fits the F4A73646 → 9E6328B3 chain: a failed boot, then a quick reboot, then another failed boot.
+* It also fits the Linux boot after 9E6328B3, which worked. Every Linux boot here starts from S5: `x86/amd: Previous system reset reason [0x00200800]: ACPI power state transition`, so it does not show that a warm reset clears the PSP.
+* It does not yet explain the boots after the relink boots C82DFDFB and 46B679A1, which reboot through `/sbin/reboot` with the GPU up.
+
+What decides it: AmdCppc now reads the following before NMXGPU starts, and logs one line,
+`AmdCppc: psp at start: reset=… psp35=… psp64=… ring_lo=… ring_hi=… ring_sz=… sol81=… smu_msg=… smu_arg=… smu_resp=…`
+(also `sysctl debug.amdcppc.psp`):
+* the FCH S5_RESET_STATUS (0xFED803C0);
+* the PSP KM ring registers (C2PMSG_69/70/71);
+* sOS sign of life (C2PMSG_81);
+* the SMU mailbox (C2PMSG_66/82/90);
+These are SMN addresses through 00:00.0 config 0x60/0x64, checked against Linux amdgpu on this machine. Live Linux values: ring 0x80_1faa5000 size 0x1000, sol 0x0031860a, SMU msg 0xf arg 7 resp 1.
+* A failing boot that shows a warm reset and the previous session's ring still programmed confirms the explanation. The fix is then in NMXGPU init, before PSP hw_init: finish the missing unload (PrepareMp1ForUnload, as Linux's driver unload does) when the PSP still holds a session.
+* A failing boot after an S5 reset with clean registers rules it out.
+
+Source: rog-control-macos branch `diag/psp-snapshot`, built by CI. Installed 2026-11-03 to `/boot/EFI/OC/Kexts/AmdCppc.kext` with
+`scripts/linux-install-amdcppc-psp.sh`, backup `/boot/EFI/OC/Backup/AmdCppc.kext-20261103T083255Z`. This repository's
+`kexts/AmdCppc` copy is stale (the kext moved to rog-control-macos), so the same edit here was reverted.
