@@ -4843,3 +4843,73 @@ What to read after the boot:
 - `sysctl compat.linuxkpi.nmx_wc` should read 0.
 - Whether the hang returns.
 - Whether "STALE fence read" changes. With a WB `adev->wb`, the clflush re-read is meaningful again.
+
+## Step89: first Step88 boot is stable; WindowServer's CPU goes to contiguous page allocation; three fixes for the next boot (2026-11-03, macOS)
+
+### The Step88 boot
+Boot at 17:40 (local). The installed NMXGPU is the Step88 binary (sha256 `3dbc47cc…`, `debug.nmx_umap_cache` = 2). There is
+no `compat.linuxkpi.nmx_wc` sysctl, so `nmx_umap_cache` is the check. For 20+ minutes of desktop: WindowServer 205 kept
+running, `debug.nmx_timeouts` = 0, no page fault, no ring timeout and no new wsdeath log. The earlier hangs came after 2–7 min.
+`STALE fence read` still shows up (36 on sdma0, 4 on mes): about the same rate as before. With a cached, snooped `adev->wb`
+this fits the race Step87 described (an SDMA trap that arrives before its fence write is visible). It is harmless,
+because fence_process uses the memory value.
+
+PSP: every firmware load worked. AmdCppc's snapshot before NMXGPU started read
+`reset=00080800 … ring_lo=1f95c000 ring_hi=00000080 ring_sz=00001000 sol81=00241396 smu_msg=00000019 smu_resp=00000001`.
+Bit 19 of S5_RESET_STATUS means software wrote 0x6 to 0xCF9, a warm reboot (the relink's `/sbin/reboot`). The previous
+session's KM ring was still programmed. So a warm reset with a live PSP ring does not by itself make the next load fail.
+The Step85 explanation now needs a failing boot that shows something else.
+
+### Where WindowServer's CPU goes
+WindowServer sat at 50–70 % CPU with a mostly still desktop. `sample` (6 s) and `spindump` (4 s), in
+`~/ga403-logs/step89/`:
+
+* 4165 of ~6000 samples on one WindowServer thread are in `__ioctl` ← `drmCommandWriteRead` ← `amdgpu_bo_alloc`
+  ← `radv_alloc_memory` ← `nvmtl_alloc_opaque_image_mem` ← `nvmtl_vk_image_create_typed`. NVMTL makes a new image,
+  and so a new BO, per surface.
+* Kernel side (spindump, symbolised with atos against NMXGPU and `/System/Library/Kernels/kernel`):
+  `amdgpu_gem_create_ioctl` → `ttm_pool_alloc` → `linux_alloc_pages` → `vm_page_alloc_noobj_contig` →
+  `backing_alloc` → `nmx_xnu_mem_alloc` → `IOBufferMemoryDescriptor::inTaskWithPhysicalMask` →
+  `IOKernelAllocateWithPhysicalRestrict` → **`cpm_allocate`** (313 of 316 samples), partly blocked in `thread_block`.
+* Why: `ttm_pool_alloc` tries order min(fls(pages)-1, 10) first. On xkpi every order > 0 is a physically contiguous run
+  of its own (`nmx_page.c`, BK_RUN through `cpm_allocate`), and it goes back to xnu when the BO is freed. Upstream TTM keeps
+  no pool of *cached* pages on x86 (`ttm_pool_select_type` returns NULL), so since Step88 made GTT cached, every BO pays
+  this cost. Before Step88 the WC pool recycled pages, so Step88 brought this regression in with the coherency fix.
+* Smaller items: `nvmtl_vk_image_write` (CPU uploads, 239 samples), `IOSurfaceClientRelease` (134), fence waits (~130).
+* NMXAccel's paced K6 copy: per frame about 4.8 ms of copy and 3.4 ms of `pause` spin waiting for the scan
+  (`debug.nmxaccel_beam_copy_us` / `_wait_us` over 7147 frames). It runs on the NMXDisplayPipe work loop. The copy is
+  close to memory bandwidth (20 MB read + 20 MB written, l10r→XRGB). The spin wastes CPU.
+
+### Fixes (installed together, take effect on the next boot)
+`scripts/macos-patch-nmx-step89.sh [CI NMXAccel]` runs on macOS as root. It backs up to `/Library/NullMoth/nmx-step89-*`,
+patches NMXGPU, installs NMXAccel, relinks the AuxKC with kmutil, and checks that the new collection holds the patched
+bytes and both UUIDs. `--undo` puts the backup back.
+
+1. **TTM order 0** (NMXGPU 0x5fd9b1): `cmpl $0xa,%eax; movl $0xa,%r12d` → `$0`. Every TT page is order 0, which
+   `linux_alloc_pages` serves from `vm_page_alloc_noobj`: xkpi's 2 MB chunk free list (non-contiguous
+   `inTaskWithOptions` chunks, a spinlocked pop). No more `cpm_allocate`. The GPU uses 4 KB PTEs for GTT. Chunks are
+   never handed back to xnu (that was already true), so wired memory stays at its high-water mark.
+2. **ibprobe v2** (`scripts/nmx-ibprobe/cave.s`): every line goes through `snprintf` (the `jmp _snprintf` tail call at
+   0x8789e) into a stack buffer, then `printf("%s\n")` with NMXGPU's own format at 0x7001ed. logd can then resolve the
+   line, unlike the Step86 `<compose failure>`. The head lines also print pasid, vm, mapping and bo, which shows
+   which lookup left `limit` = 0 last time. `CP_IB1_CMD_BUFSZ` = 0x20c0 (seg 1) was checked against NMXGPU's own
+   ipdump table. The cave now builds on macOS: clang emits ELF, and `elflink.py` places it. It reproduces the Step86
+   `cave.bin` byte for byte.
+3. **NMXAccel beam waits sleep** (nvidia-macos-driver `ci/nmxaccel` 414a235, CI run 41623695878, NMXAccel
+   `11c9a392…`, UUID 0EA8C295…):
+   * Waits `IODelay` until ~150 µs before the target line, then spin. The line period is measured from earlier copies.
+     A wait never sleeps across a refresh, so `line()` still sees every wrap.
+   * The copy starts when the scan is at h + 8 + 16 − copy length, so only the last band waits.
+   * The beam log line now also prints ns/line.
+
+| kext | before | after |
+|---|---|---|
+| NMXGPU | 3dbc47cc… (Step88) | 47eec16d… |
+| NMXAccel | 99a11fb3… (CI 41586784851) | 11c9a392… (CI 41623695878) |
+
+What to read after the boot:
+- `sample`: `amdgpu_bo_alloc` should be gone from the top of WindowServer's stacks, and WindowServer's %CPU should drop.
+- `debug.nmxaccel_beam_wait_us` keeps counting (it is wall time). Check `top`: kernel_task and WindowServer CPU
+  during animation.
+- `debug.nmxaccel_beam_lapped` should stay near 0, and there should be no tearing.
+- If a GFX hang comes back: `NullMoth ibprobe` lines in the wsdeath log, now readable.

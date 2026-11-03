@@ -3,6 +3,10 @@
 # memory) and through each page's write-back physmap alias (what the CPU cache holds) -- parses both as PM4, counts the
 # dwords where they differ and prints the dwords around the parse stop and around the CP's fetch position.
 # It only reads: no flush, no kmap, no lock but the pasid xarray mutex.
+# Step89: every line goes through pr(): snprintf into a stack buffer, then printf("%s\n") with NMXGPU's own "%s\n"
+# (0x7001ed). logd resolves formats only from the kext's __cstring, so the Step86 lines that used formats from this
+# cave read "<compose failure>". The head lines now also print pasid, vm, mapping and bo, so a zero limit says which
+# lookup failed.
 # Linked at 0x5aa5a0 (si_initialize_smc_cac_tables, SI dpm only, no external relocations inside).
 # rbx = adev, r13 = job, rbp = amdgpu_coredump's frame. 0(%rsp) = IB1_BASE_LO, 8(%rsp) = IB1_BUFSZ (still pushed).
         .text
@@ -18,7 +22,7 @@ _start:
         pushq   %r14
         pushq   %r15
         subq    $0x40, %rsp
-        # 0 va, 8 left, 0x10 cmd, 0x18 bo, 0x20 vm, 0x28 mapping, 0x30 mem_type
+        # 0 va, 8 left, 0x10 cmd, 0x18 bo, 0x20 vm, 0x28 mapping, 0x30 mem_type, 0x38 pasid
         movl    %ecx, 8(%rsp)
         movl    -0x38(%rbp), %edx
         shlq    $32, %rdx
@@ -36,6 +40,7 @@ _start:
         movq    $0, 0x18(%rsp)
         movq    $0, 0x28(%rsp)
         movq    $-1, 0x30(%rsp)
+        movq    $0, 0x38(%rsp)
         xorl    %r12d, %r12d
         xorl    %r14d, %r14d
         xorl    %r15d, %r15d
@@ -43,6 +48,7 @@ _start:
         call    MTX_LOCK
         leaq    0xf180(%rbx), %rdi
         movl    0x1f4(%r13), %esi
+        movl    %esi, 0x38(%rsp)
         call    XA_LOAD
         movq    %rax, 0x20(%rsp)
         leaq    0xf1a8(%rbx), %rdi
@@ -106,18 +112,20 @@ _start:
         movq    (%rsp), %rsi
         movl    0x10(%rsp), %edx
         movl    8(%rsp), %ecx
-        movq    0x18(%rsp), %r8
-        movq    %r13, %r9
-        xorl    %eax, %eax
-        call    PRINTF
+        movl    0x38(%rsp), %r8d
+        movq    0x20(%rsp), %r9
+        call    pr
         leaq    F_BO(%rip), %rdi
-        movq    0x30(%rsp), %rsi
-        movq    %r15, %rdx
-        movq    %r12, %rcx
-        movq    %r14, %r8
-        movq    0x28(%rsp), %r9
-        xorl    %eax, %eax
-        call    PRINTF
+        movq    0x28(%rsp), %rsi
+        movq    0x18(%rsp), %rdx
+        movq    0x30(%rsp), %rcx
+        movq    %r15, %r8
+        movq    %r13, %r9
+        call    pr
+        leaq    F_MAP(%rip), %rdi
+        movq    %r12, %rsi
+        movq    %r14, %rdx
+        call    pr
         testq   %r13, %r13
         je      .Lout
         # parse both views
@@ -138,12 +146,10 @@ _start:
         movl    0x28(%rsp), %ecx
         movl    0x2c(%rsp), %r8d
         movl    0x30(%rsp), %r9d
-        xorl    %eax, %eax
-        call    PRINTF
+        call    pr
         leaq    F_DIFF(%rip), %rdi
         movl    0x34(%rsp), %esi
-        xorl    %eax, %eax
-        call    PRINTF
+        call    pr
         # around the A parse stop
         movl    0x20(%rsp), %edi
         call    dump2
@@ -163,6 +169,30 @@ _start:
         popq    %r13
         popq    %r12
         jmp     CONT
+
+# pr(rdi = format, rsi, rdx, rcx, r8, r9): snprintf(buf, 256, format, ...) then printf("%s\n", buf).
+# SNPRINTF is a "jmp _snprintf" tail call (0x8789e, amdgpu_reset_get_desc), PRINTF a "jmp _printf" (0xbc46e): both
+# carry the external relocation, so calling them reaches the real function.
+pr:
+        pushq   %rbp
+        movq    %rsp, %rbp
+        subq    $0x110, %rsp
+        movq    %r8, (%rsp)
+        movq    %r9, 8(%rsp)
+        movq    %rcx, %r9
+        movq    %rdx, %r8
+        movq    %rsi, %rcx
+        movq    %rdi, %rdx
+        leaq    0x10(%rsp), %rdi
+        movl    $0x100, %esi
+        xorl    %eax, %eax
+        call    SNPRINTF
+        leaq    FMT_S(%rip), %rdi
+        leaq    0x10(%rsp), %rsi
+        xorl    %eax, %eax
+        call    PRINTF
+        leave
+        ret
 
 # dump2(edi = index): 16 dwords from index - 8, view A then view B
 dump2:
@@ -212,8 +242,7 @@ dump:
         movl    -0x28(%rbp), %edx
         movl    -0x24(%rbp), %ecx
         movl    -0x20(%rbp), %r8d
-        xorl    %eax, %eax
-        call    PRINTF
+        call    pr
         addl    $4, -0x14(%rbp)
         decl    -0x18(%rbp)
         jnz     1b
@@ -314,9 +343,10 @@ rdB:
 9:      movl    $0xdeadbeef, %eax
         ret
 
-F_HEAD:  .asciz "NullMoth ibprobe: va=%llx cmd_bufsz=%x left=%x bo=%p limit=%llx\n"
-F_BO:    .asciz "NullMoth ibprobe: mem_type=%lld off=%llx vmapA=%p pagesB=%p mapping=%p\n"
-F_PARSE: .asciz "NullMoth ibprobe: pm4 A stops at %x (hdr %08x), B stops at %x (hdr %08x); A!=B in %x dwords\n"
-F_DIFF:  .asciz "NullMoth ibprobe: first A!=B at %x\n"
-F_A:     .asciz "NullMoth ibprobe A[%05x]: %08x %08x %08x %08x\n"
-F_B:     .asciz "NullMoth ibprobe B[%05x]: %08x %08x %08x %08x\n"
+F_HEAD:  .asciz "NullMoth ibprobe: va=%llx cmd_bufsz=%x left=%x pasid=%x vm=%p"
+F_BO:    .asciz "NullMoth ibprobe: mapping=%p bo=%p mem_type=%lld off=%llx limit=%llx"
+F_MAP:   .asciz "NullMoth ibprobe: vmapA=%p pagesB=%p"
+F_PARSE: .asciz "NullMoth ibprobe: pm4 A stops at %x (hdr %08x), B stops at %x (hdr %08x); A!=B in %x dwords"
+F_DIFF:  .asciz "NullMoth ibprobe: first A!=B at %x"
+F_A:     .asciz "NullMoth ibprobe A[%05x]: %08x %08x %08x %08x"
+F_B:     .asciz "NullMoth ibprobe B[%05x]: %08x %08x %08x %08x"
