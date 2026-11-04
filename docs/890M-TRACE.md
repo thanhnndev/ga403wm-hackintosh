@@ -6474,3 +6474,16 @@ After the reboot:
    - WindowServer alive;
    - the desktop redraws.
 3. If it hangs again: hold the power button, then run `scripts/macos-syssleep-test.sh collect "<start>"` and check the spin/panic reports.
+
+### Step110 result (2026-11-04 23:37): system sleep and wake PASS, no hang
+
+The boot armed the wake work: `paging wake on (setPowerState slot 253)`.
+
+Test: `macos-syssleep-test.sh 60`. The script itself was cut short when the Claude app restarted during the sleep; the logs below were read by hand.
+- Sleep at 23:37:57. StrixS0ix idled 28269 ms in the MWAITX loop; wake event 0x400 (RTC), _DSM all 0.
+- At 23:38:33.029, right after the framebuffer power-on: `NMXBacklight: paging wake (framebuffer power-on, #1): DidWake true + 1 x false, DidPowerOn 0x0, paging on, WindowServer woken`.
+- `NMXPowerKeep: system has powered on` was logged. It was missing in Step109d.
+- The lock screen came up; the owner logged in and got the desktop back. WindowServer stayed alive, with no watchdog report and no panic.
+- A few `timed out fence` lines remain, but one is from 23:37:51, before the sleep. That is the driver's existing fence issue, not the sleep path.
+
+Still open: NMXGPU skips suspend because xkpi reads FADT as zero, so the 890M stays powered in S0. Next steps: the xkpi FADT read, then SMU OS_HINT for S0i3 residency, and `macos-syssleep-test.sh restore` for pmset when the sleep tests are done.
