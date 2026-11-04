@@ -6147,3 +6147,26 @@ WS CPU back to ~27 %, desktop smooth; NVRM 2.7.1 GSP state.
   instance): node opened through NMXAccel, `vk: UP`, no crash. Not re-tested: Chrome/Edge WebGL (only the refused-call
   fallbacks changed; their GPU helper was unaffected), WindowServer (loads the new plugin at its next start).
 - After the reboot: `scripts/macos-webgl-safari-test.sh live --ab`.
+
+## Step104c (2026-11-04 15:45): translator fix live - Chrome's on-device-model kernels translate
+
+- Root cause (translator, `passes/stage_input/mod.rs`): a threadgroup kernel argument with AIR
+  `air.struct_type_info` was given a workgroup variable typed from that layout even when the emitter had chosen a
+  raw uint-array word view for it (it does when a non-inlined helper reaches the argument through a raw cursor,
+  e.g. an access inside a branch). The pass only splices the parameter id for the variable, so the word-indexed
+  access chains became whole-struct pointers -> owned Load/Store contract failure -> Dawn aborts. Fix: keep the raw
+  view whenever the emitter chose it.
+- Branch `translator-wg-raw-param` on the fork (635cb43), based on upstream tag v2.7.1 (the live translator's
+  release; exports identical). Regression test tests/workgroup_raw_param_layout.rs (fails without the fix).
+- Checks: an A/B harness (old live dylib vs new, same process) over 87 cached app shaders = 82 byte-identical,
+  5 failing in both (pre-existing, other stages), 9 previously failing kernels fixed (repro variants + Chrome's
+  dump), 0 broken. Integration tests on pristine v2.7.1 vs fixed: identical per test case (165/166 ok, the same
+  26 pre-existing failures from fixtures missing in the public tree), plus the new test.
+- Toolchain: rustup minimal (cargo 1.99.1) in ~/.cargo, spirv-val from the spirv-tools crate (scratch build).
+- Installed with scripts/macos-nvmtl-translator-install.sh (bundle swap, backup
+  /Library/NullMoth/nvmtl-translator-20261104T084552Z, `--undo`): translator e399e64a4b86d757. New processes load it,
+  WindowServer on its next start; the plugin keys SPIR-V caches by the dylib's sha256. Re-signing the bundle also
+  re-signs NVMTLDriver (sha changes, code does not).
+- Verified live: the repro MSL kernels and the tint-shaped kernel create pipelines; fresh Chrome profile (sandboxed)
+  ran its on-device-model WebGPU benchmark at 15:49:13 - four `dawn_entry_point` compute pipelines created
+  (4116-15912 B SPIR-V), no crash report, no service disconnect, nmx_timeouts 0.
