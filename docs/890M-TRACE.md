@@ -5827,7 +5827,7 @@ Boot after the Step100c relink. Desktop OK, flips latch (mode 1 imports, `#0/#1 
   pointers do occur in practice; no `NMX mmfix:` (Step97b bypass) line.
 - **NMXBacklight:** `sense slot 337, panel registered, initial 100%, display not yet; handler published` (12.7 s), then
   `brightness parameters on AppleBacklightDisplay` (46.5 s) and `100% applied (rc 0)`: the display is an
-  AppleBacklightDisplay now. Slider moves not yet seen in the log (owner to try).
+  AppleBacklightDisplay now. **Owner verified the slider changes the OLED brightness** (12:2x).
 - **desc-cache:** `hit 350527 miss 8375783 (long 8188350)` at 7 min, WindowServer ~69 %. 98 % of lookups overflowed the
   key. Root cause: WindowServer's fragment shaders declare binding 192 (`[[color(n)]]` framebuffer fetch; the log says
   so for every such module), `nvmtl_spirv_bmask` returned 0 on any binding outside the layout's bands, so those
