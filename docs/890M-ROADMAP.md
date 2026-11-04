@@ -21,8 +21,8 @@ Daily-use gate (OLED + apps on the 890M), in order:
    (b) reopen the allow list by rungs: done 2026-11-04 (Step103 rung 1, Step104 rung 2 + `*`; Chrome/Edge WebGL
    on the 890M). Open: Safari's WebKit GPU process may not map executables from /Library/GPUBundles (its sandbox
    maps only sealed /System paths and read-only cryptex grafts). Step105 (staged, reboot pending): StrixSbxMap,
-   a kernel-side Sandbox mmap exception for the pinned plugin files, plus three plugin-side fixes still to do in
-   the fork; see "Safari WebGL: Sandbox mmap exception" below. Also open: WindowServer CPU with many animated clients.
+   a kernel-side Sandbox mmap exception for the pinned plugin files; the three plugin-side fixes are live
+   (Step105b, plugin fb86bf5, simulation PASS); see "Safari WebGL: Sandbox mmap exception" below. Also open: WindowServer CPU with many animated clients.
 2. Sleep/wake and lid with NMXGPU: never tested (caffeinate always on).
 3. Stability run: several clean boots and a full workday without a panic (last panic 2026-11-04 11:50, Step100c, fixed).
 4. Video decode (VCN) for browsers/players: not started; without it video decodes on the CPU.
@@ -172,7 +172,7 @@ live sysctl writes):
 Recovery if a boot goes wrong: boot-arg `-strixsbxoff`, or from Linux remove the `StrixSbxMap.kext` Kernel/Add entry
 (config backup `config.plist.strixsbxmap-20261104-151851` on the ESP).
 
-### Plugin side: three more sandbox walls (fork work, no reboot needed)
+### Plugin side: three more sandbox walls (fixed live in Step105b, plugin fb86bf5)
 
 The mmap exception alone is not enough. `tools/890m/sbx-sim.m` applies the WebKit GPU profile in-process (like the
 GPU process does, after dyld and libdispatch are up) plus exactly the 8 pinned file-map-executable rules, then
@@ -181,7 +181,7 @@ RADV). Result 2026-11-04: with only the pins, the plugin loads but the device do
 rules gives `vk: UP` and a correct pixel (PASS). Each of the three was removed again on its own: each alone brings
 `device: none` back.
 
-| Wall (deny in the GPU profile) | Effect | Fix in the plugin (fork desc-cache) |
+| Wall (deny in the GPU profile) | Effect | Fix in the plugin (fork desc-cache fb86bf5, installed live) |
 |---|---|---|
 | `sysctl-read hw.pagesize_compat` (not on the profile's sysctl list) | `getpagesize()` fails: drm-xnu rebinding finds "0 imports in the driver and 0 libdrm images", `_sysconf not rebound`, RADV enumerates 0 GPUs | take the page size from `vm_page_size` (mach global, no syscall) in the rebinder; answer `getpagesize`/`sysconf(_SC_PAGESIZE)` for RADV/libdrm the same way |
 | `file-read-data /dev/null` | the NMDR handle fd cannot be opened: `amdgpu_query_info(ACCEL_WORKING) failed (-9)` | fall back to a node the profile can read (`/dev/random` is allowed read-only), or a handle that needs no path |
@@ -202,8 +202,8 @@ Before the reboot (now, and after every plugin fix):
     scripts/macos-webgl-safari-test.sh sim            # system WebKit profile + the pins staged on the ESP
     scripts/macos-webgl-safari-test.sh sim --safari   # Safari's cryptex profile
 
-Today: `SIM FAIL` with the three walls above. After the plugin fix (installed live, then
-`scripts/macos-install-strixsbxmap.sh --refresh` for the new cdhash): expected `SIM PASS`. The simulator turns the
+Before the plugin fix: `SIM FAIL` with the three walls above. With plugin fb86bf5 (installed live, pins refreshed
+with `scripts/macos-install-strixsbxmap.sh --refresh`): `SIM PASS` for both profiles, 2026-11-04 15:34. The simulator turns the
 IOKit message filter off (it needs WebKit's entitlement); the NMDR selectors 0/1/2 are on its allowed list.
 
 After the batched reboot:

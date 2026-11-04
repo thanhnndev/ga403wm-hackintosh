@@ -6130,3 +6130,20 @@ WS CPU back to ~27 %, desktop smooth; NVRM 2.7.1 GSP state.
 - Next: the three plugin fixes in the fork (page size from vm_page_size, a readable handle node, F_DUPFD_CLOEXEC in
   the drm-xnu shim), live install + `--refresh`, `scripts/macos-webgl-safari-test.sh sim` -> PASS before the reboot;
   after the reboot `scripts/macos-webgl-safari-test.sh live --ab`.
+
+## Step105b (2026-11-04 15:35): plugin fb86bf5 - the three WebKit GPU sandbox walls fixed live, simulation PASS
+
+- Fork desc-cache fb86bf5 (pushed to fork/desc-cache; `plugin/nvmtl_drm_xnu.h`, `plugin/nvmtl_vk.c`): page size from
+  `vm_page_size` in the import rebinder and for RADV/libdrm `getpagesize`/`sysconf(_SC_PAGESIZE)` (armed processes);
+  NMDR handle falls back to `/dev/random`; a refused `F_DUPFD`/`F_DUPFD_CLOEXEC` becomes `dup` + `F_SETFD`.
+  Build = build/build_plugin.sh's clang line plus `-framework IOKit` (the script points at a removed ~/nvmtl-build
+  tree), 336 warnings like the base. Artifact `nmx-plugin-890m/out/plugin-desccache-fb86bf5/NVMTLDriver`.
+- Installed live (scripts/macos-nvmtl-plugin-install.sh, swap by rename): bundle binary f1ddbb96e93ed00a,
+  CDHash ba5915fe200d165b31876e720557fac8f944184c; backup /Library/NullMoth/nvmtl-plugin-20261104T083340Z
+  (6ba40a36abc42bea = 820624d). Undo: `sudo scripts/macos-nvmtl-plugin-install.sh --undo`, then `--refresh`.
+- `scripts/macos-install-strixsbxmap.sh --refresh`: ESP pins updated to the new cdhash (kext not live yet).
+- `scripts/macos-webgl-safari-test.sh sim` and `sim --safari`: armed with 27 imports, `vk: UP`, pixel 0,255,0 PASS
+  with only the 8 pinned mmaps added to the profile. Control (`sbx-sim --none`) PASS. TextEdit (App Sandbox, fresh
+  instance): node opened through NMXAccel, `vk: UP`, no crash. Not re-tested: Chrome/Edge WebGL (only the refused-call
+  fallbacks changed; their GPU helper was unaffected), WindowServer (loads the new plugin at its next start).
+- After the reboot: `scripts/macos-webgl-safari-test.sh live --ab`.
