@@ -12,13 +12,13 @@ the headless accelerator, then replace the NVIDIA userland.
 | M1 | Own kernel driver up (NMXGPU) | done |
 | M2 | Graphics jobs reliable | done for WindowServer (H2 interrupt-loss root cause fixed Step100); apps not re-tested since Step70 |
 | M3 | WindowServer composites on the 890M | **done**: amdgpu DC drives the OLED, zero-copy page flips, 116 fps, WS ~2.35 ms CPU per frame (27 % at 116 fps, was 500-900 %) |
-| M3b | Apps get a Metal device | **open**: `nvmtl-allow.txt` has `*` off since Step70 (app render jobs hung the gfx ring); `metal-devices` shows 0 for apps |
+| M3b | Apps get a Metal device | **half**: non-sandboxed apps work (2026-11-04: Terminal with `NVMTL_ENABLE=1` UP on RADV STRIX1, fish output loop, desc-cache hit 1684/miss 143, no ring timeout; tools: 10 compute + 10 render + 200-frame loop + 15 parallel clean). Sandboxed apps (TextEdit etc.) get no device: the sandbox denies `file-read-data /dev/dri`, RADV enumerates 0 GPUs, the plugin refuses and the app draws on the CPU (looks fine, but no GPU). Allow list still `!WindowServer` only |
 | M4 | Own userland (NVMTLDriver from the fork source, RADV) | partly: the NVMTL plugin is now built from fork source (desc-cache branch); RADV/libdrm still NullMoth binaries |
 | M5 | No NullMoth kexts | not started (NVRM/NVAccel/NVRMFB/NVRMAGDC/NMXAccel loaded) |
 
 Daily-use gate (OLED + apps on the 890M), in order:
-1. App Metal: re-test bounded app render jobs now that H2 is fixed (Step70's hang may have been the lost interrupt), then
-   reopen the allow list by rungs (named apps, then `*`).
+1. App Metal: bounded app jobs are clean again after H2 (done 2026-11-04). Left: (a) sandboxed apps, see below;
+   (b) reopen the allow list by rungs (named non-sandboxed apps, then `*`).
 2. Sleep/wake and lid with NMXGPU: never tested (caffeinate always on).
 3. Stability run: several clean boots and a full workday without a panic (last panic 2026-11-04 11:50, Step100c, fixed).
 4. Video decode (VCN) for browsers/players: not started; without it video decodes on the CPU.
@@ -90,3 +90,33 @@ Open, in order:
    source first; until then Step97b's mm_dtor `ret` leak and the mmfix2 cave stay).
 4. Remaining prints on the IRQ path (`___drm_err`, VM-fault messages) can block like H2 did during a console stall;
    consider dropping `-v` from boot-args.
+
+## Sandboxed apps: /dev/dri is blocked (found 2026-11-04)
+
+`Sandbox: TextEdit(17713) deny(1) file-read-data /dev/dri`. Every App Store / sandboxed app (and browser GPU
+processes) hits this, so opening the DRM render node can never be the app path. NullMoth's NVIDIA userland already
+solves the same problem (nvk-macos.patch ~11720): it opens an IOKit user client on the accelerator (sandboxed apps
+may open IOAccelerator user clients), opens `/dev/null` read-only as a handle fd (allowed in every sandbox), binds the
+fd to the connection (`SEL_BINDFD`) and sends every ioctl through `IOConnectCallMethod(SEL_ESC)`.
+Plan for the 890M, same shape:
+1. NMXGPU/NMXAccel: a user client whose escape selector runs the amdgpu DRM ioctls (GEM create/mmap/VA, CS submit,
+   syncobj, query info) for the bound file context, so the per-process DRM file stays in the kernel.
+2. libdrm (RADV): when `open("/dev/dri/renderD128")` fails with EPERM, fall back to the IOKit path; `drmIoctl` on that
+   fd goes through `IOConnectCallMethod`. mmap of BOs: map through the user client (`IOConnectMapMemory64`).
+3. Test: TextEdit / Preview / Safari GPU process get "vk: UP" with no sandbox violation; then the allow list rungs.
+
+## Hybrid and automatic GPU choice (owner requirement, 2026-11-04)
+
+Goal: the machine picks the GPU by itself, like a real MacBook Pro with two GPUs, and switching just works:
+- The 890M always owns the OLED, the display path, brightness and WindowServer (never moves to the RTX).
+- Low-power / default apps get the 890M. Apps that ask for high power (Metal `MTLCreateSystemDefaultDevice` on a
+  high-performance request, `NSSupportsAutomaticGraphicsSwitching` = false, games, Blender, LLM runtimes) get the
+  RTX 5060 through the NullMoth NVIDIA Metal device; its frames are copied to the 890M for display.
+- Both devices show in `MTLCopyAllDevices` (890M `lowPower`=YES, RTX `lowPower`=NO, `removable`=NO), so apps that
+  choose for themselves (Blender, Final Cut style) can do it.
+- An override per app (allow-list style file or a small menu-bar setting): force 890M / force RTX / auto.
+- The RTX powers down when no app uses it (runtime D3, NVRM already parks it) and wakes on the first high-power app.
+- HDMI (wired to the RTX) works as a second display while the OLED stays on the 890M.
+Order: after M3b (apps on the 890M, sandbox fix) - the RTX Metal device needs the same sandbox-safe path and the
+plugin has to run both devices in one process.
+
