@@ -6020,3 +6020,13 @@ when NVAccel exists (nvmtl_vk_vendor) - to be decided with the hybrid work.
 
 Next boot: WindowServer on the 890M again (one initWithAcceleratorPort accepted, vendor 1002; NVIDIA port refused),
 WS CPU back to ~27 %, desktop smooth; NVRM 2.7.1 GSP state.
+
+## Step102b boot (2026-11-04 14:37): WindowServer back on the 890M
+
+- WindowServer: AMD accelerator accepted (`GPU vendor 1002`, `vk: UP … RADV STRIX1`), NVIDIA port refused
+  (`accelerator vendor 10de, but this process runs Metal on 1002: no second device`); no CoreDisplay abort.
+- present-rate 10 s: 90.6 fps, flips submitted 906 / latched 905, fallback 0, fence 2.18 ms; WindowServer 31.6 % CPU
+  over 10 s (~3.5 ms per frame) three minutes after boot with pkd/diagnosticd/Spotlight still busy (Step101b record:
+  2.35 ms). Re-measure when idle.
+- NVIDIA 2.7.1: `RmInitAdapter succeeded` (GSP up, 0000:62:00.0); bootguard "this start counts as good".
+- No GPU timeout/fault/reset in the kernel log.
