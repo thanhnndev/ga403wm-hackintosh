@@ -41,6 +41,18 @@ for name in ('NMXGPU', 'NMXAccel', 'NMXAGDC', 'NMXBacklight'):
     present = bool(u) and bytes.fromhex(u.replace('-', '')) in kc
     print(f'{sys.argv[1]}: {name} uuid={u} present={present}')
     ok = ok and present
+# A binary patch keeps the UUID: byte windows of the installed NMXGPU that the collection must hold exactly once
+# (lines "offset length", written by the Linux-side install; Step100c).
+pr = Path('/Library/StrixGraphicsFix/nmx-relink.probes')
+if pr.exists():
+    g = Path('/Library/Extensions/NMXGPU.kext/Contents/MacOS/NMXGPU').read_bytes()
+    for l in pr.read_text().split('\n'):
+        if not l.strip():
+            continue
+        o, n = (int(x, 0) for x in l.split())
+        c = kc.count(g[o:o + n])
+        print(f'{sys.argv[1]}: NMXGPU bytes {o:#x}+{n:#x} found {c}x')
+        ok = ok and c == 1
 sys.exit(0 if ok else 1)
 PY
 }

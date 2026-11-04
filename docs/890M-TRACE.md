@@ -5777,3 +5777,44 @@ Fix (nothing in the kexts changes; Step100 is not reverted):
 Next boot: macOS relinks by itself (no desktop, ~2-3 min) and reboots. Look in /Library/StrixGraphicsFix/nmx-relink.log
 for `present=True` on both checks and `attempt=1` only. If it took a second attempt, kernelmanagerd rebuilds at boot as
 well.
+
+## Step100c: black screen after the relink; the irqfix state overlapped the flip lock (2026-11-04)
+
+The Step100b relink worked on the first attempt. Both KC checks were `present=True`, and the KC (11:30:14) still held all four
+kexts. Boots 11:31 and 11:36: NMXGPU came up as before (DC, rings, `driving 1002:150e`, NMXBacklight `100% applied`).
+WindowServer opened the pipe, and NMXAccel reached `flip: NMXGPU flip API present ... generation 1` at 11:32:09.577.
+After that there is no NMX line at all. At ~up 156 s the userspace watchdog panicked the Mac:
+`no successful checkins from WindowServer ... in 120 seconds` (Kernel-2026-11-04-113630.panic). Both boots match.
+
+Spin reports (`WindowServer_*_userspace_watchdog_timeout.spin`):
+- The WindowServer main thread is in IOAccelerator `externalMethod`, `blocked by turnstile waiting for kernel_task thread 0x10b3`.
+- Thread 0x10b3 `NMXDisplayPipe`: IOAcceleratorFamily2 -> NMXAccel -> NMXGPU+0x5071a3 (the flip cave entry) ->
+  **running** at NMXGPU+0x507724 / 0x50772a in all 12 samples. That is `lock()` from nmx-flip/common.h:
+  `xchg %eax,0x9270a0(%rip); test; je; pause; jmp`.
+
+Cause:
+- The Step99 flip/import caves keep `struct st` at 0x9270a0, with `lock` first.
+- The Step100 irqfix cave keeps ST[] at 0x927010 with NSTATE = 23 words, i.e. 0x927010..0x9270c8. Step97 used 16 words,
+  ending at 0x927090.
+- So ST[18] H_MAXJ (the longest handler run in jiffies, non-zero after the first interrupt) is the flip lock.
+  ST[19..22] (STALE_*) overlay gen/current/pending/nbuf/logs/tried/seqSub.
+- The REGION file listed `0x927010..0x9270c0` but nobody checked it against the flip's 0x9270a0.
+- The first flip spins forever inside the display-pipe gate, and WindowServer waits on the gate.
+
+Fix (`scripts/nmx-irqfix/st_move.py`, d4830f51 -> 3e1b6619):
+- ST[] moves to 0x927208..0x9272c0 (`ci_populate_bapm_vddc_vid_sidd.__ratelimited.79` .. `ci_set_mc_special_registers.
+  __ratelimited.97`, CI dpm only). 0x927200 is where the flip state ends; 0x927370 is the end of the free CI block.
+- Only the 69 rip-relative displacements into 0x927010..0x9270c8 change, by +0x1f8 each. They come from a raw
+  disassembly of the cave, 0x509100..0x50a024, with strings after that; the list is `st_sites-d4830f51.txt`.
+- Check: the instruction stream is identical after masking the displacements. Every ST ref is now in 0x927208..0x9272b8.
+  No byte outside the cave changed (138 bytes in total).
+- The cave is not rebuilt from cave.c, because the current clang does not reproduce the installed cave.bin.
+
+Install: `pkexec scripts/linux-patch-step100c.sh`:
+- Backs up NMXGPU.kext and the KC to step100c-bk-*.
+- Patches NMXGPU and re-arms nmx-relink.
+- nmx-relink now also checks byte windows of NMXGPU listed in /Library/StrixGraphicsFix/nmx-relink.probes, because a binary
+  patch keeps the UUID.
+
+The relink boot still runs d4830f51, so it will hang and panic again at ~160 s. The relink finishes at ~80 s (it took 53 s
+on Step100b).
