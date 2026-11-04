@@ -6487,3 +6487,31 @@ Test: `macos-syssleep-test.sh 60`. The script itself was cut short when the Clau
 - A few `timed out fence` lines remain, but one is from 23:37:51, before the sleep. That is the driver's existing fence issue, not the sleep path.
 
 Still open: NMXGPU skips suspend because xkpi reads FADT as zero, so the 890M stays powered in S0. Next steps: the xkpi FADT read, then SMU OS_HINT for S0i3 residency, and `macos-syssleep-test.sh restore` for pmset when the sleep tests are done.
+
+## Step111: StrixS0ix 0.1.2 hands the live FADT to xkpi, so amdgpu really suspends in S0 sleep (2026-11-04, installed, reboot pending)
+
+**Root cause of "no FADT; ACPI power flags read as zero".**
+- xkpi (nmxaccel gpu-port/xkpi/xnu/nmx_platform.cpp, `copy_acpi_tables`) reads every ACPI table from the **first** registry entry that has an "ACPI Tables" dictionary.
+- Tahoe's platform expert publishes none. The only one is StrixVFCT's codeless IOResources node (Step26), which holds VFCT only.
+- So `nmx_acpica_init` found no FACP and zeroed `AcpiGbl_FADT`.
+- amdgpu then saw ACPI_FADT_LOW_POWER_S0 clear, logged "BIOS has not been configured for suspend-to-idle", and skipped suspend and resume ("suspend returned 0 in 0 ms"). The 890M stayed fully powered through S0 sleep (Step109d/110).
+
+**Fix: StrixS0ix 0.1.2.**
+- It already reads the live FACP through `IOACPIPlatformDevice::getACPITableData`.
+- It now adds that FACP to the first "ACPI Tables" dictionary (StrixVFCT's), or publishes one on itself when there is none.
+- It logs the FADT flags (`S0ix,FadtFlags`) and LOW_POWER_S0 (bit 21).
+- It runs before NMXGPU's SYSINIT: in the Step110 boot it was 64 ms earlier. If NMXGPU ever wins that race it just sees the Step110 state.
+- `-s0ixnofacp` skips it.
+- With the flag visible, the NMXGPU s0ix cave (Step107, stype 3) finally makes amdgpu take its s0ix path: PSP/GFX/MES/SDMA kept, SMU D3Entry, resume without firmware reload.
+- This path is new on this machine, and its resume is the risk.
+
+**Install:** `scripts/macos-install-step111.sh` (`--undo`). Backup: /Library/NullMoth/step111-bk-20261104T164602Z.
+
+**After the reboot:**
+1. Boot log: `StrixS0ix: FACP (... LOW_POWER_S0 set) published for xkpi: IOService`, and **no** "no FADT".
+2. `macos-syssleep-test.sh 60`, hands off. Expected:
+   - no "BIOS has not been configured";
+   - NMXGPU suspend and resume take real time (not 0 ms);
+   - paging wake;
+   - desktop back.
+3. **If the wake hangs (GPU resume):** hard restart and boot with `-s0ixnofacp` (or `--undo`). That keeps the Step110 behaviour, where sleep works with the GPU powered.

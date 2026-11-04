@@ -119,6 +119,7 @@ class StrixS0ix : public IOService {
     UInt32 sleeps = 0;
     bool installHalt();
     void readFadt();
+    void publishFacp(const OSData *facp);
     IOReturn dsm(UInt32 fn, OSObject **result = nullptr);
 public:
     bool start(IOService *provider) override;
@@ -140,6 +141,47 @@ void StrixS0ix::readFadt()
     if (pm1a && pm1a < 0x10000) gPm1Sts = uint16_t(pm1a);
     if (gpe0 && gpe0 < 0x10000) { gGpe0Sts = uint16_t(gpe0); gGpe0Len = b[92]; }
     IOLog("StrixS0ix: FADT PM1a_EVT %#x GPE0 %#x len %u\n", gPm1Sts, gGpe0Sts, gGpe0Len);
+    publishFacp(facp);
+}
+
+// 0.1.2: NMXGPU's xkpi reads ACPI tables from the first registry entry with an "ACPI Tables" dictionary
+// (nmx_platform.cpp copy_acpi_tables). On Tahoe that is StrixVFCT's node, which holds only VFCT, so xkpi zeroed its
+// FADT copy ("no FADT; ACPI power flags read as zero"), amdgpu saw LOW_POWER_S0 clear ("BIOS has not been configured
+// for suspend-to-idle") and skipped suspend and resume: the 890M stayed fully powered in S0 sleep (Step109d/110).
+// Add the live FACP to that dictionary (or publish one here when StrixVFCT is absent). This runs before NMXGPU's
+// SYSINIT (Step110 boot: 64 ms earlier); if NMXGPU ever wins the race it sees today's state. -s0ixnofacp skips it.
+void StrixS0ix::publishFacp(const OSData *facp)
+{
+    if (PE_parse_boot_argn("-s0ixnofacp", nullptr, 0)) { IOLog("StrixS0ix: -s0ixnofacp, FACP not published\n"); return; }
+    uint32_t flags;
+    memcpy(&flags, static_cast<const uint8_t *>(facp->getBytesNoCopy()) + 112, 4);
+    setProperty("S0ix,FadtFlags", flags, 32);
+    const OSSymbol *key = OSSymbol::withCString("ACPI Tables");
+    IORegistryEntry *host = nullptr;
+    if (IORegistryEntry *root = IORegistryEntry::getRegistryRoot()) {
+        if (IORegistryIterator *it = IORegistryIterator::iterateOver(root, gIOServicePlane, kIORegistryIterateRecursively)) {
+            while (IORegistryEntry *e = it->getNextObject())
+                if (OSDynamicCast(OSDictionary, e->getProperty(key))) { host = e; host->retain(); break; }
+            it->release();
+        }
+    }
+    OSDictionary *old = host ? OSDynamicCast(OSDictionary, host->getProperty(key)) : nullptr;
+    OSDictionary *tables = old ? OSDictionary::withDictionary(old, old->getCount() + 1) : OSDictionary::withCapacity(1);
+    const char *where = "none";
+    if (tables) {
+        if (old && old->getObject("FACP")) where = "already there";
+        else {
+            tables->setObject("FACP", facp);
+            IORegistryEntry *dst = host ? host : this;
+            dst->setProperty(key, tables);
+            where = host ? host->getName() : "StrixS0ix (no other ACPI Tables entry)";
+        }
+        tables->release();
+    }
+    OSSafeReleaseNULL(host);
+    key->release();
+    IOLog("StrixS0ix: FACP (%u bytes, flags %#x, LOW_POWER_S0 %s) published for xkpi: %s\n", facp->getLength(), flags,
+          (flags & (1u << 21)) ? "set" : "CLEAR", where);
 }
 
 bool StrixS0ix::installHalt()
@@ -231,7 +273,7 @@ bool StrixS0ix::start(IOService *provider)
     PMinit();
     getPMRootDomain()->addPowerChild(this);       // top level: powered down after the device tree, only on real sleep
     if (registerPowerDriver(this, states, 2) == kIOReturnSuccess) { pm = true; changePowerStateTo(1); }
-    IOLog("StrixS0ix: 0.1.1 up, PEP _DSM mask %#x (%s), halt hook %s, power child %s\n", mask, useDsm ? "used" : "off",
+    IOLog("StrixS0ix: 0.1.2 up, PEP _DSM mask %#x (%s), halt hook %s, power child %s\n", mask, useDsm ? "used" : "off",
           halt ? "on" : "OFF", pm ? "on" : "FAILED");
     registerService();
     return true;
