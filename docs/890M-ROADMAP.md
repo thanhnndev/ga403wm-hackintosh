@@ -56,7 +56,8 @@ Open, in order:
    at 111 fps, user 43 % / system 18 %, NVMTL ~30 % of the user samples). Next: recycle per-frame texture memory,
    memo the sampler-variant key per encoder, cheap trace flag. Details: `docs/890M-TRACE.md`, "Step100 boot 2".
    Step101 (plugin 3d0dc6a) implements all three; Step101 boot showed the per-frame churn is sampler states ->
-   Step101b (f973e95) sampler-state cache, installed 2026-11-04, measure at the next boot.
+   Step101b (f973e95) sampler-state cache: measured ~3.4 ms CPU per frame (from ~5.5-6.2). Step101c (fbb6ca4)
+   identity views share the image view (view destroys ~200/s were the last epoch churn), installed, measure next boot.
 2. **HiDPI scaled modes** (owner: "not now, keep it on the roadmap"). System Settings shows one resolution tile and no
    refresh menu because NMXGPUFB reports a single mode. Root cause and plan: `docs/890M-TRACE.md`, section
    "HiDPI scaled modes: root cause and plan". Pieces: more backing sizes reported from NMXBacklight's vtable copy,

@@ -5930,3 +5930,23 @@ flip imports): the previous boot had 4 in 17 min, sdma has none, so not a regres
 - Pixel-state dictionaries are interned by descriptor too (labelled samplers).
 - Trace: the desc-cache stats line now names the destroy behind each image-epoch bump
   (`img by view .. image .. sampler .. bufview ..`), so the next boot shows what is left.
+
+## Step101b boot (13:03 local, plugin f973e95): WindowServer per-frame CPU down ~45 %
+
+State: NVMTLDriver C465B823 (f973e95), no panic; mes STALE lines 6 (background, as before); NMXBacklight active.
+
+- present-rate 20 s: 96.2 fps, fence 3.28 ms, flips 1925, fallback 0.
+- `ps -M` delta over 21 s: **user 25.7 %, system 6.6 %** -> ~3.4 ms CPU per frame (Step101 boot ~6.2 ms, boot 2
+  ~5.5 ms). `top` 37..40 %.
+- Sampler cache: `hit 128, 11 made` (sampler destroys 0).
+- Desc-cache after ~1 min: `hit 227076 miss 37582 ... epochs img 15001 (img by view 13043 image 1957 sampler 0)`.
+  What is left is image **view** destroys (~200/s).
+- Source (sample): `newTextureWithDescriptor:iosurface:` -> surface keep -> `newTextureViewWithPixelFormat:` on the
+  cached backing: every per-frame IOSurface wrapper made its own VkImageView with the backing's format and range.
+
+## Step101c: identity views share the image's own view (plugin fbb6ca4)
+
+`nvmtlViewWithFormat:levels:`: a view of a root texture with the same Metal format (not a8), every level and slice,
+the same type, and a root without its own or swizzled view takes the image's view (`_ownView` stays nil, `nvview`
+falls back to `image->view`); nothing to destroy at dealloc. Log `newTextureView: N identity view(s) share the
+image's own view` at powers of two. Off: `NVMTL_NO_IDVIEW=1`. Expect `img by view` to drop to a trickle next boot.
