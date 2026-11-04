@@ -6030,3 +6030,22 @@ WS CPU back to ~27 %, desktop smooth; NVRM 2.7.1 GSP state.
   2.35 ms). Re-measure when idle.
 - NVIDIA 2.7.1: `RmInitAdapter succeeded` (GSP up, 0000:62:00.0); bootguard "this start counts as good".
 - No GPU timeout/fault/reset in the kernel log.
+
+## Step103 (2026-11-04 14:42): allow list rung 1 - named apps on the 890M
+
+- Plugin c78c5de: apps default to the low-power NMX GPU (890M); the RTX only with `NVMTL_GPU=nvidia` (with NVIDIA
+  2.7.1's NVAccel present the old default was NVIDIA). WindowServer rule unchanged (follows the armed NMX pipe).
+- `/Library/GPUBundles/nvmtl-allow.txt` = scripts/nvmtl-allow-rung1.txt: `!WindowServer` plus TextEdit, Preview,
+  Calculator, Notes, Terminal, Safari, com.apple.WebKit.GPU. Previous list saved at ~/ga403-logs/nvmtl-allow.before-step103.txt.
+  No reboot: apps pick it up at their next launch.
+- Tests (fresh instances, ~10 s each): TextEdit, Calculator, Notes, Safari (all App Sandbox -> `drm-xnu … sandbox
+  refuses /dev/dri`), Preview with a desktop picture (G-SUB up to 32 parts), Terminal (unsandboxed, plain /dev/dri):
+  every one `vk: UP … AMD Radeon 890M Graphics (RADV STRIX1)`, NVIDIA port `no second device`. Kernel: no GPU
+  timeout/fault/reset. Desktop meanwhile 96 fps, flips 481/481, fallback 0.
+- Blocker found: Safari's WebKit GPU process cannot load the plugin at all - its sandbox
+  (WebKit.framework/Resources/com.apple.WebKit.GPUProcess.sb) allows file-read of /Library/GPUBundles but
+  file-map-executable only under /System/Library/{Extensions,Components,CoreServices,Video/Plug-Ins} and the cryptex
+  frameworks (`deny(1) file-map-executable /Library/GPUBundles/NVMTLDriver.bundle/…`). WebGL in Safari therefore runs
+  in software (a WebGL2 page reports OK). Fix needs the plugin on a path that profile can map (all on the sealed system
+  volume) or another route; open item, see roadmap.
+- Undo: put ~/ga403-logs/nvmtl-allow.before-step103.txt back (root 644).

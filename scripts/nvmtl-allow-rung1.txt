@@ -1,0 +1,15 @@
+# rung 3: everyone; -Name denies
+# Step70 (2026-10-24): "*" was turned off while the 890M gfx ring hung on an app's first render job; the H2 interrupt
+# fix (Step100) cured that: bounded app tests clean since 2026-11-04. "*" stays off until the named rungs prove out.
+# mtlprobe / nvmtltest / nvmtlrender stay allowed by name inside the plugin.
+#*
+!WindowServer
+# rung 1 (2026-11-04, Step103): named apps, sandboxed ones reach the GPU through NMXAccel's NMDR client (Step102).
+# Apps get the 890M unless NVMTL_GPU=nvidia. Remove a line (or add -Name) to send an app back to CPU drawing.
+TextEdit
+Preview
+Calculator
+Notes
+Terminal
+Safari
+com.apple.WebKit.GPU
