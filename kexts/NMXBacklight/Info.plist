@@ -15,9 +15,9 @@
 	<key>CFBundlePackageType</key>
 	<string>KEXT</string>
 	<key>CFBundleShortVersionString</key>
-	<string>0.1.0</string>
+	<string>0.2.0</string>
 	<key>CFBundleVersion</key>
-	<string>0.1.0</string>
+	<string>0.2.0</string>
 	<key>IOKitPersonalities</key>
 	<dict>
 		<key>NMXBacklight</key>
@@ -30,6 +30,17 @@
 			<string>NMXBacklight</string>
 			<key>IOProviderClass</key>
 			<string>NMXAMDFB</string>
+		</dict>
+		<key>NMXPowerKeep</key>
+		<dict>
+			<key>CFBundleIdentifier</key>
+			<string>com.ga403wm.nmxbacklight</string>
+			<key>IOClass</key>
+			<string>NMXPowerKeep</string>
+			<key>IOMatchCategory</key>
+			<string>NMXPowerKeep</string>
+			<key>IOProviderClass</key>
+			<string>NMXGPU</string>
 		</dict>
 	</dict>
 	<key>OSBundleLibraries</key>

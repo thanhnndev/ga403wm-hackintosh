@@ -11,7 +11,7 @@
 //      dc_link_set_backlight_level_nits (AUX nits on this panel, under DC's lock). No DPCD writes of our own.
 // The NMXGPU functions are called by address: the load address comes from the framebuffer's vtable pointer, and every
 // function is checked against its known bytes first. Any mismatch (another NMXGPU build) leaves everything untouched.
-// Boot-arg -nmxbloff disables the kext.
+// Boot-arg -nmxbloff disables the backlight part; NMXPowerKeep (end of file) holds NMXGPU on during display sleep.
 #include <IOKit/graphics/IOFramebuffer.h>
 #include <IOKit/graphics/IODisplay.h>
 #include <IOKit/ndrvsupport/IOMacOSVideo.h>
@@ -251,4 +251,62 @@ void NMXBacklightHandler::applyFire(thread_call_param_t p, thread_call_param_t)
     do { v = me->pending; } while (!OSCompareAndSwap(UInt32(v), UInt32(-1), (volatile UInt32 *)&me->pending));
     if (v < 0 || !me->owner) return;
     if (me->owner->setPercent(UInt32(v))) me->level = v;
+}
+
+// NMXPowerKeep: keeps NMXGPU powered while the system is awake.
+// NMXGPU registers two power states but never asks for one itself, so its state follows its children: when display
+// sleep takes the framebuffer down, NMXGPU drops to 0 and runs a full amdgpu suspend under WindowServer and NMXAccel
+// (the 2026-10-17 hang: "NMXGPU slow (SetState 0, 708 ms)", WindowServer timeout, silent hang). This service joins the
+// power tree as a child of NMXGPU and asks for state 1, which needs NMXGPU's kIOPMPowerOn, so display sleep becomes
+// the framebuffer's own DPMS off/on only. On system sleep the power domain goes down from the top and this child
+// follows it to 0 as any device does. Boot-arg -nmxkeepoff leaves it inert.
+class NMXPowerKeep : public IOService {
+    OSDeclareDefaultStructors(NMXPowerKeep)
+    bool pm = false;
+    UInt32 changes = 0;
+public:
+    bool start(IOService *provider) override;
+    void stop(IOService *provider) override;
+    IOReturn setPowerState(unsigned long state, IOService *device) override;
+};
+
+OSDefineMetaClassAndStructors(NMXPowerKeep, IOService)
+
+bool NMXPowerKeep::start(IOService *provider)
+{
+    if (!IOService::start(provider)) return false;
+    if (PE_parse_boot_argn("-nmxkeepoff", nullptr, 0)) { IOLog("NMXPowerKeep: -nmxkeepoff, inert\n"); return false; }
+    static IOPMPowerState states[2] = {
+        { kIOPMPowerStateVersion1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },
+        { kIOPMPowerStateVersion1, kIOPMPowerOn, kIOPMPowerOn, kIOPMPowerOn, 0, 0, 0, 0, 0, 0, 0, 0 },
+    };
+    PMinit();
+    provider->joinPMtree(this);
+    if (registerPowerDriver(this, states, 2) != kIOReturnSuccess) {
+        IOLog("NMXPowerKeep: registerPowerDriver failed, inert\n");
+        PMstop();
+        return false;
+    }
+    pm = true;
+    changePowerStateTo(1);
+    setProperty("PowerKeep,Wanted", 1ULL, 32);
+    IOLog("NMXPowerKeep: holding %s on while the system is awake\n", provider->getName());
+    registerService();
+    return true;
+}
+
+void NMXPowerKeep::stop(IOService *provider)
+{
+    if (pm) PMstop();
+    pm = false;
+    IOService::stop(provider);
+}
+
+IOReturn NMXPowerKeep::setPowerState(unsigned long state, IOService *)
+{
+    UInt32 n = ++changes;
+    setProperty("PowerKeep,State", uint64_t(state), 32);
+    setProperty("PowerKeep,Changes", n, 32);
+    if (n <= 64) IOLog("NMXPowerKeep: power state %lu (change %u)\n", state, unsigned(n));
+    return kIOPMAckImplied;
 }

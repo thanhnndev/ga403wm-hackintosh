@@ -6187,3 +6187,37 @@ First boot with StrixSbxMap, plugin fb86bf5 and the Step104c translator together
 - About This Mac: AMD Radeon 890M, 512 MB (ESP `model` + `VRAM,totalMB`).
 - WindowServer: about 31-38 % CPU by `ps -o time=` deltas. The 148 % right after login was the decaying `ps %cpu`
   average.
+
+## Step106 (2026-11-04 16:30): VCN decodes on the 890M (AV1/VP9 bit-exact); NMXPowerKeep for display sleep (reboot pending)
+
+### VCN: first hardware video decode
+- Kernel: NMXGPU already brings up vcn_v4_0_5 (ip block 8) and jpeg_v4_0_5 (9), loads `amdgpu/vcn_4_0_5.bin` from
+  /Library/NullMoth/firmware and creates rings `vcn_unified_0` / `jpeg_dec_0` (step99 boot log). Nothing disables them.
+- RADV (live NullMoth build, Mesa bffd919): queue families 0 gfx, 1 compute x4, 2 VIDEO_DECODE, 3 VIDEO_ENCODE, 4
+  transfer. Device extensions: video_queue, video_decode_queue, decode_av1, decode_vp9, encode_queue, encode_av1,
+  video_maintenance1/2. **No decode_h264 / decode_h265**: that build has the default `-Dvideo-codecs` (royalty-free
+  only). Checker: a dlopen of libvulkan_radeon + vkGetPhysicalDeviceQueueFamilyProperties, no submission.
+- ffmpeg 8.0 from source (`--enable-vulkan`, headers Vulkan-Headers 1.4.330, ~/develop/projects/radv-video/ffinst)
+  with `DYLD_LIBRARY_PATH=/Library/GPUBundles/nvmtl VK_ICD_FILENAMES=/Library/GPUBundles/nvmtl/radeon_icd.json`,
+  `-init_hw_device vulkan=vk -hwaccel vulkan` (ffmpeg's native av1 decoder has no software path, so frames mean VCN):
+  AV1 conformance av1-1-b8-01-size-16x16 (8 frames) and 226x226, VP9 vp90-2-02-size-16x16 (10 frames) and
+  vp90-2-00-quantizer-00 (352x288): per-frame md5 **identical** to the reference .md5 files, 0 decode errors, no ring
+  timeout or VCN line in the kernel log. MacPorts is broken on Tahoe ("OS platform mismatch"), hence source builds.
+- Next: RADV from source with `-Dvideo-codecs=all` (H.264/HEVC) plus the nmxmap change in source
+  (~/develop/projects/radv-video, never installed over the live RADV until it passes the same checks), then a
+  VideoToolbox decoder plugin for Safari/Chrome (route (a): CFPlugIn in /Library/Video/Plug-Ins; unproven that
+  VideoToolbox picks a third-party hardware decoder for browsers). Netflix: Chrome/Edge (Widevine L3, software)
+  already works; Safari's FairPlay hardware path needs Apple's own GPU/video stack and is out of reach.
+
+### NMXPowerKeep: display sleep without a GPU suspend
+Root cause of the one recorded display-sleep hang (Step33, "NMXGPU slow (SetState 0, 708 ms)", WindowServer timeout,
+silent hang): NMXGPU registers power states 0/1 but never asks for one, so it follows its children. Display sleep
+takes NMXAMDFB down, NMXGPU drops to 0 and runs a full amdgpu suspend (always the S3 path) under WindowServer and
+NMXAccel. Fix without touching the binary-patched NMXGPU: NMXBacklight 0.2.0 adds `NMXPowerKeep`, an IOService that
+matches NMXGPU, joins the power tree as its child and asks for state 1 (input requirement kIOPMPowerOn). Display sleep
+is then the framebuffer's DPMS off/on only. System sleep still lowers the whole domain (stage 2, not tested; the
+platform has no S3, only s0ix, and NMXGPU's suspend is the S3 path).
+- Installed 2026-11-04 16:33 with `scripts/macos-install-nmxpowerkeep.sh` (backup /Library/NullMoth/nmxpowerkeep-*,
+  AuxKC relinked, still holds NMXGPU/NMXAccel/NMXAGDC/NMXBacklight after 45 s). Undo: `--undo`; off: `-nmxkeepoff`.
+- After the reboot: `ioreg -r -c NMXPowerKeep` shows `PowerKeep,State = 1`, then `scripts/macos-displaysleep-test.sh`
+  (display off 20 s, woken by `caffeinate -u`, PASS = no NMXGPU setPowerState(0), no WindowServer timeout).
