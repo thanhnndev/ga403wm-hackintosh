@@ -20,8 +20,9 @@ Daily-use gate (OLED + apps on the 890M), in order:
 1. App Metal: bounded app jobs are clean again after H2 (done 2026-11-04). Left: (a) sandboxed apps, see below;
    (b) reopen the allow list by rungs: done 2026-11-04 (Step103 rung 1, Step104 rung 2 + `*`; Chrome/Edge WebGL
    on the 890M). Open: Safari's WebKit GPU process may not map executables from /Library/GPUBundles (its sandbox
-   maps only sealed /System paths and read-only cryptex grafts), so Safari WebGL stays in software until a
-   kernel-side Sandbox mmap exception for the plugin files exists; WindowServer CPU with many animated clients.
+   maps only sealed /System paths and read-only cryptex grafts). Step105 (staged, reboot pending): StrixSbxMap,
+   a kernel-side Sandbox mmap exception for the pinned plugin files, plus three plugin-side fixes still to do in
+   the fork; see "Safari WebGL: Sandbox mmap exception" below. Also open: WindowServer CPU with many animated clients.
 2. Sleep/wake and lid with NMXGPU: never tested (caffeinate always on).
 3. Stability run: several clean boots and a full workday without a panic (last panic 2026-11-04 11:50, Step100c, fixed).
 4. Video decode (VCN) for browsers/players: not started; without it video decodes on the CPU.
@@ -110,6 +111,113 @@ Plan for the 890M, same shape:
 Built and installed as Step102 (docs/890M-TRACE.md): the user client lives in NMXAccel (no NMXGPU change, no new
 cave) and the userland side is in the NVMTL plugin (libc import rebinding in RADV/libdrm, sandboxed processes only),
 so libdrm/RADV binaries stay as they are.
+
+## Safari WebGL: Sandbox mmap exception (Step105, 2026-11-04; kext staged, reboot pending)
+
+Problem: `Sandbox: com.apple.WebKit.GPU deny(1) file-map-executable /Library/GPUBundles/NVMTLDriver.bundle/Contents/MacOS/NVMTLDriver`,
+then `CFBundle: Error loading … NVMTLDriver`: Metal gets no 890M device in the WebKit GPU process, WebGL context is
+lost at once (WKWebView harness: renderer null). Both GPU process profiles (system WebKit
+`/System/Library/Frameworks/WebKit.framework/…/com.apple.WebKit.GPUProcess.sb` used by WKWebView apps, and Safari's
+cryptex `StagedFrameworks/Safari/…`) are `(deny default)` and allow file-map-executable only under sealed /System
+paths and cryptex grafts. Ruled out in Step104: WebGL in WebContent (same deny), binaries in the cryptex dirs (EROFS).
+MACF policies are AND-ed, so no second policy can allow it: the change has to be inside Sandbox's own check.
+
+### Kernel side: StrixSbxMap (kexts/StrixSbxMap, BSD, this repo)
+
+Sandbox 300.0 (macOS 26.7.1 25G241) keeps its symbols in the boot KC. The hook is small:
+
+    hook_file_check_mmap(cred, fileglob *fg, label *, int prot, int flags, uint64_t pos, int *maxprot)
+        if (!(prot & PROT_EXEC)) return 0          ; test cl,4
+        vp = fg_get_vnode(fg); if (!vp || vnode_isdyldsharedcache(vp)) return 0
+        return cred_sb_evaluate(cred, 0x13 /* file-map-executable */, &ctx{vp})
+
+StrixSbxMap is a Lilu plugin (injected by OpenCore, like StrixHeadroom) that routes `_hook_file_check_mmap` with
+`routeMultiple` (Lilu processes Sandbox even though it loads before Lilu). The wrapper always calls the original;
+only a non-zero (deny) answer for a PROT_EXEC map is looked at, and it becomes 0 only when all of these hold:
+
+| Check | How |
+|---|---|
+| exception enabled | boot-arg `-strixsbxoff` (Lilu) / `sysctl debug.strixsbx.enable=0` turn it off |
+| process | `proc_selfname` on the list, default `com.apple.WebKit.GPU` only (WebContent and everything else unchanged) |
+| file | `fg_get_vnode` -> regular file, `vn_getpath` (Data-volume prefix folded) equal to a pinned path |
+| identity | `ubc_cs_blob_get(vp, -1, -1, pos)`: the code signature blob dyld registered (F_ADDFILESIGS) that covers the mapped offset; `csblob_get_cdhash` must equal the cdhash pinned for that path |
+
+Identity is the cdhash, not the vnode pointer: a vnode pointer is reused after the file is replaced, the cdhash is the
+content. The path check keeps a byte-identical copy elsewhere from passing. Everything else, including a missing
+blob or a stale cdhash after a plugin rebuild, keeps Sandbox's deny (fail closed) and is counted/logged
+(`sbxmap: … cdhash … is not the pinned one (run the installer with --refresh)`).
+Before routing, the hook prologue is checked (`test cl,4` and a `call` to `fg_get_vnode` within 0x40 bytes); any
+other Sandbox build leaves the plugin inactive (`route_error` in the status sysctl). Kernel symbols used:
+`_fg_get_vnode`, `_ubc_cs_blob_get` (checked: cputype -1 -> offset match), `_csblob_get_cdhash` (blob+0x58).
+Cost: one extra call per exec mmap; the path/cdhash work only runs after a deny.
+
+Pinned files (8): NVMTLDriver, libnvmtl_translate.dylib, air-runtime/libLLVM.dylib, air-runtime/libzstd.1.dylib
+(loaded by libLLVM when a shader is translated, found by the simulator below), nvmtl/libvulkan.1.4.362.dylib,
+libvulkan_radeon.dylib, libdrm.2.dylib, libdrm_amdgpu.1.dylib. All are ad-hoc signed (CDHash present).
+The list lives in the kext personality (`AllowedFiles`, written by the installer from `codesign -dvvv`) and can be
+replaced by root at runtime (`sysctl debug.strixsbx.files="cdhash:/path;…"`), so a plugin rebuild needs
+`--refresh`, not a reboot. sysctls: `debug.strixsbx.{status,enable,files,procs}`, writes need root.
+
+What it allows: the WebKit GPU process may map exactly the code that is already loaded in every other Metal app.
+It cannot map anything else, and nothing changes for other processes or other operations.
+
+Install / undo (scripts/macos-install-strixsbxmap.sh, user shell, ESP mounted user-owned; admin prompt only for the
+live sysctl writes):
+
+    scripts/macos-install-strixsbxmap.sh            # preflight on the KC, build, pin, ESP kext + Kernel/Add (25.x)
+    scripts/macos-install-strixsbxmap.sh --refresh  # after a plugin/RADV rebuild: new pins on the ESP + live
+    scripts/macos-install-strixsbxmap.sh --status
+    scripts/macos-install-strixsbxmap.sh --undo     # live enable=0 now, Kernel/Add entry + ESP kext removed
+
+Recovery if a boot goes wrong: boot-arg `-strixsbxoff`, or from Linux remove the `StrixSbxMap.kext` Kernel/Add entry
+(config backup `config.plist.strixsbxmap-20261104-151851` on the ESP).
+
+### Plugin side: three more sandbox walls (fork work, no reboot needed)
+
+The mmap exception alone is not enough. `tools/890m/sbx-sim.m` applies the WebKit GPU profile in-process (like the
+GPU process does, after dyld and libdispatch are up) plus exactly the 8 pinned file-map-executable rules, then
+creates the Metal device and runs one bounded render job (MSL source -> Apple compiler -> in-process AIR->SPIR-V ->
+RADV). Result 2026-11-04: with only the pins, the plugin loads but the device does not come up; adding three
+rules gives `vk: UP` and a correct pixel (PASS). Each of the three was removed again on its own: each alone brings
+`device: none` back.
+
+| Wall (deny in the GPU profile) | Effect | Fix in the plugin (fork desc-cache) |
+|---|---|---|
+| `sysctl-read hw.pagesize_compat` (not on the profile's sysctl list) | `getpagesize()` fails: drm-xnu rebinding finds "0 imports in the driver and 0 libdrm images", `_sysconf not rebound`, RADV enumerates 0 GPUs | take the page size from `vm_page_size` (mach global, no syscall) in the rebinder; answer `getpagesize`/`sysconf(_SC_PAGESIZE)` for RADV/libdrm the same way |
+| `file-read-data /dev/null` | the NMDR handle fd cannot be opened: `amdgpu_query_info(ACCEL_WORKING) failed (-9)` | fall back to a node the profile can read (`/dev/random` is allowed read-only), or a handle that needs no path |
+| `system-fcntl F_DUPFD_CLOEXEC` (list: F_ADDFILESIGS_RETURN F_CHECK_LV F_GETFL F_GETPATH F_GETPROTECTIONCLASS F_GETSIGSINFO F_NOCACHE F_SETFD F_SETFL F_SETLKW F_SETNOSIGPIPE) | RADV's `os_dupfd_cloexec` on the render fd fails | handle F_DUPFD_CLOEXEC on drm-xnu fds in the shim (new handle bound to the same NMDR connection, or dup + F_SETFD) |
+
+Safari's cryptex profile has the same three restrictions (checked). Not needed: `air-opt` (shader translation ran
+in-process; the profile denies process-exec/fork, so a metallib path that spawns air-opt would fail; watch for
+`air-opt spawn failed` in the GPU process). Non-fatal leftovers: spvcache stores fail (read-only cache dir), a few
+syscall-unix denies from the cache trimmer, `sysctl-read debug.nmxaccel_headless`.
+Alternative kept in reserve: route `hook_file_check_fcntl` and the sysctl/open checks the same way in StrixSbxMap.
+Rejected for now: it widens the kernel exception beyond files, needs a reboot per try, and the plugin can avoid all
+three calls.
+
+### Test plan
+
+Before the reboot (now, and after every plugin fix):
+
+    scripts/macos-webgl-safari-test.sh sim            # system WebKit profile + the pins staged on the ESP
+    scripts/macos-webgl-safari-test.sh sim --safari   # Safari's cryptex profile
+
+Today: `SIM FAIL` with the three walls above. After the plugin fix (installed live, then
+`scripts/macos-install-strixsbxmap.sh --refresh` for the new cdhash): expected `SIM PASS`. The simulator turns the
+IOKit message filter off (it needs WebKit's entitlement); the NMDR selectors 0/1/2 are on its allowed list.
+
+After the batched reboot:
+1. `scripts/macos-install-strixsbxmap.sh --status`: `routed=1 route_error="none" files=8 procs=1`, live pins match.
+   Kernel log `sbxmap: routed Sandbox hook_file_check_mmap`, `config: 8 pinned files`.
+2. `scripts/macos-webgl-safari-test.sh live --ab`: build/webgl-probe (WKWebView, `UseGPUProcessForWebGLEnabled` on,
+   `MaskWebGLStringsEnabled` off, one clear + one triangle + readPixels, 25 s cap) prints `unmasked_renderer`
+   with `AMD Radeon 890M … (RADV STRIX1)`, pixel 0,255,0 -> `LIVE PASS`; `allowed` counter rises; no
+   file-map-executable deny for com.apple.WebKit.GPU. A/B: enable=0 -> the deny and the lost context come back;
+   enable=1 -> PASS again (same boot).
+3. Safari itself: new window, a WebGL page; `sysctl debug.strixsbx.status` `last="com.apple.WebKit.GPU /Library/GPUBundles/…"`,
+   GPU process log has no `Error loading …NVMTLDriver`. (Safari masks the renderer string, the counters are the proof.)
+4. Regression: Chrome/Edge WebGL still on the 890M, TextEdit/Notes `vk: UP`, WindowServer unaffected (not on the
+   process list), no stale/noblob counts, no panic. Undo path tried once: `--undo` -> enable=0 live.
 
 ## Hybrid and automatic GPU choice (owner requirement, 2026-11-04)
 

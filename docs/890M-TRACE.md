@@ -6112,3 +6112,21 @@ WS CPU back to ~27 %, desktop smooth; NVRM 2.7.1 GSP state.
   directly in the kernel, translates. Area: translator `native/emitter` raw Workgroup parameters
   (`concrete_vector_workgroup_raw_param_pointee` types the helper parameter as the struct, the raw word path in
   `memory/word_access.rs` assumes a raw uint array root). Fix needs a Rust toolchain (none on this Mac) or fork CI.
+
+## Step105 (2026-11-04 15:30): Safari WebGL - StrixSbxMap staged (reboot pending), plugin walls found by simulation
+
+- Design and test plan: docs/890M-ROADMAP.md, "Safari WebGL: Sandbox mmap exception".
+- Baseline (WKWebView, tools/890m/webgl-probe.swift): GPU process on -> context created then lost (renderer null),
+  `deny(1) file-map-executable …/NVMTLDriver`, `CFBundle: Error loading …NVMTLDriver`; GPU process off -> no context.
+- Kernel: StrixSbxMap 0.1.0 (Lilu plugin, kexts/StrixSbxMap) routes Sandbox `_hook_file_check_mmap`; a deny becomes
+  allow only for com.apple.WebKit.GPU + pinned path + matching cdhash of the registered code signature blob.
+  Staged on the ESP by scripts/macos-install-strixsbxmap.sh (Kernel/Add, MinKernel 25.0.0, MaxKernel 25.99.99,
+  8 pins; config backup config.plist.strixsbxmap-20261104-151851). Undo: `--undo`, boot-arg `-strixsbxoff`.
+- Simulation (tools/890m/sbx-sim.m: WebKit GPU profile applied in-process + the 8 pins, one bounded render job):
+  pins only -> plugin loads, `0 imports` rebound, no device. Needed in addition (each confirmed by removing it
+  alone): `sysctl-read hw.pagesize_compat`, `file-read-data /dev/null`, `system-fcntl F_DUPFD_CLOEXEC`. With all
+  three: `vk: UP`, MSL source -> in-process AIR->SPIR-V, pixel 0,255,0 PASS. `air-runtime/libzstd.1.dylib` is
+  the 8th file (libLLVM loads it at the first translation). Safari's cryptex profile has the same three limits.
+- Next: the three plugin fixes in the fork (page size from vm_page_size, a readable handle node, F_DUPFD_CLOEXEC in
+  the drm-xnu shim), live install + `--refresh`, `scripts/macos-webgl-safari-test.sh sim` -> PASS before the reboot;
+  after the reboot `scripts/macos-webgl-safari-test.sh live --ab`.
