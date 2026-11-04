@@ -5676,3 +5676,23 @@ NMXGPU 1907d9f9 is the Step97 build (c2326f22, from the Step98 backup) plus `scr
 Risk: the GPU VM change is in the boot-critical display bring-up. No picture means
 `pkexec scripts/linux-undo-step99.sh` from Linux (NMXGPU back to Step98b, daemon removed, relink on the next boot).
 On macOS: `sudo scripts/macos-install-step99.sh --undo`. Backup: /Library/NullMoth/step99-bk-*.
+
+## Step99 boot (2026-11-04 10:11): DC with GPU VM boots, flips on by default, zero copy works
+
+- The boot was clean: NMXGPU 1907d9f9, 0 "CS rejected", the panel lit as before. The home buffer is still VRAM at
+  phys 0x87c000000 / gpu 0x801c000000, so `fb_create_vram` kept it out of GTT.
+- The flip-default daemon logged `flips mode 2 after 1 s`. NMXAccel reports caps 0x307 (SUBMIT, IMPORT, VRAM_CHAIN,
+  XRGB8888, XRGB2101010), so `gpu_vm_support` is on. The chain is home + 0x862000000 + 0x866000000.
+- Mode 2, 10 s: 69.5 fps for the content on screen. Beam and copy 0, 695/695 latched, kernel_task ~29%.
+- Mode 1 (`sysctl -w debug.nmxaccel_flip=1`):
+  - Three CoreDisplay surfaces were imported (0x2, 0x4, 0x1), each 2880x1800 pitch 11520 XRGB8888. Each is 5063 pages
+    in 5063 runs: the IOSurface pages are not physically contiguous, so the GART is what makes the scan possible.
+    The GART addresses are 0x7fff00e83000, 0x7fff0224a000 and 0x7fff03611000.
+  - 10 s: 62.6 fps for the content on screen, 626/626 latched, latch wait 6.26 ms (async, off the serial path).
+    Fallback, timeouts, tripped, import_fail and front_written were all 0. kernel_task dropped to ~22%: the CPU copy
+    is gone.
+  - `hw_mismatch` stayed 0 over every mode-1 latch. NMXAccel compares HUBP0's surface address with the import's GART
+    address on each latch, so DCN really fetches the IOSurface pages.
+- The fps figures follow what the desktop draws; they are not a like-for-like benchmark.
+- Still to check: what is on screen with mode 1 (stale or torn pixels if CoreDisplay drew into the surface on
+  screen; `front_written` has stayed 0). The default mode is still 2 (`/Library/StrixGraphicsFix/nmx-flip.mode`).
