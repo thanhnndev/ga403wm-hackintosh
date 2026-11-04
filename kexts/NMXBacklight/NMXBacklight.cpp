@@ -12,6 +12,19 @@
 // The NMXGPU functions are called by address: the load address comes from the framebuffer's vtable pointer, and every
 // function is checked against its known bytes first. Any mismatch (another NMXGPU build) leaves everything untouched.
 // Boot-arg -nmxbloff disables the backlight part; NMXPowerKeep (end of file) holds NMXGPU on during display sleep.
+//   4. (0.4.0) the system wake work IOGraphics never does for NMXAMDFB. A system sleep clears the framebuffer's
+//      pagingState (IOFramebuffer::systemWork, with kIOFBNotifyWillSleep to every client). IOGraphics sets it again
+//      only from its own power work (IOFramebuffer::setPowerState -> checkPowerWork -> handleEvent(DidPowerOn, info)).
+//      NMXAMDFB replaces setPowerState and acks at once, and its handleEvent() calls do nothing off the controller's
+//      power thread, so after the first system sleep pagingState stayed clear and WindowServer slept in
+//      IOFramebuffer::_extEntry forever (Step109 test 2026-11-04: ws_main_thread in IOGraphicsWorkLoop::sleepGate,
+//      userspace watchdog panic 120 s later). Same bug and fix as NVRMFB's familyDidWake (nmxaccel PR #182): the
+//      setPowerState slot of the private vtable wraps NMXAMDFB's; on power-on after a system sleep, if pagingState is
+//      still clear, it delivers DidWake(true), DidWake(false) for each WillSleep(false), DidPowerOn(false), sets
+//      pagingState and wakes WindowServer, all under a command gate on the framebuffer's workloop. A thread call 3 s
+//      after the system power-on does the same if the power-on never reached the framebuffer. -nmxfbwakeoff disables it.
+#include <IOKit/IOCommandGate.h>
+#include <IOKit/IOWorkLoop.h>
 #include <IOKit/graphics/IOFramebuffer.h>
 #include <IOKit/graphics/IODisplay.h>
 #include <IOKit/ndrvsupport/IOMacOSVideo.h>
@@ -24,6 +37,18 @@
 
 extern "C" IOReturn _ZN13IOFramebuffer13getAppleSenseEiPjS0_S0_S0_(IOFramebuffer *, IOIndex, UInt32 *, UInt32 *,
                                                                     UInt32 *, UInt32 *);
+extern "C" IOReturn _ZN9IOService13setPowerStateEmPS_(IOService *, unsigned long, IOService *);
+
+// IOFramebuffer's protected state, read and driven from outside the class (never instantiated)
+struct FBPeek : IOFramebuffer {
+    static bool paging(IOFramebuffer *fb) { return static_cast<FBPeek *>(fb)->pagingState; }
+    static void setPaging(IOFramebuffer *fb) { static_cast<FBPeek *>(fb)->pagingState = true; }
+    static void *serverEvent(IOFramebuffer *fb) { return &static_cast<FBPeek *>(fb)->fServerConnect; }
+    static IOReturn deliver(IOFramebuffer *fb, IOIndex event, void *info)
+    {
+        return static_cast<FBPeek *>(fb)->deliverFramebufferNotification(event, info);
+    }
+};
 
 namespace {
 // NMXGPU (Step99 build and later caves; none of these move): file addresses.
@@ -43,6 +68,67 @@ typedef void *(*next_fn)(void *prev, void **devp);
 uintptr_t gBase;
 uintptr_t gOrigSense;
 volatile bool gLcd;
+
+// system wake work (part 4)
+constexpr uintptr_t kServerConnectOff = 0x188;   // IOGraphics 600: _extEntry sleeps on this+0x188 (fServerConnect)
+uintptr_t gOrigSetPS;
+IOFramebuffer *gWakeFb;
+IOCommandGate *gWakeGate;
+thread_call_t gWakeLate;
+volatile UInt32 gSysSlept;          // a WillSleep came from IOGraphics' system work since the last wake work
+volatile SInt32 gWillSleepOff;      // WillSleep(false) notifications owed a DidWake(false)
+UInt32 gWakeWorks;
+
+IOReturn wakeGated(OSObject *, void *why, void *, void *, void *)
+{
+    IOFramebuffer *fb = gWakeFb;
+    if (!fb || FBPeek::paging(fb)) return kIOReturnSuccess;   // already done (or IOGraphics did it after all)
+    // DidWake(true), then as many DidWake(false) as WillSleep(false) arrived: IOGraphicsAccelerator2 counts
+    // WillSleep(false) as a mode change in progress and stays disabled until each one is matched (NVRMFB 5583ee9)
+    const SInt32 owed = gWillSleepOff;
+    IOReturn r1 = FBPeek::deliver(fb, kIOFBNotifyDidWake, (void *)true);
+    IOReturn r2 = FBPeek::deliver(fb, kIOFBNotifyDidWake, (void *)false);
+    for (SInt32 i = 1; i < owed; ++i) r2 = FBPeek::deliver(fb, kIOFBNotifyDidWake, (void *)false);
+    IOReturn r3 = FBPeek::deliver(fb, kIOFBNotifyDidPowerOn, (void *)false);
+    FBPeek::setPaging(fb);
+    gWakeGate->commandWakeup(FBPeek::serverEvent(fb), false);
+    gWillSleepOff = 0;
+    ++gWakeWorks;
+    IOLog("NMXBacklight: paging wake (%s, #%u): DidWake true + %d x false (0x%x/0x%x), DidPowerOn 0x%x, paging on, "
+          "WindowServer woken\n", static_cast<const char *>(why), unsigned(gWakeWorks), owed > 1 ? int(owed) : 1, r1, r2, r3);
+    return kIOReturnSuccess;
+}
+
+void wakeWork(const char *why)
+{
+    if (!gWakeGate || !gWakeFb) return;
+    if (!OSCompareAndSwap(1, 0, &gSysSlept)) return;   // no system sleep since the last wake work
+    if (FBPeek::paging(gWakeFb)) { IOLog("NMXBacklight: %s: paging already on, nothing to do\n", why); return; }
+    gWakeGate->runAction(&wakeGated, const_cast<char *>(why));
+}
+
+IOReturn nmxSetPowerState(IOService *self, unsigned long ordinal, IOService *device)
+{
+    IOReturn r = reinterpret_cast<decltype(&nmxSetPowerState)>(gOrigSetPS)(self, ordinal, device);
+    if (ordinal && self == gWakeFb) wakeWork("framebuffer power-on");
+    return r;
+}
+
+void wakeLateFire(thread_call_param_t, thread_call_param_t)
+{
+    // a dark wake leaves the framebuffer off: its own power-on does the work later
+    if (gWakeFb && gWakeFb->getPowerState() > 0) wakeWork("3 s after system power-on");
+}
+
+IOReturn fbTap(OSObject *, void *, IOFramebuffer *fb, IOIndex event, void *info)
+{
+    if (fb != gWakeFb || event != kIOFBNotifyWillSleep) return kIOReturnSuccess;
+    // only IOGraphics' system work sends WillSleep here: NMXAMDFB's own handleEvent(WillPowerOff) is a no-op off the
+    // controller thread, and a display sleep does not clear pagingState
+    gSysSlept = 1;
+    if (!info) OSIncrementAtomic(&gWillSleepOff);
+    return kIOReturnSuccess;
+}
 
 IOReturn nmxSense(IOFramebuffer *fb, IOIndex idx, UInt32 *senseType, UInt32 *primary, UInt32 *extended,
                   UInt32 *displayType)
@@ -92,6 +178,8 @@ class NMXBacklight : public IOService {
     IOLock *lock = nullptr;
     NMXBacklightHandler *handler = nullptr;
     UInt32 writes = 0, failures = 0;
+    IONotifier *tap = nullptr;
+    int wakeSlot(IOFramebuffer *fb, const uintptr_t *vt);
 public:
     bool start(IOService *provider) override;
     void stop(IOService *provider) override;
@@ -133,12 +221,18 @@ bool NMXBacklight::start(IOService *provider)
     handler = NMXBacklightHandler::with(this, initial);
     if (!lock || !handler) { IOLog("NMXBacklight: allocation failed\n"); return false; }
 
+    const int psSlot = wakeSlot(fb, vt);
+
     // private vtable copy for this object only; never freed (the object may outlive the kext's interest in it)
     auto copy = static_cast<uintptr_t *>(IOMalloc(kVtableBytes));
     if (!copy) return false;
     memcpy(copy, reinterpret_cast<void *>(vptr - 16), kVtableBytes);
     gOrigSense = base;
     copy[2 + slot] = reinterpret_cast<uintptr_t>(&nmxSense);
+    if (psSlot >= 0) {
+        gOrigSetPS = vt[psSlot];
+        copy[2 + psSlot] = reinterpret_cast<uintptr_t>(&nmxSetPowerState);
+    }
     gLcd = true;
     __atomic_store_n(reinterpret_cast<uintptr_t *>(fb), reinterpret_cast<uintptr_t>(copy + 2), __ATOMIC_RELEASE);
 
@@ -152,18 +246,71 @@ bool NMXBacklight::start(IOService *provider)
         it->release();
     }
     setProperty("Backlight,Slot", uint32_t(slot), 32);
+    setProperty("PagingWake,Slot", uint64_t(int64_t(psSlot)), 32);
     setProperty("Backlight,Initial", uint32_t(initial), 32);
     setProperty("Backlight,PanelAtStart", dev != nullptr);
     setProperty("Backlight,DisplayBeforeUs", shown);
-    IOLog("NMXBacklight: NMXGPU at %lx, sense slot %d, panel %s, initial %d%%, display %s; handler published\n", gBase,
-          slot, dev ? "registered" : "not yet", int(initial), shown ? "ALREADY matched (slider needs a re-probe)" : "not yet");
+    IOLog("NMXBacklight: NMXGPU at %lx, sense slot %d, panel %s, initial %d%%, display %s; handler published; "
+          "paging wake %s (setPowerState slot %d)\n", gBase, slot, dev ? "registered" : "not yet", int(initial),
+          shown ? "ALREADY matched (slider needs a re-probe)" : "not yet", psSlot >= 0 ? "on" : "OFF", psSlot);
     registerService();
     return true;
+}
+
+// Part 4 setup: the setPowerState slot (found in this class's own vtable, where it still holds IOService's), the
+// WillSleep tap and the command gate on the framebuffer's workloop. -1 leaves the slot alone (wake work off).
+int NMXBacklight::wakeSlot(IOFramebuffer *fb, const uintptr_t *vt)
+{
+    if (PE_parse_boot_argn("-nmxfbwakeoff", nullptr, 0)) { IOLog("NMXBacklight: -nmxfbwakeoff, no paging wake\n"); return -1; }
+    if (reinterpret_cast<uintptr_t>(FBPeek::serverEvent(fb)) - reinterpret_cast<uintptr_t>(fb) != kServerConnectOff) {
+        IOLog("NMXBacklight: fServerConnect not at 0x188 in this SDK, no paging wake\n");
+        return -1;
+    }
+    const uintptr_t ios = reinterpret_cast<uintptr_t>(&_ZN9IOService13setPowerStateEmPS_);
+    const uintptr_t *mine = *reinterpret_cast<uintptr_t *const *>(this);
+    // first hit: this class's vtable comes first; the next one in the kext (the handler's) holds it too
+    int ps = -1;
+    for (unsigned i = 0; i < (kVtableBytes - 16) / 8 && ps < 0; i++)
+        if (mine[i] == ios) ps = int(i);
+    // NMXAMDFB overrides it: the framebuffer's slot must point into NMXGPU's text
+    if (ps < 0 || vt[ps] < gBase || vt[ps] >= gBase + kVtable) {
+        IOLog("NMXBacklight: setPowerState slot %d (fb %lx) is not NMXAMDFB's, no paging wake\n", ps,
+              ps >= 0 ? vt[ps] : 0UL);
+        return -1;
+    }
+    IOWorkLoop *wl = fb->getWorkLoop();
+    gWakeFb = fb;
+    tap = fb->addFramebufferNotification(&fbTap, this, nullptr);
+    gWakeGate = IOCommandGate::commandGate(this);
+    if (gWakeGate && wl && wl->addEventSource(gWakeGate) != kIOReturnSuccess) OSSafeReleaseNULL(gWakeGate);
+    gWakeLate = thread_call_allocate(wakeLateFire, nullptr);
+    if (!tap || !gWakeGate || !gWakeLate || !wl) {
+        IOLog("NMXBacklight: paging wake setup failed (tap %d gate %d call %d wl %d)\n", tap != nullptr,
+              gWakeGate != nullptr, gWakeLate != nullptr, wl != nullptr);
+        if (tap) { tap->remove(); tap = nullptr; }
+        if (gWakeGate) { if (wl) wl->removeEventSource(gWakeGate); OSSafeReleaseNULL(gWakeGate); }
+        gWakeFb = nullptr;
+        return -1;
+    }
+    return ps;
+}
+
+void nmxWakeLate()
+{
+    if (gWakeLate && gWakeFb) {
+        uint64_t d;
+        clock_interval_to_deadline(3, kSecondScale, &d);
+        thread_call_enter_delayed(gWakeLate, d);
+    }
 }
 
 void NMXBacklight::stop(IOService *provider)
 {
     gLcd = false;   // the vtable copy stays; its sense slot falls back to IOFramebuffer's
+    // the setPowerState slot stays wrapped too: wakeWork() does nothing once gWakeFb is cleared
+    if (tap) { tap->remove(); tap = nullptr; }
+    gWakeFb = nullptr;
+    if (gWakeLate) { thread_call_cancel(gWakeLate); }
     if (handler) { handler->detach(provider); handler->release(); handler = nullptr; }
     IOService::stop(provider);
 }
@@ -348,6 +495,7 @@ IOReturn NMXPowerKeep::sysPower(void *target, void *, UInt32 type, IOService *, 
     case kIOMessageSystemWillPowerOn:
         if (me->tSleep) absolutetime_to_nanoseconds(now - me->tSleep, &ns);
         IOLog("NMXPowerKeep: system will power on, %llu ms after will-sleep\n", ns / 1000000);
+        nmxWakeLate();   // HasPoweredOn did not arrive in the 2026-11-04 test: arm the fallback here already
         break;
     case kIOMessageSystemHasPoweredOn:
         me->wakes++;
@@ -356,6 +504,7 @@ IOReturn NMXPowerKeep::sysPower(void *target, void *, UInt32 type, IOService *, 
         me->setProperty("PowerKeep,LastWakeMs", ns / 1000000, 64);
         IOLog("NMXPowerKeep: system has powered on (#%u), %llu ms after will-sleep, keep state %u\n",
               unsigned(me->wakes), ns / 1000000, unsigned(me->getPowerState()));
+        nmxWakeLate();
         break;
     default:
         break;

@@ -1,6 +1,6 @@
 #!/bin/bash
 # SPDX-License-Identifier: BSD-3-Clause-Clear
-# System sleep test on the s0ix path (Step107: NMXGPU s0ix suspend, NMXBacklight 0.3.0 timeline). Asks for the admin
+# System sleep test on the s0ix path (Step107: NMXGPU s0ix suspend, NMXBacklight 0.3.0 timeline, 0.4.0 paging wake). Asks for the admin
 # password once (osascript). Sets pmset for the test (no hibernate image, no dark wakes), schedules an RTC wake, stops
 # caffeinate, waits 10 s and sleeps; after the wake it collects logs and restarts caffeinate. Wi-Fi is left alone.
 # Do not touch the keyboard, touchpad or a Bluetooth mouse after the password: input during the 10 s turns the sleep into a
@@ -23,7 +23,10 @@ collect() {  # $1 = start time
     pmset -g log | grep -E "^$(date +%Y-%m-%d).*(Sleep|Wake|DarkWake|Failure|Slow|Timeout)" | tail -15 > "$OUT/pmset.txt"
     ioreg -r -c NMXPowerKeep -d 1 | grep PowerKeep > "$OUT/powerkeep.txt"
     ioreg -r -c StrixS0ix -d 1 | grep 'S0ix,' > "$OUT/s0ix.txt"
-    echo "== timeline";  grep -E "StrixS0ix|NMXPowerKeep: system|NullMoth GPU: (setPowerState|suspend|resume)" "$OUT/kernel.txt" | cut -c1-23,100-260
+    echo "== timeline";  grep -E "StrixS0ix|NMXPowerKeep: system|NullMoth GPU: (setPowerState|suspend|resume)|NMXBacklight: (paging|.*paging wake|framebuffer power)" "$OUT/kernel.txt" | cut -c1-23,100-260
+    # Step110: WindowServer waits in IOFramebuffer::_extEntry until NMXAMDFB's pagingState is set again after a sleep
+    echo "== NMXAMDFB after wake (PagingWake,Slot >= 0 = wake work armed)"; ioreg -r -c NMXBacklight -d 1 | grep -E 'PagingWake|Backlight,Slot'
+    pgrep -x WindowServer >/dev/null && echo "WindowServer pid $(pgrep -x WindowServer)" || echo "WindowServer NOT running"
     echo "== amdgpu s0ix / S3 hints"; grep -iE "s0ix|suspend-to-idle|S3|psp.*load|ring .* timeout|failed" "$OUT/kernel.txt" | cut -c1-23,100-260 | head -12
     echo "== WindowServer"; cut -c1-23,100-240 "$OUT/windowserver.txt" | tail -6
     echo "== root domain (SLEEP_STATE = slept; f->9 then 9->f = dark wake only)"; cat "$OUT/pmrd.txt"

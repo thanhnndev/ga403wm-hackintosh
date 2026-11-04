@@ -6415,3 +6415,62 @@ Done in the session "Translator: RenderBox features for icons":
   - merging `plugin-renderbox` into desc-cache is the owner's decision.
 
 **Merged (owner, 2026-11-04):** `plugin-renderbox` was fast-forwarded into desc-cache. desc-cache is now e1d1e26 (df1c9b8, e3d8399, e1d1e26 on top of fb86bf5) and pushed to the fork. The live plugin 9d816dc7 is the build from e1d1e26.
+
+## Step109d: first real S0 system sleep, and the hang after wake (2026-11-04 22:49)
+
+Test: `scripts/macos-syssleep-test.sh 60`, StrixS0ix 0.1.1 live (hook on). Logs: ~/ga403-logs/syssleep-20261104-224925.
+
+**Sleep and wake themselves work.**
+- PMRD `ON_STATE->SLEEP_STATE (9->0)` FINISH at 22:50:02. The wake at 22:50:35 is "Wake from Deep Idle [CDNVA] : due to RTC".
+- StrixS0ix: idle 32430 ms in the MWAITX loop, wake event 0x400 (RTC), 130 loops, _DSM 3/7/5 and 6/8/4 all 0.
+- NVRM: standby took 6477 ms, resume took 902 ms, and the GPU answered.
+- powerd reports `WakeTime: 1.064 sec`.
+
+**Then the machine hung and needed a hard restart.** At 22:57:17 the kernel panicked: "userspace watchdog timeout: no successful checkins from WindowServer (2 induced crashes) in 120 seconds".
+- CoreAnimation logged `timed out fence` at 22:50:35.997, 45.1 and 46.0.
+- From about 22:50:47, ws_main_thread never ran again.
+- Spin reports (Kernel-2026-11-04-225717.panic, WindowServer_...225127/225205 .spin), symbolicated against SystemKernelExtensions.kc: `IOFramebufferUserClient::externalMethod -> IOFramebuffer::extGetCurrentDisplayMode -> _extEntry+0x108 -> IOGraphicsControllerWorkLoop::sleepGate -> lck_mtx_sleep`.
+
+**Root cause: NMXAMDFB's pagingState is never set again after a system sleep.** Disassembly of IOGraphicsFamily 600 shows the mechanism.
+- `_extEntry` sleeps on `this+0x188` (fServerConnect) until one of these holds: `[this+0x199] & 0x20` (pagingState, bit 13 of the bitfield word 0x198, as in the MacKernelSDK header), a global, or a helper call.
+- `IOFramebuffer::systemWork+0x30d` clears pagingState on system sleep, for every framebuffer.
+- It is set again only in two places:
+  - `IOFramebuffer::open+0x701`;
+  - `IOFramebuffer::handleEvent`, for kIOFBNotifyDidWake/DidPowerOn (4) with info != NULL (and event 8).
+- `handleEvent` first checks that the calling thread owns the controller's gate (`+0x84`). On any other thread it does nothing.
+- The normal path is `IOFramebuffer::setPowerState`. It stores the pending state in bits 8-11 of 0x198, sets pendingPowerChange (0x1000), calls `IOFBController::startThread`, and returns 45 s. Then `checkPowerWork` calls `setAttribute('pwrs')` on the controller thread, and the event path sets pagingState.
+- NMXAMDFB (nmxaccel gpu-port/xkpi/xnu/nmx_fb.cpp) overrides setPowerState and acks at once. Its `handleEvent(kIOFBNotifyDidPowerOn)` runs on the PM thread with info NULL, so it is a no-op.
+- So after the first system sleep pagingState stays clear, and WindowServer waits forever. The fence timeouts are a side effect: the compositor stalls behind the main thread.
+- Display sleep (Step106c) never clears pagingState, which is why it passed.
+- NVRMFB hit the same bug and fixed it with `familyDidWake` (nmxaccel 5583ee9, PR #182).
+
+**NMXGPU did not suspend at all.** "suspend returned 0 in 0 ms", with "Power consumption will be higher as BIOS has not been configured for suspend-to-idle".
+- xkpi logs "no FADT; ACPI power flags read as zero". Tahoe does not publish the FACP table property, the same issue StrixS0ix hit, so amdgpu sees LOW_POWER_S0 = 0.
+- With neither s0ix nor S3 active, amdgpu skips suspend and resume, and the GPU stays powered with its state intact.
+- This is harmless for the hang, but it costs power during sleep. The fix (xkpi FADT read through getACPITableData, then the amdgpu s0ix path) is a separate step.
+
+## Step110: NMXBacklight 0.4.0, the system wake work for NMXAMDFB (2026-11-04, installed, reboot pending)
+
+NMXBacklight already gives the NMXAMDFB object a private vtable copy (getAppleSense). 0.4.0 also wraps the **setPowerState** slot:
+- **Slot:** taken from NMXBacklight's own vtable, where it still holds `IOService::setPowerState`. The framebuffer's slot must point into NMXGPU's text, otherwise the feature stays off.
+- **Sleep tap:** `addFramebufferNotification` on the framebuffer counts kIOFBNotifyWillSleep. Only IOGraphics' system work sends it here.
+- **On power-on after a system sleep with pagingState still clear:** a command gate on the framebuffer's workloop runs the wake work, as NVRMFB does:
+  - DidWake(true);
+  - DidWake(false) once per WillSleep(false);
+  - DidPowerOn(false);
+  - pagingState = 1;
+  - `commandWakeup(&fServerConnect)`.
+- **Fallback:** a thread call 3 s after kIOMessageSystemWillPowerOn / HasPoweredOn does the same, if the framebuffer is powered but was never told. HasPoweredOn was not logged in Step109d.
+- **Checks:** the fServerConnect offset (0x188) is checked against the header.
+- **Off switch:** boot-arg `-nmxfbwakeoff`.
+
+Install: `scripts/macos-install-step110.sh` (`--undo`). It relinks AuxKC and checks every NMXGPU cave, StrixS0ix and the 0.4.0 string, again after 45 s. It was installed 22:xx; the backup is in /Library/NullMoth/step110-bk-*.
+
+After the reboot:
+1. Boot log: `NMXBacklight: ... paging wake on (setPowerState slot N)`, and `ioreg -r -c NMXBacklight -d 1 | grep PagingWake`.
+2. `scripts/macos-syssleep-test.sh 60`, hands off. Expected:
+   - `NMXBacklight: paging wake (framebuffer power-on, #1): ... WindowServer woken`;
+   - no `timed out fence`;
+   - WindowServer alive;
+   - the desktop redraws.
+3. If it hangs again: hold the power button, then run `scripts/macos-syssleep-test.sh collect "<start>"` and check the spin/panic reports.
