@@ -6221,3 +6221,21 @@ platform has no S3, only s0ix, and NMXGPU's suspend is the S3 path).
   AuxKC relinked, still holds NMXGPU/NMXAccel/NMXAGDC/NMXBacklight after 45 s). Undo: `--undo`; off: `-nmxkeepoff`.
 - After the reboot: `ioreg -r -c NMXPowerKeep` shows `PowerKeep,State = 1`, then `scripts/macos-displaysleep-test.sh`
   (display off 20 s, woken by `caffeinate -u`, PASS = no NMXGPU setPowerState(0), no WindowServer timeout).
+
+### Step106b (16:55): RADV from source with all video codecs - H.264/HEVC decode on the VCN
+- Build (~/develop/projects/radv-video, not installed): Mesa bffd919 + NullMoth mesa-macos.patch (fork, PolyForm, kept
+  out of this repo) + `radv-nmxmap.patch` (the Step33d binary patch as source: drmNmxMmap/drmNmxMunmap in
+  radv_amdgpu_winsys_bo_map/unmap/destroy under `__APPLE__`), `-Dvulkan-drivers=amd -Dvideo-codecs=all -Dllvm=disabled`,
+  glslang vulkan-sdk-1.4.363.0 built for it, libdrm b97cbde + NullMoth patch for headers only. The dylib links the live
+  /Library/GPUBundles/nvmtl libdrm (it has the minor patch), exports the same three ICD symbols as the live one, sha256
+  3b964732...; it still links /opt/local libelf and libz, so it is a test build, not an install candidate yet.
+- Device extensions add VK_KHR_video_decode_h264/h265 and encode_h264/h265 to the av1/vp9 set.
+- Gotcha: `DYLD_LIBRARY_PATH=/Library/GPUBundles/nvmtl` makes dyld resolve the loader's dlopen of the new ICD by leaf
+  name to the LIVE libvulkan_radeon.dylib. Use a directory with only the loader symlinked, plus `VK_DRIVER_FILES`.
+- ffmpeg, 1280x720 30 fps, 60 frames, clips made with VideoToolbox's software encoder (`-allow_sw 1`; VT has no hardware
+  encoder here): H.264 High and HEVC Main decoded with `-hwaccel vulkan` give per-frame md5 identical to ffmpeg's
+  software decoder. With `-hwaccel_output_format vulkan` (no software fallback): H.264 60 frames in 0.23 s (user CPU
+  0.031 s, ~260 fps), HEVC 0.19 s (user 0.026 s). No amdgpu timeout/fault in the kernel log.
+- Codec status on the 890M: H.264, HEVC, VP9, AV1 decode all work through Vulkan Video. Left for browsers: the
+  VideoToolbox side (Safari/Chrome only decode through VideoToolbox), and a RADV build that can replace the live one
+  (no /opt/local deps, then the WindowServer/app checks) before mpv/IINA can use it from the bundle.
