@@ -6393,3 +6393,5 @@ Findings (tools/890m/vtstub, built and tested without root first):
   - Icon caches cleared (/Library/Caches/com.apple.iconservices.store and the user com.apple.iconservices), then iconservicesagent, iconservicesd, Dock and Finder restarted.
   - Since then: no NVMTL device in iconservicesagent ("denied by list"), and 0 RenderBox precondition failures.
 - Real fix: those three translator features, in the NullMoth translator fork, not here.
+
+**strix-headroom-hold uninstalled (2026-11-04 22:15).** The LaunchAgent had no Metal device: it is denied in the allow list since Step35. So it exited with status 1, and launchd restarted it about 6 times a minute (123 denials this boot). The workaround is obsolete: since Step104 WindowServer composites on the 890M, and this boot ran fine without the agent. It was removed with `scripts/macos-strix-headroom-hold.sh uninstall`; the binary is left in ~/Library/Application Support/StrixHeadroomHold, and `install` brings it back. The `-strix-headroom-hold` deny line stays.
