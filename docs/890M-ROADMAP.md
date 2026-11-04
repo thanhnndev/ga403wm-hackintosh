@@ -5,6 +5,29 @@ composited on the iGPU (this is what removes the 500-900 % WindowServer CPU: it 
 because no Metal device exists). Route B decision (2026-10-17, Step31): build our own stack from NullMoth v2.0.4 sources, then replace
 the headless accelerator, then replace the NVIDIA userland.
 
+## State 2026-11-04 (Step101c boot) - supersedes the milestone table below
+
+| # | Milestone | Status |
+|---|---|---|
+| M1 | Own kernel driver up (NMXGPU) | done |
+| M2 | Graphics jobs reliable | done for WindowServer (H2 interrupt-loss root cause fixed Step100); apps not re-tested since Step70 |
+| M3 | WindowServer composites on the 890M | **done**: amdgpu DC drives the OLED, zero-copy page flips, 116 fps, WS ~2.35 ms CPU per frame (27 % at 116 fps, was 500-900 %) |
+| M3b | Apps get a Metal device | **open**: `nvmtl-allow.txt` has `*` off since Step70 (app render jobs hung the gfx ring); `metal-devices` shows 0 for apps |
+| M4 | Own userland (NVMTLDriver from the fork source, RADV) | partly: the NVMTL plugin is now built from fork source (desc-cache branch); RADV/libdrm still NullMoth binaries |
+| M5 | No NullMoth kexts | not started (NVRM/NVAccel/NVRMFB/NVRMAGDC/NMXAccel loaded) |
+
+Daily-use gate (OLED + apps on the 890M), in order:
+1. App Metal: re-test bounded app render jobs now that H2 is fixed (Step70's hang may have been the lost interrupt), then
+   reopen the allow list by rungs (named apps, then `*`).
+2. Sleep/wake and lid with NMXGPU: never tested (caffeinate always on).
+3. Stability run: several clean boots and a full workday without a panic (last panic 2026-11-04 11:50, Step100c, fixed).
+4. Video decode (VCN) for browsers/players: not started; without it video decodes on the CPU.
+5. HiDPI extra scaled modes (Retina 1440x900 @ 120 Hz already works; only the other sizes are missing).
+
+Hybrid with the RTX 5060 (NVRM 2.5.2, GSP-RM up, `RmInitAdapter succeeded`): the kernel side boots today. Missing for
+apps: a Metal device for the RTX (NullMoth NVIDIA path, same allow-list gate) and a device choice per app (low power =
+890M, high power = RTX); HDMI on the RTX was the old hybrid desktop (NVRMFB/AGDC) and needs a re-test with the AMD OLED.
+
 ## Layers, who owns them today
 
 | Layer | Component | State | NullMoth dependency |
