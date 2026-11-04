@@ -6082,3 +6082,33 @@ WS CPU back to ~27 %, desktop smooth; NVRM 2.7.1 GSP state.
   PciRoot(0x0)/Pci(0x8,0x1)/Pci(0x0,0x0): `model`="AMD Radeon 890M", `VRAM,totalMB`=512, `VRAM,totalsize`=512 MiB
   (backup config.plist.vram-20261104-144958, occonfig clean). Verify after the next reboot
   (system_profiler SPDisplaysDataType).
+
+## Step104b (2026-11-04 15:10-15:30): WindowServer CPU/memory check, Chrome on-device-model crash root cause
+
+- WindowServer CPU is load, not drift: `present-rate.sh 10` with only the usual apps open = 88.1 fps, flips 881/882,
+  fallback 0, WindowServer 26.0 % (~3 ms CPU per frame, Step102b 31.6 % at 90.6 fps). The 186-197 % / 50-70 %
+  readings were with ~30 and ~15 animating clients. spindump (4 s, 400 samples): main thread spread over CoreAnimation
+  layer prep, IOSurface queries/set-value, display-pipe transactions and NMXGPU ioctls; no single hot kernel frame.
+  `__ioctl` samples in `sample` are mostly `drmSyncobjWait` (blocked). 208 NMX jobs/s at 88 fps (~2.4 per frame).
+- Memory: `ps` RSS grows ~50 MB per open/quit round of 5 apps, but `vmmap -summary` across a round shows physical
+  footprint flat at 1.2 GB (peak 1.6 GB), IOSurface resident unchanged (292.7 MB), MALLOC unchanged; NVMTL image
+  census falls back (2001 -> 672 live MTLTextures). No leak; RSS counts shared pages. Footprint itself is high
+  (MALLOC_MEDIUM ~509 MB resident) - optimization item.
+- Chrome Helper SIGTRAP (14:56) = Chrome's on-device-model service (`liboptimization_guide_internal`, LiteRT
+  `LiteRtTopKWebGpuSampler` via Dawn/WebGPU on Metal) ~3 min after browser start (GPU benchmark timer; reproduces on
+  fresh profiles prof3/prof4, `Unexpected on_device_model service disconnect`). Its Dawn compute kernel fails in our
+  AIR->SPIR-V translator, Dawn CHECKs on the failed pipeline:
+  `native emitter: owned Load violates its pointer-pointee and value-type contract: pointer %556, of type %94
+  (TypePointer Workgroup %71), points at %71 (TypeStruct %70), but the result type is %4 (TypeInt 32 0)`.
+  Kernel shape: threadgroup memory as a kernel argument (`air.address_space 3`, `tint_struct_5 { array<half4,128> }`,
+  1024 B), member pointer passed to a non-inlined helper, `<4 x half>` loads/stores on it. Input captured with
+  `NVMTL_DUMP_FAILED_DIR` (scratchpad dump/56b1fd7e86828fa0-Kernel.ll). Simple MSL look-alikes (struct/half4/noinline
+  helper) translate fine, so the trigger is narrower. Not a driver/kernel fault; WebGL is unaffected.
+- Minimal repro (tools/890m/translator-repro/wg-helper-branch.metal, driver run.m: `xcrun clang -fobjc-arc -o run
+  run.m -framework Metal -framework Foundation; NVMTL_DUMP_FAILED_DIR=<dir> ./run wg-helper-branch.metal`): a
+  non-inlined helper that takes a `threadgroup` pointer (a member of the `[[threadgroup(0)]]` struct argument) and
+  stores to it inside an `if` block. Fails for half4/float4/uint/half2 alike (Load or Store contract error, the
+  access uses the struct-typed parameter pointer as a word pointer); the same code without the `if`, or written
+  directly in the kernel, translates. Area: translator `native/emitter` raw Workgroup parameters
+  (`concrete_vector_workgroup_raw_param_pointee` types the helper parameter as the struct, the raw word path in
+  `memory/word_access.rs` assumes a raw uint array root). Fix needs a Rust toolchain (none on this Mac) or fork CI.
