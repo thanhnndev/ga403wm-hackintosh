@@ -6464,7 +6464,7 @@ NMXBacklight already gives the NMXAMDFB object a private vtable copy (getAppleSe
 - **Checks:** the fServerConnect offset (0x188) is checked against the header.
 - **Off switch:** boot-arg `-nmxfbwakeoff`.
 
-Install: `scripts/macos-install-step110.sh` (`--undo`). It relinks AuxKC and checks every NMXGPU cave, StrixS0ix and the 0.4.0 string, again after 45 s. It was installed 22:xx; the backup is in /Library/NullMoth/step110-bk-*.
+Install: `scripts/macos-install-step110.sh` (`--undo`). It relinks AuxKC and checks every NMXGPU cave, StrixS0ix and the 0.4.0 string, again after 45 s. It is installed; the backup is /Library/NullMoth/step110-bk-20261104T161253Z.
 
 After the reboot:
 1. Boot log: `NMXBacklight: ... paging wake on (setPowerState slot N)`, and `ioreg -r -c NMXBacklight -d 1 | grep PagingWake`.
