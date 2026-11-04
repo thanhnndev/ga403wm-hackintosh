@@ -5,14 +5,23 @@ composited on the iGPU (this is what removes the 500-900 % WindowServer CPU: it 
 because no Metal device exists). Route B decision (2026-10-17, Step31): build our own stack from NullMoth v2.0.4 sources, then replace
 the headless accelerator, then replace the NVIDIA userland.
 
-## State 2026-11-04 (Step101c boot) - supersedes the milestone table below
+## State 2026-11-04 (Step105c boot) - supersedes the milestone table below
+
+Step105c boot: M3b done (allow list `*`, sandboxed apps through NMDR, Chrome/Edge and Safari WebGL on the 890M, Chrome
+on-device-model kernels translate after the Step104c fix), About This Mac shows AMD Radeon 890M 512 MB, NVRM/NVAccel
+2.7.1 loaded. HiDPI scaled modes: owner reports them working (gate item 5 closed). M5 scope (owner question
+2026-11-04): NullMoth also ships the NVIDIA driver (NVRM, NVAccel, NVRMFB, NVRMAGDC), the only RTX 5060 driver on macOS,
+so "no NullMoth" means the 890M path only (NMXGPU/NMXAccel built from the fork, RADV/libdrm from source); the NVIDIA
+kexts stay for the hybrid. Next: sleep/wake test (gate 2) and VCN video decode (gate 4).
+
+Older table (Step101c boot):
 
 | # | Milestone | Status |
 |---|---|---|
 | M1 | Own kernel driver up (NMXGPU) | done |
 | M2 | Graphics jobs reliable | done for WindowServer (H2 interrupt-loss root cause fixed Step100); apps not re-tested since Step70 |
 | M3 | WindowServer composites on the 890M | **done**: amdgpu DC drives the OLED, zero-copy page flips, 116 fps, WS ~2.35 ms CPU per frame (27 % at 116 fps, was 500-900 %) |
-| M3b | Apps get a Metal device | **half**: non-sandboxed apps work (2026-11-04: Terminal with `NVMTL_ENABLE=1` UP on RADV STRIX1, fish output loop, desc-cache hit 1684/miss 143, no ring timeout; tools: 10 compute + 10 render + 200-frame loop + 15 parallel clean). Sandboxed apps (TextEdit etc.) get no device: the sandbox denies `file-read-data /dev/dri`, RADV enumerates 0 GPUs, the plugin refuses and the app draws on the CPU (looks fine, but no GPU). Allow list still `!WindowServer` only |
+| M3b | Apps get a Metal device | **done 2026-11-04 (Step105c)**; was **half**: non-sandboxed apps work (2026-11-04: Terminal with `NVMTL_ENABLE=1` UP on RADV STRIX1, fish output loop, desc-cache hit 1684/miss 143, no ring timeout; tools: 10 compute + 10 render + 200-frame loop + 15 parallel clean). Sandboxed apps (TextEdit etc.) get no device: the sandbox denies `file-read-data /dev/dri`, RADV enumerates 0 GPUs, the plugin refuses and the app draws on the CPU (looks fine, but no GPU). Allow list still `!WindowServer` only |
 | M4 | Own userland (NVMTLDriver from the fork source, RADV) | partly: the NVMTL plugin is now built from fork source (desc-cache branch); RADV/libdrm still NullMoth binaries |
 | M5 | No NullMoth kexts | not started (NVRM/NVAccel/NVRMFB/NVRMAGDC/NMXAccel loaded) |
 
@@ -26,7 +35,7 @@ Daily-use gate (OLED + apps on the 890M), in order:
 2. Sleep/wake and lid with NMXGPU: never tested (caffeinate always on).
 3. Stability run: several clean boots and a full workday without a panic (last panic 2026-11-04 11:50, Step100c, fixed).
 4. Video decode (VCN) for browsers/players: not started; without it video decodes on the CPU.
-5. HiDPI extra scaled modes (Retina 1440x900 @ 120 Hz already works; only the other sizes are missing).
+5. HiDPI extra scaled modes: done (owner, 2026-11-04).
 
 Hybrid with the RTX 5060 (NVRM 2.7.1 installed 2026-11-04 for the next boot; on 2.5.2 GSP-RM was up, `RmInitAdapter succeeded`): the kernel side boots today. Missing for
 apps: a Metal device for the RTX (NullMoth NVIDIA path, same allow-list gate) and a device choice per app (low power =
