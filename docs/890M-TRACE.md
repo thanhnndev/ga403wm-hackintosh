@@ -5819,7 +5819,7 @@ Install: `pkexec scripts/linux-patch-step100c.sh`:
 The relink boot still runs d4830f51, so it will hang and panic again at ~160 s. The relink finishes at ~80 s (it took 53 s
 on Step100b).
 
-## Step100 boot (12:53 local, 3e1b6619): H2 quiet, records retired, brightness path live; WindowServer CPU root cause
+## Step100 boot (11:53 local, 3e1b6619): H2 quiet, records retired, brightness path live; WindowServer CPU root cause
 
 Boot after the Step100c relink. Desktop OK, flips latch (mode 1 imports, `#0/#1 latched`).
 - **H2:** 0 `STALE fence read on sdma*` lines (the IRQ path no longer prints) and no irqwatch line. One boot only.
