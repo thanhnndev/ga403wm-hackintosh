@@ -6279,3 +6279,28 @@ confirms Linux on this laptop only offers s2idle. So S3 is out; the model is s0i
   wake). Expect in the log: `NMXPowerKeep: system will sleep`, `NullMoth GPU: setPowerState(0)`, suspend returned 0,
   then resume. Not done yet (stage 2c): NMXGPUFB familyDidWake and the NMXAccel submit gate, LPS0 _DSM + SMU OS_HINT
   for real S0i3 residency, itlmt7925 power handling.
+
+## Step108 (2026-11-04 17:27): VideoToolbox decoder plugin probe - VTStub installed in /System (reboot pending, with Step107)
+
+Findings (tools/890m/vtstub, built and tested without root first):
+- Registration: Info.plist `CMClassImplementations`, one dict per codec: `CMClassID` com.apple.videotoolbox.videodecoder,
+  `CMFactoryFunction` (exported C symbol), `CMMatchingInfo` {VTCodecType, VTIsHardwareAccelerated, VTRating, ...}.
+  Higher VTRating wins (AppleH264SW 200, AppleVideoDecoder 400). Factory: `CMDerivedObjectCreate` with a
+  {CMBaseClass, VTVideoDecoderClass} vtable (layout read from AV1DecoderSW.bundle); frames go out through
+  `VTDecoderSessionEmitDecodedFrame`.
+- Registered in process with {hardware: true, rating 1000}: `VTIsHardwareDecodeSupported` turns 1 for avc1/hvc1/av01
+  (vp09 after `VTRegisterSupplementalVideoDecoderIfAvailable`, which Chrome and WebKit call), and
+  RequireHardwareAcceleratedVideoDecoder picks the stub (60/60 stub frames, H.264 and HEVC).
+- /Library/Video/Plug-Ins is scanned with a code requirement (`anchor apple ... info[CFBundleIdentifier] =
+  "com.apple."*`, FigRegistry option 1): ad-hoc or Developer ID plugins are dropped silently. /System/Library/Video/
+  Plug-Ins is option 0 (no check). Bundle decoders run in VTDecoderXPCService (disable-library-validation, no app
+  sandbox), not in the app.
+- Gate: the stub only draws a solid colour, so its factory refuses (-12906) unless `/tmp/vtstub.on` exists; then
+  VideoToolbox falls back to Apple's decoders (checked: no flag + enable-hw -> real frames; flag + require-hw -> stub
+  colour). Side effect while installed: VTIsHardwareDecodeSupported says 1 for the four codecs even with the flag off.
+- Installed 17:27 with `tools/890m/vtstub/install.sh --system` (system volume /dev/disk1s4 at
+  /System/Volumes/Update/mnt1, new boot snapshot blessed). Undo: `install.sh --undo --system` (next boot).
+- After the reboot: `touch /tmp/vtstub.on`, `log stream --predicate 'subsystem == "com.ga403wm.vtstub"'`, then
+  `build/vtprobe --supplemental --require clips/t-h264.mp4` (out of process this time), QuickTime Player, Safari and
+  Chrome on `test.html`; note which process loads the stub (VTDecoderXPCService or the browser's GPU process), then
+  `rm /tmp/vtstub.on`. Next if it loads: a real decoder in the stub's place backed by RADV Vulkan Video (Step106b).

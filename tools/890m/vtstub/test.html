@@ -1,0 +1,12 @@
+<!doctype html><meta charset="utf-8"><title>vtstub test</title>
+<p>H.264 / HEVC. Magenta (YCbCr 105,212,234) frames = VTStub decoded them.</p>
+<video src="../clips/t-h264.mp4" controls autoplay muted loop width="640"></video>
+<video src="../clips/t-hevc.mp4" controls autoplay muted loop width="640"></video>
+<pre id="o"></pre>
+<script>
+const o=document.getElementById('o');
+const cfgs=[['avc1.64001f','video/mp4'],['hvc1.1.6.L93.B0','video/mp4'],['vp09.00.10.08','video/webm'],['av01.0.05M.08','video/mp4']];
+(async()=>{for(const [c,t] of cfgs){try{const r=await navigator.mediaCapabilities.decodingInfo({type:'file',video:{contentType:`${t}; codecs="${c}"`,width:1280,height:720,bitrate:2e6,framerate:30}});
+o.textContent+=`${c}: supported=${r.supported} smooth=${r.smooth} powerEfficient=${r.powerEfficient}\n`;}catch(e){o.textContent+=`${c}: ${e}\n`;}}
+if(window.VideoDecoder)for(const [c] of cfgs){const s=await VideoDecoder.isConfigSupported({codec:c,hardwareAcceleration:'prefer-hardware'}).catch(e=>({supported:String(e)}));o.textContent+=`WebCodecs hw ${c}: ${s.supported}\n`;}})();
+</script>
