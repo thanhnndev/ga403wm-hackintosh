@@ -1,4 +1,16 @@
-**Current state (2026-10-17 12:30): upstream 2.3.1 + the fork overlay, installed on macOS 26.7.1, loads at the next reboot.**
+**Current state (2026-11-04 13:33): upstream 2.7.1 (NVIDIA driver) under the 890M stack, installed, loads at the next reboot.**
+`nullmoth-nvidia-2.7.1.tar.gz` SHA-256 `0b28f420...` (matches the release SHA256SUMS.txt; package SHA256SUMS ok). Installed
+by `scripts/macos-install-nvidia-2.7.1.sh`: upstream install.sh (NVRM/NVRMFB/NVAccel/NVRMAGDC 2.7.1, NVK userland,
+firmware; NMXGPU and `/Library/NullMoth/gpu-userland` RADV kept as they were), then NMXAudio.kext taken out again (new
+kext = Step100b kernelmanagerd risk; saved in `/Library/NullMoth/nv271-20261104T063234Z`), our 890M plugin (fbb6ca4,
+UUID 277FD7A9) and allow list (`!WindowServer` only) back, own relink with every NMXGPU probe and eight kext UUIDs
+checked again after 45 s. Upstream backup (2.5.2): `/Library/NullMoth/backup-20261104-133241.sYyjJs`. The NVRM boot
+guard and its bootguard/lastgood jobs stay as shipped (no guard patch: WindowServer is on the 890M, a parked NVIDIA
+driver no longer takes the desktop). Checked before install: 2.6.6's NVAccel "a GPU with no Metal accelerator does not
+own the desktop" finds NMXAccel's MetalPluginName one level under the 890M PCI device, so the 890M keeps the desktop;
+NVPrimarySelector is opt-in and not used; WindowServer opens libvulkan_radeon directly (no NVK in that process).
+
+Previous state (2026-10-17): **Current state (2026-10-17 12:30): upstream 2.3.1 + the fork overlay, installed on macOS 26.7.1, loads at the next reboot.**
 `nullmoth-nvidia-2.3.1.tar.gz` SHA-256 `3522e2f5...` (matches the release's SHA256SUMS.txt, package SHA256SUMS ok);
 upstream backup `/Library/NullMoth/backup-20261017-122934.HLqztf` (`uninstall.sh <backup>` goes back to 2.0.4); fork
 `ga403wm` rebased onto `v2.3.1` without conflicts (`805e77a`, old tip tagged `ga403wm-on-2.0.4`); overlay NVRMFB `ad490cf6...`

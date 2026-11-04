@@ -24,7 +24,7 @@ Daily-use gate (OLED + apps on the 890M), in order:
 4. Video decode (VCN) for browsers/players: not started; without it video decodes on the CPU.
 5. HiDPI extra scaled modes (Retina 1440x900 @ 120 Hz already works; only the other sizes are missing).
 
-Hybrid with the RTX 5060 (NVRM 2.5.2, GSP-RM up, `RmInitAdapter succeeded`): the kernel side boots today. Missing for
+Hybrid with the RTX 5060 (NVRM 2.7.1 installed 2026-11-04 for the next boot; on 2.5.2 GSP-RM was up, `RmInitAdapter succeeded`): the kernel side boots today. Missing for
 apps: a Metal device for the RTX (NullMoth NVIDIA path, same allow-list gate) and a device choice per app (low power =
 890M, high power = RTX); HDMI on the RTX was the old hybrid desktop (NVRMFB/AGDC) and needs a re-test with the AMD OLED.
 
