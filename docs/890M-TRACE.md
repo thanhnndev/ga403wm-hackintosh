@@ -5858,3 +5858,30 @@ timing and, on setDisplayMode, gets a buffer of that size from NMXGPU and update
 (2) the flip cave allocates the per-mode VRAM buffer and sets the plane src rect to the fb size on every commit
 (today SET_FB_FOR_PLANE keeps src 2880x1800), so DC's plane scaler fits it to the panel; (3) check NMXAccel's copy
 fallback for a surface size different from the home buffer. Fallback: boot-arg -nmxbloff.
+
+## Step100 boot 2 (12:29 local, plugin e34b10d live): desc-cache fixed; WindowServer CPU is now load plus NVMTL per-draw cost
+
+State: NMXGPU 3e1b6619, NVMTLDriver UUID 2DEC581D (e34b10d), NMXBacklight and NMXAccel loaded, no panic.
+
+- H2: 0 `STALE fence read on sdma` lines, no irqwatch line. mmfix2: `threads 1, procs 0`. Flip API up 2880x1800.
+- NMXBacklight: handler published (sense slot 337), parameters on AppleBacklightDisplay at 100 %.
+- Desc-cache (12:34): `hit 3103568 miss 281316 (stale 3902, page 31976, long 0, full 0)`. Hit rate 92 %, `long` went from
+  dominant to 0: the e34b10d key fix works.
+- Shutdown stall 12:28 (previous boot's shutdown): 1 s, every thread idle (NMX threads parked), caffeinate and
+  duetexpertd slow on SIGTERM. Not a GPU issue.
+
+WindowServer, Claude Helper redrawing at 96 % (present-rate 10 s: 111.2 fps, fence 4.23 ms, flips 1112, fallback 0):
+- `top`: 59..68 % (Step100 boot 1: ~69 %). `ps -M` delta over 10 s: user 43 %, system 18 %.
+- The fence wait (`drmSyncobjWait` under `nvmtl_gsub_finish`, 1449 of 5000 ms in `sample`) sleeps; it is wall time on
+  the pump thread, not CPU.
+- On-CPU user samples by owner: NVMTL+radv ~30 %, QuartzCore ~25 %, SkyLight ~13 %, rest (objc/malloc/CF under both).
+  QuartzCore/SkyLight is the 111 fps compositing load itself.
+- NVMTL per 5 s: encoder 829 ms (draws ~430, `nvmtlBindSamplerPipeline` 134), texture create 137 + destroy 94 (per-frame
+  `create_variable_blur_mip_surface` -> BO alloc/VA map/free ioctls, `amdgpu_vamgr_free_va` 34), submit 195.
+
+Reducible NVMTL costs (no single bug left), by size:
+1. Per-frame texture memory: CA's blur mip surfaces allocate and free a BO every frame. Recycle VkDeviceMemory by
+   (size, heap) after the submission that used it retires.
+2. `nvmtlBindSamplerPipeline` builds two NSDictionaries and JSON-serializes them per draw for the sampler-variant key.
+   Memo the last (pipeline, sampler objects) -> variant per encoder; keep the JSON key only on a miss.
+3. `nvmtl_trace_on` reads the clock on every call (41 samples): a flag refreshed by a timer is enough.

@@ -52,9 +52,9 @@ cause (Step100 irqfix), stale xkpi records (Step100 mmfix2), brightness slider v
 verified), cave registry check (`scripts/nmx-caves/check.py`).
 
 Open, in order:
-1. **Measure the WindowServer CPU fix**: plugin e34b10d (framebuffer-fetch binding no longer drops the binding mask)
-   is installed and loads at the next WindowServer start; expect `desc-cache stats ... long` near 0 and WindowServer
-   well below the 69 % of the Step100 boot.
+1. **WindowServer CPU, NVMTL per-draw cost** (measured 2026-11-04 boot 2: desc-cache `long 0`, hit 92 %; WS 59..68 %
+   at 111 fps, user 43 % / system 18 %, NVMTL ~30 % of the user samples). Next: recycle per-frame texture memory,
+   memo the sampler-variant key per encoder, cheap trace flag. Details: `docs/890M-TRACE.md`, "Step100 boot 2".
 2. **HiDPI scaled modes** (owner: "not now, keep it on the roadmap"). System Settings shows one resolution tile and no
    refresh menu because NMXGPUFB reports a single mode. Root cause and plan: `docs/890M-TRACE.md`, section
    "HiDPI scaled modes: root cause and plan". Pieces: more backing sizes reported from NMXBacklight's vtable copy,
