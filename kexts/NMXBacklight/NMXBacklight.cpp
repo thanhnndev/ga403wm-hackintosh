@@ -15,6 +15,9 @@
 #include <IOKit/graphics/IOFramebuffer.h>
 #include <IOKit/graphics/IODisplay.h>
 #include <IOKit/ndrvsupport/IOMacOSVideo.h>
+#include <IOKit/IOMessage.h>
+#include <IOKit/pwr_mgt/IOPM.h>
+#include <IOKit/pwr_mgt/RootDomain.h>
 #include <kern/thread_call.h>
 #include <libkern/OSAtomic.h>
 #include <pexpert/pexpert.h>
@@ -259,11 +262,16 @@ void NMXBacklightHandler::applyFire(thread_call_param_t p, thread_call_param_t)
 // (the 2026-10-17 hang: "NMXGPU slow (SetState 0, 708 ms)", WindowServer timeout, silent hang). This service joins the
 // power tree as a child of NMXGPU and asks for state 1, which needs NMXGPU's kIOPMPowerOn, so display sleep becomes
 // the framebuffer's own DPMS off/on only. On system sleep the power domain goes down from the top and this child
-// follows it to 0 as any device does. Boot-arg -nmxkeepoff leaves it inert.
+// follows it to 0 as any device does. Boot-arg -nmxkeepoff leaves it inert; nmxkeep_dsleep=0 keeps the logging but
+// lets display sleep suspend NMXGPU (test harness). It also logs the system sleep/wake timeline (PowerKeep,Sys*).
 class NMXPowerKeep : public IOService {
     OSDeclareDefaultStructors(NMXPowerKeep)
     bool pm = false;
     UInt32 changes = 0;
+    IONotifier *sysNote = nullptr;
+    uint64_t tSleep = 0;
+    UInt32 sleeps = 0, wakes = 0;
+    static IOReturn sysPower(void *target, void *ref, UInt32 type, IOService *provider, void *arg, vm_size_t size);
 public:
     bool start(IOService *provider) override;
     void stop(IOService *provider) override;
@@ -288,15 +296,24 @@ bool NMXPowerKeep::start(IOService *provider)
         return false;
     }
     pm = true;
-    changePowerStateTo(1);
-    setProperty("PowerKeep,Wanted", 1ULL, 32);
-    IOLog("NMXPowerKeep: holding %s on while the system is awake\n", provider->getName());
+    // nmxkeep_dsleep=0: do not hold NMXGPU, so display sleep runs NMXGPU's own suspend/resume while the system stays
+    // awake (a harness for the NMXGPU suspend path, sleep plan stage 2b; the default 1 is the Step106 behaviour)
+    UInt32 hold = 1;
+    PE_parse_boot_argn("nmxkeep_dsleep", &hold, sizeof hold);
+    if (hold) changePowerStateTo(1);
+    setProperty("PowerKeep,Wanted", uint64_t(hold ? 1 : 0), 32);
+    // system sleep/wake timeline for the stage 2a tests (logs only; never delays sleep)
+    sysNote = registerPrioritySleepWakeInterest(&NMXPowerKeep::sysPower, this, nullptr);
+    setProperty("PowerKeep,SysSleeps", 0ULL, 32);
+    IOLog("NMXPowerKeep: %s %s while the system is awake; sleep/wake interest %s\n", hold ? "holding" : "NOT holding",
+          provider->getName(), sysNote ? "on" : "FAILED");
     registerService();
     return true;
 }
 
 void NMXPowerKeep::stop(IOService *provider)
 {
+    if (sysNote) { sysNote->remove(); sysNote = nullptr; }
     if (pm) PMstop();
     pm = false;
     IOService::stop(provider);
@@ -309,4 +326,39 @@ IOReturn NMXPowerKeep::setPowerState(unsigned long state, IOService *)
     setProperty("PowerKeep,Changes", n, 32);
     if (n <= 64) IOLog("NMXPowerKeep: power state %lu (change %u)\n", state, unsigned(n));
     return kIOPMAckImplied;
+}
+
+IOReturn NMXPowerKeep::sysPower(void *target, void *, UInt32 type, IOService *, void *arg, vm_size_t)
+{
+    auto me = static_cast<NMXPowerKeep *>(target);
+    auto note = static_cast<IOPowerStateChangeNotification *>(arg);
+    uint64_t now = mach_absolute_time(), ns = 0;
+    switch (type) {
+    case kIOMessageCanSystemSleep:
+        if (note) note->returnValue = 0;
+        break;
+    case kIOMessageSystemWillSleep:
+        me->tSleep = now;
+        me->sleeps++;
+        me->setProperty("PowerKeep,SysSleeps", me->sleeps, 32);
+        IOLog("NMXPowerKeep: system will sleep (#%u), keep state %u\n", unsigned(me->sleeps),
+              unsigned(me->getPowerState()));
+        if (note) note->returnValue = 0;
+        break;
+    case kIOMessageSystemWillPowerOn:
+        if (me->tSleep) absolutetime_to_nanoseconds(now - me->tSleep, &ns);
+        IOLog("NMXPowerKeep: system will power on, %llu ms after will-sleep\n", ns / 1000000);
+        break;
+    case kIOMessageSystemHasPoweredOn:
+        me->wakes++;
+        if (me->tSleep) absolutetime_to_nanoseconds(now - me->tSleep, &ns);
+        me->setProperty("PowerKeep,SysWakes", me->wakes, 32);
+        me->setProperty("PowerKeep,LastWakeMs", ns / 1000000, 64);
+        IOLog("NMXPowerKeep: system has powered on (#%u), %llu ms after will-sleep, keep state %u\n",
+              unsigned(me->wakes), ns / 1000000, unsigned(me->getPowerState()));
+        break;
+    default:
+        break;
+    }
+    return kIOReturnSuccess;
 }

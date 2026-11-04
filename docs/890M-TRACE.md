@@ -6253,3 +6253,29 @@ IOPowerManagement ChildrenPowerState=1 CurrentPowerState=1. `scripts/macos-displ
   nothing).
 Gate item 2 (sleep/wake): display sleep done. System sleep and lid close are stage 2: NMXGPU's suspend is the S3 path
 on an s0ix-only platform, NMXAccel/NMXGPUFB have no wake handling; not tested.
+
+## Step107 (2026-11-04 17:22): system sleep on the s0ix path - NMXGPU suspends amdgpu as suspend-to-idle (reboot pending)
+
+Platform, checked on this machine: AppleACPIPlatform logs `ACPI: sleep states S4 S5`; the DSDT renames `_S3` to `XS3`
+(`SS3 = Zero`); SSDT-28 has `\_SB.PEP` (AMDI000A / PNP0D80) with the Modern Standby _DSMs (AMD e3f32452..., mask 0x03
+= device constraints only; Microsoft 11e00d56..., mask 0x1F9 = display off/on, entry/exit, MS entry/exit). The owner
+confirms Linux on this laptop only offers s2idle. So S3 is out; the model is s0ix (the GPU keeps power).
+- NMXGPU's suspend (only reached on system sleep since NMXPowerKeep) invoked power_suspend with POWER_STYPE_FW_SUSPEND
+  (2) -> pm_suspend_target_state = PM_SUSPEND_MEM -> amdgpu S3 path (full teardown, PrepareMp1ForUnload, cold re-init
+  on resume over powered hardware). The live `amdgpu_acpi_is_s0ix_active` (0x7e40) is the CONFIG_AMD_PMC build: true
+  when APU + target TO_IDLE + asic >= RAVEN + gfxoff + FADT LOW_POWER_S0 (flags bit 21, `testb $0x20, 0x72(FADT)`).
+  `linux_handle_power_suspend_event` maps stype 3 to TO_IDLE (1).
+- `scripts/nmx-s0ix/patch_s0ix.py`: the two `mov $0x2,%esi` at 0x6de44c / 0x6de45d in nmx_port_power become `$0x3`
+  (SUSPEND_TO_IDLE). NMXGPU 3e1b6619 -> 2a1bb264. Cave registry unchanged (an immediate, no cave).
+  If the FADT bit or gfxoff were missing, amdgpu logs "BIOS has not been configured for suspend-to-idle" and takes
+  the S3 path as before; neither is verifiable from Tahoe (no FACP in ioreg), the log answers it.
+- NMXBacklight 0.3.0: NMXPowerKeep also logs the system sleep/wake timeline (`registerPrioritySleepWakeInterest`,
+  `PowerKeep,SysSleeps/SysWakes/LastWakeMs`), never delays sleep. Boot-arg `nmxkeep_dsleep=0` releases the hold, so
+  display sleep exercises NMXGPU's suspend/resume with the system awake (harness).
+- Installed 17:22 with `scripts/macos-install-step107.sh` (backup /Library/NullMoth/step107-bk-*, all cave --check-kc
+  present, AuxKC holds the four kexts after 45 s). Undo: `--undo`.
+- Test after the reboot: `scripts/macos-syssleep-test.sh 60` (pmset hibernatemode/standby/powernap/tcpkeepalive/
+  proximitywake/womp 0, saved first, `restore` puts them back; en4 down because itlmt7925 has no power handling; RTC
+  wake). Expect in the log: `NMXPowerKeep: system will sleep`, `NullMoth GPU: setPowerState(0)`, suspend returned 0,
+  then resume. Not done yet (stage 2c): NMXGPUFB familyDidWake and the NMXAccel submit gate, LPS0 _DSM + SMU OS_HINT
+  for real S0i3 residency, itlmt7925 power handling.

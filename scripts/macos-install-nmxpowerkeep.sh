@@ -1,6 +1,6 @@
 #!/bin/bash
 # SPDX-License-Identifier: BSD-3-Clause-Clear
-# Installs NMXBacklight 0.2.0 (adds NMXPowerKeep: NMXGPU stays powered during display sleep) into /Library/Extensions
+# Installs NMXBacklight 0.2.0+ (NMXPowerKeep: NMXGPU stays powered during display sleep; 0.3.0 adds the sleep/wake timeline) into /Library/Extensions
 # and relinks the auxiliary kernel collection. Loads at the next boot. Run as root.
 #   sudo scripts/macos-install-nmxpowerkeep.sh          install build/NMXBacklight.kext
 #   sudo scripts/macos-install-nmxpowerkeep.sh --undo   put back the kext and the collection saved by the last install
