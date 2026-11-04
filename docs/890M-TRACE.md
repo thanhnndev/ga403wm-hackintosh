@@ -6170,3 +6170,20 @@ WS CPU back to ~27 %, desktop smooth; NVRM 2.7.1 GSP state.
 - Verified live: the repro MSL kernels and the tint-shaped kernel create pipelines; fresh Chrome profile (sandboxed)
   ran its on-device-model WebGPU benchmark at 15:49:13 - four `dawn_entry_point` compute pipelines created
   (4116-15912 B SPIR-V), no crash report, no service disconnect, nmx_timeouts 0.
+
+## Step105c (2026-11-04 16:06): boot check - Safari WebGL on the 890M, translator, VRAM, WindowServer
+
+First boot with StrixSbxMap, plugin fb86bf5 and the Step104c translator together.
+
+- Safari / WKWebView WebGL: `scripts/macos-webgl-safari-test.sh live --ab` renders (ok=true, pixel 0,255,0,255) in the
+  WebKit GPU process. That process logs `vk: UP in this Metal process — "AMD Radeon 890M Graphics (RADV STRIX1)"`,
+  GPU vendor 1002, and opens DRM node 128 through NMXAccel (the sandbox refuses /dev/dri). The kext count goes
+  allowed 8 -> 15 -> 22, stale=0. A/B: with `debug.strixsbx.enable=0` the `file-map-executable` deny on NVMTLDriver
+  comes back and WebGL fails (shaderSource TypeError). The first run said LIVE FAIL only because WebKit reports
+  unmasked_renderer "Apple GPU" even with the mask off. The verdict now also accepts the GPU process `vk: UP ... 890M`
+  line (the log capture includes it), and the rerun prints LIVE PASS.
+- Chrome 156: the GPU process has the 890M (`vk: UP ... RADV STRIX1`). No Chrome Helper crash report and no
+  `Check failed` / on_device_model disconnect since the translator swap (the last crash report, 14:56, predates it).
+- About This Mac: AMD Radeon 890M, 512 MB (ESP `model` + `VRAM,totalMB`).
+- WindowServer: about 31-38 % CPU by `ps -o time=` deltas. The 148 % right after login was the decaying `ps %cpu`
+  average.

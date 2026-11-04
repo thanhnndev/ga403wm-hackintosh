@@ -68,12 +68,14 @@ live)
     bounded 40 build/webgl-probe --gpu-process on --mask off > "$OUT/probe-$1.json" 2>"$OUT/probe-$1.err"; local rc=$?
     s1=$(sysctl -n debug.strixsbx.status 2>/dev/null)
     denies "$t0" com.apple.WebKit.GPU > "$OUT/denies-$1.txt"
-    /usr/bin/log show --start "$t0" --predicate 'eventMessage CONTAINS "sbxmap" OR (process == "com.apple.WebKit.GPU" AND eventMessage CONTAINS "GPUBundles")' \
+    /usr/bin/log show --start "$t0" --predicate 'eventMessage CONTAINS "sbxmap" OR (process == "com.apple.WebKit.GPU" AND (eventMessage CONTAINS "GPUBundles" OR eventMessage CONTAINS "vk: UP"))' \
       2>/dev/null | cut -c1-260 > "$OUT/log-$1.txt"
     echo "== $1 (exit $rc)"; cat "$OUT/probe-$1.json"
     echo "kext before: $s0"; echo "kext after:  $s1"
     echo "GPU process denies:"; grep -v -E 'apple-coprocessor-version' "$OUT/denies-$1.txt" | head -10
-    grep -q -E '"unmasked_renderer":"[^"]*(890M|RADV)' "$OUT/probe-$1.json" && grep -q '"ok":true' "$OUT/probe-$1.json"
+    # WebKit reports "Apple GPU" even with the mask off, so the device comes from the GPU process NVMTL log
+    grep -q '"ok":true' "$OUT/probe-$1.json" && { grep -q -E '"unmasked_renderer":"[^"]*(890M|RADV)' "$OUT/probe-$1.json" ||
+      grep -q -E 'vk: UP .*890M' "$OUT/log-$1.txt"; }
   }
   probe on; R=$?
   [[ $R == 0 ]] && echo "LIVE PASS: WKWebView WebGL renders on the 890M through the WebKit GPU process" ||
