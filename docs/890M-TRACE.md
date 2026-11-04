@@ -5950,3 +5950,36 @@ State: NVMTLDriver C465B823 (f973e95), no panic; mes STALE lines 6 (background, 
 the same type, and a root without its own or swizzled view takes the image's view (`_ownView` stays nil, `nvview`
 falls back to `image->view`); nothing to destroy at dealloc. Log `newTextureView: N identity view(s) share the
 image's own view` at powers of two. Off: `NVMTL_NO_IDVIEW=1`. Expect `img by view` to drop to a trickle next boot.
+
+## Step102 (2026-11-04): Metal for sandboxed apps - DRM through IOKit (installed, reboot pending)
+
+Root cause (app test, same day): sandboxed apps (TextEdit, App Store apps, browser GPU processes) are refused
+`/dev/dri` (`Sandbox: TextEdit(17713) deny(1) file-read-data /dev/dri`), RADV enumerates 0 GPUs, the plugin refuses
+the device and the app draws on the CPU (it looks fine, which hid it). Non-sandboxed Terminal (`NVMTL_ENABLE=1`) is UP
+on RADV STRIX1 with no ring timeout.
+
+Pre-check with `sandbox-exec` (deny default + system.sb `(system-graphics)`): `open(/dev/dri/renderD128)` -> EPERM,
+but `IOServiceOpen(NMXAccel, …)` reaches the driver (types 0/1 open; the new type answered kIOReturnUnsupported from
+the old kext, not "not permitted"). The sandbox allows user clients of an IOAccelerator, as NullMoth's NVIDIA bridge uses.
+
+Fix (fork, PolyForm code stays there):
+- NMXAccel `ci/nmxaccel-drmuc` 7bd4e99 (CI run 41789977284, sha 48b3f689): user client type `'NMDR'` (0x4E4D4452),
+  `kexts/NVRM/accel/nmx/nmx_drm_uc.cpp`. Selector 0 opens `/dev/dri/renderD<N>` on a kernel thread (kernel vfs context,
+  so the caller's sandbox is not asked; the open is its own devfs clone = its own DRM file); selector 1 runs an ioctl
+  with VNOP_IOCTL on the caller's thread (mappings land in the caller's task); selector 2 = node major for stat;
+  close / process death closes the vnode. Log: `NMXAccel: drm-uc: pid N opened /dev/dri/renderD128 for its sandbox`.
+- Plugin `desc-cache` 923deca (`plugin/nvmtl_drm_xnu.h`): only in sandboxed processes (`sandbox_check`), the libc
+  imports of RADV, libdrm and libdrm_amdgpu (open, ioctl, close, dup, fcntl F_DUPFD, fstat, stat, access,
+  opendir/readdir/closedir) are rebound; each tries the real call first and steps in only on EPERM/EACCES. The handle fd
+  is a read-only /dev/null. `NVMTL_DRM_XNU=1` forces the path in an unsandboxed process (tests). Log:
+  `drm-xnu: sandbox-safe DRM path armed`, `drm-xnu: <app>: node 128 opened through NMXAccel`.
+- Install: `scripts/macos-install-step102.sh` (backup /Library/NullMoth/step102-20261104T070755Z, relink, all probes +
+  8 UUIDs verified twice). Undo: `sudo scripts/macos-install-step102.sh --undo`. Allow list unchanged (`!WindowServer`).
+
+After the reboot:
+1. Desktop as before (WindowServer unsandboxed: the plugin installs nothing there): picture, brightness, ~2.35 ms/frame.
+2. Forced path, unsandboxed: `NVMTL_DRM_XNU=1 NVMTL_ENABLE=1` + tools/890m/build/nvmtltest -> compute correct, kernel log
+   `drm-uc: pid … opened`.
+3. Sandboxed: `open -n --env NVMTL_ENABLE=1 -a TextEdit` -> no `deny … /dev/dri`, plugin `vk: UP`, `drm-xnu: … opened
+   through NMXAccel`; then a sandboxed browser GPU process.
+4. Then the allow-list rungs (named apps, then `*`).

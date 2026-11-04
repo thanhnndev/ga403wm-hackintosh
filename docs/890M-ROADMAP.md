@@ -91,7 +91,7 @@ Open, in order:
 4. Remaining prints on the IRQ path (`___drm_err`, VM-fault messages) can block like H2 did during a console stall;
    consider dropping `-v` from boot-args.
 
-## Sandboxed apps: /dev/dri is blocked (found 2026-11-04)
+## Sandboxed apps: /dev/dri is blocked (found 2026-11-04; fix Step102 installed, reboot pending)
 
 `Sandbox: TextEdit(17713) deny(1) file-read-data /dev/dri`. Every App Store / sandboxed app (and browser GPU
 processes) hits this, so opening the DRM render node can never be the app path. NullMoth's NVIDIA userland already
@@ -104,6 +104,9 @@ Plan for the 890M, same shape:
 2. libdrm (RADV): when `open("/dev/dri/renderD128")` fails with EPERM, fall back to the IOKit path; `drmIoctl` on that
    fd goes through `IOConnectCallMethod`. mmap of BOs: map through the user client (`IOConnectMapMemory64`).
 3. Test: TextEdit / Preview / Safari GPU process get "vk: UP" with no sandbox violation; then the allow list rungs.
+Built and installed as Step102 (docs/890M-TRACE.md): the user client lives in NMXAccel (no NMXGPU change, no new
+cave) and the userland side is in the NVMTL plugin (libc import rebinding in RADV/libdrm, sandboxed processes only),
+so libdrm/RADV binaries stay as they are.
 
 ## Hybrid and automatic GPU choice (owner requirement, 2026-11-04)
 
