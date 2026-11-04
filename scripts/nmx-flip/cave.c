@@ -18,12 +18,10 @@
 //
 // Generation: the bridge commits its home fb itself (restore, hotplug, display power). Status notices the plane's fb is
 // not the one it last latched and bumps generation; current then names whatever is really on screen.
-typedef unsigned long u64; typedef unsigned int u32; typedef long s64;
+
+#include "common.h"
 
 #pragma GCC visibility push(hidden)
-extern int PRINTF(const char *fmt, ...);
-extern int SNPRINTF(char *buf, u64 n, const char *fmt, ...);
-extern const char FMT_S[];
 extern char FBS[];                                    // static fbs[MAX_FB] { dev, fb } in nmx_fb_bridge.c
 extern char *DRM_CLIENT_FB_CREATE(char *client, u32 w, u32 h, u32 fmt);
 extern void DRM_CLIENT_FB_DELETE(char *buffer);
@@ -46,83 +44,14 @@ extern void SET_FB_FOR_PLANE(char *pstate, char *fb);
 extern int NONBLOCKING_COMMIT(char *state);
 extern void COMMIT_FREE(char *ref);                   // __drm_crtc_commit_free(struct kref *)
 extern u64 VBLANK_COUNT_AND_TIME(char *crtc, s64 *ns);
+extern char *FB_CREATE_VRAM(char *client, u32 w, u32 h, u32 fmt);   // import.c: drm_client_framebuffer_create in VRAM
+extern u32 FLIP_IMPORT(void *r);                                    // import.c: nmxFlipImport
+extern u32 FLIP_RELEASE_IMPORT(u32 h);                              // import.c: free an import (not on screen, not pending)
 #pragma GCC visibility pop
 
-// layout from the real headers (scripts/nmx-flip/offsets.txt)
-#define FB_BUFFER 120
-#define FB_INFO 152
-#define INFO_W 4
-#define INFO_H 8
-#define INFO_PITCH 12
-#define INFO_PHYS 16
-#define INFO_SIZE 24
-#define INFO_KVA 32
-#define CLIENT_MODESETS 104
-#define BUF_GEM 16
-#define BUF_PITCH 8
-#define BUF_FB 40
-#define MS_CRTC 8
-#define MS_MODE 16
-#define MS_SIZE 48
-#define CRTC_PRIMARY 168
-#define PLANE_STATE 1280
-#define PSTATE_FB 16
-#define CSTATE_COMMIT 320
-#define AS_REF 0
-#define AS_ACQUIRE_CTX 72
-#define COMMIT_REF 8
-#define COMMIT_FLIP_DONE 12
-#define BO_GEM 72
-#define DOMAIN_VRAM 4
-#define FMT_XRGB8888 0x34325258
-#define EDEADLK 11
-#define EBUSY 16
 
-#define R_OK 0
-#define R_UNSUPPORTED 0xe00002c7u
-#define R_BADARG 0xe00002c2u
-#define R_BUSY 0xe00002d5u
-#define R_NOTREADY 0xe00002d8u
-#define R_ERROR 0xe00002bcu
-#define NONE 0xffffffffu
-#define NBUF 3
 
-struct flipbuf { u64 phys; void *kva; u64 size; u64 gpu; u32 handle, pitch; };
-struct req {
-    u32 version, flags, handle, format, width, height, pitch, caps, maxImports, nbuffers;
-    void *md; u64 offset, gpuAddr, seq, seqSubmitted, seqLatched;
-    u32 current, pending, generation; int err;
-    u64 vblankCount, vblankNs;
-    struct flipbuf buf[NBUF];
-};
-_Static_assert(__builtin_offsetof(struct req, buf) == 120, "NMXFlipRequest layout");
-_Static_assert(sizeof(struct flipbuf) == 40, "NMXFlipBuffer layout");
 
-struct st {
-    volatile int lock;
-    u32 inited, gen, current, pending, nbuf, logs, tried;
-    u64 seqSub, seqLat;
-    char *commit;                 // the pending flip's drm_crtc_commit (one reference held)
-    char *crtc, *plane, *nfb;
-    char *drmfb[NBUF];            // drm_framebuffer per handle
-    char *buffer[NBUF];           // drm_client_buffer per handle (0 = home, the bridge's)
-    u64 kva[NBUF], phys[NBUF], size[NBUF], gpu[NBUF];
-    u32 pitch[NBUF];
-};
-_Static_assert(sizeof(struct st) <= 352, "state fits the borrowed words");
-#pragma GCC visibility push(hidden)
-extern struct st ST;               // 352 bytes of dead CI dpm ratelimit state at 0x9270a0 (16-aligned)
-#pragma GCC visibility pop
-#define S (&ST)
-
-#define LOG(...) do { if (S->logs < 40) { char b_[200]; S->logs++; SNPRINTF(b_, sizeof b_, __VA_ARGS__); PRINTF(FMT_S, b_); } } while (0)
-#define P(p, off) (*(char **)((char *)(p) + (off)))
-#define U32(p, off) (*(u32 *)((char *)(p) + (off)))
-#define U64(p, off) (*(u64 *)((char *)(p) + (off)))
-#define IS_ERR(p) ((u64)(p) >= (u64)-4095)
-
-static void lock(void) { while (__atomic_exchange_n(&S->lock, 1, __ATOMIC_ACQUIRE)) __builtin_ia32_pause(); }
-static void unlock(void) { __atomic_store_n(&S->lock, 0, __ATOMIC_RELEASE); }
 
 static void kref_put(char *ref, void (*release)(char *))
 {
@@ -158,6 +87,9 @@ static int init(void)
     S->kva[0] = U64(nfb, FB_INFO + INFO_KVA); S->phys[0] = U64(nfb, FB_INFO + INFO_PHYS);
     S->size[0] = U64(nfb, FB_INFO + INFO_SIZE); S->pitch[0] = U32(nfb, FB_INFO + INFO_PITCH);
     S->current = 0; S->pending = NONE; S->nbuf = 1;
+    // the home buffer must stay in VRAM whatever is on screen: DC unpins it when a flip moves away from it
+    int e = pin(S->buffer[0], &S->gpu[0]);
+    if (e) { LOG("NMX flip: home buffer would not pin (%d), no flips", e); return 0; }
     __atomic_store_n(&S->inited, 1, __ATOMIC_RELEASE);
     LOG("NMX flip: API up, crtc %llx plane %llx home fb %llx %ux%u pitch %u", (u64)crtc, (u64)S->plane,
         (u64)S->drmfb[0], U32(nfb, FB_INFO + INFO_W), U32(nfb, FB_INFO + INFO_H), S->pitch[0]);
@@ -169,10 +101,9 @@ static u32 do_buffers(struct req *r)
     if (!S->tried) {
         S->tried = 1;
         u32 w = U32(S->nfb, FB_INFO + INFO_W), h = U32(S->nfb, FB_INFO + INFO_H);
-        int e = pin(S->buffer[0], &S->gpu[0]);
-        if (e) { LOG("NMX flip: home buffer would not pin (%d), no chain", e); r->err = e; return R_ERROR; }
+        int e;
         for (u32 i = 1; i < NBUF; i++) {
-            char *b = DRM_CLIENT_FB_CREATE(S->nfb, w, h, FMT_XRGB8888);
+            char *b = FB_CREATE_VRAM(S->nfb, w, h, FMT_XRGB8888);
             if (IS_ERR(b) || !b) { LOG("NMX flip: buffer %u not created (%ld)", i, (s64)b); break; }
             if ((e = pin(b, &S->gpu[i]))) { LOG("NMX flip: buffer %u would not pin (%d)", i, e); DRM_CLIENT_FB_DELETE(b); break; }
             char map[16];
@@ -207,9 +138,9 @@ static void refresh(void)
     }
     if (S->pending == NONE) {
         char *ps = P(S->plane, PLANE_STATE), *fb = ps ? P(ps, PSTATE_FB) : 0;
-        if (fb && fb != S->drmfb[S->current]) {
+        if (fb && fb != fb_of(S->current)) {
             u32 h = NONE;
-            for (u32 i = 0; i < S->nbuf; i++) if (S->drmfb[i] == fb) h = i;
+            for (u32 i = 0; i < IMP0 + NIMP; i++) if (fb_of(i) == fb) h = i;
             S->gen++;
             LOG("NMX flip: on screen is fb %llx (handle %d), not handle %u: generation %u", (u64)fb, (int)h, S->current, S->gen);
             S->current = h == NONE ? 0 : h;
@@ -220,7 +151,8 @@ static void refresh(void)
 static u32 do_submit(struct req *r)
 {
     u32 h = r->handle;
-    if (h >= S->nbuf) return R_BADARG;
+    char *nfbp = fb_of(h);
+    if (!nfbp) return R_BADARG;
     lock();
     refresh();
     if (S->pending != NONE) { unlock(); return R_BUSY; }
@@ -237,7 +169,7 @@ static u32 do_submit(struct req *r)
         for (;;) {
             char *ps = GET_PLANE_STATE(state, S->plane), *cs;
             if (IS_ERR(ps)) { e = (int)(s64)ps; goto deadlk; }
-            SET_FB_FOR_PLANE(ps, S->drmfb[h]);
+            SET_FB_FOR_PLANE(ps, nfbp);
             cs = GET_CRTC_STATE(state, S->crtc);
             if (IS_ERR(cs)) { e = (int)(s64)cs; goto deadlk; }
             e = NONBLOCKING_COMMIT(state);
@@ -297,20 +229,22 @@ s64 flip_dispatch(char *sym, struct req *r)
              is(sym, "nmxFlipBuffers") ? 2 : is(sym, "nmxFlipRelease") ? 3 : is(sym, "nmxFlipImport") ? 1 : -1;
     if (fn < 0) return -1;
     if (!r || r->version != 1) return R_BADARG;
-    if (fn == 1) return R_UNSUPPORTED;
     if (!init()) return R_NOTREADY;
     r->err = 0;
     switch (fn) {
     case 0:
         r->caps = 1u | 4u | 0x100u; r->maxImports = 0;
+        if (GPU_VM(S->nfb)) { r->caps |= 2u | 0x200u; r->maxImports = NIMP; }   // DC scans GTT only with GPU VM on
         r->width = U32(S->nfb, FB_INFO + INFO_W); r->height = U32(S->nfb, FB_INFO + INFO_H); r->pitch = S->pitch[0];
         r->generation = S->gen;
         return R_OK;
+    case 1: return FLIP_IMPORT(r);
     case 2: return do_buffers(r);
     case 3: {
         u32 busy;
         lock(); refresh(); busy = r->handle == S->current || r->handle == S->pending; unlock();
-        return busy ? R_BUSY : R_OK;
+        if (busy) return R_BUSY;
+        return r->handle >= IMP0 ? FLIP_RELEASE_IMPORT(r->handle) : R_OK;
     }
     case 4: return do_submit(r);
     default: return do_status(r);

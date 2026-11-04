@@ -5638,3 +5638,41 @@ Next:
 1. Make flips the default at boot.
 2. Mode 1, zero copy: scan the IOSurface itself (DC with GPU VM, its own boot). It removes the remaining CPU copy.
 3. A descriptor-set cache in NVMTL, for WindowServer's CPU.
+
+## Step99: zero-copy flips (mode 1) + flips on by default (installed, reboot pending)
+
+NMXGPU 1907d9f9 is the Step97 build (c2326f22, from the Step98 backup) plus `scripts/nmx-flip/step99_patch.py`.
+
+**Zero copy needs DC with GPU VM.**
+- The bridge forced `amdgpu_sg_display = 0` in `nmx_fb_before_attach`. That store at 0x6ccfcb is now a nop, so the
+  parameter keeps its default -1. `amdgpu_dm_init` then sets `mode_info.gpu_vm_support` (adev+0x10de4) on the APU,
+  DC runs with the system context / HVM (Linux's default on Strix), and `amdgpu_display_supported_domains` offers
+  GTT for USWC buffers.
+- The bridge's own buffers must stay one contiguous VRAM range, because the IOFramebuffer aperture and the K6 copy
+  use them. So `nmx_fb_open`'s call to `drm_client_framebuffer_create` (0x6cd39d) goes through `fb_create_vram`,
+  which clears `gpu_vm_support` around the call. The mode-2 chain uses the same helper.
+- The home buffer is now pinned in VRAM on the first flip call, whatever the mode. DC unpins it when a flip moves to
+  another buffer, and without our pin TTM could then evict it.
+
+**`nmxFlipImport`** (`scripts/nmx-flip/import.c`, 2389 bytes at 0x506580 in dead `kv_dpm_sw_init`):
+1. The descriptor's pages are read with `getPhysicalSegment`. NMXGPU's own call uses vtable +0x138 and
+   `kIOMemoryMapperNone`. They go into a flat sg_table, contiguous runs merged; the dma address is the physical
+   address, since xkpi maps 1:1.
+2. `amdgpu_gem_object_create(CPU domain, CPU_GTT_USWC, ttm_bo_type_sg)`. The sg_table is set on `bo->tbo.sg` and on
+   the ttm_tt TTM already made (`TTM_TT_FLAG_EXTERNAL`), so `amdgpu_ttm_backend_bind` takes the dma addresses from
+   it.
+3. Pinned in GTT, then `amdgpu_ttm_alloc_gart`. The gpu address is the GART address DCN fetches.
+4. A GEM handle on the bridge's DRM file, then `drm_mode_addfb2` (XRGB8888 for 'BGRA', XRGB2101010 for 'l10r', the
+   surface's pitch).
+- Handles 8..11. `nmxFlipRelease` unpins and removes the fb and the handle; the sg_table is leaked on purpose.
+- Caps add IMPORT and XRGB2101010 only when `gpu_vm_support` is set.
+
+**Flips on by default.**
+- LaunchDaemon `com.ga403wm.nmx-flip-default` sets `debug.nmxaccel_flip` from
+  `/Library/StrixGraphicsFix/nmx-flip.mode`, which defaults to 2. Mode 2 is proven on this machine.
+- Mode 1 is switched on by hand after the boot: `sudo sysctl -w debug.nmxaccel_flip=1`. Watch `iop: flip:` and
+  `NMX flip: import`. `front_written` counts CoreDisplay drawing into the surface on screen.
+
+Risk: the GPU VM change is in the boot-critical display bring-up. No picture means
+`pkexec scripts/linux-undo-step99.sh` from Linux (NMXGPU back to Step98b, daemon removed, relink on the next boot).
+On macOS: `sudo scripts/macos-install-step99.sh --undo`. Backup: /Library/NullMoth/step99-bk-*.
