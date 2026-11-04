@@ -6333,3 +6333,40 @@ Findings (tools/890m/vtstub, built and tested without root first):
 - The USB device assertions (the owner's USB tether, level 255) only keep USB ports powered. They do not block sleep.
 - A run before this one was spoiled by the script: it restarted `caffeinate -u` during dark wake. The script now waits past the RTC wake first.
 - Next: give macOS an `_S3` (SSDT) so the root domain reaches SLEEP_STATE. Then replace the final PM1 S3 write with the s0ix entry: LPS0 _DSM fn 3/7/5 and the SMU OS_HINT, then idle until a wake event.
+
+## Step109: S0 sleep through Apple's own deep idle path (2026-11-04, installed, reboot pending)
+
+**Finding:** AppleACPIPlatform (BootKC, tools/kc.py) already has a complete S0 sleep path. It is only enabled by an ACPI object:
+- `initPlatformPowerManagement` evaluates `\_SB.LPS0`. An Integer 1 sets the deep idle flag (+0x16d) and publishes `IOPMDeepIdleSupported` on the root domain. `\_GPE.LXEN` = 1 would also enable the wake GPE methods (not used).
+- `resolveSystemStateSupport`: the sleep state mask starts as 0x39 and `AcpiCacheSleepTypeData` drops S3 here. Without the deep idle flag (or a debug flag) S0 is cleared too. "Can sleep" (+0x16c) = S0 or S3.
+- `queryPlatformCanSleep` returns 0xe00002e2 while +0x16c is 0. That is the `kPMPCIUnsupported` seen in Step107c.
+- `sleepPlatform`: S0 calls `acpi_idle_kernel(callback)`, S3 calls `acpi_sleep_kernel`. The S0 callback clears ACPI status, disables all GPEs, enables the wake GPEs and calls `picSleepWake(2)`. `acpi_idle_kernel` then calls `pmCPUHalt(PM_HALT_SLEEP)` and rebases time on return.
+
+**Blocker in the kernel:** `pmCPUHalt` with type 3 and no `pmDispatch` runs `cli; wbinvd; hlt` and panics ("back from Halt") if it ever returns. Nothing registers `pmDispatch` on AMD (`machdep.xcpm.mode: 0`). So LPS0 alone would hang the first sleep.
+- `pmKextRegister(0x66, dispatch, callbacks)` is exported in com.apple.kpi.unsupported.
+- With `dispatch == NULL` it only fills the callbacks.
+- A wrong version, or a second registration, panics.
+- All 67 kernel loads of `pmDispatch` check the field before calling it, including `thread_tell_urgency` (+0xc8, checked at entry). So a table with only `pmCPUHalt` (+0x48) is safe.
+
+**Changes:**
+- `acpi/SSDT-S0IDLE.dsl` → `efi/OC/ACPI/SSDT-S0IDLE.aml`: 69 bytes, hand-assembled by tools/mk_ssdt_s0idle.py (no iasl). `Method (\_SB.LPS0) { If (_OSI ("Darwin")) Return (One); Return (Zero) }`. Config ACPI Add entry 8.
+- `kexts/StrixS0ix` 0.1.0, matched on PEP (AMDI000A):
+  - Gated on Darwin 25, MONITORX, and the lcpu state at +0x58 reading RUN, checked through the callbacks before registering.
+  - Registers `pmCPUHalt`:
+    - Non-boot CPUs, or an unarmed boot CPU: `lcpu.state = HALT`, then `wbinvd; hlt` forever, as stock.
+    - Armed boot CPU: MONITORX/MWAITX C1 (IRQ break with IF=0, 0.25 s TSC timer), polling PM1 (0x800) and GPE0 (0x820/0x824, enabled bits only) until a wake event. It also stops on a long run of immediate breaks (0x80000000) or the `s0ix_maxsec` safety limit (default 300 s, 0x40000000).
+  - Top-level power child of the root domain. On real sleep (state 0) it runs PEP MS _DSM 3/7/5 (Microsoft GUID, rev 0) and arms the idle. On wake (state 1) it runs 6/8/4 and publishes S0ix,* (LastWakeEvent, LastIdleMs, IdleEntries).
+  - Restart and power-off never arm.
+  - No hook: holds a CPU assertion, so sleep is blocked rather than hung.
+  - Boot-args: `-s0ixoff`, `-s0ixnodsm`, `s0ix_maxsec`.
+- `scripts/macos-install-step109.sh` (`--undo`): kext into the AuxKC (all NMXGPU caves re-checked), SSDT to the ESP, config entry, and backups in /Library/NullMoth/step109-bk-* and `config.plist.pre-step109`.
+
+**Not yet:** the SMU OS_HINT (amd_pmc) for S0i3 residency. NMXGPU's s0ix suspend (Step107) gets its first real run on this sleep.
+
+**Test after the reboot:**
+1. `ioreg -r -c StrixS0ix` should show HaltHook Yes and DsmMask 0x1f9. The boot log should say `ACPI: sleep states S0 S4 S5`.
+2. `scripts/macos-syssleep-test.sh 60`, hands off. Expect PMRD `ON_STATE->SLEEP_STATE` and `S0ix,LastWakeEvent` 0x400 (RTC).
+
+**Recovery if it hangs:**
+- Power button; if that does nothing, hold power 10 s.
+- Boot with `-s0ixoff`, or restore `config.plist.pre-step109` from Linux.

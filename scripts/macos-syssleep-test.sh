@@ -14,7 +14,7 @@ SAVE=~/ga403-logs/pmset-before-syssleep.txt
 OUT=~/ga403-logs/syssleep-$(date +%Y%m%d-%H%M%S); mkdir -p "$OUT"
 root() { osascript -e "do shell script \"$1\" with prompt \"$2\" with administrator privileges" >/dev/null; }  # rc != 0: cancelled / wrong password
 collect() {  # $1 = start time
-    /usr/bin/log show --start "$1" --predicate 'senderImagePath CONTAINS "NMXGPU" OR senderImagePath CONTAINS "NMXAccel" OR senderImagePath CONTAINS "NMXBacklight" OR senderImagePath CONTAINS "NVRM" OR eventMessage CONTAINS "amdgpu"' \
+    /usr/bin/log show --start "$1" --predicate 'senderImagePath CONTAINS "NMXGPU" OR senderImagePath CONTAINS "NMXAccel" OR senderImagePath CONTAINS "NMXBacklight" OR senderImagePath CONTAINS "NVRM" OR senderImagePath CONTAINS "StrixS0ix" OR eventMessage CONTAINS "amdgpu"' \
         2>/dev/null | cut -c1-260 > "$OUT/kernel.txt"
     /usr/bin/log show --start "$1" --predicate 'process == "WindowServer" AND NOT eventMessage CONTAINS "gamma" AND (eventMessage CONTAINS[c] "timed out" OR eventMessage CONTAINS "displayDidWake" OR eventMessage CONTAINS "displayWillSleep" OR eventMessage CONTAINS "System is awake")' \
         2>/dev/null | cut -c1-240 > "$OUT/windowserver.txt"
@@ -22,12 +22,14 @@ collect() {  # $1 = start time
         2>/dev/null | cut -c1-23,80-220 > "$OUT/pmrd.txt"
     pmset -g log | grep -E "^$(date +%Y-%m-%d).*(Sleep|Wake|DarkWake|Failure|Slow|Timeout)" | tail -15 > "$OUT/pmset.txt"
     ioreg -r -c NMXPowerKeep -d 1 | grep PowerKeep > "$OUT/powerkeep.txt"
-    echo "== timeline";  grep -E "NMXPowerKeep: system|NullMoth GPU: (setPowerState|suspend|resume)" "$OUT/kernel.txt" | cut -c1-23,100-260
+    ioreg -r -c StrixS0ix -d 1 | grep 'S0ix,' > "$OUT/s0ix.txt"
+    echo "== timeline";  grep -E "StrixS0ix|NMXPowerKeep: system|NullMoth GPU: (setPowerState|suspend|resume)" "$OUT/kernel.txt" | cut -c1-23,100-260
     echo "== amdgpu s0ix / S3 hints"; grep -iE "s0ix|suspend-to-idle|S3|psp.*load|ring .* timeout|failed" "$OUT/kernel.txt" | cut -c1-23,100-260 | head -12
     echo "== WindowServer"; cut -c1-23,100-240 "$OUT/windowserver.txt" | tail -6
     echo "== root domain (SLEEP_STATE = slept; f->9 then 9->f = dark wake only)"; cat "$OUT/pmrd.txt"
     echo "== pmset";     cat "$OUT/pmset.txt"
     echo "== NMXPowerKeep"; cat "$OUT/powerkeep.txt"
+    echo "== StrixS0ix (LastWakeEvent: 0x400 RTC, 0x100 power button, 0x10000+n GPE n, 0x40000000 safety timeout)"; cat "$OUT/s0ix.txt"
     echo "logs: $OUT"
 }
 case ${1:-} in
