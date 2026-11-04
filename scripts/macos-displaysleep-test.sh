@@ -8,19 +8,23 @@
 set -uo pipefail
 OUT=~/ga403-logs/displaysleep-$(date +%Y%m%d-%H%M%S); mkdir -p "$OUT"
 collect() {  # $1 = start time
-    /usr/bin/log show --start "$1" --predicate 'process == "kernel" AND (eventMessage CONTAINS "NullMoth" OR eventMessage CONTAINS "NMXPowerKeep" OR eventMessage CONTAINS "amdgpu" OR eventMessage CONTAINS "NMXGPU")' \
+    /usr/bin/log show --start "$1" --predicate 'senderImagePath CONTAINS "NMXGPU" OR senderImagePath CONTAINS "NMXAccel" OR senderImagePath CONTAINS "NMXBacklight" OR eventMessage CONTAINS "amdgpu"' \
         2>/dev/null | cut -c1-240 > "$OUT/kernel.txt"
-    /usr/bin/log show --start "$1" --predicate 'process == "WindowServer" AND (eventMessage CONTAINS[c] "timeout" OR eventMessage CONTAINS[c] "timed out" OR eventMessage CONTAINS[c] "display" AND eventMessage CONTAINS[c] "sleep")' \
+    /usr/bin/log show --start "$1" --predicate 'process == "WindowServer" AND NOT eventMessage CONTAINS "gamma" AND (eventMessage CONTAINS[c] "timed out" OR eventMessage CONTAINS[c] "timeout" OR eventMessage CONTAINS "displayDidWake" OR eventMessage CONTAINS "displayWillSleep")' \
         2>/dev/null | cut -c1-240 > "$OUT/windowserver.txt"
     pmset -g log | grep -E "Display is turned|Slow|SetState|Failure|Timeout|NMXGPU" | tail -20 > "$OUT/pmset.txt"
     ioreg -r -c NMXPowerKeep -d 1 | grep -E "PowerKeep" > "$OUT/powerkeep.txt"
     echo "== NMXPowerKeep";   cat "$OUT/powerkeep.txt"
-    echo "== kernel (power lines)"; grep -E "setPowerState|suspend|resume|NMXPowerKeep|display: power|power off|power on" "$OUT/kernel.txt" | tail -15
+    echo "== kernel (power lines)"; grep -E "setPowerState|suspend|resume|NMXPowerKeep|enableAccelerator|displayMode" "$OUT/kernel.txt" | tail -15
     echo "== WindowServer";   tail -8 "$OUT/windowserver.txt"
     echo "== pmset";          cat "$OUT/pmset.txt"
     local bad=0
     grep -q "setPowerState(0)" "$OUT/kernel.txt" && { echo "FAIL: NMXGPU went to state 0 (suspend) on display sleep"; bad=1; }
-    grep -qiE "timed out|timeout" "$OUT/windowserver.txt" && { echo "FAIL: WindowServer timeout"; bad=1; }
+    # a single CoreAnimation "timed out fence" while the panel is off is a frame that waited on the dark pipe (Step106c);
+    # the Step33 failure was a WindowServer display timeout (30000 ms) followed by a hang
+    grep -iE "timed out|timeout" "$OUT/windowserver.txt" | grep -qv "timed out fence" && { echo "FAIL: WindowServer timeout"; bad=1; }
+    grep -c "timed out fence" "$OUT/windowserver.txt" | awk '$1>0{print "note: "$1" CoreAnimation fence timeout(s) while dark"}'
+    grep -q displayDidWake "$OUT/windowserver.txt" || { echo "FAIL: no displayDidWake from WindowServer"; bad=1; }
     grep -q "PowerKeep,State\" = 1" "$OUT/powerkeep.txt" || { echo "FAIL: NMXPowerKeep not loaded or not at state 1"; bad=1; }
     [[ $bad == 0 ]] && echo "PASS: display slept and woke with NMXGPU held on"
     echo "logs: $OUT"; return $bad

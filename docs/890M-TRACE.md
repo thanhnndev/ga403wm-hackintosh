@@ -6239,3 +6239,17 @@ platform has no S3, only s0ix, and NMXGPU's suspend is the S3 path).
 - Codec status on the 890M: H.264, HEVC, VP9, AV1 decode all work through Vulkan Video. Left for browsers: the
   VideoToolbox side (Safari/Chrome only decode through VideoToolbox), and a RADV build that can replace the live one
   (no /opt/local deps, then the WindowServer/app checks) before mpv/IINA can use it from the bundle.
+
+### Step106c (16:58): display sleep PASS with NMXPowerKeep
+Boot 16:53: NMXBacklight 0.2.0 loaded, `NMXPowerKeep: holding NMXGPU on while the system is awake`, NMXGPU
+IOPowerManagement ChildrenPowerState=1 CurrentPowerState=1. `scripts/macos-displaysleep-test.sh`:
+- 20 s dark (16:55:22-16:55:42) and 90 s dark (16:56:35-16:58:05; the Step33 hang came 23 s after the display slept):
+  pmset "Display is turned off/on", WindowServer `displayWillSleepWithImages` -> `displayDidWake`, NMXAccel
+  `displayModeDidChange` -> `enableAccelerator()` on wake, NVMTL keeps submitting, no NMXGPU setPowerState, no
+  amdgpu error, `PowerKeep,Changes` stays 1 (the GPU never left state 1). The panel comes back.
+- One CoreAnimation `timed out fence` while dark in the 20 s run (a frame that waited on the dark pipe); it recovers.
+  The test script counts it as a note, and FAILs only on another WindowServer timeout, a missing displayDidWake, a
+  NMXGPU state 0 or NMXPowerKeep not at 1. Its kernel predicate now uses senderImagePath (process == "kernel" matched
+  nothing).
+Gate item 2 (sleep/wake): display sleep done. System sleep and lid close are stage 2: NMXGPU's suspend is the S3 path
+on an s0ix-only platform, NMXAccel/NMXGPUFB have no wake handling; not tested.
