@@ -5696,3 +5696,11 @@ On macOS: `sudo scripts/macos-install-step99.sh --undo`. Backup: /Library/NullMo
 - The fps figures follow what the desktop draws; they are not a like-for-like benchmark.
 - Still to check: what is on screen with mode 1 (stale or torn pixels if CoreDisplay drew into the surface on
   screen; `front_written` has stayed 0). The default mode is still 2 (`/Library/StrixGraphicsFix/nmx-flip.mode`).
+- The owner checked the screen in mode 1 (windows dragged, pages scrolled, typing): it looks normal, with no
+  tearing, flicker or garbage. After that use: 17042 submitted, 17041 latched (one in flight), 3 imports. Fallback,
+  timeouts, tripped, front_written, hw_mismatch and import_fail were all 0.
+- **Mode 1 is now the boot default**: `/Library/StrixGraphicsFix/nmx-flip.mode` = 1. To go back to mode 2, write 2
+  there. The daemon's fallback when the file is missing stays 2.
+
+Next: a descriptor-set cache in NVMTL (WindowServer CPU), the root cause of the boot-time interrupt loss (H2), and
+the xkpi source fixes (mm lifetime, process records) in place of the Step97b cave.
