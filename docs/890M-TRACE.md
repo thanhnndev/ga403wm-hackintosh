@@ -5983,3 +5983,40 @@ After the reboot:
 3. Sandboxed: `open -n --env NVMTL_ENABLE=1 -a TextEdit` -> no `deny … /dev/dri`, plugin `vk: UP`, `drm-xnu: … opened
    through NMXAccel`; then a sandboxed browser GPU process.
 4. Then the allow-list rungs (named apps, then `*`).
+
+## Step102 boot (2026-11-04 14:13, NVIDIA 2.7.1 + Step102): desktop lag = WindowServer on the RTX; sandboxed Metal works
+
+Lag root cause: WindowServer ran its Metal device on the RTX 5060 and copied every frame out through system memory
+(`headless GPU: the display belongs to another GPU - IOSurfaces are copied out`); WindowServer used 7:16 CPU in its
+first 8 min (~90 %, was ~27 %). The plugin's old WindowServer rule handed the compositor to NVIDIA whenever an NVAccel
+exists (`the 1002 accelerator does not claim this process -- the NVIDIA display's accelerator must`). On 2.5.2 no
+NVAccel was published, so only the AMD accelerator was asked (13:21 boot: one initWithAcceleratorPort, vendor 1002);
+2.7.1 publishes a headless NVAccel (`NVAccelHeadless = Yes`, debug.nvaccel_headless 1) while NMXAccel owns the panel
+(debug.nmxaccel_armed 1, nmxaccel_headless 0).
+Not a DRM-node mix-up (owner asked: on Linux renderD128 was the dGPU, renderD129 the iGPU): on macOS NVIDIA has no
+DRM node, `/dev/dri` holds only card0 + renderD128 = amdgpu 3.61.0 (tools/890m/build/drm-open). Same class of bug,
+though: the default picked the dGPU by presence, not by who drives the panel.
+
+Fix, plugin 5be0c73/497348c: in WindowServer, when NMXAccel's display pipe is armed and not headless, the AMD
+accelerator claims the process and a headless NVAccel does not (`the panel is on NMXAccel's display pipe -- the
+headless NVIDIA accelerator does not claim this process`); without an armed NMX pipe the old NVIDIA rule stays.
+New `NVMTL_GPU=amd|intel|nvidia` picks the GPU for an app (first step of the per-app choice). Takes effect at the next
+WindowServer start.
+
+Step102 (sandboxed apps) verified on this boot, after two plugin fixes found with a sandbox-exec harness
+(scratchpad h.c, libdrm + libdrm_amdgpu + the shim, no root):
+- ea3daae: libdrm on macOS tells primary from render by `access("/dev/dri/card<minor>")`; the shim faked card128 as
+  present, so the render fd looked primary and amdgpu_get_auth failed. Only render nodes (128..191) are faked now.
+- bd6f2cb: WindowServer is sandboxed too (sandbox_check 1) but may open the node; the shim now arms only where
+  `sandbox_check(pid, "file-read-data", PATH, "/dev/dri/renderD128")` refuses it (WindowServer 0, TextEdit 1), and
+  there skips the refused real call (one violation report per process instead of one per open/stat).
+Results: harness inside sandbox-exec: real open -1, IOKit open fd 3, drmGetNodeTypeFromFd 2, amdgpu_device_initialize
+0 (3.61). TextEdit (App Sandbox, NVMTL_ENABLE=1 NVMTL_GPU=amd): `drm-xnu: sandbox-safe DRM path armed … this
+process's sandbox refuses /dev/dri`, kernel `drm-uc: pid … opened /dev/dri/renderD128 for its sandbox`, `vk: UP …
+AMD Radeon 890M Graphics (RADV STRIX1)`, G-SUB submits; no ring timeout/fault. Unsandboxed nvmtltest (NVMTL_GPU=amd)
+still correct (2.39 ms); forced IOKit path in an unsandboxed tool reaches the device too.
+Installed plugin: bd6f2cb (/Library/GPUBundles, re-signed 07e79c63). Apps without NVMTL_GPU now default to NVIDIA
+when NVAccel exists (nvmtl_vk_vendor) - to be decided with the hybrid work.
+
+Next boot: WindowServer on the 890M again (one initWithAcceleratorPort accepted, vendor 1002; NVIDIA port refused),
+WS CPU back to ~27 %, desktop smooth; NVRM 2.7.1 GSP state.
