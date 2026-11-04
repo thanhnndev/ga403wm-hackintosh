@@ -34,7 +34,7 @@ mkdir -p "$OBJ"
 build_kext() {
   local name="$1" dir="$2"; shift 2
   local out="build/$name.kext" objs=() extra_cxx=()
-  case "$name" in StrixProbe|StrixGOP|StrixMetalGate) extra_cxx+=(-fno-c++-static-destructors -Wall -Wextra -Werror -MMD) ;; esac
+  case "$name" in StrixProbe|StrixGOP|StrixMetalGate|NMXBacklight) extra_cxx+=(-fno-c++-static-destructors -Wall -Wextra -Werror -MMD) ;; esac
   # StrixAccel subclasses the IOAcceleratorFamily2 private classes through a generated header: its hidden-overload
   # and tag warnings are noise, everything else stays on.
   case "$name" in StrixAccel) extra_cxx+=(-fno-c++-static-destructors -Wall -Wextra -Wno-unused-parameter -Wno-overloaded-virtual -Wno-mismatched-tags -MMD) ;; esac
@@ -75,6 +75,9 @@ if [ ${#TARGETS[@]} -gt 0 ] && want StrixMetalGate "${TARGETS[@]}"; then
 fi
 if [ ${#TARGETS[@]} -gt 0 ] && want StrixGOP "${TARGETS[@]}"; then
   build_kext StrixGOP kexts/StrixGOP kmod_info.c StrixGOP.cpp
+fi
+if [ ${#TARGETS[@]} -gt 0 ] && want NMXBacklight "${TARGETS[@]}"; then
+  build_kext NMXBacklight kexts/NMXBacklight kmod_info.c NMXBacklight.cpp
 fi
 if [ ${#TARGETS[@]} -gt 0 ] && want StrixAccel "${TARGETS[@]}"; then
   build_kext StrixAccel kexts/StrixAccel kmod_info.c StrixAccel.cpp

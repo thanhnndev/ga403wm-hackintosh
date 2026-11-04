@@ -1,0 +1,56 @@
+# H2 (Step100 irqfix): no printf on the IH consumer thread. Applies after amdgpu-fence-read-flush.patch and
+# amdgpu-fence-irq-diag.patch (append to patches/series after amdgpu-fence-irq-diag.patch).
+--- a/drivers/gpu/drm/amd/amdgpu/amdgpu_fence.c	2026-11-04 10:53:47
++++ b/drivers/gpu/drm/amd/amdgpu/amdgpu_fence.c	2026-11-04 10:54:18
+@@ -104,6 +104,11 @@
+ 		*drv->cpu_addr = cpu_to_le32(seq);
+ }
+ 
++/* NullMoth (H2): stale fence-read statistics, written lock-free from IRQ context, read anywhere */
++unsigned long nmx_fence_stale_reads;
++u64 nmx_fence_stale_last;
++struct amdgpu_ring *nmx_fence_stale_ring;
++
+ /**
+  * amdgpu_fence_read - read a fence value
+  *
+@@ -121,17 +126,22 @@
+ 		/*
+ 		 * NullMoth: the fence page is written by the GPU through system memory and the kernel's mapping is
+ 		 * write-back. A line already in the CPU's cache hides the GPU's write (fences "never" complete, only the
+-		 * fallback timer fires). Flush the line, read again, and count/log every case where the plain read was stale.
++		 * fallback timer fires). Flush the line, read again, and count every case where the plain read was stale.
++		 *
++		 * H2: never print here. amdgpu_fence_read runs inside amdgpu_fence_process, i.e. on the IH ring's only
++		 * consumer (the MSI vector's IOWorkLoop thread). A kernel printf there can block for seconds while the
++		 * verbose console is busy; rptr is then never written, the IH (RPTR_REARM) sends no further MSI, and every
++		 * fence falls back to the 0.5 s timer. The counters are read from process context (fallback log, sysctl).
+ 		 */
+-		static int stale_logged;
+ 		u32 plain = le32_to_cpu(*drv->cpu_addr);
+ 
+ 		__asm__ __volatile__("clflush %0" : : "m"(*(volatile char *)drv->cpu_addr) : "memory");
+ 		__asm__ __volatile__("mfence" : : : "memory");
+ 		seq = le32_to_cpu(*drv->cpu_addr);
+-		if (seq != plain && stale_logged < 40) {
+-			stale_logged++;
+-			printf("NullMoth: STALE fence read on %s: cached %u, memory %u\n", ring->name, plain, seq);
++		if (seq != plain) {
++			nmx_fence_stale_reads++;
++			nmx_fence_stale_last = (u64)plain << 32 | seq;
++			nmx_fence_stale_ring = ring;
+ 		}
+ 	}
+ 	else
+@@ -348,8 +358,9 @@
+ 
+ 		if (shown < 60) {
+ 			shown++;
+-			printf("NullMoth: fence fallback on %s: last_seq %u -> %u, sync_seq %u, irqs so far %lu\n", ring->name,
+-			       before, atomic_read(&ring->fence_drv.last_seq), ring->fence_drv.sync_seq, nmx_irq_dispatched);
++			printf("NullMoth: fence fallback on %s: last_seq %u -> %u, sync_seq %u, irqs so far %lu, stale reads %lu\n",
++			       ring->name, before, atomic_read(&ring->fence_drv.last_seq), ring->fence_drv.sync_seq,
++			       nmx_irq_dispatched, nmx_fence_stale_reads);
+ 		}
+ 		DRM_WARN("Fence fallback timer expired on ring %s\n", ring->name);
+ 	}

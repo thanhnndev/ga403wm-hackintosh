@@ -5704,3 +5704,45 @@ On macOS: `sudo scripts/macos-install-step99.sh --undo`. Backup: /Library/NullMo
 
 Next: a descriptor-set cache in NVMTL (WindowServer CPU), the root cause of the boot-time interrupt loss (H2), and
 the xkpi source fixes (mm lifetime, process records) in place of the Step97b cave.
+
+## Step100: one batch: H2 root cause fix, stale xkpi records, NVMTL descriptor cache, brightness (2026-11-04, installed, reboot pending)
+
+Installed by `scripts/macos-install-step100.sh` (undo: `--undo`, or `scripts/linux-undo-step100.sh` from Linux).
+NMXGPU 1907d9f9 (Step99) -> **d4830f51**; all KC probes present (Step97b, Step99, irqfix, mm fix, NMXBacklight).
+
+**H2 (boot-time interrupt loss): the IH thread blocks in a kernel printf.** `amdgpu_fence_read`'s stale-read
+diagnostic printf (inlined into `amdgpu_fence_process`, 0x6e88b3) runs on the MSI's interrupt thread. With `-v` every
+printf also draws on the video console, and the console stalls for seconds during the first modeset (`nmx_fb_open`).
+The handler then never writes rptr back; with RPTR_REARM the IH sends no further MSI, so fences complete only through
+the 0.5 s fallback. Evidence (00:13 boot): IH STATUS has an interrupt pending, no overflow; event source produced 34,
+consumed 33; software rptr 0x520 vs hardware 0x500; the IRQ thread's last line is `STALE fence read on sdma0` and the
+cmpxchg after the printf never ran; NMXAccel stalled in IOLog at the same instant. Same on the 17:10 boot (recovered
+after 1.5 s); the 23:09 boot matches in timing (loss within 3 ms of the first mode set on all three).
+Fix (`scripts/nmx-irqfix/`): the printf set-up at 0x6e88a0 becomes `call stale_note` (count only, never prints);
+irqwatch rebuilt in its region as a safety net that names a blocked handler. Source: `amdgpu-fence-read-noprint.patch`.
+
+**Stale xkpi records (root cause behind Step97b).** Thread records (keyed by thread_t) and process records (keyed by
+proc_t) are never removed and xnu reuses both pointers, so a new thread could run with a dead process's task and mm.
+`scripts/nmx-mmfix2/`: the lookups in `nmx_thread_get` (0x6d7530) and `nmx_proc_for` (0x6d73c0) now also compare the
+stored tid / pid (calling thread_tid / proc_pid through the already-linked call sites); a mismatch unkeys the record
+and a fresh one is built. Capped at 4096 per kind. Log: `NMX mmfix2: stale xkpi records retired: threads N, procs M`.
+Step97b's bypass and the mm_dtor `ret` stay as a safety net. Source fix: nmx-src fork branch `mm-lifetime` 163d117.
+
+**NVMTL descriptor-set cache** (plugin fork branch `desc-cache` d5da629, UUID 7927EB9E): see
+`scripts/nvmtl-desccache/NOTES.md`. CPU test: 157,674 -> 5,059 new sets per 120k draws. Off switch:
+`NVMTL_NO_DESCCACHE=1` (`install.sh off`) or `touch /tmp/nvmtl-desccache-off`. Stats line every 60 s.
+
+**Brightness: NMXBacklight.kext** (`kexts/NMXBacklight`, BSD). Matches NMXAMDFB; publishes the "backlight"
+IODisplayParameterHandler, gives that framebuffer object a vtable copy whose getAppleSense says LCD (so IOGraphics builds
+AppleBacklightDisplay), and applies levels through amdgpu: nmx_backlight_next -> linux_backlight_update_status (percent)
+-> amdgpu_dm -> dc_link_set_backlight_level_nits. NMXGPU functions are checked byte for byte first. Boot-arg
+`-nmxbloff` disables it. Display name needed no change (System Information: "Samsung ATNA40CU05-0 (OLED)"; System
+Settings always says "Built-in Retina Display"). More HiDPI sizes need scaled-mode support in NMXGPUFB
+(IOFBScalerInfo, validate/setDetailedTimings, a larger client framebuffer scaled by DC): not in this batch.
+
+**Check after boot:**
+- `/usr/bin/log show --last boot --predicate 'sender == "NMXGPU"' | grep -E "irqwatch|STALE|mmfix"`: no irqwatch, no
+  sdma STALE lines; mmfix2 counts if any records were recycled; no `NMX mmfix:` (Step97b) lines.
+- `/usr/bin/log show --last boot | grep NMXBacklight`: "handler published", `display not yet`, "brightness parameters
+  on AppleBacklightDisplay", then "N% applied" on slider moves. `ioreg -lw0 | grep -E "AppleBacklightDisplay"`.
+- `scripts/nvmtl-desccache/install.sh status` (hit/miss), `top`, `tools/890m/present-rate.sh 10`.
