@@ -6325,3 +6325,11 @@ Findings (tools/890m/vtstub, built and tested without root first):
   - hands off all input during the test;
   - log the PMRD START/prevented/full-wake lines;
   - Wi-Fi no longer touched (owned by the AWDL branch).
+
+**System sleep, hands-off rerun (17:46:00):**
+- The input problem is gone: powerd's darkwakelinger ended at 17:46:30.
+- The only blocker left is `System sleep prevented by kPMPCIUnsupported`. It held the machine in dark wake until the RTC wake at 17:47:10.
+- This is the platform's "can't sleep" flag (AppleACPIPlatform/PCI host bridge, assertion `com.apple.pci.hostBridge.preventSleep`). It matches the ACPI table having no _S3 (`ACPI: sleep states S4 S5`, DSDT `XS3`).
+- The USB device assertions (the owner's USB tether, level 255) only keep USB ports powered. They do not block sleep.
+- A run before this one was spoiled by the script: it restarted `caffeinate -u` during dark wake. The script now waits past the RTC wake first.
+- Next: give macOS an `_S3` (SSDT) so the root domain reaches SLEEP_STATE. Then replace the final PM1 S3 write with the s0ix entry: LPS0 _DSM fn 3/7/5 and the SMU OS_HINT, then idle until a wake event.

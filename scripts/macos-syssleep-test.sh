@@ -45,8 +45,9 @@ echo "start $T0, sleep 10 s after the password, RTC wake at $W. Hands off the ke
 # caffeinate is stopped inside the root step, so a cancelled password leaves everything as it was
 root "/usr/bin/pkill -x caffeinate; /usr/bin/pmset -a hibernatemode 0 standby 0 powernap 0 tcpkeepalive 0 proximitywake 0 womp 0; /usr/bin/pmset schedule wake '$W'; /usr/bin/perl -e 'select(undef,undef,undef,10)'; /usr/bin/pmset sleepnow" "Test sleep cả máy (s0ix): pmset cho test, hẹn giờ wake, sleep sau 10 s. Đừng chạm phím/chuột sau khi nhập mật khẩu" \
     || { echo "admin step cancelled or the password was wrong: nothing changed, no sleep"; exit 1; }
-# returns once the machine is awake again
-perl -e 'select(undef, undef, undef, 15)'
+# pmset sleepnow returns at once; caffeinate -u declares the user active, so restarting it while the machine is still in
+# dark wake wakes it fully (second Step107 run). Wait past the RTC wake (sleep 10 s + N s + margin) before restarting it.
+perl -e 'select(undef, undef, undef, $ARGV[0])' $((N+25))
 nohup caffeinate -dimsu >/dev/null 2>&1 &
 disown
 collect "$T0"
