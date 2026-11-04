@@ -44,3 +44,23 @@ So only the kernel driver is ours. Everything between the driver and WindowServe
    (recommended). The alternative, writing the Metal driver first, delays any WindowServer relief by a very long time.
 2. Time-box M2: if build 12's VM/page-directory data plus a Linux comparison do not explain the stall, stop adding diagnostics and
    instead mirror Linux's exact VMID/page-table/TLB flush sequence in the port.
+
+## Backlog (2026-11-04, after Step100)
+
+Done since this audit: DC display on the 890M (NMXGPU), page flips and zero copy (Step98-99), H2 interrupt-loss root
+cause (Step100 irqfix), stale xkpi records (Step100 mmfix2), brightness slider via amdgpu DC (NMXBacklight, owner
+verified), cave registry check (`scripts/nmx-caves/check.py`).
+
+Open, in order:
+1. **Measure the WindowServer CPU fix**: plugin e34b10d (framebuffer-fetch binding no longer drops the binding mask)
+   is installed and loads at the next WindowServer start; expect `desc-cache stats ... long` near 0 and WindowServer
+   well below the 69 % of the Step100 boot.
+2. **HiDPI scaled modes** (owner: "not now, keep it on the roadmap"). System Settings shows one resolution tile and no
+   refresh menu because NMXGPUFB reports a single mode. Root cause and plan: `docs/890M-TRACE.md`, section
+   "HiDPI scaled modes: root cause and plan". Pieces: more backing sizes reported from NMXBacklight's vtable copy,
+   a per-mode VRAM buffer plus plane src rect = fb size in the flip cave (DC plane scaler), NMXAccel copy fallback
+   for a surface size different from the home buffer. One reboot batch; fallback boot-arg `-nmxbloff`.
+3. xkpi mm lifetime as a source build: fork branch `mm-lifetime` 163d117 (the binary steps would have to move into
+   source first; until then Step97b's mm_dtor `ret` leak and the mmfix2 cave stay).
+4. Remaining prints on the IRQ path (`___drm_err`, VM-fault messages) can block like H2 did during a console stall;
+   consider dropping `-v` from boot-args.
