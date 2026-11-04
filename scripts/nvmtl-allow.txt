@@ -1,0 +1,44 @@
+# rung 3: everyone; -Name denies
+# Step70 (2026-10-24): "*" was turned off while the 890M gfx ring hung on an app's first render job; the H2 interrupt
+# fix (Step100) cured that. Step104 (2026-11-04): rungs 1-2 clean, "*" on.
+# mtlprobe / nvmtltest / nvmtlrender stay allowed by name inside the plugin.
+# never: strix-headroom-hold (it holds EDR headroom on WindowServer's behalf; a GPU job there hung GFX in Step35)
+-strix-headroom-hold
+*
+!WindowServer
+# rung 1 (2026-11-04, Step103): named apps, sandboxed ones reach the GPU through NMXAccel's NMDR client (Step102).
+# Apps get the 890M unless NVMTL_GPU=nvidia. Remove a line (or add -Name) to send an app back to CPU drawing.
+TextEdit
+Preview
+Calculator
+Notes
+Terminal
+Safari
+com.apple.WebKit.GPU
+# rung 2 (2026-11-04, Step104): system UI, Apple apps, Chromium browsers (their GPU helper process draws)
+Finder
+Dock
+SystemUIServer
+ControlCenter
+NotificationCenter
+System Settings
+Mail
+Photos
+Music
+Messages
+Maps
+Calendar
+Reminders
+FaceTime
+QuickTime Player
+Google Chrome
+Google Chrome Helper (GPU)
+# Chrome 15x / Edge: the GPU process is the plain helper (--type=gpu-process)
+Google Chrome Helper
+Google Chrome Helper (Aperitif)
+Google Chrome Helper (Aperitif GPU)
+Microsoft Edge
+Microsoft Edge Helper (GPU)
+Microsoft Edge Helper
+Microsoft Edge Helper (Aperitif)
+Microsoft Edge Helper (Aperitif GPU)

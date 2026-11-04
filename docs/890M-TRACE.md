@@ -6049,3 +6049,36 @@ WS CPU back to ~27 %, desktop smooth; NVRM 2.7.1 GSP state.
   in software (a WebGL2 page reports OK). Fix needs the plugin on a path that profile can map (all on the sealed system
   volume) or another route; open item, see roadmap.
 - Undo: put ~/ga403-logs/nvmtl-allow.before-step103.txt back (root 644).
+
+## Step104 (2026-11-04 15:05): allow list to `*`, Chromium WebGL on the 890M, About This Mac VRAM
+
+- Browsers: Chrome 155 and Edge (fresh profiles; names added: `Google Chrome Helper (GPU)`, `… (Aperitif)`,
+  `… (Aperitif GPU)`, same for Edge) - WebGL renderer string `ANGLE Metal Renderer: AMD Radeon 890M Graphics
+  (RADV STRIX1) (NVMTL over …)`: WebGL really runs on the iGPU. A profile whose first GPU init failed keeps
+  `--use-gl=disabled`; a fresh profile (or chrome://gpu reset) clears it. One Chrome Helper SIGTRAP at 14:56 is in
+  `liboptimization_guide_internal` (on-device model service, its own WebGPU/Metal use) - open, watch.
+- Rung 2 (Finder, Dock, SystemUIServer, ControlCenter, NotificationCenter, System Settings, Mail, Photos, Music,
+  Messages, Maps, Calendar, Reminders, FaceTime, QuickTime Player): all load RADV and open NMDR clients; Dock does
+  not use Metal. NotificationCenter first said `vk: zero physical devices`: its sandbox allows reading
+  /dev/dri/renderD128 but denies `file-ioctl` (`deny(1) file-ioctl … (_IO "d" 21)`), so the read-only gate did not
+  arm drm-xnu. Plugin 820624d (fork desc-cache): arm when either file-read-data or file-ioctl is refused.
+  Installed live (6ba40a36abc42bea); NotificationCenter then `node 128 opened through NMXAccel`, renders.
+- Rung 3: `*` on (after `-strix-headroom-hold`), scripts/nvmtl-allow.txt = live list. 16 more apps launched
+  (App Store, Books, Weather, Stocks, Home, Podcasts, TV, Freeform, Font Book, Activity Monitor, Console, Journal,
+  Passwords, Clock, Contacts): all RADV, no crash report, no GPU timeout/fault/reset. Undo `*`:
+  ~/ga403-logs/nvmtl-allow.before-step104-star.txt.
+- Perf note: WindowServer 186-197 % CPU with ~30 apps open (Weather/TV/Memoji animating), ~50-70 % after closing
+  them (boot baseline ~32 %). Sample: most `__ioctl` time is `drmSyncobjWait` (blocked, not spinning); CPU side is
+  CoreAnimation layer prep. Follow-up: per-frame cost with many clients.
+- Safari WebGL: still software. Research: the WebKit GPU process profile (cryptex
+  StagedFrameworks/Safari/WebKit.framework/…/com.apple.WebKit.GPUProcess.sb) maps executables only from sealed
+  /System paths and cryptex grafts; `/Library/GPUBundles` is read-only there. Tried: (1) WebGL out of the GPU
+  process (`UseGPUProcessForWebGLEnabled` off, WKWebView harness) - WebContent denies the same file-map-executable,
+  WebGL disappears; (2) binaries in `Cryptexes/Incoming/OS/usr/lib` (listed in the profile) - the cryptex dirs are
+  read-only grafts (EROFS). Remaining route: a kernel-side exception in Sandbox's mmap check for the signed plugin
+  files (own step).
+- About This Mac "#display 19 MB": the 890M had no `model`/`VRAM,totalMB`, so it showed the IOName (`#display`,
+  injected on purpose) and the framebuffer size (2880x1800x4). config.plist DeviceProperties
+  PciRoot(0x0)/Pci(0x8,0x1)/Pci(0x0,0x0): `model`="AMD Radeon 890M", `VRAM,totalMB`=512, `VRAM,totalsize`=512 MiB
+  (backup config.plist.vram-20261104-144958, occonfig clean). Verify after the next reboot
+  (system_profiler SPDisplaysDataType).

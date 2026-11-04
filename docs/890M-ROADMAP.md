@@ -18,9 +18,10 @@ the headless accelerator, then replace the NVIDIA userland.
 
 Daily-use gate (OLED + apps on the 890M), in order:
 1. App Metal: bounded app jobs are clean again after H2 (done 2026-11-04). Left: (a) sandboxed apps, see below;
-   (b) reopen the allow list by rungs: rung 1 done 2026-11-04 (Step103: TextEdit, Preview, Calculator, Notes,
-   Terminal, Safari on the 890M); next rung: Finder/system apps, then `*`. Open: Safari's WebKit GPU process may not
-   map executables from /Library/GPUBundles (its own sandbox profile), so WebGL stays in software for now.
+   (b) reopen the allow list by rungs: done 2026-11-04 (Step103 rung 1, Step104 rung 2 + `*`; Chrome/Edge WebGL
+   on the 890M). Open: Safari's WebKit GPU process may not map executables from /Library/GPUBundles (its sandbox
+   maps only sealed /System paths and read-only cryptex grafts), so Safari WebGL stays in software until a
+   kernel-side Sandbox mmap exception for the plugin files exists; WindowServer CPU with many animated clients.
 2. Sleep/wake and lid with NMXGPU: never tested (caffeinate always on).
 3. Stability run: several clean boots and a full workday without a panic (last panic 2026-11-04 11:50, Step100c, fixed).
 4. Video decode (VCN) for browsers/players: not started; without it video decodes on the CPU.
