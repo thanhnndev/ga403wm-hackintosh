@@ -4,6 +4,11 @@
 # mtlprobe / nvmtltest / nvmtlrender stay allowed by name inside the plugin.
 # never: strix-headroom-hold (it holds EDR headroom on WindowServer's behalf; a GPU job there hung GFX in Step35)
 -strix-headroom-hold
+# Step109b (2026-11-04): iconservicesagent draws Tahoe layered icons through RenderBox, which needs visible
+# functions (custom_fn), [[color(n)]] framebuffer fetch and buffer textures; the translator lacks them, RenderBox
+# hits precondition failures and the cached icons come out wrong (Dock, System Settings, menus). Its output is
+# cached, so it draws on the CPU until the translator has those features.
+-iconservicesagent
 *
 !WindowServer
 # rung 1 (2026-11-04, Step103): named apps, sandboxed ones reach the GPU through NMXAccel's NMDR client (Step102).

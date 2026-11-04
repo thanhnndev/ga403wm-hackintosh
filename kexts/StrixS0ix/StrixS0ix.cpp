@@ -48,7 +48,7 @@ constexpr size_t kDispHalt = 0x48 / 8;            // pmDispatch_t::pmCPUHalt (pm
 constexpr size_t kCbInitComplete = 0x10 / 8;      // pmCallBacks_t::initComplete (sets pmInitDone)
 constexpr size_t kCbGetMyLCPU = 0x38 / 8;         // pmCallBacks_t::GetMyLCPU (_pmGetMyLogicalCPU)
 constexpr size_t kLcpuState = 0x58;               // x86_lcpu_t::state: pmCPUHalt writes 0x15e8(cpu_data), lcpu = +0x1590
-constexpr uint32_t kLcpuHalt = 1, kLcpuRun = 4;   // lcpu_state_t
+constexpr uint32_t kLcpuHalt = 1, kLcpuRun = 5;   // lcpu_state_t: OFF 0, HALT 1, NONSCHED 2, PAUSE 3, IDLE 4, RUN 5
 constexpr uint16_t kPm1Wake = (1u << 8) | (1u << 9) | (1u << 10) | (1u << 14);   // PWRBTN, SLPBTN, RTC, PCIEXP_WAKE
 }
 
@@ -130,9 +130,9 @@ OSDefineMetaClassAndStructors(StrixS0ix, IOService)
 
 void StrixS0ix::readFadt()
 {
-    auto tables = OSDynamicCast(OSDictionary, getPlatform()->getProperty("ACPI Tables"));
-    auto facp = tables ? OSDynamicCast(OSData, tables->getObject("FACP")) : nullptr;
-    if (!facp || facp->getLength() < 96) { IOLog("StrixS0ix: no FACP in ACPI Tables, using 0x800/0x820\n"); return; }
+    // Tahoe publishes no "ACPI Tables" property; ask the platform through the ACPI device
+    const OSData *facp = pep->getACPITableData("FACP", 0);
+    if (!facp || facp->getLength() < 96) { IOLog("StrixS0ix: FACP not readable, using 0x800/0x820\n"); return; }
     auto b = static_cast<const uint8_t *>(facp->getBytesNoCopy());
     uint32_t pm1a, gpe0;
     memcpy(&pm1a, b + 56, 4);
@@ -231,7 +231,7 @@ bool StrixS0ix::start(IOService *provider)
     PMinit();
     getPMRootDomain()->addPowerChild(this);       // top level: powered down after the device tree, only on real sleep
     if (registerPowerDriver(this, states, 2) == kIOReturnSuccess) { pm = true; changePowerStateTo(1); }
-    IOLog("StrixS0ix: 0.1.0 up, PEP _DSM mask %#x (%s), halt hook %s, power child %s\n", mask, useDsm ? "used" : "off",
+    IOLog("StrixS0ix: 0.1.1 up, PEP _DSM mask %#x (%s), halt hook %s, power child %s\n", mask, useDsm ? "used" : "off",
           halt ? "on" : "OFF", pm ? "on" : "FAILED");
     registerService();
     return true;

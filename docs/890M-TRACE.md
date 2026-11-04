@@ -6370,3 +6370,26 @@ Findings (tools/890m/vtstub, built and tested without root first):
 **Recovery if it hangs:**
 - Power button; if that does nothing, hold power 10 s.
 - Boot with `-s0ixoff`, or restore `config.plist.pre-step109` from Linux.
+
+## Step109b: first boot with SSDT-S0IDLE, icon fix (2026-11-04)
+
+**SSDT-S0IDLE works.** The boot log reads `ACPI: sleep states S0 S4 S5`, and the root domain has `IOPMDeepIdleSupported = Yes`.
+
+**StrixS0ix 0.1.0 refused its hook:** "lcpu state at +0x58 is 5, not RUN".
+- The enum is OFF 0, HALT 1, NONSCHED 2, PAUSE 3, IDLE 4, RUN 5 (I had RUN = 4). The offset was right.
+- The safety path worked: the CPU assertion `com.ga403wm.strixs0ix.no-halt-hook` blocks sleep, so there was no hang. DsmMask 0x1f9, MwaitIBE Yes.
+- Tahoe publishes no "ACPI Tables" property, so 0.1.0 fell back to 0x800/0x820. Those happen to be correct.
+
+**StrixS0ix 0.1.1:** RUN = 5, FADT read through `IOACPIPlatformDevice::getACPITableData("FACP")`. Installed with macos-install-step109.sh; reboot pending.
+
+**Broken icons in the Dock, System Settings and menus, and high iconservicesagent CPU.**
+- Cause: since Step104 (`*`), iconservicesagent renders Tahoe layered icons through RenderBox on the translator. The translator lacks three things RenderBox needs:
+  - visible functions: "function constants: re-translate FAILED: native emitter: visible function "custom_fn" is called on a live path but no linked function supplies it";
+  - `[[color(n)]]` framebuffer fetch (descriptor binding 192);
+  - buffer textures: `vkCreateImage(buffer texture) -> -1000158000`.
+- Result: 886 RenderBox `precondition failure` errors in 13 minutes, and wrong icons in the cache.
+- Fix:
+  - `-iconservicesagent` in scripts/nvmtl-allow.txt and /Library/GPUBundles/nvmtl-allow.txt (backup /Library/NullMoth/nvmtl-allow.before-step109b.txt). Its output is cached, so it draws on the CPU.
+  - Icon caches cleared (/Library/Caches/com.apple.iconservices.store and the user com.apple.iconservices), then iconservicesagent, iconservicesd, Dock and Finder restarted.
+  - Since then: no NVMTL device in iconservicesagent ("denied by list"), and 0 RenderBox precondition failures.
+- Real fix: those three translator features, in the NullMoth translator fork, not here.
