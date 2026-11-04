@@ -57,6 +57,11 @@ sys.exit(0 if ok else 1)
 PY
 }
 
+# cave registry (installed by the macOS installers): refuse to link an NMXGPU whose caves share borrowed data
+if [ -x /Library/StrixGraphicsFix/nmx-caves-check.py ]; then
+    /usr/bin/python3 -I /Library/StrixGraphicsFix/nmx-caves-check.py /Library/Extensions/NMXGPU.kext/Contents/MacOS/NMXGPU \
+        || { echo "NOT RELINKED: cave registry check failed" | tee "$ROOT/nmx-relink.status"; exit 1; }
+fi
 NEW="$KC.relink"
 rc=1; assert_rc=1
 for attempt in 1 2 3; do

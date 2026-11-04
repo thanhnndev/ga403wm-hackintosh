@@ -1,6 +1,6 @@
 #!/bin/bash
 # SPDX-License-Identifier: BSD-3-Clause-Clear
-# NVMTL desc-cache (fork branch desc-cache, d5da629): stage/install helper. Run as root; nothing here reboots or
+# NVMTL desc-cache (fork branch desc-cache, e34b10d: binding mask fix + sparse key): stage/install helper. Run as root; nothing here reboots or
 # restarts WindowServer (it loads the new plugin on its next start).
 #
 #   sudo scripts/nvmtl-desccache/install.sh install [NVMTLDriver]   # verify sha256, then macos-nvmtl-plugin-install.sh
@@ -10,10 +10,10 @@
 # Live, no restart: `touch /tmp/nvmtl-desccache-off` (rm it to turn the cache back on; checked every ~2 s).
 set -euo pipefail
 HERE=$(cd "$(dirname "$0")" && pwd)
-ART_DEFAULT=$HOME/develop/projects/nmx-plugin-890m/out/plugin-desccache-d5da629/NVMTLDriver
-[[ -n ${SUDO_USER:-} ]] && ART_DEFAULT=$(eval echo "~$SUDO_USER")/develop/projects/nmx-plugin-890m/out/plugin-desccache-d5da629/NVMTLDriver
-SHA=ff3bc393de139c67e4744fa5dad1ce2647d490b04d6d9f745c1ab8c256e6a85d   # as built + ad-hoc signed
-UUID=7927EB9E-CED4-3CCF-9F83-CA9167A2C74D                              # survives the installer's re-sign
+ART_DEFAULT=$HOME/develop/projects/nmx-plugin-890m/out/plugin-desccache-e34b10d/NVMTLDriver
+[[ -n ${SUDO_USER:-} ]] && ART_DEFAULT=$(eval echo "~$SUDO_USER")/develop/projects/nmx-plugin-890m/out/plugin-desccache-e34b10d/NVMTLDriver
+SHA=a6574d218af59821d919f38ad6430d6f232e263aef12668f83cff802428ad803   # as built + ad-hoc signed
+UUID=2DEC581D-D7F6-3D2B-B229-FDA797C62528                              # survives the installer's re-sign
 CONF=/Library/GPUBundles/nvmtl/nvrm610.conf
 BIN=/Library/GPUBundles/NVMTLDriver.bundle/Contents/MacOS/NVMTLDriver
 need_root() { [[ $EUID == 0 ]] || { echo "run as root"; exit 1; }; }

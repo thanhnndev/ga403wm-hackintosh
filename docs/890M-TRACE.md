@@ -5818,3 +5818,30 @@ Install: `pkexec scripts/linux-patch-step100c.sh`:
 
 The relink boot still runs d4830f51, so it will hang and panic again at ~160 s. The relink finishes at ~80 s (it took 53 s
 on Step100b).
+
+## Step100 boot (12:53 local, 3e1b6619): H2 quiet, records retired, brightness path live; WindowServer CPU root cause
+
+Boot after the Step100c relink. Desktop OK, flips latch (mode 1 imports, `#0/#1 latched`).
+- **H2:** 0 `STALE fence read on sdma*` lines (the IRQ path no longer prints) and no irqwatch line. One boot only.
+- **mmfix2:** `stale xkpi records retired: threads 1` (11:53:49) then `threads 2` (11:54:09), procs 0. Recycled thread_t
+  pointers do occur in practice; no `NMX mmfix:` (Step97b bypass) line.
+- **NMXBacklight:** `sense slot 337, panel registered, initial 100%, display not yet; handler published` (12.7 s), then
+  `brightness parameters on AppleBacklightDisplay` (46.5 s) and `100% applied (rc 0)`: the display is an
+  AppleBacklightDisplay now. Slider moves not yet seen in the log (owner to try).
+- **desc-cache:** `hit 350527 miss 8375783 (long 8188350)` at 7 min, WindowServer ~69 %. 98 % of lookups overflowed the
+  key. Root cause: WindowServer's fragment shaders declare binding 192 (`[[color(n)]]` framebuffer fetch; the log says
+  so for every such module), `nvmtl_spirv_bmask` returned 0 on any binding outside the layout's bands, so those
+  pipelines had no mask and every draw wrote **all ~200 bindings** (CPU test: 21.0 M descriptor writes per 120 k draws
+  without a mask vs 0.34 M with one), and the cache key spent 1-2 words on each.
+  Fix (plugin fork `desc-cache` e34b10d): the mask skips bindings that are not in the set layout (192..199, 200..479,
+  heap set 2) instead of being dropped; the cache key holds only bound descriptors as (binding, value) pairs; 256
+  entries per command buffer. CPU tests pass, plus a SPIR-V unit test for the mask (192 skipped, 640/32 kept, heap
+  skipped). Built `out/plugin-desccache-e34b10d` (sha a6574d21, UUID 2DEC581D); takes effect at the next WindowServer
+  start.
+
+**Cave registry (root cause of Step100c):** `scripts/nmx-caves/check.py NMXGPU` disassembles every cave and checks that
+code ranges and borrowed data ranges are disjoint and that every rip-relative data reference of a cave lands in its own
+registered range (or a listed NMXGPU global). The live 3e1b6619 passes; the d4830f51 build fails on the irqfix
+references to 0x927010 (the overlap that hung the first flip). The Step100 installer runs it before linking;
+nmx-relink runs it when `/Library/StrixGraphicsFix/nmx-caves-check.py` is installed. A new cave must add itself to
+`REGISTRY`.

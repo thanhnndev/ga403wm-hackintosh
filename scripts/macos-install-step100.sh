@@ -55,6 +55,9 @@ else
 fi
 shasum -a 256 "$G/Contents/MacOS/NMXGPU"
 
+# every cave's code and borrowed data must be registered and disjoint (Step100c: irqfix ST[] ran into the flip lock)
+/usr/bin/python3 -I "$HERE/nmx-caves/check.py" "$G/Contents/MacOS/NMXGPU" || { echo "cave registry check failed -- not linking"; exit 1; }
+install -o 0 -g 0 -m 755 "$HERE/nmx-caves/check.py" /Library/StrixGraphicsFix/nmx-caves-check.py
 NEW=$KC.step100
 rm -f /Library/KernelCollections/AuxiliaryKernelExtensions.kc.step100
 /usr/bin/kmutil create -n aux --volume-root / --allow-missing-kdk --kernel /System/Library/Kernels/kernel \
