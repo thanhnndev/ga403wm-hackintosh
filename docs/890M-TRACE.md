@@ -6304,3 +6304,24 @@ Findings (tools/890m/vtstub, built and tested without root first):
   `build/vtprobe --supplemental --require clips/t-h264.mp4` (out of process this time), QuickTime Player, Safari and
   Chrome on `test.html`; note which process loads the stub (VTDecoderXPCService or the browser's GPU process), then
   `rm /tmp/vtstub.on`. Next if it loads: a real decoder in the stub's place backed by RADV Vulkan Video (Step106b).
+
+## Step108b / Step107b: post-boot results (2026-11-04)
+
+**VTStub (gated, /System/Library/Video/Plug-Ins):**
+- VTDecoderXPCService loads the ad-hoc plugin from /System.
+- Flag off (no /tmp/vtstub.on): Apple's decoder runs.
+- Flag on with require-hw: stub frames come out for H.264 and HEVC.
+- Safari: H.264 runs in-process in com.apple.WebKit.GPU (700+ frames); HEVC goes through VTDecoderXPCService.
+- Chrome: avc1 and hvc1 go through VTDecoderXPCService.
+- So a real decoder must work in both hosts. Flag removed after the test.
+
+**System sleep, first authorized run (17:36:30):** the machine did not sleep. This was not a platform limit.
+- IOPMrootDomain started ON_STATE->SLEEP_STATE ("sleep reason Software Sleep"). `tellChangeDown::userActivityAtSleep 2` (password typed right before) turned it into a dark-wake capability change, f->9.
+- In dark wake (`sleepASAP 1`), powerd's `darkwakelinger` InternalPreventSleep held it ("System sleep prevented by kPMCPUAssertion").
+- At +1.6 s a UGREEN BLE Mouse HID event caused "Requesting full wake due to dark wake activity tickle", 9->f.
+- NMXGPU's s0ix path never ran (NMXPowerKeep SysSleeps 0).
+- Fixes in scripts/macos-syssleep-test.sh:
+  - wait 10 s after the password before `pmset sleepnow`;
+  - hands off all input during the test;
+  - log the PMRD START/prevented/full-wake lines;
+  - Wi-Fi no longer touched (owned by the AWDL branch).
