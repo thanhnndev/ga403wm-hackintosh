@@ -5885,3 +5885,22 @@ Reducible NVMTL costs (no single bug left), by size:
 2. `nvmtlBindSamplerPipeline` builds two NSDictionaries and JSON-serializes them per draw for the sampler-variant key.
    Memo the last (pipeline, sampler objects) -> variant per encoder; keep the JSON key only on a miss.
 3. `nvmtl_trace_on` reads the clock on every call (41 samples): a flag refreshed by a timer is enough.
+
+## Step101: NVMTL per-draw cost (plugin 3d0dc6a, fork branch desc-cache; loads at the next WindowServer start)
+
+The three reducible costs from "Step100 boot 2":
+1. **Image park** (`nvmtl_vk.c`, `nvmtl_vk_image_park/unpark/park_drain`). A plain device texture
+   (`newTextureWithDescriptor:`, typed path; not multisample, depth, IOSurface, heap or buffer-backed) is parked at
+   dealloc under its creation key (w, h, format, bpp, a8, mips, ShaderWrite, type, layers) and the next texture with
+   the same key takes it. At most 48 images / 160 MB (oldest destroyed first, one image at most 40 MB); a failed
+   allocation drains the park and tries again. Parked images stay counted in the VRAM totals. Same lifetime rule as the
+   destroy it replaces (dealloc runs once no command buffer holds the texture). A destroy also bumped the desc-cache
+   image epoch and retired every cached set that held an image; a park does not. Off: `NVMTL_NO_IPARK=1`. Log line
+   `image park (hit|miss): hit .. miss .. parked .. evicted ..` at powers of two.
+2. **Sampler-variant fast path** (`nvmtlBindSamplerPipeline`): per pipeline, a map from the bound sampler-state objects
+   (slot, pointer) to the variant, filled after the JSON-keyed slow path has an answer. The entry holds the state
+   objects strongly (no pointer reuse); 256 entries per pipeline, then cleared.
+3. **Trace check**: `nvmtl_trace_on` reads the clock every 64th call.
+
+Check at the next boot: `image park` hit count growing with few misses; desc-cache `epochs img` grows much more slowly
+than at boot 2 (126754 in 5 min); WindowServer `ps -M` user time against 43 % at 111 fps (`present-rate.sh 10`).
