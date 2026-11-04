@@ -6395,3 +6395,21 @@ Findings (tools/890m/vtstub, built and tested without root first):
 - Real fix: those three translator features, in the NullMoth translator fork, not here.
 
 **strix-headroom-hold uninstalled (2026-11-04 22:15).** The LaunchAgent had no Metal device: it is denied in the allow list since Step35. So it exited with status 1, and launchd restarted it about 6 times a minute (123 denials this boot). The workaround is obsolete: since Step104 WindowServer composites on the 890M, and this boot ran fine without the agent. It was removed with `scripts/macos-strix-headroom-hold.sh uninstall`; the binary is left in ~/Library/Application Support/StrixHeadroomHold, and `install` brings it back. The `-strix-headroom-hold` deny line stays.
+
+## Step109c: iconservicesagent back on the 890M (2026-11-04)
+
+Done in the session "Translator: RenderBox features for icons":
+- **Translator:** a live visible-function call is deferred to pipeline link (#1). Its rbx test arms are dbb55f7 on the translator fork.
+- **Plugin**, branch `plugin-renderbox` cut from desc-cache fb86bf5 and **not merged**:
+  - df1c9b8: framebuffer fetch (#2), ported from upstream; WindowServer is unchanged unless `NVMTL_FBFETCH_WS=1`.
+  - e3d8399: an aligned shadow image when a buffer texture's row pitch is not a multiple of 256 B, which RADV refuses (#3). It keeps the explicit layout; `NVMTL_NO_BUFTEX_SHADOW=1` turns it off.
+  - e1d1e26: the 913ade5 port (a buffer texture accepts any view format of the same size).
+- **Live plugin** is now 9d816dc7. The backup of a5dc97e2 (fb86bf5) is at /Library/NullMoth/nvmtl-plugin-20261104T153710Z. To go back: `macos-nvmtl-plugin-install.sh --undo`, then `macos-install-strixsbxmap.sh --refresh`.
+- **Results:**
+  - rbx 17/17.
+  - iconservicesagent: 0 precondition failures, 0 failed buffer textures.
+  - Icons are pixel-identical to the GPU run and differ from the CPU render only at thin rim edges.
+- **Allow list:** the `-iconservicesagent` deny line is removed (this commit).
+- **Open:**
+  - fetch draws that use triangle strips are not split per triangle (only triangle lists are);
+  - merging `plugin-renderbox` into desc-cache is the owner's decision.
