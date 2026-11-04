@@ -5845,3 +5845,16 @@ registered range (or a listed NMXGPU global). The live 3e1b6619 passes; the d483
 references to 0x927010 (the overlap that hung the first flip). The Step100 installer runs it before linking;
 nmx-relink runs it when `/Library/StrixGraphicsFix/nmx-caves-check.py` is installed. A new cave must add itself to
 `REGISTRY`.
+
+### HiDPI scaled modes: root cause and plan (deferred by the owner, 2026-11-04)
+
+System Settings shows one "Larger Text / More Space" tile and no refresh menu: CoreGraphics gets exactly 2 modes
+(1440x900 HiDPI and 2880x1800, both 120 Hz, IO mode 1). NMXGPUFB is a fixed single-mode framebuffer:
+getPixelInformation / setDisplayMode accept only mode 1, size/pitch/aperture come from fixed fields
+(+0x1dc w, +0x1e0 h, +0x1e4 rowBytes, +0x1e8 aperture phys, +0x1f0 VRAM size); it has no validateDetailedTiming /
+setDetailedTimings and no scaler info, so `scale-resolutions` in the override cannot add sizes.
+Plan: (1) NMXBacklight's vtable copy reports more backing sizes (3360x2100, 3024x1890, 2560x1600, ...) on the native
+timing and, on setDisplayMode, gets a buffer of that size from NMXGPU and updates the +0x1dc..+0x1e8 fields;
+(2) the flip cave allocates the per-mode VRAM buffer and sets the plane src rect to the fb size on every commit
+(today SET_FB_FOR_PLANE keeps src 2880x1800), so DC's plane scaler fits it to the panel; (3) check NMXAccel's copy
+fallback for a surface size different from the home buffer. Fallback: boot-arg -nmxbloff.
