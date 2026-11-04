@@ -55,7 +55,8 @@ Open, in order:
 1. **WindowServer CPU, NVMTL per-draw cost** (measured 2026-11-04 boot 2: desc-cache `long 0`, hit 92 %; WS 59..68 %
    at 111 fps, user 43 % / system 18 %, NVMTL ~30 % of the user samples). Next: recycle per-frame texture memory,
    memo the sampler-variant key per encoder, cheap trace flag. Details: `docs/890M-TRACE.md`, "Step100 boot 2".
-   Step101 (plugin 3d0dc6a) implements all three, installed 2026-11-04, measure at the next boot.
+   Step101 (plugin 3d0dc6a) implements all three; Step101 boot showed the per-frame churn is sampler states ->
+   Step101b (f973e95) sampler-state cache, installed 2026-11-04, measure at the next boot.
 2. **HiDPI scaled modes** (owner: "not now, keep it on the roadmap"). System Settings shows one resolution tile and no
    refresh menu because NMXGPUFB reports a single mode. Root cause and plan: `docs/890M-TRACE.md`, section
    "HiDPI scaled modes: root cause and plan". Pieces: more backing sizes reported from NMXBacklight's vtable copy,

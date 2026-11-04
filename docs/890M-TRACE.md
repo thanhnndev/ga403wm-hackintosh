@@ -5904,3 +5904,29 @@ The three reducible costs from "Step100 boot 2":
 
 Check at the next boot: `image park` hit count growing with few misses; desc-cache `epochs img` grows much more slowly
 than at boot 2 (126754 in 5 min); WindowServer `ps -M` user time against 43 % at 111 fps (`present-rate.sh 10`).
+
+## Step101 boot (12:46 local, plugin 3d0dc6a): image park live; the per-frame churn is sampler states
+
+State: NMXGPU 3e1b6619, NVMTLDriver EBC78554 (3d0dc6a), no panic. `STALE fence read on mes_3.0.0` 8 lines (init and
+flip imports): the previous boot had 4 in 17 min, sdma has none, so not a regression.
+
+- WindowServer at ~81 fps over 20 s (`ps -M` delta): user 39.8 %, system 10.5 % (boot 2: 43 % / 18 % at 111 fps, with
+  the Claude app redrawing at 96 %; this run it sat at ~5 %, so the load is lighter and only per-frame cost compares:
+  CPU per frame by user+system ~5.5 ms at boot 2, ~6.2 ms now: no per-frame gain yet; plain texture creates left the
+  profile, but at a lower frame rate fixed per-frame work weighs more).
+- Image park: hit 32 miss 96 in the first minute, then fewer than 256 park calls in 4 min: plain textures are not the
+  per-frame churn in this load. `newTextureWithDescriptor:` (plain) is gone from `sample`.
+- Desc-cache: `epochs img 79728` after 2 min (~660 bumps/s) - still high. Sampler fast path: JSON serialization still
+  on the profile (18 of 157 samples in `nvmtlBindSamplerPipeline`).
+- Root cause of both: CoreAnimation asks for **new sampler states every frame** (`newSamplerStateWithDescriptor:` 26
+  samples per 5 s). Each one was a new VkSampler (and NSDictionary pixel state), its destroy bumped the image epoch
+  (retiring every cached set with an image in it), and the fast path keyed by pointer never saw the same pointer.
+
+## Step101b: sampler-state cache (plugin f973e95)
+
+- `newSamplerStateWithDescriptor:` returns one immutable object per unlabelled descriptor (every field: filters, mip,
+  anisotropy, address modes, border, reduction, normalized, lodAverage, argument buffers, compare, LOD clamps, bias);
+  held for the process lifetime, at most 1024; `NVMTL_NO_SAMPCACHE=1` turns it off. Log `sampler cache: hit N, M made`.
+- Pixel-state dictionaries are interned by descriptor too (labelled samplers).
+- Trace: the desc-cache stats line now names the destroy behind each image-epoch bump
+  (`img by view .. image .. sampler .. bufview ..`), so the next boot shows what is left.
