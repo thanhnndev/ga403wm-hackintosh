@@ -6413,3 +6413,5 @@ Done in the session "Translator: RenderBox features for icons":
 - **Open:**
   - fetch draws that use triangle strips are not split per triangle (only triangle lists are);
   - merging `plugin-renderbox` into desc-cache is the owner's decision.
+
+**Merged (owner, 2026-11-04):** `plugin-renderbox` was fast-forwarded into desc-cache. desc-cache is now e1d1e26 (df1c9b8, e3d8399, e1d1e26 on top of fb86bf5) and pushed to the fork. The live plugin 9d816dc7 is the build from e1d1e26.
