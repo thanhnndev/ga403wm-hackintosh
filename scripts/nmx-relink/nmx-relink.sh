@@ -17,16 +17,12 @@ BK=/Library/NullMoth/nmx-step60-$(date -u +%Y%m%dT%H%M%SZ)
 mkdir -p "$BK" && cp -p "$KC" "$BK/AuxiliaryKernelExtensions.kc"
 echo "backup=$BK"
 
-NEW="$KC.relink"
-rm -f "$NEW"
-/usr/bin/kmutil create -n aux --volume-root / --allow-missing-kdk --kernel /System/Library/Kernels/kernel \
-    -B /System/Library/KernelCollections/BootKernelExtensions.kc \
-    -S /System/Library/KernelCollections/SystemKernelExtensions.kc \
-    --repository /Library/Extensions -A "$NEW" -z
-rc=$?
-echo "kmutil_create_exit=$rc"
-
-/usr/bin/python3 - "$NEW" <<'PY'
+# Step100 boot: kernelmanagerd rewrote the AuxKC 7 s after the installer's relink (a new kext, NMXBacklight, had
+# appeared in /Library/Extensions) from its own list (/private/var/db/KernelExtensionManagement/AuxKC/CurrentAuxKC/
+# com.apple.kcgen.instructions.plist), which never holds NMXGPU or NMXAGDC; that boot ran without NMXGPU. So the
+# collection is checked again on disk after kernelmanagerd has had time to act, and built again if it was replaced.
+check_kc() {
+/usr/bin/python3 - "$1" <<'PY'
 import re, subprocess, sys
 from pathlib import Path
 kc_path = Path(sys.argv[1])
@@ -35,20 +31,41 @@ if not kc_path.exists():
     sys.exit(1)
 kc = kc_path.read_bytes()
 ok = True
-for name in ('NMXGPU', 'NMXAccel', 'NMXAGDC'):
+for name in ('NMXGPU', 'NMXAccel', 'NMXAGDC', 'NMXBacklight'):
     b = f'/Library/Extensions/{name}.kext/Contents/MacOS/{name}'
+    if name == 'NMXBacklight' and not Path(b).exists():
+        continue
     out = subprocess.run(['/usr/bin/otool', '-l', b], capture_output=True, text=True).stdout
     m = re.search(r'LC_UUID\s+cmdsize \d+\s+uuid ([0-9A-F-]{36})', out)
     u = m.group(1) if m else None
     present = bool(u) and bytes.fromhex(u.replace('-', '')) in kc
-    print(f'{name} uuid={u} present_in_new_collection={present}')
+    print(f'{sys.argv[1]}: {name} uuid={u} present={present}')
     ok = ok and present
 sys.exit(0 if ok else 1)
 PY
-assert_rc=$?
+}
+
+NEW="$KC.relink"
+rc=1; assert_rc=1
+for attempt in 1 2 3; do
+    rm -f "$NEW"
+    /usr/bin/kmutil create -n aux --volume-root / --allow-missing-kdk --kernel /System/Library/Kernels/kernel \
+        -B /System/Library/KernelCollections/BootKernelExtensions.kc \
+        -S /System/Library/KernelCollections/SystemKernelExtensions.kc \
+        --repository /Library/Extensions -A "$NEW" -z
+    rc=$?
+    echo "attempt=$attempt kmutil_create_exit=$rc"
+    check_kc "$NEW"; assert_rc=$?
+    [[ $rc == 0 && $assert_rc == 0 ]] || break
+    mv -f "$NEW" "$KC"; sync
+    sleep 45
+    ls -l /private/var/db/KernelExtensionManagement/AuxKC/CurrentAuxKC/ 2>/dev/null
+    check_kc "$KC"; assert_rc=$?
+    [[ $assert_rc == 0 ]] && break
+    echo "attempt=$attempt: the collection on disk was replaced after the relink; building it again"
+done
 
 if [[ $rc == 0 && $assert_rc == 0 ]]; then
-    mv -f "$NEW" "$KC"
     rm -rf /Library/NullMoth/kexts/26/NMXAccel.kext
     mkdir -p /Library/NullMoth/kexts/26
     ditto /Library/Extensions/NMXAccel.kext /Library/NullMoth/kexts/26/NMXAccel.kext

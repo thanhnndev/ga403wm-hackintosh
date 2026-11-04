@@ -5746,3 +5746,34 @@ Settings always says "Built-in Retina Display"). More HiDPI sizes need scaled-mo
 - `/usr/bin/log show --last boot | grep NMXBacklight`: "handler published", `display not yet`, "brightness parameters
   on AppleBacklightDisplay", then "N% applied" on slider moves. `ioreg -lw0 | grep -E "AppleBacklightDisplay"`.
 - `scripts/nvmtl-desccache/install.sh status` (hit/miss), `top`, `tools/890m/present-rate.sh 10`.
+
+## Step100b: the Step100 boot ran without NMXGPU; kernelmanagerd replaced the AuxKC (2026-11-04)
+
+Boot 11:03:44 (local): WindowServer crash loop, CoreDisplay `0 of 1 framebuffers` (only the NVIDIA IONDRVFramebuffer).
+Not one `(NMXGPU)` line in that boot, so none of the Step100 NMXGPU changes (irqfix, mmfix2) ever ran.
+
+- The VGA matching thread: NMXAccel probe at 52.131, then `NMXGPU has not claimed 1002:150e yet` in the same ms. On the
+  good 23:10 boot (Step99) the same thread had a 1.9 s gap there, which is the NMXGPU kext load, followed by `no FADT` and
+  `ran 45 SYSINITs`.
+- The AuxKC on disk (written 11:01:08) holds: AppleMobileDevice, nke.rvi, HighPointIOP/RR, NMXAccel, nmxbacklight,
+  NVAccel, NVRM, NVRMAGDC, NVRMFB, strixaccel, strixgop, pataudit. **No com.nullmoth.NMXGPU and no com.ga403wm.NMXAGDC**,
+  and none of the NMXGPU bytes. The Step99 KC (backup step100-bk-20261104T035737Z) had both of them and no pataudit/rvi.
+- The installer's own collection was good (`--check-kc` all present) and was moved in at 11:01:01 (`RELINKED`).
+  `/private/var/db/KernelExtensionManagement/AuxKC/CurrentAuxKC/` (instructions + uakl + StashedExtensions) was written at
+  11:01:06-07 and the KC at 11:01:08: kernelmanagerd rebuilt the AuxKC from `com.apple.kcgen.instructions.plist`
+  (`kextsToBuild`), its own list of approved kexts. The trigger was the new kext NMXBacklight in /Library/Extensions
+  (its cdHash 08537cc6 is now in the UAKL). NMXGPU and NMXAGDC have never been in that list, because we always link
+  by hand with `kmutil create`. The list even pulls PatAudit from ~/develop/.../build/ws-deep.
+- Earlier steps changed only existing kexts, so kernelmanagerd never rebuilt and the hand-linked KC stayed.
+
+Fix (nothing in the kexts changes; Step100 is not reverted):
+- `scripts/nmx-relink/nmx-relink.sh`: after the `mv`, it waits 45 s and checks the KC **on disk** again for the UUIDs of
+  NMXGPU, NMXAccel, NMXAGDC and NMXBacklight. If the KC was replaced, it links again (up to 3 attempts). It reboots only
+  when the KC still holds all four.
+- `scripts/macos-install-step100.sh`: the same 45 s on-disk check after the `mv`.
+- `pkexec scripts/linux-rearm-step100.sh`: checks NMXGPU d4830f51 and NMXBacklight 8a57847a, backs up the kernelmanagerd
+  KC and its instructions to /Library/NullMoth/step100b-*, re-arms nmx-relink with the reboot flag.
+
+Next boot: macOS relinks by itself (no desktop, ~2-3 min) and reboots. Look in /Library/StrixGraphicsFix/nmx-relink.log
+for `present=True` on both checks and `attempt=1` only. If it took a second attempt, kernelmanagerd rebuilds at boot as
+well.

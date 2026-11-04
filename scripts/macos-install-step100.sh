@@ -71,4 +71,13 @@ if [[ ${1:-} != --undo ]]; then
 fi
 mv -f "$NEW" "$KC"
 sync
+# Step100 boot: kernelmanagerd replaced this collection 7 s after the mv (NMXBacklight was a new kext) with one built
+# from its own list, without NMXGPU/NMXAGDC. Check the file again once it has had time to act.
+sleep 45
+for b in NMXGPU NMXAccel NMXAGDC NMXBacklight; do
+    u=$(otool -l "/Library/Extensions/$b.kext/Contents/MacOS/$b" | awk '/LC_UUID/{f=1} f&&/uuid/{print $2; exit}' | tr -d -)
+    /usr/bin/python3 -I -c 'import sys; sys.exit(0 if bytes.fromhex(sys.argv[2]) in open(sys.argv[1],"rb").read() else 1)' "$KC" "$u" \
+        || { echo "AuxKC on disk lost $b after the relink (kernelmanagerd?): run this script again"; exit 1; }
+done
+echo "AuxKC still holds NMXGPU, NMXAccel, NMXAGDC, NMXBacklight after 45 s"
 echo "RELINKED $(date -u): reboot to load it"
