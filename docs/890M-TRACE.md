@@ -7509,3 +7509,28 @@ IOSurface contents pays it. Idle WindowServer was not sampled this time.
   and desktop stalls, not just of video. Every client window or layer that updates (Zalo/Electron, Docker Desktop,
   Claude) adds entries, so n grows and the cost per miss grows with n^2. The fixed plugin is installed. WindowServer
   maps it only when it restarts (log out and back in, or the pending reboot).
+
+## Step120 results (18:48-19:13) and Step121
+
+The owner ran the tests with the lid opened at about 45 s; the RTC alarm was the safety net.
+
+| test | settings | result |
+|---|---|---|
+| A | defaults (_DSM 3/7/5, GPIO pin 0 armed) | Lid open: nothing. No _AEI pin moved (0, 5, 0x10, 0x3A, 0x3B, 0x36, 0x12), no GPE0, no PM1 for 80 s. Woke on the RTC. |
+| B | `dsmskip 0x180` (no fn 7/8 = EC 0x98/0x86) | **Lid open woke it at once**: GPE 0x0A, "Wake ... due to /Lid Open", full wake in about 1 s. |
+| D | B + RTC alarm with the lid closed | SSDT-LIDFIX works: the clamshell stays closed and the machine goes back to sleep. Lid open later woke it at once (18:56:10). |
+| E | B + `gpiowake 0` (CC6 loop) | Lid open wakes. CPU not-met is down to 19 ms from the whole sleep. Only DISPLAY and NBIO still block S0i3. |
+| F | power button, lid open | No pin, GPE or PM1 bit when pressed during the halt (19:10, 19:11 with pin 0 armed, 19:13 with `dsmskip 0x198`). |
+
+- Root cause of the lid wake: PEP _DSM fn 7 (`UPHK` → `ECM1 0x98`) puts the EC in a mode with no lid SCI. It does not use GPIO pin 0 for the lid either. Leaving out fn 7/8 fixes it.
+- Power button:
+  - The two runs with the old script (10 s before sleep, press after about 30 s) show the press as an EC GPE wake that ends in a dark wake only: 18:59:18 "DarkWake ... due to /" and 19:03:21, then maintenance sleep.
+  - In the later runs the press came about 12 s after the screen went off. That is while macOS is still suspending drivers, before the halt (sleep is entered about 15-25 s after `pmset sleepnow`), so the press was lost.
+  - So the button reaches the halt, but macOS does not treat it as user activity.
+- Leftover RTC alarms from earlier tests made some wakes look like full wakes (18:54:58, 18:59:39). `scripts/s0ix-tools/cancel-pmset-wakes.sh` now runs in each root step. The syssleep test now sleeps 3 s after the password.
+- Step121 = StrixS0ix 0.1.10 (`scripts/macos-install-step121.sh`):
+  - Defaults are now DsmSkip 0x180 and GPIO wake off.
+  - PWRB (PNP0C0C) is watched with `registerInterest`. On `kIOACPIMessageDeviceNotification` 0x80 within 60 s of our wake, it tickles IODisplayWrangler (`activityTickle`; `requestUserActive` is not exported to kexts), which the root domain turns into a full wake from dark wake.
+  - Each PWRB message is logged with its type, argument and time.
+  - Reboot pending.
+- Next: power button test with the press about 30 s after the screen goes off, then a long sleep to check the fans and the EC dark wakes.

@@ -47,13 +47,13 @@ HERE=$(cd "$(dirname "$0")" && pwd)
 N=${1:-60}
 [[ -f $SAVE ]] || pmset -g > "$SAVE"
 T0=$(date "+%Y-%m-%d %H:%M:%S"); echo "$T0" > "$OUT/start"
-echo "start $T0, sleep 10 s after the password, RTC wake $((N+10)) s after the password. Hands off the keyboard, touchpad and mouse."
+echo "start $T0, sleep 3 s after the password, RTC wake $((N+3)) s after the password. Hands off the keyboard, touchpad and mouse."
 # caffeinate is stopped inside the root step, so a cancelled password leaves everything as it was
 root "/bin/bash '$HERE/s0ix-tools/syssleep-root.sh' $N ${S0IX_PRE:-}" "Test sleep cả máy (s0ix): pmset cho test, hẹn giờ wake, sleep sau 10 s. Đừng chạm phím/chuột sau khi nhập mật khẩu" \
     || { echo "admin step cancelled or the password was wrong: nothing changed, no sleep"; exit 1; }
 # pmset sleepnow returns at once; caffeinate -u declares the user active, so restarting it while the machine is still in
 # dark wake wakes it fully (second Step107 run). Wait past the RTC wake (sleep 10 s + N s + margin) before restarting it.
-perl -e 'select(undef, undef, undef, $ARGV[0])' $((N+25))
+perl -e 'select(undef, undef, undef, $ARGV[0])' $((N+8))
 nohup caffeinate -dimsu >/dev/null 2>&1 &
 disown
 collect "$T0"

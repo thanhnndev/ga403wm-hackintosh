@@ -96,7 +96,7 @@ static volatile uint32_t gEcEnAtHalt;            // the enable word as macOS lef
 // is a wake event; on exit the old control word goes back with the status cleared, and after the wake StrixS0ix runs
 // _EVT(0) so ACPI sends the Notify macOS never got. S0ix,GpioWake: 0 off, 1 wake (default), 2 observe (latch only).
 static volatile uint8_t *gGpio;                  // AMDI0030 MMIO (pin n control at n * 4)
-static volatile uint32_t gGpioMode = 1;
+static volatile uint32_t gGpioMode = 0;
 static volatile bool gGpioCc6;                   // boot CPU CC6 while GPIO wake is armed (until IRQ 7 is proven)
 static uint32_t gPin0Saved, gPin0AtHalt, gPin0AtWake, gPin0IntMs, gPin0Toggles;
 // 0.1.9: the other _AEI pins too (SSDT-22: 5, 0x10, 0x3A, 0x3B, 0x36, D3C 0x12): at 17:02 a lid open moved no pin 0 bit
@@ -105,7 +105,7 @@ static constexpr uint8_t kAeiPins[7] = { 0x00, 0x05, 0x10, 0x3A, 0x3B, 0x36, 0x1
 static uint32_t gAeiHalt[7], gAeiLast[7], gAeiWake[7], gAeiFirstMs[7], gAeiToggles[7];
 // 0.1.9: S0ix,DsmSkip, a bit per PEP _DSM fn to leave out (0x18 = fn 3/4 EC 0x97/0x99 + HBHT, 0x180 = fn 7/8 EC 0x98/0x86):
 // tests whether the EC Modern Standby commands hold the lid event back (17:02: lid open, SCI 30 s later)
-static volatile uint32_t gDsmSkip = 0;
+static volatile uint32_t gDsmSkip = 0x180;          // 0.1.10 default: fn 7/8 off (Step120 test B: with them the EC sends no lid SCI)
 static volatile uint32_t gEcMode = 1;            // 0.1.7: S0ix,EcWake 0 = off, 1 = EC GPE wakes, 2 = observe only
 // 0.1.7: every PM1 / GPE0 status bit that appears while halted, with its first time (ms after halt entry). Observe
 // mode (2) keeps the boot CPU on the MWAITX loop (0.25 s polls) and never wakes on the EC, so a lid open or a power
@@ -371,6 +371,10 @@ class StrixS0ix : public IOService {
     IOACPIPlatformDevice *gpioDev = nullptr;
     IOMemoryMap *gpioMap = nullptr;
     thread_call_t evtCall = nullptr;
+    // 0.1.10: the power button's EC SCI wakes the halt, but macOS stays in dark wake (Step120: 18:59:18, 19:03:21);
+    // on Notify(PWRB, 0x80) soon after our wake, ask the root domain for a full wake like a HID event would
+    IONotifier *pwrbNote = nullptr;
+    static IOReturn pwrbMsg(void *target, void *ref, UInt32 type, IOService *provider, void *arg, vm_size_t size);
     bool pciBuilt = false;
     uint64_t ecam = 0;
     void buildPci();
@@ -583,8 +587,8 @@ void StrixS0ix::pmcWake()
 
 void StrixS0ix::setupGpio()
 {
-    UInt32 mode = 1;
-    PE_parse_boot_argn("s0ix_gpiowake", &mode, sizeof mode);
+    UInt32 mode = 0;                                // 0.1.10: off by default; pin 0 never moved in Step120 (lid, button), and
+    PE_parse_boot_argn("s0ix_gpiowake", &mode, sizeof mode);   // an armed pin keeps the boot CPU out of CC6
     gGpioMode = mode > 2 ? 2 : mode;
     if (IOService *g = IOService::copyMatchingService(IOService::nameMatching("AMDI0030"))) {
         gpioDev = OSDynamicCast(IOACPIPlatformDevice, g);
@@ -616,6 +620,31 @@ void StrixS0ix::gpioEvt(thread_call_param_t self, thread_call_param_t)
     IOLog("StrixS0ix: GPIO._EVT(0) after the pin 0 wake -> %#x\n", r);
 }
 
+static uint64_t gWakeAbs;          // mach_absolute_time of our last setPowerState(1) after a sleep
+IOReturn StrixS0ix::pwrbMsg(void *target, void *, UInt32 type, IOService *, void *arg, vm_size_t)
+{
+    auto me = static_cast<StrixS0ix *>(target);
+    uintptr_t v = reinterpret_cast<uintptr_t>(arg);
+    uint64_t ns = 0;
+    if (gWakeAbs) absolutetime_to_nanoseconds(mach_absolute_time() - gWakeAbs, &ns);
+    bool near = gWakeAbs && ns < 60ull * NSEC_PER_SEC;
+    bool press = type == kIOACPIMessageDeviceNotification && v == 0x80;
+    IOLog("StrixS0ix: PWRB message %#x arg %#lx, %llu ms after the wake%s\n", type, (unsigned long)v, ns / 1000000,
+          press && near ? ": power button, asking for a full wake" : "");
+    // requestUserActive is not exported to kexts; a display wrangler activity tickle is the exported path that the root
+    // domain turns into a full wake from dark wake (kStimulusDarkWakeActivityTickle), the same as a HID event
+    if (press && near) {
+        IOReturn r = kIOReturnNotFound;
+        if (IOService *w = IOService::copyMatchingService(IOService::serviceMatching("IODisplayWrangler"))) {
+            r = w->activityTickle(kIOPMSuperclassPolicy1, 4) ? kIOReturnSuccess : kIOReturnNotReady;
+            w->release();
+        }
+        IOLog("StrixS0ix: display wrangler tickle -> %#x\n", r);
+    }
+    (void)me;
+    return kIOReturnSuccess;
+}
+
 void StrixS0ix::setupEcWake()
 {
     UInt32 on = 1;
@@ -630,6 +659,11 @@ void StrixS0ix::setupEcWake()
     setProperty("S0ix,EcWakeGpe", gEcGpe, 8);
     setProperty("S0ix,EcWake", gEcMode, 32);
     IOLog("StrixS0ix: EC GPE %#x mode %u as a wake source (lid, power button)\n", gpe, unsigned(gEcMode));
+    if (IOService *pb = IOService::copyMatchingService(IOService::nameMatching("PNP0C0C"))) {
+        pwrbNote = pb->registerInterest(gIOGeneralInterest, &StrixS0ix::pwrbMsg, this);
+        pb->release();
+    }
+    IOLog("StrixS0ix: PWRB notify %s\n", pwrbNote ? "watched (full wake on 0x80 after a sleep)" : "NOT found");
 }
 
 void StrixS0ix::setupCc6()
@@ -894,7 +928,7 @@ bool StrixS0ix::start(IOService *provider)
     PMinit();
     getPMRootDomain()->addPowerChild(this);       // top level: powered down after the device tree, only on real sleep
     if (registerPowerDriver(this, states, 2) == kIOReturnSuccess) { pm = true; changePowerStateTo(1); }
-    IOLog("StrixS0ix: 0.1.9 up, PEP _DSM mask %#x (%s), halt hook %s, power child %s\n", mask, useDsm ? "used" : "off",
+    IOLog("StrixS0ix: 0.1.10 up, PEP _DSM mask %#x (%s), halt hook %s, power child %s\n", mask, useDsm ? "used" : "off",
           halt ? "on" : "OFF", pm ? "on" : "FAILED");
     registerService();
     return true;
@@ -926,6 +960,7 @@ IOReturn StrixS0ix::setPowerState(unsigned long state, IOService *)
     if (!slept) return kIOPMAckImplied;           // the first state 1 at registration
     slept = false;
     gArmed = false;
+    gWakeAbs = mach_absolute_time();
     pmcWake();
     publishPci();
     IOReturn a = kIOReturnSuccess, b = kIOReturnSuccess, c = kIOReturnSuccess;

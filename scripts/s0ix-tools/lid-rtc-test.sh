@@ -15,7 +15,7 @@ dump() {
     pmset -g log | grep -E "^$(date +%Y-%m-%d).*(Sleep  |Wake  |DarkWake)" | tail -6; } >> "$OUT"; sync
 }
 T0=$(date "+%Y-%m-%d %H:%M:%S"); I0=$(idle)
-osascript -e "do shell script \"${S0IX_PRE:+$S0IX_PRE; }/usr/bin/pmset schedule wake \\\"\$(/bin/date -v+${N}S '+%m/%d/%y %H:%M:%S')\\\"\" with prompt \"Hẹn RTC wake sau $N s cho test gập nắp\" with administrator privileges" >/dev/null || { echo "cancelled"; exit 1; }
+osascript -e "do shell script \"${S0IX_PRE:+$S0IX_PRE; }/bin/bash '$(cd "$(dirname "$0")" && pwd)/cancel-pmset-wakes.sh'; /usr/bin/pmset schedule wake \\\"\$(/bin/date -v+${N}S '+%m/%d/%y %H:%M:%S')\\\"\" with prompt \"Hẹn RTC wake sau $N s cho test gập nắp\" with administrator privileges" >/dev/null || { echo "cancelled"; exit 1; }
 echo "RTC alarm in $N s ($(date -v+${N}S '+%H:%M:%S')). Close the lid now; keep it closed about 4 minutes, then open it."
 pkill -x caffeinate
 n=0; until [[ $(lid) == Yes ]]; do wait1; ((n++ > 300)) && { echo "lid never closed"; nohup caffeinate -dimsu >/dev/null 2>&1 & exit 1; }; done
