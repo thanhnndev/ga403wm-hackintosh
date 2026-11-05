@@ -7548,3 +7548,27 @@ The owner ran the tests with the lid opened at about 45 s; the RTC alarm was the
   - On 0xE7 (`_QE7`, power button) it tickles IODisplayWrangler for a full wake.
   - Switch: `s0ix-set ecquery on|off`, boot-arg `s0ix_ecquery=0`.
   - The log will also show which query the earlier "EC: other" dark wakes carry (battery, thermal).
+
+## Edge web video lag part 4: after the surface keep fix (boot 2026-11-05), buffer texture shadow copies
+
+The surface keep fix (fork `surface-keep-hash` ff0ebef, plugin 57aee79b) was loaded by WindowServer at this boot.
+
+| measure | before (part 2/3) | after the reboot |
+|---|---|---|
+| `nvmtl_surface_keep` share of WindowServer's main thread, idle | 64 % | 0.3 % |
+| same, 60 fps video | ~63 % | 0.7 % |
+| WindowServer CPU, idle | 58-83 % | 23.6 % |
+| WindowServer CPU, VP9 60 fps in Edge | - | 55 % |
+| hitch probe, VP9 60 fps, 60 s, no sampler attached | 162 gaps over 25 ms, 40 dropped (1080p60) | **3 gaps over 25 ms (worst 50 ms), 0 dropped**, p99 17.6 ms (YouTube ABR picked 720p60) |
+
+- Keep stats: about 540 misses per 30 s, most of them "idle cap" (388). That is NVMTL_KEEP_IDLE 48; raising it is a tuning option, not done.
+- What WindowServer's main thread still spends: about 55 % busy plus 12-16 % blocked in the submit ioctl (`ac_drm_cs_submit_raw2`).
+  The biggest NVMTL item was **`nvmtl_btsh_rows` → `radv_CmdCopyBuffer2`: 887 of 4441 samples (20 %) during video, 322/3921 (8 %) idle**.
+  - RenderBox masks in WindowServer are buffer textures like 176x48 R8 with bytesPerRow 192. GFX11 linear images need a 256-byte pitch, so NVMTL gives them a shadow image and copies the rows in before every command buffer that uses them (about 6 per command buffer).
+  - The copy was one `VkBufferCopy` per row. RADV records every region as its own compute dispatch, so one mask cost 48 dispatches.
+- Fix, fork `surface-keep-hash` **bf0ef9e**: each shadow gets a transfer-only twin image over the same memory (same format, size, pitch; usage TRANSFER_SRC|DST, kept in GENERAL). The upload is one `vkCmdCopyBufferToImage` with `bufferRowLength` = the app's pitch, and the writeback is one `vkCmdCopyImageToBuffer`. The tracked image's own layout is not touched. `NVMTL_BTSH_ROWCOPY=1` brings back the per-row copies; the log says `shadows made, N of them one-copy`.
+  - `plugin/tests/btsh_test.m`: R8 176x48 pitch 192 read, read again after a CPU change, RGBA8 100x20 pitch 448 at offset 64, render-clear writeback (texels land, row padding and bytes before the offset untouched). PASS on both builds.
+  - Cost, 300 command buffers with 6 shadowed masks each: commit CPU **117-128 us → 73-75 us**, GPU time the same (8 us). surfkeep_test still passes.
+  - Installed as plugin d2b358c7 (backup /Library/NullMoth/nvmtl-plugin-20261105T123646Z), sbxmap pins refreshed. **WindowServer loads it at its next start** (log out/in or the pending reboot); new apps load it at once.
+  - Undo: `sudo scripts/macos-nvmtl-plugin-install.sh --undo`, then `scripts/macos-install-strixsbxmap.sh --refresh`.
+- Next after that boot: sample WindowServer during video again (btsh share should be near 0), then look at the submit ioctl wait and the remaining software paths (Canvas in software, CPU video decode).
