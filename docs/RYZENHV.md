@@ -11,6 +11,21 @@ FlushByAsid, DecodeAssists, AVIC, vGIF...). Log: `SVM enabled on 24 CPUs`, `self
 registered` in place of AppleHV. All 24 cores were online when the kext started (no late cores, unlike issue 1).
 Counters: enableFailures 0, assertFailures 0. `kern.hv_support` is still 0 (not written at boot). No VM run yet.
 
+## First VMs (2026-11-05, same boot)
+
+* `rhv-info hv sysctl 1`: `kern.hv_support was 0, now 1` (not kept across reboots: run it again after each boot).
+* `build/hvf-smoke`: **PASS**, all 5 stages (registers, serial/CPUID/HLT, EPT violation + `hv_vm_map` from the handler,
+  `hv_vcpu_interrupt` from another thread, error codes).
+* QEMU 11.1.2 (MacPorts) `-accel hvf -cpu host -m 1024 -smp 2 -nographic`, Alpine 3.24.3 netboot `vmlinuz-virt` 6.18.58 with
+  `rdinit=/bin/sh`: boots to the shell. `smpboot: CPU0: AMD 1a/24`, `Brought up 1 node, 2 CPUs`, 976 MB.
+  With `rdinit=/bin/sh` busybox has no applet links (`grep: not found`); use `/bin/busybox grep` or the normal init.
+* **AVX-512**: the guest sees `Enabled xstate features 0x7` (x87/SSE/AVX only). QEMU's hvf takes the host XCR0 of its own
+  thread, which XNU has not yet promoted to AVX-512, so the guest gets no AVX-512. This avoids the XCR0 mismatch risk
+  (RyzenHV `docs/notes/GA403WM-ZEN5-TAHOE.md`); `vmFpuMismatches 0`.
+* Guest note: `Measured 120 cycles TSC warp between CPUs, turning off TSC clock` (guest falls back to another clocksource).
+* Counters after ~5 min of QEMU: vmRuns 211284, vmExits 212732, **vmInvalidExits 0**, assertFailures 0, vmNptFaults 112497.
+* QEMU ignores SIGALRM: a `perl -e 'alarm N; exec …'` limit does not stop it; end it with `kill` (or `Ctrl-A x`).
+
 ## Installed on the internal ESP (2026-11-05)
 
 Like the other kexts of this repo: copied to `EFI/OC/Kexts/RyzenHV.kext` (none was there before) and listed with
