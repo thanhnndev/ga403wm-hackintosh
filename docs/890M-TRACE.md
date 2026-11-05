@@ -6547,3 +6547,45 @@ So the package keeps drawing power and the fans keep running. Next steps for rea
 - the `amd_pmc` OS_HINT through the SMU mailbox, with S0i3 residency read back from the SMU;
 - dGPU D3cold during sleep;
 - optionally, shorten the apsd delay.
+
+## Boot-time audit and `-v` removed (2026-11-05, config changed, no reboot needed yet)
+
+The owner reported that Tahoe boots slowly. Measured on the 08:46 boot (OLED only, no HDMI) with `/usr/bin/log show --last boot` and `sysctl kern.boottime`.
+
+| Phase | From → to | Time |
+|---|---|---|
+| Firmware + OpenCore | power on → kernel start | not in the logs. Includes the 5 s picker (`Misc > Boot > Timeout 5`, `ShowPicker true`) |
+| Kernel + early kexts | kern.boottime 08:46:08.6 → launchd 08:46:12.7 | 4.1 s |
+| launchd → WindowServer spawn | 08:46:12.7 → 08:46:15.5 | 2.8 s |
+| GPU kexts (NMXGPU modeset done 08:46:19.2, StrixS0ix up 08:46:17.8, NVRM RmInitAdapter 08:46:22.2) | in parallel with the next row | ~7 s, no stall |
+| **WindowServer blocked in IOKitWaitQuiet** | 08:46:17 → 08:46:54.1 | **36.2 s** |
+| WindowServer → login window shown | 08:46:54.1 → 08:47:00.4 | 6.3 s |
+| Password entry (owner) | 08:47:00.4 → 08:47:22.1 | 21.7 s (user time) |
+| Login → desktop ready | 08:47:22.1 → 08:47:25.6 | 3.5 s |
+
+Machine time from kernel start to the login window: about 52 s. Of that, 36 s is one wait.
+
+**The 36 s wait is the NVRM boot hold.** At 08:46:17.853 NVRM logs "registry held busy until the display is armed". It holds the IORegistry busy, so WindowServer's IOKitWaitQuiet cannot return. With the OLED only, the RTX has no display (`ENUMERATED: 0 connected display(s)`, all NVRMFB `kapiInit failed -- not starting`). The auto-go thread still runs its full loops:
+- it waits 20 × 1 s for `debug.nvaccel_heads_published`. The mask stays 0, and the "mask unchanged 3 times" exit only counts a non-zero mask (`heads published mask 0x0 ... after 20 s`, 08:46:44.0);
+- it then tries `debug.nvaccelfb=1` 10 × 1 s (`accelerator level 1 NEVER took after 11 tries`, 08:46:54.07).
+
+After that comes `boot hold RELEASED (display PARTIAL)` at 08:46:54.090, and WindowServer logs again at 08:46:54.098. NVAccel already knew at 08:46:23.855 ("headless check: no display on any NVIDIA connector"). So about 30 s of the hold is spent waiting for an RTX display that never comes.
+
+There is no boot-arg that shortens it:
+- `nvrmholdcap` only accepts 40–600 s, and the hold ends at 36 s anyway;
+- `-nvrmnogo` skips the whole RTX bring-up, so apps would lose the NVIDIA Metal device.
+
+The fix belongs in the NVRM auto-go thread, in the NVIDIA translator tree (`nmx-translator-271`, PolyForm; no code from it goes into this repo). When the display nub reports 0 connected displays, skip both loops (or release the hold first) and keep the RTX as a headless Metal device. Expected gain: about 30 s per OLED-only boot. Not done here, because it touches the NVIDIA stack.
+
+**`-v` this boot.** No console stall was visible. NMXGPU's first modeset finished at 08:46:19.2, and there is no gap over 1 s in the GPU kext log before the NVRM hold. So `-v` was not the main cost this time. It is still removed: verbose console printing is useless on a normal boot, and the IH-thread printf block during the first modeset can come back.
+
+**Change (ESP):**
+- `EFI/OC/config.plist` → `NVRAM > Add > 7C436110-… > boot-args` now has no `-v`. That is the only line that changed (`diff` against the backup), and `plutil -lint` is OK.
+- Backup: `config.plist.pre-no-v`.
+- `boot-args` is in `NVRAM > Delete > 7C436110-…`, so OpenCore rewrites the NVRAM value on every boot, and no `nvram` write is needed. The live NVRAM still shows `-v` until the next boot.
+- Undo: `cp /Volumes/ESP/EFI/OC/config.plist.pre-no-v /Volumes/ESP/EFI/OC/config.plist`, or add `-v` back. For a single verbose boot, press Cmd+V in the OpenCore picker.
+
+**Other options, not applied:**
+- OpenCore picker `Timeout 5` → 1–2. This saves 3–4 s, and the picker stays available, since any key stops the countdown. It is the owner's call, because the picker is the Linux fallback after a panic.
+- Debug boot-args (`itlmt_native_nvtrace=1`, `itlmt_stat=1`, `strixamp_trace=1`, `alcverbs=1`, `msgbuf=1048576`) cost little at boot (the log shows no stall from them). Leave them until their research is done.
+- kernelmanagerd sandbox denials on `/private/var/db/loadedkextmt.plist` (08:46:18–20) are noise and do not block boot.
