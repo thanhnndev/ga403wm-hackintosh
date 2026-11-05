@@ -6835,3 +6835,11 @@ panic and no CF9 path in our code.
   came back on.
 - Next: the `_PTS(5)` PME-clear SSDT (see the proposed fix above), batched with the next reboot, with the owner's OK.
   An optional test with no install: unplug every USB device and the BLE dongle, then Shut Down.
+
+### Step113 first sleep: panic (fixed, reinstalled, reboot pending)
+
+The first sleep test (mode 0) panicked at 10:46:16 on entry to sleep. The machine did not wake and needed a forced restart.
+
+- Panic: `A kext releasing a(n) OSData ... has corrupted the registry`, thrown from `StrixS0ix::buildPci` (via setPowerState). Report: /Library/Logs/DiagnosticReports/Kernel-2026-11-05-105201.panic.
+- Cause: `IOACPIPlatformDevice::getACPITableData("MCFG")` does not retain the table for the caller (readFadt already handles FACP this way), and buildPci released it.
+- Fix: the release is removed. The kext is rebuilt and reinstalled with `scripts/macos-install-step113.sh`; it loads at the next boot.

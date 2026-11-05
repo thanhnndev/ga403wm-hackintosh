@@ -450,8 +450,9 @@ void StrixS0ix::buildPci()
     if (pciBuilt) return;
     pciBuilt = true;
     if (const OSData *mcfg = pep->getACPITableData("MCFG", 0)) {
+        // not retained for us (as FACP in readFadt): releasing it panicked the first 0.1.4 sleep ("A kext releasing a(n)
+        // OSData ... has corrupted the registry", Kernel-2026-11-05-105201.panic)
         if (mcfg->getLength() >= 56) memcpy(&ecam, static_cast<const uint8_t *>(mcfg->getBytesNoCopy()) + 44, 8);
-        mcfg->release();
     }
     if (!ecam) { IOLog("StrixS0ix: no MCFG, no PCI D-state work\n"); return; }
     OSDictionary *m = IOService::serviceMatching("IOPCIDevice");
