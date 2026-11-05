@@ -7268,3 +7268,24 @@ Test (one password):
 - Logged on every wake: pin 0 at halt and at wake, when its status was first seen, and the level toggles.
 - Test: `scripts/s0ix-tools/lid-rtc-test.sh 90` (RTC safety net at 90 s). Open the lid at about 30 s: it must wake at
   once with `wake event 0x20000`. Then the same with the power button.
+
+**Latent lid-state bug traced: `_LID` reads "open" from the wake until `EC0._PS0` (SSDT-LIDFIX, on the ESP, next boot).**
+- Firmware `LID0._LID` (DSDT line 14573) is `If (EC0.ECOK) { LIDS ? 0 : 1 } Else { Return (One) }`.
+- `EC0._PS3` sets `ECOK = Zero` and `_PS0` sets it back from `OKEC`. macOS power-manages the EC0 device (AppleACPIEC),
+  so during sleep and right after the wake `_LID` reports **open**.
+- Seen at the 14:13 RTC wake: the root domain logged `clamshell closed 0` 4 ms after the wake with the lid shut, and
+  did a full wake.
+- Risk: any dark wake in a closed laptop (RTC, maintenance, network, a later EC/GPIO event) can turn into a full wake
+  with the panel on, in a bag.
+- `LIDS` is bit 5 of ERAM byte 0x52. ERAM is `SystemMemory 0xFEDD8300`, the EC RAM window that SSDT-ECRAM already
+  reads at runtime, so it is valid with the EC in D3. `ECOK` gates only the EmbeddedControl region.
+- **Fix:**
+  - `acpi/SSDT-LIDFIX.dsl`: under Darwin, `_LID` reads `LIDS` directly, still taking MUT0 like the firmware. Other OSes
+    run the firmware method.
+  - OpenCore patch `_LID to XLID`, DSDT only, Find `5F4C494400A0` → `584C494400A0`. It is unique in the live DSDT
+    (SysReport copy, 66513 bytes).
+  - The table and the ACPI/Add entry are on the ESP. Backup: `config.plist.pre-lidfix`. ocvalidate is clean.
+  - Undo: disable both entries together.
+- Check after the boot:
+  - `ioreg -r -k AppleClamshellState -d1` follows the lid.
+  - In the next lid + RTC test, the RTC wake with the lid shut logs `clamshell closed 1` and stays a dark wake.
