@@ -6919,3 +6919,27 @@ without the flag behaves like c54e304 (hold on). SSDT-PTS5 stays.
 kernel_thread_start and `adjustBusy(-1)` on every exit of attachNow. adjustBusy is virtual. Its slot is in __ZTV6NMXGPU (0x8f5b10),
 and an UNSIGND reloc points to it at 0x8f5550/0x8f6150, so a cave can call it through `(*this)->vtbl` with no new relocation. After
 that, `-nvrmnohold` can come back.
+
+### Addendum: where the NMXGPU busy hold must start (2026-11-05, from the nmxaccel-ci source)
+
+The fix above takes `adjustBusy(+1)` before `kernel_thread_start` in `start()`. The source
+(nmxaccel-ci `gpu-port/xkpi/xnu/nmx_kext.cpp`, comment above `kernel_thread_start`) says why the attach runs on its own
+thread: it reads firmware, root mount waits for matching to settle, and an attach inside matching stopped the Mac at the
+logo. A busy hold from `start()` keeps the registry non-quiet while `attachNow()` waits for the firmware folder, which is
+the same deadlock. So:
+1. `adjustBusy(+1)` in `attachNow()` right after `nmx_xnu_wait_firmware_root` returns OK (root is mounted by then).
+2. `adjustBusy(-1)` on every exit: after `nmx_fb_publish()` (fb or not) and on every failure branch (marker set, attach
+   failed). The early return when the firmware folder never appears takes no hold.
+3. A cap thread_call (about 30 s, boot-arg tunable) releases the hold if the amdgpu attach hangs.
+4. A `nmxgpu-boot-hold` property and one log line per state.
+
+The window between root mount and step 1 is small: the attach thread is already waiting on the folder, and WindowServer
+starts several seconds after mount (11:43 boot: mount 25.50, WindowServer up 30.59, NMXGPU driving 33.77). NVRM's own
+hold starts at the same point (after root mount) and has never raced.
+
+Separate, lower priority: WindowServer did not adopt NMXAMDFB when it appeared 0.55 s late. A late NMXAMDFB should
+still be taken (connect interrupt, like NVRMFB's `fHotplugBorn` path).
+
+Verify over several boots with `-nvrmnohold` (it is a ~0.6 s race): "Done waiting for IOKitWaitQuiet" (bluetoothd) and
+WindowServer's first `IOFBSetDisplayModeAndDepth` on VGA@0 come after "NMXAMDFB published", and no
+`Setting main display 0x00000000 offline`. Report: https://claude.ai/artifact/YaTnhdFy7As59STtf699BM
