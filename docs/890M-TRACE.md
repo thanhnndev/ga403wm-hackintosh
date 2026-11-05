@@ -7455,3 +7455,48 @@ IOSurface contents pays it. Idle WindowServer was not sampled this time.
   other activity), CPU at idle.
 - Still open from part 1: Canvas software via the NVIDIA PCI identity (fix B), and CPU decode (fix C, VCN-backed
   VideoToolbox decoder).
+
+### Edge video lag, part 3: surface keep fix (2026-11-05 18:20-18:40, installed, WindowServer loads it at the next boot)
+
+- Fork branch `surface-keep-hash` (ff0ebef, cut from desc-cache e1d1e26 = the live 9d816dc7 build, pushed to `fork`),
+  `plugin/NVMTLDevice.m`:
+  - `NVMTLSurfKey` (7 fields, splitmix64 hash, field compare) replaces the NSArray key in the weak cache and the keep.
+  - The keep's `used` map is merged into the keep entry (`NVMTLSurfKeep {texture, last}`). The old `used` map also
+    leaked a stamp for every key touched after its keep entry went.
+  - The sweep enumerates in place: no `allKeys` copy, one lookup per dropped entry. The rules are unchanged: held
+    entries stay; unheld host entries stay for `NVMTL_KEEP_MS` 3000 and are capped at `NVMTL_KEEP_IDLE` 48; others
+    go.
+  - Miss accounting: the first 12 misses are logged with their reason (`new surface`, `same surface, other key`,
+    `dropped: unheld|expired|idle cap`). After that, one summary line every 30 s: `surface keep: 30 s: hits …,
+    misses … (…), N entries, sweep avg/max us`.
+- Build: the same clang line as build/build_plugin.sh plus `-framework IOKit`, with
+  `-I radv-video/Vulkan-Headers-1.4.330/include`. A base build of e1d1e26 with this line has the same segment sizes and
+  symbols as the live plugin. 336 warnings, none new. Artifact
+  `nmx-plugin-890m/out/plugin-surfkeep-ff0ebef/NVMTLDriver`, LC_UUID 95F40145-4825-3874-B14D-1C46A1FECC7D.
+- Test `plugin/tests/surfkeep_test.m` (`NM_TEST_PLUGIN=… NM_TEST_ACCEL=NMXAccel`, on the 890M, no install):
+  - A wrapper clears the surface green and goes away. The next wrapper must read green, clear it red, and the one
+    after must read red. An sRGB wrapper of the same surface also works. PASS on base and fix.
+  - Then it holds N wrapped surfaces and wraps 200 fresh ones:
+
+  | live surfaces | base miss avg / max | fix miss avg / max | base hit | fix hit |
+  |---|---|---|---|---|
+  | 100 | 3011 / 6243 us | 192 / 642 us | 11.6 us | 6.2 us |
+  | 400 | 12061 / 21521 us | 309 / 3715 us | 21.6 us | 6.6 us |
+
+- Installed 18:26 with `scripts/macos-nvmtl-plugin-install.sh` (bundle binary 57aee79b89b0ffbc, backup
+  /Library/NullMoth/nvmtl-plugin-20261105T113638Z = 9d816dc7), then `scripts/macos-install-strixsbxmap.sh --refresh`
+  (new NVMTLDriver cdhash 3fca36be…, ESP + live sysctl, stale=0). Apps started since then (WallpaperDynamicExtension,
+  Edge GPU process) load it and log `surface keep: miss (new surface)` / hits, with no errors.
+- Edge A/B in its GPU process (fresh test instance, VP9 1080p60 forced, 20 s window), base reinstalled in between.
+  Background load was higher than in part 2 (Docker, Zalo; WindowServer 83-100 %):
+  - base: 251 and 224 drops of ~1200, GPU process ~57 %.
+  - fix: 30 and 197 drops of ~1200, GPU process 42-56 %.
+  - This is the same within noise. Edge's GPU process holds few surfaces, and WindowServer is still on the old plugin
+    until it restarts, so the drops come from WindowServer at ~95 %, not from the plugin in Edge.
+- After the next boot (reboot owned by the main session, nothing to do before it):
+  1. `/usr/bin/log show --last 5m --predicate 'process == "WindowServer" AND eventMessage CONTAINS "surface keep"'`.
+     The 30 s line gives the miss rate and its reasons. If `dropped: idle cap` dominates during video, raise
+     `NVMTL_KEEP_IDLE` in nvrm610.conf. If `same surface, other key` dominates, share one import per (surface, plane).
+  2. WindowServer `sample` during the same video: `nvmtl_surface_keep` should be near 0. Measure main-thread busy %.
+  3. Hitch probe (`hitch.mjs`: rVFC/rAF gaps over 25 ms per 30 s; was 11-162) and WindowServer idle CPU (was 58-83 %).
+- Undo: `sudo scripts/macos-nvmtl-plugin-install.sh --undo`, then `scripts/macos-install-strixsbxmap.sh --refresh`.
