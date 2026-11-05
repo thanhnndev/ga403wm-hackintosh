@@ -7597,3 +7597,32 @@ The surface keep fix (fork `surface-keep-hash` ff0ebef, plugin 57aee79b) was loa
   1. Kernel (NMXGPU source build, already planned as tech debt): on macOS a host-pointer BO is wired memory that never moves, so it can be validated once and then treated like a VM_ALWAYS_VALID BO (kept off the per-submit list). Also cut the per-BO cost (ww_mutex over sx lock, lookups): 1.4 us per BO is several times Linux.
   2. RADV (our libvulkan_radeon): keep host-pointer imports off the global list after their first submit and add them to a command buffer only when NVMTL says it uses them (private entry point; NVMTL knows each command buffer's IOSurface textures). Needs care with bindless descriptors.
   3. Smaller: fewer imports (one BO per IOSurface, shared across planes/wrappers; release keep entries sooner).
+
+## Step114b: DISPLAY IPS sleep trace added to the NMXGPU source build (2026-11-05, not built, not installed)
+
+For the S0i3 blocker: every s0ix sleep the SMU marks DISPLAY (slot 0) and NBIO (slot 9) "not met" for the whole sleep,
+even with the 890M in D3hot. The question is whether `dm_suspend` really gets DCN 3.5 into IPS.
+
+On the same fork branch as Step114 (`xkpi-thread-lockfree`), commit **ec38af4**:
+`gpu-port/xkpi/patches/amdgpu-dm-ips-trace.patch`, last in `patches/series`. The full series of 16 patches replays
+cleanly on drm-kmod HEAD. Both patched files compile with the port's flags (tested in an APFS clone of the vendor tree,
+so the shared tree is untouched). Log lines start with `NullMoth ips:` and appear once per suspend/resume:
+- `dm_suspend`: one line each at "suspend before", "after dc_set_power_state(D3)", "after allow_idle_optimizations"
+  (plus whether `dc_allow_idle_optimizations(true)` was called or skipped) and "suspend done (dmub D3)". Each line
+  logs `in_s0ix`, `caps.ips_support`, `config.disable_ips`, `idle_optimizations_allowed`, the stream count of
+  `current_state`, and the DMUB shared-state IPS signals with the RCG/IPS1/IPS2 entry/exit counters.
+- `dm_resume` entry, before `apply_idle_power_optimizations(false)`: the same line.
+- `dcn35_clk_mgr` init: `smu_ver`, `disable_ips` before and after, and `dcn35_smu_get_ips_supported`. If
+  `disable_ips` is already DISABLE_ALL, the line says PMFW was not asked.
+
+The DMUB counters are read from shared memory. I did not use the GPINT residency query
+(`dc_dmub_srv_ips_query_residency_info`), because it wakes the DMCUB, which would change the very sleep being
+measured.
+
+How to read it:
+- Entry counters unchanged between "suspend done" and "resume" while streams 0, `ips_support` 1 and the allow call
+  ran: IPS is allowed but not entered.
+- `ips_support` 0, or the allow call skipped: the IPS path is off by config or capability.
+- Counters move but DISPLAY is still "not met": the blocker is somewhere else.
+
+It ships in the same single NMXGPU build as Step114 and the NMXAMDFB busy hold (one build, one install, one reboot).
