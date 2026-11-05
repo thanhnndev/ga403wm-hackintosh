@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 // StrixS0ix runtime switches, no reboot needed (run as root):
 //   s0ix-set bootcc6 on|off     boot CPU in CC6 between wake checks while asleep (0.1.3+)
-//   s0ix-set d3 0..4            PCI D3hot during sleep (0 record only, 1 890M buses, 2 + other endpoints,
-//                               3 + no-No_Soft_Reset functions with config save/restore (0.1.5), 4 + the 890M itself)
+//   s0ix-set d3 0..5            PCI D3hot during sleep (0 record only, 1 890M buses, 2 + other endpoints,
+//                               3 + no-No_Soft_Reset functions with config save/restore (0.1.5), 4 + the 890M itself, 5 + the RTX)
 //   s0ix-set cst 1|2            0.1.5: CC6 entry port, _CST C2 (base+1) or C3 (base+2, default)
 //   s0ix-set halthint on|off    0.1.4: OS_HINT from the halt path (on) or from the power state change (off)
 #include <CoreFoundation/CoreFoundation.h>
@@ -12,7 +12,7 @@
 #include <string.h>
 int main(int argc, char **argv)
 {
-    if (argc != 3) { fprintf(stderr, "usage: s0ix-set bootcc6|halthint on|off, s0ix-set d3 0..4, s0ix-set cst 1|2\n"); return 2; }
+    if (argc != 3) { fprintf(stderr, "usage: s0ix-set bootcc6|halthint on|off, s0ix-set d3 0..5, s0ix-set cst 1|2\n"); return 2; }
     CFStringRef key; CFTypeRef val;
     int on = !strcmp(argv[2], "on");
     if (!strcmp(argv[1], "bootcc6")) { key = CFSTR("S0ix,BootCC6"); val = on ? kCFBooleanTrue : kCFBooleanFalse; }

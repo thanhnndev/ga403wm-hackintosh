@@ -78,9 +78,19 @@ static uint16_t gCstBase;
 static bool gCc6Cpus = true;                     // non-boot CPUs in CC6 while halted
 static volatile bool gCc6Boot;                   // armed boot CPU in CC6 between wake checks
 static volatile uint32_t gLastCc6Loops;
+// 0.1.6: the power button (_QE7 -> Notify PWRB) and the lid (_Q2F -> Notify LID0) are EC queries on the EC's GPE
+// (EC0._GPE 0x0A). The DSDT has no _PRW at all, so AppleACPIPlatform disables that GPE before the halt and nothing but
+// the RTC could end a sleep (lid close 2026-11-05 13:00: no wake, forced restart). Like Linux s2idle and Windows Modern
+// Standby the EC GPE is a wake source: enabled for the halt, the old enable word put back on exit; its status stays set,
+// so after the wake ACPI runs the query (lid open or power button wakes fully, other EC events go back to sleep).
+static volatile uint8_t gEcGpe = 0x0A;          // EC0._GPE, re-read at start; 0xff = off (boot-arg s0ix_ecwake=0)
+static uint32_t gEcEnSaved;
+static volatile bool gEcEnSet;
+static volatile uint32_t gEcEnAtHalt;            // the enable word as macOS left it, for the log
 
 static inline uint16_t inw(uint16_t p) { uint16_t v; asm volatile("inw %1, %0" : "=a"(v) : "Nd"(p)); return v; }
 static inline uint32_t inl(uint16_t p) { uint32_t v; asm volatile("inl %1, %0" : "=a"(v) : "Nd"(p)); return v; }
+static inline void outl(uint16_t p, uint32_t v) { asm volatile("outl %0, %1" :: "a"(v), "Nd"(p)); }
 static inline uint8_t inb(uint16_t p) { uint8_t v; asm volatile("inb %1, %0" : "=a"(v) : "Nd"(p) : "memory"); return v; }
 static inline uint64_t rdmsr64(uint32_t m) { uint32_t lo, hi; asm volatile("rdmsr" : "=a"(lo), "=d"(hi) : "c"(m)); return (uint64_t(hi) << 32) | lo; }
 static inline uint64_t rdtsc64() { uint32_t lo, hi; asm volatile("rdtsc" : "=a"(lo), "=d"(hi)); return (uint64_t(hi) << 32) | lo; }
@@ -171,9 +181,11 @@ static void cfgRestore(PciFn &f)
 }
 
 // which functions a D3 mode moves: 1 = 890M buses (No_Soft_Reset only), 2 = + other endpoints, 3 = + functions
-// without No_Soft_Reset (config saved/restored) except the 890M itself, 4 = + the 890M
+// without No_Soft_Reset (config saved/restored) except the 890M itself, 4 = + the 890M, 5 = + the RTX (NSR only)
 static bool d3Wanted(const PciFn &f, uint32_t mode)
 {
+    // 0.1.6: 5 = + the RTX and its audio (No_Soft_Reset 1), left in D0 by NVRM standby; NBIO stays busy with them in D0
+    if (f.vendor == 0x10de) return mode >= 5 && f.nsr;
     if (!f.tier || f.tier > (mode < 2 ? mode : 2)) return false;
     if (f.nsr) return true;
     if (mode < 3) return false;
@@ -194,12 +206,20 @@ static void haltEnter()
         }
     }
     for (unsigned i = 0; i < gFnN; i++) if (gFn[i].set == 3 && gFn[i].pre == 0) { tscDelay(gTscHz / 100); break; }   // 10 ms
+    gEcEnSet = false;
+    if (gEcGpe != 0xff && gEcGpe < gGpe0Len / 2 * 8) {
+        uint16_t en = uint16_t(gGpe0Sts + gGpe0Len / 2 + (gEcGpe / 32) * 4);
+        gEcEnSaved = gEcEnAtHalt = inl(en);
+        uint32_t bit = 1u << (gEcGpe % 32);
+        if (!(gEcEnSaved & bit)) { outl(en, gEcEnSaved | bit); gEcEnSet = true; }
+    }
     if (gHaltHint && gPmc) gHintIn = pmcRaw(0x03, 1);
 }
 
 static void haltExit()
 {
     if (gHaltHint && gPmc) gHintOut = pmcRaw(0x03, 0);
+    if (gEcEnSet) { outl(uint16_t(gGpe0Sts + gGpe0Len / 2 + (gEcGpe / 32) * 4), gEcEnSaved); gEcEnSet = false; }
     bool any = false;
     for (unsigned i = 0; i < gFnN; i++) {
         PciFn &f = gFn[i];
@@ -268,6 +288,7 @@ class StrixS0ix : public IOService {
     void pmcSleep();
     void pmcWake();
     void setupCc6();
+    void setupEcWake();
     bool pciBuilt = false;
     uint64_t ecam = 0;
     void buildPci();
@@ -478,6 +499,20 @@ void StrixS0ix::pmcWake()
           at ? list : " none");
 }
 
+void StrixS0ix::setupEcWake()
+{
+    UInt32 on = 1;
+    PE_parse_boot_argn("s0ix_ecwake", &on, sizeof on);
+    UInt32 gpe = 0x0A;
+    if (IOService *ec = IOService::copyMatchingService(IOService::nameMatching("PNP0C09"))) {
+        if (auto dev = OSDynamicCast(IOACPIPlatformDevice, ec)) dev->evaluateInteger("_GPE", &gpe);
+        ec->release();
+    }
+    gEcGpe = (on && gpe < 0xff) ? uint8_t(gpe) : 0xff;
+    setProperty("S0ix,EcWakeGpe", gEcGpe, 8);
+    IOLog("StrixS0ix: EC GPE %#x %s as a wake source (lid, power button)\n", gpe, gEcGpe != 0xff ? "on" : "off");
+}
+
 void StrixS0ix::setupCc6()
 {
     UInt32 v = 1;
@@ -582,7 +617,7 @@ IOReturn StrixS0ix::setProperties(OSObject *properties)
 {
     auto d = OSDynamicCast(OSDictionary, properties);
     if (auto n = d ? OSDynamicCast(OSNumber, d->getObject("S0ix,D3Mode")) : nullptr) {
-        gD3Mode = n->unsigned32BitValue() > 4 ? 4 : n->unsigned32BitValue();
+        gD3Mode = n->unsigned32BitValue() > 5 ? 5 : n->unsigned32BitValue();
         setProperty("S0ix,D3Mode", gD3Mode, 32);
         IOLog("StrixS0ix: D3 mode now %u\n", unsigned(gD3Mode));
         return kIOReturnSuccess;
@@ -670,6 +705,7 @@ bool StrixS0ix::start(IOService *provider)
     OSKextRetainKextWithLoadTag(OSKextGetCurrentLoadTag());
     useDsm = !PE_parse_boot_argn("-s0ixnodsm", nullptr, 0);
     readFadt();
+    setupEcWake();
     setupCc6();
     {
         UInt32 v = 1;
@@ -677,7 +713,7 @@ bool StrixS0ix::start(IOService *provider)
         gHaltHint = v != 0;
         v = 0;
         PE_parse_boot_argn("s0ix_d3", &v, sizeof v);
-        gD3Mode = v > 4 ? 4 : v;
+        gD3Mode = v > 5 ? 5 : v;
         setProperty("S0ix,HaltHint", bool(gHaltHint));
         setProperty("S0ix,D3Mode", gD3Mode, 32);
     }
@@ -755,7 +791,11 @@ IOReturn StrixS0ix::setPowerState(unsigned long state, IOService *)
     setProperty("S0ix,LastIdleMs", ms, 64);
     setProperty("S0ix,LastLoops", gLastLoops, 32);
     setProperty("S0ix,LastCC6Loops", gLastCc6Loops, 32);
-    IOLog("StrixS0ix: wake #%u, idle entries %llu, last idle %llu ms, wake event %#x, loops %u fast %u cc6 %u, _DSM 6/8/4 %x/%x/%x\n",
-          unsigned(sleeps), gIdleEntries, ms, gLastWhy, gLastLoops, gLastFast, gLastCc6Loops, a, b, c);
+    setProperty("S0ix,EcEnAtHalt", gEcEnAtHalt, 32);
+    IOLog("StrixS0ix: wake #%u, idle entries %llu, last idle %llu ms, wake event %#x (%s), loops %u fast %u cc6 %u, "
+          "GPE0_EN at halt %#x, _DSM 6/8/4 %x/%x/%x\n", unsigned(sleeps), gIdleEntries, ms, gLastWhy,
+          gLastWhy == 0x400 ? "RTC" : gLastWhy == 0x100 ? "power button" : gLastWhy == (0x10000u | gEcGpe) ? "EC: lid/button/other" :
+          gLastWhy & 0x10000 ? "GPE" : gLastWhy == 0x40000000 ? "time limit" : gLastWhy == 0x80000000 ? "IRQ storm" : "PM1",
+          gLastLoops, gLastFast, gLastCc6Loops, gEcEnAtHalt, a, b, c);
     return kIOPMAckImplied;
 }

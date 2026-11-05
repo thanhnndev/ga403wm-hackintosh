@@ -7093,3 +7093,68 @@ S0i3 was **not reached** in any mode: DISPLAY (0), CPU (1) and NBIO (9) were not
     `shutdown` is set.
   - still bit 23: it comes from the S5 path itself. Then check the PTS5 table, by disabling it for one shutdown and
     confirming that the machine comes back on.
+
+## Step115 results (StrixS0ix 0.1.5 live) + Step116: StrixS0ix 0.1.6, EC GPE wake (2026-11-05, installed, reboot pending)
+
+**Sleep tests on the 12:29 boot** (`scripts/macos-syssleep-test.sh 120`, RTC wake, AC, cc6 on `_CST` C3 port 0x415):
+
+| Run | D3 mode | Asleep | Not met (ms, SMU slots) | Left in D0 | Resume |
+|-----|---------|--------|-------------------------|------------|--------|
+| 12:37 | 2 | 94 s | DISPLAY 93666, CPU 11, NBIO 93666 | NPU, 890M + HDMI audio, NHI, SD reader, RTX + audio | ok |
+| 12:43 | 3 | none | invalid: the RTC alarm was set before the password, it fired during Software Sleep | | |
+| 12:46 | 3 | 95 s | DISPLAY 95374, CPU 11, NBIO 95374 | 890M, RTX + audio | ok, NSR-0 functions restored (D0->D3->D0) |
+| 12:52 | 4 | 78 s | DISPLAY 77512, CPU 11, NBIO 77512 | RTX + audio | ok, 890M D3hot -> D0, NMXGPU resume 314 ms, WindowServer fine |
+
+- **CPU is solved.** With the C3 port the CPU block is busy only 11 ms (0.1.4 on C2: the whole sleep).
+- **DISPLAY is not a PCI D-state problem.** It stays busy for the whole sleep even with the 890M in D3hot.
+  - The streams are off at suspend: NMXAMDFB is a DRM client, so `drm_atomic_helper_suspend` disables its CRTC.
+  - DMUB is up (fw 0x09005600, DCN 3.5). PMFW 93.11 gives `DMUB_IPS_RCG_IN_ACTIVE_IPS2_IN_OFF`, so IPS2 is allowed in
+    s0ix.
+  - Next: log `in_s0ix`, `ips_support`, `disable_ips`, `idle_optimizations_allowed`, the stream count and the IPS
+    residency in `dm_suspend`. This goes into the single NMXGPU source build (requested from the nmxgpu session), not
+    as a cave.
+- **NBIO:** the only functions left in D0 are the RTX and its audio (NSR 1; NVRM standby leaves them in D0).
+  0.1.6 adds `s0ix-set d3 5`, which also puts them in D3hot.
+
+**Log bugs found by the owner's question ("is the trace right?"), fixed in 0.1.6:**
+- The not-met list printed all 32 slots. SMU 93.11 fills 16 per-block slots, then 16 running totals (slot i + 16).
+  Slot 15 is not a block time (values around 4.5e18 us). The raw property shows this: 16 = 0, 17 = 1, 25 = 9.
+  0.1.6 prints slots 0..14 by name (`DISPLAY 77512ms CPU 11ms NBIO 77512ms`). The raw 32 slots stay in
+  `S0ix,SmuNotMetUs`.
+- "D0 at sleep" mixed the functions put in D3 with those left in D0. 0.1.6 logs two lists: "put in D3" and "left in D0".
+- The test script set the RTC alarm before the password prompt. The root step now runs
+  `scripts/s0ix-tools/syssleep-root.sh`, which sets the alarm after the password. `S0IX_PRE` runs `s0ix-set` in
+  the same password step.
+
+**Lid close 13:00 (d3 4): the machine never woke and had to be force-restarted.**
+- powerd logged `Entering Sleep state due to 'Clamshell Sleep'` at 13:00:55. Opening the lid did nothing. The power
+  button did nothing. The kernel log from about 12:55 was lost with the forced restart.
+- **Root cause (DSDT):**
+  - The power button is EC query `_QE7` → `Notify (PWRB, 0x80)`. The lid is `_Q2F` → `Notify (LID0, 0x80)`. Both
+    arrive on the EC's GPE, `EC0._GPE = 0x0A`.
+  - The DSDT has **no `_PRW` at all**, so AppleACPIPlatform disables GPE 0x0A before `pmCPUHalt`.
+  - The StrixS0ix halt loop wakes only on PM1 fixed events (the fixed power button is not used: PWRB is a control
+    method button) or an enabled GPE.
+  - So only the RTC could end a sleep. Every earlier test woke by RTC, which is why this never showed. Idle sleep or
+    Apple menu → Sleep would have hung the same way.
+- **Fix (0.1.6), the Linux s2idle / Modern Standby model:**
+  - The EC GPE is a wake source. `haltEnter` sets its GPE0_EN bit (the word macOS left is saved) and `haltExit` puts
+    the saved word back.
+  - The status bit stays set, so after the wake ACPI runs the query.
+  - Lid open and the power button then wake fully. Other EC events (battery, thermal) should give a dark wake and go
+    back to sleep. How often that happens is to be measured.
+  - Off with boot-arg `s0ix_ecwake=0`.
+  - The wake log names the event (RTC / EC / GPE / time limit / IRQ storm) and the GPE0_EN word at halt
+    (`S0ix,EcEnAtHalt`).
+- Installed with `scripts/macos-install-step116.sh` (backup `/Library/NullMoth/step116-bk-*`, `--undo`).
+
+**Next boot test order:**
+1. `scripts/s0ix-tools/lid-test.sh`: close the lid, open it after about 1 minute. It must wake by itself.
+2. The same with the power button instead of opening the lid.
+3. A RTC sleep with `S0IX_PRE="$PWD/build/s0ix-set d3 5"`: does NBIO clear with the RTX in D3hot?
+4. A long sleep (15 min or more): count the EC dark wakes.
+
+Other sleep findings (audit, open):
+- The 300 s safety net (`s0ix_maxsec`) applies only in the MWAITX loop. The boot-CPU CC6 loop has no time limit.
+  That is fine now that the lid and the button can wake it, but it should be one rule for both loops.
+- D3 mode is runtime only (default 0 after boot). Once d3 4/5 are proven, make it the default (boot-arg `s0ix_d3`).
