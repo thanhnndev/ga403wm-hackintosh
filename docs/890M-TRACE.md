@@ -6866,3 +6866,33 @@ Build checks: Info.plist and the undefined imports are equal to the live kext, a
 2. The IOAVBNub / WindowServer waitQuiet ends at about the NMXAMDFB publish, not at the end of go(2). The expected gain is about 3 s.
 3. Headless Metal still works: the NVAccel headless check line appears, and an app can still pick the RTX.
 4. HDMI hotplug after boot, as a separate test: does the RTX display come up? If not, arming on hotplug is its own follow-up.
+
+**Fix installed: SSDT-PTS5 (2026-11-05 11:07). Reboot pending; it takes effect on the first Shut Down after that boot.**
+- Source `acpi/SSDT-PTS5.dsl`, compiled with ACPICA iasl 20260930 (the wifi worktree build) to
+  `efi/OC/ACPI/SSDT-PTS5.aml` (392 bytes), and copied to `/Volumes/ESP/EFI/OC/ACPI/`.
+- What it does:
+  - New `\_PTS`. When `Arg0 == 5` and `_OSI("Darwin")`, it clears PME_En (PMCSR bit 8) and writes 1 to PME_Status
+    (bit 15) on:
+    - XHC0/XHC3/XHC4/NHI0/NHI1 behind GPPC (00:08.3)
+    - XHC1 behind GPPA (00:08.1)
+    - the USB4 SWUS behind GPP0 (00:01.1) and GPP1 (00:01.2)
+  - Then it always calls `ZPTS(Arg0)`, so other OSes and other states behave as before.
+  - Bus numbers come from each root port's secondary-bus register. The PM capability is found by a capability walk
+    bounded to 48 steps. Absent functions are skipped (vendor/device dword reads 0xFFFFFFFF). Config space goes through
+    the firmware's CPM helpers M645/M049/M04B/M04E (ECAM).
+- ESP config changes (backup `EFI/OC/config.plist.pre-pts5`):
+  - ACPI > Add `SSDT-PTS5.aml` (enabled).
+  - ACPI > Patch "_PTS to ZPTS (DSDT only)": Find `5F50545301`, Replace `5A50545301`, TableSignature `DSDT`, Count 1.
+    The firmware DSDT (OEM rev 0x01072009) has exactly one match, at 0x288B.
+  - The repository's `efi/OC/config.plist` was already different from the ESP, and it was not changed.
+- Checked in acpiexec 20260930 with the patched firmware DSDT, all 28 firmware SSDTs and SSDT-PTS5:
+  - The table loads (the only error is the existing firmware `GPP5.WLAN._S0W` duplicate).
+  - `\_PTS 5` runs with and without the Darwin interface installed.
+  - A seeded fake config space (cap at 0x50, PMCSR 0x0108 = D0 + PME_En) gives PMCSR 0x8008 after `ZPMF`, and the cap
+    header is unchanged.
+- Verify after the next boot, then Shut Down:
+  - the machine stays off;
+  - at the next power-on, `sysctl debug.amdcppc.psp` reads bit 21 only after the owner presses the button.
+  - If it still comes back on its own, the wake is not PCI PME. Next candidates: the GPE0 enables for 0x19/0x1A at S5,
+    and the RTC alarm.
+- Undo: disable both entries (or restore `config.plist.pre-pts5`).
