@@ -3,7 +3,15 @@
 [RyzenHV](https://github.com/thanhnndev/ryzen-hypervisor.framework) gives macOS a Hypervisor.framework on AMD-V (SVM), so
 QEMU `-accel hvf`, Docker and other VM apps can run. Zen 5 / macOS 26 notes: RyzenHV repo, `docs/notes/GA403WM-ZEN5-TAHOE.md`.
 
-## Installed on the internal ESP (2026-11-05, reboot pending)
+## First boot (2026-11-05 10:42): loads, SVM on all 24 cores
+
+`rhv-info`: AMD family 0x1a model 0x24, 24 logical CPUs, SVM usable and active on 24, **BIOS disable: no** (SVM Mode is
+on in BIOS GA403WM.310, the default), VM_CR.LOCK 1, revision 1, 32768 ASIDs, features 0xfebfbdff (NPT, NRIPS, VmcbClean,
+FlushByAsid, DecodeAssists, AVIC, vGIF...). Log: `SVM enabled on 24 CPUs`, `selftest: 24 of 24 CPUs ok`, `hv front end:
+registered` in place of AppleHV. All 24 cores were online when the kext started (no late cores, unlike issue 1).
+Counters: enableFailures 0, assertFailures 0. `kern.hv_support` is still 0 (not written at boot). No VM run yet.
+
+## Installed on the internal ESP (2026-11-05)
 
 Like the other kexts of this repo: copied to `EFI/OC/Kexts/RyzenHV.kext` (none was there before) and listed with
 `tools/occonfig.py`, which wrote the backups first.
