@@ -6515,3 +6515,35 @@ Still open: NMXGPU skips suspend because xkpi reads FADT as zero, so the 890M st
    - paging wake;
    - desktop back.
 3. **If the wake hangs (GPU resume):** hard restart and boot with `-s0ixnofacp` (or `--undo`). That keeps the Step110 behaviour, where sleep works with the GPU powered.
+
+### Step111 result (2026-11-05 08:50): amdgpu really suspends; sleep entry is slow; fans keep running
+
+Boot: `StrixS0ix: FACP (276 bytes, flags 0x2085bd, LOW_POWER_S0 set) published for xkpi: IOService`. No "no FADT" and no "BIOS has not been configured" line.
+
+Test: `macos-syssleep-test.sh 60`. Logs: ~/ga403-logs/syssleep-20261105-084946.
+- **GPU now suspends and resumes for real.** NMXGPU suspend took 614 ms (was 0 ms); resume took 323 ms, with "SMU is resumed successfully!".
+- **Wake was clean.** Paging wake ran (08:50:57.013), the desktop came back, and WindowServer stayed alive. StrixS0ix: idle 16466 ms, wake event 0x400 (RTC).
+
+**What the owner saw.** The display went off, the keyboard LED stayed on for a while, then started the "breathing" sleep pattern like on Linux, and the fans kept running.
+
+**Sleep entry timeline.**
+
+| Time | Event |
+|---|---|
+| 08:50:02 | display off and dark wake (f->9); sleep held back by a CPU assertion (cloudd NSURLSession tasks, about 13 s) |
+| 08:50:15 | Entering Sleep (`9->0` START) |
+| 08:50:33 | kernel drivers are told; pmset reports "apsd is slow (17518 ms)" and "bluetooth.sleep is slow (1517 ms)" |
+| 08:50:33.099 | StrixS0ix _DSM 3/7/5. This is the moment the EC starts the keyboard "breathing", about 31 s after the display went off |
+| 08:50:40 | NVRM standby done (6935 ms, saving VRAM); then the MWAITX idle starts |
+
+apsd (push notifications) waits about 17.5 s for its connection to close. That is likely the USB-tethered network in use while Wi-Fi is on its own branch. It is user space, not our driver path.
+
+**Fans.** The EC gets the Modern Standby _DSM calls (the LED pattern proves it), but the SoC never reaches S0i3:
+- no SMU OS_HINT or S0i3 request is sent (Linux `amd_pmc` does this);
+- the RTX stays in RM standby, not D3cold;
+- only CPU0 sits in MWAITX, while the other cores HLT.
+
+So the package keeps drawing power and the fans keep running. Next steps for real low-power sleep:
+- the `amd_pmc` OS_HINT through the SMU mailbox, with S0i3 residency read back from the SMU;
+- dGPU D3cold during sleep;
+- optionally, shorten the apsd delay.
