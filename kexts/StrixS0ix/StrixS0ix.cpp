@@ -44,6 +44,7 @@
 #include <IOKit/IOMemoryDescriptor.h>
 #include <IOKit/pwr_mgt/IOPM.h>
 #include <IOKit/pwr_mgt/RootDomain.h>
+#include <kern/thread_call.h>
 #include <libkern/OSKextLib.h>
 #include <libkern/version.h>
 #include <pexpert/pexpert.h>
@@ -87,6 +88,17 @@ static volatile uint8_t gEcGpe = 0x0A;          // EC0._GPE, re-read at start; 0
 static uint32_t gEcEnSaved;
 static volatile bool gEcEnSet;
 static volatile uint32_t gEcEnAtHalt;            // the enable word as macOS left it, for the log
+// 0.1.8: in Modern Standby the EC reports the lid and the power button on AMD GPIO 0 (PWR_BTN_L), not on its GPE:
+// SSDT-22 \_SB.GPIO._AEI lists pin 0 (PBTN, ExclusiveAndWake) and _EVT(0) does Notify (PWRB) + Notify (LID0). macOS
+// has no _AEI support and VoodooGPIOAMD serves only the touchpad pin, so nothing armed pin 0: the 14:38 observe run
+// saw no GPE0 and no PM1 bit for a lid open and a power button press. At halt pin 0 gets interrupt enable, IRQ
+// delivery and S0i3 wake (pinctrl-amd bits 11/12/13) with its status cleared; its interrupt / wake status (bits 28/29)
+// is a wake event; on exit the old control word goes back with the status cleared, and after the wake StrixS0ix runs
+// _EVT(0) so ACPI sends the Notify macOS never got. S0ix,GpioWake: 0 off, 1 wake (default), 2 observe (latch only).
+static volatile uint8_t *gGpio;                  // AMDI0030 MMIO (pin n control at n * 4)
+static volatile uint32_t gGpioMode = 1;
+static volatile bool gGpioCc6;                   // boot CPU CC6 while GPIO wake is armed (until IRQ 7 is proven)
+static uint32_t gPin0Saved, gPin0AtHalt, gPin0AtWake, gPin0IntMs, gPin0Toggles;
 static volatile uint32_t gEcMode = 1;            // 0.1.7: S0ix,EcWake 0 = off, 1 = EC GPE wakes, 2 = observe only
 // 0.1.7: every PM1 / GPE0 status bit that appears while halted, with its first time (ms after halt entry). Observe
 // mode (2) keeps the boot CPU on the MWAITX loop (0.25 s polls) and never wakes on the EC, so a lid open or a power
@@ -105,6 +117,15 @@ static inline void cpuid(uint32_t leaf, uint32_t r[4]) { asm volatile("cpuid" : 
 
 static void sampleStatus()
 {
+    if (gGpio && gGpioMode) {
+        static uint32_t last;
+        uint32_t v = *reinterpret_cast<volatile uint32_t *>(gGpio);
+        if (gPin0Toggles == 0 && last == 0) last = gPin0AtHalt;
+        if ((v ^ last) & (1u << 16)) gPin0Toggles++;
+        if ((v & (3u << 28)) && !gPin0IntMs)
+            gPin0IntMs = 1 + uint32_t((rdtsc64() - gHaltT0) / (gTscHz / 1000 ? gTscHz / 1000 : 1));
+        last = v;
+    }
     uint32_t g = inl(gGpe0Sts) & ~gSeenGpe;
     uint32_t p = inw(gPm1Sts) & 0xffffu & ~gSeenPm1;
     if (!(g | p)) return;
@@ -120,6 +141,7 @@ static uint32_t wakeEvent()
 {
     uint16_t s = inw(gPm1Sts) & kPm1Wake;
     if (s) return s;
+    if (gGpio && gGpioMode == 1 && (*reinterpret_cast<volatile uint32_t *>(gGpio) & (3u << 28))) return 0x20000u;
     uint16_t half = gGpe0Len / 2;
     for (uint16_t i = 0; i + 4 <= half; i += 4) {
         uint32_t g = inl(gGpe0Sts + i) & inl(gGpe0Sts + half + i);
@@ -226,6 +248,14 @@ static void haltEnter()
     for (unsigned i = 0; i < gFnN; i++) if (gFn[i].set == 3 && gFn[i].pre == 0) { tscDelay(gTscHz / 100); break; }   // 10 ms
     gEcEnSet = false;
     gSeenGpe = gSeenPm1 = 0;
+    gPin0IntMs = gPin0Toggles = 0;
+    if (gGpio && gGpioMode) {
+        auto pin0 = reinterpret_cast<volatile uint32_t *>(gGpio);
+        gPin0Saved = gPin0AtHalt = *pin0;
+        uint32_t v = (gPin0Saved | (1u << 11) | (1u << 13)) & ~(3u << 28);
+        if (gGpioMode == 1) v |= 1u << 12;        // deliver to IRQ 7, so a C-state ends on it
+        *pin0 = v | (3u << 28);                   // W1C: drop the lid-close pulse latched before the halt
+    }
     if (gEcMode == 1 && gEcGpe != 0xff && gEcGpe < gGpe0Len / 2 * 8) {
         uint16_t en = uint16_t(gGpe0Sts + gGpe0Len / 2 + (gEcGpe / 32) * 4);
         gEcEnSaved = gEcEnAtHalt = inl(en);
@@ -238,6 +268,11 @@ static void haltEnter()
 static void haltExit()
 {
     if (gHaltHint && gPmc) gHintOut = pmcRaw(0x03, 0);
+    if (gGpio && gGpioMode) {
+        auto pin0 = reinterpret_cast<volatile uint32_t *>(gGpio);
+        gPin0AtWake = *pin0;
+        *pin0 = (gPin0Saved & ~(3u << 28)) | (3u << 28);   // old control word, status cleared before IRQs come back
+    }
     if (gEcEnSet) { outl(uint16_t(gGpe0Sts + gGpe0Len / 2 + (gEcGpe / 32) * 4), gEcEnSaved); gEcEnSet = false; }
     bool any = false;
     for (unsigned i = 0; i < gFnN; i++) {
@@ -267,7 +302,7 @@ static void s0ixHalt(void)
     uint32_t why, loops = 0, fast = 0, cc6 = 0, cc6fast = 0;
     // CC6 between checks: the wake event's SCI ends the C-state (interrupts stay masked); a pending non-wake
     // interrupt makes C2 return at once, and after a run of those the loop drops back to MWAITX with its timer
-    while (gCc6Boot && gEcMode != 2 && gCstPort && !(why = wakeEvent())) {
+    while (gCc6Boot && gEcMode != 2 && !(gGpio && gGpioMode && !gGpioCc6) && gCstPort && !(why = wakeEvent())) {
         uint64_t a = rdtsc64();
         (void)inb(gCstPort);
         cc6++;
@@ -311,6 +346,11 @@ class StrixS0ix : public IOService {
     void pmcWake();
     void setupCc6();
     void setupEcWake();
+    void setupGpio();
+    static void gpioEvt(thread_call_param_t self, thread_call_param_t);
+    IOACPIPlatformDevice *gpioDev = nullptr;
+    IOMemoryMap *gpioMap = nullptr;
+    thread_call_t evtCall = nullptr;
     bool pciBuilt = false;
     uint64_t ecam = 0;
     void buildPci();
@@ -521,6 +561,41 @@ void StrixS0ix::pmcWake()
           at ? list : " none");
 }
 
+void StrixS0ix::setupGpio()
+{
+    UInt32 mode = 1;
+    PE_parse_boot_argn("s0ix_gpiowake", &mode, sizeof mode);
+    gGpioMode = mode > 2 ? 2 : mode;
+    if (IOService *g = IOService::copyMatchingService(IOService::nameMatching("AMDI0030"))) {
+        gpioDev = OSDynamicCast(IOACPIPlatformDevice, g);
+        if (gpioDev) {
+            gpioDev->retain();
+            if (IODeviceMemory *m = gpioDev->getDeviceMemoryWithIndex(0))
+                if ((gpioMap = m->map(kIOMapInhibitCache)))
+                    gGpio = reinterpret_cast<volatile uint8_t *>(gpioMap->getVirtualAddress());
+        }
+        g->release();
+    }
+    evtCall = thread_call_allocate(&StrixS0ix::gpioEvt, this);
+    uint32_t pin0 = gGpio ? *reinterpret_cast<volatile uint32_t *>(gGpio) : 0;
+    setProperty("S0ix,GpioWake", gGpioMode, 32);
+    setProperty("S0ix,GpioPin0", pin0, 32);
+    IOLog("StrixS0ix: AMD GPIO %s, pin 0 (lid + power button, _AEI) control %#x, wake mode %u\n",
+          gGpio ? "mapped" : "NOT found", pin0, unsigned(gGpioMode));
+}
+
+// after a pin 0 wake: what Windows / Linux do with the _AEI event (Notify PWRB and LID0); EC needs to be up first
+void StrixS0ix::gpioEvt(thread_call_param_t self, thread_call_param_t)
+{
+    auto me = static_cast<StrixS0ix *>(self);
+    if (!me->gpioDev) return;
+    OSNumber *n = OSNumber::withNumber(0ULL, 32);
+    OSObject *arg[1] = { n };
+    IOReturn r = me->gpioDev->evaluateObject("_EVT", nullptr, arg, 1);
+    if (n) n->release();
+    IOLog("StrixS0ix: GPIO._EVT(0) after the pin 0 wake -> %#x\n", r);
+}
+
 void StrixS0ix::setupEcWake()
 {
     UInt32 on = 1;
@@ -655,6 +730,18 @@ IOReturn StrixS0ix::setProperties(OSObject *properties)
         IOLog("StrixS0ix: C-state port now %#x (_CST C%u)\n", unsigned(gCstPort), depth + 1);
         return kIOReturnSuccess;
     }
+    if (auto n = d ? OSDynamicCast(OSNumber, d->getObject("S0ix,GpioWake")) : nullptr) {
+        gGpioMode = n->unsigned32BitValue() > 2 ? 2 : n->unsigned32BitValue();
+        setProperty("S0ix,GpioWake", gGpioMode, 32);
+        IOLog("StrixS0ix: GPIO pin 0 wake mode now %u\n", unsigned(gGpioMode));
+        return kIOReturnSuccess;
+    }
+    if (auto b2 = d ? OSDynamicCast(OSBoolean, d->getObject("S0ix,GpioCc6")) : nullptr) {
+        gGpioCc6 = b2->isTrue();
+        setProperty("S0ix,GpioCc6", bool(gGpioCc6));
+        IOLog("StrixS0ix: boot CPU %s while GPIO wake is armed\n", gGpioCc6 ? "in CC6" : "on MWAITX");
+        return kIOReturnSuccess;
+    }
     if (auto n = d ? OSDynamicCast(OSNumber, d->getObject("S0ix,EcWake")) : nullptr) {
         gEcMode = n->unsigned32BitValue() > 2 ? 2 : n->unsigned32BitValue();
         setProperty("S0ix,EcWake", gEcMode, 32);
@@ -737,6 +824,7 @@ bool StrixS0ix::start(IOService *provider)
     useDsm = !PE_parse_boot_argn("-s0ixnodsm", nullptr, 0);
     readFadt();
     setupEcWake();
+    setupGpio();
     setupCc6();
     {
         UInt32 v = 1;
@@ -779,7 +867,7 @@ bool StrixS0ix::start(IOService *provider)
     PMinit();
     getPMRootDomain()->addPowerChild(this);       // top level: powered down after the device tree, only on real sleep
     if (registerPowerDriver(this, states, 2) == kIOReturnSuccess) { pm = true; changePowerStateTo(1); }
-    IOLog("StrixS0ix: 0.1.7 up, PEP _DSM mask %#x (%s), halt hook %s, power child %s\n", mask, useDsm ? "used" : "off",
+    IOLog("StrixS0ix: 0.1.8 up, PEP _DSM mask %#x (%s), halt hook %s, power child %s\n", mask, useDsm ? "used" : "off",
           halt ? "on" : "OFF", pm ? "on" : "FAILED");
     registerService();
     return true;
@@ -833,9 +921,20 @@ IOReturn StrixS0ix::setPowerState(unsigned long state, IOService *)
         setProperty("S0ix,SeenPm1Sts", gSeenPm1, 32);
         IOLog("StrixS0ix: status bits raised while halted:%s\n", at ? seen : " none");
     }
+    if (gGpio && gGpioMode) {
+        setProperty("S0ix,GpioPin0AtHalt", gPin0AtHalt, 32);
+        setProperty("S0ix,GpioPin0AtWake", gPin0AtWake, 32);
+        IOLog("StrixS0ix: GPIO pin 0 at halt %#x, at wake %#x, status first seen at %u ms (0 = never), level toggles %u\n",
+              gPin0AtHalt, gPin0AtWake, gPin0IntMs ? gPin0IntMs - 1 : 0, gPin0Toggles);
+        if (gLastWhy == 0x20000u && evtCall) {
+            uint64_t dl;
+            clock_interval_to_deadline(300, kMillisecondScale, &dl);
+            thread_call_enter_delayed(evtCall, dl);
+        }
+    }
     IOLog("StrixS0ix: wake #%u, idle entries %llu, last idle %llu ms, wake event %#x (%s), loops %u fast %u cc6 %u, "
           "GPE0_EN at halt %#x, _DSM 6/8/4 %x/%x/%x\n", unsigned(sleeps), gIdleEntries, ms, gLastWhy,
-          gLastWhy == 0x400 ? "RTC" : gLastWhy == 0x100 ? "power button" : gLastWhy == (0x10000u | gEcGpe) ? "EC: lid/button/other" :
+          gLastWhy == 0x400 ? "RTC" : gLastWhy == 0x100 ? "power button" : gLastWhy == 0x20000u ? "GPIO 0: lid/power button" : gLastWhy == (0x10000u | gEcGpe) ? "EC: lid/button/other" :
           gLastWhy & 0x10000 ? "GPE" : gLastWhy == 0x40000000 ? "time limit" : gLastWhy == 0x80000000 ? "IRQ storm" : "PM1",
           gLastLoops, gLastFast, gLastCc6Loops, gEcEnAtHalt, a, b, c);
     return kIOPMAckImplied;

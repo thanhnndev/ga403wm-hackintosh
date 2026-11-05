@@ -7234,3 +7234,37 @@ Test (one password):
 - `S0IX_PRE="$PWD/build/s0ix-set ecwake 2" scripts/s0ix-tools/lid-rtc-test.sh 180`.
 - Close the lid at once. Open it at about 60 s (the screen stays dark), and press the power button once at about 120 s.
 - At 180 s the RTC wakes the machine; read the raised bits.
+
+**Observe run 14:38 (0.1.7, `ecwake 2`, MWAITX loop): the lid and the power button raise no GPE0 and no PM1 bit.**
+- The lid closed at 14:38:27 and halt began at about 14:38:51. The owner opened the lid at about 30 s and pressed the
+  power button at about 60 s.
+- The RTC woke the machine at 14:39:52 (60.5 s): `SeenGpe0Sts = 0`, `SeenPm1Sts = 0x410`. Bit 10 is RTC and bit 4 is
+  BM_STS, and both appear only at 60519 ms, which is the alarm.
+- So neither event reaches GPE 0x0A or PWRBTN_STS during the sleep. 0.1.6's EC GPE enable could never have worked.
+- **Where they go (SSDT-22):** `\_SB.GPIO._AEI` lists pin 0, plus pins 5, 0x10, 0x3A, 0x3B, 0x36 and 0x12 (D3C).
+  - Pin 0 is `PBTN`: Edge, ActiveHigh, ExclusiveAndWake, debounce 50 ms. It is listed when `CMBS == 0`, which is this
+    machine's case.
+  - `_EVT(0)` reads EC BACH, then does `Notify (\_SB.PWRB, 0x80)` and `Notify (\_SB.LID0, 0x80)`.
+  - AMD GPIO 0 is the PWR_BTN_L pin. In Modern Standby the EC pulses it for the lid and for the button. At runtime the
+    same events also come as EC queries (`_Q2F`, `_QE7`), which is why lid close and the power button work while
+    awake.
+- macOS has no `_AEI` / `_EVT` support. The AMDI0030 controller is bound to VoodooGPIOAMD (IRQ 7), which serves only the
+  touchpad's pin. Nothing arms pin 0, and nothing runs `_EVT`.
+- Latent issue: at the RTC wake the lid read as open while it was closed. `LID0._LID` returns 1 when `EC0.ECOK` is 0,
+  so any dark wake in a closed laptop can turn into a full wake with the screen on. This needs an SSDT: `_LID` should
+  return the last EC state while ECOK is 0.
+
+**Step119: StrixS0ix 0.1.8, GPIO pin 0 wake (installed, reboot pending).**
+- `haltEnter` maps AMDI0030 MMIO and saves the pin 0 control word. It sets InterruptEnable (bit 11), the IRQ delivery
+  mask bit (12) and S0i3 wake (13), and clears the latched status (W1C bits 28/29), which drops the lid-close pulse.
+- `wakeEvent`: pin 0 interrupt or wake status is wake event `0x20000` ("GPIO 0: lid/power button").
+- `haltExit` puts back the old control word with the status cleared, before interrupts come back, so VoodooGPIO never
+  sees a pin 0 interrupt.
+- 300 ms after a pin 0 wake, a thread call evaluates `\_SB.GPIO._EVT(0)`. That delivers the Notify that Linux and
+  Windows deliver.
+- The boot CPU stays on the MWAITX loop while pin 0 is armed (`gpiocc6 off`, the default) until IRQ 7 is proven to end
+  CC6.
+- `s0ix-set gpiowake 0|1|2`: off / wake / observe. Boot-arg `s0ix_gpiowake`.
+- Logged on every wake: pin 0 at halt and at wake, when its status was first seen, and the level toggles.
+- Test: `scripts/s0ix-tools/lid-rtc-test.sh 90` (RTC safety net at 90 s). Open the lid at about 30 s: it must wake at
+  once with `wake event 0x20000`. Then the same with the power button.
