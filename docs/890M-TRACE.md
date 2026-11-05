@@ -6896,3 +6896,26 @@ Build checks: Info.plist and the undefined imports are equal to the live kext, a
   - If it still comes back on its own, the wake is not PCI PME. Next candidates: the GPE0 enables for 0x19/0x1A at S5,
     and the RTC alarm.
 - Undo: disable both entries (or restore `config.plist.pre-pts5`).
+
+## Black screen after `-nvrmnohold` (2026-11-05 11:11 and 11:12 boots, traced from Linux)
+
+The two boots after the `-nvrmnohold` + SSDT-PTS5 install (11:11:25 and 11:12:14, both ended with shutdown cause 5)
+stayed black. The 10:52 boot before them reached the desktop; its 11:1x `Kernel-...-111129.panic` (spinlock timeout in
+WindowServer amdgpu_cs_ioctl → lkpi_kfree → nmx_curthread) is a separate issue, still open.
+
+**Cause (unified log, 11:12 boot, local time):**
+- 11:12:22.171 WindowServer: `Setting offline display 0x00000000 main in CGXConstructVirtualFramebuffer`
+- 11:12:22.448 WindowServer: `GPU: FB: 0 of 0 opened`. It found no framebuffer, so it uses a virtual one and the main display is offline.
+- 11:12:22.623 kernel: `NMXAMDFB published`, 175 ms too late.
+- 11:12:22.750 → 25.750: NVRM go(2), with no hold taken (`-nvrmnohold`).
+- In every good boot, WindowServer calls `IOFBSetDisplayModeAndDepth ... displayID 0x20d06700` on VGA@0 (GPPA, the 890M). Neither black boot has that call.
+
+The NVRM boot hold kept the registry busy for about 3 s. That made WindowServer wait for the hold, and by the time it ended NMXAMDFB already existed. Without the hold, nothing makes WindowServer wait for the 890M framebuffer. The reason is that NMXGPU::start (0x6e5160) only starts `attachThread` and returns. The amdgpu attach, the modeset and nmx_fb_publish then run outside IOKit's busy window.
+
+**Now:** `-nvrmnohold` removed from the ESP boot-args (owner's call). Backup `config.plist.pre-drop-nvrmnohold-*`. NVRM
+without the flag behaves like c54e304 (hold on). SSDT-PTS5 stays.
+
+**Proper fix (not done yet):** NMXGPU should keep itself busy from start() until nmx_fb_publish returns: `adjustBusy(+1)` before
+kernel_thread_start and `adjustBusy(-1)` on every exit of attachNow. adjustBusy is virtual. Its slot is in __ZTV6NMXGPU (0x8f5b10),
+and an UNSIGND reloc points to it at 0x8f5550/0x8f6150, so a cave can call it through `(*this)->vtbl` with no new relocation. After
+that, `-nvrmnohold` can come back.
