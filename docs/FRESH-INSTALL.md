@@ -8,9 +8,15 @@ tìm đường 1 click install all ấy" (find a one-click way to install everyt
 
 ## Summary
 
-* **Recommendation: the hybrid (option c).** A USB stick holds the OpenCore EFI, the macOS installer and a payload
-  volume. After macOS is installed, one app on the stick (`GA403 Setup.app`) applies everything in order across two
-  or three reboots, resuming on its own after each one, and verifies each stage against a manifest.
+* **Recommendation: the hybrid (option c), on a small USB.** One FAT32 stick (4 GB is enough) holds three folders:
+  the OpenCore EFI with only the kexts the install needs (Wi-Fi, keyboard/mouse/touchpad, USB map, the AMD kernel
+  patches), the macOS **Recovery** image (`macrecovery.py`, about 1 GB), and `GA403/` with the post-install app. macOS
+  itself is downloaded by Recovery over Wi-Fi; no full installer is put on the stick (owner's direction, 2026-11-05).
+* **Pre-install versus post-install.** The USB EFI carries only what Recovery, the installer and the first boot
+  need (section 2.1). Everything else is post-install, done by `GA403 Setup.app`: the full EFI on the internal disk,
+  the iGPU (NMXGPU + 890M userland), NVIDIA, power/sleep fixes, audio, ROG Control, optimisations. The app applies
+  them in order across two or three reboots, resumes on its own after each one, and verifies each stage against a
+  manifest.
 * **The step scripts cannot be replayed on a fresh machine.** The live NMXGPU (`5760efb6…`) is a source build
   (`7efe25b8`, Step69) followed by about 22 binary patches and caves (Step74 to Step112c). Each step script only
   accepts the exact sha256 the previous step produced, and some read their input from dated backup folders that exist
@@ -23,7 +29,8 @@ tìm đường 1 click install all ấy" (find a one-click way to install everyt
 * **Licensing split.** Every PolyForm part (NMXGPU, NMXAccel, NMXAGDC, NVRM*, NVAccel, NVMTL plugin and translator,
   RADV/libdrm builds, NullMoth firmware) lives only in the payload, never in this BSD repo. The repo carries the
   manifest format, the scripts, the BSD kexts' sources, and sha256 values.
-* **Clicks that cannot be automated:** the BIOS settings, picking the USB in the boot menu, macOS Setup Assistant
+* **Clicks that cannot be automated:** the BIOS settings, picking the USB in the boot menu, joining Wi-Fi and
+  erasing the disk in Recovery, macOS Setup Assistant
   (account, Apple ID), one admin password per stage, and the reboots (the app can trigger them, but a person should
   confirm each one). The setup expects no "Allow" click in Privacy & Security because `csr-active-config` 0x0A43
   includes `CSR_ALLOW_UNAPPROVED_KEXTS`. This has to be confirmed on the first real run.
@@ -138,13 +145,17 @@ Both need authenticated root disabled (0x800 in csr) and must be redone after ev
 ```
  BIOS: Secure Boot off (or enrolled, docs/SECURE-BOOT.md), CSM off, Above 4G decoding on
    │
- S0  build the USB (on any Mac, this machine included)  ─────────────────────────────── no target needed
-   │   OpenCore 1.0.9+zen5, install-profile config, SMBIOS generated per target, macOS 26 installer, payload volume
+ S0  build the USB (macOS, Linux or Windows: macrecovery.py is python) ─────────────────── no target needed
+   │   one FAT32 volume: EFI/ (OpenCore 1.0.9+zen5, pre-install kexts, SMBIOS generated per target),
+   │   com.apple.recovery.boot/ (Tahoe BaseSystem), GA403/ (Setup app, manifest, scripts, optional payload)
    │
- S1  boot the USB → macOS installer → installs to internal disk (the installer reboots 2-3 times by itself;
-   │   OpenCore on the USB picks "macOS Installer" automatically)                         needs: OC on USB only
+ S1  boot the USB → OpenCore picker → macOS Recovery
+   │   join Wi-Fi (itlmt7925Native in the USB EFI) or plug a phone (HoRNDIS) / USB Ethernet
+   │   Disk Utility: erase the target (APFS) → Reinstall macOS → Recovery downloads Tahoe (~15 GB, on the target disk)
+   │   the installer reboots 2-3 times; OpenCore on the USB picks "macOS Installer"        needs: OC on USB only
    │
  S2  first boot (still from the USB OpenCore) → Setup Assistant (user account)           manual
+   │   open GA403/GA403 Setup.app from the USB                                               ← post-install starts
    │
  S3  Setup app, stage "efi"   [admin password #1]
    │   dump VFCT → build StrixVFCT; copy the EFI to the internal ESP with the same SMBIOS; full-profile config
@@ -169,10 +180,9 @@ Order rules that matter:
 1. SIP and AMFI come from OpenCore (`NVRAM > Add` + `Delete` of `csr-active-config` and `boot-args`), so they only
    change when the machine boots the **full** EFI. S4 must therefore run after a boot from the internal ESP (REBOOT 1);
    it cannot run straight after Setup Assistant.
-2. The installer profile (S1) should be the base set only: Lilu, VirtualSMC, SMCBatteryManager, ForgedInvariant,
-   USBToolBox + UTBMap, ItlXhciKick (USB lag), VoodooI2C + HID (touchpad), NVMeFix, RestrictEvents, AmdCppc,
-   itlmt7925/Native, HoRNDIS + NullEthernet, AppleALC, the kernel patches, and SIP left at the default (csr 0). No
-   Strix*, no NVRM, no AMFIPass. If the installer fails, this set is small enough to debug.
+2. The USB EFI (S1) carries the pre-install set of 2.1 only, with SIP left at the default (csr 0) and no AMFI
+   boot-args. No Strix*, no NVRM, no AMFIPass, no Kernel/Block of IONDRVSupport (Recovery draws on the firmware GOP
+   framebuffer). If Recovery or the installer fails, this set is small enough to debug.
 3. The NullMoth upstream `install.sh` must run **before** the golden overlay: it writes NVRM/NVRMFB/NVAccel/NVRMAGDC,
    NVK and firmware, and it would replace the 890M plugin and the allow list. The current
    `macos-install-nvidia-2.7.1.sh` gate on NMXGPU `3e1b6619` has to become "NMXGPU = manifest sha" (or be removed:
@@ -183,6 +193,32 @@ Order rules that matter:
    (Step100b).
 6. Anything that touches `/System` runs last and on its own reboot, so a failure there can be rolled back by booting
    the previous snapshot (`bless --last-sealed-snapshot` or the OpenCore picker).
+
+### 2.1 Pre-install (USB EFI) versus post-install (Setup app)
+
+Sorted from the live `config.plist` (section 1.1). Rule: a part goes on the USB only if Recovery, the installer or
+the first boot cannot work, or cannot be used with the built-in keyboard and touchpad, without it.
+
+| Part | Where | Why |
+|---|---|---|
+| AMD kernel patches (cpuid, PAT, non-monotonic time, 10-bit tags), Booter/Kernel quirks, `ForgedInvariant` | USB | macOS does not boot on Zen 5 without them; OpenCore must be the Zen 5 FSB-patched build |
+| `Lilu`, `VirtualSMC`, `SMCBatteryManager`, `RestrictEvents`, `AppleMCEReporterDisabler`, `NVMeFix` | USB | SMC and battery, CPU naming, MCE reporter panics on AMD, NVMe power |
+| `USBToolBox` + `UTBMap`, `SSDT-USBX`, `SSDT-USB-Reset` | USB | USB ports (the stick itself, keyboard, phone tether) |
+| `ItlXhciKick` | USB | the 2 s key-release lag on AMD xHCI makes the keyboard unusable in Recovery without it |
+| `VoodooI2C` (+ GPIO, Services, Input), `VoodooI2CHID`, `SSDT-XOSI` + `_OSI` rename, `-vi2c-force-polling` | USB | touchpad |
+| `itlmt7925Native` + `itlmt7925`, `itlmt_native=1 itlmt_native_if=1 itlmt_native_dp=1 itlmt_fast=6 itlmt_m1=0` | USB | Wi-Fi, so Recovery can download macOS |
+| `HoRNDIS`, `NullEthernet` + `SSDT-RMNE` | USB | phone tethering fallback if Wi-Fi fails in Recovery; a built-in `en0` for the App Store/iServices |
+| `SSDT-EC`, `SSDT-PLUG-ALT` | USB | the usual EC and CPU plugin SSDTs |
+| PlatformInfo `MacBookPro16,2` with a generated serial | USB | Recovery sends the board-id to Apple to pick the image; the same identity is reused in the internal EFI |
+| boot-args `keepsyms=1 debug=0x100 -v` | USB only | verbose boot while installing; dropped in the full profile |
+| full `config.plist` (csr 0x0A43, AMFI args, AMFIPass, Kernel/Block, DeviceProperties, trace flags removed) | post-install (stage efi) | SIP/AMFI must change only once macOS is installed (rule 1) |
+| `StrixVFCT`, `StrixProbe`, `StrixMetalGate`, `StrixHeadroom`, `StrixSbxMap` (built after the GPU bundles) | post-install (stage efi / le) | iGPU, only useful with NMXGPU |
+| NMXGPU, NMXAccel, NMXAGDC, NMXBacklight, NullMoth 2.7.1 (NVRM, NVRMFB, NVAccel, NVRMAGDC), 890M userland, allow list, flip daemon | post-install (stage le) | iGPU and NVIDIA; AuxKC |
+| `StrixS0ix`, `SSDT-S0IDLE`, `SSDT-PTS5` + `_PTS` rename, `SSDT-ECRAM`, `ACAD._PSR` patch | post-install (stage efi / le) | sleep, shutdown, EC access, AC detection |
+| `AmdCppc` + `AmdCppcPolicy`, `RyzenHV` | post-install | CPU power policy, hypervisor |
+| `AppleALC` (`alcverbs=1`), `StrixAmp`, RogAudio | post-install | audio |
+| `BlueToolFixup`, `MtkBtFw`, `BtLeDlFix` | post-install | Bluetooth (not needed: the built-in keyboard and touchpad are not Bluetooth) |
+| `AsusWmi`, `BrightnessKeys`, `Sinetek-rtsx`, ROG Control, TapGuard, ItlWiFi, HiDPI override, ESP automount | post-install | laptop controls, card reader, apps, display scaling |
 
 ### Machine-specific versus shared
 
@@ -198,10 +234,10 @@ Order rules that matter:
 
 ### (a) USB image only: EFI + payload partition + first-boot script
 
-The USB holds the EFI, the installer and a payload. A first-boot LaunchDaemon, copied onto the new system, does the
-rest.
+The USB holds the EFI, the Recovery image and a payload. A first-boot LaunchDaemon, copied onto the new system, does
+the rest.
 
-* Pros: no app to write; works offline; one artifact to hand over.
+* Pros: no app to write; one small artifact to hand over.
 * Cons: nothing can be copied into the new system before Setup Assistant except through the installer itself, so the
   "first-boot script" still has to be started by hand from the USB (Terminal + `sudo`). No progress UI or report;
   errors end up in a log file. Reboot sequencing, admin prompts and verification all become text instructions.
@@ -221,7 +257,7 @@ A `.pkg` (or app) installed on a macOS that already boots, which installs everyt
 
 ### (c) Hybrid: USB EFI for the install, then one post-install app that applies and verifies (recommended)
 
-The USB from (a) plus `GA403 Setup.app` on its payload volume. The app is a thin UI over the same stage scripts. A
+The USB from (a) plus `GA403 Setup.app` in its `GA403/` folder. The app is a thin UI over the same stage scripts. A
 resume LaunchDaemon carries the state across reboots.
 
 * Pros: the user flow comes close to one click (start the app once, type the password at each stage, confirm each
@@ -270,7 +306,7 @@ scripts/fresh-install/
   resume.sh + com.ga403wm.fresh-install.plist   todo: resume daemon, reads /Library/GA403/state.json
   undo.sh                  todo: roll back one stage from its backup
   kccheck/kccheck.c        prototype, done: LC_UUID + byte-window checks of a kernel collection (no python on a fresh macOS)
-  profiles/install.json    todo: installer-profile overrides for config.plist (base kexts, csr 0, no AMFI args)
+  profiles/usb.json        todo: USB-profile overrides for config.plist (pre-install set of 2.1, csr 0, no AMFI args)
   profiles/full.json       todo: full-profile overrides (today's live config minus trace flags)
   app/                     todo: GA403 Setup.app (SwiftUI, calls the stage scripts through one osascript admin call per stage)
 docs/FRESH-INSTALL.md      this file
@@ -278,13 +314,19 @@ docs/FRESH-INSTALL.md      this file
 
 On the USB (built by `build-usb.sh`, never committed):
 
+One FAT32 volume (GPT, one partition; a 4 GB stick is enough, 2 GB without the optional payload):
+
 ```
-EFI (FAT32, 512 MB)        EFI/BOOT/BOOTx64.efi, EFI/OC/{OpenCore.efi,Drivers,ACPI,Kexts,config.plist}  (install profile)
-Install macOS Tahoe        createinstallmedia volume (full installer, works offline); or BaseSystem from macrecovery
-GA403-PAYLOAD (APFS)       manifest.json, GA403 Setup.app, scripts/, bsd/ (our kexts + apps, built),
-                           thirdparty/ (EFI kexts from upstream), polyform/ (payload tarball or folder),
-                           vendor/nullmoth-nvidia-2.7.1.tar.gz, smbios.plist (generated for THIS target, chmod 600)
+EFI/BOOT/BOOTx64.efi
+EFI/OC/                    OpenCore.efi, Drivers, ACPI, Kexts (pre-install set, 2.1), config.plist (USB profile)
+com.apple.recovery.boot/   BaseSystem.dmg + .chunklist from macrecovery.py (about 1 GB); OpenCore lists it as Recovery
+GA403/                     GA403 Setup.app, manifest.json, scripts/, kccheck, bsd/ (our kexts + apps, built),
+                           thirdparty/ (EFI kexts from upstream), smbios.plist (generated for THIS target),
+                           payload/ (optional, about 900 MB: PolyForm overlay + the NullMoth 2.7.1 tarball)
 ```
+
+Without `GA403/payload/`, the Setup app downloads the payload after macOS is installed (Wi-Fi works by then, with
+the same Native kext), from the fork's release asset named in the manifest, sha-checked, after asking.
 
 On the target: `/Library/GA403/` holds `state.json`, the manifest copy, stage logs, and backups
 (`/Library/GA403/backup/<stage>-<UTC>/`).
@@ -317,11 +359,12 @@ every relink and is checked through the kext UUIDs instead). Results of the dry 
 
 ### 4.3 What each stage does
 
-**S0 build-usb.sh** (on this Mac): erase the stick (only after typing its name), make the 3 partitions, run
-`createinstallmedia` from `Install macOS Tahoe.app` (`softwareupdate --fetch-full-installer`, about 17 GB, needs the
-owner's OK), or as a fallback `macrecovery.py -b Mac-CFF7D910A743CAAF -m 00000000000000000 -os latest download` (needs
-network inside Recovery, which is less certain here). Build our kexts (`scripts/build.sh`). Assemble the
-install-profile config from `efi/OC/config.plist` + `profiles/install.json`. Generate the SMBIOS (`macserial`) once
+**S0 build-usb.sh** (on this Mac; the Recovery download also works from Linux or Windows): erase the stick (only after
+typing its name) as one FAT32 partition. Download the Recovery image with
+`macrecovery.py -b Mac-CFF7D910A743CAAF -m 00000000000000000 -os latest download` into `com.apple.recovery.boot/`
+(about 1 GB; the full macOS comes later from Apple, inside Recovery). Build our kexts (`scripts/build.sh`), fetch the
+pinned third-party kexts of `efi/kexts.json`. Assemble the USB config from `efi/OC/config.plist` +
+`profiles/usb.json` (the pre-install set of 2.1). Generate the SMBIOS (`macserial`) once
 per target and write it to `smbios.plist` on the payload volume, so the USB config and the later internal config use
 the same identity. Run `ocvalidate`. Copy the payload and verify it with `verify.sh --payload`.
 
@@ -376,7 +419,7 @@ Runtime (S5, after REBOOT 2):
 * Every stage writes its backup first, to `/Library/GA403/backup/<stage>-<UTC>/`: the ESP folder, the replaced
   files, and the old AuxKC. `undo.sh <stage>` restores the newest backup, relinks and reboots. That matches the
   `--undo` pattern of today's step scripts.
-* If REBOOT 2 does not come up: the OpenCore picker → the USB stick's EFI (install profile, no AuxKC kexts from us,
+* If REBOOT 2 does not come up: the OpenCore picker → the USB stick's EFI (USB profile, no AuxKC kexts from us,
   SIP default) still boots the installed macOS. From there `undo.sh le` runs, or, as a last resort, deleting
   `/Library/KernelCollections/AuxiliaryKernelExtensions.kc` gives a boot without any third-party AuxKC kexts. Linux
   from the USB is a further route (the repo already has `linux-*` installers and `nmx-relink`).
@@ -394,7 +437,7 @@ Runtime (S5, after REBOOT 2):
 |---|---|---|
 | BIOS (Secure Boot, CSM, Above 4G) | no | yes, once |
 | Build the USB | yes (`build-usb.sh`) | approve the downloads (installer, third-party kexts, payload), type the disk name |
-| Boot the USB, run the installer | the installer reboots by itself | pick the USB in the boot menu, pick the target disk |
+| Boot the USB, Recovery, reinstall macOS | the download and the installer reboots run by themselves | pick the USB in the boot menu, join Wi-Fi, erase the target in Disk Utility, pick it in Reinstall macOS |
 | Setup Assistant | no | yes |
 | S3 EFI to internal disk | yes | password #1, confirm the reboot, pick the internal entry once |
 | VFCT dump | see below | maybe |
@@ -416,6 +459,20 @@ first:
 * **No full install has ever been done with this stack** (README: only Recovery from USB was tested on 15.6.1; the
   live system was upgraded in place to Tahoe). The first fresh run should target a spare SSD or an external disk,
   with this disk untouched.
+* **Wi-Fi inside Recovery is untested.** `itlmt7925Native` hooks IO80211/Skywalk with layouts checked on the
+  installed 25G241 system; the Recovery BaseSystem is a smaller system of the same build family, and whether its Wi-Fi
+  menu drives our interface has never been tried. Test it first (boot the USB, Recovery, join Wi-Fi, open Safari in
+  Recovery) before anything is erased. Fallbacks already on the USB: phone tethering (HoRNDIS) and any USB Ethernet
+  adapter Apple supports. The Ethernet-mode `itlmt7925.kext` would need the network name and password injected into
+  the USB copy (`inject-creds`), in plain text on the stick, so it stays a last resort.
+* **Recovery installs the newest Tahoe build Apple serves, not a chosen one.** The golden payload is tied to 25G241
+  (StrixAccel ABI profile, Wi-Fi native layouts, the `/System` sandbox change). The Setup app must read `sw_vers`
+  first: on the manifest's build it runs normally; on another build it stops before the `le` stage and says which
+  parts need a re-check. Tahoe being the last Intel release limits how far this drifts, but every new point release
+  needs one pass on this machine before the manifest lists it.
+* **No App Store installer to fall back on.** Without a full installer on the stick, a failed download in Recovery
+  means retrying the network. A second, offline route can be added later (a `createinstallmedia` stick made
+  separately) without changing anything in this design.
 * **kmutil approval.** Expected: no Privacy & Security prompt with `CSR_ALLOW_UNAPPROVED_KEXTS`. If one appears, the
   app shows the user where to click and waits.
 * **kernelmanagerd** may rebuild the AuxKC at the first boot that sees new kexts. That is covered by the 45 s check
@@ -457,14 +514,17 @@ What the dry runs added to the design:
 1. **Capture**: done (4.8). Still to do: save the exact NullMoth 2.7.1 tarball again (download, with the owner's OK)
    and check it against `0b28f420…7851`.
 2. **Refresh the repo's EFI**: `scripts/export-efi.py` from the live ESP into `efi/OC` (sanitized), add
-   `SSDT-ECRAM`, and split `profiles/install.json` / `profiles/full.json`.
+   `SSDT-ECRAM`, and split `profiles/usb.json` / `profiles/full.json`.
 3. **`kccheck`**: prototype done and tested (4.8). Still to do: a build line in `scripts/build.sh` and a probe file per
    manifest version.
 4. **Write the stage scripts** (S3, S4, S5, resume daemon, undo) on top of `verify.sh` and the existing step-script
    helpers (`relink()`, `checks()`), and change the NMXGPU gate in the NVIDIA install step.
-5. **Dry run on a spare SSD** (or an external NVMe), CLI only, without the app. Record every manual step.
-6. **The app** (SwiftUI wrapper, design in section 6) once the CLI run passes. Its `--snapshot` renders can be built and reviewed before that.
-7. **Longer term: make NMXGPU buildable.** Port each cave from 1.3 into the fork branch `ga403wm-nmx` as a source
+5. **Recovery smoke test with the USB EFI** (nothing erased): build the stick, boot it, check the keyboard, the
+   touchpad and Wi-Fi in Recovery, and that Reinstall macOS reaches Apple's servers. This decides whether the
+   pre-install set of 2.1 is complete.
+6. **Dry run on a spare SSD** (or an external NVMe), CLI only, without the app. Record every manual step.
+7. **The app** (SwiftUI wrapper, design in section 6) once the CLI run passes. Its `--snapshot` renders can be built and reviewed before that.
+8. **Longer term: make NMXGPU buildable.** Port each cave from 1.3 into the fork branch `ga403wm-nmx` as a source
    change, let CI build NMXGPU, and switch the manifest row from "captured" to "CI artifact". That also ends the
    offset bookkeeping in `nmx-caves/check.py`.
 
