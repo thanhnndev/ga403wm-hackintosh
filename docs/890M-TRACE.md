@@ -7582,7 +7582,7 @@ The surface keep fix (fork `surface-keep-hash` ff0ebef, plugin 57aee79b) was loa
   `drm_ioctl` → amdgpu CS ioctl → `amdgpu_cs_p1_bo_handles`, `amdgpu_bo_list_create`, `drm_exec_prepare_obj`/`drm_exec_lock_obj` (`linux_ww_mutex_lock_sub`, `nmx_sx_try_xlock`), `amdgpu_cs_bo_validate`, `drm_gem_object_lookup`, `ttm_resource_compatible`, `amdgpu_ttm_tt_is_userptr`.
   That is the per-BO work of the BO list: the cost grows with the number of BOs every submit carries.
 - Why so many BOs: RADV makes every non-WSI allocation resident (`buffer_make_resident(true)` in radv_device_memory.c). Private allocations are `is_local` (`AMDGPU_GEM_CREATE_VM_ALWAYS_VALID`) and stay off the list, but **host-pointer imports are not local**. NVMTL imports every IOSurface that way (`create_bo_from_user_mem` / `radv_bo_from_ptr`), so every live IOSurface texture is in RADV's global BO list and goes to the kernel with **every** submit, used or not.
-- Measured (`plugin/tests/submit_scale_test.m`, fork 3rd commit on surface-keep-hash): commit of a 256-byte copy
+- Measured (`plugin/tests/submit_scale_test.m`, fork surface-keep-hash 85914af): commit of a 256-byte copy
 
   | live shared MTLBuffers | live IOSurface textures | commit CPU |
   |---|---|---|
