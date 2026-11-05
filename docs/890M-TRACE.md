@@ -6702,3 +6702,35 @@ The boot was faster, but the 890M did not suspend in the sleep test. Root cause:
 - After the reboot, run the sleep test: amdgpu must take the s0ix suspend path, and the DISPLAY block should go away.
 - Then run with BootCC6 on (the CPU block).
 - NBIO (9) is most likely the RTX root port, which needs dGPU D3cold.
+
+## Step112c result + Step113 (StrixS0ix 0.1.4), 2026-11-05
+
+**Step112c works.** amdgpu took its s0ix path on every sleep: "suspend returned 0 in 607/613 ms", resume 321 ms. GFX (block 2) went idle about 0.6 s into the sleep. Mapping block 2 to GFX this way confirms the SMU block order: 0 DISPLAY, 1 CPU, 2 GFX, 5 ACP, 6/7 VCN, 8 ISP, 9 NBIO.
+
+**Runs**
+- Run 1 (~/ga403-logs/syssleep-20261105-102642):
+  - 75.7 s asleep. A dark wake came from GPE 0x1a (XHC0) after 77 s.
+  - S0i3 not reached. DISPLAY, CPU and NBIO were not met for the whole sleep.
+- Run 2: invalid. Test 1's script was still waiting and restarted `caffeinate -u`, which woke the machine from its dark wake.
+- Run 2b (`S0ix,BootCC6` on):
+  - 60.7 s asleep, RTC wake (0x400) on time.
+  - `cc6 1`: the boot CPU stayed in one IO C-state read the whole time.
+  - S0i3 still not reached, and DISPLAY, CPU and NBIO were unchanged.
+
+**D-states during sleep.** IOPCIFamily logs "did move PMCSR to D3" only for XHC0/1/3/4. Every other function stays in D0: the 890M (VGA), HDAU, PSP, ACP, HDEF, the NPU (150d), IPU, NHI0, SDCR, WLAN and NVMe. Linux puts devices into D3hot (pci_pm_suspend_noirq) before amd_pmc's OS_HINT. Our OS_HINT also went out about 0.6 s **before** amdgpu had finished suspending, because StrixS0ix's setPowerState(0) runs first.
+
+**StrixS0ix 0.1.4 (installed, reboot pending)**
+- **OS_HINT(1)/(0) from the halt path.** It is sent on the boot CPU after all drivers have suspended, on both entry and exit. Off: `s0ix-set halthint off` or boot-arg `s0ix_halthint=0`.
+- **PCI D-state table.** It is built at the first sleep from IOPCIDevice endpoints that have a PM capability. Each entry keeps its own ECAM map from MCFG, so the halt path never takes an IOPCIBridge lock with interrupts off.
+  - In the halt path it records each function's D-state and publishes `S0ix,PciStates` (pre → set → post).
+  - With `S0ix,D3Mode` (`s0ix-set d3 N` at runtime, or boot-arg `s0ix_d3=N`) it moves functions with No_Soft_Reset to D3hot after the drivers have suspended. On wake, before OS_HINT(0) returns control, it brings them back to D0 and waits 10 ms.
+  - Mode 1 covers the 890M's bus and the NPU bus. Mode 2 adds the other endpoints. The RTX, NVMe, USB and bus 0 are never included. The default is 0 (record only).
+- **Boot CPU CC6** is now on by default (`s0ix_cc6boot=0` turns it off).
+- **Tool.** `scripts/s0ix-tools/s0ix-set.c` replaces s0ix-bootcc6: `bootcc6`, `d3`, `halthint`.
+- **Install.** `scripts/macos-install-step113.sh` (`--undo`). It also checks the FADT patch and the headless NVRM in the AuxKC.
+
+**Plan after reboot**
+1. Sleep with mode 0 and read the recorded D-states.
+2. Sleep with mode 1 (890M buses in D3hot); DISPLAY should go away.
+3. Sleep with mode 2 (NBIO).
+4. If CPU is still not met, look at the CC6 configuration (MSR C001_0294 CStateCfg) and at the non-boot cores.
