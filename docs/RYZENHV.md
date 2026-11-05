@@ -3,7 +3,7 @@
 [RyzenHV](https://github.com/thanhnndev/ryzen-hypervisor.framework) gives macOS a Hypervisor.framework on AMD-V (SVM), so
 QEMU `-accel hvf`, Docker and other VM apps can run. Zen 5 / macOS 26 notes: RyzenHV repo, `docs/notes/GA403WM-ZEN5-TAHOE.md`.
 
-## Docker Desktop (2026-11-05): works with RyzenHV 0.7.11 (HyperKit, 24 CPUs)
+## Docker Desktop (2026-11-05): works with RyzenHV 0.7.12 (HyperKit, 24 CPUs)
 
 Docker Desktop 4.97.0 (Intel, build 244584, sha256 of the dmg `98da1a82dac734ba…`) in `/Applications`, set to HyperKit
 (`UseVirtualizationFramework=false`) and `AutoDownloadUpdates=false` in `~/Library/Group Containers/group.com.docker/settings-store.json`
@@ -59,6 +59,24 @@ aside in `~/.ryzenhv/dl/held-updates/`.
   `Hello from Docker!`, an Alpine container sees 24 CPUs and fetches https://example.com.
 * Still open, harmless so far: the guest's `WRMSR 0xc0000502` at every context switch and `RDMSR 0xc0010010` fault (HyperKit
   logs them); sleep with a running VM is not retested on 0.7.10+.
+
+### 0.7.12 (14:56, booted 16:57): Docker no longer fails after it stopped its own VM
+
+* `hyperkit: process terminated unexpectedly ... exit code 1` / `Failed to set up pidfile` came back after Resource Saver
+  stopped the VM (14:27, 5 minutes idle) and after every Quit or `docker desktop stop`.
+* Cause: Docker's backend ends HyperKit right after the guest says `VM has indicated it is ready to be powered off` (gone in
+  8-9 ms, so by a signal that skips `atexit`; HyperKit ignores SIGTERM/SIGINT here) and never removes `vms/0/hyperkit.pid`
+  (its own `internal/pidfile` writes JSON files elsewhere; `hyperkit.(*Engine).Cleanup` is empty). HyperKit opens the file with
+  `O_WRONLY|O_CREAT|O_EXCL` (`src/hyperkit.c` setup_pidfile; `mov esi, 0xa01` at 0x100227b9d in 4.98) and refuses to start
+  while it exists. A guest that powers itself off makes HyperKit exit 0 and remove the file (tested with 1, 2, 24 vCPUs), so
+  the hypervisor is not involved.
+* Fix in RyzenHV 0.7.12: a third HyperKit fix-up (kext `HvPatch.cpp`, shim `rhv_patch.c`) turns the flags into 0x601,
+  `O_WRONLY|O_CREAT|O_TRUNC`: a leftover file is overwritten. Found exactly once in Docker 4.98's HyperKit (0x227b96).
+  Binary sha256 `318738c4446d1b84`; old kext `EFI/OC/Kexts-backup/RyzenHV.kext.20261105-145637`, config backup
+  `config.plist.ryzenhv-0712-20261105-145637`. RyzenHV is now `Kernel/Add/46` (SimpleHDA was added at 5).
+* After the boot: Docker started with the 14:41 leftover file in place (engine up 9 s, file overwritten with the new pid);
+  `docker desktop stop` + start twice, the file left each time: engine up in 7 s both times, no `Failed to set up pidfile`;
+  hello-world and an arm64 Alpine (`aarch64`) run.
 
 Kernel panics the same morning (10:52 `com.ga403wm.strixs0ix` `StrixS0ix::buildPci` from `setPowerState`; 11:11 NullMoth
 `NMXGPU` `amdgpu_cs_ioctl` spinlock timeout in WindowServer) have no RyzenHV frame in their backtraces.
