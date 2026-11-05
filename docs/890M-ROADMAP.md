@@ -243,3 +243,20 @@ Goal: the machine picks the GPU by itself, like a real MacBook Pro with two GPUs
 Order: after M3b (apps on the 890M, sandbox fix) - the RTX Metal device needs the same sandbox-safe path and the
 plugin has to run both devices in one process.
 
+
+## Technical debt (owner, 2026-11-05): root-cause fixes in NMXGPU, one build
+
+The owner's rule: fix these at the root in the NMXGPU source, with no new binary patch on top of the live build. Both go into **one** NMXGPU build, one install and one reboot.
+
+1. **NMXGPU does not hold the registry busy until NMXAMDFB is published** (TRACE: the `-nvrmnohold` black-screen addendum, 0193173).
+   - What happens: WindowServer's IOKitWaitQuiet returns before the 890M framebuffer exists, and it never adopts the OLED. The black screen showed up when the NVRM hold was removed; that hold had been hiding the race.
+   - Fix: in `attachNow()` call `adjustBusy(+1)` right after `nmx_xnu_wait_firmware_root` returns OK. Call `adjustBusy(-1)` on every exit, or once NMXAMDFB is published. Add a cap thread_call (about 30 s) and an `nmxgpu-boot-hold` property.
+     - Not in `start()`: a hold there blocks root mount while the attach thread waits for firmware, and the boot hangs at the logo.
+   - Secondary, lower priority: WindowServer does not adopt NMXAMDFB when it appears about 0.5 s late.
+   - Status: not written. The report is at https://claude.ai/artifact/YaTnhdFy7As59STtf699BM.
+   - Unblocks: `-nvrmnohold` (NVRM stops holding for the RTX) and about 3 s off boot.
+2. **`nmx_thread_lock` spin lock deadlock in xkpi** (TRACE Step114, b3ece92; panic Kernel-2026-11-05-111129).
+   - What happens: WindowServer CS submit → `lkpi_kfree` → `nmx_curthread` → `nmx_thread_get` holds the spin lock while a cross-call IPI waits.
+   - Fix: written in the NullMoth source fork, branch `xkpi-thread-lockfree` (e249183 fix, e4fa61a stress test). Not built, not installed.
+
+Until both exist, the live NMXGPU stays at 5760efb6 (Step100c caves + s0ix + Step112c FADT re-read). The rebuild must then re-apply or replace the s0ix and FADT patches in source (`nmx_port_power` stype 3, and an FADT re-read before suspend), so they do not come back as caves.
