@@ -69,3 +69,18 @@ DeviceProperties, `DisableLinkeditJettison = true`, `SecureBootModel = Disabled`
 - Speakers through the CS35L56 pair (StrixAmp), headphone jack (pin 0x21) detect and switch, internal mic (pin 0x12).
 - Jack crackle (#7) and idle interrupts (#6).
 - Display sleep and s0ix sleep/wake keep audio.
+
+## Result after the reboot (2026-11-05)
+
+- SimpleHDA loaded: `AppleHDAController@0,6` on HDEF, codec ALC285 (10EC0285), Built-in Output / Built-in Input in
+  CoreAudio, internal speakers audible.
+- ROG Speakers were silent at first. Two causes, both in rogaudiod (fixed on `research/audio-rog-dolby`, ad5b9f7):
+  1. macOS made Built-in Output/Input the defaults, so apps went around the chain. rogaudiod now moves the default back
+     to the ROG device whenever it lands on the built-in device it wraps (settings key `autoDefault`, default on).
+  2. The wrapped Built-in Output stayed at -25.5 dB while the volume keys drive ROG Speakers, so ROG could never get
+     louder than that. rogaudiod now holds Built-in at 0 dB and moves the difference into the ROG Speakers volume.
+- Checked: the tap -> DSP -> Built-in path carries the full test file for 8 s (`rogaudiod -v` peak-hold stats); after a
+  reboot both ROG devices are the defaults, Built-in 0 dB, ROG Speakers -12 dB at 81 % system volume.
+- Notes: rogaudiod needs about 4 s after start before the speaker path runs (AppleHDA HAL plug-in load). Run only one
+  rogaudiod at a time: the tap clears what it reads, so two readers split the audio.
+- Still to check: headphone jack (and the ALC285 crackle), Clear Mic recording, idle interrupts, sleep/wake.
