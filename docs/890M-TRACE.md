@@ -7063,3 +7063,33 @@ S0i3 was **not reached** in any mode: DISPLAY (0), CPU (1) and NBIO (9) were not
 1. d3 2 with C3: shows whether the CPU block clears.
 2. d3 3.
 3. d3 4: the 890M itself in D3hot. If amdgpu's s0ix resume cannot cope with the internal reset, this one is expected to fail.
+
+**SSDT-PTS5 result (2026-11-05 12:27): Shut Down now stays off.**
+- The boot that shut down started 11:43 with SSDT-PTS5 + `_PTS→ZPTS` (config edited 11:07) and StrixS0ix 0.1.5 (from
+  the sleep session).
+- 12:27:02 loginwindow `logoutType:3 - Shutdown`. launchd ran its shutdown phases, and the log ends 12:27:11.78. No
+  panic.
+- The owner saw that the machine did not come back on by itself. The next boot is 12:29:01: the owner powered it on.
+- `sysctl debug.amdcppc.psp` on that boot: `reset=00800800`, which is bit 23 + bit 11. All reset readings so far:
+
+  | Boot after | `reset=` | Bit | Meaning (Linux `s5_reset_reason_txt`) |
+  |------------|----------|-----|---------------------------------------|
+  | Restart | `00080800` | 19 | CF9 warm reset |
+  | 10:42 Shut Down, came back on by itself | `00200800` | 21 | ACPI power state transition |
+  | 12:27 Shut Down, stayed off | `00800800` | 23 | internal CPU shutdown event |
+
+- Open question: why bit 23 and not bit 21? A CPU shutdown event usually means a core triple-faulted or hit the
+  shutdown state. That normally resets the machine, but here the machine stayed off. Two things changed for this
+  shutdown:
+  - SSDT-PTS5 runs only AML (ECAM config writes to the USB functions) and cannot make a core shut down.
+  - StrixS0ix 0.1.5 now parks the non-boot CPUs at halt with the `_CST` C3 port 0x415 (`S0ix,CstDepth 2`). The 10:42
+    shutdown used 0.1.3, which parks on 0x414.
+
+  So the likely source is a parked core while the rails go down after the S5 write, not a failure before S5. The
+  outcome (power off, stays off) is correct either way.
+- A/B test, nothing to install: before the next Shut Down run `build/s0ix-set cst 1` (non-boot CPUs back on 0x414, as
+  0.1.3 did). At the next boot read `sysctl debug.amdcppc.psp`:
+  - bit 21: bit 23 comes from C3 parking at halt. Fix it in StrixS0ix, for example park on the C2 port or `hlt` when
+    `shutdown` is set.
+  - still bit 23: it comes from the S5 path itself. Then check the PTS5 table, by disabling it for one shutdown and
+    confirming that the machine comes back on.
