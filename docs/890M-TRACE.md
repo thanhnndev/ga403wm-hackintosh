@@ -7196,3 +7196,14 @@ Next (when resumed): a differential GL harness. Run the same CGL program on the 
 premultiplied blend, scissor, glTexSubImage, FBO to texture, glBlitFramebuffer/glCopyTexSubImage, TEXTURE_RECTANGLE from
 an IOSurface, share-group contexts. The first op that differs points into the GL bridge / translator. Fix goes in the
 plugin fork (nmx-plugin-desccache) or the translator, not in Zalo.
+
+**Step116 lid test (13:48, StrixS0ix 0.1.6 live, d3 0): still no wake, forced restart.**
+- powerd: `Entering Sleep state due to 'Clamshell Sleep'` at 13:48:19. The kernel log from about 13:47 was lost
+  again.
+- So the EC GPE wake alone did not fix it, or the hang is elsewhere: the clamshell sleep entry, or the wake with the
+  lid open.
+- Every Software Sleep test (four runs) woke by RTC.
+- Next: `scripts/s0ix-tools/lid-rtc-test.sh`. It sets an RTC alarm after the password, then the lid is closed and
+  kept closed past the alarm. On the first wake the script dumps and syncs the kernel trace before the lid is opened.
+  - The RTC wakes it: the halt path works in clamshell, and the hang is the lid-open wake.
+  - The RTC does not wake it: the clamshell sleep entry hangs.
