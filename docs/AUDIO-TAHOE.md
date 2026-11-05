@@ -1,6 +1,13 @@
 # Audio on macOS Tahoe (AppleHDA restore)
 
-Status 2026-11-05: researched, not installed.
+Status 2026-11-05 14:33: SimpleHDA 1.0.1 installed, loads on the next reboot.
+
+Installed: `EFI/OC/Kexts/SimpleHDA.kext` (executable sha256 5a1beec9...83c1, release zip f2fc55da...5982, all 10 files match
+the zip's SHA256.json), Kernel>Add index 5 right after AppleALC (MinKernel 25.0.0), boot-arg `shda-lang=en`, HAL package
+in `/Library/Audio/Plug-Ins/SimpleHDA/` (Apple-signed, sha256 matches `Resources/AppleHDA.json`; the pkg has no scripts).
+Config backups: `EFI/OC/config.plist.pre-simplehda-20261105-143159` and the same name in `~/efi-audit`. ocvalidate: no issues.
+Nothing had to be removed: no other AppleHDA, VoodooHDA, OCLP root patch or NMXAudio on the machine; AppleALC, StrixAmp and
+RogAudio stay. After the reboot: `zsh scripts/macos-simplehda.sh check` (and `idle`); undo: `-shdaoff` or `... undo`.
 
 ## Problem
 
