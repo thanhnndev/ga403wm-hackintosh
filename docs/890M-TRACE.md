@@ -6660,3 +6660,45 @@ Firmware + OpenCore time is not in the log. The machine was off from 09:20 to 10
 **What NVRM did.** At 10:06:09.359 it logged `heads published mask 0x0 ... after 0 s`, then `NVRMFB reports 0 connected displays on every nub after 0 s — releasing the boot hold`, then `boot hold RELEASED (no display on any NVIDIA connector)`. WindowServer logged again 10 ms later (10:06:09.369). The 6.5 s that is left is the RTX go(2) itself: 3.0 s, after the 500 ms settle that starts at 10:06:04.8. NMXGPU's modeset finished at 10:06:06.2.
 
 **Still open: login → desktop.** It took 10.5 s, against 3.4 s before. Most of it is about 5 s between ContinueAfterDesktopReady (10:09:04.1) and ContinueAfterTALCheckin (10:09:09.1), which is the TAL app-relaunch check-in, so it is probably the windows restored by session restore. This is user space and is not looked at yet.
+
+## Step112 result + Step112c (FADT re-read), 2026-11-05
+
+The boot was faster, but the 890M did not suspend in the sleep test. Root cause: a race between StrixS0ix and NMXGPU at start-up. Step112c fixes it; the fix is installed and needs a reboot.
+
+**Boot (headless NVRM, no `-v`)**
+- Kernel 10:05:58.
+- WindowServer starts at 10:06:02.9.
+- NVRM releases its boot hold at 10:06:09.36 ("NVRMFB reports 0 connected displays ... after 0 s"). Before the fix it held for 36 s; it now holds for 6.5 s, and most of that is NVRM `go(2)` (3.0 s).
+
+**StrixS0ix 0.1.3 at boot**
+- CStateBaseAddr is 0x413, so the CC6 port is 0x414. Non-boot CPUs use CC6; the boot CPU uses MWAITX.
+- PMC mailbox at 0xfd110000, SMU 93.11.0. The metrics table is mapped; idlemask 0xf5c01aff.
+
+**Sleep test (hands off, ~/ga403-logs/syssleep-20261105-101003)**
+- The machine slept from 10:12:50 to 10:14:55, about 2 min. The RTC wake was missed because the password took longer than the test window; it woke on XHC0.
+- No hang. The paging wake ran and WindowServer stayed alive.
+- SMU: OS_HINT(1) and OS_HINT(0) both returned OK, and hint_count is 1.
+- S0i3 was **not reached** (0 ms).
+- Blocks that were not idle for the whole 124.6 s:
+  - 0 DISPLAY
+  - 1 CPU
+  - 9 NBIO
+- ACP, VCN and ISP were not idle for less than 0.11 s.
+- The `timecondition_notmet_lastcapture` array has 16 entries in this table version. Entries 16 and up are the totals, and entry 15 is not a time.
+- **Why amdgpu did not suspend:** it logged "BIOS has not been configured for suspend-to-idle" and its suspend took 0 ms. xkpi had logged "no FADT" at 10:06:04.832, while StrixS0ix had published FACP at 04.775.
+  - xkpi copies the FADT once, in its nmx_acpica_init SYSINIT, and the two kexts start within ~50 ms of each other.
+  - The Step111 boot won this race; this boot lost it.
+  - So DISPLAY not idle is expected for this run.
+
+**Step112c**
+- `scripts/nmx-s0ix/patch_fadt.py`: in nmx_port_power's suspend half, `mov %rdi,%rbx; mov %rax,%rdi` at 0x6de446 becomes `call cave; nop`. The cave sits over dead amdgpu_kv_dpm_get_enable_mask at 0x50ac10. It calls nmx_acpica_init again, which re-reads FACP, so every sleep sees LOW_POWER_S0 whatever the boot order.
+  - NMXGPU sha goes from 2a1bb264 to 5760efb6.
+  - The patch is registered in nmx-caves/check.py, and patch_s0ix.py still reports "patched".
+- Installer: `scripts/macos-install-step112c.sh` (`--undo` restores the previous NMXGPU).
+
+**New tool:** `scripts/s0ix-tools/s0ix-bootcc6.c` (built to build/s0ix-bootcc6, run as root) turns boot-CPU CC6 on or off at runtime. Use it to test the CPU block (1) without a reboot.
+
+**Next**
+- After the reboot, run the sleep test: amdgpu must take the s0ix suspend path, and the DISPLAY block should go away.
+- Then run with BootCC6 on (the CPU block).
+- NBIO (9) is most likely the RTX root port, which needs dGPU D3cold.

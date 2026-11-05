@@ -23,6 +23,7 @@ REGISTRY = {
     'irqfix (Step100c)':  ([(0x509100, 0x50a630)], [(0x927208, 0x9272c0)]),
     'mmfix (Step97b)':    ([(0x50a730, 0x50a9a0)], [(0x926ff8, 0x926ffc)]),
     'mmfix2 (Step100)':   ([(0x50a9a0, 0x50abc0)], [(0x926f98, 0x926fa8)]),
+    'fadt (Step112c)':    ([(0x50ac10, 0x50ac20)], []),
 }
 # NMXGPU's own globals that caves read (or use as designed); not borrowed, never registered as a cave's data
 SHARED = {
