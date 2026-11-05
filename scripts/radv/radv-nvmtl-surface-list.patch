@@ -1,0 +1,352 @@
+diff --git a/src/amd/vulkan/meson.build b/src/amd/vulkan/meson.build
+index d38d934..f337333 100644
+--- a/src/amd/vulkan/meson.build
++++ b/src/amd/vulkan/meson.build
+@@ -157,6 +157,7 @@ libradv_files = files(
+   'radv_device.c',
+   'radv_device.h',
+   'radv_device_memory.c',
++  'radv_nvmtl.c',
+   'radv_device_memory.h',
+   'radv_descriptors.c',
+   'radv_descriptors.h',
+diff --git a/src/amd/vulkan/radv_nvmtl.c b/src/amd/vulkan/radv_nvmtl.c
+new file mode 100644
+index 0000000..f89ea32
+--- /dev/null
++++ b/src/amd/vulkan/radv_nvmtl.c
+@@ -0,0 +1,63 @@
++/*
++ * Copyright 2026 thanhnndev and contributors
++ * SPDX-License-Identifier: MIT
++ *
++ * Private entry points for NVMTL, the Metal driver of the macOS port (found with dlsym, not part of Vulkan).
++ *
++ * NVMTL imports every IOSurface it wraps as host memory. Host-pointer imports are not local BOs, so RADV keeps them
++ * on the global BO list and every submit hands all of them to the kernel, used or not: with WindowServer's hundreds
++ * of surfaces the CS ioctl spends ~1 ms per submit locking and validating BOs it does not touch.
++ *
++ *   radv_nvmtl_memory_set_surface(dev, mem, true)   move an imported allocation to the surface list
++ *   radv_nvmtl_cmd_use_memory(cb, mem)              this command buffer uses that allocation
++ *   radv_nvmtl_cmd_exact(cb)                         this command buffer listed every surface it uses
++ *
++ * A submit carries the whole surface list unless every command buffer in it is exact, so a client that never calls
++ * these gets the old behaviour.
++ */
++#include "radv_cmd_buffer.h"
++#include "radv_device.h"
++#include "radv_device_memory.h"
++#include "radv_radeon_winsys.h"
++#include "winsys/amdgpu/radv_amdgpu_bo.h"
++#include "winsys/amdgpu/radv_amdgpu_cs.h"
++
++PUBLIC uint32_t radv_nvmtl_abi(void);
++PUBLIC VkResult radv_nvmtl_memory_set_surface(VkDevice device, VkDeviceMemory memory, VkBool32 surface);
++PUBLIC void radv_nvmtl_cmd_use_memory(VkCommandBuffer commandBuffer, VkDeviceMemory memory);
++PUBLIC void radv_nvmtl_cmd_exact(VkCommandBuffer commandBuffer);
++
++PUBLIC uint32_t
++radv_nvmtl_abi(void)
++{
++   return 1;
++}
++
++PUBLIC VkResult
++radv_nvmtl_memory_set_surface(VkDevice _device, VkDeviceMemory _mem, VkBool32 surface)
++{
++   VK_FROM_HANDLE(radv_device, device, _device);
++   VK_FROM_HANDLE(radv_device_memory, mem, _mem);
++   if (!device || !mem || !mem->bo)
++      return VK_ERROR_INITIALIZATION_FAILED;
++   return radv_amdgpu_nvmtl_bo_set_surface(device->ws, mem->bo, surface);
++}
++
++PUBLIC void
++radv_nvmtl_cmd_use_memory(VkCommandBuffer commandBuffer, VkDeviceMemory _mem)
++{
++   VK_FROM_HANDLE(radv_cmd_buffer, cmd_buffer, commandBuffer);
++   VK_FROM_HANDLE(radv_device_memory, mem, _mem);
++   if (!cmd_buffer || !mem || !mem->bo)
++      return;
++   struct radv_device *device = radv_cmd_buffer_device(cmd_buffer);
++   radv_cs_add_buffer(device->ws, cmd_buffer->cs->b, mem->bo);
++}
++
++PUBLIC void
++radv_nvmtl_cmd_exact(VkCommandBuffer commandBuffer)
++{
++   VK_FROM_HANDLE(radv_cmd_buffer, cmd_buffer, commandBuffer);
++   if (cmd_buffer && cmd_buffer->cs)
++      radv_amdgpu_nvmtl_cs_set_exact(cmd_buffer->cs->b);
++}
+diff --git a/src/amd/vulkan/winsys/amdgpu/radv_amdgpu_bo.c b/src/amd/vulkan/winsys/amdgpu/radv_amdgpu_bo.c
+index a1fc602..4695ba6 100644
+--- a/src/amd/vulkan/winsys/amdgpu/radv_amdgpu_bo.c
++++ b/src/amd/vulkan/winsys/amdgpu/radv_amdgpu_bo.c
+@@ -348,6 +348,21 @@ radv_amdgpu_global_bo_list_add(struct radv_amdgpu_winsys *ws, struct radv_amdgpu
+    return VK_SUCCESS;
+ }
+ 
++static void
++radv_amdgpu_nvmtl_surface_list_del(struct radv_amdgpu_winsys *ws, struct radv_amdgpu_winsys_bo *bo)
++{
++   u_rwlock_wrlock(&ws->global_bo_list.lock);
++   for (unsigned i = ws->surface_bo_list.count; i-- > 0;) {
++      if (ws->surface_bo_list.bos[i] == bo) {
++         ws->surface_bo_list.bos[i] = ws->surface_bo_list.bos[ws->surface_bo_list.count - 1];
++         --ws->surface_bo_list.count;
++         break;
++      }
++   }
++   bo->nvmtl_surface = false;
++   u_rwlock_wrunlock(&ws->global_bo_list.lock);
++}
++
+ static void
+ radv_amdgpu_global_bo_list_del(struct radv_amdgpu_winsys *ws, struct radv_amdgpu_winsys_bo *bo)
+ {
+@@ -397,6 +412,8 @@ radv_amdgpu_winsys_bo_destroy(struct radeon_winsys *_ws, struct radeon_winsys_bo
+ 
+    if (ws->debug_all_bos)
+       radv_amdgpu_global_bo_list_del(ws, bo);
++   if (bo->nvmtl_surface)
++      radv_amdgpu_nvmtl_surface_list_del(ws, bo);
+ 
+    const uint64_t va_size = radv_amdgpu_bo_va_size(bo->base.size, bo->flags);
+    radv_amdgpu_bo_va_op(ws, bo->bo_handle, 0, va_size, bo->base.va, 0, 0, AMDGPU_VA_OP_UNMAP);
+@@ -1229,6 +1246,12 @@ radv_amdgpu_winsys_bo_make_resident(struct radeon_winsys *_ws, struct radeon_win
+    if (ws->debug_all_bos)
+       return VK_SUCCESS;
+ 
++   if (bo->nvmtl_surface) {
++      if (!resident)
++         radv_amdgpu_nvmtl_surface_list_del(ws, bo);
++      return VK_SUCCESS;
++   }
++
+    if (resident) {
+       result = radv_amdgpu_global_bo_list_add(ws, bo);
+    } else {
+@@ -1238,6 +1261,63 @@ radv_amdgpu_winsys_bo_make_resident(struct radeon_winsys *_ws, struct radeon_win
+    return result;
+ }
+ 
++/* NVMTL (macOS port): move a resident host-pointer BO from the global list to the surface list (surface = true) or
++ * back. Only BOs that are on the global list now (not local, not with RADV_DEBUG=allbos) move. */
++VkResult
++radv_amdgpu_nvmtl_bo_set_surface(struct radeon_winsys *_ws, struct radeon_winsys_bo *_bo, bool surface)
++{
++   struct radv_amdgpu_winsys *ws = radv_amdgpu_winsys(_ws);
++   struct radv_amdgpu_winsys_bo *bo = radv_amdgpu_winsys_bo(_bo);
++
++   if (!bo || bo->base.is_local || bo->base.is_virtual || ws->debug_all_bos)
++      return VK_ERROR_FEATURE_NOT_PRESENT;
++   if (bo->nvmtl_surface == surface)
++      return VK_SUCCESS;
++
++   u_rwlock_wrlock(&ws->global_bo_list.lock);
++   bool found = false;
++   if (surface) {
++      for (unsigned i = ws->global_bo_list.count; i-- > 0;) {
++         if (ws->global_bo_list.bos[i] == bo) {
++            ws->global_bo_list.bos[i] = ws->global_bo_list.bos[ws->global_bo_list.count - 1];
++            --ws->global_bo_list.count;
++            found = true;
++            break;
++         }
++      }
++      if (found && ws->surface_bo_list.count == ws->surface_bo_list.capacity) {
++         unsigned capacity = MAX2(64, ws->surface_bo_list.capacity * 2);
++         void *data = realloc(ws->surface_bo_list.bos, capacity * sizeof(struct radv_amdgpu_winsys_bo *));
++         if (!data) {
++            ws->global_bo_list.bos[ws->global_bo_list.count++] = bo; /* the slot it left is still there */
++            u_rwlock_wrunlock(&ws->global_bo_list.lock);
++            return VK_ERROR_OUT_OF_HOST_MEMORY;
++         }
++         ws->surface_bo_list.bos = (struct radv_amdgpu_winsys_bo **)data;
++         ws->surface_bo_list.capacity = capacity;
++      }
++      if (found) {
++         ws->surface_bo_list.bos[ws->surface_bo_list.count++] = bo;
++         bo->nvmtl_surface = true;
++         bo->base.use_global_list = false; /* radv_cs_add_buffer adds it to the command streams that use it */
++      }
++      u_rwlock_wrunlock(&ws->global_bo_list.lock);
++      return found ? VK_SUCCESS : VK_ERROR_FEATURE_NOT_PRESENT;
++   }
++
++   for (unsigned i = ws->surface_bo_list.count; i-- > 0;) {
++      if (ws->surface_bo_list.bos[i] == bo) {
++         ws->surface_bo_list.bos[i] = ws->surface_bo_list.bos[ws->surface_bo_list.count - 1];
++         --ws->surface_bo_list.count;
++         found = true;
++         break;
++      }
++   }
++   bo->nvmtl_surface = false;
++   u_rwlock_wrunlock(&ws->global_bo_list.lock);
++   return found ? radv_amdgpu_global_bo_list_add(ws, bo) : VK_ERROR_FEATURE_NOT_PRESENT;
++}
++
+ static int
+ radv_amdgpu_bo_va_compare(const void *a, const void *b)
+ {
+diff --git a/src/amd/vulkan/winsys/amdgpu/radv_amdgpu_bo.h b/src/amd/vulkan/winsys/amdgpu/radv_amdgpu_bo.h
+index 5458cf0..356e996 100644
+--- a/src/amd/vulkan/winsys/amdgpu/radv_amdgpu_bo.h
++++ b/src/amd/vulkan/winsys/amdgpu/radv_amdgpu_bo.h
+@@ -37,8 +37,13 @@ struct radv_amdgpu_winsys_bo {
+    void *cpu_map;
+ 
+    bool emulate_sparse_residency;
++
++   /* NVMTL: resident on surface_bo_list instead of global_bo_list */
++   bool nvmtl_surface;
+ };
+ 
++VkResult radv_amdgpu_nvmtl_bo_set_surface(struct radeon_winsys *ws, struct radeon_winsys_bo *bo, bool surface);
++
+ static inline struct radv_amdgpu_winsys_bo *
+ radv_amdgpu_winsys_bo(struct radeon_winsys_bo *bo)
+ {
+diff --git a/src/amd/vulkan/winsys/amdgpu/radv_amdgpu_cs.c b/src/amd/vulkan/winsys/amdgpu/radv_amdgpu_cs.c
+index 350715a..582ff6d 100644
+--- a/src/amd/vulkan/winsys/amdgpu/radv_amdgpu_cs.c
++++ b/src/amd/vulkan/winsys/amdgpu/radv_amdgpu_cs.c
+@@ -80,6 +80,9 @@ struct radv_amdgpu_cs {
+ 
+    /* The header dword of the last CP DMA packet in the command buffer. */
+    uint32_t *last_cp_dma_header;
++
++   /* NVMTL: the client added every surface BO this CS uses (radv_nvmtl_cmd_exact) */
++   bool nvmtl_exact;
+ };
+ 
+ struct radv_winsys_sem_counts {
+@@ -538,6 +541,7 @@ radv_amdgpu_cs_reset(struct ac_cmdbuf *_cs)
+    cs->base.reserved_dw = 0;
+    cs->status = VK_SUCCESS;
+    cs->last_cp_dma_header = NULL;
++   cs->nvmtl_exact = false;
+ 
+    for (unsigned i = 0; i < cs->num_buffers; ++i) {
+       unsigned hash = cs->handles[i].bo_handle & (ARRAY_SIZE(cs->buffer_hash_table) - 1);
+@@ -924,6 +928,38 @@ radv_amdgpu_add_cs_array_to_bo_list(struct ac_cmdbuf **cs_array, unsigned num_cs
+    return num_handles;
+ }
+ 
++void
++radv_amdgpu_nvmtl_cs_set_exact(struct ac_cmdbuf *_cs)
++{
++   radv_amdgpu_cs(_cs)->nvmtl_exact = true;
++}
++
++/* NVMTL: a submit carries the surface list unless every command stream in it listed its own surfaces */
++static bool
++radv_amdgpu_nvmtl_needs_surfaces(struct radv_amdgpu_winsys *ws, struct ac_cmdbuf **cs_array, unsigned count)
++{
++   if (!ws->surface_bo_list.count)
++      return false;
++   for (unsigned i = 0; i < count; ++i) {
++      for (struct radv_amdgpu_cs *cs = radv_amdgpu_cs(cs_array[i]); cs; cs = cs->chained_to) {
++         if (!cs->nvmtl_exact)
++            return true;
++      }
++   }
++   return false;
++}
++
++static unsigned
++radv_amdgpu_copy_nvmtl_surfaces(struct radv_amdgpu_winsys *ws, struct drm_amdgpu_bo_list_entry *handles, unsigned n)
++{
++   for (uint32_t i = 0; i < ws->surface_bo_list.count; i++) {
++      handles[n].bo_handle = ws->surface_bo_list.bos[i]->bo_handle;
++      handles[n].bo_priority = ws->surface_bo_list.bos[i]->priority;
++      n++;
++   }
++   return n;
++}
++
+ static unsigned
+ radv_amdgpu_copy_global_bo_list(struct radv_amdgpu_winsys *ws, struct drm_amdgpu_bo_list_entry *handles)
+ {
+@@ -944,6 +980,7 @@ radv_amdgpu_get_bo_list(struct radv_amdgpu_winsys *ws, struct ac_cmdbuf **cs_arr
+ {
+    struct drm_amdgpu_bo_list_entry *handles = NULL;
+    unsigned num_handles = 0;
++   const bool surfaces = radv_amdgpu_nvmtl_needs_surfaces(ws, cs_array, count);
+ 
+    if (ws->debug_all_bos) {
+       handles = malloc(sizeof(handles[0]) * ws->global_bo_list.count);
+@@ -952,7 +989,7 @@ radv_amdgpu_get_bo_list(struct radv_amdgpu_winsys *ws, struct ac_cmdbuf **cs_arr
+ 
+       num_handles = radv_amdgpu_copy_global_bo_list(ws, handles);
+    } else if (count == 1 && !num_initial_preambles && !num_continue_preambles && !num_postambles &&
+-              !radv_amdgpu_cs(cs_array[0])->chained_to && !ws->global_bo_list.count) {
++              !radv_amdgpu_cs(cs_array[0])->chained_to && !ws->global_bo_list.count && !surfaces) {
+       struct radv_amdgpu_cs *cs = (struct radv_amdgpu_cs *)cs_array[0];
+       if (cs->num_buffers == 0)
+          return VK_SUCCESS;
+@@ -964,7 +1001,7 @@ radv_amdgpu_get_bo_list(struct radv_amdgpu_winsys *ws, struct ac_cmdbuf **cs_arr
+       memcpy(handles, cs->handles, sizeof(handles[0]) * cs->num_buffers);
+       num_handles = cs->num_buffers;
+    } else {
+-      unsigned total_buffer_count = ws->global_bo_list.count;
++      unsigned total_buffer_count = ws->global_bo_list.count + (surfaces ? ws->surface_bo_list.count : 0);
+       total_buffer_count += radv_amdgpu_count_cs_array_bo(cs_array, count);
+       total_buffer_count += radv_amdgpu_count_cs_array_bo(initial_preamble_array, num_initial_preambles);
+       total_buffer_count += radv_amdgpu_count_cs_array_bo(continue_preamble_array, num_continue_preambles);
+@@ -978,6 +1015,8 @@ radv_amdgpu_get_bo_list(struct radv_amdgpu_winsys *ws, struct ac_cmdbuf **cs_arr
+          return VK_ERROR_OUT_OF_HOST_MEMORY;
+ 
+       num_handles = radv_amdgpu_copy_global_bo_list(ws, handles);
++      if (surfaces)
++         num_handles = radv_amdgpu_copy_nvmtl_surfaces(ws, handles, num_handles);
+       num_handles = radv_amdgpu_add_cs_array_to_bo_list(cs_array, count, handles, num_handles);
+       num_handles =
+          radv_amdgpu_add_cs_array_to_bo_list(initial_preamble_array, num_initial_preambles, handles, num_handles);
+diff --git a/src/amd/vulkan/winsys/amdgpu/radv_amdgpu_cs.h b/src/amd/vulkan/winsys/amdgpu/radv_amdgpu_cs.h
+index 77f8e02..366e6c9 100644
+--- a/src/amd/vulkan/winsys/amdgpu/radv_amdgpu_cs.h
++++ b/src/amd/vulkan/winsys/amdgpu/radv_amdgpu_cs.h
+@@ -43,4 +43,7 @@ radv_amdgpu_ctx(struct radeon_winsys_ctx *base)
+ 
+ void radv_amdgpu_cs_init_functions(struct radv_amdgpu_winsys *ws);
+ 
++/* NVMTL (macOS port), radv_nvmtl.c */
++void radv_amdgpu_nvmtl_cs_set_exact(struct ac_cmdbuf *cs);
++
+ #endif /* RADV_AMDGPU_CS_H */
+diff --git a/src/amd/vulkan/winsys/amdgpu/radv_amdgpu_winsys.c b/src/amd/vulkan/winsys/amdgpu/radv_amdgpu_winsys.c
+index 8d06821..6df6877 100644
+--- a/src/amd/vulkan/winsys/amdgpu/radv_amdgpu_winsys.c
++++ b/src/amd/vulkan/winsys/amdgpu/radv_amdgpu_winsys.c
+@@ -173,6 +173,7 @@ radv_amdgpu_winsys_destroy(struct radeon_winsys *rws)
+ 
+    u_rwlock_destroy(&ws->global_bo_list.lock);
+    free(ws->global_bo_list.bos);
++   free(ws->surface_bo_list.bos);
+ 
+    ac_drm_cs_destroy_syncobj(ws->dev, ws->vm_timeline_syncobj);
+    simple_mtx_destroy(&ws->vm_ioctl_lock);
+diff --git a/src/amd/vulkan/winsys/amdgpu/radv_amdgpu_winsys.h b/src/amd/vulkan/winsys/amdgpu/radv_amdgpu_winsys.h
+index bf1236b..ce43eed 100644
+--- a/src/amd/vulkan/winsys/amdgpu/radv_amdgpu_winsys.h
++++ b/src/amd/vulkan/winsys/amdgpu/radv_amdgpu_winsys.h
+@@ -62,6 +62,16 @@ struct radv_amdgpu_winsys {
+       struct u_rwlock lock;
+    } global_bo_list;
+ 
++   /* NVMTL (macOS port): host-pointer imports of IOSurfaces, kept off the global list. A submit carries them only when
++    * one of its command buffers has not listed the surfaces it uses (radv_nvmtl_cmd_exact). Every live BO in a submit
++    * costs the kernel a lookup, lock and validate, and WindowServer holds hundreds of surfaces. Guarded by
++    * global_bo_list.lock. */
++   struct {
++      struct radv_amdgpu_winsys_bo **bos;
++      uint32_t count;
++      uint32_t capacity;
++   } surface_bo_list;
++
+    /* BO log */
+    struct u_rwlock log_bo_list_lock;
+    struct list_head log_bo_list;

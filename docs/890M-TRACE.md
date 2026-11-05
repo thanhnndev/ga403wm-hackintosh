@@ -7626,3 +7626,32 @@ How to read it:
 - Counters move but DISPLAY is still "not met": the blocker is somewhere else.
 
 It ships in the same single NMXGPU build as Step114 and the NMXAMDFB busy hold (one build, one install, one reboot).
+
+## Edge web video lag part 6: surface list (RADV + plugin), installed 2026-11-05 22:13
+
+Fix for part 5 (every live IOSurface rode every submit), owner picked the RADV route.
+- RADV: source build `~/develop/projects/radv-video/build-res.sh` = Mesa bffd919 + NullMoth mesa-macos.patch + radv-nmxmap.patch + **`scripts/radv/radv-nvmtl-surface-list.patch`** (MIT, ours):
+  - winsys: a second list `surface_bo_list` next to the global BO list (same lock). `radv_amdgpu_nvmtl_bo_set_surface` moves a resident BO between them; a surface BO has `use_global_list = false`, so `radv_cs_add_buffer` adds it to the command streams that use it.
+  - each `radv_amdgpu_cs` has `nvmtl_exact`; `radv_amdgpu_get_bo_list` adds the whole surface list unless every CS of the submit is exact. A client that never calls the new entry points gets the old behaviour.
+  - `radv_nvmtl.c` exports `radv_nvmtl_abi` (1), `radv_nvmtl_memory_set_surface`, `radv_nvmtl_cmd_use_memory`, `radv_nvmtl_cmd_exact` (dlsym; NVMTL opens the ICD directly, so the handles are RADV's).
+  - Install names: system libz, /Library/GPUBundles/nvmtl libdrm (every needed symbol is there), no rpaths, no libelf (the old test-build blocker).
+- Plugin (fork `surface-keep-hash` **c315472**):
+  - IOSurface host imports (`nvmtl_surface_image_create`) are moved to the surface list (`_hostSL`).
+  - When a submission part is sealed, its resource set (the command buffer retains everything it uses until it completes, so it names every texture its commands touch) + dirty surfaces + drawable: each IOSurface texture's root allocation is added to the part's VkCommandBuffer, then the buffer is marked exact. Prologue and counter-reset command buffers (buffer copies, fills, query resets) are exact too. Any other submit stays non-exact and carries every surface.
+  - `gpuResourceID` (argument encoders, residency through gpuResourceID) puts that texture's surface back on the global list, since an argument buffer can reach it without a binding.
+  - `NVMTL_SURFACE_LIST=0` turns it off; with a RADV without `radv_nvmtl_abi` it stays off (log: `vk: surface list ON/OFF`).
+- Harness (`submit_scale_test`, commit of a 256-byte copy, 1000 live buffers):
+
+  | live IOSurface textures | live RADV | new RADV, list off | new RADV, list on |
+  |---|---|---|---|
+  | 0 | 115 us | 60 us | 56 us |
+  | 250 | 480 us | 179 us | 58 us |
+  | 500 | 770 us | 356 us | **48-58 us** |
+
+  surfkeep_test (render into an IOSurface, read it through another) and btsh_test pass with the list on and off. No NMXGPU fault/timeout in the kernel log.
+- Installed (22:13): RADV 2a2269ce (backup /Library/NullMoth/radv-live-20261105T151335Z), plugin 998153ff (backup nvmtl-plugin-20261105T151335Z), sbxmap pins refreshed (allowed 8, stale 0). New processes use it now (TextEdit: `surface list ON`); **WindowServer at the next boot**.
+  - Each app recompiles its shaders once on the new driver (NVMTL fc cache miss, ~3.8 s for `fixed_frag_lpf_cpf`), WindowServer too at the first login.
+  - Undo: `sudo scripts/macos-nvmtl-radv-install.sh --undo`, `sudo scripts/macos-nvmtl-plugin-install.sh --undo`, `scripts/macos-install-strixsbxmap.sh --refresh`.
+- Next boot: WindowServer sample (submit ioctl share should drop from ~11 %), hitch probe, CPU with Docker + Zalo open.
+
+Side note, the 21:58 freeze (owner force-rebooted at 22:00): the system log stops at 21:58:21 for every process; no NMXGPU fault/timeout. Just before: System Settings frontmost and a loginwindow password sheet (21:58:15). Nothing from this trace was running (source reading only; the RADV build started 22:07).
