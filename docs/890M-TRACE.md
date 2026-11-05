@@ -7310,3 +7310,87 @@ Test (one password):
   - B: `dsmskip 0x180`.
   - C: `dsmskip 0x198`.
   - For each, compare the time from lid open to the GPE 0x0A status bit, and which pin moved.
+
+## Edge web video lag (2026-11-05 17:15-17:25, diagnose only, nothing installed)
+
+Owner report: web video in Microsoft Edge 156.0.4314.58 is still slightly laggy; `edge://gpu` shows Canvas
+"software only". Method: a second Edge instance with a throwaway profile (scratchpad, `--remote-debugging-port`),
+YouTube "COSTA RICA IN 4K 60fps" (LXb3EKWsInQ) muted, quality pinned through the player API, other codecs hidden from
+YouTube by overriding `MediaSource.isTypeSupported` / `mediaCapabilities.decodingInfo` in the page. Decoder names from
+the DevTools Media domain (= media-internals), frame counts from `getVideoPlaybackQuality()`, CPU from `top`
+(2 s samples, averages slightly low because the first sample reads 0). The owner's own Edge was left alone.
+powermetrics was not run: the top/log evidence is already conclusive, and it needs a password prompt.
+
+### 1. Decode: almost no hardware decode, and VTStub causes a fallback stutter
+| content | Edge picks first | result | final decoder | CPU in the decoding process |
+|---|---|---|---|---|
+| VP9 1080p60 (YouTube default) | VideoToolboxVideoDecoder | "video decoder fallback after initial decode error" | **VpxVideoDecoder** (libvpx, renderer) | renderer ~64 % |
+| VP9 2160p60 | VideoToolboxVideoDecoder | same fallback | **VpxVideoDecoder** | renderer **~190 %** |
+| AV1 1440p/1080p | VideoToolboxVideoDecoder | same fallback | **Dav1dVideoDecoder** | renderer ~40 % (short run) |
+| H.264 High 1080p60 | VideoToolboxVideoDecoder | stays | VT, but **AppleH264SW** in VTDecoderXPCService | VTDecoderXPCService ~39 % |
+
+- Why: VTStub (Step108) is still in `/System/Library/Video/Plug-Ins` and `/tmp/vtstub.on` does not exist. Its
+  Info.plist advertises avc1/hvc1/vp09/av01 as hardware with rating 1000, so `VTIsHardwareDecodeSupported` = 1 and
+  `edge://gpu` lists "Decode vp9/av1/hevc/h264 ... Hardware accelerated". Chrome then opens a VT session, VideoToolbox
+  calls the stub first, and the stub refuses: log `VTSTUB CreateInstance codec=vp09 refused (no /tmp/vtstub.on)` (same
+  for av01, avc1). For VP9/AV1 there is no Apple fallback in VT here (AppleGVAVPXDecoder/AV1 hardware needs Apple
+  silicon), so the first frame fails and Chrome reinitialises in software. For H.264, VT falls back to AppleH264SW,
+  which is CPU decode inside VTDecoderXPCService and still counts as a platform decoder.
+- Cost of the fallback: every new decoder runs it again, and YouTube creates a new decoder at start, on every
+  quality/ABR switch and on seeks. Measured: 50 of the first 105 frames dropped at 1080p start, 79-108 dropped in the
+  first ~700 frames on other runs. That is ~1 s of stutter each time. In steady state only 0.6-2 % of frames drop
+  (9-31 of ~1440 in 24 s). This matches "slightly laggy": mostly hitches, not a constantly low frame rate.
+- VTStub's fake capability also makes MediaCapabilities report VP9/AV1 4K60 as power efficient, so YouTube serves
+  4K60 VP9, which then software-decodes at ~190 % CPU.
+- The VCN path (Step106/106b, bit-exact via RADV Vulkan Video) is not used by any browser: the live RADV has no
+  H.264/HEVC and there is no real VideoToolbox decoder yet.
+
+### 2. GPU process: on the 890M, but Chrome believes it is NVIDIA
+- Edge GPU process (`--type=gpu-process`) maps NVMTLDriver + `/Library/GPUBundles/nvmtl/libvulkan_radeon.dylib`;
+  GL_RENDERER `ANGLE Metal Renderer: AMD Radeon 890M Graphics (RADV STRIX1) (NVMTL over ... 890M ...)`,
+  Skia backend `GraphiteDawnMetal`. Drawing really runs on the 890M.
+- `edge://gpu` GPU0 is `VENDOR=0x10de DEVICE=0x2d59` (RTX 5060 Laptop) with the 890M strings. Chrome takes the PCI
+  ids from the IOKit parent of the Metal device's registryID. The default Metal device is the NVMTL instance under
+  `PEGP@0/NVAccel` (NVIDIA, MetalPluginName NVMTLDriver), while NMXAccel (890M) carries a second one. NVMTL routes
+  that device's work to RADV, but its identity stays NVIDIA.
+- Per-frame cost at 60 fps VP9 1080p (small 809x455 player, 120 Hz panel): Edge GPU process ~38-44 % CPU,
+  WindowServer ~92-104 % (58 % idle with the same windows; boot baseline ~32 %). A 4 s `sample` of the GPU process
+  shows no CPU readback/upload hot spot in user space (no ReadPixels/getBytes/IOSurfaceLock; 8 samples of
+  memmove). The nvmtl.execution queue is blocked in `drmSyncobjWait` (150/159), and the rest is mach_msg/kevent
+  waits. So the GPU-process CPU is mostly kernel/IPC time plus the libvpx-frame upload, not a copy loop. WindowServer's
+  per-frame cost is the known NVMTL per-draw/CA cost (Step100-101, Step104b), multiplied by a 60 fps layer update.
+
+### 3. Canvas "software only" = Chrome's NVIDIA-on-Mac blocklist entry
+`Problems Detected`: "Don't use the OOPR Canvas feature on Macs with NVIDIA GPUs: 1227033 ... Disabled Features:
+accelerated_2d_canvas". It matches because of the 0x10de vendor id above, not because of anything wrong with the
+890M. Driver Bug Workarounds also list `force_low_power_gpu` and `disable_ms_video_super_resolution` (dual-GPU/NVIDIA
+rules). Check: a test instance with `--ignore-gpu-blocklist` reports `2d_canvas: enabled`, same workarounds. Software
+canvas hurts sites that draw video into a canvas (YouTube ambient mode, web players with canvas renderers): each such
+draw becomes a GPU->CPU readback.
+
+### Root cause, ranked
+1. **VTStub's hardware claim** (Step108, gated off) sends every VP9/AV1/H.264 stream into VideoToolbox first. VP9/AV1
+   fail and fall back to libvpx/dav1d with ~1 s of dropped frames at start, on each quality switch and on seeks.
+   H.264 decodes in software inside VT.
+2. **All decode is CPU decode** (libvpx / dav1d / AppleH264SW). At 4K60 that is ~190 % CPU in the renderer.
+3. **High per-frame compositing cost**: WindowServer +35-45 % and the GPU process ~40 % at 60 fps, from the NVMTL/CA
+   cost already traced (Step101 and later), not a new readback.
+4. **Canvas on software**, because NVMTL's default Metal device has NVIDIA's PCI identity. This matters only for
+   canvas-based players.
+
+### Proposed next fixes
+- A (quick, next reboot, owned by the main session): remove VTStub (`tools/890m/vtstub/install.sh --undo --system`)
+  until a real decoder replaces it. Chrome then goes straight to libvpx/dav1d with no failed VT init, and stops
+  advertising 4K60 VP9 as power efficient. Expect the start/switch stutter to go away. CPU decode stays.
+- B (owner, no reboot): Edge `edge://flags/#ignore-gpu-blocklist` gives hardware Canvas back now. Or, in the driver:
+  make the NVMTL device that is routed to RADV report NMXAccel's registryID (890M, 0x1002:0x150e), so Chrome sees AMD
+  and drops the NVIDIA rules (canvas, force_low_power_gpu). Untested: Chrome may also change other AMD-specific
+  workarounds, so A/B it.
+- C (the real fix, from Step106b): a VideoToolbox decoder backed by RADV Vulkan Video in VTStub's place, with
+  VP9/AV1 first (the live RADV already has them) and H.264/HEVC after an installable `-Dvideo-codecs=all` RADV. It
+  should output IOSurface-backed CVPixelBuffers, so Chrome can hand frames to CoreAnimation as overlays without an
+  upload.
+- D: WindowServer per-frame cost stays the general NVMTL item. Re-measure after A and C, because zero-copy overlays
+  should also cut the GPU-process share.
+- Not useful: the guessed `--disable-features=VideoToolboxVp9Decoding,VideoToolboxAv1Decoding` had no effect in Edge
+  156 (VT was still tried first).
