@@ -6943,3 +6943,80 @@ still be taken (connect interrupt, like NVRMFB's `fHotplugBorn` path).
 Verify over several boots with `-nvrmnohold` (it is a ~0.6 s race): "Done waiting for IOKitWaitQuiet" (bluetoothd) and
 WindowServer's first `IOFBSetDisplayModeAndDepth` on VGA@0 come after "NMXAMDFB published", and no
 `Setting main display 0x00000000 offline`. Report: https://claude.ai/artifact/YaTnhdFy7As59STtf699BM
+
+## Step114: NMXGPU spin lock timeout panic (`nmx_thread_lock`), root-cause fix in source (2026-11-05, not built, not installed)
+
+Panic `Kernel-2026-11-05-111129` (11:09, normal use, no sleep, uptime 18 min): "NMIPI for spinlock acquisition
+timeout, spinlock 0xffffff99ee8f1220, owner WindowServer on CPU 12", then "mp_kdp_enter() timed-out on cpu 14".
+
+What the panic shows (live NMXGPU 5760efb6, vmaddr = file offset, load base 0xffffff7faaff1000):
+- The lock is `nmx_thread_lock`: the global at 0x98bae8 is a pointer to an `lck_spin_alloc_init` lock on the heap
+  (zone DATA range, which matches the address).
+- CPU 14 is the CPU that panicked ("timed-out on cpu %d" names the CPU running `mp_kdp_enter`), so it is the waiter
+  that hit the spin timeout. It did not answer the debugger IPI, so it was spinning with interrupts off.
+- CPU 12 holds the lock, running thread code with interrupts on: the backtrace goes from `hndl_allintrs` straight to
+  the thread stack, where the frame pointer is `nmx_thread_get`'s (return `nmx_curthread+0x11`). So it was inside the
+  locked region of `nmx_thread_get` (walk + Step100 mmfix2 cave), called from `amdgpu_cs_parser_fini -> lkpi_kfree`.
+- `mp_cpus_call_cpu_init+0x493` is a wrong symbol. With the BootKC (slide 0x14200000, `tools/kc.py`), the RIP
+  0xffffff80004e0937 is in the unnamed function at 0xffffff80004e08b0, right after `mp_safe_spin_lock`: it bumps a
+  CPU counter, then loops on `pause` + `machine_timeout_suspended` and services `MP_TLB_FLUSH` (cpu_signals bit 0).
+  That is `mp_kdp_wait`. CPUs 0, 1 and 6 (idle) sit at the same RIP. So CPU 12 was parked by the panic's own debugger
+  rendezvous. It was not stuck in a cross-call.
+
+Hypothesis "a holder takes a cross-call IPI that waits for a CPU spinning with interrupts off": **refuted**. CPU 12
+took the IPI normally and was not waiting for any CPU. There is no lock-order cycle either. Nothing takes another lock
+under `nmx_thread_lock` (the cave only calls `thread_tid`). No interrupt handler takes it: xkpi IRQs run on IOKit work
+loops (`xnu/nmx_pci.cpp`), callouts and the VBL timer run on thread calls, and the only `ml_at_interrupt_context` users
+are guards.
+
+Every acquirer (live binary, `otool -tV`): `nmx_thread_get` (fast walk, slow-path re-check and insert),
+`nmx_thread_leave`, `nmx_proc_for`, `tdfind`, `nmx_proc_any_task`, `nmx_threads_release_all`, init/fini.
+`nmx_curthread` has 253 call sites. In the live binary nothing calls `nmx_thread_enter`/`leave` (only `kthread_exit`
+and `taskqueue_thread_loop` drop records), so user-thread records are never freed (as Step100 found). Callers that take
+the lock with interrupts already off:
+- `critical_enter` users: `linux_rcu_read_lock`/`unlock`, the FPU window (`linux_fpu.c`), `drm_sched_entity_push_job`,
+  `__folio_batch_release`, `gfx_v9/10/11_get_gpu_clock_counter`, `smuio_v14_0_2_get_gpu_clock_counter`. Inside these,
+  `critical_exit`, a nested enter, `sched_pin`, `kfree` and sx locks all call `curthread`.
+- `MTX_SPIN` mutexes (`nmx_mtx_lock` turns interrupts off while held).
+
+Root cause: the hottest lock in the driver is one global, unfair xnu spin lock. `curthread` runs on every kfree,
+sched_pin/unpin, sx lock and critical section, and took that lock on every call, from all 16 CPUs, many with
+interrupts off. Meanwhile the holder kept interrupts on, so interrupts could hold it up. With every app on the 890M
+(Step104), a waiter with interrupts off could lose the lock past the spin timeout. The panic cannot tell which of
+"starved" or "holder stretched" happened (the waiter's stack is cut from the report), but both come from the same
+design, and the fix removes both.
+
+Fix, in the NullMoth source fork (`~/develop/projects/nmx-src-2.0.4`, remote `fork`). The branch is
+**`xkpi-thread-lockfree`**, on top of `mm-lifetime` (163d117, the source of Step100):
+- e249183 `bsdcompat/src/nmx_kernel.c`:
+  - `curthread` looks up its record without the lock. Records are type-stable: a dropped record goes on a free list
+    and is reused, never `IOFree`d while the layer runs. Links and bucket heads are published with release stores,
+    the lock only serializes writers, and a lock-free miss is always looked up again under the lock.
+  - The registry lock (`nmx_tl_lock`/`nmx_tl_unlock`) is held with interrupts off on every path.
+  - Full-table scans (`tdfind`, `nmx_proc_any_task`, `nmx_proc_reap` step 2, `release_all`) take it one bucket at a
+    time.
+  - In interrupt context `curthread` uses a per-CPU record and never allocates.
+- e4fa61a `tests/thread_registry/run.sh`: a user-space stress test. It extracts the record code verbatim and runs
+  16 threads over 24 recycled thread_t values, 12.8M lookups, once with the real hash and once with every record in
+  one bucket, under TSan and ASan. Result: 0 mismatches, no reports, counts consistent. The same test with the old
+  "IOFree on drop" put back reports heap-use-after-free, so the type-stable records are what make the lock-free path
+  safe.
+- `nmx_kernel.c` compiles clean with the port's `cc.sh` against the branch's headers (the generated fast path is a
+  lock-free walk plus the tid compare; the lock appears only on the miss path).
+
+Not done, by the owner's decision ("fix từ root cause chứ không patch hiện trạng nữa"): no binary cave, no install
+script. Not built as a kext and not installed. It goes into one NMXGPU build together with the NMXAMDFB busy-hold
+fix from the `-nvrmnohold` black-screen trace above: one build, one install, one reboot, when the owner says so.
+Build notes:
+- The base must be `ga403wm-nmx` + `mm-lifetime` + `xkpi-thread-lockfree` (which already has both) + the busy-hold
+  branch.
+- The live binary also carries binary caves with no source counterpart on these branches: ibprobe, wcsplit, userptr,
+  ibprep, cstrace, flip, irqfix, mmfix, fadt (`scripts/nmx-caves/check.py`). Before a source build replaces the live
+  kext, check that each of those either has a source commit in the build or is re-applied to the new binary.
+  Otherwise those fixes are lost.
+- To build: `all.sh` (compile), then `kext/build.sh <out>` with `AMD_ONLY=1`, from a tree where
+  `GPU_SRC/xkpi` points at the build checkout.
+
+Follow-ups seen on the way (not fixed here): the slow path can still `IOMallocZero` with interrupts off (a thread's
+first record made inside an `MTX_SPIN` region). A stale `task->task_thread` pointer to a dropped record now points to
+a reused record rather than freed memory.
