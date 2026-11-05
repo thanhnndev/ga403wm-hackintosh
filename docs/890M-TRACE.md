@@ -7396,3 +7396,62 @@ draw becomes a GPU->CPU readback.
   156 (VT was still tried first).
 
 - 17:3x: VTStub removed (`tools/890m/vtstub/install.sh --undo --system`), new snapshot blessed; live after the next reboot (batched with Step120 + SSDT-LIDFIX). Recheck Edge: no "decoder fallback", no dropped-frame burst at start/quality switch.
+
+### Edge video lag, part 2 (2026-11-05 18:11-18:20, boot 18:03 without VTStub, diagnose only)
+
+Same method (throwaway Edge profile, DevTools port, YouTube LXb3EKWsInQ), plus a `requestVideoFrameCallback` and
+`requestAnimationFrame` probe in the page that records every presentation gap over 25 ms, and a 6 s `sample` of
+WindowServer (root, via osascript).
+
+**Fix A works.** `edge://gpu` no longer lists H.264/VP9/AV1 hardware decode (only HEVC, Apple's own claim). Chrome
+now logs `Cannot select VideoToolboxVideoDecoder ... kUnsupportedConfig` and picks VpxVideoDecoder/Dav1dVideoDecoder
+directly, with no "fallback after initial decode error". Steady 22 s windows: VP9 1080p60 drops 0 of 1320 frames,
+VP9 2160p60 drops 0 of 1318 (renderer ~198 % CPU, libvpx), seek +60 s drops 0. CPU: WindowServer 63 % idle, ~96-107 %
+while playing; Edge GPU process 22-31 %; renderer ~49 % at 1080p.
+
+**What is left is presentation hitches, and they come from WindowServer.**
+- VP9 1080p60, 30 s: p50 16.6 ms, 11 gaps of 25-49 ms. VP9 1080p60, 60 s: p99 42.5 ms, 162 gaps over 25 ms and 40
+  skipped presentations. Most of them (87) fell in 18:18:20-30, when NotificationCenter drew a banner and the owner
+  clicked: any extra WindowServer work shows up as video hitches. AV1 1080p30: only 2 gaps (63/67 ms) in 20 s.
+- The page's own rAF clock skips at the same instants as the video, so the frame clock misses frames. Decode is not
+  the cause.
+- Edge GPU process `sample` during playback: CrGpuMain/main thread and VizCompositorThread are idle ~97 % of samples
+  (mach_msg waits). Edge is not the bottleneck.
+- WindowServer `sample` (6 s, VP9 1080p60): `ws_main_thread` is busy 78 % of samples. Another ~14 % is blocked
+  ioctls: `amdgpu_create_bo_from_user_mem` 180, `ac_drm_cs_submit_raw2` 199, `bo_destroy` 91, `drmNmxMmap` 66.
+  So about 92 % of the main thread is spent, with no headroom left for a 60 fps client plus anything else.
+- Where the busy time goes: `CA::OGL::render_contents_background -> bind_image -> MetalContext::update_surface ->
+  -[NVMTLDevice newTextureWithDescriptor:iosurface:plane:]` (2733 samples, ~70 % of the main thread) ->
+  `nvmtlNewSurfaceTexture` -> **`nvmtl_surface_keep` 2451** (+ `nvmtl_vk_buffer_import_host` 200). Leaves:
+  `-[__NSDictionaryM objectForKeyedSubscript:]` -> `-[NSArray isEqualToArray:]` -> `-[__NSCFNumber compare:]`.
+
+**Root cause (NVMTL plugin, `plugin/NVMTLDevice.m` `nvmtl_surface_keep`, same code in desc-cache, renderbox and
+890m branches):**
+1. The surface keep and its `used` timestamps are NSMutableDictionary objects keyed by
+   `@[@(IOSurfaceID), @(plane), @(w), @(h), @(pixelFormat), @(ropt), @(fbo)]`. `-[NSArray hash]` is the element count,
+   so every key hashes to 7 (checked: `@[@463,…].hash == @[@999,…].hash == 7`). Every lookup is a linear scan of
+   7-number `isEqualToArray:` compares. The weak NSMapTable cache uses the same keys.
+2. Every cache miss (a new wrapper for a surface) runs the eviction sweep over `keep.allKeys` with two such lookups
+   per key, so one insert costs O(n^2) NSNumber compares. Measured on this CPU, a standalone copy of the sweep takes
+   0.7 ms at n=100, 2.5 ms at 200, 10.5 ms at 400 and 36.6 ms at 800. The frame budget is 8.3 ms at 120 Hz. WindowServer
+   holds keep entries for every surface any client still retains, plus up to 48 idle host entries.
+3. During video, misses happen every frame (the `buffer_import_host` + `create_bo_from_user_mem` + `bo_destroy`
+   ioctls in the same sample: the surface's pages are pinned and imported again). Which part of the 7-field key
+   changes per frame for Chrome's video layer (a new IOSurface from Chrome's pool, the second plane, a different
+   pixelFormat/ropt from CA) is not yet known.
+This is very likely also the general "WindowServer 50-100 % CPU" seen since Step104b, because any client that updates
+IOSurface contents pays it. Idle WindowServer was not sampled this time.
+
+**Proposed fix (NVMTL plugin, NullMoth code: stays in the nmx-plugin-* fork, not this repo):**
+- Key the keep/used/cache maps by a real hash: a C struct key in a CFDictionary with custom callbacks, or one
+  NSNumber/NSValue packing (IOSurfaceID, plane, fmt, ropt, fbo) with w/h checked on hit. Merge keep and used into
+  one entry {texture, lastUsedMs}.
+- Run the eviction sweep at most every ~250 ms or when the map grows past a bound, not on every insert. Find held vs
+  unheld entries without two dictionary lookups per key.
+- Then log the miss reason for Chrome's video layer (which key field differs from the previous entry for the same
+  IOSurfaceID). If the IOSurface is the same and only ropt/fbo/pixelFormat differ, share one host import per
+  (surface, plane) and make views, so the userptr BO is not re-imported each frame.
+- Measure again with the same probes: WindowServer main-thread busy %, gaps over 25 ms per minute (target 0 without
+  other activity), CPU at idle.
+- Still open from part 1: Canvas software via the NVIDIA PCI identity (fix B), and CPU decode (fix C, VCN-backed
+  VideoToolbox decoder).
