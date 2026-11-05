@@ -7020,3 +7020,46 @@ Build notes:
 Follow-ups seen on the way (not fixed here): the slow path can still `IOMallocZero` with interrupts off (a thread's
 first record made inside an `MTX_SPIN` region). A stale `task->task_thread` pointer to a dropped record now points to
 a reused record rather than freed memory.
+
+## Step113 results (d3 0/1/2) + StrixS0ix 0.1.5 (installed, reboot pending), 2026-11-05
+
+**Runs.** Three sleeps on the 11:43 boot (0.1.4 with the MCFG fix). Each slept about 50 to 60 s, woke on the RTC (0x400) on time, and amdgpu suspended in about 610 ms and resumed in about 325 ms. OS_HINT came from the halt path: in/out 0x1/0x1, after amdgpu had suspended. `cc6 1` on every run (the boot CPU stayed in CC6).
+
+S0i3 was **not reached** in any mode: DISPLAY (0), CPU (1) and NBIO (9) were not idle for the whole sleep. GFX (2) is no longer on the list now that amdgpu suspends.
+
+- **d3 0 (record only).** Functions IOPCIFamily already had in D3: NVMe (61:00.0) and the four xHCI. Functions still in D0:
+
+  | Function | Device |
+  |---|---|
+  | 63:00.0 | MT7925 Wi-Fi |
+  | 65:00.0 | 890M, **NSR 0** |
+  | 65:00.1 | HDMI audio, NSR 0 |
+  | 65:00.2 | PSP |
+  | 65:00.5 | ACP |
+  | 65:00.6 | HDEF |
+  | 67:00.5 | USB4 NHI |
+  | 66:00.0 | NPU, NSR 0 |
+  | 66:00.1 | IPU |
+  | 62:00.0 / 62:00.1 | RTX + audio |
+  | 64:00.0 | SD reader, NSR 0 |
+
+- **d3 1.** PSP, ACP, HDEF and IPU went D0→D3→D0. No change in the SMU blocks.
+- **d3 2.** Wi-Fi went D0→D3→D0 as well. Still no change. Wi-Fi had not been associated since 12:07, so these runs do not show whether Wi-Fi survives D3.
+
+**Next leads.**
+- The CPU block persists with every core in the _CST C2 state (port 0x414). The firmware `_CST` (SSDT-4) has three states: C1 = FFixedHW (MWAIT), C2 = IO 0x414 (latency 18 µs), C3 = IO 0x415 (latency 350 µs). C3 is the deepest, and we never used it.
+- DISPLAY and NBIO need the functions without No_Soft_Reset in D3 (the 890M, its HDMI audio, the NPU, the SD reader, the NHI), and in the end the RTX.
+
+**StrixS0ix 0.1.5**
+- **C-state port.** CC6 entry now uses base+2, port 0x415 (`_CST` C3), by default. Boot-arg `s0ix_cst=1`, or `s0ix-set cst 1|2` at runtime, picks C2 or C3.
+- **More D3 modes.** D3Mode 3 adds functions without No_Soft_Reset, except the 890M. D3Mode 4 adds the 890M. For these functions the config space is saved before D3hot and restored after D0, as `pci_save_state` / `pci_restore_state` do:
+  1. the PCIe control registers;
+  2. the header, in reverse order so the command register comes last;
+  3. MSI addr/data/ctl and the MSI-X ctl.
+- **NHI tier.** The USB4 NHI (0c0340) is now tier 2. Only xHCI (0c0330) is still excluded.
+- Installed with `scripts/macos-install-step113.sh` (`--undo`).
+
+**Test plan after the reboot**
+1. d3 2 with C3: shows whether the CPU block clears.
+2. d3 3.
+3. d3 4: the 890M itself in D3hot. If amdgpu's s0ix resume cannot cope with the internal reset, this one is expected to fail.

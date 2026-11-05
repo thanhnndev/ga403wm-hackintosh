@@ -73,7 +73,8 @@ static volatile bool gArmed;
 alignas(64) static volatile uint64_t gMonitorLine[8];
 static volatile uint64_t gIdleEntries, gLastIdleTsc, gTscHz;
 static volatile uint32_t gLastWhy, gLastLoops, gLastFast;
-static uint16_t gCstPort;                        // CStateBaseAddr + 1 (C2 = CC6), 0 = none
+static volatile uint16_t gCstPort;               // CStateBaseAddr + depth (_CST C2 = +1, C3 = +2), 0 = none
+static uint16_t gCstBase;
 static bool gCc6Cpus = true;                     // non-boot CPUs in CC6 while halted
 static volatile bool gCc6Boot;                   // armed boot CPU in CC6 between wake checks
 static volatile uint32_t gLastCc6Loops;
@@ -109,6 +110,10 @@ static uint32_t wakeEvent()
 // 2 = also every other endpoint IOPCIFamily left in D0 (never the RTX, NVMe or bridges).
 struct PciFn {
     volatile uint16_t *pmcsr;                    // ECAM VA of PMCSR
+    volatile uint8_t *cfg;                       // ECAM VA of the function's config space
+    uint8_t pcie, msi, msix;                     // capability offsets (0 = none)
+    bool saved;
+    uint32_t save[64];                           // config space at sleep, for functions without No_Soft_Reset
     uint16_t bdf, vendor, device;
     uint32_t cls;
     bool nsr;
@@ -137,13 +142,53 @@ static uint32_t pmcRaw(uint32_t msg, uint32_t arg)  // amd_pmc protocol, spin on
 
 static void tscDelay(uint64_t tsc) { uint64_t t = rdtsc64(); while (rdtsc64() - t < tsc) asm volatile("pause"); }
 
+// 0.1.5: pci_save_state / pci_restore_state for functions whose PMCSR No_Soft_Reset is 0 (D3hot -> D0 resets their
+// config space): header in reverse (command last), the PCIe control registers, then MSI / MSI-X.
+static void cfgSave(PciFn &f)
+{
+    auto c = reinterpret_cast<volatile uint32_t *>(f.cfg);
+    for (unsigned i = 0; i < 64; i++) f.save[i] = c[i];
+    f.saved = true;
+}
+
+static void cfgRestore(PciFn &f)
+{
+    if (!f.saved) return;
+    auto w16 = [&](unsigned off) { *reinterpret_cast<volatile uint16_t *>(f.cfg + off) =
+                                       uint16_t(f.save[off >> 2] >> ((off & 2) * 8)); };
+    auto w32 = [&](unsigned off) { *reinterpret_cast<volatile uint32_t *>(f.cfg + off) = f.save[off >> 2]; };
+    if (f.pcie) { w16(f.pcie + 0x08); w16(f.pcie + 0x10); w16(f.pcie + 0x18); w16(f.pcie + 0x1c); w16(f.pcie + 0x28); w16(f.pcie + 0x30); }
+    auto c = reinterpret_cast<volatile uint32_t *>(f.cfg);
+    for (int i = 15; i >= 1; i--) if (c[i] != f.save[i]) c[i] = f.save[i];
+    if (f.msi) {
+        uint16_t ctl = uint16_t(f.save[(f.msi + 2) >> 2] >> (((f.msi + 2) & 2) * 8));
+        w32(f.msi + 4);
+        if (ctl & 0x80) { w32(f.msi + 8); w16(f.msi + 0xc); } else w16(f.msi + 8);
+        w16(f.msi + 2);
+    }
+    if (f.msix) w16(f.msix + 2);
+    f.saved = false;
+}
+
+// which functions a D3 mode moves: 1 = 890M buses (No_Soft_Reset only), 2 = + other endpoints, 3 = + functions
+// without No_Soft_Reset (config saved/restored) except the 890M itself, 4 = + the 890M
+static bool d3Wanted(const PciFn &f, uint32_t mode)
+{
+    if (!f.tier || f.tier > (mode < 2 ? mode : 2)) return false;
+    if (f.nsr) return true;
+    if (mode < 3) return false;
+    bool gpu = f.vendor == 0x1002 && (f.cls >> 16) == 0x03;
+    return !gpu || mode >= 4;
+}
+
 static void haltEnter()
 {
     for (unsigned i = 0; i < gFnN; i++) {
         PciFn &f = gFn[i];
         uint16_t v = *f.pmcsr;
         f.pre = v & 3; f.set = f.pre; f.post = 0xff;
-        if (f.tier && f.tier <= gD3Mode && f.nsr && f.pre == 0) {
+        if (f.pre == 0 && d3Wanted(f, gD3Mode)) {
+            if (!f.nsr) cfgSave(f);
             *f.pmcsr = uint16_t((v & ~0x8003u) | 3);   // keep PME_En, do not clear PME_Status (W1C)
             f.set = 3;
         }
@@ -161,6 +206,7 @@ static void haltExit()
         if (f.set == 3 && f.pre == 0) { *f.pmcsr = uint16_t(*f.pmcsr & ~0x8003u); any = true; }
     }
     if (any) tscDelay(gTscHz / 100);              // D3hot -> D0: 10 ms before the first config access
+    for (unsigned i = 0; i < gFnN; i++) if (gFn[i].set == 3 && gFn[i].pre == 0 && !gFn[i].nsr) cfgRestore(gFn[i]);
     for (unsigned i = 0; i < gFnN; i++) gFn[i].post = *gFn[i].pmcsr & 3;
 }
 
@@ -437,7 +483,11 @@ void StrixS0ix::setupCc6()
     PE_parse_boot_argn("s0ix_cc6boot", &v, sizeof v);
     gCc6Boot = v != 0;
     uint64_t base = rdmsr64(0xC0010073) & 0xffff;   // CStateBaseAddr
-    if (base >= 0x100 && base < 0xfff0) gCstPort = uint16_t(base + 1);
+    UInt32 depth = 2;                               // 0.1.5: _CST C3 (port base+2, 350 us) is the deepest; C2 = base+1
+    PE_parse_boot_argn("s0ix_cst", &depth, sizeof depth);
+    if (depth < 1 || depth > 2) depth = 2;
+    if (base >= 0x100 && base < 0xfff0) { gCstBase = uint16_t(base); gCstPort = uint16_t(base + depth); }
+    setProperty("S0ix,CstDepth", depth, 32);
     setProperty("S0ix,CstPort", gCstPort, 16);
     setProperty("S0ix,CC6Cpus", gCc6Cpus && gCstPort);
     setProperty("S0ix,BootCC6", gCc6Boot && gCstPort);
@@ -483,11 +533,17 @@ void StrixS0ix::buildPci()
         auto base = reinterpret_cast<volatile uint8_t *>(map->getVirtualAddress());
         if (*reinterpret_cast<volatile uint32_t *>(base) != id) { map->release(); continue; }   // ECAM must agree
         PciFn &f = gFn[gFnN++];
+        f.cfg = base;
         f.pmcsr = reinterpret_cast<volatile uint16_t *>(base + pmOff + 4);
+        UInt8 cap = 0;
+        f.pcie = d->findPCICapability(kIOPCIPCIExpressCapability, &cap) ? cap : 0;
+        cap = 0; f.msi = d->findPCICapability(kIOPCIMSICapability, &cap) ? cap : 0;
+        cap = 0; f.msix = d->findPCICapability(kIOPCIMSIXCapability, &cap) ? cap : 0;
+        f.saved = false;
         f.bdf = uint16_t(bus << 8 | dev << 3 | fn);
         f.vendor = uint16_t(id); f.device = uint16_t(id >> 16); f.cls = cls;
         f.nsr = (*f.pmcsr & 0x8) != 0;
-        bool usb = (cls >> 8) == 0x0C03, nvme = (cls >> 8) == 0x0108, nv = f.vendor == 0x10de;
+        bool usb = cls == 0x0C0330, nvme = (cls >> 8) == 0x0108, nv = f.vendor == 0x10de;
         f.tier = (usb || nvme || nv || bus == 0) ? 0 : (bus == igpuBus[0] || bus == igpuBus[1]) ? 1 : 2;
         f.pre = f.set = f.post = 0xff;
     }
@@ -520,9 +576,18 @@ IOReturn StrixS0ix::setProperties(OSObject *properties)
 {
     auto d = OSDynamicCast(OSDictionary, properties);
     if (auto n = d ? OSDynamicCast(OSNumber, d->getObject("S0ix,D3Mode")) : nullptr) {
-        gD3Mode = n->unsigned32BitValue() > 2 ? 2 : n->unsigned32BitValue();
+        gD3Mode = n->unsigned32BitValue() > 4 ? 4 : n->unsigned32BitValue();
         setProperty("S0ix,D3Mode", gD3Mode, 32);
         IOLog("StrixS0ix: D3 mode now %u\n", unsigned(gD3Mode));
+        return kIOReturnSuccess;
+    }
+    if (auto n = d ? OSDynamicCast(OSNumber, d->getObject("S0ix,CstDepth")) : nullptr) {
+        uint32_t depth = n->unsigned32BitValue();
+        if (!gCstBase || depth < 1 || depth > 2) return kIOReturnBadArgument;
+        gCstPort = uint16_t(gCstBase + depth);
+        setProperty("S0ix,CstDepth", depth, 32);
+        setProperty("S0ix,CstPort", gCstPort, 16);
+        IOLog("StrixS0ix: C-state port now %#x (_CST C%u)\n", unsigned(gCstPort), depth + 1);
         return kIOReturnSuccess;
     }
     if (auto h = d ? OSDynamicCast(OSBoolean, d->getObject("S0ix,HaltHint")) : nullptr) {
@@ -606,7 +671,7 @@ bool StrixS0ix::start(IOService *provider)
         gHaltHint = v != 0;
         v = 0;
         PE_parse_boot_argn("s0ix_d3", &v, sizeof v);
-        gD3Mode = v > 2 ? 2 : v;
+        gD3Mode = v > 4 ? 4 : v;
         setProperty("S0ix,HaltHint", bool(gHaltHint));
         setProperty("S0ix,D3Mode", gD3Mode, 32);
     }
@@ -641,7 +706,7 @@ bool StrixS0ix::start(IOService *provider)
     PMinit();
     getPMRootDomain()->addPowerChild(this);       // top level: powered down after the device tree, only on real sleep
     if (registerPowerDriver(this, states, 2) == kIOReturnSuccess) { pm = true; changePowerStateTo(1); }
-    IOLog("StrixS0ix: 0.1.4 up, PEP _DSM mask %#x (%s), halt hook %s, power child %s\n", mask, useDsm ? "used" : "off",
+    IOLog("StrixS0ix: 0.1.5 up, PEP _DSM mask %#x (%s), halt hook %s, power child %s\n", mask, useDsm ? "used" : "off",
           halt ? "on" : "OFF", pm ? "on" : "FAILED");
     registerService();
     return true;
