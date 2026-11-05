@@ -1,8 +1,43 @@
-# RyzenHV on the GA403WM (test stick)
+# RyzenHV on the GA403WM
 
 [RyzenHV](https://github.com/thanhnndev/ryzen-hypervisor.framework) gives macOS a Hypervisor.framework on AMD-V (SVM), so
-QEMU `-accel hvf`, Docker and other VM apps can run. It is tried **from a USB stick only**: the internal ESP is read, never
-written. Zen 5 / macOS 26 notes: RyzenHV repo, `docs/notes/GA403WM-ZEN5-TAHOE.md`.
+QEMU `-accel hvf`, Docker and other VM apps can run. Zen 5 / macOS 26 notes: RyzenHV repo, `docs/notes/GA403WM-ZEN5-TAHOE.md`.
+
+## Installed on the internal ESP (2026-11-05, reboot pending)
+
+Like the other kexts of this repo: copied to `EFI/OC/Kexts/RyzenHV.kext` (none was there before) and listed with
+`tools/occonfig.py`, which wrote the backups first.
+
+| | |
+|---|---|
+| kext | RyzenHV 0.7.8, built from ryzen-hypervisor.framework `f9435eb` (`make kext tools`), binary sha256 `ece26ed15b33d320…`; 401 imported symbols resolve against kernel 25.6.0 |
+| Kernel/Add | last entry, `Enabled`, `MinKernel 24.0.0`, `MaxKernel 25.99.99` |
+| boot-args added | `rhv_enable_svm=1 rhv_selftest=1 rhv_hv=1 rhv_allow_users=1 rhv_loglevel=4` (one boot: probe, SVM on every core, self-test, native front end) |
+| backups | `EFI/OC/config.plist.pre-ryzenhv-20261105-103227` (before the entry), `config.plist.pre-ryzenhv-args-20261105-103227` (before the boot-args) |
+| config sha256 | before `18056c52a738d575`, after `15ad41e6f37824c2`; `occonfig.py check`: no issues |
+
+**Check after the reboot** (`R=~/develop/projects/ryzen-hypervisor.framework/build`):
+
+```bash
+$R/rhv-info                     # family 0x1a model 0x24, SVM supported, BIOS disable: NO, NPT [x], usable 24
+$R/rhv-info log | grep -E "SVM enabled|selftest|rescan|front end|ERR|WARN"
+$R/rhv-info hv                  # front end: registered
+$R/rhv-info hv sysctl 1 && sysctl kern.hv_support      # then build/hvf-smoke, QEMU -accel hvf
+```
+
+`BIOS disable: YES` means SVM Mode is off in the BIOS (ASUS: "SVM(Secure Virtual Machine) mode", default Enabled; F2 at
+power-on, F7 for Advanced Mode). The kext then does nothing.
+
+**Undo / way back**
+* Kill switch: boot-arg `-rhv_off` (the kext loads and does nothing).
+* Without RyzenHV: `cp EFI/OC/config.plist.pre-ryzenhv-20261105-103227 EFI/OC/config.plist` (from macOS on `/Volumes/ESP`, or from
+  Linux on `/boot`), then `EFI/OC/Kexts/RyzenHV.kext` can be deleted.
+* A panic at boot: pick Linux in the picker and do the copy above from `/boot/EFI/OC`.
+
+## Optional: a test stick
+
+The rest of this page is the USB stick variant (`scripts/macos-make-rhv-usb.sh`), for trying a new RyzenHV build without
+touching the internal ESP.
 
 ## How the stick follows this repo's rules
 
