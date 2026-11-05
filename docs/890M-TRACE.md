@@ -6843,3 +6843,26 @@ The first sleep test (mode 0) panicked at 10:46:16 on entry to sleep. The machin
 - Panic: `A kext releasing a(n) OSData ... has corrupted the registry`, thrown from `StrixS0ix::buildPci` (via setPowerState). Report: /Library/Logs/DiagnosticReports/Kernel-2026-11-05-105201.panic.
 - Cause: `IOACPIPlatformDevice::getACPITableData("MCFG")` does not retain the table for the caller (readFadt already handles FACP this way), and buildPci released it.
 - Fix: the release is removed. The kext is rebuilt and reinstalled with `scripts/macos-install-step113.sh`; it loads at the next boot.
+
+### Boot-time step 2: `-nvrmnohold` (2026-11-05 11:06, installed, reboot pending)
+
+On the 10:42 boot, c54e304 was live. The NVRM hold started at 10:42:51.36 and the 890M framebuffer (NMXAMDFB) was published at 10:42:52.73. The hold was released only at 10:42:55.88, when go(2) finished (3.0 s). So WindowServer still waited about 3 s for the RTX only to learn that the RTX has no display. On this machine the desktop is always on the 890M. The RTX is needed only for:
+- headless Metal apps. NVAccel's headless check restores MetalPluginName at about +6 s, without the hold;
+- HDMI, which is wired to the RTX.
+
+**Change.** NVRM in nmx-translator-271 3d0246f adds the boot-arg `-nvrmnohold`:
+- With the flag, NVRM never takes the hold: no adjustBusy(+1) and no cap timer. auto-go and go(2) still run in the background. A display on the RTX is still armed, but WindowServer is already up by then.
+- Without the flag, behaviour is the same as c54e304.
+
+Build checks: Info.plist and the undefined imports are equal to the live kext, and `strings` only adds the new lines.
+
+**Installed:**
+- `sudo scripts/macos-install-step112b.sh ~/nvrm-build-nohold/NVRM.kext` (the same installer as Step112b). NVRM sha256 is dca5eac6cfca8e7c. The NMXGPU cave checks pass in the new AuxKC and again after 45 s.
+- Backup: /Library/NullMoth/step112b-bk-20261105T040555Z (the c54e304 NVRM and the old AuxKC). `--undo` restores it.
+- ESP: `-nvrmnohold` was appended to boot-args. Backup `config.plist.pre-nvrmnohold`, `plutil -lint` OK. To undo, drop the flag: the kext without the flag behaves like c54e304.
+
+**Check after the reboot:**
+1. The log has `boot hold OFF (-nvrmnohold)` and `registry NOT held (-nvrmnohold)`.
+2. The IOAVBNub / WindowServer waitQuiet ends at about the NMXAMDFB publish, not at the end of go(2). The expected gain is about 3 s.
+3. Headless Metal still works: the NVAccel headless check line appears, and an app can still pick the RTX.
+4. HDMI hotplug after boot, as a separate test: does the RTX display come up? If not, arming on hotplug is its own follow-up.
