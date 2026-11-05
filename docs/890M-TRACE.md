@@ -7572,3 +7572,28 @@ The surface keep fix (fork `surface-keep-hash` ff0ebef, plugin 57aee79b) was loa
   - Installed as plugin d2b358c7 (backup /Library/NullMoth/nvmtl-plugin-20261105T123646Z), sbxmap pins refreshed. **WindowServer loads it at its next start** (log out/in or the pending reboot); new apps load it at once.
   - Undo: `sudo scripts/macos-nvmtl-plugin-install.sh --undo`, then `scripts/macos-install-strixsbxmap.sh --refresh`.
 - Next after that boot: sample WindowServer during video again (btsh share should be near 0), then look at the submit ioctl wait and the remaining software paths (Canvas in software, CPU video decode).
+
+## Edge web video lag part 5: after the btsh boot (2026-11-05 21:20) - the submit ioctl scales with live IOSurfaces
+
+- WindowServer runs plugin d2b358c7 (bf0ef9e). Log: `1984 shadows made, 1984 of them one-copy`. Main thread sample (10 s, Zalo and Claude open):
+  busy 48.7 %; `nvmtl_btsh_rows` **20 % → 0.2 %**; `nvmtl_surface_keep` 0.8 %; NVMTL plugin own code is small now.
+- The largest item left is the submit: `vkQueueSubmit` → `radv_amdgpu_winsys_cs_submit` → `ac_drm_cs_submit_raw2` = **11.4 %** of the main thread (about 110 submits/s, so ~1 ms each).
+- spindump with kernel stacks: 75 of 500 main-thread samples are in that ioctl, and almost all of them are **on CPU in NMXGPU**, not waiting:
+  `drm_ioctl` → amdgpu CS ioctl → `amdgpu_cs_p1_bo_handles`, `amdgpu_bo_list_create`, `drm_exec_prepare_obj`/`drm_exec_lock_obj` (`linux_ww_mutex_lock_sub`, `nmx_sx_try_xlock`), `amdgpu_cs_bo_validate`, `drm_gem_object_lookup`, `ttm_resource_compatible`, `amdgpu_ttm_tt_is_userptr`.
+  That is the per-BO work of the BO list: the cost grows with the number of BOs every submit carries.
+- Why so many BOs: RADV makes every non-WSI allocation resident (`buffer_make_resident(true)` in radv_device_memory.c). Private allocations are `is_local` (`AMDGPU_GEM_CREATE_VM_ALWAYS_VALID`) and stay off the list, but **host-pointer imports are not local**. NVMTL imports every IOSurface that way (`create_bo_from_user_mem` / `radv_bo_from_ptr`), so every live IOSurface texture is in RADV's global BO list and goes to the kernel with **every** submit, used or not.
+- Measured (`plugin/tests/submit_scale_test.m`, fork 3rd commit on surface-keep-hash): commit of a 256-byte copy
+
+  | live shared MTLBuffers | live IOSurface textures | commit CPU |
+  |---|---|---|
+  | 0 | 0 | 100 us |
+  | 1000 | 0 | 115 us |
+  | 1000 | 250 | 480 us |
+  | 1000 | 500 | 770 us |
+
+  About 1.4 us per live IOSurface per submit. WindowServer has about 740 live images (image census) and ~110 submits/s → ~1 ms per submit → ~11 % of its main thread, the number the sample shows.
+- **This is the "Docker + Zalo makes the machine stall" mechanism:** every window, layer and app surface is an IOSurface that WindowServer wraps, so each new window makes *every* WindowServer frame slower, linearly, until its main thread is full. Apps on the 890M pay the same per their own surfaces.
+- Ways to fix it (to decide):
+  1. Kernel (NMXGPU source build, already planned as tech debt): on macOS a host-pointer BO is wired memory that never moves, so it can be validated once and then treated like a VM_ALWAYS_VALID BO (kept off the per-submit list). Also cut the per-BO cost (ww_mutex over sx lock, lookups): 1.4 us per BO is several times Linux.
+  2. RADV (our libvulkan_radeon): keep host-pointer imports off the global list after their first submit and add them to a command buffer only when NVMTL says it uses them (private entry point; NVMTL knows each command buffer's IOSurface textures). Needs care with bindless descriptors.
+  3. Smaller: fewer imports (one BO per IOSurface, shared across planes/wrappers; release keep entries sooner).
