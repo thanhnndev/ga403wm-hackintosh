@@ -7534,3 +7534,17 @@ The owner ran the tests with the lid opened at about 45 s; the RTC alarm was the
   - Each PWRB message is logged with its type, argument and time.
   - Reboot pending.
 - Next: power button test with the press about 30 s after the screen goes off, then a long sleep to check the fans and the EC dark wakes.
+
+## Step121 power button test (19:21) and Step122
+
+- 0.1.10 was live after the reboot: PWRB was being watched, DsmSkip 0x180 and GPIO wake off were the defaults.
+- The owner pressed the power button about 30 s after the screen went off:
+  - At 19:22:33 the EC GPE 0x0A woke the halt (11.7 s into it). It was only a dark wake ("due to /").
+  - **No PWRB message reached the interest handler.** So either `_QE7` → `Notify(PWRB, 0x80)` did not run, or macOS delivers it only to AppleACPIButton, which does not turn it into a full wake from dark wake.
+  - The full wake came at 19:22:58 from the test script (HID activity).
+- Step122 = StrixS0ix 0.1.11 (`scripts/macos-install-step122.sh`):
+  - After an EC GPE wake, while still in the halt path, the kext takes the EC query itself: status 0x66 SCI_EVT, command 0x84, data 0x62, 5 ms timeouts.
+  - 500 ms after the wake it runs that `_Qxx` on EC0 from a thread call and logs `EC query X at the wake`. AppleACPIEC then finds no SCI_EVT left.
+  - On 0xE7 (`_QE7`, power button) it tickles IODisplayWrangler for a full wake.
+  - Switch: `s0ix-set ecquery on|off`, boot-arg `s0ix_ecquery=0`.
+  - The log will also show which query the earlier "EC: other" dark wakes carry (battery, thermal).

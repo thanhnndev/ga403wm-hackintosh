@@ -117,6 +117,7 @@ static uint64_t gHaltT0;
 static inline uint16_t inw(uint16_t p) { uint16_t v; asm volatile("inw %1, %0" : "=a"(v) : "Nd"(p)); return v; }
 static inline uint32_t inl(uint16_t p) { uint32_t v; asm volatile("inl %1, %0" : "=a"(v) : "Nd"(p)); return v; }
 static inline void outl(uint16_t p, uint32_t v) { asm volatile("outl %0, %1" :: "a"(v), "Nd"(p)); }
+static inline void outb(uint16_t p, uint8_t v) { asm volatile("outb %0, %1" :: "a"(v), "Nd"(p)); }
 static inline uint8_t inb(uint16_t p) { uint8_t v; asm volatile("inb %1, %0" : "=a"(v) : "Nd"(p) : "memory"); return v; }
 static inline uint64_t rdmsr64(uint32_t m) { uint32_t lo, hi; asm volatile("rdmsr" : "=a"(lo), "=d"(hi) : "c"(m)); return (uint64_t(hi) << 32) | lo; }
 static inline uint64_t rdtsc64() { uint32_t lo, hi; asm volatile("rdtsc" : "=a"(lo), "=d"(hi)); return (uint64_t(hi) << 32) | lo; }
@@ -304,6 +305,29 @@ static void haltExit()
     for (unsigned i = 0; i < gFnN; i++) gFn[i].post = *gFn[i].pmcsr & 3;
 }
 
+// 0.1.11: an EC GPE wake leaves macOS in dark wake even for the power button (Step121 19:22:33: no PWRB notify reached
+// us, so the _QE7 Notify does not happen or does not count). Take the EC query ourselves at wake (status 0x66 SCI_EVT,
+// command 0x84, data 0x62), then run that _Qxx from a thread and ask for a full wake on 0xE7 (power button).
+// AppleACPIEC then finds no SCI_EVT and does nothing. gEcQuery: -1 not tried, -2 no SCI_EVT, -3 EC timeout, else xx.
+static volatile int gEcQuery = -1;
+static volatile bool gEcQ = true;              // S0ix,EcQuery / boot-arg s0ix_ecquery=0 turns the interception off
+static volatile uint8_t gEcSt;
+static bool ecWait(uint8_t mask, uint8_t want)
+{
+    uint64_t end = rdtsc64() + gTscHz / 200;       // 5 ms
+    while (((gEcSt = inb(0x66)) & mask) != want) if (rdtsc64() > end) return false;
+    return true;
+}
+static void ecQuery()
+{
+    gEcSt = inb(0x66);
+    if (!(gEcSt & 0x20)) { gEcQuery = -2; return; }
+    if (!ecWait(0x02, 0)) { gEcQuery = -3; return; }
+    outb(0x66, 0x84);
+    if (!ecWait(0x01, 0x01)) { gEcQuery = -3; return; }
+    gEcQuery = inb(0x62);
+}
+
 static void s0ixHalt(void)
 {
     if (cpu_number() != 0 || !gArmed) {
@@ -345,6 +369,8 @@ static void s0ixHalt(void)
     }
     gLastIdleTsc = rdtsc64() - t0;
     haltExit();
+    gEcQuery = -1;
+    if (gEcGpe != 0xff && why == (0x10000u | gEcGpe) && gEcQ) ecQuery();
     gLastWhy = why;
     gLastLoops = loops;
     gLastFast = fast;
@@ -374,6 +400,10 @@ class StrixS0ix : public IOService {
     // 0.1.10: the power button's EC SCI wakes the halt, but macOS stays in dark wake (Step120: 18:59:18, 19:03:21);
     // on Notify(PWRB, 0x80) soon after our wake, ask the root domain for a full wake like a HID event would
     IONotifier *pwrbNote = nullptr;
+    IOACPIPlatformDevice *ecDev = nullptr;
+    thread_call_t qCall = nullptr;
+    static void ecEvt(thread_call_param_t self, thread_call_param_t);
+    static IOReturn fullWake(const char *why);
     static IOReturn pwrbMsg(void *target, void *ref, UInt32 type, IOService *provider, void *arg, vm_size_t size);
     bool pciBuilt = false;
     uint64_t ecam = 0;
@@ -620,7 +650,30 @@ void StrixS0ix::gpioEvt(thread_call_param_t self, thread_call_param_t)
     IOLog("StrixS0ix: GPIO._EVT(0) after the pin 0 wake -> %#x\n", r);
 }
 
-static uint64_t gWakeAbs;          // mach_absolute_time of our last setPowerState(1) after a sleep
+static uint64_t gWakeAbs;
+// requestUserActive is not exported to kexts; a display wrangler activity tickle is the exported path that the root
+// domain turns into a full wake from dark wake (kStimulusDarkWakeActivityTickle), the same as a HID event
+IOReturn StrixS0ix::fullWake(const char *why)
+{
+    IOReturn r = kIOReturnNotFound;
+    if (IOService *w = IOService::copyMatchingService(IOService::serviceMatching("IODisplayWrangler"))) {
+        r = w->activityTickle(kIOPMSuperclassPolicy1, 4) ? kIOReturnSuccess : kIOReturnNotReady;
+        w->release();
+    }
+    IOLog("StrixS0ix: %s: display wrangler tickle -> %#x\n", why, r);
+    return r;
+}
+
+void StrixS0ix::ecEvt(thread_call_param_t self, thread_call_param_t)
+{
+    auto me = static_cast<StrixS0ix *>(self);
+    int q = gEcQuery;
+    if (q < 0 || !me->ecDev) return;
+    char name[5] = { '_', 'Q', "0123456789ABCDEF"[(q >> 4) & 15], "0123456789ABCDEF"[q & 15], 0 };
+    IOReturn r = me->ecDev->evaluateObject(name);
+    IOLog("StrixS0ix: EC query %#x at the wake, %s -> %#x\n", q, name, r);
+    if (q == 0xE7) fullWake("power button (_QE7)");
+}          // mach_absolute_time of our last setPowerState(1) after a sleep
 IOReturn StrixS0ix::pwrbMsg(void *target, void *, UInt32 type, IOService *, void *arg, vm_size_t)
 {
     auto me = static_cast<StrixS0ix *>(target);
@@ -633,14 +686,7 @@ IOReturn StrixS0ix::pwrbMsg(void *target, void *, UInt32 type, IOService *, void
           press && near ? ": power button, asking for a full wake" : "");
     // requestUserActive is not exported to kexts; a display wrangler activity tickle is the exported path that the root
     // domain turns into a full wake from dark wake (kStimulusDarkWakeActivityTickle), the same as a HID event
-    if (press && near) {
-        IOReturn r = kIOReturnNotFound;
-        if (IOService *w = IOService::copyMatchingService(IOService::serviceMatching("IODisplayWrangler"))) {
-            r = w->activityTickle(kIOPMSuperclassPolicy1, 4) ? kIOReturnSuccess : kIOReturnNotReady;
-            w->release();
-        }
-        IOLog("StrixS0ix: display wrangler tickle -> %#x\n", r);
-    }
+    if (press && near) fullWake("PWRB notify 0x80");
     (void)me;
     return kIOReturnSuccess;
 }
@@ -651,10 +697,14 @@ void StrixS0ix::setupEcWake()
     PE_parse_boot_argn("s0ix_ecwake", &on, sizeof on);
     UInt32 gpe = 0x0A;
     if (IOService *ec = IOService::copyMatchingService(IOService::nameMatching("PNP0C09"))) {
-        if (auto dev = OSDynamicCast(IOACPIPlatformDevice, ec)) dev->evaluateInteger("_GPE", &gpe);
+        if (auto dev = OSDynamicCast(IOACPIPlatformDevice, ec)) { dev->evaluateInteger("_GPE", &gpe); ecDev = dev; dev->retain(); }
         ec->release();
     }
     gEcGpe = gpe < 0xff ? uint8_t(gpe) : 0xff;
+    UInt32 q = 1;
+    PE_parse_boot_argn("s0ix_ecquery", &q, sizeof q);
+    gEcQ = q != 0;
+    qCall = thread_call_allocate(&StrixS0ix::ecEvt, this);
     gEcMode = on > 2 ? 2 : on;
     setProperty("S0ix,EcWakeGpe", gEcGpe, 8);
     setProperty("S0ix,EcWake", gEcMode, 32);
@@ -782,6 +832,12 @@ IOReturn StrixS0ix::setProperties(OSObject *properties)
         setProperty("S0ix,CstDepth", depth, 32);
         setProperty("S0ix,CstPort", gCstPort, 16);
         IOLog("StrixS0ix: C-state port now %#x (_CST C%u)\n", unsigned(gCstPort), depth + 1);
+        return kIOReturnSuccess;
+    }
+    if (auto q = d ? OSDynamicCast(OSBoolean, d->getObject("S0ix,EcQuery")) : nullptr) {
+        gEcQ = q->isTrue();
+        setProperty("S0ix,EcQuery", bool(gEcQ));
+        IOLog("StrixS0ix: EC query at the wake %s\n", gEcQ ? "taken by us" : "left to AppleACPIEC");
         return kIOReturnSuccess;
     }
     if (auto n = d ? OSDynamicCast(OSNumber, d->getObject("S0ix,DsmSkip")) : nullptr) {
@@ -928,7 +984,7 @@ bool StrixS0ix::start(IOService *provider)
     PMinit();
     getPMRootDomain()->addPowerChild(this);       // top level: powered down after the device tree, only on real sleep
     if (registerPowerDriver(this, states, 2) == kIOReturnSuccess) { pm = true; changePowerStateTo(1); }
-    IOLog("StrixS0ix: 0.1.10 up, PEP _DSM mask %#x (%s), halt hook %s, power child %s\n", mask, useDsm ? "used" : "off",
+    IOLog("StrixS0ix: 0.1.11 up, PEP _DSM mask %#x (%s), halt hook %s, power child %s\n", mask, useDsm ? "used" : "off",
           halt ? "on" : "OFF", pm ? "on" : "FAILED");
     registerService();
     return true;
@@ -996,6 +1052,14 @@ IOReturn StrixS0ix::setPowerState(unsigned long state, IOService *)
             clock_interval_to_deadline(300, kMillisecondScale, &dl);
             thread_call_enter_delayed(evtCall, dl);
         }
+    }
+    if (gEcQuery != -1) IOLog("StrixS0ix: EC status %#x at the wake, query %d%s\n", unsigned(gEcSt), gEcQuery,
+                              gEcQuery == -2 ? " (no SCI_EVT)" : gEcQuery == -3 ? " (EC timeout)" : "");
+    setProperty("S0ix,LastEcQuery", uint32_t(gEcQuery & 0xffff), 32);
+    if (gEcQuery >= 0 && qCall) {
+        uint64_t dl;
+        clock_interval_to_deadline(500, kMillisecondScale, &dl);
+        thread_call_enter_delayed(qCall, dl);
     }
     IOLog("StrixS0ix: wake #%u, idle entries %llu, last idle %llu ms, wake event %#x (%s), loops %u fast %u cc6 %u, "
           "GPE0_EN at halt %#x, _DSM 6/8/4 %x/%x/%x\n", unsigned(sleeps), gIdleEntries, ms, gLastWhy,
