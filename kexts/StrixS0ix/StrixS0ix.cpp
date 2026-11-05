@@ -87,6 +87,13 @@ static volatile uint8_t gEcGpe = 0x0A;          // EC0._GPE, re-read at start; 0
 static uint32_t gEcEnSaved;
 static volatile bool gEcEnSet;
 static volatile uint32_t gEcEnAtHalt;            // the enable word as macOS left it, for the log
+static volatile uint32_t gEcMode = 1;            // 0.1.7: S0ix,EcWake 0 = off, 1 = EC GPE wakes, 2 = observe only
+// 0.1.7: every PM1 / GPE0 status bit that appears while halted, with its first time (ms after halt entry). Observe
+// mode (2) keeps the boot CPU on the MWAITX loop (0.25 s polls) and never wakes on the EC, so a lid open or a power
+// button press during an RTC-timed sleep shows which status bit it raises, without risking a sleep that never ends.
+static uint32_t gSeenGpe, gSeenPm1;
+static uint32_t gSeenGpeMs[32], gSeenPm1Ms[16];
+static uint64_t gHaltT0;
 
 static inline uint16_t inw(uint16_t p) { uint16_t v; asm volatile("inw %1, %0" : "=a"(v) : "Nd"(p)); return v; }
 static inline uint32_t inl(uint16_t p) { uint32_t v; asm volatile("inl %1, %0" : "=a"(v) : "Nd"(p)); return v; }
@@ -95,6 +102,17 @@ static inline uint8_t inb(uint16_t p) { uint8_t v; asm volatile("inb %1, %0" : "
 static inline uint64_t rdmsr64(uint32_t m) { uint32_t lo, hi; asm volatile("rdmsr" : "=a"(lo), "=d"(hi) : "c"(m)); return (uint64_t(hi) << 32) | lo; }
 static inline uint64_t rdtsc64() { uint32_t lo, hi; asm volatile("rdtsc" : "=a"(lo), "=d"(hi)); return (uint64_t(hi) << 32) | lo; }
 static inline void cpuid(uint32_t leaf, uint32_t r[4]) { asm volatile("cpuid" : "=a"(r[0]), "=b"(r[1]), "=c"(r[2]), "=d"(r[3]) : "a"(leaf), "c"(0)); }
+
+static void sampleStatus()
+{
+    uint32_t g = inl(gGpe0Sts) & ~gSeenGpe;
+    uint32_t p = inw(gPm1Sts) & 0xffffu & ~gSeenPm1;
+    if (!(g | p)) return;
+    uint32_t ms = uint32_t((rdtsc64() - gHaltT0) / (gTscHz / 1000 ? gTscHz / 1000 : 1));
+    for (unsigned i = 0; i < 32; i++) if (g & (1u << i)) gSeenGpeMs[i] = ms;
+    for (unsigned i = 0; i < 16; i++) if (p & (1u << i)) gSeenPm1Ms[i] = ms;
+    gSeenGpe |= g; gSeenPm1 |= p;
+}
 
 // Wake events since the platform callback cleared all ACPI status: PM1 fixed events (bits 0-15) or an enabled GPE
 // (bit 16 + GPE number of the lowest one, to keep it readable in one number).
@@ -207,7 +225,8 @@ static void haltEnter()
     }
     for (unsigned i = 0; i < gFnN; i++) if (gFn[i].set == 3 && gFn[i].pre == 0) { tscDelay(gTscHz / 100); break; }   // 10 ms
     gEcEnSet = false;
-    if (gEcGpe != 0xff && gEcGpe < gGpe0Len / 2 * 8) {
+    gSeenGpe = gSeenPm1 = 0;
+    if (gEcMode == 1 && gEcGpe != 0xff && gEcGpe < gGpe0Len / 2 * 8) {
         uint16_t en = uint16_t(gGpe0Sts + gGpe0Len / 2 + (gEcGpe / 32) * 4);
         gEcEnSaved = gEcEnAtHalt = inl(en);
         uint32_t bit = 1u << (gEcGpe % 32);
@@ -242,15 +261,17 @@ static void s0ixHalt(void)
         for (;;) asm volatile("wbinvd; hlt" ::: "memory");   // stock: only INIT/SIPI brings it back
     }
     gIdleEntries++;
+    gHaltT0 = rdtsc64();
     haltEnter();
     uint64_t t0 = rdtsc64();
     uint32_t why, loops = 0, fast = 0, cc6 = 0, cc6fast = 0;
     // CC6 between checks: the wake event's SCI ends the C-state (interrupts stay masked); a pending non-wake
     // interrupt makes C2 return at once, and after a run of those the loop drops back to MWAITX with its timer
-    while (gCc6Boot && gCstPort && !(why = wakeEvent())) {
+    while (gCc6Boot && gEcMode != 2 && gCstPort && !(why = wakeEvent())) {
         uint64_t a = rdtsc64();
         (void)inb(gCstPort);
         cc6++;
+        sampleStatus();
         if (rdtsc64() - a < gTimeoutTsc / 1024) { if (++cc6fast > 2000) break; } else cc6fast = 0;
     }
     gLastCc6Loops = cc6;
@@ -259,6 +280,7 @@ static void s0ixHalt(void)
         asm volatile(".byte 0x0f, 0x01, 0xfa" :: "a"(gMonitorLine), "c"(0), "d"(0));                 // MONITORX
         asm volatile(".byte 0x0f, 0x01, 0xfb" :: "a"(0), "b"(gTimeoutTsc), "c"(3) : "memory");      // MWAITX C1, IRQ break, timer
         loops++;
+        sampleStatus();
         // a masked interrupt that is not a wake event stays pending and breaks MWAITX at once: after a long run of
         // immediate returns give up and wake (macOS goes back to sleep from the dark wake) instead of spinning
         uint64_t b = rdtsc64();
@@ -508,9 +530,11 @@ void StrixS0ix::setupEcWake()
         if (auto dev = OSDynamicCast(IOACPIPlatformDevice, ec)) dev->evaluateInteger("_GPE", &gpe);
         ec->release();
     }
-    gEcGpe = (on && gpe < 0xff) ? uint8_t(gpe) : 0xff;
+    gEcGpe = gpe < 0xff ? uint8_t(gpe) : 0xff;
+    gEcMode = on > 2 ? 2 : on;
     setProperty("S0ix,EcWakeGpe", gEcGpe, 8);
-    IOLog("StrixS0ix: EC GPE %#x %s as a wake source (lid, power button)\n", gpe, gEcGpe != 0xff ? "on" : "off");
+    setProperty("S0ix,EcWake", gEcMode, 32);
+    IOLog("StrixS0ix: EC GPE %#x mode %u as a wake source (lid, power button)\n", gpe, unsigned(gEcMode));
 }
 
 void StrixS0ix::setupCc6()
@@ -631,6 +655,13 @@ IOReturn StrixS0ix::setProperties(OSObject *properties)
         IOLog("StrixS0ix: C-state port now %#x (_CST C%u)\n", unsigned(gCstPort), depth + 1);
         return kIOReturnSuccess;
     }
+    if (auto n = d ? OSDynamicCast(OSNumber, d->getObject("S0ix,EcWake")) : nullptr) {
+        gEcMode = n->unsigned32BitValue() > 2 ? 2 : n->unsigned32BitValue();
+        setProperty("S0ix,EcWake", gEcMode, 32);
+        IOLog("StrixS0ix: EC GPE %#x now %s\n", unsigned(gEcGpe),
+              gEcMode == 1 ? "a wake source" : gEcMode == 2 ? "observed only (no EC wake, MWAITX loop)" : "off");
+        return kIOReturnSuccess;
+    }
     if (auto h = d ? OSDynamicCast(OSBoolean, d->getObject("S0ix,HaltHint")) : nullptr) {
         gHaltHint = h->isTrue();
         setProperty("S0ix,HaltHint", bool(gHaltHint));
@@ -748,7 +779,7 @@ bool StrixS0ix::start(IOService *provider)
     PMinit();
     getPMRootDomain()->addPowerChild(this);       // top level: powered down after the device tree, only on real sleep
     if (registerPowerDriver(this, states, 2) == kIOReturnSuccess) { pm = true; changePowerStateTo(1); }
-    IOLog("StrixS0ix: 0.1.6 up, PEP _DSM mask %#x (%s), halt hook %s, power child %s\n", mask, useDsm ? "used" : "off",
+    IOLog("StrixS0ix: 0.1.7 up, PEP _DSM mask %#x (%s), halt hook %s, power child %s\n", mask, useDsm ? "used" : "off",
           halt ? "on" : "OFF", pm ? "on" : "FAILED");
     registerService();
     return true;
@@ -792,6 +823,16 @@ IOReturn StrixS0ix::setPowerState(unsigned long state, IOService *)
     setProperty("S0ix,LastLoops", gLastLoops, 32);
     setProperty("S0ix,LastCC6Loops", gLastCc6Loops, 32);
     setProperty("S0ix,EcEnAtHalt", gEcEnAtHalt, 32);
+    {
+        char seen[240] = ""; size_t at = 0;
+        for (unsigned i = 0; i < 16 && at + 24 < sizeof seen; i++)
+            if (gSeenPm1 & (1u << i)) at += (size_t)snprintf(seen + at, sizeof seen - at, " PM1.%u@%ums", i, gSeenPm1Ms[i]);
+        for (unsigned i = 0; i < 32 && at + 24 < sizeof seen; i++)
+            if (gSeenGpe & (1u << i)) at += (size_t)snprintf(seen + at, sizeof seen - at, " GPE%#x@%ums", i, gSeenGpeMs[i]);
+        setProperty("S0ix,SeenGpe0Sts", gSeenGpe, 32);
+        setProperty("S0ix,SeenPm1Sts", gSeenPm1, 32);
+        IOLog("StrixS0ix: status bits raised while halted:%s\n", at ? seen : " none");
+    }
     IOLog("StrixS0ix: wake #%u, idle entries %llu, last idle %llu ms, wake event %#x (%s), loops %u fast %u cc6 %u, "
           "GPE0_EN at halt %#x, _DSM 6/8/4 %x/%x/%x\n", unsigned(sleeps), gIdleEntries, ms, gLastWhy,
           gLastWhy == 0x400 ? "RTC" : gLastWhy == 0x100 ? "power button" : gLastWhy == (0x10000u | gEcGpe) ? "EC: lid/button/other" :

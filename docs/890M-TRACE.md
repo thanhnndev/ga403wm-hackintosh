@@ -7207,3 +7207,30 @@ plugin fork (nmx-plugin-desccache) or the translator, not in Zalo.
   kept closed past the alarm. On the first wake the script dumps and syncs the kernel trace before the lid is opened.
   - The RTC wakes it: the halt path works in clamshell, and the hang is the lid-open wake.
   - The RTC does not wake it: the clamshell sleep entry hangs.
+
+**Lid + RTC test 14:11 (0.1.6, d3 0): the clamshell sleep entry is fine; the lid-open / power-button wake is what fails.**
+- The lid closed at 14:11:20 and `Clamshell Sleep` started at 14:11:34. NVRM standby took 7.0 s, then halt.
+- The RTC woke the machine at 14:13:29 with the lid still closed: `wake event 0x400 (RTC)`, 105.9 s idle, cc6 1.
+- Not met: DISPLAY 105884, CPU 19, NBIO 105884 ms.
+- `GPE0_EN at halt 0x600a104`: bits 2, 8, 13, 15, 25 and 26 are enabled. Bit 10 (EC) is not, which confirms that
+  macOS disables the EC GPE. 0.1.6 set it for the halt.
+- At the wake (14:13:29.004) the root domain read the lid as **open** while it was still closed (`clamshell closed 0`).
+  `LID0._LID` returns 1 (open) while `EC0.ECOK` is 0, so right after the wake the EC is not yet usable by AML. The
+  machine therefore did a full wake.
+- So with the EC GPE enabled, a lid open or a power button press during the sleep still does not end it. Either the EC
+  raises no GPE0 status in this state, or the wake that follows hangs. The trace cannot say which: the kernel log
+  never survives the forced restart.
+
+**Step118: StrixS0ix 0.1.7, observe mode (installed, reboot pending).**
+- `s0ix-set ecwake 2`: the EC GPE is not enabled and the boot CPU stays on the MWAITX loop (0.25 s polls).
+- Every PM1 / GPE0 status bit raised while halted is recorded with its first time. The log line is
+  `status bits raised while halted: ... GPE0xa@61234ms`, and the same data is in `S0ix,SeenGpe0Sts` and
+  `S0ix,SeenPm1Sts`.
+- The RTC still ends the sleep, so a lid open or a power button press during the sleep shows which bit it raises,
+  and no forced restart is needed.
+- `ecwake 0|1` = off / wake source (1 is the default, as in 0.1.6).
+
+Test (one password):
+- `S0IX_PRE="$PWD/build/s0ix-set ecwake 2" scripts/s0ix-tools/lid-rtc-test.sh 180`.
+- Close the lid at once. Open it at about 60 s (the screen stays dark), and press the power button once at about 120 s.
+- At 180 s the RTC wakes the machine; read the raised bits.
