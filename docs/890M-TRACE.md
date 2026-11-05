@@ -7394,3 +7394,5 @@ draw becomes a GPU->CPU readback.
   should also cut the GPU-process share.
 - Not useful: the guessed `--disable-features=VideoToolboxVp9Decoding,VideoToolboxAv1Decoding` had no effect in Edge
   156 (VT was still tried first).
+
+- 17:3x: VTStub removed (`tools/890m/vtstub/install.sh --undo --system`), new snapshot blessed; live after the next reboot (batched with Step120 + SSDT-LIDFIX). Recheck Edge: no "decoder fallback", no dropped-frame burst at start/quality switch.
