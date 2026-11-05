@@ -6734,3 +6734,90 @@ The boot was faster, but the 890M did not suspend in the sleep test. Root cause:
 2. Sleep with mode 1 (890M buses in D3hot); DISPLAY should go away.
 3. Sleep with mode 2 (NBIO).
 4. If CPU is still not met, look at the CC6 configuration (MSR C001_0294 CStateCfg) and at the non-boot cores.
+
+## Shutdown restarts audit (2026-11-05, read-only, nothing installed)
+
+The owner reports that Apple menu → Shut Down restarts the machine instead of powering it off. This audit used only
+logs and files: nothing was installed, and the ESP, NVRAM, kexts and pmset were not changed.
+
+**What macOS asked for: power-off, and it got that far cleanly.**
+- loginwindow logged every request with its type. Shut Down requests were at 11-04 08:51, 09:34, 18:11 and 23:55, and at
+  11-05 09:20:03 (`Received a kAEShowShutdownDialog` → `logoutType:3 - Shutdown`). Restart requests (`kAEShowRestartDialog`,
+  `logoutType:2`) were at 11-04 11:03…22:43 and 11-05 10:23:50. So Shut Down is not turned into a restart in user space.
+- 09:20:09: launchd ran its normal shutdown phases (`BOOTOUT_SERVICES → … → DOMAIN_DEACTIVATE`), and WindowServer exited
+  with exit(0). The unified log ends at 09:20:10.119 (`system wallclock time adjusted`). The kernel halt path (_PTS(5), the
+  SLP_TYP write) happens after logd has stopped, so it is never logged.
+- No panic: `DumpPanic processed 0 files` at the 10:05 boot, and there is no new `.panic` file (the last one is from 11-04 22:57).
+  Panics are normally saved on this machine (11-03 and 11-04 have them), so a panic during halt would have shown up.
+- `shutdown_stall_*.shutdownStall` exists for every shutdown and restart. The 09:20:16 one (`spindump -i`) is the usual
+  1-second sample taken 2 s into shutdown. It shows idle user processes (caffeinate and others) and no kernel thread stuck.
+  It is not a cause.
+- SMC "Previous shutdown cause: 5" and AppleRTC "RTC: lost battery power" appear on **every** boot, after restarts too.
+  VirtualSMC and DisableRtcChecksum produce them, so they say nothing about how the machine went down.
+
+**What came back after a Shut Down.** No macOS boot followed any Shut Down within minutes:
+
+| Shut Down | Next macOS boot |
+|-----------|-----------------|
+| 09:20     | 10:05           |
+| 23:55     | 08:46           |
+| 18:11     | 21:38           |
+| 09:34     | 10:11           |
+
+After a Restart the next boot comes within about 1 minute (10:23:50 → 10:24:14). The unified log has no entries at all
+between 09:20:10 and 10:05:58. So when the machine "restarts" after Shut Down, it does not reach macOS on its own. The
+OpenCore picker has Timeout 2 and ShowPicker on, and its default is macOS, so OC alone would have booted macOS within
+seconds. The machine must either:
+- come back on and stop before macOS (firmware or OC hang, or another OS was picked), or
+- be powered on by hand later.
+
+The owner's observation is needed here: what is on the screen after the "restart" (ROG logo, OC picker, black screen with
+the keyboard lit), and does it happen when Windows or Linux shuts down?
+
+**The reset register already gives the answer for each boot.** AmdCppc reads the FCH S5_RESET_STATUS (0xFED803C0) at
+start (`sysctl debug.amdcppc.psp`, field `reset=`). The bits, from Linux `s5_reset_reason_txt`:
+- 19: software wrote 0x6 to CF9 (warm reset)
+- 21: ACPI power state transition (power-on from S5)
+- 1: power button held for 4 s
+- 23: CPU shutdown event
+- 25: hardware watchdog
+
+The current boot followed the 10:23 Restart and reads `reset=00080800`, which is bit 19 + bit 11: a normal CF9 restart,
+as expected. Bit 11 is set on every boot and has no name. The boot after a Shut Down has not been read yet, because the
+value only survives until the next boot. Read it on the next macOS boot after a Shut Down:
+- bit 21 (0x0020xxxx) with no button press: S5 was entered and something woke the machine (a wake source left armed).
+- bit 19: something reset the machine instead of entering S5.
+- bit 1: the owner forced it off by holding the button.
+
+**Candidates checked**
+- StrixS0ix (installed 0.1.3 and repository 0.1.4): `systemWillShutdown` sets `shutdown` and clears `gArmed`, and
+  `setPowerState(0)` returns at once when `shutdown` is set. So power-off never runs the PEP _DSM, the SMU OS_HINT/PMC
+  messages or the armed idle loop. At halt, non-boot CPUs (and the unarmed boot CPU, if it ever re-enters pmCPUHalt)
+  sit in the `inb(0x414)` CC6 loop or in `wbinvd; hlt`. Neither of those resets the machine: CC6 is a core C-state, and
+  the S5 write goes to the FCH, which does not need the cores. Low probability. A/B test: boot-arg `-s0ixoff`, or
+  remove the kext for one boot.
+- No CF9 write and no PEHaltRestart/haltRestart call exists in `kexts/` or in the nmx-* trees (grep). The NMXGPU/NMXNPU
+  `systemWillShutdown` paths only run the amdgpu PCI shutdown (PrepareMp1ForUnload).
+- ACPI (DSDT dump `abi/acpi/ga403wm/20261012`):
+  - `_S5` = {5,0,0,0}, which is normal.
+  - `_PTS` runs XPTS (empty), TPM.TPTS, MPTS (AMD, writes FED80200/240), SPTS (`PEWS = Zero`) and NPTS/APTS. Nothing in
+    it disables USB/USB4 PME.
+  - OC adds no `_PTS`/`_S5` patch, `FadtEnableReset` is false, and SSDT-S0IDLE only adds `\_SB.LPS0`.
+- Wake sources:
+  - `womp 0`, `proximitywake 0`, and no autorestart key in `pmset -g custom`.
+  - `pmset -g sched` holds only `wake` events (calaccessd, osanalytics), which do not power on from S5. There is no `poweron`.
+  - The XHCI (GPE 0x19/0x1A) and USB4 bridges (GPP0/GPP1.SWUS, 0x1A) have `_PRW` up to S4.
+  - Step112c already showed XHC0 (GPE 0x1A) waking the machine by itself out of S0 sleep after 77 s. A PME that stays
+    armed at S5 entry is the classic hackintosh cause of "Shut Down restarts", fixed on other machines by the
+    `_PTS(5)` XHC PMEE clear (OC SSDT-PTSWAK / Clover FixShutdown).
+
+**Most likely cause (to confirm with the reset bits): a USB (XHC0..4) or USB4 PME wake left armed when macOS enters S5,
+so the machine powers back on right after power-off.** It is less likely to be a kernel-side reset, because there is no
+panic and no CF9 path in our code.
+
+**Proposed fix (not applied; it needs a reboot and the owner's OK):**
+1. An `SSDT-PTS5` that wraps `_PTS`: rename `_PTS` to `ZPTS` with an OC ACPI patch, then a new `_PTS(Arg0)` that, for
+   `Arg0 == 5` under Darwin, clears PME_En (PMCSR bit 8) and writes PME_Status on XHC0..XHC4 and on the USB4 NHI/bridges,
+   then calls `ZPTS`. Undo: disable the SSDT and the patch.
+2. Before that, the cheap test with no install: after one Shut Down, read `sysctl debug.amdcppc.psp` at the next boot,
+   and unplug every USB device (BLE dongle, mouse) before a second Shut Down for comparison.
