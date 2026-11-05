@@ -99,6 +99,13 @@ static volatile uint8_t *gGpio;                  // AMDI0030 MMIO (pin n control
 static volatile uint32_t gGpioMode = 1;
 static volatile bool gGpioCc6;                   // boot CPU CC6 while GPIO wake is armed (until IRQ 7 is proven)
 static uint32_t gPin0Saved, gPin0AtHalt, gPin0AtWake, gPin0IntMs, gPin0Toggles;
+// 0.1.9: the other _AEI pins too (SSDT-22: 5, 0x10, 0x3A, 0x3B, 0x36, D3C 0x12): at 17:02 a lid open moved no pin 0 bit
+// and the wake came 30 s later on the EC GPE, so record which pin (if any) the EC drives for the lid
+static constexpr uint8_t kAeiPins[7] = { 0x00, 0x05, 0x10, 0x3A, 0x3B, 0x36, 0x12 };
+static uint32_t gAeiHalt[7], gAeiLast[7], gAeiWake[7], gAeiFirstMs[7], gAeiToggles[7];
+// 0.1.9: S0ix,DsmSkip, a bit per PEP _DSM fn to leave out (0x18 = fn 3/4 EC 0x97/0x99 + HBHT, 0x180 = fn 7/8 EC 0x98/0x86):
+// tests whether the EC Modern Standby commands hold the lid event back (17:02: lid open, SCI 30 s later)
+static volatile uint32_t gDsmSkip = 0;
 static volatile uint32_t gEcMode = 1;            // 0.1.7: S0ix,EcWake 0 = off, 1 = EC GPE wakes, 2 = observe only
 // 0.1.7: every PM1 / GPE0 status bit that appears while halted, with its first time (ms after halt entry). Observe
 // mode (2) keeps the boot CPU on the MWAITX loop (0.25 s polls) and never wakes on the EC, so a lid open or a power
@@ -117,6 +124,14 @@ static inline void cpuid(uint32_t leaf, uint32_t r[4]) { asm volatile("cpuid" : 
 
 static void sampleStatus()
 {
+    if (gGpio) {
+        uint32_t ms = 1 + uint32_t((rdtsc64() - gHaltT0) / (gTscHz / 1000 ? gTscHz / 1000 : 1));
+        for (unsigned i = 0; i < 7; i++) {
+            uint32_t v = *reinterpret_cast<volatile uint32_t *>(gGpio + kAeiPins[i] * 4);
+            if ((v ^ gAeiLast[i]) & ((1u << 16) | (3u << 28))) { gAeiToggles[i]++; if (!gAeiFirstMs[i]) gAeiFirstMs[i] = ms; }
+            gAeiLast[i] = v;
+        }
+    }
     if (gGpio && gGpioMode) {
         static uint32_t last;
         uint32_t v = *reinterpret_cast<volatile uint32_t *>(gGpio);
@@ -249,6 +264,10 @@ static void haltEnter()
     gEcEnSet = false;
     gSeenGpe = gSeenPm1 = 0;
     gPin0IntMs = gPin0Toggles = 0;
+    if (gGpio) for (unsigned i = 0; i < 7; i++) {
+        gAeiHalt[i] = gAeiLast[i] = *reinterpret_cast<volatile uint32_t *>(gGpio + kAeiPins[i] * 4);
+        gAeiFirstMs[i] = gAeiToggles[i] = 0;
+    }
     if (gGpio && gGpioMode) {
         auto pin0 = reinterpret_cast<volatile uint32_t *>(gGpio);
         gPin0Saved = gPin0AtHalt = *pin0;
@@ -268,6 +287,7 @@ static void haltEnter()
 static void haltExit()
 {
     if (gHaltHint && gPmc) gHintOut = pmcRaw(0x03, 0);
+    if (gGpio) for (unsigned i = 0; i < 7; i++) gAeiWake[i] = *reinterpret_cast<volatile uint32_t *>(gGpio + kAeiPins[i] * 4);
     if (gGpio && gGpioMode) {
         auto pin0 = reinterpret_cast<volatile uint32_t *>(gGpio);
         gPin0AtWake = *pin0;
@@ -730,6 +750,12 @@ IOReturn StrixS0ix::setProperties(OSObject *properties)
         IOLog("StrixS0ix: C-state port now %#x (_CST C%u)\n", unsigned(gCstPort), depth + 1);
         return kIOReturnSuccess;
     }
+    if (auto n = d ? OSDynamicCast(OSNumber, d->getObject("S0ix,DsmSkip")) : nullptr) {
+        gDsmSkip = n->unsigned32BitValue() & 0x1f8;
+        setProperty("S0ix,DsmSkip", gDsmSkip, 32);
+        IOLog("StrixS0ix: PEP _DSM skip mask now %#x\n", unsigned(gDsmSkip));
+        return kIOReturnSuccess;
+    }
     if (auto n = d ? OSDynamicCast(OSNumber, d->getObject("S0ix,GpioWake")) : nullptr) {
         gGpioMode = n->unsigned32BitValue() > 2 ? 2 : n->unsigned32BitValue();
         setProperty("S0ix,GpioWake", gGpioMode, 32);
@@ -806,6 +832,7 @@ IOReturn StrixS0ix::dsm(UInt32 fn, OSObject **result)
                                     0x83, 0x7b, 0x1f, 0x89, 0x8f, 0x9a, 0xa4, 0x61 };   // 11e00d56-ce64-47ce-837b-1f898f9aa461
     OSObject *p[4] = { OSData::withBytes(ms, sizeof ms), OSNumber::withNumber(0ULL, 32),
                        OSNumber::withNumber(uint64_t(fn), 32), OSArray::withCapacity(1) };
+    if (gDsmSkip & (1u << fn)) { IOLog("StrixS0ix: PEP _DSM fn %u skipped (S0ix,DsmSkip)\n", unsigned(fn)); return kIOReturnSuccess; }
     IOReturn r = kIOReturnNoMemory;
     OSObject *res = nullptr;
     if (p[0] && p[1] && p[2] && p[3]) r = pep->evaluateObject("_DSM", &res, p, 4);
@@ -867,7 +894,7 @@ bool StrixS0ix::start(IOService *provider)
     PMinit();
     getPMRootDomain()->addPowerChild(this);       // top level: powered down after the device tree, only on real sleep
     if (registerPowerDriver(this, states, 2) == kIOReturnSuccess) { pm = true; changePowerStateTo(1); }
-    IOLog("StrixS0ix: 0.1.8 up, PEP _DSM mask %#x (%s), halt hook %s, power child %s\n", mask, useDsm ? "used" : "off",
+    IOLog("StrixS0ix: 0.1.9 up, PEP _DSM mask %#x (%s), halt hook %s, power child %s\n", mask, useDsm ? "used" : "off",
           halt ? "on" : "OFF", pm ? "on" : "FAILED");
     registerService();
     return true;
@@ -926,6 +953,9 @@ IOReturn StrixS0ix::setPowerState(unsigned long state, IOService *)
         setProperty("S0ix,GpioPin0AtWake", gPin0AtWake, 32);
         IOLog("StrixS0ix: GPIO pin 0 at halt %#x, at wake %#x, status first seen at %u ms (0 = never), level toggles %u\n",
               gPin0AtHalt, gPin0AtWake, gPin0IntMs ? gPin0IntMs - 1 : 0, gPin0Toggles);
+        for (unsigned i = 0; i < 7; i++)
+            IOLog("StrixS0ix: _AEI pin %#x halt %#x wake %#x, changes %u, first at %u ms\n", kAeiPins[i], gAeiHalt[i],
+                  gAeiWake[i], gAeiToggles[i], gAeiFirstMs[i] ? gAeiFirstMs[i] - 1 : 0);
         if (gLastWhy == 0x20000u && evtCall) {
             uint64_t dl;
             clock_interval_to_deadline(300, kMillisecondScale, &dl);

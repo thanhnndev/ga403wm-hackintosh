@@ -7289,3 +7289,24 @@ Test (one password):
 - Check after the boot:
   - `ioreg -r -k AppleClamshellState -d1` follows the lid.
   - In the next lid + RTC test, the RTC wake with the lid shut logs `clamshell closed 1` and stays a dark wake.
+
+## Step119 lid test 17:01 (0.1.8, battery) and Step120
+
+- What happened: lid closed, the machine went to sleep. The owner opened the lid at about 17:02:25 (around 50 s asleep) and the screen stayed dark. The machine woke by itself at 17:02:54.
+- Trace:
+  - The wake came from the MWAITX poll, not from an interrupt: `wake event 0x1000a (EC: lid/button/other)` after 56867 ms idle, `PM1.4@56868ms GPE0xa@56868ms`.
+  - GPIO pin 0 was 0x8150b00 at halt and 0x8153b00 at wake. The only change is our armed bits 12/13. No status bit, no level toggle, at any point.
+- Reading: the lid open did not reach the SoC on _AEI pin 0, and it raised no SCI for about 30 s. The EC GPE that finally fired may have been that delayed lid event, or a periodic EC event (battery). A full wake then followed because `_LID` reads "open" while EC0 is in D3 (fixed by SSDT-LIDFIX, active next boot).
+- Suspect: the PEP _DSM Modern Standby commands we send at sleep.
+  - fn 3: `ECMD 0x97`, `HBHT = 1`.
+  - fn 7: `UPHK` → `ECM1 0x98`.
+  - Neither checks ECOK. Both are sent from `setPowerState(0)` after EC0 `_PS3`.
+  - In this mode the EC may hold lid events back, or signal them on a pin other than 0.
+- Step120 = StrixS0ix 0.1.9 (`scripts/macos-install-step120.sh`, `--undo`):
+  - Every _AEI pin (0, 5, 0x10, 0x3A, 0x3B, 0x36, 0x12) is sampled in the MWAITX loop. The log line is `_AEI pin X halt/wake/changes/first at ms`.
+  - New switch `S0ix,DsmSkip` (`s0ix-set dsmskip MASK`): `0x180` leaves out fn 7/8, `0x18` leaves out fn 3/4. Default 0.
+- Next boot, with SSDT-LIDFIX: three 90 s lid tests, each opening the lid at about 45 s.
+  - A: defaults.
+  - B: `dsmskip 0x180`.
+  - C: `dsmskip 0x198`.
+  - For each, compare the time from lid open to the GPE 0x0A status bit, and which pin moved.
