@@ -7655,3 +7655,9 @@ Fix for part 5 (every live IOSurface rode every submit), owner picked the RADV r
 - Next boot: WindowServer sample (submit ioctl share should drop from ~11 %), hitch probe, CPU with Docker + Zalo open.
 
 Side note, the 21:58 freeze (owner force-rebooted at 22:00): the system log stops at 21:58:21 for every process; no NMXGPU fault/timeout. Just before: System Settings frontmost and a loginwindow password sheet (21:58:15). Nothing from this trace was running (source reading only; the RADV build started 22:07).
+
+## Step122 power button test (22:18) and Step123
+
+- 0.1.11 caught the power button press during the halt: the EC GPE 0x0A woke it (10.7 s into the halt, GPE 0x17 also set), and the kext read EC status 0x09 and **query 0xCE**. `_QCE` only does `DBG8 = 0xCE`: it is the EC's Modern Standby wake ping. Nothing in it notifies PWRB, so macOS stays in dark wake. 0xE7 (`_QE7`, Notify PWRB) is the awake path only.
+- Step123 = StrixS0ix 0.1.12 (`scripts/macos-install-step123.sh`): a full wake (display wrangler tickle) on query 0xCE or 0xE7. The list is `S0ix,UserQueries` (`s0ix-set userq 0xE7CE`, boot-arg `s0ix_userq`), up to 4 bytes. Reboot pending.
+- Open question: whether 0xCE also comes for non-user EC events (battery, charger). If so, a closed lid still sends macOS back to sleep. The lid query code is checked in the next lid test.

@@ -310,6 +310,10 @@ static void haltExit()
 // command 0x84, data 0x62), then run that _Qxx from a thread and ask for a full wake on 0xE7 (power button).
 // AppleACPIEC then finds no SCI_EVT and does nothing. gEcQuery: -1 not tried, -2 no SCI_EVT, -3 EC timeout, else xx.
 static volatile int gEcQuery = -1;
+// 0.1.12: EC queries that mean "the user wants the machine": a byte each, 0 = unused. Step122 (22:18:53): the power
+// button during the halt is query 0xCE, whose _QCE only writes DBG8 (Modern Standby wake ping); 0xE7 is the button
+// while awake. S0ix,UserQueries / boot-arg s0ix_userq change the list.
+static volatile uint32_t gUserQ = 0x0000E7CE;
 static volatile bool gEcQ = true;              // S0ix,EcQuery / boot-arg s0ix_ecquery=0 turns the interception off
 static volatile uint8_t gEcSt;
 static bool ecWait(uint8_t mask, uint8_t want)
@@ -672,7 +676,8 @@ void StrixS0ix::ecEvt(thread_call_param_t self, thread_call_param_t)
     char name[5] = { '_', 'Q', "0123456789ABCDEF"[(q >> 4) & 15], "0123456789ABCDEF"[q & 15], 0 };
     IOReturn r = me->ecDev->evaluateObject(name);
     IOLog("StrixS0ix: EC query %#x at the wake, %s -> %#x\n", q, name, r);
-    if (q == 0xE7) fullWake("power button (_QE7)");
+    for (unsigned i = 0; i < 4; i++)
+        if (uint32_t((gUserQ >> (8 * i)) & 0xff) == uint32_t(q) && q) { fullWake(q == 0xCE ? "power button (_QCE)" : name); break; }
 }          // mach_absolute_time of our last setPowerState(1) after a sleep
 IOReturn StrixS0ix::pwrbMsg(void *target, void *, UInt32 type, IOService *, void *arg, vm_size_t)
 {
@@ -701,7 +706,10 @@ void StrixS0ix::setupEcWake()
         ec->release();
     }
     gEcGpe = gpe < 0xff ? uint8_t(gpe) : 0xff;
-    UInt32 q = 1;
+    UInt32 q = 1, uq = gUserQ;
+    PE_parse_boot_argn("s0ix_userq", &uq, sizeof uq);
+    gUserQ = uq;
+    setProperty("S0ix,UserQueries", gUserQ, 32);
     PE_parse_boot_argn("s0ix_ecquery", &q, sizeof q);
     gEcQ = q != 0;
     qCall = thread_call_allocate(&StrixS0ix::ecEvt, this);
@@ -832,6 +840,12 @@ IOReturn StrixS0ix::setProperties(OSObject *properties)
         setProperty("S0ix,CstDepth", depth, 32);
         setProperty("S0ix,CstPort", gCstPort, 16);
         IOLog("StrixS0ix: C-state port now %#x (_CST C%u)\n", unsigned(gCstPort), depth + 1);
+        return kIOReturnSuccess;
+    }
+    if (auto n = d ? OSDynamicCast(OSNumber, d->getObject("S0ix,UserQueries")) : nullptr) {
+        gUserQ = n->unsigned32BitValue();
+        setProperty("S0ix,UserQueries", gUserQ, 32);
+        IOLog("StrixS0ix: EC queries that ask for a full wake now %#x\n", unsigned(gUserQ));
         return kIOReturnSuccess;
     }
     if (auto q = d ? OSDynamicCast(OSBoolean, d->getObject("S0ix,EcQuery")) : nullptr) {
@@ -984,7 +998,7 @@ bool StrixS0ix::start(IOService *provider)
     PMinit();
     getPMRootDomain()->addPowerChild(this);       // top level: powered down after the device tree, only on real sleep
     if (registerPowerDriver(this, states, 2) == kIOReturnSuccess) { pm = true; changePowerStateTo(1); }
-    IOLog("StrixS0ix: 0.1.11 up, PEP _DSM mask %#x (%s), halt hook %s, power child %s\n", mask, useDsm ? "used" : "off",
+    IOLog("StrixS0ix: 0.1.12 up, PEP _DSM mask %#x (%s), halt hook %s, power child %s\n", mask, useDsm ? "used" : "off",
           halt ? "on" : "OFF", pm ? "on" : "FAILED");
     registerService();
     return true;

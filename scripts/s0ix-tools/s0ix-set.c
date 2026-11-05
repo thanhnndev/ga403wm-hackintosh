@@ -8,6 +8,7 @@
 //   s0ix-set gpiocc6 on|off     0.1.8: boot CPU in CC6 (not MWAITX) while GPIO wake is armed
 //   s0ix-set cst 1|2            0.1.5: CC6 entry port, _CST C2 (base+1) or C3 (base+2, default)
 //   s0ix-set ecquery on|off     0.1.11: take the EC query at an EC GPE wake, run its _Qxx, full wake on 0xE7 (default on)
+//   s0ix-set userq 0xE7CE       0.1.12: EC query bytes (up to 4) that mean a user wake (default 0xCE button asleep, 0xE7 awake)
 //   s0ix-set dsmskip MASK       0.1.9: PEP _DSM fns to leave out, bit per fn (0x18 = fn 3/4, 0x180 = fn 7/8)
 //   s0ix-set halthint on|off    0.1.4: OS_HINT from the halt path (on) or from the power state change (off)
 #include <CoreFoundation/CoreFoundation.h>
@@ -23,6 +24,7 @@ int main(int argc, char **argv)
     if (!strcmp(argv[1], "bootcc6")) { key = CFSTR("S0ix,BootCC6"); val = on ? kCFBooleanTrue : kCFBooleanFalse; }
     else if (!strcmp(argv[1], "halthint")) { key = CFSTR("S0ix,HaltHint"); val = on ? kCFBooleanTrue : kCFBooleanFalse; }
     else if (!strcmp(argv[1], "cst")) { int n = atoi(argv[2]); key = CFSTR("S0ix,CstDepth"); val = CFNumberCreate(NULL, kCFNumberIntType, &n); }
+    else if (!strcmp(argv[1], "userq")) { int n = (int)strtol(argv[2], NULL, 0); key = CFSTR("S0ix,UserQueries"); val = CFNumberCreate(NULL, kCFNumberIntType, &n); }
     else if (!strcmp(argv[1], "ecquery")) { key = CFSTR("S0ix,EcQuery"); val = on ? kCFBooleanTrue : kCFBooleanFalse; }
     else if (!strcmp(argv[1], "gpiocc6")) { key = CFSTR("S0ix,GpioCc6"); val = on ? kCFBooleanTrue : kCFBooleanFalse; }
     else if (!strcmp(argv[1], "gpiowake")) { int n = atoi(argv[2]); key = CFSTR("S0ix,GpioWake"); val = CFNumberCreate(NULL, kCFNumberIntType, &n); }
