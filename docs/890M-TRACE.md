@@ -7158,3 +7158,41 @@ Other sleep findings (audit, open):
 - The 300 s safety net (`s0ix_maxsec`) applies only in the MWAITX loop. The boot-CPU CC6 loop has no time limit.
   That is fine now that the lid and the button can wake it, but it should be one rule for both loops.
 - D3 mode is runtime only (default 0 after boot). Once d3 4/5 are proven, make it the default (boot-arg `s0ix_d3`).
+
+## Step117: OpenGL apps (old Electron) draw wrong on the 890M, found through Zalo (2026-11-05, ON HOLD, nothing installed)
+
+Owner report: Zalo (`/Applications/Zalo.app`) shows wrong colours and wrong layering (hover reaction bar drawn over the
+message bubble, missing emoji, text clipped under the pinned bar). Owner put the work on hold; this is where it stands.
+
+**Zalo is a symptom.** It is Electron 22.3.9 / Chromium 108.0.5359.215. Before Chromium 115, ANGLE on macOS uses its
+OpenGL backend, so the chain is: ANGLE-GL -> CGL -> `AppleMetalOpenGLRenderer` (Apple's GL on Metal) -> NVMTL GL bridge
+(`plugin/NVMTLGL.m`, GL IR + pluginData lowered in process to AIR, then translator -> SPIR-V) -> RADV -> NMXGPU.
+Chrome 156 / Edge / Safari use ANGLE Metal and never reach the GL bridge. Every Electron app older than ~26 and every
+plain OpenGL app (old games, Qt/Java GL, CAD, emulators) takes the same path, so the fix target is OpenGL on the 890M.
+
+Evidence (current boot, GPU process pid 1232, then relaunches via `tools/890m/zalo-gpu-log.sh`):
+- On the 890M: NMXDrmClient owned by the GPU helper; NVMTL log `vk: UP ... AMD Radeon 890M Graphics (RADV STRIX1)`,
+  `allow-listed: Zalo Helper (GPU)`, drm-xnu path armed (sandbox refuses /dev/dri). Not SwiftShader, not the RTX.
+- GL bridge in use: `GL: vertex/fragment lowered in process (GL IR ... -> ... AIR) -> ours`, `GL: reflection usageFlags
+  answered 0`, `__main has no AIR - cannot be reflected`, `buffer slot 0 is bound at offset 108, not a multiple of 16`.
+- No crash reports today (Zalo, helpers, MTLCompilerService, WindowServer); no GPU fault, no nvk-reason, no forwarded
+  unknown selector in the per-run NVMTL logs.
+- Renderer flags `--enable-zero-copy --enable-gpu-memory-buffer-compositor-resources`; small IOSurfaces at pitch 64/128
+  go through buffer-texture shadows (row upload + writeback per command buffer).
+- Managed-buffer prologue uploads ~100 GB in ~10 min (12288 submits, merged dirty ranges): a cost, not the glitch.
+
+A/B runs (env knobs only for Zalo, nothing installed):
+| run | result |
+|---|---|
+| GL path, default | glitch |
+| `--use-angle=metal` | black window: Metal front end cannot write `com.apple.metalfe/.../monolithic_metal.pcm` in the GPU helper sandbox ("Operation not permitted"), every ANGLE MSL compile fails. Separate bug (in-sandbox MSL source compile). |
+| GL + `NVMTL_NO_DESCCACHE/DIRTYONLY/IPARK/BUFREUSE/SAMPCACHE/IDVIEW=1` | glitch unchanged: plugin caches ruled out |
+| GL + `NVMTL_SCHEDULE_AFTER_SURFACE_WRITES=1` | glitch unchanged: cross-process IOSurface ordering ruled out (NMXFence marks only run in WindowServer, still worth noting) |
+| `--disable-gpu --disable-gpu-compositing` | control started (GPU helper made 0 pipelines); owner result not recorded before the hold |
+Also checked: `isComplete`/`waitUntilComplete` answers come from `_resRefs`, released at command buffer completion (correct).
+
+Next (when resumed): a differential GL harness. Run the same CGL program on the 890M and on Apple's software renderer
+(`kCGLRendererGenericFloatID`, GLRendererFloat is present), diff the pixels per op: per-draw uniform updates (ring offsets),
+premultiplied blend, scissor, glTexSubImage, FBO to texture, glBlitFramebuffer/glCopyTexSubImage, TEXTURE_RECTANGLE from
+an IOSurface, share-group contexts. The first op that differs points into the GL bridge / translator. Fix goes in the
+plugin fork (nmx-plugin-desccache) or the translator, not in Zalo.
