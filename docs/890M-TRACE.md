@@ -6641,3 +6641,22 @@ The boot-time audit (35f435c) found the 36 s NVRM boot hold on OLED-only boots. 
 - Check after the reboot:
   - the log has "NVRMFB reports 0 connected displays ... releasing the boot hold";
   - WindowServer starts about 30 s earlier.
+
+### Boot-time result (boot 2026-11-05 10:05, OLED only): kernel start → login window 15.7 s (was 51.8 s)
+
+This boot ran with the headless NVRM.kext (nmx-translator-271 c54e304, live as com.nullmoth.NVRM 2.7.1). It also had `-v` removed and the picker timeout set to 2 s.
+
+| Phase | 08:46 boot (before) | 10:05 boot (after) |
+|---|---|---|
+| kern.boottime → launchd | 4.1 s | 1.4 s (10:05:59.2 → 10:06:00.6) |
+| launchd → WindowServer spawn | 2.8 s | 2.0 s (→ 10:06:02.6) |
+| WindowServer blocked in IOKitWaitQuiet | 36.2 s | 6.5 s (10:06:02.9 → 10:06:09.4) |
+| WindowServer → login window shown | 6.3 s | 5.5 s (→ 10:06:14.9) |
+| **Kernel start → login window** | **51.8 s** | **15.7 s** |
+| Login → LoginComplete | 3.4 s | 10.5 s (10:08:58.5 → 10:09:09.2) |
+
+Firmware + OpenCore time is not in the log. The machine was off from 09:20 to 10:05. That phase includes the 2 s picker (it was 5 s).
+
+**What NVRM did.** At 10:06:09.359 it logged `heads published mask 0x0 ... after 0 s`, then `NVRMFB reports 0 connected displays on every nub after 0 s — releasing the boot hold`, then `boot hold RELEASED (no display on any NVIDIA connector)`. WindowServer logged again 10 ms later (10:06:09.369). The 6.5 s that is left is the RTX go(2) itself: 3.0 s, after the 500 ms settle that starts at 10:06:04.8. NMXGPU's modeset finished at 10:06:06.2.
+
+**Still open: login → desktop.** It took 10.5 s, against 3.4 s before. Most of it is about 5 s between ContinueAfterDesktopReady (10:09:04.1) and ContinueAfterTALCheckin (10:09:09.1), which is the TAL app-relaunch check-in, so it is probably the windows restored by session restore. This is user space and is not looked at yet.
