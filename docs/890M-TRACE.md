@@ -6585,7 +6585,8 @@ The fix belongs in the NVRM auto-go thread, in the NVIDIA translator tree (`nmx-
 - `boot-args` is in `NVRAM > Delete > 7C436110-…`, so OpenCore rewrites the NVRAM value on every boot, and no `nvram` write is needed. The live NVRAM still shows `-v` until the next boot.
 - Undo: `cp /Volumes/ESP/EFI/OC/config.plist.pre-no-v /Volumes/ESP/EFI/OC/config.plist`, or add `-v` back. For a single verbose boot, press Cmd+V in the OpenCore picker.
 
+**Applied after the owner said yes (2026-11-05):** OpenCore picker `Misc > Boot > Timeout` 5 → 2 s (backup `config.plist.pre-timeout2`, `plutil -lint` OK, only that line changed). Any key still stops the countdown, so the picker stays the Linux fallback.
+
 **Other options, not applied:**
-- OpenCore picker `Timeout 5` → 1–2. This saves 3–4 s, and the picker stays available, since any key stops the countdown. It is the owner's call, because the picker is the Linux fallback after a panic.
 - Debug boot-args (`itlmt_native_nvtrace=1`, `itlmt_stat=1`, `strixamp_trace=1`, `alcverbs=1`, `msgbuf=1048576`) cost little at boot (the log shows no stall from them). Leave them until their research is done.
 - kernelmanagerd sandbox denials on `/private/var/db/loadedkextmt.plist` (08:46:18–20) are noise and do not block boot.
