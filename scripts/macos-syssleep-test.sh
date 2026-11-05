@@ -42,13 +42,14 @@ restore)
     args=$(awk '$1 ~ /^(hibernatemode|standby|powernap|tcpkeepalive|proximitywake|womp)$/ {printf "%s %s ", $1, $2}' "$SAVE")
     root "/usr/bin/pmset -a $args" "Khôi phục pmset như trước test sleep"; echo "pmset restored: $args"; exit ;;
 esac
+# S0IX_PRE: optional root command run in the same password step, e.g. S0IX_PRE="$PWD/build/s0ix-set d3 3"
+HERE=$(cd "$(dirname "$0")" && pwd)
 N=${1:-60}
 [[ -f $SAVE ]] || pmset -g > "$SAVE"
 T0=$(date "+%Y-%m-%d %H:%M:%S"); echo "$T0" > "$OUT/start"
-W=$(date -v+$((N+10))S "+%m/%d/%y %H:%M:%S")
-echo "start $T0, sleep 10 s after the password, RTC wake at $W. Hands off the keyboard, touchpad and mouse."
+echo "start $T0, sleep 10 s after the password, RTC wake $((N+10)) s after the password. Hands off the keyboard, touchpad and mouse."
 # caffeinate is stopped inside the root step, so a cancelled password leaves everything as it was
-root "/usr/bin/pkill -x caffeinate; /usr/bin/pmset -a hibernatemode 0 standby 0 powernap 0 tcpkeepalive 0 proximitywake 0 womp 0; /usr/bin/pmset schedule wake '$W'; /usr/bin/perl -e 'select(undef,undef,undef,10)'; /usr/bin/pmset sleepnow" "Test sleep cả máy (s0ix): pmset cho test, hẹn giờ wake, sleep sau 10 s. Đừng chạm phím/chuột sau khi nhập mật khẩu" \
+root "/bin/bash '$HERE/s0ix-tools/syssleep-root.sh' $N ${S0IX_PRE:-}" "Test sleep cả máy (s0ix): pmset cho test, hẹn giờ wake, sleep sau 10 s. Đừng chạm phím/chuột sau khi nhập mật khẩu" \
     || { echo "admin step cancelled or the password was wrong: nothing changed, no sleep"; exit 1; }
 # pmset sleepnow returns at once; caffeinate -u declares the user active, so restarting it while the machine is still in
 # dark wake wakes it fully (second Step107 run). Wait past the RTC wake (sleep 10 s + N s + margin) before restarting it.

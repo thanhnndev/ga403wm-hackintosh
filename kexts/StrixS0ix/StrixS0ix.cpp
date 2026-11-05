@@ -462,12 +462,16 @@ void StrixS0ix::pmcWake()
     setProperty("S0ix,SmuHintCount", hints, 32);
     // timecondition_notmet_lastcapture[32] at 0x50: per IP block (amd_pmc soc15_ip_blk order), time it was not idle
     if (OSData *nm = OSData::withBytes(t + 0x50, 32 * 8)) { setProperty("S0ix,SmuNotMetUs", nm); nm->release(); }
-    char list[160] = "";
+    // SMU 93.11 fills 16 per-block slots (0..15) followed by 16 running totals (16..31, slot i + 16). Slot 15 holds
+    // no block time (values in the 1e18 us range), so the log names slots 0..14 only; the raw 32 stay in SmuNotMetUs.
+    static const char *const kBlk[15] = { "DISPLAY", "CPU", "GFX", "VDD", "VDD_CCX", "ACP", "VCN0", "VCN1", "ISP",
+                                          "NBIO", "DF", "USB3_0", "USB3_1", "LAPIC", "USB3_2" };
+    char list[200] = "";
     size_t at = 0;
-    for (unsigned i = 0; i < 32 && at + 12 < sizeof list; i++) {
+    for (unsigned i = 0; i < 15 && at + 24 < sizeof list; i++) {
         uint64_t v;
         memcpy(&v, t + 0x50 + i * 8, 8);
-        if (v) at += (size_t)snprintf(list + at, sizeof list - at, " %u:%llums", i, v / 1000);
+        if (v) at += (size_t)snprintf(list + at, sizeof list - at, " %s %llums", kBlk[i], v / 1000);
     }
     IOLog("StrixS0ix: OS_HINT(0) %#x, S0i3 %s, %llu ms in S0i3 (entry %llu us, resume %llu us), hints %u, idlemask %#x, "
           "not met:%s\n", h, status ? "REACHED" : "not reached", s0i3 / 1000, entering, resume, hints, mask,
@@ -555,20 +559,22 @@ void StrixS0ix::publishPci()
 {
     if (!gFnN) return;
     OSArray *a = OSArray::withCapacity(gFnN);
-    char line[200]; size_t at = 0;
-    line[0] = 0;
+    char d3[200], d0[200]; size_t a3 = 0, a0 = 0;      // moved to D3 by the halt path / left in D0 for the whole sleep
+    d3[0] = d0[0] = 0;
     for (unsigned i = 0; i < gFnN && a; i++) {
         const PciFn &f = gFn[i];
         char e[64];
         snprintf(e, sizeof e, "%02x:%02x.%x %04x:%04x cls %06x nsr %u tier %u D%u->D%u->D%u", f.bdf >> 8, (f.bdf >> 3) & 0x1f,
                  f.bdf & 7, f.vendor, f.device, f.cls, f.nsr, f.tier, f.pre, f.set, f.post);
         if (OSString *str = OSString::withCString(e)) { a->setObject(str); str->release(); }
-        if (f.pre == 0 && at + 12 < sizeof line)
-            at += (size_t)snprintf(line + at, sizeof line - at, " %02x:%02x.%x%s", f.bdf >> 8, (f.bdf >> 3) & 0x1f, f.bdf & 7,
-                                   f.set == 3 ? "(D3)" : "");
+        if (f.pre != 0) continue;
+        char *b = f.set == 3 ? d3 : d0;
+        size_t &n = f.set == 3 ? a3 : a0;
+        if (n + 12 < sizeof d3) n += (size_t)snprintf(b + n, sizeof d3 - n, " %02x:%02x.%x", f.bdf >> 8, (f.bdf >> 3) & 0x1f, f.bdf & 7);
     }
     if (a) { setProperty("S0ix,PciStates", a); a->release(); }
-    IOLog("StrixS0ix: D0 at sleep:%s; OS_HINT from halt in/out %#x/%#x\n", at ? line : " none", gHintIn, gHintOut);
+    IOLog("StrixS0ix: halt path put in D3:%s; left in D0:%s; OS_HINT from halt in/out %#x/%#x\n", a3 ? d3 : " none",
+          a0 ? d0 : " none", gHintIn, gHintOut);
 }
 
 // "S0ix,BootCC6" = true/false from user space (scripts/macos-syssleep-test.sh): no reboot needed to try it
@@ -706,7 +712,7 @@ bool StrixS0ix::start(IOService *provider)
     PMinit();
     getPMRootDomain()->addPowerChild(this);       // top level: powered down after the device tree, only on real sleep
     if (registerPowerDriver(this, states, 2) == kIOReturnSuccess) { pm = true; changePowerStateTo(1); }
-    IOLog("StrixS0ix: 0.1.5 up, PEP _DSM mask %#x (%s), halt hook %s, power child %s\n", mask, useDsm ? "used" : "off",
+    IOLog("StrixS0ix: 0.1.6 up, PEP _DSM mask %#x (%s), halt hook %s, power child %s\n", mask, useDsm ? "used" : "off",
           halt ? "on" : "OFF", pm ? "on" : "FAILED");
     registerService();
     return true;
