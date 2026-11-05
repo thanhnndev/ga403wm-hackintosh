@@ -160,6 +160,72 @@ static AudioObjectID pick_builtin(int wantInput, const char *uid)
     return best;
 }
 
+// ---- default devices --------------------------------------------------------------------------------------------------
+// With AppleHDA back (SimpleHDA on Tahoe) macOS makes Built-in Output / Input the default, which bypasses the chain.
+// Whenever the default is the very built-in device we wrap, move it to the ROG device. Any other choice (AirPods, HDMI)
+// is left alone; settings key autoDefault = false turns this off.
+static AudioObjectID default_dev(AudioObjectPropertySelector sel)
+{
+    AudioObjectPropertyAddress a = addr(sel, kAudioObjectPropertyScopeGlobal);
+    AudioObjectID d = kAudioObjectUnknown; UInt32 sz = sizeof(d);
+    if (AudioObjectGetPropertyData(kAudioObjectSystemObject, &a, 0, NULL, &sz, &d)) return kAudioObjectUnknown;
+    return d;
+}
+
+static void claim_default(AudioObjectPropertySelector sel, AudioObjectID wrapped, const char *rogUid, const char *what)
+{
+    if (wrapped == kAudioObjectUnknown || default_dev(sel) != wrapped) return;
+    AudioObjectID rog = dev_by_uid(rogUid);
+    if (rog == kAudioObjectUnknown) return;
+    AudioObjectPropertyAddress a = addr(sel, kAudioObjectPropertyScopeGlobal);
+    OSStatus rc = AudioObjectSetPropertyData(kAudioObjectSystemObject, &a, 0, NULL, sizeof(rog), &rog);
+    fprintf(stderr, "default %s: built-in -> %s (%d)\n", what, rogUid, (int)rc);
+}
+
+// ---- volume hand-off ----------------------------------------------------------------------------------------------------
+// The volume keys drive the default device, ROG Speakers. The wrapped Built-in Output keeps whatever level it had (on a
+// fresh Tahoe/SimpleHDA boot -25.5 dB), which caps ROG Speakers at that level: the chain played but could not be heard.
+// While ROG Speakers is the default, move any Built-in attenuation into the ROG Speakers volume (same loudness, no jump)
+// and hold Built-in at 0 dB. The ROG driver maps its scalar linearly onto -64..0 dB.
+static int vol_db(AudioObjectID d, UInt32 el, Float32 *db)
+{
+    AudioObjectPropertyAddress a = { kAudioDevicePropertyVolumeDecibels, kAudioDevicePropertyScopeOutput, el };
+    UInt32 sz = sizeof(*db);
+    return AudioObjectGetPropertyData(d, &a, 0, NULL, &sz, db) == 0;
+}
+
+static void handoff_volume(AudioObjectID builtin, AudioObjectID rog)
+{
+    if (builtin == kAudioObjectUnknown || rog == kAudioObjectUnknown) return;
+    Float32 worst = 0, db;
+    int any = 0;
+    for (UInt32 el = 0; el <= 2; el++) if (vol_db(builtin, el, &db)) { any = 1; if (db < worst) worst = db; }
+    UInt32 mute = 0, sz = sizeof(mute);
+    AudioObjectPropertyAddress ma = { kAudioDevicePropertyMute, kAudioDevicePropertyScopeOutput, 0 };
+    int hasMute = AudioObjectGetPropertyData(builtin, &ma, 0, NULL, &sz, &mute) == 0;
+    if ((!any || worst > -0.25f) && !(hasMute && mute)) return;
+    AudioObjectPropertyAddress ra = { kAudioDevicePropertyVolumeScalar, kAudioDevicePropertyScopeOutput, 0 };
+    Float32 v = 1; sz = sizeof(v);
+    AudioObjectGetPropertyData(rog, &ra, 0, NULL, &sz, &v);
+    Float32 rogDb = v <= 0 ? -64 : -64 + 64 * v;
+    Float32 nd = rogDb + worst;
+    if (nd < -64) nd = -64;
+    Float32 nv = (nd + 64) / 64;
+    AudioObjectSetPropertyData(rog, &ra, 0, NULL, sizeof(nv), &nv);
+    if (hasMute && mute) {
+        UInt32 one = 1, zero = 0;
+        AudioObjectSetPropertyData(rog, &ma, 0, NULL, sizeof(one), &one);
+        AudioObjectSetPropertyData(builtin, &ma, 0, NULL, sizeof(zero), &zero);
+    }
+    Float32 zero = 0;
+    for (UInt32 el = 0; el <= 2; el++) {
+        AudioObjectPropertyAddress a = { kAudioDevicePropertyVolumeDecibels, kAudioDevicePropertyScopeOutput, el };
+        if (vol_db(builtin, el, &db)) AudioObjectSetPropertyData(builtin, &a, 0, NULL, sizeof(zero), &zero);
+    }
+    fprintf(stderr, "volume: built-in %.1f dB -> 0 dB, ROG Speakers %.1f -> %.1f dB%s\n", worst, rogDb, nd,
+            hasMute && mute ? " (mute moved to ROG Speakers)" : "");
+}
+
 // ---- AUHAL ----------------------------------------------------------------------------------------------------------------
 static AudioUnit make_unit(AudioObjectID dev, int input)
 {
@@ -388,13 +454,14 @@ typedef struct {
     float width, preGain, ceiling, env;
     _Atomic int profileIdx;                     // set from the main thread
     int appliedIdx;
-    _Atomic unsigned long frames, underruns, overruns;
-    _Atomic float level;
+    _Atomic unsigned long frames, underruns, overruns, outCbs;
+    _Atomic float level, outLevel;
     // drift control
     double pos;
     float hist[(MAXFRAMES * 2 + 16) * 2];       // interpolation history / not yet consumed input frames
     size_t hn;
     int starving;
+    unsigned outBufs;                           // buffers the output unit hands us (seen in the first callback)
 } Spk;
 static Spk g_spk;
 
@@ -446,7 +513,7 @@ static OSStatus spk_in_cb(void *ref, AudioUnitRenderActionFlags *flags, const Au
         if (pk > peak) peak = pk;
     }
     if (ring_push(&s->ring, inter, (size_t)frames * 2) < (size_t)frames * 2) atomic_fetch_add(&s->overruns, 1);
-    atomic_store(&s->level, peak);
+    if (peak > atomic_load(&s->level)) atomic_store(&s->level, peak);   // peak hold, reset by the stat line
     atomic_fetch_add(&s->frames, frames);
     return 0;
 }
@@ -459,10 +526,12 @@ static OSStatus spk_out_cb(void *ref, AudioUnitRenderActionFlags *flags, const A
     Spk *s = ref;
     // non-interleaved stereo float requested: buffers 0 / 1
     float *L = io->mBuffers[0].mData, *R = io->mNumberBuffers > 1 ? io->mBuffers[1].mData : NULL;
+    s->outBufs = io->mNumberBuffers;
     if (frames > MAXFRAMES) frames = MAXFRAMES;
     double fill = (double)(ring_fill(&s->ring) / 2 + s->hn);
     if (s->starving) { if (fill >= SPK_TARGET) s->starving = 0; }
     else if (fill < 2) { s->starving = 1; atomic_fetch_add(&s->underruns, 1); }
+    atomic_fetch_add(&s->outCbs, 1);
     if (s->starving) {
         for (UInt32 i = 0; i < frames; i++) { L[i] = 0; if (R) R[i] = 0; }
         return 0;
@@ -492,6 +561,9 @@ static OSStatus spk_out_cb(void *ref, AudioUnitRenderActionFlags *flags, const A
         if (R) R[i] = (float)(s->hist[2 * k + 1] * (1 - f) + s->hist[2 * (k + 1) + 1] * f);
         pos += step;
     }
+    float opk = 0;
+    for (UInt32 i = 0; i < frames; i++) { float a = fabsf(L[i]); if (a > opk) opk = a; }
+    if (opk > atomic_load(&s->outLevel)) atomic_store(&s->outLevel, opk);
     size_t used = (size_t)pos;
     if (used > s->hn) used = s->hn;
     s->pos = pos - (double)(size_t)pos;
@@ -609,7 +681,7 @@ int main(int argc, char **argv)
     unsigned long lastStat = 0;
     unsigned long statusTick = 0;
     while (!g_quit) {
-        RogAudioSettings settings = { .volume = -20, .strength = strength, .noise = 1, .micEnabled = settingsPath ? 0 : 1 };
+        RogAudioSettings settings = { .volume = -20, .strength = strength, .noise = 1, .micEnabled = settingsPath ? 0 : 1, .autoDefault = 1 };
         if (rog_settings_read(settingsPath, &settings)) {
             int configured = profile_index(settings.profile);
             if (configured >= 0 && configured != profile) {
@@ -630,6 +702,17 @@ int main(int argc, char **argv)
             else if (want && !g_mic_on) { if (mic_start(micUid) == 0) g_mic_on = 1; else mic_stop(); micIdle = 0; }
             else if (!want && g_mic_on) { if (++micIdle >= 6) { mic_stop(); g_mic_on = 0; micIdle = 0; } }
             else if (want) micIdle = 0;
+        }
+        if (settings.autoDefault) {
+            if (spkOn) {
+                claim_default(kAudioHardwarePropertyDefaultOutputDevice, g_spk.outDev, UID_SPK, "output");
+                claim_default(kAudioHardwarePropertyDefaultSystemOutputDevice, g_spk.outDev, UID_SPK, "system output");
+                AudioObjectID rog = dev_by_uid(UID_SPK);
+                if (rog != kAudioObjectUnknown && default_dev(kAudioHardwarePropertyDefaultOutputDevice) == rog)
+                    handoff_volume(g_spk.outDev, rog);
+            }
+            if (doMic && settings.micEnabled)
+                claim_default(kAudioHardwarePropertyDefaultInputDevice, pick_builtin(1, micUid), UID_MIC, "input");
         }
         int np = settingsPath ? profile : read_profile_file(&pmt, profile);
         if (np != profile) { profile = np; atomic_store(&g_spk.profileIdx, profile); }
@@ -652,10 +735,11 @@ int main(int argc, char **argv)
             }
         }
         usleep(250000);
-        if (g_verbose && ++lastStat % 20 == 0)
-            fprintf(stderr, "stat: mic %s cbs %lu err %d in %.3f out %.3f underruns %lu | spk frames %lu level %.3f underruns %lu overruns %lu\n",
+        if (g_verbose && ++lastStat % 4 == 0)
+            fprintf(stderr, "stat: mic %s cbs %lu err %d in %.3f out %.3f underruns %lu | spk frames %lu level %.3f out cbs %lu level %.3f bufs %u underruns %lu overruns %lu\n",
                     g_mic_on ? "on" : "off", atomic_load(&g_mic.cbs), atomic_load(&g_mic.lastErr), atomic_load(&g_mic.inLevel), atomic_load(&g_mic.outLevel), atomic_load(&g_mic.underruns),
-                    atomic_load(&g_spk.frames), atomic_load(&g_spk.level), atomic_load(&g_spk.underruns), atomic_load(&g_spk.overruns));
+                    atomic_load(&g_spk.frames), atomic_load(&g_spk.level), atomic_load(&g_spk.outCbs), atomic_load(&g_spk.outLevel), g_spk.outBufs, atomic_load(&g_spk.underruns), atomic_load(&g_spk.overruns));
+        if (g_verbose && lastStat % 4 == 0) { atomic_store(&g_spk.level, 0); atomic_store(&g_spk.outLevel, 0); }
     }
     if (g_mic_on) mic_stop();
     if (spkOn) {
