@@ -516,6 +516,11 @@ relative-luminance formula from the colour values in the source (`enum T`). No u
 Contrast fixes 1 and 2 are values computed from the formula, not a rendered gate run; check them on a fresh
 `--snapshot` render after the change.
 
+Status 2026-11-05: findings 1 to 4 are fixed in `rog-control-macos` on branch `ui-contrast-offline-mock` (new `T.faint`,
+`T.redFill` for filled buttons, amber `ErrorLine`, an offline mock with no hardware values, and the panel no longer
+shows a power source or battery state without AsusWmi), README images re-rendered from `--snapshot`. Finding 5: this
+repo's `docs/rog-control-design.md` now points to the sister repo.
+
 ### 6.3 Setup app: brief
 
 ```
