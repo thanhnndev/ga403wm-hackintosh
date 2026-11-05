@@ -6590,3 +6590,44 @@ The fix belongs in the NVRM auto-go thread, in the NVIDIA translator tree (`nmx-
 **Other options, not applied:**
 - Debug boot-args (`itlmt_native_nvtrace=1`, `itlmt_stat=1`, `strixamp_trace=1`, `alcverbs=1`, `msgbuf=1048576`) cost little at boot (the log shows no stall from them). Leave them until their research is done.
 - kernelmanagerd sandbox denials on `/private/var/db/loadedkextmt.plist` (08:46:18–20) are noise and do not block boot.
+
+## Step112: S0i3 (StrixS0ix 0.1.3), installed 2026-11-05, reboot pending
+
+Step111 sleeps with amdgpu suspended, yet the fans keep running and the keyboard LED only starts breathing about 31 s after display off. Two things keep the SoC out of S0i3:
+
+- **No SMU OS hint.** Linux `amd_pmc` sends OS_HINT(1) after the LPS0 _DSM entry calls; macOS sends nothing.
+- **Cores only reach C1.** Non-boot CPUs park in HLT, and the boot CPU waits in MWAITX hint 0. S0i3 needs every core in CC6.
+
+StrixS0ix 0.1.3 adds the following:
+
+- **PMC mailbox** (`amd_pmc`, family 1Ah model 20h, root 1022:1507):
+  - Base: SMN 0x13B102E8/EC through 00:00.0 config 0x60/0x64, plus 0x10000.
+  - Registers: msg 0x938, arg 0x9BC, rsp 0x980.
+  - At start: GETSMUVERSION, then the metrics table address (LOG_GETDRAM_ADDR LO/HI), which is mapped uncached.
+  - Sleep, after _DSM 3/7/5: LOG_RESET, LOG_START, OS_HINT(1).
+  - Wake, before _DSM 6/8/4: OS_HINT(0) and LOG_DUMP_DATA.
+  - Published properties:
+    - `S0ix,SmuS0i3Entered`
+    - `S0ix,SmuS0i3Us`
+    - `S0ix,SmuHintCount`
+    - `S0ix,SmuNotMetUs` (32 × u64, per IP block)
+    - `S0ix,SmuIdleMask`
+  - Log line: `StrixS0ix: OS_HINT(0) ..., S0i3 REACHED/not reached, N ms in S0i3 ..., not met: i:ms ...`
+  - Boot-arg `s0ix_pmc=0` turns it off.
+- **CC6**: the IO C-state port is CStateBaseAddr+1 (MSR C001_0073), the same as Linux "ACPI IOPORT 0x414".
+  - Non-boot CPUs spin on `inb(port)` instead of `hlt`; INIT/SIPI still restarts them. `s0ix_cc6=0` restores HLT.
+  - The boot CPU uses inb(port) between wake checks only if `S0ix,BootCC6` is set (via `ioreg` setProperties, or boot-arg `s0ix_cc6boot=1`). If C2 keeps returning immediately (more than 2000 times in a row), it falls back to MWAITX.
+
+Install: `scripts/macos-install-step112.sh` (`--undo`; backup in /Library/NullMoth/step112-bk-*).
+
+Test after reboot:
+
+1. Run the sleep test hands off.
+2. Read the `StrixS0ix:` lines: the PMC mailbox and SMU version at boot, and the OS_HINT/S0i3 result on wake.
+3. If S0i3 is not reached, the `not met` blocks name the IP blocks still keeping the SoC awake (the RTX not in D3cold is the expected one).
+4. Then set BootCC6 and repeat.
+
+Also seen in the Step111 sleep-entry timeline:
+
+- **apsd 17.5 s.** en5 (native Wi-Fi) claims keepalive proxy support, but `APPLE80211_IOC_WOW_ENABLED` returns -3900. apsd waits for its `requestkeepaliveproxy` assertion to time out after 15 s. This was handed to the Wi-Fi branch.
+- **cloudd 13 s.** These are SystemIsActive assertions on the `pmset sleepnow` software-sleep path, which goes through dark wake. A lid close is a forced sleep path and needs its own test.

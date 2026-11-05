@@ -19,7 +19,16 @@
 //  2. The Microsoft Modern Standby _DSM on \_SB.PEP (11e00d56..., mask 0x1F9), in Linux s2idle order: display off (3),
 //     MS entry (7), sleep entry (5) when the root domain powers this service down for system sleep; sleep exit (6),
 //     MS exit (8), display on (4) when it comes back.
-// Not yet: the SMU OS_HINT (amd_pmc) for S0i3 residency; without it the SoC stays out of S0i3 but the system sleeps.
+//  3. (0.1.3) S0i3, as Linux amd_pmc + cpuidle do it:
+//     - the PMC mailbox of the SMU (MMIO at SMN 0x13B102E8/EC + 0x10000; msg 0x938, arg 0x9BC, response 0x980):
+//       LOG_RESET/LOG_START and OS_HINT(1) after the _DSM entry calls, OS_HINT(0) and LOG_DUMP_DATA before the exit
+//       calls; the SMU metrics table then says whether the last sleep reached S0i3, how long, and which IP blocks
+//       kept it out (S0ix,Smu*). Boot-arg s0ix_pmc=0 turns it off.
+//     - cores in CC6: an S0i3 needs every core in CC6, and HLT / MWAITX are only C1. Non-boot CPUs (offline during
+//       sleep, only INIT brings them back) read the IO C-state port CStateBaseAddr+1 (MSR C001_0073, the C2 entry of
+//       _CST, Linux "ACPI IOPORT") instead of HLT. Boot-arg s0ix_cc6=0 keeps HLT. The armed boot CPU does the same
+//       only when "S0ix,BootCC6" is set (property, or boot-arg s0ix_cc6boot=1): it then relies on the SCI of the wake
+//       event to end the C-state with IF=0, and falls back to MWAITX polling if C2 keeps returning at once.
 //
 // Wake event codes (S0ix,LastWakeEvent): PM1 status bits (0x100 power button, 0x400 RTC, 0x4000 PCIe wake),
 // 0x10000 + n = GPE n, 0x40000000 = no event within s0ix_maxsec (default 300 s, 0 = unlimited),
@@ -31,6 +40,8 @@
 #include <IOKit/IOService.h>
 #include <IOKit/IOLib.h>
 #include <IOKit/acpi/IOACPIPlatformDevice.h>
+#include <IOKit/pci/IOPCIDevice.h>
+#include <IOKit/IOMemoryDescriptor.h>
 #include <IOKit/pwr_mgt/IOPM.h>
 #include <IOKit/pwr_mgt/RootDomain.h>
 #include <libkern/OSKextLib.h>
@@ -62,9 +73,15 @@ static volatile bool gArmed;
 alignas(64) static volatile uint64_t gMonitorLine[8];
 static volatile uint64_t gIdleEntries, gLastIdleTsc, gTscHz;
 static volatile uint32_t gLastWhy, gLastLoops, gLastFast;
+static uint16_t gCstPort;                        // CStateBaseAddr + 1 (C2 = CC6), 0 = none
+static bool gCc6Cpus = true;                     // non-boot CPUs in CC6 while halted
+static volatile bool gCc6Boot;                   // armed boot CPU in CC6 between wake checks
+static volatile uint32_t gLastCc6Loops;
 
 static inline uint16_t inw(uint16_t p) { uint16_t v; asm volatile("inw %1, %0" : "=a"(v) : "Nd"(p)); return v; }
 static inline uint32_t inl(uint16_t p) { uint32_t v; asm volatile("inl %1, %0" : "=a"(v) : "Nd"(p)); return v; }
+static inline uint8_t inb(uint16_t p) { uint8_t v; asm volatile("inb %1, %0" : "=a"(v) : "Nd"(p) : "memory"); return v; }
+static inline uint64_t rdmsr64(uint32_t m) { uint32_t lo, hi; asm volatile("rdmsr" : "=a"(lo), "=d"(hi) : "c"(m)); return (uint64_t(hi) << 32) | lo; }
 static inline uint64_t rdtsc64() { uint32_t lo, hi; asm volatile("rdtsc" : "=a"(lo), "=d"(hi)); return (uint64_t(hi) << 32) | lo; }
 static inline void cpuid(uint32_t leaf, uint32_t r[4]) { asm volatile("cpuid" : "=a"(r[0]), "=b"(r[1]), "=c"(r[2]), "=d"(r[3]) : "a"(leaf), "c"(0)); }
 
@@ -88,11 +105,24 @@ static void s0ixHalt(void)
     if (cpu_number() != 0 || !gArmed) {
         auto st = reinterpret_cast<volatile uint32_t *>(static_cast<uint8_t *>(gGetMyLCPU()) + kLcpuState);
         *st = kLcpuHalt;                          // cpu_exit_wait() waits for LCPU_HALT
+        if (gCstPort && gCc6Cpus) {               // CC6 (caches flushed by the core); INIT/SIPI still restarts it
+            asm volatile("wbinvd" ::: "memory");
+            for (;;) (void)inb(gCstPort);
+        }
         for (;;) asm volatile("wbinvd; hlt" ::: "memory");   // stock: only INIT/SIPI brings it back
     }
     gIdleEntries++;
     uint64_t t0 = rdtsc64();
-    uint32_t why, loops = 0, fast = 0;
+    uint32_t why, loops = 0, fast = 0, cc6 = 0, cc6fast = 0;
+    // CC6 between checks: the wake event's SCI ends the C-state (interrupts stay masked); a pending non-wake
+    // interrupt makes C2 return at once, and after a run of those the loop drops back to MWAITX with its timer
+    while (gCc6Boot && gCstPort && !(why = wakeEvent())) {
+        uint64_t a = rdtsc64();
+        (void)inb(gCstPort);
+        cc6++;
+        if (rdtsc64() - a < gTimeoutTsc / 1024) { if (++cc6fast > 2000) break; } else cc6fast = 0;
+    }
+    gLastCc6Loops = cc6;
     while (!(why = wakeEvent())) {
         uint64_t a = rdtsc64();
         asm volatile(".byte 0x0f, 0x01, 0xfa" :: "a"(gMonitorLine), "c"(0), "d"(0));                 // MONITORX
@@ -114,6 +144,18 @@ static void s0ixHalt(void)
 class StrixS0ix : public IOService {
     OSDeclareDefaultStructors(StrixS0ix)
     IOACPIPlatformDevice *pep = nullptr;
+    IOPCIDevice *rc = nullptr;                  // 00:00.0, for SMN index/data
+    IOMemoryMap *pmcMap = nullptr, *smuMap = nullptr;
+    volatile uint8_t *pmc = nullptr;
+    const volatile uint8_t *smu = nullptr;        // struct smu_metrics
+    bool pmcOn = false;
+    uint32_t smuVer = 0;
+    bool setupPmc();
+    uint32_t smnRead(uint32_t addr);
+    IOReturn pmcSend(uint32_t msg, uint32_t arg, uint32_t *out = nullptr);
+    void pmcSleep();
+    void pmcWake();
+    void setupCc6();
     bool pm = false, halt = false, useDsm = true, slept = false, shutdown = false;
     IOPMDriverAssertionID block = 0;
     UInt32 sleeps = 0;
@@ -124,6 +166,7 @@ class StrixS0ix : public IOService {
 public:
     bool start(IOService *provider) override;
     IOReturn setPowerState(unsigned long state, IOService *device) override;
+    IOReturn setProperties(OSObject *properties) override;
     void systemWillShutdown(IOOptionBits specifier) override;
 };
 
@@ -182,6 +225,163 @@ void StrixS0ix::publishFacp(const OSData *facp)
     key->release();
     IOLog("StrixS0ix: FACP (%u bytes, flags %#x, LOW_POWER_S0 %s) published for xkpi: %s\n", facp->getLength(), flags,
           (flags & (1u << 21)) ? "set" : "CLEAR", where);
+}
+
+// ---- S0i3 (0.1.3) ----------------------------------------------------------------------------------------------
+namespace {
+constexpr uint32_t kPmcBaseLo = 0x13B102E8, kPmcBaseHi = 0x13B102EC, kPmcOffset = 0x10000;   // amd_pmc pmc.h
+constexpr uint32_t kPmcMsg = 0x938, kPmcArg = 0x9BC, kPmcRsp = 0x980, kPmcScratch = 0xF14;    // family 1Ah model 20h
+constexpr uint32_t kMsgVersion = 0x02, kMsgOsHint = 0x03, kMsgLogAddrHi = 0x04, kMsgLogAddrLo = 0x05,
+                   kMsgLogStart = 0x06, kMsgLogReset = 0x07, kMsgLogDump = 0x08;
+constexpr uint32_t kSmuMetricsSize = 0x250;
+}
+
+uint32_t StrixS0ix::smnRead(uint32_t addr)
+{
+    rc->configWrite32(0x60, addr);              // amd_nb SMN index/data on the root complex
+    return rc->configRead32(0x64);
+}
+
+IOReturn StrixS0ix::pmcSend(uint32_t msg, uint32_t arg, uint32_t *out)
+{
+    auto reg = [this](uint32_t o) -> volatile uint32_t & { return *reinterpret_cast<volatile uint32_t *>(pmc + o); };
+    unsigned n = 0;
+    while (reg(kPmcRsp) == 0 && n++ < 20000) IODelay(50);   // previous command done (1 s)
+    if (reg(kPmcRsp) == 0) return kIOReturnBusy;
+    reg(kPmcRsp) = 0;
+    reg(kPmcArg) = arg;
+    reg(kPmcMsg) = msg;
+    n = 0;
+    uint32_t r;
+    while ((r = reg(kPmcRsp)) == 0 && n++ < 20000) IODelay(50);
+    if (r == 1) { if (out) *out = reg(kPmcArg); return kIOReturnSuccess; }
+    return r == 0 ? kIOReturnTimeout : r == 0xFC ? kIOReturnBusy : r == 0xFE ? kIOReturnUnsupported : kIOReturnError;
+}
+
+bool StrixS0ix::setupPmc()
+{
+    UInt32 want = 1;
+    PE_parse_boot_argn("s0ix_pmc", &want, sizeof want);
+    if (!want) { IOLog("StrixS0ix: s0ix_pmc=0, no SMU OS hint\n"); return false; }
+    if (OSDictionary *m = IOService::serviceMatching("IOPCIDevice")) {
+        if (OSIterator *it = IOService::getMatchingServices(m)) {
+            while (auto d = OSDynamicCast(IOPCIDevice, it->getNextObject()))
+                if (d->getBusNumber() == 0 && d->getDeviceNumber() == 0 && d->getFunctionNumber() == 0) {
+                    rc = d; rc->retain(); break;
+                }
+            it->release();
+        }
+        m->release();
+    }
+    if (!rc) { IOLog("StrixS0ix: no 00:00.0 root complex, no SMU OS hint\n"); return false; }
+    uint32_t id = rc->configRead32(0);
+    if ((id & 0xffff) != 0x1022 || (id >> 16) != 0x1507) {
+        IOLog("StrixS0ix: root complex %08x is not Strix (1022:1507), no SMU OS hint\n", id);
+        return false;
+    }
+    uint32_t lo = smnRead(kPmcBaseLo) & 0xFFF00000u, hi = smnRead(kPmcBaseHi) & 0xFFFFu;
+    uint64_t base = (uint64_t(hi) << 32 | lo) + kPmcOffset;
+    if (!lo && !hi) { IOLog("StrixS0ix: PMC base reads 0, no SMU OS hint\n"); return false; }
+    if (IODeviceMemory *mem = IODeviceMemory::withRange(base, 0x1000)) {
+        pmcMap = mem->map(kIOMapInhibitCache);
+        mem->release();
+    }
+    if (!pmcMap) { IOLog("StrixS0ix: PMC %#llx not mappable\n", base); return false; }
+    pmc = reinterpret_cast<volatile uint8_t *>(pmcMap->getVirtualAddress());
+    IOReturn r = pmcSend(kMsgVersion, 0, &smuVer);
+    if (r != kIOReturnSuccess) { IOLog("StrixS0ix: PMC at %#llx: SMU version -> %#x, no SMU OS hint\n", base, r); return false; }
+    uint32_t tlo = 0, thi = 0;
+    if (pmcSend(kMsgLogAddrLo, 0, &tlo) == kIOReturnSuccess && pmcSend(kMsgLogAddrHi, 0, &thi) == kIOReturnSuccess &&
+        (tlo || thi)) {
+        uint64_t t = uint64_t(thi) << 32 | tlo, page = t & ~0xfffULL;
+        if (IOMemoryDescriptor *md = IOMemoryDescriptor::withPhysicalAddress(page, (t - page) + kSmuMetricsSize + 0xfff & ~0xfffULL,
+                                                                               kIODirectionIn)) {
+            smuMap = md->map(kIOMapInhibitCache);
+            md->release();
+        }
+        if (smuMap) smu = reinterpret_cast<const volatile uint8_t *>(smuMap->getVirtualAddress() + (t - page));
+    }
+    setProperty("S0ix,SmuVersion", smuVer, 32);
+    IOLog("StrixS0ix: PMC mailbox at %#llx, SMU %u.%u.%u, metrics table %s, idlemask %#x\n", base, (smuVer >> 16) & 0xff,
+          (smuVer >> 8) & 0xff, smuVer & 0xff, smu ? "mapped" : "NOT available",
+          *reinterpret_cast<volatile uint32_t *>(pmc + kPmcScratch));
+    return true;
+}
+
+void StrixS0ix::pmcSleep()
+{
+    if (!pmcOn) return;
+    IOReturn a = kIOReturnSuccess, b = kIOReturnSuccess;
+    if (smu) { a = pmcSend(kMsgLogReset, 0); b = pmcSend(kMsgLogStart, 0); }
+    IOReturn h = pmcSend(kMsgOsHint, 1);
+    IOLog("StrixS0ix: SMU log reset/start %#x/%#x, OS_HINT(1) %#x, idlemask %#x\n", a, b, h,
+          *reinterpret_cast<volatile uint32_t *>(pmc + kPmcScratch));
+}
+
+void StrixS0ix::pmcWake()
+{
+    if (!pmcOn) return;
+    uint32_t mask = *reinterpret_cast<volatile uint32_t *>(pmc + kPmcScratch);
+    IOReturn h = pmcSend(kMsgOsHint, 0);
+    IOReturn d = smu ? pmcSend(kMsgLogDump, 0) : kIOReturnUnsupported;
+    setProperty("S0ix,SmuIdleMask", mask, 32);
+    if (!smu || d != kIOReturnSuccess) {
+        IOLog("StrixS0ix: OS_HINT(0) %#x, idlemask %#x, metrics dump %#x\n", h, mask, d);
+        return;
+    }
+    uint8_t t[kSmuMetricsSize];
+    for (size_t i = 0; i < sizeof t; i++) t[i] = smu[i];
+    uint32_t hints, status;
+    uint64_t entering, resume, s0i3;
+    memcpy(&hints, t + 0x04, 4);
+    memcpy(&status, t + 0x08, 4);
+    memcpy(&entering, t + 0x10, 8);
+    memcpy(&resume, t + 0x20, 8);
+    memcpy(&s0i3, t + 0x30, 8);
+    setProperty("S0ix,SmuS0i3Entered", status, 32);
+    setProperty("S0ix,SmuS0i3Us", s0i3, 64);
+    setProperty("S0ix,SmuHintCount", hints, 32);
+    // timecondition_notmet_lastcapture[32] at 0x50: per IP block (amd_pmc soc15_ip_blk order), time it was not idle
+    if (OSData *nm = OSData::withBytes(t + 0x50, 32 * 8)) { setProperty("S0ix,SmuNotMetUs", nm); nm->release(); }
+    char list[160] = "";
+    size_t at = 0;
+    for (unsigned i = 0; i < 32 && at + 12 < sizeof list; i++) {
+        uint64_t v;
+        memcpy(&v, t + 0x50 + i * 8, 8);
+        if (v) at += (size_t)snprintf(list + at, sizeof list - at, " %u:%llums", i, v / 1000);
+    }
+    IOLog("StrixS0ix: OS_HINT(0) %#x, S0i3 %s, %llu ms in S0i3 (entry %llu us, resume %llu us), hints %u, idlemask %#x, "
+          "not met:%s\n", h, status ? "REACHED" : "not reached", s0i3 / 1000, entering, resume, hints, mask,
+          at ? list : " none");
+}
+
+void StrixS0ix::setupCc6()
+{
+    UInt32 v = 1;
+    PE_parse_boot_argn("s0ix_cc6", &v, sizeof v);
+    gCc6Cpus = v != 0;
+    v = 0;
+    PE_parse_boot_argn("s0ix_cc6boot", &v, sizeof v);
+    gCc6Boot = v != 0;
+    uint64_t base = rdmsr64(0xC0010073) & 0xffff;   // CStateBaseAddr
+    if (base >= 0x100 && base < 0xfff0) gCstPort = uint16_t(base + 1);
+    setProperty("S0ix,CstPort", gCstPort, 16);
+    setProperty("S0ix,CC6Cpus", gCc6Cpus && gCstPort);
+    setProperty("S0ix,BootCC6", gCc6Boot && gCstPort);
+    IOLog("StrixS0ix: CStateBaseAddr %#llx, CC6 port %#x, non-boot CPUs %s, boot CPU %s\n", base, gCstPort,
+          gCc6Cpus && gCstPort ? "CC6" : "HLT", gCc6Boot && gCstPort ? "CC6" : "MWAITX");
+}
+
+// "S0ix,BootCC6" = true/false from user space (scripts/macos-syssleep-test.sh): no reboot needed to try it
+IOReturn StrixS0ix::setProperties(OSObject *properties)
+{
+    auto d = OSDynamicCast(OSDictionary, properties);
+    auto b = d ? OSDynamicCast(OSBoolean, d->getObject("S0ix,BootCC6")) : nullptr;
+    if (!b) return kIOReturnUnsupported;
+    gCc6Boot = b->isTrue() && gCstPort;
+    setProperty("S0ix,BootCC6", bool(gCc6Boot));
+    IOLog("StrixS0ix: boot CPU now %s while asleep\n", gCc6Boot ? "CC6" : "MWAITX");
+    return kIOReturnSuccess;
 }
 
 bool StrixS0ix::installHalt()
@@ -244,6 +444,9 @@ bool StrixS0ix::start(IOService *provider)
     OSKextRetainKextWithLoadTag(OSKextGetCurrentLoadTag());
     useDsm = !PE_parse_boot_argn("-s0ixnodsm", nullptr, 0);
     readFadt();
+    setupCc6();
+    pmcOn = setupPmc();
+    setProperty("S0ix,Pmc", pmcOn);
 
     OSObject *q = nullptr;
     unsigned mask = 0;
@@ -273,7 +476,7 @@ bool StrixS0ix::start(IOService *provider)
     PMinit();
     getPMRootDomain()->addPowerChild(this);       // top level: powered down after the device tree, only on real sleep
     if (registerPowerDriver(this, states, 2) == kIOReturnSuccess) { pm = true; changePowerStateTo(1); }
-    IOLog("StrixS0ix: 0.1.2 up, PEP _DSM mask %#x (%s), halt hook %s, power child %s\n", mask, useDsm ? "used" : "off",
+    IOLog("StrixS0ix: 0.1.3 up, PEP _DSM mask %#x (%s), halt hook %s, power child %s\n", mask, useDsm ? "used" : "off",
           halt ? "on" : "OFF", pm ? "on" : "FAILED");
     registerService();
     return true;
@@ -295,6 +498,7 @@ IOReturn StrixS0ix::setPowerState(unsigned long state, IOService *)
         sleeps++;
         IOReturn a = kIOReturnSuccess, b = kIOReturnSuccess, c = kIOReturnSuccess;
         if (useDsm) { a = dsm(3); b = dsm(7); c = dsm(5); }
+        pmcSleep();
         gArmed = halt;
         slept = true;
         IOLog("StrixS0ix: sleep #%u, _DSM 3/7/5 %x/%x/%x, idle %s\n", unsigned(sleeps), a, b, c, halt ? "armed" : "NOT armed");
@@ -303,6 +507,7 @@ IOReturn StrixS0ix::setPowerState(unsigned long state, IOService *)
     if (!slept) return kIOPMAckImplied;           // the first state 1 at registration
     slept = false;
     gArmed = false;
+    pmcWake();
     IOReturn a = kIOReturnSuccess, b = kIOReturnSuccess, c = kIOReturnSuccess;
     if (useDsm) { a = dsm(6); b = dsm(8); c = dsm(4); }
     uint64_t ms = gTscHz ? gLastIdleTsc * 1000 / gTscHz : 0;
@@ -311,7 +516,8 @@ IOReturn StrixS0ix::setPowerState(unsigned long state, IOService *)
     setProperty("S0ix,LastWakeEvent", gLastWhy, 32);
     setProperty("S0ix,LastIdleMs", ms, 64);
     setProperty("S0ix,LastLoops", gLastLoops, 32);
-    IOLog("StrixS0ix: wake #%u, idle entries %llu, last idle %llu ms, wake event %#x, loops %u fast %u, _DSM 6/8/4 %x/%x/%x\n",
-          unsigned(sleeps), gIdleEntries, ms, gLastWhy, gLastLoops, gLastFast, a, b, c);
+    setProperty("S0ix,LastCC6Loops", gLastCc6Loops, 32);
+    IOLog("StrixS0ix: wake #%u, idle entries %llu, last idle %llu ms, wake event %#x, loops %u fast %u cc6 %u, _DSM 6/8/4 %x/%x/%x\n",
+          unsigned(sleeps), gIdleEntries, ms, gLastWhy, gLastLoops, gLastFast, gLastCc6Loops, a, b, c);
     return kIOPMAckImplied;
 }
