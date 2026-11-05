@@ -6631,3 +6631,13 @@ Also seen in the Step111 sleep-entry timeline:
 
 - **apsd 17.5 s.** en5 (native Wi-Fi) claims keepalive proxy support, but `APPLE80211_IOC_WOW_ENABLED` returns -3900. apsd waits for its `requestkeepaliveproxy` assertion to time out after 15 s. This was handed to the Wi-Fi branch.
 - **cloudd 13 s.** These are SystemIsActive assertions on the `pmset sleepnow` software-sleep path, which goes through dark wake. A lid close is a forced sleep path and needs its own test.
+
+### Step112b: headless NVRM in the same reboot
+
+The boot-time audit (35f435c) found the 36 s NVRM boot hold on OLED-only boots. nmx-translator-271 c54e304 releases the hold once every NVRMDisplay nub reports 0 connected displays.
+
+- Built kext: `~/nvrm-build-headless/NVRM.kext`. Its Info.plist is equal to the live 2.7.1 one.
+- Installed with `scripts/macos-install-step112b.sh <kext>`; undo with `--undo`. Backup: /Library/NullMoth/step112b-bk-*.
+- Check after the reboot:
+  - the log has "NVRMFB reports 0 connected displays ... releasing the boot hold";
+  - WindowServer starts about 30 s earlier.
