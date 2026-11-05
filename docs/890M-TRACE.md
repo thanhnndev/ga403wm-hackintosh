@@ -7500,3 +7500,12 @@ IOSurface contents pays it. Idle WindowServer was not sampled this time.
   2. WindowServer `sample` during the same video: `nvmtl_surface_keep` should be near 0. Measure main-thread busy %.
   3. Hitch probe (`hitch.mjs`: rVFC/rAF gaps over 25 ms per 30 s; was 11-162) and WindowServer idle CPU (was 58-83 %).
 - Undo: `sudo scripts/macos-nvmtl-plugin-install.sh --undo`, then `scripts/macos-install-strixsbxmap.sh --refresh`.
+- Idle check, 18:45 (owner: "the whole machine stalls with only Docker + Zalo open"; WindowServer 74-100 % with no video,
+  still on the old plugin): a 6 s WindowServer `sample` shows `nvmtl_surface_keep` in **3075 of 4802 main-thread
+  samples (64 %)** at idle. 2550 of those are in `objectForKeyedSubscript:` -> `isEqualToArray:`, and 1148 in the
+  idle-cap LRU sort, whose comparator does two colliding lookups per compare. Path: `update_display_callback ->
+  CompositorMetal::composite -> CA::OGL::render_contents_background -> bind_image -> update_surface ->
+  newTextureWithDescriptor:iosurface:plane:`. So the same O(n^2) keep is the root cause of the general WindowServer CPU
+  and desktop stalls, not just of video. Every client window or layer that updates (Zalo/Electron, Docker Desktop,
+  Claude) adds entries, so n grows and the cost per miss grows with n^2. The fixed plugin is installed. WindowServer
+  maps it only when it restarts (log out and back in, or the pending reboot).
