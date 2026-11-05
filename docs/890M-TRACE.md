@@ -6821,3 +6821,17 @@ panic and no CF9 path in our code.
    then calls `ZPTS`. Undo: disable the SSDT and the patch.
 2. Before that, the cheap test with no install: after one Shut Down, read `sysctl debug.amdcppc.psp` at the next boot,
    and unplug every USB device (BLE dongle, mouse) before a second Shut Down for comparison.
+
+**Result of the test Shut Down (2026-11-05 10:42), confirmed: S5 is entered, then the machine wakes from S5.**
+- loginwindow 10:42:15 `kAEShowShutdownDialog` (Shut Down). The kernel booted again at 10:42:43, about 28 s later, with no
+  button press.
+- `sysctl debug.amdcppc.psp` on that boot: `reset=00200800`, which is bit 21 (ACPI power state transition) + bit 11. It
+  is not bit 19 (CF9 reset), so neither macOS nor a kext reset the machine. The FCH entered S5, and a wake event powered
+  it back on.
+- macOS records no wake source for an S5 power-on (IOPMrootDomain only has `Wake Type`, from the last sleep).
+- So the cause is an S5 wake source left armed. The best candidate is still the XHC/USB4 PME (GPE 0x19/0x1A; XHC0 already
+  self-wakes S0 sleep). An RTC alarm is unlikely, because `pmset -g sched` has no event within minutes.
+- The earlier long gaps (09:20 → 10:05 and others) were most likely the owner turning the machine off by hand after it
+  came back on.
+- Next: the `_PTS(5)` PME-clear SSDT (see the proposed fix above), batched with the next reboot, with the owner's OK.
+  An optional test with no install: unplug every USB device and the BLE dongle, then Shut Down.
