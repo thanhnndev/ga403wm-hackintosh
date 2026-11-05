@@ -269,7 +269,7 @@ scripts/fresh-install/
   stage-system.sh          todo: optional /System stage (wraps ws-sandbox-dri.sh)
   resume.sh + com.ga403wm.fresh-install.plist   todo: resume daemon, reads /Library/GA403/state.json
   undo.sh                  todo: roll back one stage from its backup
-  kccheck/                 todo: small C tool, LC_UUID + byte-window checks (no python on a fresh macOS)
+  kccheck/kccheck.c        prototype, done: LC_UUID + byte-window checks of a kernel collection (no python on a fresh macOS)
   profiles/install.json    todo: installer-profile overrides for config.plist (base kexts, csr 0, no AMFI args)
   profiles/full.json       todo: full-profile overrides (today's live config minus trace flags)
   app/                     todo: GA403 Setup.app (SwiftUI, calls the stage scripts through one osascript admin call per stage)
@@ -311,9 +311,9 @@ JSON, so stock `plutil -extract` can read it on a fresh system (`verify.sh` does
 
 Top level: `schema`, `profile`, `macos.build` (the stack is tied to one macOS build; the app refuses another build
 unless overridden), `opencore`, `csr_active_config`, `components[]`. `capture-live.sh` writes the same shape from the
-live system (93 components today: 45 EFI, 12 AuxKC, 18 userland, 16 launchd, 2 system). On this machine,
-`verify.sh` reports `match 85, differ/missing 0, skipped 1` (the AuxKC itself, which is checked through the kext
-UUIDs instead).
+live system (93 components today: 45 EFI, 12 AuxKC incl. the collection itself, 18 userland, 16 launchd, 2 system).
+On this machine `verify.sh` reports `match 92, differ/missing 0, skipped 1` (the AuxKC file itself, which changes on
+every relink and is checked through the kext UUIDs instead). Results of the dry runs are in 4.8.
 
 ### 4.3 What each stage does
 
@@ -430,19 +430,151 @@ first:
 * **NVRM boot hold** costs about 36 s at boot (boot-time audit, 2026-11-05). This is not an installer problem, but
   the S5 report should time the boot so the fix can be measured later.
 
+### 4.8 Dry runs on the working machine (2026-11-05, owner approved tests and dry runs)
+
+All of these only read the live system. Writes went to `~/ga403-payload-25G241/` (outside the repo) and the session
+scratchpad.
+
+| Run | Result |
+|---|---|
+| `capture-live.sh ~/ga403-payload-25G241 --copy` | 93 components, payload 890 MB (`le/`, `userland/`, `launchd/`); EFI and `/System` rows are hashed, not copied, by design |
+| first copy attempt with `ditto` | 14 files failed with "Operation not permitted": RADV, libdrm, ICD jsons and `amdgpu.ids` in `/Library/GPUBundles/nvmtl` and `/Library/NullMoth/gpu-userland` carry the SIP `restricted` flag, and `ditto` tries to copy that flag as a normal user. Fixed: the copy uses `cp -R` (content, mode, symlinks) |
+| `verify.sh manifest --payload payload` | `match 45, differ/missing 0, skipped 48` |
+| `verify.sh manifest` (live) | `match 92, differ/missing 0, skipped 1` |
+| `kccheck` on the live AuxKC, 9 kexts + the 3 probe windows of `nmx-relink.probes` | all `ok`, 0.3 s; the same answers as the python `uuids_in()` / `check_kc()` logic run side by side |
+| `kccheck` negative tests | StrixProbe (an EFI kext, not in the AuxKC) reports `MISSING`, exit 1; a probe window that occurs many times reports `>1x`, exit 1 |
+
+What the dry runs added to the design:
+
+* The target needs to know about the `restricted` flag. NullMoth's own installer sets it on those files; whether our
+  S4 copy must set it too (as root, `chflags restricted`) is open. The manifest hashes content only, so it is not
+  affected.
+* The payload still lacks the NullMoth 2.7.1 tarball itself (`~/efi-audit/upgrade-2.7.1/` is gone). Downloading it
+  again needs the owner's OK.
+
 ## 5. Next steps
 
-1. **Capture** (no risk): `scripts/fresh-install/capture-live.sh ~/ga403-payload-25G241 --copy` on this machine, to a
-   folder outside the repo. Keep it private (PolyForm parts). Also save the exact NullMoth 2.7.1 tarball again
-   (download, with the owner's OK) and check it against `0b28f420…7851`.
+1. **Capture**: done (4.8). Still to do: save the exact NullMoth 2.7.1 tarball again (download, with the owner's OK)
+   and check it against `0b28f420…7851`.
 2. **Refresh the repo's EFI**: `scripts/export-efi.py` from the live ESP into `efi/OC` (sanitized), add
    `SSDT-ECRAM`, and split `profiles/install.json` / `profiles/full.json`.
-3. **Write `kccheck`** (C, about 100 lines) and port the 8-UUID and probe-window checks to it. Test it on the live
-   AuxKC; it must agree with today's python checks.
+3. **`kccheck`**: prototype done and tested (4.8). Still to do: a build line in `scripts/build.sh` and a probe file per
+   manifest version.
 4. **Write the stage scripts** (S3, S4, S5, resume daemon, undo) on top of `verify.sh` and the existing step-script
    helpers (`relink()`, `checks()`), and change the NMXGPU gate in the NVIDIA install step.
 5. **Dry run on a spare SSD** (or an external NVMe), CLI only, without the app. Record every manual step.
-6. **The app** (SwiftUI wrapper) once the CLI run passes.
+6. **The app** (SwiftUI wrapper, design in section 6) once the CLI run passes. Its `--snapshot` renders can be built and reviewed before that.
 7. **Longer term: make NMXGPU buildable.** Port each cave from 1.3 into the fork branch `ga403wm-nmx` as a source
    change, let CI build NMXGPU, and switch the manifest row from "captured" to "CI artifact". That also ends the
    offset bookkeeping in `nmx-caves/check.py`.
+
+## 6. Setup app UI/UX, based on ROG Control
+
+The owner asked to research the UI/UX of the Mac control app in this project: ROG Control (`RogControl.app` 0.3.3,
+source `rog-control-macos/macos/RogControl/RogControl.swift`, design notes `rog-control-macos/docs/rog-control-design.md`).
+The Setup app should look like the same family, so this section first reviews ROG Control, then designs Setup on it.
+
+How it was researched: the design notes and the SwiftUI source were read, the README screenshots were looked at, and
+the installed app's own offscreen mode was run (`RogControl --snapshot DIR`, which renders the panel, the window and
+every dialog from mock data without touching the hardware). Contrast ratios below were computed with the WCAG 2.x
+relative-luminance formula from the colour values in the source (`enum T`). No user-task testing was done.
+
+### 6.1 What ROG Control does well (keep these)
+
+* **One thing leads.** The window opens on the live card; CPU temperature is the largest number (gauge, expanded
+  width type). The menu bar panel repeats that order at glance size: temperature, then the four modes, then the two
+  settings people change by hand.
+* **One visual language, small and consistent.** Always dark; one red accent, amber only for warnings; chamfered cards
+  (top-right corner cut, `Chamfer`); the lid's Slash LED segments as slanted bars (`Segments`) for fan speed, mode
+  level and battery; small tracked capitals for labels (`Caps`); numbers in the expanded system width (`T.num`). Every
+  control is built from a handful of components: `Card`, `Pills`, `RogMenu`, `RogSlider`, `RogButtonStyle`,
+  `DialogShell`.
+* **Progressive disclosure.** Daily controls sit inline in three tiles; things set up once (custom limits, fan
+  curves, Slash animations, battery details, settings) open as dialogs over a dimmed window. Esc, the close button
+  and a click on the dim area close a dialog; the dialog is marked modal for VoiceOver.
+* **Honest state.** "Not saved" in amber with an icon until Custom limits are saved; Turbo disabled on battery with
+  "Needs charger"; failures appear next to the control that failed (`ErrorLine`); without AsusWmi the header chip
+  says so and the controls are disabled.
+* **Plain words first, codes second.** "Burst / Short boost / Sustained" with FPPT/SPPT/SPL as small labels, plus a
+  picture of how the CPU uses them.
+* **Layout review without hardware.** The `--snapshot` mode renders every surface at fixed sizes. That is the model
+  for testing the Setup app without running an install.
+* **Accessibility basics are there**: labels and values on gauges and sliders, adjustable actions on sliders,
+  selected traits on pills and modes, Reduce Motion honoured in the panel.
+
+### 6.2 Findings (fix in ROG Control, avoid in Setup)
+
+| # | Finding | Evidence | Suggested fix |
+|---|---|---|---|
+| 1 | Small capital labels fail text contrast | `T.faint` (0.40, 0.42, 0.45) on `surface` 3.32:1, on `raised` 3.04:1, on `bg` 3.65:1; they are 10 pt semibold, so WCAG AA needs 4.5:1 | `faint` = (0.52, 0.54, 0.57): 4.68:1 on raised, 5.10:1 on surface, 5.61:1 on bg |
+| 2 | White text on the red fill is below 4.5:1 | white on `T.red` (1.0, 0.13, 0.24) = 3.79:1; used for selected pills ("80%", "Med"), "Save to Custom", the active mode badge (the glyph is a graphic, 3:1 is enough there) | a darker fill for filled buttons only, for example (0.86, 0.10, 0.20): white on it 4.99:1; keep `T.red` for strokes, segments and text on dark (5.16:1 on bg) |
+| 3 | Red means "selected", "accent" and "error" at once | `ErrorLine` draws red text next to red-filled selected pills | errors keep the triangle icon and get the words "Failed" or "Not applied"; for a new app, use amber or a separate error colour for failures |
+| 4 | The "offline" screenshot shows values the real app would not show | `Snapshot.mock(offline: true)` still sets charge 80, keyboard Med, Slash Flux, PPT 80/65/45 and seeds the chart history, so `docs/images/rogcontrol-offline.png` shows "80%" and "Med" selected and a 4-minute chart while the chip says "controls are off"; the real `AsusState` defaults these to nil | make the offline mock leave them nil and skip `seedHistory()`, then re-render the README images |
+| 5 | Screenshots and the design copy in this repo are out of date | README image says "LAST 4 MINUTES", the 0.3.3 render says "LAST 5 MINUTES"; `docs/rog-control-design.md` here is an older copy than `rog-control-macos/docs/rog-control-design.md` (no "Visual language", old window layout) | treat the sister repo as the source; replace this copy with a link |
+| 6 | Snapshot run is slow on this machine | the offline render took more than 2 minutes and logged `Failed to create .../nvmtl-mesa for shader cache (Permission denied)`; offscreen SwiftUI goes through the 890M Metal stack | not a UI bug; useful as a smoke test of Metal for a background process, and worth a look on the NVMTL side |
+
+Contrast fixes 1 and 2 are values computed from the formula, not a rendered gate run; check them on a fresh
+`--snapshot` render after the change.
+
+### 6.3 Setup app: brief
+
+```
+Domain:           system installer for one laptop model (dev-tool family)
+Audience & tone:  the owner now, other GA403WM owners later; expert enough to boot OpenCore, but each step is
+                  high-stakes (kexts, ESP, snapshots). Calm, precise, no hype.
+Mood:             trustworthy: every claim on screen is something the app checked
+Motion depth:     subtle feedback only (segments fill, a stage row eases to done); nothing spins forever
+Layout family:    one window, one stage leads; a compact stage rail; dialogs for detail (no side menu, as in ROG Control)
+Reference anchor: ROG Control's visual language (6.1), with fixes 1 to 3 applied
+```
+
+### 6.4 Setup app: screens
+
+One window, about 880 x 600 pt, always dark, in the same header style as ROG Control ("GA403 SETUP", model line,
+status chips on the right). The left third is the stage rail; the rest is the card of the current stage, which leads.
+
+```
+ GA403 SETUP   ZEPHYRUS G14 · GA403WM              [ macOS 26.7.1 25G241 ] [ Payload verified ] [ gear ]
+ ┌ STAGES ─────────────┐ ┌ STAGE 2 OF 3 ───────────────────────────────────────────────────────┐
+ │ ■ Check this Mac    │ │ Drivers and graphics                                                   │
+ │ ■ Boot files (EFI)  │ │ Installs 11 kexts, the 890M userland and 16 background jobs, then     │
+ │ ▶ Drivers, graphics │ │ links them into the kernel collection.                                 │
+ │ □ Verify            │ │                                                                        │
+ │ □ System sandbox    │ │ ▰▰▰▰▰▰▰▰▱▱▱▱▱▱▱▱▱▱▱▱   kmutil: linking the auxiliary collection       │
+ │   (optional)        │ │                                                                        │
+ │                     │ │ WHAT CHANGES      Details >   BACKUP  /Library/GA403/backup/le-0512…   │
+ │ Reboots: 1 of 2     │ │                                                                        │
+ └─────────────────────┘ │ [ Show log ]                                   [ Install stage 2 ]    │
+                         └────────────────────────────────────────────────────────────────────────┘
+```
+
+| Screen | Leads with | Primary action | Notes |
+|---|---|---|---|
+| Check this Mac | a checklist: model GA403WM, macOS build matches the manifest, booted from which EFI (USB or internal), `csr-active-config`, AMFI boot-args, payload found and `verify.sh --payload` passed, free space | "Start" (only when every required row passes) | each row is icon + text: "Matches", "Differs: 25G250, manifest wants 25G241" (what, why, how). The plan preview (a dry run of every stage) is one dialog away |
+| Stage card (Boot files, Drivers, System sandbox) | the stage title and one sentence in plain words of what changes | "Install stage N" (asks for the admin password through the system dialog, once per stage) | "What changes" opens a dialog with the manifest rows of the stage (name, version, license, destination); the backup path is always visible before the click |
+| Running | segments filling per component, the current command in one line | none; "Show log" stays available | no cancel during `kmutil` or the ESP copy (the button is disabled with the reason as help text); steps that can stop safely say so |
+| Restart | what will happen at the restart and what to pick in the OpenCore picker ("choose the entry on the internal disk once") | "Restart now" | never restarts by itself; "Later" leaves the resume job armed |
+| Verify | the report: one row per check from 4.4, pass / fail / skipped, each with the measured value | "Done" or, on a failure, "Open report" | failures name the check, the value seen, and the next step ("Run Undo for this stage" or "Boot the USB EFI") |
+| Undo (dialog) | which backup will be restored, from when | "Undo stage N" in the destructive style, here and in the trigger | requires the admin password; never deletes a backup |
+
+States every screen must cover: not started, running, done (verified), done (not verified), failed, skipped (optional
+stage), and blocked (a precondition failed). "Verified" is only shown when `verify.sh` or `kccheck` passed; a stage
+that ran but was not checked says "Installed, not verified" (ROG Control's "hardware-confirmed versus saved" rule).
+
+### 6.5 Setup app: behaviour and copy
+
+* **One password per stage**, through `osascript ... with administrator privileges` (the project's existing pattern),
+  running the stage script as root. The app itself never runs as root.
+* **Resume after reboot:** the LaunchDaemon runs the verify step as root; a LaunchAgent opens the app at the next login
+  on the stage the state file names. Closing the window keeps the state; nothing is lost.
+* **Copy:** short, plain, in English and Vietnamese (`vi.lproj`); numbers and paths in the monospaced face; codes
+  (csr, AuxKC, SPL style) as small labels next to plain words. Errors follow what, why, how: "AuxKC lost NMXGPU after
+  the relink. kernelmanagerd rebuilt it. Run the relink again." No em dashes, no emoji.
+* **Keyboard and VoiceOver:** Return triggers the primary action, Esc closes dialogs, the stage rail is a list with
+  selected and value traits, segments have an accessibility value ("7 of 20 components").
+* **Motion:** segments ease (0.25 s), stage rows ease to done; Reduce Motion removes both. No spinner without text.
+* **Snapshot mode from day one:** `GA403Setup --snapshot DIR` renders every screen and state from mock state files, as
+  ROG Control does, so the UI can be reviewed (and the contrast fixes checked) before any install exists.
+* **Shared components:** copy `T`, `Caps`, `Chamfer`, `Card`, `Segments`, `RogButtonStyle`, `Pills`, `ErrorLine` and
+  `DialogShell` from ROG Control into a small shared Swift file (both repos are BSD and the owner's), with fixes 1 to 3
+  applied, so the two apps stay one family.

@@ -44,7 +44,10 @@ row() {  # id stage license kind dest sha [bundle_id version uuid]
 copy_in() {  # <src> <payload-relative-dest>
     [ $COPY = 1 ] || return 0
     mkdir -p "$OUT/payload/$(dirname "$2")"
-    ditto "$1" "$OUT/payload/$2"
+    # cp -R, not ditto: ditto copies BSD flags, and some NullMoth files carry the SIP "restricted" flag, which a normal
+    # user cannot set (Operation not permitted). Content, mode and symlinks are what the manifest checks.
+    rm -rf "$OUT/payload/$2"
+    cp -R "$1" "$OUT/payload/$2"
 }
 license_for() {
     case "$1" in
