@@ -7671,3 +7671,25 @@ Side note, the 21:58 freeze (owner force-rebooted at 22:00): the system log stop
 - Smaller than the harness promised: ~140 submits/s, still ~0.5 ms each. spindump (kernel stacks): the time is still per-BO list work (`amdgpu_cs_p1_bo_handles`, `amdgpu_bo_list_create`, `drm_exec_lock_obj`, `amdgpu_cs_bo_validate`, `amdgpu_ttm_tt_get_usermm`). So the submits still carry many BOs that are neither surfaces nor local; in the harness the global list is empty.
 - To see which: RADV `radv_nvmtl_stats` / `radv_nvmtl_global_breakdown` (patch updated) and plugin **eac2b8f** log `vk: BO list:` (global list by RADV_BO_PRIORITY, host-pointer or allocation, VRAM/GTT) after 256 submits, and live/handles-per-submit every 4096 submits. eac2b8f also fixes exact marking waiting for the first IOSurface import.
   Installed 14:19 (RADV 90402a4b, backup radv-live-20261106T061914Z; plugin 73ec26c8, backup nvmtl-plugin-20261106T061914Z; sbxmap allowed 16). Light apps (TextEdit, Notes, Safari) did not reach 256 submits; WindowServer logs it after the next boot.
+
+## Edge web video lag part 8: the BO-list census names the rest (2026-11-06 13:41)
+
+- Boot with RADV 90402a4b + plugin eac2b8f in WindowServer. `vk: BO list:` in WindowServer's log:
+  - right after login: `14 global BOs: [prio 14 host-ptr GTT: 14, 5348 KB]`, 28 handles per submit (13.5 global);
+  - once apps were open (~5 min): `515 global BOs: [prio 14 host-ptr GTT: 515, 45540 KB]`, **135.5 handles per submit (120.7 global)**, the most 526.
+  - Only 7 of the first 20k submits carried the surface list (`2048 imports moved, 0 back to global`): the surface list works; what is left is one kind only.
+- Priority 14 = an application allocation at the default VK_EXT_memory_priority, host-pointer, GTT, ~88 KB each: `newBufferWithBytesNoCopy` (NVMTLDevice_contract.m; Managed >= 1 MiB takes the VRAM-copy path instead). Every one of them went to the kernel on every submit, ~1.4 us each.
+- Fix, plugin **8633045** (fork `surface-keep-hash`), no RADV change: the no-copy import goes on the same RADV list as the IOSurface imports (`nvmtl_vk_buffer_list_mark`). `nvmtl_part_list_surfaces` lists every retained NVMTLBuffer on the list, and a texture's backing buffer (`_backBuf`, so the buffer-texture shadow upload in the prologue is covered). A buffer whose address can reach the GPU without being retained goes back to the global list: `gpuAddress`, argument encoder `setBuffer`, `gpuResourceID` of a texture on it. Log: `vk: buffer list ON`, `buffer list: N no-copy imports moved, M back to global`. `NVMTL_BUFFER_LIST=0` turns it off.
+- Harness `tests/nocopy_list_test.m`, commit of a blit that uses none of the live no-copy buffers:
+
+  | live no-copy buffers | list off | list on |
+  |---|---|---|
+  | 0 | 58 us | 48 us |
+  | 250 | 173 us | 46 us |
+  | 500 | 322 us | 37 us |
+  | 1000 | 514 us | **46 us** |
+
+  With 1000 alive: no-copy -> no-copy copy, a texture on a no-copy buffer -> buffer, and a buffer after `gpuAddress` all read back correctly, on and off. No NMXGPU fault/timeout.
+- Installed 13:48: plugin 5271bd8e (backup /Library/NullMoth/nvmtl-plugin-20261106T064753Z = eac2b8f), RADV unchanged (90402a4b), sbxmap refreshed (stale 0). TextEdit started on it, no fault. **WindowServer at the next boot.**
+  - Undo: `sudo scripts/macos-nvmtl-plugin-install.sh --undo`, then `scripts/macos-install-strixsbxmap.sh --refresh`.
+- Next boot, read in WindowServer's log: `buffer list: ... back to global` (if `gpuAddress` users send most of them back, the escape rule needs a finer test), `BO list: ... handles each` (expect ~15-30 instead of ~135), NMXGPU faults; then the WindowServer sample (submit ioctl share, was 7.5 %), CPU with Docker + Zalo open.
