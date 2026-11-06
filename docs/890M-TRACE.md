@@ -7759,3 +7759,21 @@ Side note, the 21:58 freeze (owner force-rebooted at 22:00): the system log stop
   - The ClickToX path. Its audit lines appear only when ClickToX runs; texture slots are not in the audit yet.
   - btsh uploads: 31.5 GB per 12288 WindowServer submits (~2.6 MB each), GPU-side copies.
 - Photo Booth preview not rendering: handed to its own session (an upstream NullMoth PR has the fix).
+
+## Photo Booth: preview renders (upstream #433/#471), lag measured (2026-11-06 15:20)
+
+- Symptom: Photo Booth's live preview stayed black, and the camera felt laggy.
+- Cause of the black preview: QuartzCore hands the driver a CAMetalLayer drawable (framebufferOnly off) with usage ShaderRead only. `CIRenderDestination` then refuses it ("usage must include ShaderWrite").
+- Fix: port of upstream NullMoth **#433** (`1ffcb94`), the WindowServer guard `b8c3e9f`, and open PR **#471** (`5d48fea`), by hand because our surface key is `NVMTLSurfKey`. Fork commit **3bec140** on `surface-keep-hash`.
+  - Surface textures with framebufferOnly off report RenderTarget, plus ShaderWrite when a storage image or `nvmtl_storage_view_for`'s twin can write them. WindowServer keeps its own usage.
+  - Textures answer `-isDrawable`, and the drawable flag is part of the surface key, so Core Image picks screen orientation.
+  - Upstream's `test_coreimage_surface_destination`: 6 failures on f4c1450e, 0 after. `test_coreimage_drawable_orientation`: 0.
+- Lag, fork commit **79b4017** (installed 0b4fd9f9 = 565ac46 + diagnostics). Switches, all off by default: `NVMTL_FRAME_STATS=1`, `NVMTL_KEEP_OFF=1`, `NVMTL_SURF_WIDEN=0`. Set them with `launchctl setenv`, then relaunch the app.
+  - Camera: ASUS FHD UVC, 1920x1080 420v. It delivers **30 fps, ~115 ms** from capture to Photo Booth (cmio `DELTA`).
+  - Plugin, per 5 s: 90 command buffers/s, commit -> completed 2.5 ms average. ~400 surface-in copies/s (~600 MB/s): the two camera planes and the 1440x960 drawable each go through a private image (`copied in and out (more than one plane)`). Photo Booth ~45 % CPU, WindowServer 50-70 % while the preview runs.
+  - `NVMTL_SURF_WIDEN=0` (old path): Photo Booth 22 % CPU and 300 copies/s, but the preview is black.
+  - `NVMTL_KEEP_OFF=1`: same numbers as baseline, so surface keep is not the cause.
+  - The 2 fps with 2 s delay seen first is Photo Booth's own idle mode: it calls `-[AVCaptureSession stopRunning]` about 2 min after its window stops being frontmost, then restarts slowly. It is not a driver stall.
+- Banding in one photo (14:43) did not come back. Back-to-back photos with widening on and off under the same light are both clean. New tests: `plugin/tests/ci_gradient_test.m` (Core Image sRGB output into a surface texture) and `vt_420v_test.m` (VTPixelTransfer 420v -> BGRA). Both match the CPU result within 1-2 levels.
+- Open: the per-frame CPU copies. Upstream's opt-in **#475** (multi-plane IOSurface VRAM sharing), **#476** (deferred surface uploads) and **#463** (reuse VRAM imports) target exactly this, but they are written for NVIDIA BAR imports and need #464/#467.
+- `plugin/tests/desccache_test.sh` fails to compile since the buffer-list/audit commits: its extractor has no stubs for `nvmtl_btsh_note` / `nvmtl_audit_used`.
