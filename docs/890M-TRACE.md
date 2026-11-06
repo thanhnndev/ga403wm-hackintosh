@@ -7694,3 +7694,21 @@ Side note, the 21:58 freeze (owner force-rebooted at 22:00): the system log stop
   - Undo: `sudo scripts/macos-nvmtl-plugin-install.sh --undo`, then `scripts/macos-install-strixsbxmap.sh --refresh`.
 - Next boot, read in WindowServer's log: `buffer list: ... back to global` (if `gpuAddress` users send most of them back, the escape rule needs a finer test), `BO list: ... handles each` (expect ~15-30 instead of ~135), NMXGPU faults; then the WindowServer sample (submit ioctl share, was 7.5 %), CPU with Docker + Zalo open.
 - Baseline before that boot (13:50, WindowServer still on eac2b8f, 13 min up, Claude app redrawing): `top` 60-77 %. spindump 5 s: WindowServer **3.03 s CPU, 2.60 s of it ws_main_thread**; the nvmtl.execution fence waiters 0.09 s (their `drmSyncobjWait` sleeps, it does not spin). Main thread sample (self time, 5 s): busy 55.9 %; kernel ioctl = CS submit **13.2 %** (the no-copy buffers, back to ~500 live), QuartzCore 8.4 %, libobjc 6.2 %, memmove/bzero 4.3 %, RADV 4.0 %, SkyLight 3.6 %, malloc 3.2 %, NVMTL 3.1 %, CoreFoundation 2.4 %. `WS::Updater::UpdateDisplays` 48 % inclusive, `CompositorMetal::composite` 31 %. Expected after the buffer list: submit ioctl ~1-2 %, main thread ~45 % busy; the rest is per-frame compositing (CoreAnimation + NVMTL/RADV encoding), the next thing to cut (frames per second and cost per frame).
+
+## Edge web video lag part 9: first boot on the buffer list (2026-11-06 13:57)
+
+- WindowServer on plugin 8633045: `vk: buffer list ON`; `2048 no-copy imports moved, 0 back to global (address escaped)`. BO-list census: **0 global BOs**, 330-340 BOs on the surface list; **18-24 handles per submit** (was 135.5), the most 416; 49 of 32768 submits carried the whole surface list.
+- Kernel log for the boot: no fault, timeout or reset. Only the lines every boot has (one `NMX userptr: pin FAILED`, `KMS: Failed to initialize writeback connector`, one dc_dmub_srv WARNING).
+- WindowServer 2.5 min after login (Claude app open), spindump 5 s: **2.39 s CPU** (was 3.03 s), ws_main_thread 1.97 s (was 2.60 s); fence waiters 0.13 s. Main thread sample (5 s):
+
+  | main thread | 13:50 (eac2b8f) | 14:00 (8633045) |
+  |---|---|---|
+  | busy | 55.9 % | **39.2 %** |
+  | kernel ioctl (self) | 13.2 % | **5.0 %** (CS submit 2.6 %) |
+  | QuartzCore self | 8.4 % | 6.4 % |
+  | RADV self | 4.0 % | 3.0 % |
+  | NVMTL self | 3.1 % | 2.2 % |
+  | `CompositorMetal::composite` incl. | 31 % | 20 % |
+
+  The load is not identical (13 min vs 2.5 min after login), so the drop in compositing is partly less to draw; the ioctl drop is the fix (handles per submit 135 -> 23).
+- What is left: per-frame compositing, about 220 submits/s (32768 in ~150 s), so several submits per display frame, each with `commitAndWaitUntilSubmitted` (5.8 % incl.). Next: count submits per frame and who triggers the redraws, then cut submits per frame and per-frame CPU in NVMTL/RADV encoding.
