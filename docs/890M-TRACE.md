@@ -7864,3 +7864,17 @@ Everything that changed between the good 14:31 boot and the 15:42 reboot (file m
 - Other errors this boot (not new):
   - `function constants: re-translate FAILED: visible function reference "custom_fn"` in iconservicesagent, Spotlight, Dock and SecurityAgent.
   - `buffer texture: refused on alignment` (bind at +32/+48) in WindowServer: that texture takes the copy path.
+
+## Step124: NVRM waits for NMXAMDFB (fix for the 15:43/15:48 black boots, installed 2026-11-06 16:47, reboot pending)
+
+- Cause, from the black-boot audit above: NVRM's MSI enable + RmInitAdapter came while NMXGPU was still attaching. The 890M lost its next MSI, NMXAMDFB came ~5 s late (after NVRM's boot hold ended) and WindowServer took the virtual display. Good boots won by 0.11-0.12 s.
+- Fix side: NVRM, not NMXGPU. A new NMXGPU source build would drop ~25 live binary patches (scripts/nmx-caves/check.py), so the NMXGPU busy hold (fork `xkpi-thread-lockfree`) stays for the source build after the caves are ported.
+- NVRM: nmx-translator-271 `nvrm-wait-nmxamdfb` a039577 (pushed to the fork), built to `~/nvrm-build-nmxwait`, sha 5305bd506ef4d24f (was dca5eac6cfca8e7c). One new import, `IOService::copyMatchingService`; Info.plist unchanged (2.7.1).
+  - `autoGo`, after the settle block and before `measureBootRaster`: if an `NMXGPU` service shows up within 3 s, wait for `NMXAMDFB` (up to `nvrmnmxwait=N` s, default 20, 0 = off, max 120). NVRM still holds its boot busy, so WindowServer waits too. The hold cap (settle + 40 s) covers 20 s.
+  - Property `nvrm-nmx-wait` on NVRM, plus log `890M wait: NMXAMDFB registered after N ms - starting this card's bring-up (MSI + RmInitAdapter)` or a TIMEOUT line.
+  - `go(2)` logs the 890M MSI capability (ctrl, address, data, PCI command) before and after this card's MSI enable and after `rm_init_adapter`, so a lost-MSI boot shows whether NVRM's enable touched the 890M's MSI registers.
+- Installer `scripts/macos-install-step124.sh` (backup `/Library/NullMoth/step124-bk-20261106T094700Z`). AuxKC checked after the relink and again after 45 s: all NMXGPU caves (mmfix, flip, irqfix, mmfix2, s0ix, fadt), StrixS0ix 0.1.12, NMXBacklight 0.4.0, headless NVRM, the new wait string. StrixS0ix and NMXGPU were not touched.
+- After the reboot, check:
+  - `/usr/bin/log show --boot --predicate 'sender == "NVRM"' | grep -E '890M (wait|MSI)'`: the wait line shows N ms; the MSI ctrl/data match before and after.
+  - WindowServer framebuffer fb0 on `/NMXGPU/NMXAMDFB`, no virtual display, NVRM boot hold time.
+- Undo: `sudo scripts/macos-install-step124.sh --undo`, or boot-arg `nvrmnmxwait=0` to turn the wait off without relinking.
