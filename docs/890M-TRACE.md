@@ -7739,3 +7739,23 @@ Side note, the 21:58 freeze (owner force-rebooted at 22:00): the system log stop
 - Plugin **3f9fabb**: audit mode, on when `/Library/NullMoth/nvmtl-bl-audit` exists (or `NVMTL_BL_AUDIT=1`). No-copy imports are registered (removed when destroyed). Each part records every buffer its descriptor sets and address tables name for bindings the pipeline declares, with the method that bound it (`nvmtl_slot.who`), and the no-copy buffers its resource set would list. At seal, a used import that would not be listed logs `vk: buffer-list AUDIT MISS (...) bound by <symbol>` (40 at most); `vk: buffer-list audit: N parts, U no-copy uses, M NOT named` every 4096 parts. It runs with the buffer list off, so nothing changes in what a submit carries.
 - Installed 14:22: plugin f4c1450e (backup nvmtl-plugin-20261106T072236Z), flag file created, sbxmap allowed 12 stale 0. Apps started since (Preview, Maps, Photo Booth, Freeform, Safari) log `AUDIT ON (buffer list off)`, no MISS, no GPU fault. WindowServer runs it from the next boot, together with bcbb0d7 (surface keep byte cap) and 779c55b (iGPU Managed, buffer list off).
 - Next boot, read: `grep "pid <WS> " /tmp/nvmtl.log | grep -E "AUDIT|audit:|managed buffers:|prologue census|surface keep: 30"`. A MISS names the method; then fix that path and turn the buffer list back on. Remove the flag file when done (`sudo rm /Library/NullMoth/nvmtl-bl-audit`).
+
+## Edge web video lag part 13: the buffer-list fault was ClickToX, not WindowServer; list back on in WindowServer (2026-11-06 14:50)
+
+- WindowServer CPU on this boot (plugin 3f9fabb, buffer list OFF, audit on; WS up 249 s; Photo Booth was open just before): spindump 5 s, **4.90 s CPU**. The main thread was busy 3.28 s; `coreanimation.pipelines` spent 0.97 s compiling once at startup.
+  - Main thread self time: `mach_msg2_trap` 210 of 501 samples (idle receive) and `__ioctl` 80. Of those 80, `ac_drm_cs_submit_raw2` takes 60 (**12 % of the main thread**). Imports and BO allocs (surface textures) take the rest.
+  - Inclusive: NVMTL 151 samples, `nvmtlSubmitWithEvents` 94, `vk_common_QueueSubmit` 61.
+  - Why submits cost again: `vk: BO list: 245-388 global BOs: [prio 14 host-ptr GTT ...]`. With the list off, every no-copy import rides every submit (part 9 had 0 global BOs with the list on).
+- Audit (all processes, /Library/NullMoth/nvmtl-bl-audit): WindowServer 32768 parts and Photo Booth 4096 parts, **0 no-copy uses** through buffer descriptors or address tables, 0 misses.
+- **The 14:07 fault was not WindowServer.** The kernel's fault line names `in process pid 32923`. That is a thread id, and the same boot's log has `process ClickToX[7955] thread 32923 caught burning CPU` at 14:05:39. ClickToX ran plugin 8633045 with the buffer list on: MPS convolution (`AMDConvolution::ndArrayConvolution2DAMD_NCHW`), heaps with placed aliases, and buffer textures on no-copy pages (`1216x512 VkFormat 98 pitch 4864 bound at 0`, shadowed 1200x500 / 1400x800). The GPU hang from its fault is what took WindowServer down.
+- WindowServer itself ran with the list on from 14:00 to 14:07 (8633045) and again after its restart until the reboot (bcbb0d7), with no fault.
+- Done: plugin **565ac46**. The buffer list is ON in WindowServer only and OFF in every other process.
+  - `NVMTL_BUFFER_LIST=0/1` still decides per process.
+  - `/Library/NullMoth/nvmtl-bl-off` turns it off everywhere without a reinstall.
+  - `nocopy_list_test` passes unset/1/0 (unset in a harness = OFF).
+  - Installed (NVMTLDriver sha1 80022006) and the sbxmap refreshed. WindowServer picks it up at the next boot.
+- Expected next boot: WindowServer `BO list: 0 global BOs`, and submit ioctl back to ~5 % of the main thread (part 9). Read `vk: buffer list ON ... WindowServer` and the audit lines.
+- Open:
+  - The ClickToX path. Its audit lines appear only when ClickToX runs; texture slots are not in the audit yet.
+  - btsh uploads: 31.5 GB per 12288 WindowServer submits (~2.6 MB each), GPU-side copies.
+- Photo Booth preview not rendering: handed to its own session (an upstream NullMoth PR has the fix).
