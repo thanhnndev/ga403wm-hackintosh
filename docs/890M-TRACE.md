@@ -7777,3 +7777,52 @@ Side note, the 21:58 freeze (owner force-rebooted at 22:00): the system log stop
 - Banding in one photo (14:43) did not come back. Back-to-back photos with widening on and off under the same light are both clean. New tests: `plugin/tests/ci_gradient_test.m` (Core Image sRGB output into a surface texture) and `vt_420v_test.m` (VTPixelTransfer 420v -> BGRA). Both match the CPU result within 1-2 levels.
 - Open: the per-frame CPU copies. Upstream's opt-in **#475** (multi-plane IOSurface VRAM sharing), **#476** (deferred surface uploads) and **#463** (reuse VRAM imports) target exactly this, but they are written for NVIDIA BAR imports and need #464/#467.
 - `plugin/tests/desccache_test.sh` fails to compile since the buffer-list/audit commits: its extractor has no stubs for `nvmtl_btsh_note` / `nvmtl_audit_used`.
+
+## Black screen on the 15:43 and 15:48 boots (2026-11-06, traced from Windows): lost 890M MSI during the NVRM bring-up
+
+Both boots after the 15:42 reboot stayed black. WindowServer made its main window on the virtual display
+`FFFFFFFF-FFFF-FFFF-FFFF-FFFFFFFFFFFF`, and the NVMTL plugin logged `headless GPU: no device for WindowServer`.
+The 14:31 boot before them was good. Boot-args and the display kexts (NMXGPU, NMXAccel, StrixGOP, StrixAccel, NVRM*)
+were the same in all three boots. The only ESP changes after 14:31 were itlmt7925.kext (14:41) and the
+StrixSbxMap Info.plist (15:33, new NVMTLDriver CDHashes, scope `com.apple.WebKit.GPU` only).
+
+Method: the tracev3 files (Persist `0x2fa`, `0x300`, `0x301`) were copied from the Paragon APFS mount and parsed
+on Windows. The parser walks each firehose chunk and adds `base_continuous_time + delta` per entry. On x86 that is ns
+since boot. Times below are seconds since boot.
+
+| boot | NMXGPU published | NVRM `(MSI)` + RmInitAdapter | NMX `LOST interrupts` | NMXAMDFB `kept` | registry QUIET | WindowServer GPU scan | main display |
+|---|---|---|---|---|---|---|---|
+| 14:31 good | 8.62 | 9.70 | none | **9.59** | 12.64 | 13.13 (`fb0:0 /NMXGPU/NMXAMDFB`) | panel |
+| 15:43 bad | 7.76 | 8.84 | 13.99 | **13.995** | 11.86 | 12.29 (no fb0, agdc 0) | virtual |
+| 15:48 bad | 9.02 | 10.09 | 15.03 | **15.98** | (not checked) | 13.57 (no fb0, agdc 0) | virtual |
+
+- NVRM always starts RmInitAdapter (and turns on MSI for the RTX) about 1.08 s after NMXGPU publishes. NMXGPU's
+  attach normally reaches NMXAMDFB about 0.97 s after publish. The good boot won by about 0.11 s.
+- In both bad boots NVRM turned on MSI while the NMX attach was still running. The 890M's next interrupt then never
+  reached the CPU. The Step100 cave says: `cause: handler idle with IVs pending (rptr 0x720 wptr_wb 0x840): the MSI
+  did not arrive`, IOInterruptEventSource `produced 45 consumed 45` (producer frozen), and MSI is still enabled
+  (`ctrl 0x85`, `addr 0xfee00000 data 0x4079`/`0x407a`).
+- The loss was declared about 5 s after NVRM's `(MSI)` in both boots (5.15 s and 4.94 s). Degraded mode (2 ms IH poll)
+  started, and NMXAMDFB was published 0.5 ms / 0.95 s later.
+- NVRM's boot hold ends when it finds no display on the RTX (`no display on any NVIDIA connector`, 11.86 on 15:43).
+  The registry then goes quiet. By that time NMXAMDFB is not there yet, so WindowServer scans the 890M without a
+  framebuffer and uses the virtual display. This is the same window as the 11-05 `-nvrmnohold` black boots, reached
+  in a different way.
+- Of the dumps checked, `LOST interrupts` and the virtual display appear only in these two boots (0x2f6..0x2fa
+  have neither).
+
+**Cause:** the H2 interrupt loss again, this time a real lost MSI (Step100 removed the printf-stall cause). It
+coincides with NVRM's MSI enable during the NMX attach. The 5 s stall until degraded mode pushes NMXAMDFB past
+NVRM's hold.
+
+**Not proven:** why NVRM's MSI setup drops the 890M's MSI. The two devices have different vectors (0x79/0x7a on the
+890M). Candidates: the interrupt controller or IOPCIFamily MSI allocation path in the translator, or the IH re-arm
+racing with something NVRM does during RmInitAdapter.
+
+**Fixes, in order:**
+1. NMXGPU busy hold (the Addendum above): `adjustBusy(+1)` after `nmx_xnu_wait_firmware_root`, and `-1` after
+   `nmx_fb_publish`. WindowServer would then wait for NMXAMDFB even in this case (desktop at ~14 s, in degraded mode).
+2. Detect the loss faster in the cave. The attach waited about 5 s before degraded mode started. A fence wait that
+   sees IVs pending with a frozen producer could poll at once.
+3. Root cause: order NVRM's RmInitAdapter after NMXAMDFB publish (an NVRM wait on the `NMXAMDFB` match, capped), and
+   log the IH and MSI state right before and after NVRM's `(MSI)` to see which write loses the interrupt.
