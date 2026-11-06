@@ -7842,3 +7842,25 @@ Everything that changed between the good 14:31 boot and the 15:42 reboot (file m
 - Margins: on this good boot NMXAMDFB was published at 16:33:57.935 and NVRM `(MSI)` + RmInitAdapter came at 58.056, so it won by 0.12 s (14:31 won by 0.11 s).
 - Any change to kernel boot timing can flip that race, such as a new Wi-Fi kext or extra kexts. The user-space NVMTL plugin changes cannot move the kernel side, but WindowServer then loads that plugin with no 890M framebuffer and logs `headless GPU`.
 - Fix: the NMXGPU busy hold (`adjustBusy` until `nmx_fb_publish`) in the next NMXGPU source build, then order NVRM's RmInitAdapter after NMXAMDFB.
+
+## Edge web video lag part 14: buffer list verified in WindowServer (boot 2026-11-06 16:33)
+
+- Plugin: fork `camera-copy-890m` f8b9420 (UUID 2F49751C), which includes 565ac46 (buffer list on in WindowServer only), 3bec140 and 79b4017 (Photo Booth).
+- WindowServer log:
+  - `buffer list ON ... (NVMTL_BUFFER_LIST=unset, WindowServer)`.
+  - `BO list: 0 global BOs` at every census.
+  - Audit: 32768 parts, 0 no-copy uses, 0 misses.
+  - No NMXGPU page faults, ring timeouts or IP dumps.
+  - No new WindowServer crash report.
+  - The audit's start-up line still says "(buffer list off)", because it reads only the env var. This is cosmetic.
+- spindump 5 s, taken while the Claude app was streaming (its renderer ~53 % CPU): WindowServer 3.33 s CPU, main thread 2.61 s (was 3.28 s on the list-off boot).
+  - Submit ioctl `ac_drm_cs_submit_raw2`: **12 of 500 samples = 2.4 %** of the main thread (list off: 60 = 12 %; part 9: 5 %).
+  - Inclusive: `UpdateDisplays` 165, `nvmtlSubmitWithEvents` 28, `newTextureWithDescriptor:iosurface:plane:` 15, `MetalContext::draw_elements` 30.
+  - `memmove` 18 samples come from `_XGetRegisteredCursorImages`, a client asking for cursor images; not the driver.
+  - `ps` over 10 s: 4.43 s CPU (44 %) in the same conditions.
+- Remaining:
+  - btsh (buffer-texture shadow) uploads: 156k uploads / 20 GB per 28672 submits (~0.7 MB each). This is GPU-side copy work.
+  - Compositing itself (`UpdateDisplays`).
+- Other errors this boot (not new):
+  - `function constants: re-translate FAILED: visible function reference "custom_fn"` in iconservicesagent, Spotlight, Dock and SecurityAgent.
+  - `buffer texture: refused on alignment` (bind at +32/+48) in WindowServer: that texture takes the copy path.
