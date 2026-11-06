@@ -7662,3 +7662,12 @@ Side note, the 21:58 freeze (owner force-rebooted at 22:00): the system log stop
 - Step123 = StrixS0ix 0.1.12 (`scripts/macos-install-step123.sh`): a full wake (display wrangler tickle) on query 0xCE or 0xE7. The list is `S0ix,UserQueries` (`s0ix-set userq 0xE7CE`, boot-arg `s0ix_userq`), up to 4 bytes. Reboot pending.
 - Open question: whether 0xCE also comes for non-user EC events (battery, charger). If so, a closed lid still sends macOS back to sleep. The lid query code is checked in the next lid test.
 - 22:24 lid test on 0.1.11: lid open = EC query 0x2F (`_Q2F` run by us), "Wake ... due to /Lid Open", screen on. The query interception does not break the lid. So 0xCE is the power button, not a generic EC wake ping for every event.
+
+## Edge web video lag part 7: first boot on the surface list (2026-11-06 12:50)
+
+- WindowServer runs RADV 2a2269ce + plugin 998153ff: `vk: surface list ON`; census `1024 imports moved (0 refused, 0 back to global for gpuResourceID), 30252 command buffers exact, 192595 surface uses listed`, against ~30.5k submits: almost every submit is exact and lists ~6 surfaces.
+- No NMXGPU fault/timeout. The one `NMX userptr: pin FAILED ... size 24000 -> -14` per boot was there before too (21:21, 21:39, 22:00 on 2026-11-05).
+- WindowServer 2 min after login (Claude, Spotlight indexing): 25.6 % CPU. Main thread (10 s sample): busy 42.4 %; `ac_drm_cs_submit_raw2` **7.5 %** (was 11.4 %); surface_keep 0.3 %, btsh 0.2 %, `nvmtl_part_list_surfaces` 0.0 %.
+- Smaller than the harness promised: ~140 submits/s, still ~0.5 ms each. spindump (kernel stacks): the time is still per-BO list work (`amdgpu_cs_p1_bo_handles`, `amdgpu_bo_list_create`, `drm_exec_lock_obj`, `amdgpu_cs_bo_validate`, `amdgpu_ttm_tt_get_usermm`). So the submits still carry many BOs that are neither surfaces nor local; in the harness the global list is empty.
+- To see which: RADV `radv_nvmtl_stats` / `radv_nvmtl_global_breakdown` (patch updated) and plugin **eac2b8f** log `vk: BO list:` (global list by RADV_BO_PRIORITY, host-pointer or allocation, VRAM/GTT) after 256 submits, and live/handles-per-submit every 4096 submits. eac2b8f also fixes exact marking waiting for the first IOSurface import.
+  Installed 14:19 (RADV 90402a4b, backup radv-live-20261106T061914Z; plugin 73ec26c8, backup nvmtl-plugin-20261106T061914Z; sbxmap allowed 16). Light apps (TextEdit, Notes, Safari) did not reach 256 submits; WindowServer logs it after the next boot.
