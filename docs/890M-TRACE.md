@@ -7878,3 +7878,16 @@ Everything that changed between the good 14:31 boot and the 15:42 reboot (file m
   - `/usr/bin/log show --boot --predicate 'sender == "NVRM"' | grep -E '890M (wait|MSI)'`: the wait line shows N ms; the MSI ctrl/data match before and after.
   - WindowServer framebuffer fb0 on `/NMXGPU/NMXAMDFB`, no virtual display, NVRM boot hold time.
 - Undo: `sudo scripts/macos-install-step124.sh --undo`, or boot-arg `nvrmnmxwait=0` to turn the wait off without relinking.
+
+## Edge web video lag part 15: audit covers textures on no-copy pages (2026-11-06 16:55)
+
+- btsh is not a WindowServer CPU target. Its shadows exist because Core Animation makes buffer textures at buffer offset +32 / +48. The hardware needs a 256-byte image base (`buffer texture: refused on alignment ... bind at 48 vs alignment 256`), so a shadow image is required. It costs ~5 uploads of ~130 KB per submit, about 150 MB/s of GPU copy, and records as one copy each.
+- The audit gap: a buffer texture bound straight on a no-copy import (`... bound at 0 (DRM linear ...)`, as in ClickToX's MPS path) reaches the shader through an image descriptor, or, with bindless-all, through the address table's bindless slot. RADV does not list BOs from either. Part 12's audit checked only buffer bindings.
+- Fork `camera-copy-890m`:
+  - **df33243**: with the audit on, image and view handles of textures on no-copy pages map to their import. Sampled and storage bindings count as uses of that import. The audit start line reports the real buffer-list state.
+  - **1fd1a05**: textures in the address table (bindless slots) count too.
+- Test: `tests/audtex_test.m` (runs on the installed plugin). Core Image samples a 64x64 texture on no-copy pages, and a blit reads it after CPU changes: PASS.
+  - The log shows `first texture binding on no-copy pages (... slot 601, bound by -[NVMTLComputeCommandEncoder setTexture:atIndex:])` and no AUDIT MISS. CI's compute kernel reads it through the bindless slot.
+  - Core Image keeps its own copy of a source texture it has seen, so only the blit pass checks CPU writes.
+- Installed (backup `nvmtl-plugin-20261106T095107Z` = 47f9d0ce, the camera-copy build) with the sbxmap refreshed. Buffer-list behaviour is unchanged (on in WindowServer only). Apps pick it up on launch, WindowServer at the next boot.
+- ClickToX (the owner's app, Release build) relaunched under the audit. The OCR path (Cmd-Shift-S) needs a real keypress: osascript may not send keystrokes. After a few captures, grep its log for `AUDIT MISS` / `texture binding on no-copy pages`.
