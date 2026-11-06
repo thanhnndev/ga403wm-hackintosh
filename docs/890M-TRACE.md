@@ -7826,3 +7826,19 @@ racing with something NVRM does during RmInitAdapter.
    sees IVs pending with a frozen producer could poll at once.
 3. Root cause: order NVRM's RmInitAdapter after NMXAMDFB publish (an NVRM wait on the `NMXAMDFB` match, capped), and
    log the IH and MSI state right before and after NVRM's `(MSI)` to see which write loses the interrupt.
+
+### Side-session audit for the 15:43/15:48 black boots (main session, 16:40)
+
+Everything that changed between the good 14:31 boot and the 15:42 reboot (file mtimes on the ESP, /Library/Extensions, /Library/GPUBundles, /Library/LaunchDaemons/Agents and /Library/NullMoth, plus git):
+
+| time | what | session |
+|---|---|---|
+| 14:41 | `EFI/OC/Kexts/itlmt7925.kext` (4th swap of the day, backups 13:30/13:48/14:12/14:41) | AWDL / AirDrop (mt7925-macos) |
+| 14:42 to 15:33 | NVMTLDriver.bundle in /Library/GPUBundles, 5 installs: buffer-list audit, 565ac46 list in WindowServer only, Photo Booth fixes | edge-video-lag, photobooth-fix, camera-copies |
+| 15:33 | `StrixSbxMap.kext` Info.plist: new NVMTLDriver CDHashes | photobooth-fix |
+
+- Nothing changed between 15:48 and 16:33. The same files gave two black boots (15:43, 15:48) and a good one (16:33).
+- So no single change broke the display. It is the boot race between NMXAMDFB and NVRM's MSI enable.
+- Margins: on this good boot NMXAMDFB was published at 16:33:57.935 and NVRM `(MSI)` + RmInitAdapter came at 58.056, so it won by 0.12 s (14:31 won by 0.11 s).
+- Any change to kernel boot timing can flip that race, such as a new Wi-Fi kext or extra kexts. The user-space NVMTL plugin changes cannot move the kernel side, but WindowServer then loads that plugin with no 890M framebuffer and logs `headless GPU`.
+- Fix: the NMXGPU busy hold (`adjustBusy` until `nmx_fb_publish`) in the next NMXGPU source build, then order NVRM's RmInitAdapter after NMXAMDFB.
