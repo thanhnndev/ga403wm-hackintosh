@@ -8434,3 +8434,14 @@ the same for `nmxgpu-alive`. On macOS: `nvram nmxgpu-stage nmxgpu-alive`.
 
 Not installed. Install only with the owner's OK: `sudo scripts/macos-install-step125.sh ~/develop/projects/nmx-build-xkpi/out-6/NMXGPU.kext`
 (rollback on any failure, `--undo`).
+
+### Step128 stage-mark build installed (2026-11-07 20:57, owner's OK, reboot pending)
+
+- `macos-install-step125.sh out-6/NMXGPU.kext` succeeded: NMXGPU ed82aa34, UUID 6613CA5C. Backup at
+  /Library/NullMoth/step125-bk-20261107T135605Z (the restored 591E7D5A, padded copy, sha 8fead28b).
+- New auxguard probes: `0xb4100 0x40 0x383100 0x40 0x651d00 0x40`.
+- The AuxKC was relinked and checked twice (now and after 45 s). Also checked separately: kccheck, all 10 kexts OK, StrixS0ix 0.1.12, and the
+  `nmxgpu-stage` / `nmxgpu-alive` / `nmxhold=0` strings are in the collection, `_proc_starttime` is not.
+- Boot-args unchanged: `nmxamd=1`, no `-v`, boot hold on (no `nmxhold`).
+- After the reboot: `nvram nmxgpu-stage nmxgpu-alive` (macOS), or the same variables under the Apple GUID from Windows
+  if it hangs. If it hangs, the next boot is with `nmxhold=0`. Undo: `sudo scripts/macos-install-step125.sh --undo`.
