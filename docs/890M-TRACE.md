@@ -7909,3 +7909,16 @@ Handed over from the fresh-install session (local_93191de7).
   - kccheck now reports NMXAccel MISSING from the Tahoe AuxKC, so auxguard relinks it 45 s into the next Tahoe boot and reboots once.
 - Other binaries with the 25G241 string: only StrixAccel, which is off (`-strixaccoff`). The NMXGPU, NVRM, plugin and RADV binaries do not have it.
 - Proper fix (NMXAccel source): gate on the IOAcceleratorFamily2 version and the reviewed offsets, not the exact xnu build string. Otherwise every point update needs this patch.
+
+### NMXAccel family-layout gate (replaces the 25G241 kernel-string gate)
+
+- The exact `IOKitBuildVersion` match is gone. NMXAccel now arms the 890M pipe when the IOAcceleratorFamily2 class sizes
+  (IOGraphicsAccelerator2, IOAccelDisplayMachine, IOAccelLegacyDisplayMachine, IOAccelEventMachineFast2, IOAccelTask,
+  via `OSMetaClass::getMetaClassWithName()->getClassSize()`) equal the reconstructed headers' static_assert sizes.
+  OS updates need no code change unless the family layout itself changes; a mismatch is logged per class
+  (`family layout: X size N, headers M  <-- MISMATCH`) and sets `NMXFamilyLayoutOK = false`.
+- Boot-arg `nmxaccel_gate=0` skips the check, `=2` forces it off.
+- Source: nmxaccel-ci branch `nmxaccel-family-gate` (from ci/nmxaccel-drmuc 7bd4e99), CI run 42350604915 (macos-15).
+- Installed on 25G332 with `scripts/macos-install-nmxaccel-gate.sh` (backup in /Library/StrixGraphicsFix/nmxaccel-gate-bk-*,
+  `--undo`), AuxKC relinked + kccheck ok. Verify after reboot: `log show --last boot | grep -E 'family layout|framebuffer watch|pipe armed'`.
+- `scripts/fresh-install/nmxaccel-kernel-gate.py` (the string-swap patch) is now obsolete for new installs.
