@@ -8362,3 +8362,15 @@ Do not, on macOS, before the hang above is understood:
   (the byte-patched AuxKC behaves like 326858e).
 - install any NMXGPU source build without NVRAM stage marks, so a hang can be located from Windows.
 - worry about the padded files: the next `ditto`/kmutil install replaces them whole.
+
+### Step128 restore verified on macOS (boot 2026-11-07 20:36)
+
+- Loaded: NMXGPU 591E7D5A (cave chain), StrixS0ix 0.1.12 (28371854), NMXAccel C18FD8B4, NVRM 573209B7 and the rest
+  as listed above; auxguard `AuxKC ok` (no relink). 890M Metal 3, OLED 2880x1800, `NMXFamilyLayoutOK = Yes`.
+  No new panic file after 16:46.
+- StrixS0ix 0.1.13 (Step126) is not a suspect: the `nmxamd`-off boots ran it and reached the desktop, and its new code
+  runs only at sleep. It can come back with any later relink once the NMXGPU in /Library/Extensions is a good build
+  (the restored 591E7D5A is). The Step126 installer itself is fine; Step125's is not.
+- Side sessions asked to re-check their own changes on this boot (userland, not reverted): NVMTL translator astc fix
+  + StrixSbxMap pins (sim-perf), VCNDec in /System (edge-video-lag), and the NMXGPU session for the ~12 s hard hang of
+  326858e (review + NVRAM stage-mark build, no install without the owner).
