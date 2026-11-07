@@ -21,7 +21,10 @@
 #include <string.h>
 
 #define kRate 48000.0
-#define kRingFrames 16384u                 // power of two
+#define kRingFrames 65536u                 // power of two (1.37 s): room for the tap catch-up below
+#define kMaxBacklog 24000u                 // frames the tap may start behind live (0.5 s)
+#define kSilent 1e-5f                      // -100 dBFS
+#define kPropLoudCount 'rgLd'              // tap device: CFNumber, ROG Speakers write cycles that carried sound
 #define kZeroTsPeriod 512u
 #define kMaxFrames 4096u
 
@@ -62,6 +65,12 @@ static float *gRing[2];                       // [mic: 1 ch][speakers: 2 ch], kR
 static pthread_mutex_t gClockLock = PTHREAD_MUTEX_INITIALIZER;
 static UInt64 gAnchorHost, gNumTs;
 static UInt32 gRunning;                       // total started IO clients across devices
+// rogaudiod opens the tap input only while sound plays (an open input lights the mic indicator). It starts a few
+// cycles late, so the tap reads from the first loud frame written while it was closed and skips silence to catch up.
+static _Atomic UInt64 gLoudCount;               // speaker write cycles with any sample above kSilent
+static _Atomic UInt64 gLoudStart = UINT64_MAX;  // sample time of the first loud frame while the tap was closed
+static _Atomic int gTapFresh;                   // set by StartIO on the tap, consumed by its first read
+static UInt64 gTapCursor;                       // tap IO thread only
 static Float64 gTicksPerFrame;
 static AudioServerPlugInHostRef gHost;
 static UInt32 gRefCount = 1;
@@ -166,6 +175,7 @@ static Boolean has(AudioObjectID id, const AudioObjectPropertyAddress *a)
         case kAudioDevicePropertyNominalSampleRate: case kAudioDevicePropertyAvailableNominalSampleRates:
         case kAudioDevicePropertyIsHidden: case kAudioDevicePropertyZeroTimeStampPeriod:
         case kAudioDevicePropertyPreferredChannelsForStereo: return true;
+        case kAudioObjectPropertyCustomPropertyInfoList: case kPropLoudCount: return id == kObjTap;
         }
         return false;
     case kClsStream:
@@ -292,6 +302,18 @@ static OSStatus sizeAndData(AudioObjectID id, const AudioObjectPropertyAddress *
             AudioValueRange r = { kRate, kRate };
             memcpy(outData, &r, sizeof(r)); *outDataSize = sizeof(r); return 0;
         }
+        case kAudioObjectPropertyCustomPropertyInfoList: {
+            AudioServerPlugInCustomPropertyInfo ci = { kPropLoudCount, kAudioServerPlugInCustomPropertyDataTypeCFPropertyList,
+                                                       kAudioServerPlugInCustomPropertyDataTypeNone };
+            if (inDataSize < sizeof(ci)) return kAudioHardwareBadPropertySizeError;
+            memcpy(outData, &ci, sizeof(ci)); *outDataSize = sizeof(ci); return 0;
+        }
+        case kPropLoudCount: {
+            if (inDataSize < sizeof(CFPropertyListRef)) return kAudioHardwareBadPropertySizeError;
+            SInt64 v = (SInt64)atomic_load(&gLoudCount);
+            *(CFPropertyListRef *)outData = CFNumberCreate(NULL, kCFNumberSInt64Type, &v);
+            *outDataSize = sizeof(CFPropertyListRef); return 0;
+        }
         case kAudioDevicePropertyPreferredChannelsForStereo: {
             if (inDataSize < 2 * sizeof(UInt32)) return kAudioHardwareBadPropertySizeError;
             UInt32 ch[2] = { 1, d->channels > 1 ? 2 : 1 };
@@ -406,7 +428,7 @@ static OSStatus GetPropertyDataSize(AudioServerPlugInDriverRef d, AudioObjectID 
     if (n == sizeof(CFStringRef)) {
         switch (a->mSelector) {
         case kAudioObjectPropertyName: case kAudioObjectPropertyManufacturer: case kAudioDevicePropertyDeviceUID:
-        case kAudioDevicePropertyModelUID: { CFStringRef s; memcpy(&s, scratch, sizeof(s)); if (s) CFRelease(s); break; }
+        case kAudioDevicePropertyModelUID: case kPropLoudCount: { CFTypeRef s; memcpy(&s, scratch, sizeof(s)); if (s) CFRelease(s); break; }
         }
     }
     *outSize = n;
@@ -467,7 +489,9 @@ static OSStatus StartIO(AudioServerPlugInDriverRef d, AudioObjectID id, UInt32 c
         gNumTs = 0;
         gAnchorHost = mach_absolute_time();
         for (int i = 0; i < 2; i++) memset(gRing[i], 0, kRingFrames * (i ? 2 : 1) * sizeof(float));
+        atomic_store(&gLoudStart, UINT64_MAX);       // new clock epoch: old sample times mean nothing
     }
+    if (id == kObjTap && atomic_load(&dev->running) == 0) atomic_store(&gTapFresh, 1);
     gRunning++;
     atomic_fetch_add(&dev->running, 1);
     pthread_mutex_unlock(&gClockLock);
@@ -526,9 +550,29 @@ static OSStatus DoIOOperation(AudioServerPlugInDriverRef d, AudioObjectID id, Au
     if (op == kAudioServerPlugInIOOperationReadInput && dev->input) {
         UInt64 t = (UInt64)ci->mInputTime.mSampleTime;
         float *out = main;
+        if (dev->dev != kObjTap) {
+            for (UInt32 i = 0; i < frames; i++) {
+                UInt32 slot = (UInt32)((t + i) & (kRingFrames - 1));
+                for (UInt32 c = 0; c < ch; c++) { out[i * ch + c] = ring[slot * ch + c]; ring[slot * ch + c] = 0; }
+            }
+            return 0;
+        }
+        if (atomic_exchange(&gTapFresh, 0)) {
+            UInt64 ls = atomic_exchange(&gLoudStart, UINT64_MAX);
+            gTapCursor = (ls != UINT64_MAX && ls <= t && t - ls <= kMaxBacklog) ? ls : t;
+        }
         for (UInt32 i = 0; i < frames; i++) {
-            UInt32 slot = (UInt32)((t + i) & (kRingFrames - 1));
+            UInt64 live = t + i;
+            if (gTapCursor > live || live - gTapCursor > kMaxBacklog) gTapCursor = live;
+            // behind live: drop silent frames until caught up
+            while (gTapCursor < live) {
+                UInt32 s = (UInt32)(gTapCursor & (kRingFrames - 1));
+                if (fabsf(ring[s * ch]) >= kSilent || fabsf(ring[s * ch + 1]) >= kSilent) break;
+                gTapCursor++;
+            }
+            UInt32 slot = (UInt32)(gTapCursor & (kRingFrames - 1));
             for (UInt32 c = 0; c < ch; c++) { out[i * ch + c] = ring[slot * ch + c]; ring[slot * ch + c] = 0; }
+            gTapCursor++;
         }
         return 0;
     }
@@ -542,9 +586,21 @@ static OSStatus DoIOOperation(AudioServerPlugInDriverRef d, AudioObjectID id, Au
             g = v <= 0.0f ? 0.0f : powf(10.0f, (-64.0f + 64.0f * v) / 20.0f);
             if (atomic_load(&dev->muted)) g = 0.0f;
         }
+        UInt64 loudAt = UINT64_MAX;
         for (UInt32 i = 0; i < frames; i++) {
             UInt32 slot = (UInt32)((t + i) & (kRingFrames - 1));
-            for (UInt32 c = 0; c < ch; c++) ring[slot * ch + c] = in[i * ch + c] * g;
+            for (UInt32 c = 0; c < ch; c++) {
+                float v = in[i * ch + c] * g;
+                ring[slot * ch + c] = v;
+                if (loudAt == UINT64_MAX && fabsf(v) >= kSilent) loudAt = t + i;
+            }
+        }
+        if (dev->ring == 1 && loudAt != UINT64_MAX) {
+            atomic_fetch_add(&gLoudCount, 1);
+            if (atomic_load(&gDevs[3].running) == 0) {          // tap closed: remember where the sound began
+                UInt64 ls = atomic_load(&gLoudStart);
+                if (ls == UINT64_MAX || ls > loudAt || loudAt - ls > kMaxBacklog) atomic_store(&gLoudStart, loudAt);
+            }
         }
         return 0;
     }

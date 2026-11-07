@@ -601,12 +601,36 @@ static int spk_start(const char *outUid, int profile)
     rc |= AudioUnitInitialize(s->in);
     rc |= AudioUnitInitialize(s->out);
     if (rc) { fprintf(stderr, "speakers: AudioUnit setup failed (%d)\n", (int)rc); return -1; }
-    rc = AudioOutputUnitStart(s->in);
-    if (!rc) rc = AudioOutputUnitStart(s->out);
+    // only the output runs all the time; the tap input opens while sound plays (spk_tap), since any open input
+    // shows the microphone indicator. Keeping Built-in Output running avoids amp wake-up pops and lost onsets.
+    rc = AudioOutputUnitStart(s->out);
     if (rc) { fprintf(stderr, "speakers: start failed (%d)\n", (int)rc); return -1; }
     char n[96]; dev_string(s->outDev, kAudioObjectPropertyName, n, sizeof(n));
     fprintf(stderr, "speakers: on -> %s, profile %s\n", n, kProfiles[profile].name);
     return 0;
+}
+
+static int g_tap_on;
+static void spk_tap(int on)
+{
+    if (on == g_tap_on) return;
+    OSStatus rc = on ? AudioOutputUnitStart(g_spk.in) : AudioOutputUnitStop(g_spk.in);
+    if (rc) { fprintf(stderr, "speakers: tap %s failed (%d)\n", on ? "start" : "stop", (int)rc); return; }
+    g_tap_on = on;
+    if (g_verbose) fprintf(stderr, "speakers: tap %s\n", on ? "open" : "closed");
+}
+
+// the driver counts ROG Speakers write cycles that carried sound ('rgLd' on the tap); -1 on a driver without it
+static long long spk_loud_count(AudioObjectID tap)
+{
+    AudioObjectPropertyAddress a = addr('rgLd', kAudioObjectPropertyScopeGlobal);
+    CFTypeRef v = NULL;
+    UInt32 size = sizeof(v);
+    if (tap == kAudioObjectUnknown || AudioObjectGetPropertyData(tap, &a, 0, NULL, &size, &v) || !v) return -1;
+    long long n = -1;
+    if (CFGetTypeID(v) == CFNumberGetTypeID()) CFNumberGetValue(v, kCFNumberLongLongType, &n);
+    CFRelease(v);
+    return n;
 }
 
 // ---- main ---------------------------------------------------------------------------------------------------------------
@@ -678,11 +702,20 @@ int main(int argc, char **argv)
     profile = read_profile_file(&pmt, profile);
     int spkOn = 0;
     int micIdle = 0;
+    enum { kTapIdle = 60 };                        // 3 s at 50 ms
+    int tapIdle = 0;
+    long long lastLoud = -1;
+    unsigned long tick = 0;
+    AudioObjectID spkDev = dev_by_uid(UID_SPK);
+    RogAudioSettings settings = { .volume = -20, .strength = strength, .noise = 1, .micEnabled = settingsPath ? 0 : 1, .autoDefault = 1 };
+    int haveSettings = 0;
     unsigned long lastStat = 0;
     unsigned long statusTick = 0;
     while (!g_quit) {
-        RogAudioSettings settings = { .volume = -20, .strength = strength, .noise = 1, .micEnabled = settingsPath ? 0 : 1, .autoDefault = 1 };
-        if (rog_settings_read(settingsPath, &settings)) {
+        if (!haveSettings || tick % 5 == 0) {
+          haveSettings = 1;
+          settings = (RogAudioSettings){ .volume = -20, .strength = strength, .noise = 1, .micEnabled = settingsPath ? 0 : 1, .autoDefault = 1 };
+          if (rog_settings_read(settingsPath, &settings)) {
             int configured = profile_index(settings.profile);
             if (configured >= 0 && configured != profile) {
                 profile = configured;
@@ -690,10 +723,20 @@ int main(int argc, char **argv)
                 fprintf(stderr, "profile: %s (RogControl)\n", settings.profile);
             }
             atomic_store(&g_mic.strength, settings.noise ? settings.strength : 0);
+          }
         }
-        if (doSpk && !spkOn) {
-            if (spk_start(outUid, profile) == 0) spkOn = 1;
+        if (doSpk && !spkOn && tick % 5 == 0) {
+            if (spk_start(outUid, profile) == 0) { spkOn = 1; lastLoud = spk_loud_count(g_spk.tapDev); }
         }
+        if (spkOn) {
+            // tap open while sound reaches ROG Speakers, closed after kTapIdle ticks of silence
+            long long lc = spk_loud_count(g_spk.tapDev);
+            int loud = lc < 0 ? dev_running_somewhere(spkDev) : lc != lastLoud;
+            lastLoud = lc;
+            if (loud) { tapIdle = 0; spk_tap(1); }
+            else if (g_tap_on && ++tapIdle >= kTapIdle) { spk_tap(0); tapIdle = 0; }
+        }
+        if (++tick % 5) { usleep(50000); continue; }   // the rest runs every 250 ms
         if (doMic) {
             AudioObjectID mic = dev_by_uid(UID_MIC);
             // master switch: when off the built-in mic is never opened, even if an app records from ROG Clear Mic
@@ -726,15 +769,15 @@ int main(int argc, char **argv)
                 if (f) {
                     fprintf(f, "<?xml version=\"1.0\"?><plist version=\"1.0\"><dict>"
                         "<key>updated</key><real>%.0f</real><key>micActive</key><%s/><key>micEnabled</key><%s/>"
-                        "<key>speakerActive</key><%s/><key>profile</key><string>%s</string>"
+                        "<key>speakerActive</key><%s/><key>speakerTap</key><%s/><key>profile</key><string>%s</string>"
                         "<key>strength</key><real>%.3f</real></dict></plist>",
-                        (double)time(NULL), g_mic_on ? "true" : "false", settings.micEnabled ? "true" : "false", spkOn ? "true" : "false",
+                        (double)time(NULL), g_mic_on ? "true" : "false", settings.micEnabled ? "true" : "false", spkOn ? "true" : "false", g_tap_on ? "true" : "false",
                         kProfiles[profile].name, atomic_load(&g_mic.strength));
                     fclose(f); rename(temp, path);
                 }
             }
         }
-        usleep(250000);
+        usleep(50000);
         if (g_verbose && ++lastStat % 4 == 0)
             fprintf(stderr, "stat: mic %s cbs %lu err %d in %.3f out %.3f underruns %lu | spk frames %lu level %.3f out cbs %lu level %.3f bufs %u underruns %lu overruns %lu\n",
                     g_mic_on ? "on" : "off", atomic_load(&g_mic.cbs), atomic_load(&g_mic.lastErr), atomic_load(&g_mic.inLevel), atomic_load(&g_mic.outLevel), atomic_load(&g_mic.underruns),
@@ -743,7 +786,7 @@ int main(int argc, char **argv)
     }
     if (g_mic_on) mic_stop();
     if (spkOn) {
-        AudioOutputUnitStop(g_spk.in); AudioOutputUnitStop(g_spk.out);
+        spk_tap(0); AudioOutputUnitStop(g_spk.out);
         AudioUnitUninitialize(g_spk.in); AudioUnitUninitialize(g_spk.out);
     }
     return g_quit == 2 ? 75 : 0;

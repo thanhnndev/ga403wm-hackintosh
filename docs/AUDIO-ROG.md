@@ -427,3 +427,32 @@ RogControl was rewritten from scratch, not patched. Build: `scripts/build-rogcon
 * `--background` (the login item) starts in the menu bar only; a manual start also opens the window.
 * CLI modes are unchanged: `--audio-status`, `--audio-set`, `--audio-play`, `--audio-mic-test`, `--bench`.
 * `rogaudiod` and `rogaudio-probe` must stay unsigned (see section 12); RogControl itself is ad-hoc signed.
+
+## 14. Microphone indicator always on (2026-11-07)
+
+**Symptom.** The macOS microphone indicator stayed on even with no app recording. **[measured]**
+
+**Cause.** The speaker chain reads the hidden *ROG Speakers Tap* input. rogaudiod kept that input open all the time, and macOS counts any open input stream as microphone use. The `kAudioHardwarePropertyProcessObjectList` check showed rogaudiod as the only process with `IsRunningInput = 1`. The built-in mic and ROG Clear Mic were not running.
+
+**Fix.**
+* **rogaudiod.**
+  * The Built-in Output unit still runs all the time. Output does not light the indicator, and keeping it running avoids amp wake-up pops.
+  * The tap input starts only when sound reaches ROG Speakers. It closes after 3 s of silence. The loop polls every 50 ms.
+  * `status.plist` has a new `speakerTap` key. `speakerActive` still means the chain is armed.
+* **Driver.**
+  * The tap exposes a custom property `'rgLd'`: a CFNumber counting ROG Speakers write cycles that carried sound (any sample at or above -100 dBFS).
+  * rogaudiod falls back to the device-running flag on a driver without it.
+* **Catch-up.**
+  * While the tap is closed, the driver remembers the sample time of the first loud frame.
+  * When the tap opens, it reads from that frame, up to 0.5 s back, then drops silent frames until it is back at live. Sounds that start while the tap is still opening keep their beginning.
+  * The ring is now 65536 frames (1.37 s).
+
+**Measured.** **[measured]**
+* Idle: rogaudiod `in=0`.
+* A 300 ms tone sent to ROG Speakers: the tap opens within one poll and closes about 3 s after the tone ends.
+* Onset test, with rogaudiod stopped and a test reader opening the tap 0, 30, 80 or 150 ms after the tone started:
+  * Every run captured the same number of loud frames (10200), and the 80 and 150 ms runs started at the tone's first frame.
+  * The 0 ms case is the live path. That every run matches it means the catch-up loses nothing.
+  * At 600 ms, beyond the 0.5 s window, the reader starts live, as intended.
+
+**Limit.** The indicator still lights while sound plays through ROG Speakers. That cannot be avoided as long as the chain reads audio through an input stream. Removing it entirely needs the driver to hand audio to rogaudiod over shared memory instead of an input device.
