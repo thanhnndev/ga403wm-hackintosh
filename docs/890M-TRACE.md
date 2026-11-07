@@ -8030,3 +8030,50 @@ Tests (no install; 1080p60 clips made with WebCodecs, `tools/mkclip.mjs`):
 - After the reboot: `build/vt_test clip.ivf` without `-b` must pick VCNDec (log subsystem com.ga403wm.vcndec),
   then Edge `Media.enable` must report `VideoToolboxVideoDecoder`, then `tools/hitch.mjs` 720p60/1080p60 with the
   simulator up; Safari VP9 check.
+
+## Step125: NMXGPU from one source build (tech debt; 2026-11-07 15:40, installed, reboot pending)
+
+The live NMXGPU (5760efb6) was the Oct 22 source build 7efe25b8 plus ~25 byte patches (FRESH-INSTALL.md 1.3). Fork
+branch `nmx-source-port` (thanhnndev/nvidia-macos-driver, from 2dbf59a; private build tree
+`~/develop/projects/nmx-build-xkpi`) carries all of them as source, plus the three fixes that were never caves:
+
+| area | cave step | now in source |
+|---|---|---|
+| class NMXAMDFB, scan-out phys | 74, 75 | xnu/nmx_fb.cpp |
+| rcu reader on CPU 0 + lock, idr cache CPU 0, unlock-of-unlocked guard | 77, 79, 78 | override linux_rcu.c / linux_idr.c, nmx_lock.c |
+| syncobj ETIME, zero flush, GTT snoop, TTM order 0 | 80, 84, 88, 89 | patches + nmx_page.c / linux_compat.c |
+| ibprobe, WC split maps, umap cache off, ibprep opt-in | 89, 90, 91, 93 | amdgpu-ibprobe.patch, nmx_vm.cpp, nmx_kext.cpp |
+| userptr pin + read-only retry, cs-trace, mm mismatch | 92, 95/96, 97b | amdgpu-userptr-*.patch, linux_compat.c |
+| irqwatch + H2 fence-read noprint, mm lifetime | 97, 100, mmfix2 | amdgpu-irqwatch-*.patch, fork 163d117 |
+| flip/import API, DC on GPU VM, home in VRAM | 98/99 | override nmx_fb_bridge.c (`nmx_fb_flip_call`) |
+| s2idle suspend, FADT re-read before suspend | 107, 112c | nmx_port.c, nmx_acpica.c (`nmx_acpica_reread`) |
+| lock-free curthread (spin lock timeout panic) | - | fork e249183 |
+| DISPLAY IPS trace (`NullMoth ips:`) | - (Step114b) | amdgpu-dm-ips-trace.patch, fork ec38af4 |
+| NMXAMDFB boot hold (`nmxgpu-boot-hold`) | - | NMXGPU::holdArm/holdRelease in attachNow |
+
+- Reproducibility first: the baseline worktree builds 7efe25b8 bit-identical, so the only differences are the ports.
+- Build: 900/900 drm sources, 76/76 runtime. New kernel imports: `OSCompareAndSwap`, `gOSKextUnresolved` and a weak
+  `proc_starttime`. The first build (bcd54768) imported `proc_starttime` strongly: it is in the 26.5 SDK but 25G332
+  exports it to no kext, kmutil refused the link ("could not find a kext which exports this symbol") and the
+  installer rolled back. A weak import called directly (f083d838) failed too ("Unexpected bind type: 3": kmutil
+  binds weak symbols only through data pointers), so the weak reference sits in a data pointer, checked against
+  `gOSKextUnresolved` (pid-only process identity where missing): NMXGPU **928335c2** (10.9 MB).
+- The boot hold: NMXGPU goes busy once the firmware folder exists (not in start(): before the root mount that would
+  hang the logo) and drops it when NMXAMDFB is published, on every failure exit, or after a 30 s cap. Property
+  `nmxgpu-boot-hold` = `released: NMXAMDFB published after N ms`.
+- `scripts/macos-install-step125.sh <NMXGPU.kext>` (`--undo`): backs up NMXGPU + AuxKC + auxguard probes, installs,
+  relinks, rewrites `/Library/StrixGraphicsFix/nmx-relink.probes` to three windows of the new __text that occur once
+  in the binary and once in the collection, checks kccheck + probes, NVRM Step124, StrixS0ix 0.1.12, NMXBacklight and
+  the source-build strings, again after 45 s; any failure rolls everything back.
+- The cave checkers (`scripts/nmx-*/... --check-kc`) used by older installers (step97..step124) no longer apply to
+  NMXGPU; do not rerun those installers on top of this build.
+
+After the reboot, grep:
+
+```bash
+/usr/bin/log show --last boot --predicate 'sender == "NMXGPU"' --style compact | grep -E 'NullMoth ips:|boot hold|NMX flip|NMX irqwatch|NMX cs-trace|FADT re-read|unlock of unlocked'
+```
+
+```bash
+ioreg -rc NMXGPU -l | grep nmxgpu-boot-hold
+```
