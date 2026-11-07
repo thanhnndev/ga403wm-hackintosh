@@ -8446,6 +8446,45 @@ Not installed. Install only with the owner's OK: `sudo scripts/macos-install-ste
 - After the reboot: `nvram nmxgpu-stage nmxgpu-alive` (macOS), or the same variables under the Apple GUID from Windows
   if it hangs. If it hangs, the next boot is with `nmxhold=0`. Undo: `sudo scripts/macos-install-step125.sh --undo`.
 
+### Step128 stage-mark boot: kernel panic at 10.15 s in NMXAccel's early display-mode delivery (read from Windows, 2026-11-07 22:4x)
+
+Boots with NMXGPU ed82aa34 (6613CA5C), from the Data volume and NVRAM (read only, `scripts/windows-apfs/`):
+- Persist: the 20:36 boot logs to 22:13:47 (WindowServer death report 22:13:21, the reboot into ed82aa34). After that,
+  `0x49.tracev3` (created 22:33:38) is empty and `0x4a.tracev3` (22:36:11) has one non-zero 4K block: no log of
+  either boot reached the disk.
+- `Kernel-2026-11-07-223607.panic` (written by the 22:36 boot about the boot before it), uptime **10.153 s**:
+  page fault CR2 `0x120`, RAX 0, on a `kernel_task` thread call:
+  `IOFramebuffer::getAttributeExt+0x28 <- IOAccelLegacyDisplayPipe::displayModeDidChange+0x30 <-
+  IOAccelLegacyDisplayMachine::display_mode_did_change+0xea <- NMXAccel deliverModeChange+0x7c <-
+  registerFramebufferLocked+0x57a <- nmxArm+0x227 <- thread_call`. NMXAccel C18FD8B4 (unchanged since the good boots).
+- NVRAM after these boots: no `nmxgpu-stage`, no `nmxgpu-alive`, no `aapl,panic-info`. The marks never reached flash
+  (at least two boots ran a build that writes them from ~7 s), so the stage-mark method gives nothing on this machine;
+  the panic report is the evidence.
+
+Disassembly (25G332 SystemKC, read from the sealed System volume):
+- `IOFramebuffer::getAttributeExt` (KC 0x14d0406a) does `rbx = [[this+0x1c8]+0]->+0x120` with no NULL test:
+  `fPrivate->controller->workloop`, the lock taken before every attribute. `controller` is assigned only in
+  `IOFramebuffer::open()` (Step29).
+- `IOAccelLegacyDisplayPipe::displayModeDidChange` (KC 0x14b98542) starts with `getAttributeExt(pipe->fb (+0x98), 'mirr')`.
+- `display_mode_did_change` (KC 0x14b65b02) calls every pipe's `displayModeDidChange` once the nest count at
+  machine+0x10c drops to 0.
+
+So: `nmxArm` got "scanout ready" from NMXAMDFB, registered the pipe and delivered will/did_change to a framebuffer that
+nobody had opened yet (WindowServer opens it at ~13 s). NMXAMDFB's scanout answer is ready as soon as `fInfo` is set
+before `registerService` (Step69 design, `nmx_fb.cpp` callPlatformFunction), so nothing stops the arm before open().
+The 326858e "hard hang at ~12 s" is very likely the same panic without a saved report (same window, same build line).
+
+Why the cave chain boots live: the arm there happened after the FB was open (WindowServer, or the earlier kernel open),
+so `controller` was set. The source port changes the order (NMXAMDFB boot hold, kernel modeset before publish), and the
+200 ms `nmxArm` poll now wins the race at ~10 s.
+
+Fix (needs a build): never deliver the mode change to a framebuffer that is not open.
+- NMXAccel `deliverModeChange` / `onCountGrewLocked`: skip `display_mode_will/did_change` while
+  `fb->fPrivate(+0x1c8)->controller` is NULL (register the pipe, deliver later). WindowServer's own `open()` delivers the
+  group's mode change itself (Step29 backtrace), so nothing is lost.
+- Or NMXGPU: NMXAMDFB sets a "opened" flag in `open()`, and the scanout query answers NotReady until then only for the
+  first registration (this brings back the Step69 race, so the NMXAccel side is the better place).
+
 ## Edge web video lag part 18: VCNDec showed a loop of the first frames (stale IOSurface seed), fixed (2026-11-07 21:10)
 
 - Owner: on screen the video only looped its first few frames and stuttered. The hitch probe could not see it: it
