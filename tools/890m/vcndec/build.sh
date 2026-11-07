@@ -21,3 +21,6 @@ clang -arch x86_64 -O2 -Wall -Wno-four-char-constants -mmacosx-version-min=14.0 
   -framework CoreFoundation -framework CoreMedia -framework CoreVideo -framework VideoToolbox
 codesign -f -s - build/vt_test
 echo built: build/vt_test
+clang $CF -fobjc-arc -o build/metal_check src/metal_check.m src/vcndec.c $LIBS -framework Foundation -framework Metal
+codesign -f -s - build/metal_check
+echo built: build/metal_check

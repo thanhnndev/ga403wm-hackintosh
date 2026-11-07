@@ -35,7 +35,7 @@ struct vcn_dec {
   // our own copy path
   VkDevice vd;
   VkPhysicalDevice pd;
-  int qf, have_host_import;
+  int qf, have_host_import, no_seed;
   VkDeviceSize host_align;
   VkCommandPool pool;
   VkCommandBuffer cmd;
@@ -121,6 +121,7 @@ static int setup_copy(vcn_dec *d) {
   }
   d->host_align = 4096;
   if (getenv("VCN_NO_IMPORT")) d->have_host_import = 0;
+  d->no_seed = getenv("VCN_NO_SEED") != NULL; // test only: reproduce the stale-frame bug
 
   // a queue that can copy: graphics or compute (not the decode queue)
   d->qf = -1;
@@ -338,7 +339,17 @@ static int copy_out(vcn_dec *d, AVFrame *f, CVPixelBufferRef pb) {
   d->ResetFences(d->vd, 1, &d->fence);
   if (vr != VK_SUCCESS) { seterr(d, "copy fence%s %d", "", vr); return -1; }
 
-  if (direct) { d->n_gpu++; return 0; }
+  if (direct) {
+    // The GPU wrote the surface's pages behind IOSurface's back: a write lock/unlock moves its seed, so consumers
+    // that cache by seed (the NVMTL plugin's surface-in skip, Core Animation) upload the new frame instead of
+    // showing a stale one from an earlier trip round the pool.
+    if (!d->no_seed) {
+      IOSurfaceLock(s, 0, NULL);
+      IOSurfaceUnlock(s, 0, NULL);
+    }
+    d->n_gpu++;
+    return 0;
+  }
   VkMappedMemoryRange mr = {VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE, NULL, d->stage_mem, 0, VK_WHOLE_SIZE};
   d->InvalidateMappedMemoryRanges(d->vd, 1, &mr);
   IOSurfaceLock(s, 0, NULL);

@@ -8445,3 +8445,24 @@ Not installed. Install only with the owner's OK: `sudo scripts/macos-install-ste
 - Boot-args unchanged: `nmxamd=1`, no `-v`, boot hold on (no `nmxhold`).
 - After the reboot: `nvram nmxgpu-stage nmxgpu-alive` (macOS), or the same variables under the Apple GUID from Windows
   if it hangs. If it hangs, the next boot is with `nmxhold=0`. Undo: `sudo scripts/macos-install-step125.sh --undo`.
+
+## Edge web video lag part 18: VCNDec showed a loop of the first frames (stale IOSurface seed), fixed (2026-11-07 21:10)
+
+- Owner: on screen the video only looped its first few frames and stuttered. The hitch probe could not see it: it
+  counts frame callbacks, not what is on screen.
+- WindowServer log: the video surfaces (2-plane NV12, row 1924 bytes) take the NVMTL "item 7: private image, copied in
+  and out" path. That path uploads a surface only when its IOSurface seed moves ("G13 surface-in ... seed 0 uploaded").
+  VCNDec writes the frame into the surface's pages with the GPU (host-pointer import), so the seed of every pool
+  surface stayed 0: WindowServer uploaded each pool surface once and then showed that first frame forever.
+- Fix (`src/vcndec.c`): after the GPU copy, `IOSurfaceLock(s, 0)` + `IOSurfaceUnlock(s, 0)` moves the seed.
+- New test `build/metal_check clip.ivf`: decodes with vcndec, reads each frame back through Metal (the installed NVMTL
+  plugin) and compares it with the surface's bytes. `NVMTL_NO_PLANE_HOST=1` forces the copied path WindowServer takes:
+
+| run | stale frames through Metal |
+|---|---|
+| without the seed move (`VCN_NO_SEED=1`) | 295 of 300 (only the first 7 = pool size are right) |
+| with the fix | 0 of 300 |
+| own-pages path (default in a single process), with or without the fix | 0 of 300 |
+
+- Mitigation now: `/Library/NullMoth/vcndec-off` set at 20:58 (Edge back on its software decoders after a page reload).
+  The fixed bundle is installed in /System for the next boot; remove the kill switch after that boot and re-check.
