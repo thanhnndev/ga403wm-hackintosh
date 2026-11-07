@@ -25,6 +25,10 @@
 #include <unistd.h>
 #include "rnnoise.h"
 #include "RogAudioSettings.h"
+#include "RogAudioShm.h"
+#include <fcntl.h>
+#include <sys/mman.h>
+#include <errno.h>
 
 #define RATE 48000.0
 #define UID_MIC "com.itlmt7925.rogaudio.mic"
@@ -443,6 +447,8 @@ static const Profile kProfiles[] = {
 };
 #define NPROFILES ((int)(sizeof(kProfiles) / sizeof(kProfiles[0])))
 
+#define SPK_TARGET 1024.0     // frames of cushion between the tap and the speakers
+
 typedef struct {
     AudioObjectID tapDev, outDev;
     AudioUnit in, out;
@@ -462,6 +468,11 @@ typedef struct {
     size_t hn;
     int starving;
     unsigned outBufs;                           // buffers the output unit hands us (seen in the first callback)
+    // shared-memory path (no input stream): the output callback pulls the driver's mix itself
+    RogShmHeader *shm;
+    const float *shmData;
+    uint64_t rpos;
+    _Atomic unsigned long shmDrops;
 } Spk;
 static Spk g_spk;
 
@@ -478,13 +489,12 @@ static void spk_apply_profile(Spk *s, int idx)
     s->appliedIdx = idx;
 }
 
+static void spk_chain(Spk *s, UInt32 frames);
 static OSStatus spk_in_cb(void *ref, AudioUnitRenderActionFlags *flags, const AudioTimeStamp *ts, UInt32 bus, UInt32 frames, AudioBufferList *unused)
 {
     (void)unused;
     Spk *s = ref;
     if (frames > MAXFRAMES) return 0;
-    int want = atomic_load(&s->profileIdx);
-    if (want != s->appliedIdx) spk_apply_profile(s, want);
     s->abl->mNumberBuffers = 2;
     for (int c = 0; c < 2; c++) {
         s->abl->mBuffers[c].mNumberChannels = 1;
@@ -493,6 +503,15 @@ static OSStatus spk_in_cb(void *ref, AudioUnitRenderActionFlags *flags, const Au
     }
     OSStatus rc = AudioUnitRender(s->in, flags, ts, bus, frames, s->abl);
     if (rc) return rc;
+    spk_chain(s, frames);
+    return 0;
+}
+
+// runs the chain on s->scratch[0..1] (frames <= MAXFRAMES) and queues the result for spk_out_cb
+static void spk_chain(Spk *s, UInt32 frames)
+{
+    int want = atomic_load(&s->profileIdx);
+    if (want != s->appliedIdx) spk_apply_profile(s, want);
     static float inter[MAXFRAMES * 2];
     float peak = 0;
     for (UInt32 i = 0; i < frames; i++) {
@@ -515,10 +534,33 @@ static OSStatus spk_in_cb(void *ref, AudioUnitRenderActionFlags *flags, const Au
     if (ring_push(&s->ring, inter, (size_t)frames * 2) < (size_t)frames * 2) atomic_fetch_add(&s->overruns, 1);
     if (peak > atomic_load(&s->level)) atomic_store(&s->level, peak);   // peak hold, reset by the stat line
     atomic_fetch_add(&s->frames, frames);
-    return 0;
 }
 
-#define SPK_TARGET 1024.0     // frames of cushion between the tap and the speakers
+// shared-memory path: copy what the driver wrote since the last call, run the chain on it
+static void spk_pull(Spk *s)
+{
+    uint64_t w = atomic_load_explicit(&s->shm->wpos, memory_order_acquire);
+    if (s->rpos > w) s->rpos = w;                                     // new driver object: start over
+    if (w - s->rpos > kShmFrames - 2 * MAXFRAMES) {                   // fell behind: keep the newest cushion
+        s->rpos = w - (uint64_t)SPK_TARGET;
+        atomic_fetch_add(&s->shmDrops, 1);
+    }
+    while (s->rpos < w) {
+        size_t room = (s->ring.cap - ring_fill(&s->ring)) / 2;
+        UInt32 n = (UInt32)(w - s->rpos);
+        if (n > MAXFRAMES) n = MAXFRAMES;
+        if (n > room) n = (UInt32)room;
+        if (n == 0) { atomic_fetch_add(&s->overruns, 1); s->rpos = w; break; }
+        for (UInt32 i = 0; i < n; i++) {
+            uint32_t slot = (uint32_t)((s->rpos + i) & (kShmFrames - 1));
+            s->scratch[0][i] = s->shmData[2 * slot]; s->scratch[1][i] = s->shmData[2 * slot + 1];
+        }
+        uint64_t w2 = atomic_load_explicit(&s->shm->wpos, memory_order_acquire);
+        if (w2 - s->rpos > kShmFrames - MAXFRAMES) { atomic_fetch_add(&s->shmDrops, 1); s->rpos = w2 - (uint64_t)SPK_TARGET; w = w2; continue; }
+        spk_chain(s, n);
+        s->rpos += n;
+    }
+}
 
 static OSStatus spk_out_cb(void *ref, AudioUnitRenderActionFlags *flags, const AudioTimeStamp *ts, UInt32 bus, UInt32 frames, AudioBufferList *io)
 {
@@ -528,6 +570,7 @@ static OSStatus spk_out_cb(void *ref, AudioUnitRenderActionFlags *flags, const A
     float *L = io->mBuffers[0].mData, *R = io->mNumberBuffers > 1 ? io->mBuffers[1].mData : NULL;
     s->outBufs = io->mNumberBuffers;
     if (frames > MAXFRAMES) frames = MAXFRAMES;
+    if (s->shm) spk_pull(s);
     double fill = (double)(ring_fill(&s->ring) / 2 + s->hn);
     if (s->starving) { if (fill >= SPK_TARGET) s->starving = 0; }
     else if (fill < 2) { s->starving = 1; atomic_fetch_add(&s->underruns, 1); }
@@ -572,6 +615,21 @@ static OSStatus spk_out_cb(void *ref, AudioUnitRenderActionFlags *flags, const A
     return 0;
 }
 
+// maps the driver's shared mix (RogAudioShm.h) read-only; NULL when the driver is older or its host is gone
+static RogShmHeader *shm_map(void)
+{
+    int fd = shm_open(ROG_SHM_NAME, O_RDONLY);
+    if (fd < 0) return NULL;
+    void *p = mmap(NULL, ROG_SHM_SIZE, PROT_READ, MAP_SHARED, fd, 0);
+    close(fd);
+    if (p == MAP_FAILED) return NULL;
+    RogShmHeader *h = p;
+    int ok = h->magic == ROG_SHM_MAGIC && h->version == ROG_SHM_VERSION && h->frames == kShmFrames && h->channels == 2 &&
+             (kill(h->pid, 0) == 0 || errno == EPERM);
+    if (!ok) { munmap(p, ROG_SHM_SIZE); return NULL; }
+    return h;
+}
+
 static int spk_start(const char *outUid, int profile)
 {
     Spk *s = &g_spk;
@@ -586,19 +644,23 @@ static int spk_start(const char *outUid, int profile)
     atomic_store(&s->profileIdx, profile);
     spk_apply_profile(s, profile);
 
-    s->in = make_unit(s->tapDev, 1);
+    s->shm = shm_map();
+    if (s->shm) { s->shmData = rog_shm_data(s->shm); s->rpos = atomic_load(&s->shm->wpos); }
+    s->in = s->shm ? NULL : make_unit(s->tapDev, 1);
     s->out = make_unit(s->outDev, 0);
-    if (!s->in || !s->out) return -1;
+    if ((!s->shm && !s->in) || !s->out) return -1;
     AudioStreamBasicDescription fin = fmt(2, 0), fout = fmt(2, 0);
     AURenderCallbackStruct cin = { spk_in_cb, s }, cout = { spk_out_cb, s };
     OSStatus rc = 0;
-    rc |= AudioUnitSetProperty(s->in, kAudioUnitProperty_StreamFormat, kAudioUnitScope_Output, 1, &fin, sizeof(fin));
-    rc |= AudioUnitSetProperty(s->in, kAudioOutputUnitProperty_SetInputCallback, kAudioUnitScope_Global, 0, &cin, sizeof(cin));
+    if (s->in) {
+        rc |= AudioUnitSetProperty(s->in, kAudioUnitProperty_StreamFormat, kAudioUnitScope_Output, 1, &fin, sizeof(fin));
+        rc |= AudioUnitSetProperty(s->in, kAudioOutputUnitProperty_SetInputCallback, kAudioUnitScope_Global, 0, &cin, sizeof(cin));
+        set_buffer_frames(s->tapDev, 256);
+    }
     rc |= AudioUnitSetProperty(s->out, kAudioUnitProperty_StreamFormat, kAudioUnitScope_Input, 0, &fout, sizeof(fout));
     rc |= AudioUnitSetProperty(s->out, kAudioUnitProperty_SetRenderCallback, kAudioUnitScope_Input, 0, &cout, sizeof(cout));
-    set_buffer_frames(s->tapDev, 256);
     set_buffer_frames(s->outDev, 256);
-    rc |= AudioUnitInitialize(s->in);
+    if (s->in) rc |= AudioUnitInitialize(s->in);
     rc |= AudioUnitInitialize(s->out);
     if (rc) { fprintf(stderr, "speakers: AudioUnit setup failed (%d)\n", (int)rc); return -1; }
     // only the output runs all the time; the tap input opens while sound plays (spk_tap), since any open input
@@ -606,14 +668,15 @@ static int spk_start(const char *outUid, int profile)
     rc = AudioOutputUnitStart(s->out);
     if (rc) { fprintf(stderr, "speakers: start failed (%d)\n", (int)rc); return -1; }
     char n[96]; dev_string(s->outDev, kAudioObjectPropertyName, n, sizeof(n));
-    fprintf(stderr, "speakers: on -> %s, profile %s\n", n, kProfiles[profile].name);
+    fprintf(stderr, "speakers: on -> %s, profile %s, source %s\n", n, kProfiles[profile].name,
+            s->shm ? "shared memory (no input stream)" : "tap input (opened while sound plays)");
     return 0;
 }
 
 static int g_tap_on;
 static void spk_tap(int on)
 {
-    if (on == g_tap_on) return;
+    if (on == g_tap_on || !g_spk.in) return;
     OSStatus rc = on ? AudioOutputUnitStart(g_spk.in) : AudioOutputUnitStop(g_spk.in);
     if (rc) { fprintf(stderr, "speakers: tap %s failed (%d)\n", on ? "start" : "stop", (int)rc); return; }
     g_tap_on = on;
@@ -728,7 +791,7 @@ int main(int argc, char **argv)
         if (doSpk && !spkOn && tick % 5 == 0) {
             if (spk_start(outUid, profile) == 0) { spkOn = 1; lastLoud = spk_loud_count(g_spk.tapDev); }
         }
-        if (spkOn) {
+        if (spkOn && !g_spk.shm) {
             // tap open while sound reaches ROG Speakers, closed after kTapIdle ticks of silence
             long long lc = spk_loud_count(g_spk.tapDev);
             int loud = lc < 0 ? dev_running_somewhere(spkDev) : lc != lastLoud;
@@ -769,9 +832,9 @@ int main(int argc, char **argv)
                 if (f) {
                     fprintf(f, "<?xml version=\"1.0\"?><plist version=\"1.0\"><dict>"
                         "<key>updated</key><real>%.0f</real><key>micActive</key><%s/><key>micEnabled</key><%s/>"
-                        "<key>speakerActive</key><%s/><key>speakerTap</key><%s/><key>profile</key><string>%s</string>"
+                        "<key>speakerActive</key><%s/><key>speakerTap</key><%s/><key>speakerSource</key><string>%s</string><key>profile</key><string>%s</string>"
                         "<key>strength</key><real>%.3f</real></dict></plist>",
-                        (double)time(NULL), g_mic_on ? "true" : "false", settings.micEnabled ? "true" : "false", spkOn ? "true" : "false", g_tap_on ? "true" : "false",
+                        (double)time(NULL), g_mic_on ? "true" : "false", settings.micEnabled ? "true" : "false", spkOn ? "true" : "false", g_tap_on ? "true" : "false", !spkOn ? "off" : g_spk.shm ? "shm" : "tap",
                         kProfiles[profile].name, atomic_load(&g_mic.strength));
                     fclose(f); rename(temp, path);
                 }
@@ -779,15 +842,16 @@ int main(int argc, char **argv)
         }
         usleep(50000);
         if (g_verbose && ++lastStat % 4 == 0)
-            fprintf(stderr, "stat: mic %s cbs %lu err %d in %.3f out %.3f underruns %lu | spk frames %lu level %.3f out cbs %lu level %.3f bufs %u underruns %lu overruns %lu\n",
+            fprintf(stderr, "stat: mic %s cbs %lu err %d in %.3f out %.3f underruns %lu | spk frames %lu level %.3f out cbs %lu level %.3f bufs %u underruns %lu overruns %lu shm drops %lu\n",
                     g_mic_on ? "on" : "off", atomic_load(&g_mic.cbs), atomic_load(&g_mic.lastErr), atomic_load(&g_mic.inLevel), atomic_load(&g_mic.outLevel), atomic_load(&g_mic.underruns),
-                    atomic_load(&g_spk.frames), atomic_load(&g_spk.level), atomic_load(&g_spk.outCbs), atomic_load(&g_spk.outLevel), g_spk.outBufs, atomic_load(&g_spk.underruns), atomic_load(&g_spk.overruns));
+                    atomic_load(&g_spk.frames), atomic_load(&g_spk.level), atomic_load(&g_spk.outCbs), atomic_load(&g_spk.outLevel), g_spk.outBufs, atomic_load(&g_spk.underruns), atomic_load(&g_spk.overruns), atomic_load(&g_spk.shmDrops));
         if (g_verbose && lastStat % 4 == 0) { atomic_store(&g_spk.level, 0); atomic_store(&g_spk.outLevel, 0); }
     }
     if (g_mic_on) mic_stop();
     if (spkOn) {
         spk_tap(0); AudioOutputUnitStop(g_spk.out);
-        AudioUnitUninitialize(g_spk.in); AudioUnitUninitialize(g_spk.out);
+        if (g_spk.in) AudioUnitUninitialize(g_spk.in);
+        AudioUnitUninitialize(g_spk.out);
     }
     return g_quit == 2 ? 75 : 0;
 }

@@ -5,7 +5,8 @@
 //   "ROG Clear Mic"       input   mono 48 kHz   what applications record; fed by "ROG Mic Feed"
 //   "ROG Mic Feed"        output  mono 48 kHz   hidden; rogaudiod writes the denoised microphone here
 //   "ROG Speakers"        output  stereo 48 kHz what applications play to; has a volume and a mute control
-//   "ROG Speakers Tap"    input   stereo 48 kHz hidden; rogaudiod reads it, runs the sound chain, plays on the real speakers
+//   "ROG Speakers Tap"    input   stereo 48 kHz hidden; fallback path for rogaudiod (and probes): opening it lights the mic
+//                                              indicator, so rogaudiod reads the same mix from shared memory (RogAudioShm.h)
 //
 // Each pair is a loopback through a ring buffer indexed by sample time, the same idea as the NullAudio sample of Apple's
 // "Creating an Audio Server Driver Plug-in" (the plug-in object model and the zero time stamp scheme follow that document).
@@ -19,6 +20,12 @@
 #include <stdatomic.h>
 #include <stdlib.h>
 #include <string.h>
+#include <fcntl.h>
+#include <sys/mman.h>
+#include <syslog.h>
+#include <sys/stat.h>
+#include <unistd.h>
+#include "RogAudioShm.h"
 
 #define kRate 48000.0
 #define kRingFrames 65536u                 // power of two (1.37 s): room for the tap catch-up below
@@ -71,6 +78,27 @@ static _Atomic UInt64 gLoudCount;               // speaker write cycles with any
 static _Atomic UInt64 gLoudStart = UINT64_MAX;  // sample time of the first loud frame while the tap was closed
 static _Atomic int gTapFresh;                   // set by StartIO on the tap, consumed by its first read
 static UInt64 gTapCursor;                       // tap IO thread only
+static RogShmHeader *gShm;                      // shared copy of the ROG Speakers mix (RogAudioShm.h), NULL if unavailable
+static float *gShmData;
+
+static void shmCreate(void)
+{
+    shm_unlink(ROG_SHM_NAME);                   // a fresh object each load: macOS sizes a POSIX shm object only once
+    int fd = shm_open(ROG_SHM_NAME, O_CREAT | O_EXCL | O_RDWR, 0644);
+    if (fd < 0) { syslog(LOG_ERR, "RogAudio: shm_open failed (%m)"); return; }
+    fchmod(fd, 0644);
+    void *p = MAP_FAILED;
+    if (ftruncate(fd, ROG_SHM_SIZE) == 0) p = mmap(NULL, ROG_SHM_SIZE, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
+    close(fd);
+    if (p == MAP_FAILED) { syslog(LOG_ERR, "RogAudio: shm map failed (%m)"); shm_unlink(ROG_SHM_NAME); return; }
+    gShm = p;
+    gShmData = rog_shm_data(p);
+    gShm->version = ROG_SHM_VERSION; gShm->rate = (uint32_t)kRate; gShm->channels = 2; gShm->frames = kShmFrames;
+    gShm->pid = getpid();
+    atomic_store(&gShm->wpos, 0);
+    atomic_thread_fence(memory_order_release);
+    gShm->magic = ROG_SHM_MAGIC;
+}
 static Float64 gTicksPerFrame;
 static AudioServerPlugInHostRef gHost;
 static UInt32 gRefCount = 1;
@@ -118,6 +146,7 @@ static OSStatus Initialize(AudioServerPlugInDriverRef d, AudioServerPlugInHostRe
     gTicksPerFrame = (1e9 / kRate) * ((Float64)tb.denom / (Float64)tb.numer);
     for (int i = 0; i < 2; i++) gRing[i] = calloc(kRingFrames * (i ? 2 : 1), sizeof(float));
     for (int i = 0; i < kNumDevs; i++) setVol(&gDevs[i], 1.0f);
+    shmCreate();
     return 0;
 }
 
@@ -594,6 +623,15 @@ static OSStatus DoIOOperation(AudioServerPlugInDriverRef d, AudioObjectID id, Au
                 ring[slot * ch + c] = v;
                 if (loudAt == UINT64_MAX && fabsf(v) >= kSilent) loudAt = t + i;
             }
+        }
+        if (dev->ring == 1 && gShm) {
+            UInt64 w = atomic_load_explicit(&gShm->wpos, memory_order_relaxed);
+            for (UInt32 i = 0; i < frames; i++) {
+                UInt32 slot = (UInt32)((w + i) & (kShmFrames - 1));
+                gShmData[2 * slot] = in[i * ch] * g; gShmData[2 * slot + 1] = in[i * ch + 1] * g;
+            }
+            atomic_store_explicit(&gShm->lastHost, mach_absolute_time(), memory_order_relaxed);
+            atomic_store_explicit(&gShm->wpos, w + frames, memory_order_release);
         }
         if (dev->ring == 1 && loudAt != UINT64_MAX) {
             atomic_fetch_add(&gLoudCount, 1);

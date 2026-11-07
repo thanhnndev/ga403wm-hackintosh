@@ -455,4 +455,23 @@ RogControl was rewritten from scratch, not patched. Build: `scripts/build-rogcon
   * The 0 ms case is the live path. That every run matches it means the catch-up loses nothing.
   * At 600 ms, beyond the 0.5 s window, the reader starts live, as intended.
 
-**Limit.** The indicator still lights while sound plays through ROG Speakers. That cannot be avoided as long as the chain reads audio through an input stream. Removing it entirely needs the driver to hand audio to rogaudiod over shared memory instead of an input device.
+**Limit (superseded by §15).** This change alone still lit the indicator while sound played through ROG Speakers.
+
+## 15. Speaker chain over shared memory (2026-11-07)
+
+**Path.** rogaudiod no longer opens any input for the speaker chain, so the microphone indicator only shows real mic use.
+* The driver host process ("Core Audio Driver (RogAudio.driver)", user `_coreaudiod`) is **not sandboxed**. coreaudiod itself is. A `sandbox_check(pid, NULL, 0)` call returned 0 for the driver host and 1 for coreaudiod. **[measured]**
+* At Initialize, the driver unlinks and recreates the POSIX shared-memory object `/com.itlmt7925.rogspk` (mode 0644). macOS sizes a POSIX shm object only once, so it cannot reuse an old one.
+* Every ROG Speakers WriteMix copies the post-volume stereo mix into it and then publishes a monotonic `wpos`. The layout is in `macos/RogAudio/RogAudioShm.h`: header, then 65536 interleaved stereo frames at offset 4096.
+* rogaudiod maps the object read-only. It checks the magic and version, and checks that the driver's pid is alive: `kill(pid, 0)` succeeding or returning EPERM both count. The Built-in Output render callback then pulls `[rpos, wpos)`, runs the chain, and feeds the existing drift-controlled resampler.
+* **Overruns.** If the writer laps the reader during a copy, the copy is dropped. The reader then jumps to the newest 1024 frames, and the jump is counted as `shm drops` in `-v`.
+* **Onsets.** The reader always holds the position where it stopped, so no sound is lost at the start. The only extra delay is the 1024-frame (21 ms) cushion before playback resumes.
+* **Fallback.** With a driver that has no shm object, rogaudiod uses the on-demand tap from §14.
+* `status.plist` has `speakerSource` = `shm` | `tap` | `off`, and the startup log line names the source.
+
+**Measured.** **[measured]**
+* With a 1.5 s tone to ROG Speakers through `rogaudiod -v`, the process never had `IsRunningInput` set: `in=0` on every sample.
+* Chain frames advanced by about 96k (2 s), with 0 underruns, 0 overruns and 0 shm drops.
+* The ring peak was 0.00025. That is the 0.1 tone at the current ROG Speakers volume of -52 dB, so the data in the ring is correct.
+* No process on the system had an input open afterwards.
+* Not checked by ear yet: the default output during the test was a Bluetooth headset.
