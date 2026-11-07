@@ -8077,3 +8077,21 @@ After the reboot, grep:
 ```bash
 ioreg -rc NMXGPU -l | grep nmxgpu-boot-hold
 ```
+
+## Step126: S0i3 NBIO trace (StrixS0ix 0.1.13), installed 2026-11-07, reboot pending
+
+What is known about the two S0i3 blockers left (SMU slots 0 DISPLAY, 9 NBIO, both "not met" for the whole sleep):
+- NBIO: with every endpoint but the RTX and its audio in D3hot (Step116 d3 4) NBIO stayed busy, so the suspects are
+  the RTX link (GPP9, NVRM standby leaves 62:00.0/.1 in D0, link in L0) or links that never get L1.2 enabled.
+  The RTX's real power-off is `\_SB.PCI0.GPP9.PG00._OFF` (SSDT-5 "OptRf2"): EC VGAT = 0, `DL23` (link to L2/L3),
+  `POFF`; `_ON` brings it back (`PON`, `L23D`). Linux reaches S0i3 on these laptops with the dGPU in D3cold.
+- DISPLAY: the 890M in D3hot does not clear it, so it is DCN 3.5 IPS inside NMXGPU. Step125 (NMXGPU source build,
+  NMXGPU session) carries the `NullMoth ips:` trace (Step114b) for the same reboot.
+
+StrixS0ix 0.1.13 (read-only trace, `scripts/macos-install-step126.sh`, `--undo`; relinks with kccheck + probes, so it
+fits on top of the Step125 source build):
+- At each sleep: one `StrixS0ix: link 00:dd.f -> bus: rp aspm S/E l1ss S/E ltr E genG xW dll D; ep bb:00.f ...` line
+  per root port and its endpoint (ASPM 1 = L0s, 2 = L1; L1SS bits 0..3 = PCI-PM L1.2, PCI-PM L1.1, ASPM L1.2,
+  ASPM L1.1), also in `S0ix,Links`.
+- At wake: `root port DLL active at halt/wake` per secondary bus (0 at halt = link down / L2-L3).
+- The runtime `s0ix-set d3 5` test (RTX + audio in D3hot) is still to run; the owner starts sleep tests.

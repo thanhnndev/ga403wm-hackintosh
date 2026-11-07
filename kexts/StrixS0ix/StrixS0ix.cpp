@@ -178,6 +178,7 @@ struct PciFn {
     volatile uint16_t *pmcsr;                    // ECAM VA of PMCSR
     volatile uint8_t *cfg;                       // ECAM VA of the function's config space
     uint8_t pcie, msi, msix;                     // capability offsets (0 = none)
+    uint16_t l1ss;                               // 0.1.13: L1 PM Substates extended capability (0 = none)
     bool saved;
     uint32_t save[64];                           // config space at sleep, for functions without No_Soft_Reset
     uint16_t bdf, vendor, device;
@@ -189,6 +190,51 @@ struct PciFn {
 static constexpr unsigned kMaxFn = 48;
 static PciFn gFn[kMaxFn];
 static unsigned gFnN;
+
+// 0.1.13: NBIO trace. The SMU marks NBIO "not met" for the whole sleep even with every endpoint but the RTX in D3hot
+// (Step116 d3 4). Record, per root port and the endpoint behind it, the ASPM / L1 PM Substates / LTR setup at sleep and
+// the root port's Link Status at halt entry and at wake, so the trace shows which link never leaves L0 or never gets
+// L1.2 enabled. Read only: nothing here changes a link.
+struct PciRp {
+    volatile uint8_t *cfg;
+    uint8_t pcie, sec;
+    uint16_t l1ss, bdf;
+    uint16_t staHalt, staWake;
+};
+static constexpr unsigned kMaxRp = 16;
+static PciRp gRp[kMaxRp];
+static unsigned gRpN;
+
+static uint16_t extCap(volatile uint8_t *cfg, uint16_t id)
+{
+    uint16_t off = 0x100;
+    for (unsigned n = 0; n < 64 && off >= 0x100; n++) {
+        uint32_t h = *reinterpret_cast<volatile uint32_t *>(cfg + off);
+        if (h == 0 || h == 0xffffffff) return 0;
+        if ((h & 0xffff) == id) return off;
+        off = uint16_t((h >> 20) & 0xffc);
+    }
+    return 0;
+}
+
+// "aspm S/E l1ss S/E ltr E genG xW dll D": S = supported bits, E = enabled bits (ASPM 1 = L0s, 2 = L1; L1SS bits
+// 0..3 = PCI-PM L1.2, PCI-PM L1.1, ASPM L1.2, ASPM L1.1), LTR = Device Control 2 bit 10
+static void linkDesc(char *b, size_t n, volatile uint8_t *cfg, uint8_t pcie, uint16_t l1ss)
+{
+    if (!pcie) { snprintf(b, n, "no PCIe cap"); return; }
+    uint32_t lcap = *reinterpret_cast<volatile uint32_t *>(cfg + pcie + 0x0c);
+    uint16_t lctl = *reinterpret_cast<volatile uint16_t *>(cfg + pcie + 0x10);
+    uint16_t lsta = *reinterpret_cast<volatile uint16_t *>(cfg + pcie + 0x12);
+    uint16_t dctl2 = *reinterpret_cast<volatile uint16_t *>(cfg + pcie + 0x28);
+    unsigned sc = 0, ec = 0;
+    if (l1ss) {
+        sc = *reinterpret_cast<volatile uint32_t *>(cfg + l1ss + 4) & 0xf;
+        ec = *reinterpret_cast<volatile uint32_t *>(cfg + l1ss + 8) & 0xf;
+    }
+    snprintf(b, n, "aspm %u/%u l1ss %s%x/%x ltr %u gen%u x%u dll %u", unsigned((lcap >> 10) & 3), unsigned(lctl & 3),
+             l1ss ? "" : "none ", sc, ec, unsigned((dctl2 >> 10) & 1), unsigned(lsta & 0xf), unsigned((lsta >> 4) & 0x3f),
+             unsigned((lsta >> 13) & 1));
+}
 static volatile uint32_t gD3Mode;                  // S0ix,D3Mode
 static volatile uint8_t *gPmc;                     // PMC mailbox (0.1.3), for OS_HINT from the halt path
 static volatile bool gHaltHint;                    // send OS_HINT from the halt path (0.1.4) instead of setPowerState
@@ -262,6 +308,7 @@ static void haltEnter()
         }
     }
     for (unsigned i = 0; i < gFnN; i++) if (gFn[i].set == 3 && gFn[i].pre == 0) { tscDelay(gTscHz / 100); break; }   // 10 ms
+    for (unsigned i = 0; i < gRpN; i++) gRp[i].staHalt = *reinterpret_cast<volatile uint16_t *>(gRp[i].cfg + gRp[i].pcie + 0x12);
     gEcEnSet = false;
     gSeenGpe = gSeenPm1 = 0;
     gPin0IntMs = gPin0Toggles = 0;
@@ -288,6 +335,7 @@ static void haltEnter()
 static void haltExit()
 {
     if (gHaltHint && gPmc) gHintOut = pmcRaw(0x03, 0);
+    for (unsigned i = 0; i < gRpN; i++) gRp[i].staWake = *reinterpret_cast<volatile uint16_t *>(gRp[i].cfg + gRp[i].pcie + 0x12);
     if (gGpio) for (unsigned i = 0; i < 7; i++) gAeiWake[i] = *reinterpret_cast<volatile uint32_t *>(gGpio + kAeiPins[i] * 4);
     if (gGpio && gGpioMode) {
         auto pin0 = reinterpret_cast<volatile uint32_t *>(gGpio);
@@ -762,7 +810,25 @@ void StrixS0ix::buildPci()
     while (it && n < kMaxFn) {
         auto d = OSDynamicCast(IOPCIDevice, it->getNextObject());
         if (!d) break;
-        if ((d->configRead8(0x0E) & 0x7f) != 0) continue;           // bridges stay as they are
+        if ((d->configRead8(0x0E) & 0x7f) != 0) {                   // bridges stay as they are
+            UInt8 pc = 0;
+            if (d->getBusNumber() == 0 && (d->configRead8(0x0E) & 0x7f) == 1 && gRpN < kMaxRp &&
+                d->findPCICapability(kIOPCIPCIExpressCapability, &pc) && pc && ((d->configRead16(pc + 2) >> 4) & 0xf) == 4) {
+                uint64_t pa = ecam + (uint64_t(d->getDeviceNumber()) << 15 | uint64_t(d->getFunctionNumber()) << 12);
+                IODeviceMemory *mem = IODeviceMemory::withRange(pa, 0x1000);
+                IOMemoryMap *map = mem ? mem->map(kIOMapInhibitCache) : nullptr;
+                OSSafeReleaseNULL(mem);
+                if (map) {                                           // kept for the life of the kext
+                    PciRp &r = gRp[gRpN++];
+                    r.cfg = reinterpret_cast<volatile uint8_t *>(map->getVirtualAddress());
+                    r.pcie = pc; r.sec = d->configRead8(0x19);
+                    r.bdf = uint16_t(d->getDeviceNumber() << 3 | d->getFunctionNumber());
+                    r.l1ss = extCap(r.cfg, 0x1e);
+                    r.staHalt = r.staWake = 0;
+                }
+            }
+            continue;
+        }
         uint32_t id = d->configRead32(0), cls = d->configRead32(8) >> 8;
         if ((id & 0xffff) == 0x1002 && (cls >> 16) == 0x03) igpuBus[0] = d->getBusNumber();
         if (id == 0x150d1022) igpuBus[1] = d->getBusNumber();       // NPU bus (IPU sits next to it)
@@ -789,6 +855,7 @@ void StrixS0ix::buildPci()
         f.pcie = d->findPCICapability(kIOPCIPCIExpressCapability, &cap) ? cap : 0;
         cap = 0; f.msi = d->findPCICapability(kIOPCIMSICapability, &cap) ? cap : 0;
         cap = 0; f.msix = d->findPCICapability(kIOPCIMSIXCapability, &cap) ? cap : 0;
+        f.l1ss = extCap(base, 0x1e);
         f.saved = false;
         f.bdf = uint16_t(bus << 8 | dev << 3 | fn);
         f.vendor = uint16_t(id); f.device = uint16_t(id >> 16); f.cls = cls;
@@ -801,8 +868,34 @@ void StrixS0ix::buildPci()
           igpuBus[0], igpuBus[1], unsigned(gD3Mode));
 }
 
+static void logLinks(IOService *svc)
+{
+    OSArray *a = OSArray::withCapacity(gRpN);
+    for (unsigned i = 0; i < gRpN; i++) {
+        const PciRp &r = gRp[i];
+        char rp[96], ep[96] = "no endpoint", line[240];
+        linkDesc(rp, sizeof rp, r.cfg, r.pcie, r.l1ss);
+        unsigned epBdf = 0xffff;
+        for (unsigned j = 0; j < gFnN; j++) if ((gFn[j].bdf >> 8) == r.sec) {
+            linkDesc(ep, sizeof ep, gFn[j].cfg, gFn[j].pcie, gFn[j].l1ss); epBdf = gFn[j].bdf; break;
+        }
+        snprintf(line, sizeof line, "00:%02x.%x -> %02x: rp %s; ep %02x:00.%x %s", r.bdf >> 3, r.bdf & 7, r.sec, rp,
+                 epBdf >> 8, epBdf & 7, ep);
+        IOLog("StrixS0ix: link %s\n", line);
+        if (a) if (OSString *str = OSString::withCString(line)) { a->setObject(str); str->release(); }
+    }
+    if (a) { svc->setProperty("S0ix,Links", a); a->release(); }
+}
+
 void StrixS0ix::publishPci()
 {
+    if (gRpN) {
+        char l[300]; size_t at = 0; l[0] = 0;
+        for (unsigned i = 0; i < gRpN && at + 40 < sizeof l; i++)   // DLL active and width at halt / at wake
+            at += (size_t)snprintf(l + at, sizeof l - at, " %02x:%u/%u", gRp[i].sec, unsigned((gRp[i].staHalt >> 13) & 1),
+                                   unsigned((gRp[i].staWake >> 13) & 1));
+        IOLog("StrixS0ix: root port DLL active at halt/wake (secondary bus: halt/wake):%s\n", l);
+    }
     if (!gFnN) return;
     OSArray *a = OSArray::withCapacity(gFnN);
     char d3[200], d0[200]; size_t a3 = 0, a0 = 0;      // moved to D3 by the halt path / left in D0 for the whole sleep
@@ -998,7 +1091,7 @@ bool StrixS0ix::start(IOService *provider)
     PMinit();
     getPMRootDomain()->addPowerChild(this);       // top level: powered down after the device tree, only on real sleep
     if (registerPowerDriver(this, states, 2) == kIOReturnSuccess) { pm = true; changePowerStateTo(1); }
-    IOLog("StrixS0ix: 0.1.12 up, PEP _DSM mask %#x (%s), halt hook %s, power child %s\n", mask, useDsm ? "used" : "off",
+    IOLog("StrixS0ix: 0.1.13 up, PEP _DSM mask %#x (%s), halt hook %s, power child %s\n", mask, useDsm ? "used" : "off",
           halt ? "on" : "OFF", pm ? "on" : "FAILED");
     registerService();
     return true;
@@ -1021,6 +1114,7 @@ IOReturn StrixS0ix::setPowerState(unsigned long state, IOService *)
         IOReturn a = kIOReturnSuccess, b = kIOReturnSuccess, c = kIOReturnSuccess;
         if (useDsm) { a = dsm(3); b = dsm(7); c = dsm(5); }
         buildPci();
+        logLinks(this);
         pmcSleep();
         gArmed = halt;
         slept = true;
