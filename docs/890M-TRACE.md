@@ -8021,3 +8021,12 @@ Tests (no install; 1080p60 clips made with WebCodecs, `tools/mkclip.mjs`):
 - Open: the session property `UsingHardwareAcceleratedVideoDecoder` reads 0 with the in-process registration
   (VideoToolbox answers it from the registration; check again with the bundle in /System). Safari: WebKit's GPU
   process may host the decoder in-process for some codecs; its sandbox must allow /Library/GPUBundles/nvmtl.
+
+### VCNDec installed (2026-11-07, next boot)
+
+- `tools/890m/vcndec/install.sh --system`: /dev/disk1s4 mounted at /System/Volumes/Update/mnt1, VCNDec.bundle in
+  System/Library/Video/Plug-Ins, new boot snapshot blessed. Live after the next reboot.
+- Undo: `install.sh --undo --system` (next boot). Kill switch now: `touch /Library/NullMoth/vcndec-off`.
+- After the reboot: `build/vt_test clip.ivf` without `-b` must pick VCNDec (log subsystem com.ga403wm.vcndec),
+  then Edge `Media.enable` must report `VideoToolboxVideoDecoder`, then `tools/hitch.mjs` 720p60/1080p60 with the
+  simulator up; Safari VP9 check.
