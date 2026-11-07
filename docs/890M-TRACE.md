@@ -8192,3 +8192,37 @@ Next:
    weak import in or out.
 4. To get the normal setup back: re-add `nmxamd=1`, or copy `config.plist.bk-nonmx-20261107T170744` over
    `config.plist` (that backup still has `-v`).
+
+### Step128 root cause: the weak `proc_starttime` import (2026-11-07 17:20)
+
+The boot at 16:46 (UTC+7) wrote its panic, and the next boot (with `nmxamd` off) saved it to disk:
+`/Library/Logs/DiagnosticReports/Kernel-2026-11-07-164643.panic`. It was never a hang. `debug=0x100` halts on panic
+and the frozen screen showed nothing new.
+
+```
+panic(cpu 3 ...): Kernel trap at 0xffffff800e85cd38, type = 14=page fault ... Kernel NX fault
+RAX = RCX = RIP = CR2 = 0xffffff800e85cd38
+com.nullmoth.NMXGPU : _nmx_thread_get + 0x1b6
+  <- _nmx_curthread + 0x1c <- _lkpi_fpu_safe_exec + 0x15 <- _lkpi_kmalloc + 0x2e <- _linux_compat_init + 0x131
+  <- _nmx_sysinit_run + 0x1c0 <- _nmx_port_start + 0x108 <- NMXGPU::start + 0x11d <- IOService::startCandidate
+com.nullmoth.NMXGPU(1.0)[E9E87100-...]   uptime 7.07 s   KernelCache base 0xffffff800e800000
+```
+
+- RIP == CR2, and the address is inside the kernel image (base + 0x5cd38), in a non-executable page: a call through a
+  function pointer that points at data.
+- `nmx_thread_get` -> `nmx_curproc` -> `nmx_proc_for` -> `nmx_proc_start` calls `nmx_proc_starttime_fn`, the weak
+  `_proc_starttime` added in 2cf0bcc. 25G332 does not export `proc_starttime` to kexts, and kmutil bound the missing
+  weak symbol to an address in kernel data, not NULL and not the value of `gOSKextUnresolved`. The guard passed, and
+  the first `curthread` of `NMXGPU::start` (from `linux_compat_init` kmalloc) jumped into data.
+- With `nmxamd` off, NMXGPU declines the 890M before `nmx_port_start`. Bootguard logged "desktop came up and stayed up"
+  at 17:10:22 and 17:14:40. So the rest of the Step125/126 set (StrixS0ix 0.1.13, StrixSbxMap, NVRM) boots.
+
+Fix: fork `nmx-source-port` 326858e. The weak import is gone; `nmx_proc_start` returns 0, so the pid alone tells the
+owners of a recycled `proc_t` apart (the fallback the code already described). No other weak import exists in
+`gpu-port/xkpi`. Lesson: on this kmutil, never use `weak_import` for a kernel symbol that may be missing; check the
+export list of the running kernel and leave the symbol out.
+
+To get the 890M back (on the Mac):
+1. `cd ~/develop/projects/nmx-build-xkpi`, pull `nmx-source-port` (326858e), build NMXGPU.kext.
+2. `sudo scripts/macos-install-step125.sh <out>/NMXGPU.kext` (AuxKC relink).
+3. Re-add `nmxamd=1` to boot-args in ESP `config.plist`, reboot. Keep `-v` for the first boot.
