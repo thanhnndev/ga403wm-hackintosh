@@ -8240,3 +8240,46 @@ So "it still hangs" is the missing panel driver, not a new fault. The installed 
 the weak import, so re-adding `nmxamd=1` before installing the fixed build (326858e) would panic again. To build
 on the Mac you need a picture first: remove `-strixgopoff` so StrixGOP 0.1.11 (boot-raster framebuffer, no
 acceleration) shows the login window. Then build, install, re-add `nmxamd=1` and put `-strixgopoff` back.
+
+### Step128 fix applied from Windows: two bytes in the installed AuxKC (2026-11-07 17:40)
+
+The exact fault, from the installed binaries (`/Library/Extensions/NMXGPU.kext` and
+`/Library/KernelCollections/AuxiliaryKernelExtensions.kc`, pulled read-only):
+
+```
+nmx_proc_for (kext 0x6db8f5, AuxKC 0x7c58f5):
+  mov rax, [nmx_proc_starttime_fn] ; test rax, rax ; je skip
+  mov rcx, [GOT gOSKextUnresolved] ; cmp rax, [rcx] ; je skip   <- compares with the VALUE of gOSKextUnresolved
+  call rax                                                      <- NX fault
+```
+
+In the AuxKC, the slot `nmx_proc_starttime_fn` (AuxKC 0xa16ec8) and the GOT entry of `gOSKextUnresolved`
+(0x98b0d8) are both chained fixups with target 0x15cd38. kmutil binds a missing weak symbol to the *address* of
+`gOSKextUnresolved` (that is what Apple's `OSKextSymbolIsResolved` compares: `&sym != &gOSKextUnresolved`), and that
+address is kernel data. The guard compared with the value, so it always passed. Second copy of the same inline in
+the reaper (kext 0x6dd166).
+
+Patch (AuxKC is not code-signed: no LC_CODE_SIGNATURE), both `je` -> `jmp` to the "no proc_starttime" path:
+
+| AuxKC offset | APFS block (Data volume) | before | after |
+|---|---|---|---|
+| 0x7c5907 | 0x855d9e +0x907 | `74 28` | `eb 28` |
+| 0x7c7170 | 0x855da0 +0x170 | `74 37` | `eb 37` |
+
+How it was written, with no APFS write driver: Paragon refuses to mount (activation denied), and `wsl --mount` cannot
+attach disk 0 (it carries Windows). APFS checksums metadata objects only, not file data, so overwriting bytes inside
+an existing extent is invisible to the filesystem. `scripts`-less, in the session scratchpad: `auxkc_patch.py`
+(dissect.apfs). It finds the extent (one extent, logical 0, phys 0x8555d9, 0x1dd8000 bytes; not compressed, not
+encrypted). Dry run first: the raw block, the block read through APFS and the pulled copy must be equal and match
+the byte pattern. Then it backs up both 4 KiB blocks, writes them through `\.\Harddisk0Partition3`, reads them
+back (byte now `eb`, the other 4095 bytes unchanged).
+
+ESP: `nmxamd=1` added back (backup `config.plist.bk-addnmx-20261107T174020`). The config is now byte-identical to
+the one before Step128 removed it, `-v` kept.
+
+Still to do:
+- `/Library/Extensions/NMXGPU.kext` is still 928335c2 with the bug. Any AuxKC rebuild (kmutil, kext install) relinks
+  from it and brings the panic back. Build the source fix (fork `nmx-source-port` 326858e) and install it with
+  `scripts/macos-install-step125.sh` before the next AuxKC rebuild.
+- Undo of the byte patch: write the two `.orig` blocks back to blocks 0x855d9e and 0x855da0 (valid only while the
+  AuxKC file is not rebuilt).
