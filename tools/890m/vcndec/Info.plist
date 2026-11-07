@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>CFBundleExecutable</key>
+	<string>VCNDec</string>
+	<key>CFBundleIdentifier</key>
+	<string>com.ga403wm.vcndec</string>
+	<key>CFBundleInfoDictionaryVersion</key>
+	<string>6.0</string>
+	<key>CFBundleName</key>
+	<string>VCNDec</string>
+	<key>CFBundlePackageType</key>
+	<string>BNDL</string>
+	<key>CFBundleShortVersionString</key>
+	<string>0.1.0</string>
+	<key>CFBundleVersion</key>
+	<string>0.1.0</string>
+	<key>CMClassImplementations</key>
+	<array>
+		<dict>
+			<key>CMClassID</key>
+			<string>com.apple.videotoolbox.videodecoder</string>
+			<key>CMClassImplementationID</key>
+			<string>com.ga403wm.vcndec.vp09</string>
+			<key>CMClassImplementationName</key>
+			<string>GA403 890M VCN VP9 Decoder</string>
+			<key>CMClassImplementationVersion</key>
+			<integer>1</integer>
+			<key>CMCopyright</key>
+			<string>ga403wm</string>
+			<key>CMExecutableArchitectures</key>
+			<array>
+				<string>x86_64</string>
+			</array>
+			<key>CMFactoryFunction</key>
+			<string>VCNDec_CreateInstance</string>
+			<key>CMManufacturer</key>
+			<string>ga403wm</string>
+			<key>CMMatchingInfo</key>
+			<dict>
+				<key>VTCodecType</key>
+				<string>vp09</string>
+				<key>VTIsHardwareAccelerated</key>
+				<true/>
+				<key>VTRating</key>
+				<integer>1000</integer>
+			</dict>
+		</dict>
+		<dict>
+			<key>CMClassID</key>
+			<string>com.apple.videotoolbox.videodecoder</string>
+			<key>CMClassImplementationID</key>
+			<string>com.ga403wm.vcndec.av01</string>
+			<key>CMClassImplementationName</key>
+			<string>GA403 890M VCN AV1 Decoder</string>
+			<key>CMClassImplementationVersion</key>
+			<integer>1</integer>
+			<key>CMCopyright</key>
+			<string>ga403wm</string>
+			<key>CMExecutableArchitectures</key>
+			<array>
+				<string>x86_64</string>
+			</array>
+			<key>CMFactoryFunction</key>
+			<string>VCNDec_CreateInstance</string>
+			<key>CMManufacturer</key>
+			<string>ga403wm</string>
+			<key>CMMatchingInfo</key>
+			<dict>
+				<key>VTCodecType</key>
+				<string>av01</string>
+				<key>VTIsHardwareAccelerated</key>
+				<true/>
+				<key>VTRating</key>
+				<integer>1000</integer>
+			</dict>
+		</dict>
+	</array>
+	<key>LSMinimumSystemVersion</key>
+	<string>26.0</string>
+</dict>
+</plist>

@@ -7968,12 +7968,14 @@ Clip: 1920x1080 60 fps VP9 profile 0, 300 frames, 12 Mbit/s, made in the probe E
 
 | decoder | wall | CPU |
 |---|---|---|
-| libavcodec vp9, 1 thread | 4.94 s (1.0x realtime) | 4.94 s |
-| libavcodec vp9, auto threads | 1.35 s | 6.92 s (~134 % CPU while playing) |
+| libavcodec vp9, 1 thread (no x86 asm in this build) | 4.94 s (1.0x realtime) | 4.94 s |
+| libavcodec vp9, auto threads (no x86 asm) | 1.35 s | 6.92 s |
 | Vulkan video on VCN (frames stay on GPU) | 0.81 s (6.2x realtime) | 0.57 s |
 | Vulkan video + `hwdownload` to NV12 | 2.72 s | 5.41 s (readback through uncached memory) |
 
-The VCN output is bit-exact with libavcodec (framemd5 NV12, 0 of 300 frames differ).
+The VCN output is bit-exact with libavcodec (framemd5 NV12, 0 of 300 frames differ). The software rows come from
+an ffmpeg built with `--disable-x86asm`, so they overstate the CPU cost; the Edge renderer number (libvpx with SIMD,
+~43 % of a core at 1080p60) is the one that counts.
 
 ### Plan: a real VideoToolbox decoder on VCN (replaces VTStub)
 
@@ -7983,3 +7985,39 @@ The VCN output is bit-exact with libavcodec (framemd5 NV12, 0 of 300 frames diff
   IOSurface pages imported as host memory (the same no-copy import the NVMTL plugin uses for IOSurfaces).
 - Open questions before the first install: GPU access (NMXGPU user client, /Library/GPUBundles) from the
   VTDecoderXPCService sandbox, and the VT decoder vtable fields Chromium uses (decode frame, finish, copy properties).
+
+## Edge web video lag part 17: VCNDec, a VideoToolbox VP9/AV1 decoder on the 890M VCN (2026-11-07 16:10, built, not installed)
+
+Source: `tools/890m/vcndec` (BSD; links a minimal static LGPL libavcodec built by `ff-build.sh`).
+
+- `src/vcndec.c`: libavcodec vp9/av1 with the Vulkan hwaccel on the live RADV (`/Library/GPUBundles/nvmtl`), no
+  software fallback. The minimal ffmpeg (vp9 + av1 decoders, vp9_vulkan/av1_vulkan, no avformat/filters) is patched to
+  dlopen the live loader `/Library/GPUBundles/nvmtl/libvulkan.1.dylib` first and the plugin sets `VK_DRIVER_FILES`,
+  because VTDecoderXPCService has no DYLD/Vulkan environment. The decoded image goes out with one
+  `vkCmdCopyImageToBuffer` per plane into a VkBuffer that imports the destination IOSurface's own pages
+  (VK_EXT_external_memory_host, one import per IOSurface, cached with the surface retained). The CPU never reads
+  VRAM; a host-cached staging buffer + memcpy is the fallback (`VCN_NO_IMPORT=1`).
+- `src/vcnvt.c`: the VideoToolbox decoder class (vtable from VTStub), `vp09` + `av01` registered as hardware,
+  rating 1000. Accepts profile 0, 8-bit 4:2:0 (vpcC / av1C checked; 10-bit is refused so the app decodes it itself),
+  emits NV12 `420v`/`420f` with the format's colour tags, one emit per sample (hidden frames -> FrameDropped).
+  Kill switch: `/Library/NullMoth/vcndec-off`.
+- `install.sh --system` (from VTStub): copies the bundle into /System/Library/Video/Plug-Ins and blesses a new boot
+  snapshot; `--undo --system` removes it.
+
+Tests (no install; 1080p60 clips made with WebCodecs, `tools/mkclip.mjs`):
+
+| test | frames | result | speed | CPU |
+|---|---|---|---|---|
+| `vcndec_test` VP9, direct IOSurface import | 900 | bit-exact (300/300 vs libavcodec) | 155-177 fps | 1.6 ms/frame |
+| `vcndec_test` VP9, staging + memcpy | 900 | - | 143 fps | 2.05 ms/frame |
+| `vt_test -b` VP9 through VTDecompressionSession (require hardware) | 300 | bit-exact 300/300 | 180 fps | 2.1 ms/frame |
+| `vt_test -b` AV1 through VTDecompressionSession | 240 | 240/240 = ffmpeg Vulkan decode | 75 fps with md5 | - |
+
+- With the in-process registration `VTIsHardwareDecodeSupported` turns 1 for vp09 and av01 and a session that
+  requires hardware picks VCNDec (log: "VCNDEC StartSession vp09 1920x1080 ... on the 890M VCN", "close: in 300 out
+  300 dropped 0 errors 0 (gpu-copy 300 cpu-copy 0 imports 1)").
+- At 60 fps the decoder costs ~10 % of one core, against ~43 % for the Edge renderer's libvpx at 1080p60, and the
+  decode itself runs on VCN, so the simulator / WindowServer load no longer starves it.
+- Open: the session property `UsingHardwareAcceleratedVideoDecoder` reads 0 with the in-process registration
+  (VideoToolbox answers it from the registration; check again with the bundle in /System). Safari: WebKit's GPU
+  process may host the decoder in-process for some codecs; its sandbox must allow /Library/GPUBundles/nvmtl.
