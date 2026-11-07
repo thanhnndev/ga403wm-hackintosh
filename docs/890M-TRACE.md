@@ -7922,3 +7922,14 @@ Handed over from the fresh-install session (local_93191de7).
 - Installed on 25G332 with `scripts/macos-install-nmxaccel-gate.sh` (backup in /Library/StrixGraphicsFix/nmxaccel-gate-bk-*,
   `--undo`), AuxKC relinked + kccheck ok. Verify after reboot: `log show --last boot | grep -E 'family layout|framebuffer watch|pipe armed'`.
 - `scripts/fresh-install/nmxaccel-kernel-gate.py` (the string-swap patch) is now obsolete for new installs.
+
+### Reboot 2026-11-07 14:29 (25G332): family gate, Step124, power button PASS
+
+- NMXAccel family gate: all 5 classes match the headers (IOGraphicsAccelerator2 3544, IOAccelDisplayMachine 376,
+  IOAccelLegacyDisplayMachine 504, IOAccelEventMachineFast2 3376, IOAccelTask 600), `NMXFamilyLayoutOK = Yes`,
+  "native framebuffer watch enabled" + "NMX display pipe armed" on 25G332 with no kernel-string patch. WindowServer = 890M, Metal 3.
+- Step124: "NVRM-xnu: 890M wait: NMXAMDFB registered after 884 ms - starting this card's bring-up"; boot OK.
+- Power button wake (StrixS0ix 0.1.12), logs ~/ga403-logs/syssleep-20261107-143111: halted 8.7 s, wake event 0x1000a
+  (EC GPE), EC status 0x9, query 0xCE -> `_QCE` -> wrangler tickle -> "PMRD: Requesting full wake due to dark wake
+  activity tickle", full wake promotion 895 ms. Lid (0x2F) and power button (0xCE) both wake the machine fully now.
+  Still open: S0i3 not reached (not met: DISPLAY, NBIO).
