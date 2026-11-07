@@ -8374,3 +8374,21 @@ Do not, on macOS, before the hang above is understood:
 - Side sessions asked to re-check their own changes on this boot (userland, not reverted): NVMTL translator astc fix
   + StrixSbxMap pins (sim-perf), VCNDec in /System (edge-video-lag), and the NMXGPU session for the ~12 s hard hang of
   326858e (review + NVRAM stage-mark build, no install without the owner).
+
+### VCNDec verified on boot 2026-11-07 20:36 (old cave-chain NMXGPU 591E7D5A, same build as the 15:xx tests)
+
+- Loads from /System/Library/Video/Plug-Ins in VTDecoderXPCService: `vt_test` without `-b` -> VTIsHardwareDecodeSupported 1,
+  VP9 1080p60 300/300 frames bit-exact vs libavcodec, 202 fps, 0.44 ms client CPU/frame; AV1 240/240 frames, 205 fps, 0 errors.
+- Edge (CDP Media.enable): `Selected VideoToolboxVideoDecoder` for vp9 and av1, `kIsPlatformVideoDecoder true`.
+  VCNDec log: one YouTube session "in 5815 out 5815 dropped 0 errors 0 (gpu-copy 5815)".
+- Edge YouTube LXb3EKWsInQ, simulator up (40 s each):
+
+| run | decoded | dropped | rVFC gaps > 25 ms | worst | before (CPU decode, part 16) |
+|---|---|---|---|---|---|
+| 720p60 (right after page load) | 2399 | 30 | 41 | 58 ms | 374 dropped, worst 651 ms |
+| 1080p60 | 2398 | 7 | 17 | 44 ms | 164 dropped, worst 99 ms |
+
+  CPU during 1080p60: Edge renderer 19 % (was ~123 %), VTDecoderXPCService 5 %, WindowServer 61 %.
+- No crash reports dated after 20:36, no NMXGPU timeout/reset/fault lines (only the routine "mmfix2 stale xkpi records retired").
+- Safari: no VCNDec session seen after opening the same YouTube page (no VCNDEC log line from WebKit or a second
+  VTDecoderXPCService), so Safari's VP9/AV1 path is not verified yet.
