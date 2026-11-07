@@ -8117,7 +8117,9 @@ Second defect found while trying to A/B the knobs: `debug.nmx_umap_cache`, `debu
 userland writes with EPERM (`sysctl: … Operation not permitted`), and macOS' `sysctl(8)` then prints the old value
 instead of `old -> new`, so the first boot after b26 could not be measured at all. They are plain `CTLFLAG_RW` now.
 
-Measured on the Step125 source build (installed `928335c2`, loaded UUID `591E7D5A`), 6 fresh processes of
+Correction (Step128): this was **not** the Step125 build. UUID `591E7D5A` is the old cave-chain NMXGPU (see line ~4761);
+928335c2 has UUID `E9E87100` and was only in the AuxKC waiting for a reboot. 928335c2 has never run.
+Measured on the old NMXGPU (installed `928335c2`, loaded UUID `591E7D5A`), 6 fresh processes of
 `metal-first-job.swift` with one dispatch each: **6/6 pass**, jobs +445 to +758 per process, `timeouts +0`,
 `grab_stray +0`. The AMD device reports `Metal 3`, OLED `2880 x 1800`, 120 Hz, internal. The VA-0 page fault from
 Steps 59-66 does not reproduce on this build, so the mapping work in Step125 (WC split maps, umap cache off,
@@ -8131,3 +8133,62 @@ userptr pin) is the fix that landed; the knobs stay as the A/B switch if it come
 - So the RTX in D0 is not the NBIO blocker, and D-states are not the answer. NBIO and DISPLAY track each other
   exactly, which points at one cause: DCN not reaching IPS keeps an NBIO path busy. The Step125 `NullMoth ips:` trace
   is the next thing to read; the 0.1.13 link trace will confirm or rule out the L1.2 side.
+
+## Step128: the Step125/126 reboot hangs at every boot; NMXGPU 928335c2 is the only boot-time kernel change (2026-11-07 16:00-17:10)
+
+Three boots after the 15:56 reboot (15:56:56, 15:59:11, 16:01:44) all froze ~2 s after logd started, about 6 s after
+kernel start, which is when kernelmanagerd loads the AuxKC. Traced from Windows, read-only: the Data volume was read
+with `dissect.apfs` (Paragon refused to mount: activation "Authorization is denied"), and NVRAM through
+`GetFirmwareEnvironmentVariableW`.
+
+Evidence:
+- No panic: no new `.panic` file and no `aapl,panic-info` in NVRAM. `nullmoth-nv-starts` is absent (counter 0) and
+  `nullmoth-nv-ok=1`, so the NVIDIA boot guard is not involved; when it does trigger it only parks NVRM, it does not
+  freeze the machine.
+- The 14:29 panic (`mp_kdp_enter() timed-out`, 23/24 acks, spindump) happened at shutdown; the boot after it was good.
+- Only logd.0.log kept data from the hung boots. system.log, install.log, the powermanagement asl and the tracev3
+  extents written in those boots are all zeros, so the disk stopped committing at ~6 s.
+- Verbose boot (`-v` added to the ESP config.plist at 16:45): `StrixS0ix: 0.1.13 up ... halt hook on` is printed, the
+  boot continues, and the last lines are `X86PlatformPlugin ... _CST/_PSS failed`, `IOPPF StartupPowerEvents 0x0`,
+  `IOVersatile failed to load`. The good boot at 14:29 prints the same lines at 6.156 s, then NVRM at 6.313 s and
+  NMXGPU at 6.73 s. Neither NVRM nor NMXGPU lines appear. This does not mark the hang point: once amdgpu
+  initializes DCN, the panel stops scanning out the firmware framebuffer, so the console freezes on screen.
+
+What changed after the 14:29 good boot:
+
+| change | when (UTC+7) | runs at boot? |
+|---|---|---|
+| NMXGPU 928335c2 (Step125 source build, UUID E9E87100) | 15:34 | **yes**, first time ever |
+| StrixS0ix 0.1.13 (Step126) | 15:39 | the new code runs only in `setPowerState(0)`/halt (`buildPci`, `logLinks`, root-port status reads); boot path same as 0.1.12 |
+| AuxKC relink | 15:40 | carries the two kexts above |
+| ESP `StrixSbxMap.kext/Contents/Info.plist` | 15:40:58 | only 8 new NVMTL cdhash pins, used only on `com.apple.WebKit.GPU` mmap; binary unchanged since 11-04 |
+| VCNDec, NVMTL translator | 15:30, 15:40 | userland, loads much later |
+
+NMXAccel (14:17) and NVRM Step124 (11-06) both booted fine at 14:29. Every other kext on the ESP is older than 14:29.
+
+Code reviewed in the fork (`nmx-source-port`, 2cf0bcc), without finding the hang line:
+- Boot hold (`holdArm`/`holdRelease`, ff47964): `adjustBusy(1)` once the firmware folder exists, capped at 30 s, so it
+  cannot hang by itself for more than 2 minutes.
+- Lock-free curthread (d345b3e): writers take the registry spin lock with interrupts off. A stuck lock would end in
+  an xnu spinlock-timeout panic, and there is none.
+- `amdgpu-dm-ips-trace.patch` (e0da44f): adds `printf` only.
+- Weak `proc_starttime` through a data pointer (2cf0bcc): checked against NULL and `gOSKextUnresolved` before the
+  call; it runs on the first `curproc`, early in the kext start. Not proven safe on the machine: how kmutil binds a
+  missing weak import in the AuxKC was not checked.
+
+State left for the next boot:
+- ESP `config.plist`: `-v` added (backup `config.plist.bk-addv-20261107T164437`), `nmxamd=1` removed (backup
+  `config.plist.bk-nonmx-20261107T170744`). Only the boot-args string changed (LF kept, +3 / -9 bytes).
+- Without `nmxamd`, NMXGPU declines the 890M (`opted_in()` in nmx_kext.cpp). Everything installed stays in place.
+
+Next:
+1. Boot with `nmxamd` off. If it boots, NMXGPU 928335c2 is confirmed. If it still hangs, look at NVRM next
+   (`nullmoth-remove=1`).
+2. From that macOS, build 928335c2 with NVRAM breadcrumbs (`nmxgpu-stage` at module start, `nmx_port_start`,
+   firmware wait, `holdArm`, each amdgpu IP block init, DC init, `nmx_fb_publish`). Write each mark with
+   `IODTNVRAM`/SetVariable so it reaches flash before the hang. Boot once with `nmxamd=1`, then read the last mark
+   from Windows (same NVRAM read as above). That mark is the stage to fix.
+3. Also dump the AuxKC bind for `_proc_starttime` (value of `nmx_proc_starttime_fn` in the collection) to rule the
+   weak import in or out.
+4. To get the normal setup back: re-add `nmxamd=1`, or copy `config.plist.bk-nonmx-20261107T170744` over
+   `config.plist` (that backup still has `-v`).
