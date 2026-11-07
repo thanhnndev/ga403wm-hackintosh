@@ -123,7 +123,7 @@ the frame for WindowServer, so the sim stays on the 890M anyway.
 
 ## Flutter on the simulator (2026-11-07, boot 20:36)
 Flutter 3.47.9 stable via mise (`mise use -g flutter@3.47.9`, on PATH in zsh and fish through `mise activate`),
-analytics off. `flutter doctor`: Xcode OK, CocoaPods missing (plugins need it), no Android SDK, and "Flutter is
+analytics off. CocoaPods 1.17.0 on MacPorts ruby34 (`port install ruby34`, `port select --set ruby ruby34`, `gem3.4 install cocoapods` as root; `/opt/local/bin/pod`). Flutter 3.47 builds plugins with Swift Package Manager by default; with `enable-swift-package-manager: false` the same app builds through `pod install` (url_launcher, shared_preferences). `flutter doctor`: Xcode OK, no Android SDK, and "Flutter is
 deprecating support for Intel-based Macs" (this host is x86_64). The simulator only runs debug builds (JIT).
 Impeller draws with Metal, i.e. through NVMTL on the 890M.
 
