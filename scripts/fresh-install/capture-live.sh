@@ -117,29 +117,42 @@ for d in /Library/GPUBundles/NVMTLDriver.bundle /Library/GPUBundles/NVIDIAShared
     copy_in "$d" "userland${d}"
 done
 for f in /Library/GPUBundles/nvmtl-allow.txt /Library/StrixGraphicsFix/nmx-flip.mode \
-         /Library/StrixGraphicsFix/nmx-flip-default.sh /Library/NullMoth/driver-version; do
+         /Library/StrixGraphicsFix/nmx-flip-default.sh /Library/NullMoth/driver-version \
+         /Library/StrixGraphicsFix/nmx-relink.probes /Library/StrixGraphicsFix/kccheck /Library/StrixGraphicsFix/auxguard.sh \
+         /Library/StrixGraphicsFix/ws-sandbox-dri.sh /Library/StrixGraphicsFix/ws-sandbox-dri-undo.sh; do
     [ -f "$f" ] || continue
     row "file-$(basename "$f")" userland BSD-3-Clause-Clear file "$f" "$(sha "$f")"
     copy_in "$f" "userland${f}"
 done
+# NullMoth's top-level scripts, which its launchd jobs run (missing from the 2026-11-05 capture)
+for f in /Library/NullMoth/*.sh; do
+    [ -f "$f" ] || continue
+    row "file-nullmoth-$(basename "$f")" userland PolyForm-Noncommercial-1.0.0 file "$f" "$(sha "$f")"
+    copy_in "$f" "userland${f}"
+done
 
-# 3b. Programs the launchd jobs start, the audio HAL driver and the panel display override (BSD, this project).
+# 3b. Programs the launchd jobs start, the audio HAL driver, StrixAmp data and the panel display override (BSD, this
+# project). Not ItlWiFi.app or 1401.app: the owner does not want them on a fresh install (2026-11-07).
 for d in /Library/PrivilegedHelperTools/com.itlmt7925.* "/Library/Application Support/RogAudio" \
-         /Library/Audio/Plug-Ins/HAL/RogAudio.driver /Applications/ItlWiFi.app /Applications/RogControl.app \
-         /Applications/TapGuard.app /Library/Displays/Contents/Resources/Overrides/DisplayVendorID-4c83; do
+         /Library/Audio/Plug-Ins/HAL/RogAudio.driver /Applications/RogControl.app /Applications/TapGuard.app \
+         /Library/Displays/Contents/Resources/Overrides/DisplayVendorID-4c83 /usr/local/share/strixamp \
+         "$HOME/Library/Application Support/RogControl/rogkeyd.app"; do
     [ -e "$d" ] || continue
     if [ -d "$d" ]; then
         row "app-$(basename "$d")" userland BSD-3-Clause-Clear tree "$d" "$(treesha "$d")"
     else
         row "app-$(basename "$d")" userland BSD-3-Clause-Clear file "$d" "$(sha "$d")"
     fi
-    copy_in "$d" "userland${d}"
+    copy_in "$d" "userland${d#"$HOME"}"   # per-user paths are stored without the home folder
 done
 
-# 4. launchd jobs of this project and of NullMoth.
+# 4. launchd jobs of this project and of NullMoth. Left out: ItlWiFi (not wanted), graphics-bootstrap (stale),
+# audio-boot-trace (removed at the owner's request) and com.nullmoth.crashcheck (needs 1401.app). Migration Assistant
+# brought back graphics-bootstrap and crashcheck on the 2026-11-07 run; a capture must not carry them forward.
 for f in /Library/LaunchDaemons/com.{nullmoth,ga403wm,itlmt7925}.*.plist /Library/LaunchAgents/com.{nullmoth,itlmt7925}.*.plist \
          "$HOME"/Library/LaunchAgents/com.itlmt7925.*.plist; do
     [ -f "$f" ] || continue
+    case "$(basename "$f")" in *.ItlWiFi.plist|*.graphics-bootstrap.plist|*.audio-boot-trace.plist|com.nullmoth.crashcheck.plist) continue ;; esac
     row "launchd-$(basename "$f" .plist)" launchd "$(license_for "$(basename "$f")")" file "$f" "$(sha "$f")"
     copy_in "$f" "launchd${f#"$HOME"}"
 done

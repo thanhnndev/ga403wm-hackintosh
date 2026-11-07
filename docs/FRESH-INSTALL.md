@@ -1,7 +1,11 @@
 # Fresh install of the whole GA403WM stack: research and design
 
-Status: research and design, 2026-11-05 (branch `research/890m-cobalt64`). Nothing here has been run on a fresh machine.
-The two prototype scripts in `scripts/fresh-install/` are read-only and were tested on the working machine only.
+Status: research and design, 2026-11-05 (branch `research/890m-cobalt64`), updated 2026-11-07 after the first real
+fresh install (Tahoe 26.7.2, 25G332). That run was done by hand, through `Install macOS Tahoe.app` from the old macOS,
+not through Recovery from the USB, and none of the stage scripts below existed yet. Its findings are kept as written in
+[FRESH-INSTALL-LESSONS-2026-11-07.md](FRESH-INSTALL-LESSONS-2026-11-07.md) and folded into this design (section 4.9
+lists what changed). The prototype scripts in `scripts/fresh-install/` are read-only and were tested on the working
+machine only.
 
 Owner's request: "nghiên cứu cài all bộ ga403 cho fresh install đi. Có thể cài qua usb hoặc tạo 1 app. Nói chung là
 tìm đường 1 click install all ấy" (find a one-click way to install everything on a fresh machine, by USB or an app).
@@ -25,7 +29,11 @@ tìm đường 1 click install all ấy" (find a one-click way to install everyt
 * **So the installer copies final, verified artifacts, not the history.** The first version uses a "golden payload"
   captured from this working machine (`scripts/fresh-install/capture-live.sh`, 93 components, sha256 for each). In
   the longer term, the caves move into the fork's source, so CI can build NMXGPU and the manifest can point at CI
-  artifacts instead of a capture.
+  artifacts instead of a capture. A capture goes stale fast: the 2026-11-05 payload differed from the live system in
+  six components two days later. So the capture is taken right before the stick is built, `verify.sh --drift` fails
+  when payload and live differ, and the app shows the capture date.
+* **Stage scripts are bash plus prebuilt tools only.** A fresh macOS has no python3 until the Command Line Tools are
+  installed (`/usr/bin/python3` is only a stub that offers to install them).
 * **Licensing split.** Every PolyForm part (NMXGPU, NMXAccel, NMXAGDC, NVRM*, NVAccel, NVMTL plugin and translator,
   RADV/libdrm builds, NullMoth firmware) lives only in the payload, never in this BSD repo. The repo carries the
   manifest format, the scripts, the BSD kexts' sources, and sha256 values.
@@ -125,17 +133,22 @@ changing that gate.
 | `/Library/GPUBundles/NVIDIAShared.bundle`, `nvmtl/` | NVK, RADV (`libvulkan_radeon`), libdrm, ICDs, caches | PolyForm + Mesa (MIT) |
 | `/Library/GPUBundles/nvmtl-allow.txt` | = `scripts/nvmtl-allow.txt` (`*`, `!WindowServer`, …); must be readable by `_windowserver` | BSD |
 | `/Library/NullMoth/` | upstream scripts, `gpu-userland/`, `firmware/` (7 MB), `nvfw/` (220 MB), `kexts/`, `licenses/`, about 190 backup folders | PolyForm + vendor firmware |
-| `/Library/StrixGraphicsFix/` | `nmx-flip-default.sh` + `nmx-flip.mode` (1 = zero copy), relink tools, old `bootstrap.sh` | BSD |
-| LaunchDaemons | `com.nullmoth.{bootguard,displaytrace,recover,wsdeath,wsreset}`, `com.ga403wm.nmx-flip-default`, `com.itlmt7925.{AmdCppcPolicy,strixamp,audio-boot-trace,graphics-bootstrap}` | mixed |
-| LaunchAgents | `com.nullmoth.crashcheck`, `com.itlmt7925.rogaudiod`; per user: `com.itlmt7925.{ItlWiFi,RogControl,TapGuard,espmount}` | mixed |
-| Programs behind them | `/Library/PrivilegedHelperTools/com.itlmt7925.*`, `/Library/Application Support/RogAudio`, `/Library/Audio/Plug-Ins/HAL/RogAudio.driver`, `/Applications/{ItlWiFi,RogControl,TapGuard}.app` | BSD (sister repos) |
+| `/Library/NullMoth/*.sh` | the scripts the `com.nullmoth.*` daemons run (`bootguard`, `nullmoth-{displaytrace,recover,setup,wsdeath,wsreset}`, `uninstall`); missing from the 2026-11-05 capture | PolyForm |
+| `/Library/StrixGraphicsFix/` | `nmx-flip-default.sh` + `nmx-flip.mode` (1 = zero copy), `nmx-relink.probes` (cave windows for `kccheck`), `kccheck`, `auxguard.sh` (2026-11-07, source in `scripts/fresh-install/auxguard/`), `ws-sandbox-dri.sh`, relink tools, old `bootstrap.sh` | BSD |
+| `/usr/local/share/strixamp/` | StrixAmp firmware/tables (`fw/`); missing from the 2026-11-05 capture | BSD |
+| LaunchDaemons | `com.nullmoth.{bootguard,displaytrace,recover,wsdeath,wsreset}`, `com.ga403wm.{nmx-flip-default,auxguard}`, `com.itlmt7925.{AmdCppcPolicy,strixamp}`; **not** `audio-boot-trace` (removed at the owner's request) or `graphics-bootstrap` (stale, see 4.7) | mixed |
+| LaunchAgents | `com.itlmt7925.rogaudiod`; per user: `com.itlmt7925.{RogControl,TapGuard,espmount,rogkeyd}`; **not** `com.nullmoth.crashcheck` (its 1401.app is not installed) or ItlWiFi | mixed |
+| Programs behind them | `/Library/PrivilegedHelperTools/com.itlmt7925.*`, `~/Library/Application Support/RogControl/rogkeyd.app` (per user), `/Library/Application Support/RogAudio`, `/Library/Audio/Plug-Ins/HAL/RogAudio.driver`, `/Applications/{RogControl,TapGuard}.app` | BSD (sister repos) |
+
+The owner does not want `1401.app` or `ItlWiFi.app` on a fresh install (native Wi-Fi and the custom driver are used),
+so the full profile leaves both out.
 | Display override | `/Library/Displays/.../DisplayVendorID-4c83` (HiDPI, embeds the panel EDID) | BSD, from `macos-install-hidpi.sh` |
 
 ### 1.5 Changes inside the sealed system (blessed snapshot)
 
 | Change | Tool | Needed in the fresh profile? |
 |---|---|---|
-| `/dev/dri` rule in `com.apple.WindowServer.sb` | `scripts/ws-sandbox/ws-sandbox-dri.sh` (mounts the system volume, patches, `bless --create-snapshot`, reboots) | to check: Step102's DRM-through-IOKit path (NMDR user client) may have made it unnecessary for WindowServer; test on the first fresh run with and without it |
+| `/dev/dri` rule in `com.apple.WindowServer.sb` | `scripts/ws-sandbox/ws-sandbox-dri.sh` (mounts the system volume, patches, `bless --create-snapshot`, reboots) | **yes, required** (checked on the 2026-11-07 fresh run): without it CoreDisplay logs `Failed to create MetalDevice` and WindowServer has no Metal device. A fixed step, run once by the guard daemon (4.3) |
 | `VTStub.bundle` in `/System/Library/Video/Plug-Ins` | `tools/890m/vtstub/install.sh --system` | **no**: experiment, gated by `/tmp/vtstub.on`; leave it out |
 
 Both need authenticated root disabled (0x800 in csr) and must be redone after every macOS update.
@@ -161,16 +174,21 @@ Both need authenticated root disabled (0x800 in csr) and must be redone after ev
    │   dump VFCT → build StrixVFCT; copy the EFI to the internal ESP with the same SMBIOS; full-profile config
    │   (csr 0x0A43, AMFI boot-args); boot entry; ocvalidate; arm the resume daemon               → REBOOT 1
    │
- S4  stage "le + userland"   (resume daemon, then admin password #2 in the app)
+ S4  stage "le + userland", all offline   (resume daemon, then admin password #2 in the app)
+   │   post-migration cleanup: remove graphics-bootstrap, com.nullmoth.crashcheck (Migration Assistant restores them)
    │   NullMoth 2.7.1 upstream install.sh (tarball sha-checked) with NMXAudio held back
-   │   → golden overlay: NMXGPU, NMXAccel, NMXAGDC, NVRM, NMXBacklight, StrixS0ix → /Library/Extensions
+   │   → golden overlay: NMXGPU, NMXAccel (family gate, 74a6f5c), NMXAGDC, NVRM, NMXBacklight, StrixS0ix
+   │     → /Library/Extensions as root, root:wheel 755/644
    │   → 890M plugin + translator, RADV/libdrm, allow list, flip-default daemon, helpers/apps/agents
    │   → StrixSbxMap built with the pins of the files just installed → ESP
-   │   → kmutil create AuxKC, kccheck (UUIDs + cave byte windows), recheck after 45 s           → REBOOT 2
+   │   → kmutil create AuxKC (prelinked against the installed KCs), kccheck (UUIDs + cave windows)
+   │   → arm the guard daemon (auxguard + ws-sandbox-dri)                                       → REBOOT 2
    │
- S5  stage "verify"  (resume daemon, no password)
-   │   kexts loaded, AuxKC on disk still complete, NMXGPU modeset, WindowServer on the 890M, NVIDIA headless,
-   │   Wi-Fi, audio, brightness; optional "system" stage (WindowServer.sb) if the S5 test needs it → REBOOT 3
+ S5  guard + stage "verify"  (resume daemon, no password)
+   │   guard: wait 45 s, kccheck the AuxKC; if kernelmanagerd replaced it, relink and reboot (at most 2);
+   │   run ws-sandbox-dri.sh once (/dev/dri rule, new blessed snapshot)                         → REBOOT 3
+   │   verify: NMX pipe armed, kexts loaded, AuxKC complete, NMXGPU modeset, WindowServer Metal on the 890M,
+   │   NVIDIA headless, Wi-Fi, audio, brightness, agents
    │
  done: the app shows a report; the resume daemon removes itself
 ```
@@ -192,7 +210,11 @@ Order rules that matter:
 5. One AuxKC relink at the end of S4, not one per kext. A new kext added after the relink triggers kernelmanagerd
    (Step100b).
 6. Anything that touches `/System` runs last and on its own reboot, so a failure there can be rolled back by booting
-   the previous snapshot (`bless --last-sealed-snapshot` or the OpenCore picker).
+   the previous snapshot (`bless --last-sealed-snapshot` or the OpenCore picker). The WindowServer sandbox rule needs
+   csr 0x800 (`CSR_ALLOW_UNAUTHENTICATED_ROOT`), which is one more reason S3 must come first.
+7. S4 needs no reboot in the middle: kexts, prelink, `kccheck` and arming the guard all happen in one pass, then one
+   reboot (proven on the 2026-11-07 run). The guard's two-reboot cap covers the case where kernelmanagerd replaces the
+   AuxKC on the first boot, which happened on that run.
 
 ### 2.1 Pre-install (USB EFI) versus post-install (Setup app)
 
@@ -218,7 +240,7 @@ the first boot cannot work, or cannot be used with the built-in keyboard and tou
 | `AmdCppc` + `AmdCppcPolicy`, `RyzenHV` | post-install | CPU power policy, hypervisor |
 | `AppleALC` (`alcverbs=1`), `StrixAmp`, RogAudio | post-install | audio |
 | `BlueToolFixup`, `MtkBtFw`, `BtLeDlFix` | post-install | Bluetooth (not needed: the built-in keyboard and touchpad are not Bluetooth) |
-| `AsusWmi`, `BrightnessKeys`, `Sinetek-rtsx`, ROG Control, TapGuard, ItlWiFi, HiDPI override, ESP automount | post-install | laptop controls, card reader, apps, display scaling |
+| `AsusWmi`, `BrightnessKeys`, `Sinetek-rtsx`, ROG Control (+ `rogkeyd`), TapGuard, HiDPI override, ESP automount | post-install | laptop controls, card reader, apps, display scaling (no ItlWiFi, no 1401) |
 
 ### Machine-specific versus shared
 
@@ -296,14 +318,16 @@ In this repo (BSD):
 ```
 scripts/fresh-install/
   capture-live.sh          prototype, done: hash (and with --copy, collect) the live stack into OUT/
-  verify.sh                prototype, done: compare a manifest with the live system or a payload folder
+  verify.sh                prototype, done: compare a manifest with the live system or a payload folder;
+                           --drift fails when the payload differs from the live system (stale capture)
   manifest.example.json    prototype, done: the schema by example
   build-usb.sh             todo: partition + fill a USB from a manifest (S0)
   stage-efi.sh             todo: S3 (VFCT dump, StrixVFCT, SMBIOS, ESP copy, ocvalidate)
   stage-le.sh              todo: S4 (NullMoth upstream, overlay, StrixSbxMap, relink, kccheck)
   stage-verify.sh          todo: S5 (runtime checks, report JSON)
   stage-system.sh          todo: optional /System stage (wraps ws-sandbox-dri.sh)
-  resume.sh + com.ga403wm.fresh-install.plist   todo: resume daemon, reads /Library/GA403/state.json
+  auxguard/                copied 2026-11-07 from the fresh run: auxguard.sh + com.ga403wm.auxguard.plist (base of resume.sh)
+  resume.sh + com.ga403wm.fresh-install.plist   todo: resume daemon = auxguard + state.json (/Library/GA403/state.json)
   undo.sh                  todo: roll back one stage from its backup
   kccheck/kccheck.c        prototype, done: LC_UUID + byte-window checks of a kernel collection (no python on a fresh macOS)
   profiles/usb.json        todo: USB-profile overrides for config.plist (pre-install set of 2.1, csr 0, no AMFI args)
@@ -375,13 +399,35 @@ from the stick), run `ocvalidate`. Install the resume daemon. Set `state.json` t
 The user picks the internal OpenCore once (or the BIOS boot order is set).
 
 **S4 stage-le.sh** (root): check that the boot really came from the internal ESP with csr 0x0A43 (`csrutil status`,
-`nvram csr-active-config`) and the AMFI boot-args, and stop with a clear message if not. Unpack the NullMoth 2.7.1
+`nvram csr-active-config`) and the AMFI boot-args, and stop with a clear message if not. Clean up what Migration
+Assistant restored from an older system: the `com.itlmt7925.graphics-bootstrap` daemon and the
+`com.nullmoth.crashcheck` agent (move them to `/Library/GA403/backup/`, do not delete). Unpack the NullMoth 2.7.1
 tarball (sha-checked) and run its `install.sh` the way `macos-install-nvidia-2.7.1.sh` does (NMXAudio held back).
-Copy the golden overlay to `/Library/Extensions` (`chown -R 0:0`, `chmod -R go-w`) and the userland trees and files.
-Then `nvmtl-desccache/install.sh` equivalent: plugin + translator, allow list readable by `_windowserver`. Install the
-launchd jobs and programs, build StrixSbxMap with the new pins and put it on the ESP. Then one `kmutil create -n aux`
-into `AuxiliaryKernelExtensions.kc.ga403`, `kccheck` (all 8 UUIDs + the NMXGPU cave windows, see 4.4), `mv`, wait
-45 s, `kccheck` again. Last, `verify.sh --stage le` and `--stage userland`, then ask for the reboot.
+Copy the golden overlay to `/Library/Extensions` as root (`chown -R root:wheel`, folders 755, files 644) and the
+userland trees and files. The NMXAccel in the overlay must carry the family gate (74a6f5c,
+`scripts/macos-install-nmxaccel-gate.sh`): the older exact kernel-string gate does not arm the 890M pipe on any other
+build, and that gave no Metal and a frozen login on 25G332. Then `nvmtl-desccache/install.sh` equivalent: plugin +
+translator, allow list readable by `_windowserver`. Install the launchd jobs and programs, build StrixSbxMap with the
+new pins and put it on the ESP. Then one AuxKC link against the KCs of the installed system:
+
+```
+kmutil create -n aux --volume-root / --allow-missing-kdk \
+  --kernel /System/Library/Kernels/kernel \
+  -B /System/Library/KernelCollections/BootKernelExtensions.kc \
+  -S /System/Library/KernelCollections/SystemKernelExtensions.kc \
+  --repository /Library/Extensions -A /Library/KernelCollections/AuxiliaryKernelExtensions.kc.ga403 -z
+```
+
+When S4 builds for another volume (a target disk mounted at `/Volumes/X`), prefix the kernel, `-B`, `-S` and
+`--repository` paths with the target, but keep `--volume-root /`: `--volume-root /Volumes/X` fails with
+`KextExcludeList not found`. Then `kccheck` (all 9 UUIDs + the NMXGPU cave windows, see 4.4), back up the old KC,
+`mv`, and arm the guard daemon (below). Last, `verify.sh --stage le` and `--stage userland`, then ask for the reboot.
+
+**Guard daemon** (root, every boot until done; `scripts/fresh-install/auxguard/`, live since 2026-11-07): wait 45 s,
+`kccheck` the AuxKC with `nmx-relink.probes`. If kernelmanagerd replaced it (it did on the first boot of the
+2026-11-07 run), relink into `$KC.relink`, check that file, keep the old KC as `AuxKC.replaced.<UTC>`, `mv`. Run
+`ws-sandbox-dri.sh` once (`.done` marker). Reboot only if something changed, at most twice (a counter file).
+`resume.sh` grows from this script: it adds `state.json` and starts S5 when the guard has nothing left to do.
 
 **S5 stage-verify.sh** (root, no password: runs from the resume daemon, the app shows the result): run the checks of
 4.4 and write `/Library/GA403/report.json`. If every check passes, the daemon removes itself.
@@ -400,8 +446,16 @@ Static (before each reboot):
 * `ocvalidate` on the written config.plist; `plutil -lint`.
 * `sudo -u _windowserver test -r /Library/GPUBundles/nvmtl-allow.txt`.
 
-Runtime (S5, after REBOOT 2):
+Runtime (S5, after the guard's last reboot). The first five are the checks that proved the stack on the 2026-11-07
+run:
 
+* `sysctl debug.nmxaccel_armed` = 1, and `/usr/bin/log show --last boot` has `debug.nvaccelfb now reads 1` (the
+  NMXAccel native framebuffer watch).
+* The unified log has NVMTL `this GPU owns the display (NMX pipe armed)` for WindowServer, and no CoreDisplay
+  `Failed to create MetalDevice`.
+* `system_profiler SPDisplaysDataType`: AMD Radeon 890M, Metal 3, 2880x1800; the RTX 5060 listed without a display.
+* About 440 processes hold the DRM user client (`drm-uc`), not a handful.
+* 16 GPU-stack kexts loaded; agents RogControl, TapGuard, rogaudiod and rogkeyd running.
 * `kmutil showloaded`: every bundle id of the manifest's `le` stage plus the enabled EFI kexts, at the manifest
   version.
 * AuxKC on disk still passes `kccheck` (kernelmanagerd did not replace it).
@@ -456,32 +510,40 @@ first:
 
 ### 4.7 Risks and open questions
 
-* **No full install has ever been done with this stack** (README: only Recovery from USB was tested on 15.6.1; the
-  live system was upgraded in place to Tahoe). The first fresh run should target a spare SSD or an external disk,
-  with this disk untouched.
-* **Wi-Fi inside Recovery is untested.** `itlmt7925Native` hooks IO80211/Skywalk with layouts checked on the
+* **One fresh install has been done, by hand** (2026-11-07, 25G332, through `Install macOS Tahoe.app` onto a new
+  APFS volume, then Migration Assistant). The scripted path (USB, Recovery, stage scripts) has never run. The first
+  scripted run should target a spare SSD or an external disk, with this disk untouched.
+* **Wi-Fi inside Recovery is still untested** (the 2026-11-07 run did not use Recovery). `itlmt7925Native` hooks IO80211/Skywalk with layouts checked on the
   installed 25G241 system; the Recovery BaseSystem is a smaller system of the same build family, and whether its Wi-Fi
   menu drives our interface has never been tried. Test it first (boot the USB, Recovery, join Wi-Fi, open Safari in
   Recovery) before anything is erased. Fallbacks already on the USB: phone tethering (HoRNDIS) and any USB Ethernet
   adapter Apple supports. The Ethernet-mode `itlmt7925.kext` would need the network name and password injected into
   the USB copy (`inject-creds`), in plain text on the stick, so it stays a last resort.
-* **Recovery installs the newest Tahoe build Apple serves, not a chosen one.** The golden payload is tied to 25G241
-  (StrixAccel ABI profile, Wi-Fi native layouts, the `/System` sandbox change). The Setup app must read `sw_vers`
-  first: on the manifest's build it runs normally; on another build it stops before the `le` stage and says which
-  parts need a re-check. Tahoe being the last Intel release limits how far this drifts, but every new point release
-  needs one pass on this machine before the manifest lists it.
+* **Recovery installs the newest Tahoe build Apple serves, not a chosen one. This has happened:** the 2026-11-07
+  install got 25G332, while the payload was captured on 25G241. The one part that broke was the NMXAccel gate, which
+  matched the exact 25G241 kernel string; the family gate (74a6f5c) replaced it. The Setup app must read `sw_vers`
+  first: on the manifest's build it runs normally; on a newer build it lists which parts depend on the build (NMXAccel
+  gate, StrixAccel ABI profile, Wi-Fi native layouts, the `/System` sandbox change) and asks before the `le` stage,
+  instead of refusing. Every new point release still needs one pass on this machine before the manifest lists it.
+* **Stale payload.** A capture can drift from the live system within days (six components on 2026-11-07). Capture
+  right before building the stick, check with `verify.sh MANIFEST --drift PAYLOAD` (4.8), and show the capture date
+  in the app.
+* **Migration Assistant restores stale jobs.** Moving data from an older system brought back the
+  `graphics-bootstrap` daemon and `com.nullmoth.crashcheck` (whose 1401.app is gone). S4 removes them (4.3).
+* **Python in the relink path.** `scripts/nmx-relink/nmx-relink.sh` runs `nmx-caves-check.py` with
+  `/usr/bin/python3` when that check is installed. On a fresh macOS that file is only the stub that offers the Command
+  Line Tools, so the check fails and the relink stops. The guard uses `kccheck` instead; `nmx-relink.sh` should do the
+  same (or skip the check when the Command Line Tools are missing).
 * **No App Store installer to fall back on.** Without a full installer on the stick, a failed download in Recovery
   means retrying the network. A second, offline route can be added later (a `createinstallmedia` stick made
   separately) without changing anything in this design.
 * **kmutil approval.** Expected: no Privacy & Security prompt with `CSR_ALLOW_UNAPPROVED_KEXTS`. If one appears, the
   app shows the user where to click and waits.
-* **kernelmanagerd** may rebuild the AuxKC at the first boot that sees new kexts. That is covered by the 45 s check
-  and the post-boot check, but S4 might need a second relink pass from the resume daemon (as `nmx-relink.sh` does).
-* **The golden payload is tied to macOS 25G241.** A different Tahoe build needs the ABI checks of the trace (StrixAccel
-  profile, Wi-Fi native ABI) before the manifest's `macos.build` can change.
+* **kernelmanagerd** rebuilt the AuxKC without our kexts on the first boot of the 2026-11-07 run. The guard daemon
+  (4.3) fixed it with one relink and one extra reboot; the design now relies on it.
 * **`graphics-bootstrap` LaunchDaemon** (`/Library/StrixGraphicsFix/bootstrap.sh`) is stale: it lists StrixAccel
-  0.1.15 / NVRMEdpBL and its last status is `LOAD_FAILED exit=2`. Leave it out of the fresh profile (and consider
-  removing it here).
+  0.1.15 / NVRMEdpBL and its last status is `LOAD_FAILED exit=2`. Left out of the fresh profile, and removed by S4 if
+  Migration Assistant brings it back.
 * **Trace flags** in boot-args (`itlmt_stat`, `itlmt_native_nvtrace`, `strixamp_trace`, `rhv_selftest`,
   `rhv_loglevel=4`) and `debug=0x100`: the full profile should drop them, and a "debug" profile can add them back.
 * **NVRM boot hold** costs about 36 s at boot (boot-time audit, 2026-11-05). This is not an installer problem, but
@@ -501,6 +563,17 @@ scratchpad.
 | `kccheck` on the live AuxKC, 9 kexts + the 3 probe windows of `nmx-relink.probes` | all `ok`, 0.3 s; the same answers as the python `uuids_in()` / `check_kc()` logic run side by side |
 | `kccheck` negative tests | StrixProbe (an EFI kext, not in the AuxKC) reports `MISSING`, exit 1; a probe window that occurs many times reports `>1x`, exit 1 |
 
+Rerun on 2026-11-07 (25G332, after the first fresh install), still read-only:
+
+| Run | Result |
+|---|---|
+| `capture-live.sh` (hashes only, new rows of 1.4, ItlWiFi and stale jobs left out) | 106 components |
+| `verify.sh` on that manifest (live) | `match 105, differ/missing 0, skipped 1` |
+| `verify.sh ~/ga403-payload-25G241/manifest.live.json --drift ~/ga403-payload-25G241/payload` | exit 1, `match 35, differ/missing 10`: DRIFT for NMXAccel (family gate), NVRM, StrixS0ix, NVMTLDriver.bundle, nvmtl, RogAudio, RogControl.app; GONE for the audio-boot-trace, graphics-bootstrap and crashcheck jobs. The same six stale parts the fresh run found by hand, plus the gate |
+
+`--drift` only checks what the payload carries. A part that is new on the live system shows up by capturing again and
+comparing the component ids of the two manifests.
+
 What the dry runs added to the design:
 
 * The target needs to know about the `restricted` flag. NullMoth's own installer sets it on those files; whether our
@@ -508,6 +581,42 @@ What the dry runs added to the design:
   affected.
 * The payload still lacks the NullMoth 2.7.1 tarball itself (`~/efi-audit/upgrade-2.7.1/` is gone). Downloading it
   again needs the owner's OK.
+
+### 4.9 The first fresh install (2026-11-07): what changed in this design
+
+Full notes: [FRESH-INSTALL-LESSONS-2026-11-07.md](FRESH-INSTALL-LESSONS-2026-11-07.md). Changes made above:
+
+| Finding | Where it changed the design |
+|---|---|
+| Apple served 25G332, not the manifest's 25G241 | 4.7: the app asks instead of refusing on a newer build |
+| The 2026-11-05 payload was stale two days later | summary, 4.7, 4.8: capture right before the stick, `verify.sh --drift` |
+| Capture missed `/Library/NullMoth/*.sh`, `/usr/local/share/strixamp`, `nmx-relink.probes` | 1.4, `capture-live.sh` rows |
+| The WindowServer `/dev/dri` rule is required | 1.5, guard daemon (4.3) |
+| NMXAccel exact kernel-string gate gave no Metal and a frozen login | 4.3: overlay carries the family gate (74a6f5c) |
+| Offline AuxKC prelink works with `--volume-root /` | 4.3 command, order rule 7 |
+| kernelmanagerd replaced the AuxKC on the first boot | guard daemon (4.3), `scripts/fresh-install/auxguard/` |
+| Migration Assistant restored `graphics-bootstrap` and `com.nullmoth.crashcheck` | S4 cleanup (4.3), 4.7 |
+| No 1401.app, no ItlWiFi.app | 1.4, 2.1, `capture-live.sh` |
+| No python3 on a fresh macOS | summary, 4.7 (`nmx-relink.sh`) |
+| Kexts must be `root:wheel` 755/644 | 4.3 |
+
+Symptoms seen on that run, for the app's error messages (what, why, how):
+
+| Symptom | Cause | What the app says to do |
+|---|---|---|
+| First boot reaches userspace, then a black screen or no login; WindowServer aborts in `CoreDisplay CGXMappedDisplayStart` | no GPU stack, or an AuxKC without our kexts | boot the USB EFI, run the guard check (`kccheck`), relink |
+| Desktop draws but is extremely slow, then freezes at the account or login step | WindowServer has no Metal device: NMXAccel gate not armed, or the sandbox rule missing | check `debug.nmxaccel_armed` and `ws-sandbox-dri.status` |
+| `kmutil` "KextExcludeList not found" | `--volume-root` pointed at the target volume | use `--volume-root /` (4.3) |
+| Installer: "not enough free space, additional N MB" after space was freed | the installer reads free space only once | relaunch it; `/Library/InstallerSandboxes/.PKInstallSandboxManager*` can hold many GB |
+
+Smaller traps for the stage scripts: quote `/Volumes` paths and build them with a slash (a missing slash created
+`/Volumes/WorkApplications` on the boot disk and filled it); call `/usr/bin/log`, since zsh has a `log` builtin; the
+owner's login shell is fish, where a glob that matches nothing is an error. Per-user data (agents with the user name
+in paths, app settings) can only be restored once the account exists: an `after-login.sh` with `rsync --update`
+worked. The OpenCore picker reads the volume name from
+`Preboot/<group UUID>/System/Library/CoreServices/.disk_label.contentDetails`, which `diskutil apfs updatePreboot`
+did not refresh after a rename; write it as root. Delete or grow containers only after checking the target's UUID and
+name and that the free space directly follows the container.
 
 ## 5. Next steps
 
@@ -517,13 +626,15 @@ What the dry runs added to the design:
    `SSDT-ECRAM`, and split `profiles/usb.json` / `profiles/full.json`.
 3. **`kccheck`**: prototype done and tested (4.8). Still to do: a build line in `scripts/build.sh` and a probe file per
    manifest version.
-4. **Write the stage scripts** (S3, S4, S5, resume daemon, undo) on top of `verify.sh` and the existing step-script
-   helpers (`relink()`, `checks()`), and change the NMXGPU gate in the NVIDIA install step.
+4. **Write the stage scripts** (S3, S4, S5, resume daemon, undo) in bash on top of `verify.sh`, `kccheck`, the guard
+   daemon (`scripts/fresh-install/auxguard/`) and the existing step-script helpers (`relink()`, `checks()`); change
+   the NMXGPU gate in the NVIDIA install step, and replace the python check in `nmx-relink.sh` with `kccheck`.
 5. **Recovery smoke test with the USB EFI** (nothing erased): build the stick, boot it, check the keyboard, the
    touchpad and Wi-Fi in Recovery, and that Reinstall macOS reaches Apple's servers. This decides whether the
    pre-install set of 2.1 is complete.
 6. **Dry run on a spare SSD** (or an external NVMe), CLI only, without the app. Record every manual step.
-7. **The app** (SwiftUI wrapper, design in section 6) once the CLI run passes. Its `--snapshot` renders can be built and reviewed before that.
+7. **The app** (SwiftUI wrapper, design in section 6) only after step 6 passes: the app wraps stage scripts that
+   have run end to end, it does not replace them. Its `--snapshot` renders can be built and reviewed before that.
 8. **Longer term: make NMXGPU buildable.** Port each cave from 1.3 into the fork branch `ga403wm-nmx` as a source
    change, let CI build NMXGPU, and switch the manifest row from "captured" to "CI artifact". That also ends the
    offset bookkeeping in `nmx-caves/check.py`.
