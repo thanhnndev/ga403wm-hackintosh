@@ -8576,3 +8576,15 @@ Fix (fork `nmx-source-port`, not yet booted):
 - `scripts/macos-install-step125.sh` refuses a build whose plist lacks `NMXOwnsDisplay=true` or whose binary lacks the
   owned-by-default fix.
 - NMXAccel stays as built (C18FD8B4): the delivery before open is correct once the controller exists.
+
+### Step129: NMXGPU 4fa624f9 (owned-by-default fix) + StrixS0ix 0.1.13 installed (2026-11-07 23:4x, owner's OK, reboot pending)
+
+- NMXGPU from fork `nmx-source-port` 57ae789 (UUID B9229F5F, sha 4fa624f9): `NMXOwnsDisplay` true in the plist,
+  owned-by-default in `nmx_fb.cpp`, plus everything of e32615c (stage marks, `nmxhold=0`, IPS trace, lock-free
+  curthread, boot hold, no `proc_starttime`). Installed with `scripts/macos-install-step125.sh` (backup of the cave set
+  591E7D5A in `/Library/NullMoth/step125-bk-*`), then `scripts/macos-install-step126.sh` (StrixS0ix 0.1.13). AuxKC
+  checked: both kexts by UUID, NVRM Step124, NMXAccel family gate, NMXBacklight 0.4.0; probes 0xb4100/0x383100/0x651d00.
+- Expect after the reboot: NMXAMDFB with `IOFBDependentID`, `GATES after deliverModeChange ... pipe 0 active = 1`,
+  `NMX flip: API up`, imports, desktop on the 890M, no panic; `nmxgpu-boot-hold` "released: NMXAMDFB published".
+- Undo from macOS: `sudo scripts/macos-install-step125.sh --undo` (+ `macos-install-step126.sh --undo`). If the boot
+  fails: the Windows restore of `step125-bk-*` as in the 23:14 revert.
