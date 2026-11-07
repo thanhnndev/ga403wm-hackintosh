@@ -8546,3 +8546,33 @@ other kexts were not touched by Step125 and are as at 20:36. The NMXAccel patch 
 
 - Mitigation now: `/Library/NullMoth/vcndec-off` set at 20:58 (Edge back on its software decoders after a page reload).
   The fixed bundle is installed in /System for the next boot; remove the kill switch after that boot and re-check.
+
+### Step128 root cause found on macOS: the source build's Info.plist lost `NMXOwnsDisplay` (2026-11-07 23:3x)
+
+Read on the restored macOS (boot 23:16, NMXGPU 591E7D5A), from the unified log of the two black boots (23:08, 23:10)
+and the good one (20:36):
+
+- **Black boot (ed82aa34 + the Windows NMXAccel byte patch):** NMXAMDFB published 9.9 s, pipe armed, WindowServer opened the
+  FB at 12.9 s (`pipe: open`, `scanout ok`, `setDisplayMode`), but `nmxgpu-stage` stops at `hold released` (no `first flip`
+  mark), and the kernel log has no `NMX flip: API up`, no `import`, no `performTransaction`, no
+  `GATES after deliverModeChange ... pipe 0 active = 1`. WindowServer never presented a frame: black.
+- **Good boot (cave chain):** `delivering display_mode_will_change/did_change` at 25.083 s, **before** `pipe: open` at
+  29.72 s, with no panic, then `pipe 0 active = 1`, `flip: API up`, imports, transactions. So "mode change before open()"
+  is not the bug, and the Windows-side NMXAccel patch (skip the delivery before open) removed the one delivery that turns
+  the pipe active: that is what made the patched boots black.
+- **Difference:** `IOFramebuffer::start()` builds the framebuffer's controller only from an `IOFBDependentID` that is
+  already set (b15 comment in `nmx_fb.cpp`). NMXAMDFB sets it only when the internal panel is `foreign` or `owned`, and
+  `owned` needs `NMXOwnsDisplay = true` on the NMXGPU provider. The live cave-chain `Info.plist` has it
+  (`IOKitPersonalities/NMXGPUAMD/NMXOwnsDisplay`, written by `macos-nmx-owns-oled-install.sh`, Step80); the source
+  tree's `gpu-port/xkpi/kext/Info.plist` never had it (a full plist diff shows this is the only difference), and
+  out-6 (ed82aa34) has none. So NMXAMDFB had no controller group: unpatched, NMXAccel's first mode change faulted in
+  `getAttributeExt` on `fPrivate->controller` NULL (CR2 0x120 at 10.15 s; the earlier "hang at ~12 s" is the same panic
+  without a saved report); patched, no panic but no display pipe, black.
+
+Fix (fork `nmx-source-port`, not yet booted):
+- `kext/Info.plist`: `NMXOwnsDisplay` true in the NMXGPUAMD personality.
+- `xnu/nmx_fb.cpp`: the internal panel is owned unless the provider says `NMXOwnsDisplay = false` explicitly, and a
+  panel that ends up neither owned nor foreign logs `neither owned nor foreign ... no display pipe`.
+- `scripts/macos-install-step125.sh` refuses a build whose plist lacks `NMXOwnsDisplay=true` or whose binary lacks the
+  owned-by-default fix.
+- NMXAccel stays as built (C18FD8B4): the delivery before open is correct once the controller exists.

@@ -124,6 +124,11 @@ src_build "$B/Contents/MacOS/NMXGPU" || { echo "$B is not the Step125 source bui
 # with the NVRAM stage marks (nmxgpu-stage / nmxgpu-alive) may go in, so a hang can be located from Windows.
 if grep -qa '_proc_starttime' "$B/Contents/MacOS/NMXGPU"; then echo "$B imports proc_starttime (Step128 panic), refusing"; exit 1; fi
 grep -qaF 'nmxgpu-stage' "$B/Contents/MacOS/NMXGPU" || { echo "$B has no NVRAM stage marks (Step128), refusing"; exit 1; }
+# Step128 root cause: the source build's Info.plist lost NMXOwnsDisplay (the Step80 installer had written it into the
+# live cave-chain plist). Without it NMXAMDFB has no controller group: panic at 10 s (CR2 0x120) or a black panel.
+[[ $(/usr/libexec/PlistBuddy -c 'Print :IOKitPersonalities:NMXGPUAMD:NMXOwnsDisplay' "$B/Contents/Info.plist" 2>/dev/null) == true ]] \
+    || { echo "$B Info.plist has no NMXOwnsDisplay=true in NMXGPUAMD (Step128 black panel), refusing"; exit 1; }
+grep -qaF 'neither owned nor foreign' "$B/Contents/MacOS/NMXGPU" || { echo "$B predates the owned-by-default fix (Step128), refusing"; exit 1; }
 BK=/Library/NullMoth/step125-bk-$TS
 mkdir -p "$BK"
 ditto "$G" "$BK/NMXGPU.kext"
