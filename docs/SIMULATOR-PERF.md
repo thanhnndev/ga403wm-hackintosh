@@ -95,6 +95,24 @@ The RTX's shared IOSurfaces live in system RAM (`b80 LOCAL+mapped memory -> syst
 frames the RTX is 2-3x slower and only ties at 64x the shading work. Both GPUs see each other's writes (pixel
 counts match). Keep the simulator on the 890M.
 
+Why the RTX loses (`tools/sim-bench/split.swift`, same frame, 2026-11-07):
+
+| | 890M | RTX |
+|---|---|---|
+| empty command buffer, commit -> completed | 0.022 ms | 0.025 ms |
+| frame into a private (VRAM) texture, GPU time per frame | 0.56 ms | **0.11 ms** |
+| frame into a shared IOSurface, GPU time per frame | 0.85 ms | 0.38 ms |
+| frame into a shared IOSurface, 1 frame per command buffer | 1.16 ms | **2.83 ms** |
+| fp32 FMA throughput | 4.0 TFLOP/s | 7.4 TFLOP/s |
+
+RTX extra cost per command buffer on an IOSurface (IOSurface minus private, 1 frame per buffer):
+3 MB surface 0.65 ms, 12 MB 2.5 ms, 25 MB 4.4 ms, about 5.5 GB/s and linear in size. So the RTX's per-commit cost
+is one transfer of the whole surface over PCIe, plus slower drawing into system RAM. Submission latency, Metal and the
+GPU itself are not the cause. The cause is the port: the plugin keeps shared IOSurfaces in system RAM (b79/b80
+placement) and moves the full surface on every command buffer. The simulator commits about once per frame, so it pays
+that cost every frame. A fix would keep a VRAM copy and transfer only damaged regions. But the 890M still has to read
+the frame for WindowServer, so the sim stays on the 890M anyway.
+
 ### Simulator settings tried
 | setting | SimMetalHost | fps | verdict |
 |---|---|---|---|
@@ -135,6 +153,7 @@ translator's hash, so every app compiles its shaders once more after the install
   frame. `SimBench/build.sh release` builds it with `swiftc` for the x86_64 simulator (no Xcode project).
 - `run.sh LABEL [s]` cold launch + fps + CPU; `exp.sh LABEL` CPU per sim process with SimBench running;
   `after.sh LABEL` sim reboot + idle CPU + launch; `cpu.sh`; `crashrate.sh [s]`.
+- `split.swift` submit latency / VRAM vs IOSurface / ALU split per GPU (`W=`, `H=` for the surface size).
 - `xgpu.swift` render-on-one-GPU / sample-on-the-890M IOSurface A/B (`NVMTL_GPU=nvidia` for the RTX).
 - `lib.swift`, `astc.swift`, `tew.swift`: compute pipelines from MTLSimDriver's `default.metallib`
   (copy it from the runtime's `MTLSimDriver.framework`); `DYLD_LIBRARY_PATH=<dir with a translator build>` tests a
