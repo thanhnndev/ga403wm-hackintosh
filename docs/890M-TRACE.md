@@ -8316,3 +8316,49 @@ Next: the hang stage needs evidence the disk cannot give (the system stops befor
 `IODTNVRAM`, plus NVRM's existing marks; boot once with `nmxamd=1`, read the last mark from Windows. Building and
 installing needs one macOS session with a picture (NMXGPU off, StrixGOP raster on), since kmutil cannot run from
 Windows and only byte-sized fixes can be written into the AuxKC in place.
+
+### Step128 restore: the 14:29 good boot set put back from Windows (2026-11-07 18:15, reboot pending)
+
+Owner's call: record the trace, then put ESP, kexts and /Library back as they were at the last good boot (14:29,
+before Step125/126). Nothing could be relinked (no kmutil on Windows), so the files of that boot were written back
+in place from the installers' own backups, the same way as the two-byte patch.
+
+The good boot, from auxguard.log 2026-11-07 07:29:11Z: NMXGPU UUID `591E7D5A` (sha 5760efb6, cave chain), StrixS0ix
+`28371854` (0.1.12), probes `0x509100/0x509800/0x509e00`, every other kext as today (NMXAccel C18FD8B4, NMXAGDC
+90C7A833, NMXBacklight EF716CC3, NVRM 573209B7, NVAccel 3D45DC36, NVRMFB 64F97BB0, NVRMAGDC 4DBD6B43).
+
+| target | source | sizes (target / source) |
+|---|---|---|
+| /Library/KernelCollections/AuxiliaryKernelExtensions.kc | step125-bk-20261107T083523Z (built 07:18Z, booted at 14:29) | 31293440 / 31195136 |
+| /Library/Extensions/NMXGPU.kext/Contents/MacOS/NMXGPU | step125-bk (591E7D5A) | 10904240 / 10871640 |
+| /Library/Extensions/NMXGPU.kext/Contents/Info.plist | step125-bk | 2452 / 2093 |
+| /Library/Extensions/StrixS0ix.kext/Contents/MacOS/StrixS0ix | step126-bk-20261107T084026Z (0.1.12) | 70040 / 65680 |
+| /Library/Extensions/StrixS0ix.kext/Contents/Info.plist | step126-bk | 1472 / 1472 |
+| /Library/StrixGraphicsFix/nmx-relink.probes | new probes for 591E7D5A (see below) | 41 / 41 |
+| ESP EFI/OC/config.plist | config.plist.bk-addv-20261107T164437 (the 14:29 config; differs from the current one by `-v` only) | |
+
+- File sizes cannot change from Windows, so a shorter source is padded: Mach-O files with zeros (past the last
+  segment, not parsed), plists with newlines after `</plist>` (XML trailing whitespace; both parse). The old probes
+  file is 42 bytes and the live one 41, so `probes_calc.py` picked three new windows of the 591E7D5A `__text`
+  (`0x80000 0x40`, `0x37f800 0x40`, `0x64bb00 0x40`), each found once in the binary and once in the old AuxKC. The
+  original three still match too.
+- Checks before writing: not compressed, not encrypted, never cloned (inode flags 0x8000 only), no physical block
+  shared with any of the 161 files under /Library/{NullMoth step12*,StrixGraphicsFix,KernelCollections,Extensions},
+  each target unchanged since the 18:12 pull, raw blocks equal to the blocks read through APFS. Raw blocks saved
+  before the write (session scratchpad `restore_bk_20261107T181538`), read back after it.
+- Checks after (fresh APFS parse, files read through the filesystem): every target = its source + padding; both
+  plists parse (StrixS0ix 0.1.12); the kccheck conditions hold on the result (three probes 1x/1x, NMXGPU 591E7D5A and
+  StrixS0ix 28371854 in the collection, the seven other UUIDs present). So auxguard should log `AuxKC ok` and not relink.
+- ESP: current config kept as `config.plist.bk-restore-20261107T181537`.
+- Not reverted (userland, loaded long after the boot window, and paired with each other): the NVMTL translator
+  (15:40), VCNDec (15:30), and the ESP `StrixSbxMap.kext` Info.plist (15:40:58, cdhash pins for that translator).
+
+State for the next boot: old NMXGPU (cave chain) with `nmxamd=1`, StrixS0ix 0.1.12, NVRM Step124, NMXAccel family
+gate, no `-v`. This is the configuration that booted at 14:29.
+
+Do not, on macOS, before the hang above is understood:
+- rerun `scripts/macos-install-step125.sh` or `scripts/macos-install-step126.sh` as they are. Step125 installs a
+  source build whose weak import panics (928335c2), and 326858e, which fixes that, still hangs the boot at ~12 s
+  (the byte-patched AuxKC behaves like 326858e).
+- install any NMXGPU source build without NVRAM stage marks, so a hang can be located from Windows.
+- worry about the padded files: the next `ditto`/kmutil install replaces them whole.
