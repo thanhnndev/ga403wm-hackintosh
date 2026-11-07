@@ -8226,3 +8226,17 @@ To get the 890M back (on the Mac):
 1. `cd ~/develop/projects/nmx-build-xkpi`, pull `nmx-source-port` (326858e), build NMXGPU.kext.
 2. `sudo scripts/macos-install-step125.sh <out>/NMXGPU.kext` (AuxKC relink).
 3. Re-add `nmxamd=1` to boot-args in ESP `config.plist`, reboot. Keep `-v` for the first boot.
+
+### Step128 follow-up: the boots with `nmxamd` off reach loginwindow with no picture (2026-11-07 17:30)
+
+Four boots after `nmxamd=1` was removed (BOOT_TIME 17:09:31, 17:13:48, 17:24:49, 17:26:35, UTC+7). None panicked:
+no new `.panic`, no `aapl,panic-info` in NVRAM. Bootguard logged "desktop came up" for each one (17:10:22, 17:14:40,
+17:25:43, 17:27:28). In the last boot's log (Persist 0x37), WindowServer (pid 200) and loginwindow (pid 207) run.
+NVKMS reports `no display on any NVIDIA connector`. NMXGPU declines (no `nmxamd`), and StrixGOP is off
+(`-strixgopoff`). So nothing drives the OLED, which keeps the frozen verbose text. No console login happened after
+15:56 (no `USER_PROCESS` in system.log).
+
+So "it still hangs" is the missing panel driver, not a new fault. The installed NMXGPU is still 928335c2, which has
+the weak import, so re-adding `nmxamd=1` before installing the fixed build (326858e) would panic again. To build
+on the Mac you need a picture first: remove `-strixgopoff` so StrixGOP 0.1.11 (boot-raster framebuffer, no
+acceleration) shows the login window. Then build, install, re-add `nmxamd=1` and put `-strixgopoff` back.
