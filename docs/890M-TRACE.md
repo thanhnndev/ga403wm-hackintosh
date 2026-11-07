@@ -8283,3 +8283,36 @@ Still to do:
   `scripts/macos-install-step125.sh` before the next AuxKC rebuild.
 - Undo of the byte patch: write the two `.orig` blocks back to blocks 0x855d9e and 0x855da0 (valid only while the
   AuxKC file is not rebuilt).
+
+### Step128 after the byte patch: hard hang at ~12 s uptime, no panic saved (2026-11-07 18:00)
+
+Three boots with the patched AuxKC and `nmxamd=1` (timesync boots 10:43:52, 10:45:41, 10:58:00 UTC). The 7 s panic is
+gone: the verbose text runs on, then the panel goes black (amdgpu has taken DCN). The owner waited 3 minutes in the last
+boot; Caps Lock did not toggle its LED.
+
+Evidence (pulled read-only from Windows, `apfs_pull11.py`):
+- The last write of anything on the Data volume is 10:58:10.90 UTC: logd.0.log, Persist `0x3a`, strixamp.log,
+  wifi.log, install.log, fsck_apfs.log all end by then. Nothing in the 3 minutes after. Timesync maps 10:58:05.4535 to
+  kt 6.539 s, so the disk stopped at **~12.0 s uptime**; the 10:45 boot stopped at ~12.3 s. The Persist/Special tracev3
+  extents of these boots are zeros (metadata committed, log data never written), so the kernel log of the hang is lost.
+- No `aapl,panic-info` in NVRAM, `nullmoth-nv-starts` absent, `nullmoth-nv-ok=1`. This is weaker than it looks: the
+  15:56-16:01 boots carried the same weak-import panic and also left no `aapl,panic-info`; only the 16:46 one did.
+- The byte patch itself is correct: both `je` -> `jmp` targets leave `start = 0` (0x6db8e5..0x6db8fc zero the
+  slot; 0x6dd1a9 is `xor edx, edx`), which is what 326858e does in source.
+- `amdgpu-dm-ips-trace.patch` was re-read: printf only (the "dcn35 PMFW IPS support" in its title is the existing
+  upstream call it logs around). Ruled out.
+
+Where ~12 s falls, from the good 14:29 boot with the old NMXGPU and NVRM Step124 (Persist 0x2fa, same boot-args):
+NMXGPU loaded 7.24 s, amdgpu firmware 8.20 s, `amdgpu_dm_initialize_drm_device` 8.61 s, NMXAMDFB published 9.59 s,
+NVRM released by the Step124 wait at 9.70 s and in RTX bring-up (RmInitAdapter, GSP firmware, `_DSM`) through
+10-12 s, WindowServer 13.13 s. So the hang is after the DCN takeover and in the window where NMXAMDFB is published and
+NVRM brings the RTX up. Boot timing moves by ~1 s between boots, so the exact stage is not known.
+
+Ruled out as test levers: `-nvoff` also parks NMXGPU (`opted_in()` in nmx_kext.cpp), and the "1401" picker
+entry / `nullmoth-remove` uninstalls the NVIDIA driver. Neither isolates NVRM from NMXGPU.
+
+Next: the hang stage needs evidence the disk cannot give (the system stops before logd's data reaches it). Build
+326858e on the Mac with NVRAM breadcrumbs (Step128 Next 2): one `nmxgpu-stage` mark per stage written with
+`IODTNVRAM`, plus NVRM's existing marks; boot once with `nmxamd=1`, read the last mark from Windows. Building and
+installing needs one macOS session with a picture (NMXGPU off, StrixGOP raster on), since kmutil cannot run from
+Windows and only byte-sized fixes can be written into the AuxKC in place.
