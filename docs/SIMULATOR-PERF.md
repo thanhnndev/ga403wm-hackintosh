@@ -121,6 +121,29 @@ the frame for WindowServer, so the sim stays on the 890M anyway.
 | Simulator hidden | 85-87 % | 60.0 | the sim keeps rendering; no gain |
 | File > GPU Selection > Prefer Discrete GPU | | | no effect (one device per process) |
 
+## Flutter on the simulator (2026-11-07, boot 20:36)
+Flutter 3.47.9 stable via mise (`mise use -g flutter@3.47.9`, on PATH in zsh and fish through `mise activate`),
+analytics off. `flutter doctor`: Xcode OK, CocoaPods missing (plugins need it), no Android SDK, and "Flutter is
+deprecating support for Intel-based Macs" (this host is x86_64). The simulator only runs debug builds (JIT).
+Impeller draws with Metal, i.e. through NVMTL on the 890M.
+
+`tools/sim-bench/flutter/run.sh` (400-row list, auto-scroll, every row animated each frame, 5 hot reloads):
+
+| | result |
+|---|---|
+| `flutter run`, first frame (Xcode build already cached; first build 30 s) | 22.9 s |
+| fps while scrolling | 36-63, mostly 50-58 |
+| raster (GPU side) per frame, p50 / max | 5.8-6.7 ms / 7.8-11.1 ms |
+| build (Dart, debug JIT) per frame, p50 | 5.4-24.7 ms |
+| hot reload (1 of 754 libraries) | 302 / 369 / 373 / 427 / 436 ms |
+| after each reload, ~2 s | 5-26 fps, build p50 26-98 ms, worst frame 178-285 ms |
+| CPU while scrolling | Runner 86 %, WindowServer 41 %, SimRenderServer 9 %, backboardd 10 % |
+
+Raster stays at ~6 ms: the GPU path is not the limit. Frames are lost in the Dart build phase on the CPU (debug JIT,
+the benchmark rebuilds 400 animated rows every frame), and the stutter after a hot reload is the JIT recompiling.
+Both are debug-mode costs, so they are not specific to this port. Real frame rates need a profile build on a device.
+No translator failures and no crashes in the log during the run.
+
 ## Installed change and undo
 The fixed translator (sha256 `eb6acb2af570f9ab`, built from fork 2da7b21 = 164adb3 + this fix) is installed in
 `/Library/GPUBundles/NVMTLDriver.bundle` with the existing installer, and the StrixSbxMap pins were refreshed:
@@ -144,8 +167,7 @@ translator's hash, so every app compiles its shaders once more after the install
 - `/Library/NullMoth/nullmoth-displaytrace.sh` runs two `log stream` processes all the time: `log` ~38 % CPU plus
   most of diagnosticd's ~45 %. Not the simulator, but it is the largest CPU user left on an idle desktop.
 - bluetoothd ~32 % CPU at idle (not looked at).
-- Flutter (Impeller on the simulator draws through Metal, so through this translator) and the Android emulator:
-  not installed; need the owner's go-ahead to download. Measure with the same scripts once they are.
+- Android emulator: not installed (no Android SDK).
 - Launch time (~0.5 s to first frame for a SwiftUI app) was not traced.
 
 ## Tools (`tools/sim-bench/`)
@@ -153,6 +175,7 @@ translator's hash, so every app compiles its shaders once more after the install
   frame. `SimBench/build.sh release` builds it with `swiftc` for the x86_64 simulator (no Xcode project).
 - `run.sh LABEL [s]` cold launch + fps + CPU; `exp.sh LABEL` CPU per sim process with SimBench running;
   `after.sh LABEL` sim reboot + idle CPU + launch; `cpu.sh`; `crashrate.sh [s]`.
+- `flutter/run.sh` + `flutter/main.dart`: Flutter frame timings (FrameTiming) and timed hot reloads on the booted sim.
 - `split.swift` submit latency / VRAM vs IOSurface / ALU split per GPU (`W=`, `H=` for the surface size).
 - `xgpu.swift` render-on-one-GPU / sample-on-the-890M IOSurface A/B (`NVMTL_GPU=nvidia` for the RTX).
 - `lib.swift`, `astc.swift`, `tew.swift`: compute pipelines from MTLSimDriver's `default.metallib`
