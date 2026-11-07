@@ -8485,6 +8485,30 @@ Fix (needs a build): never deliver the mode change to a framebuffer that is not 
 - Or NMXGPU: NMXAMDFB sets a "opened" flag in `open()`, and the scanout query answers NotReady until then only for the
   first registration (this brings back the Step69 race, so the NMXAccel side is the better place).
 
+
+### Step128 fix written from Windows: NMXAccel skips the mode change while NMXAMDFB is not open (2026-11-07 23:06, owner's OK, reboot pending)
+
+In place in the installed AuxKC (the ed82aa34 collection, NMXAccel C18FD8B4), `scripts/windows-apfs/auxkc_patch_nmxaccel.py`:
+- NMXAccel `deliverModeChange` (KC 0xcff30). The 58 bytes at 0xcff4e..0xcff88 were its two "delivering
+  display_mode_will_change/did_change" ALOG calls. They now hold the test
+  `fFB(+0x1020) == NULL || fFB->fPrivate(+0x1c8) == NULL || fPrivate->controller([0]) == NULL -> return` (0xd0108, the
+  function's own epilogue), else `jmp 0xcff88` (the original `display_mode_will_change` call). Offsets: `fDM` +0x1000 and
+  `fFB` +0x1020 from `registerFramebufferLocked`'s own checks, `fPrivate` +0x1c8 and `controller` at [0] from
+  25G332 `getAttributeExt`.
+- Covers both callers (0xcfe25 in `registerFramebufferLocked` = the panic path, 0xc802e). will/did stay paired, so the
+  machine's nest count (+0x10c) is untouched. Once the FB is open (the cave-chain order) it delivers exactly as before.
+  Before open the pipe is still registered and armed; WindowServer's `open()` delivers the group's mode change itself.
+- Checks: not compressed, one block (0x96753a, +0xf4e), raw == APFS read == the 22:41 pull, the old bytes matched
+  before the write, read back after it, a fresh APFS parse sees the new bytes. NMXGPU probes and the kext UUIDs are not
+  touched, so auxguard's kccheck should pass and not relink. Original block saved in the session scratchpad
+  (`auxkc_block_96753a_20261107T230638.orig`).
+- Lost: the "delivering ..." log line. Any `kmutil` relink drops the patch, so the same test has to go into NMXAccel's
+  source (`kexts/NVRM/accel/nvrm-accel.cpp` `deliverModeChange`).
+
+Next boot, read: no panic at ~10 s, the desktop on the 890M; then `log show --last boot | grep -E 'pipe armed|Created FB|display pipe'`
+and `nvram nmxgpu-stage nmxgpu-alive` (the stage marks did not survive a panic; on a live boot they show whether they work at all).
+If it still goes black, the next panic report (written by the boot after it) names the next stop.
+
 ## Edge web video lag part 18: VCNDec showed a loop of the first frames (stale IOSurface seed), fixed (2026-11-07 21:10)
 
 - Owner: on screen the video only looped its first few frames and stuttered. The hitch probe could not see it: it
