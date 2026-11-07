@@ -8122,3 +8122,12 @@ Measured on the Step125 source build (installed `928335c2`, loaded UUID `591E7D5
 `grab_stray +0`. The AMD device reports `Metal 3`, OLED `2880 x 1800`, 120 Hz, internal. The VA-0 page fault from
 Steps 59-66 does not reproduce on this build, so the mapping work in Step125 (WC split maps, umap cache off,
 userptr pin) is the fix that landed; the knobs stay as the A/B switch if it comes back.
+
+**Step126 pre-reboot test 15:53 (0.1.12 live, `s0ix-set d3 5`): every endpoint in D3hot, NBIO still not met.**
+- Logs ~/ga403-logs/syssleep-20261107-155326. Put in D3: 63:00.0 65:00.0/.1/.2/.5 62:00.0/.1 (RTX + audio)
+  66:00.0/.1 67:00.5 64:00.0; left in D0: none. RTC wake, 5.1 s halted (a CPU assertion held the sleep 14 s).
+- NVRM resumed fine from D3hot (RESUME 0x0, 890 ms); NMXGPU resume 649 ms.
+- `S0ix,SmuNotMetUs`: slot 0 (DISPLAY) = slot 9 (NBIO) = 5078686 us, identical to the microsecond, CPU 11 ms.
+- So the RTX in D0 is not the NBIO blocker, and D-states are not the answer. NBIO and DISPLAY track each other
+  exactly, which points at one cause: DCN not reaching IPS keeps an NBIO path busy. The Step125 `NullMoth ips:` trace
+  is the next thing to read; the 0.1.13 link trace will confirm or rule out the L1.2 side.
