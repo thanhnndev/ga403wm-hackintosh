@@ -8509,6 +8509,23 @@ Next boot, read: no panic at ~10 s, the desktop on the 890M; then `log show --la
 and `nvram nmxgpu-stage nmxgpu-alive` (the stage marks did not survive a panic; on a live boot they show whether they work at all).
 If it still goes black, the next panic report (written by the boot after it) names the next stop.
 
+
+### Step128 reverted to the 20:36 good set from Windows (2026-11-07 23:14, owner's call)
+
+What the boots after the NMXAccel patch showed (Data volume, read 23:12):
+- `Kernel-2026-11-07-230819.panic` is the report of the 22:36 boot (unpatched, same 10.15 s `deliverModeChange` panic,
+  uptime 9.79 s), written by the 23:08 boot.
+- The two patched boots (auxguard / nmx-flip-default at 16:08:21Z and 16:10:20Z) got past 10 s, ran 1-2 min each
+  (Persist 0x4b-0x4e, ~34 MB of log in ~3 min) and left no panic, but the screen stayed black. Their logs are not decoded.
+
+Owner: revert. `scripts/windows-apfs/apfs_restore2.py` wrote the installer's own backup
+`/Library/NullMoth/step125-bk-20261107T135605Z` back in place (the set that booted at 20:36):
+AuxKC (sha 3e7bb295, same size), NMXGPU 591E7D5A (8fead28b, padded 4808 zero bytes), its Info.plist, probes.
+Checks: inode flags 0x8000 only, no target block shared with any of 2968 files under /Library/{NullMoth,
+StrixGraphicsFix,KernelCollections,Extensions} and out-6, raw == APFS before writing, raw read back after, a fresh parse
+shows 0 differing blocks. Raw blocks saved in the session scratchpad (`restore2_bk_20261107T231447`). ESP and the
+other kexts were not touched by Step125 and are as at 20:36. The NMXAccel patch is gone with the old AuxKC.
+
 ## Edge web video lag part 18: VCNDec showed a loop of the first frames (stale IOSurface seed), fixed (2026-11-07 21:10)
 
 - Owner: on screen the video only looped its first few frames and stuttered. The hitch probe could not see it: it
