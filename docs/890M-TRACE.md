@@ -8392,3 +8392,45 @@ Do not, on macOS, before the hang above is understood:
 - No crash reports dated after 20:36, no NMXGPU timeout/reset/fault lines (only the routine "mmfix2 stale xkpi records retired").
 - Safari: no VCNDec session seen after opening the same YouTube page (no VCNDEC log line from WebKit or a second
   VTDecoderXPCService), so Safari's VP9/AV1 path is not verified yet.
+
+### Step128 review of 326858e against the cave chain, and a stage-mark build (2026-11-07 20:55, built, not installed)
+
+The 7 s panic was the Step125 port's own mistake. kmutil binds a missing weak import to the address
+`&gOSKextUnresolved` (Apple's `OSKextSymbolIsResolved` compares addresses). f083d838 compared against that address
+and could not link. 928335c2 was then "corrected" to compare against the value. Lesson kept in the installer:
+`macos-install-step125.sh` now refuses any NMXGPU that still names `_proc_starttime` or lacks the stage marks.
+
+Review of 326858e, the paths that run in the ~9.6-12 s window (no hang line found; ranked by suspicion):
+
+| area | vs the cave chain | can it hang hard? |
+|---|---|---|
+| NMXAMDFB boot hold (new) | the cave chain never made NMXGPU busy | not by itself: capped at 30 s, released on every exit. It shifts the boot order, though: the registry root stays busy until publish, and `adjustBusy(-1)` runs on the attach thread right after `nmx_fb_publish`. NVRM's Step124 wait is plain `waitForMatchingService` with timeouts, no waitQuiet. Bisect with `nmxhold=0` |
+| lock-free curthread (d345b3e, never booted before) | new | writers use `lck_spin` with interrupts off. No path re-enters it on one CPU: `nmx_curproc`, `proc_name` and `IOMalloc` run outside it, the reaper only queues, and interrupt context gets per-CPU records without the lock. A stuck holder would end in a spin-timeout panic |
+| mm/record lifetime (163d117, replaces the mmfix2 cave, never booted before) | broader than the cave | runs on thread/process recycling, so it is live during boot; no lock nesting found |
+| rcu (Step77) | same CPU-0 record, but one global raw spin for both types instead of one per type | held only inside `critical_enter` (interrupts off) around `ck_epoch_begin/end`; cannot nest |
+| WC/UC split maps (Step90) | same flags as cave.s (kernel reservation 0x1101, cache-mask test) | kernel vmap path same; user paths run only after WindowServer |
+| snooped GTT, umap_cache 0, zero flush, TTM order 0 | same values as Step88/91/84/89 | no |
+| irqwatch (Step97/100) | same design | lock-free single owner, nobody spins |
+| IPS trace | printf only | no |
+
+An open point on NVRAM evidence: NVRM's boot guard writes `nullmoth-nv-starts` with a plain `setProperty` and no
+sync. So "nv-starts absent" after a hang may only mean the write never reached flash, not that NVRM never started.
+
+Build: fork `nmx-source-port` e32615c (326858e + stage marks + `nmxhold`), NMXGPU **ed82aa34**, at
+`~/develop/projects/nmx-build-xkpi/out-6/NMXGPU.kext`. No weak imports; every kernel import is one other kexts here
+already link against (`memchr` and `ml_get_interrupts_enabled` were avoided for that reason).
+- `nmxgpu-stage` (Apple GUID 7C436110-...): the last ~180 bytes of `<uptime ms>:<stage>|` entries. Stages: start,
+  port_start, port_started, "fw ok, hold, attach", ip_early_init, ip_init, `hw <block>` before each amdgpu hw_init (so
+  `hw amdgpu_dm` = the DCN takeover), ip_init done, ip_late_init, attached, "registered, fb publish", fb modeset,
+  fb modeset done, fb published, hold released, the first `nmxFlip*` call. Each write is followed by
+  `IONVRAM-FORCESYNCNOW-PROPERTY`.
+- `nmxgpu-alive`: from "hold released", once a second for 40 s: `<ms> ms beat <n> irq <890M IRQs dispatched> nvrm
+  <NVRM's nvrm-nmx-wait>`. The last beat dates the hang, and whether its IRQ count still moves.
+- Boot-args: `nmxstage=0` turns the marks off, `nmxhold=0` skips the boot hold.
+- The extra NVRAM writes (~25 + 40) shift boot timing a little; if the hang is a race it may move.
+
+Reading the marks from Windows: `GetFirmwareEnvironmentVariableW(L"nmxgpu-stage", L"{7C436110-AB2A-4BBB-A880-FE41995C9F82}", ...)`,
+the same for `nmxgpu-alive`. On macOS: `nvram nmxgpu-stage nmxgpu-alive`.
+
+Not installed. Install only with the owner's OK: `sudo scripts/macos-install-step125.sh ~/develop/projects/nmx-build-xkpi/out-6/NMXGPU.kext`
+(rollback on any failure, `--undo`).

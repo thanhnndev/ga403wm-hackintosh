@@ -119,6 +119,11 @@ fi
 
 B=${1:?path to the source-built NMXGPU.kext}
 src_build "$B/Contents/MacOS/NMXGPU" || { echo "$B is not the Step125 source build"; exit 1; }
+# Step128: 928335c2 panicked at 7 s on its weak proc_starttime import (kmutil binds a missing weak symbol to
+# &gOSKextUnresolved), and 326858e hung the boot at ~12 s with nothing on disk. Only a build without that import and
+# with the NVRAM stage marks (nmxgpu-stage / nmxgpu-alive) may go in, so a hang can be located from Windows.
+if grep -qa '_proc_starttime' "$B/Contents/MacOS/NMXGPU"; then echo "$B imports proc_starttime (Step128 panic), refusing"; exit 1; fi
+grep -qaF 'nmxgpu-stage' "$B/Contents/MacOS/NMXGPU" || { echo "$B has no NVRAM stage marks (Step128), refusing"; exit 1; }
 BK=/Library/NullMoth/step125-bk-$TS
 mkdir -p "$BK"
 ditto "$G" "$BK/NMXGPU.kext"
