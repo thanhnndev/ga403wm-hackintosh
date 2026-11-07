@@ -8095,3 +8095,30 @@ fits on top of the Step125 source build):
   ASPM L1.1), also in `S0ix,Links`.
 - At wake: `root port DLL active at halt/wake` per secondary bus (0 at halt = link down / L2-L3).
 - The runtime `s0ix-set d3 5` test (RTX + audio in D3hot) is still to run; the owner starts sleep tests.
+
+## Step127: the console bridge lights the panel only; the cache knobs become writable (source, 2026-11-07)
+
+Owner-visible symptom: with an HDMI monitor plugged in the machine does not reach the desktop; unplugged it boots.
+`nmx_fb_bridge.c` lit *every* connected output the fbdev way, one buffer as large as the largest mode, and pointed
+each lit CRTC at it. With a monitor attached at boot the panel's CRTC could be programmed for the monitor's mode, or
+the second CRTC on the same buffer failed the commit, and the boot stopped there.
+
+The bridge now calls `bridge_restrict_to_panel()` after `drm_client_modeset_probe`, both at open and at hotplug:
+the panel (eDP/LVDS) keeps its own mode and is the only modeset given a framebuffer; external outputs get
+`ms->mode = NULL`, which the atomic commit turns into a disabled CRTC, and one line is logged per output
+(`NullMoth display: leaving external output … off`). With no panel connected the old behaviour is kept, so a
+headless boot still lights what is there. Menu of evidence this is the right layer: the fault is in mode selection,
+not in the panel path (the OLED comes up 2880x1800 in every boot without HDMI); the NVIDIA side has its own guard
+removed (Step126/NullMoth 2.5.2 notes) and can be excluded at boot with `nullmoth-remove=1` if a monitor-plugged
+boot still stops.
+
+Second defect found while trying to A/B the knobs: `debug.nmx_umap_cache`, `debug.nmx_umap_flush` and
+`debug.nmx_wbinvd` were declared `CTLFLAG_RW | CTLFLAG_LOCKED | CTLFLAG_KERN`. The `CTLFLAG_KERN` node answers
+userland writes with EPERM (`sysctl: … Operation not permitted`), and macOS' `sysctl(8)` then prints the old value
+instead of `old -> new`, so the first boot after b26 could not be measured at all. They are plain `CTLFLAG_RW` now.
+
+Measured on the Step125 source build (installed `928335c2`, loaded UUID `591E7D5A`), 6 fresh processes of
+`metal-first-job.swift` with one dispatch each: **6/6 pass**, jobs +445 to +758 per process, `timeouts +0`,
+`grab_stray +0`. The AMD device reports `Metal 3`, OLED `2880 x 1800`, 120 Hz, internal. The VA-0 page fault from
+Steps 59-66 does not reproduce on this build, so the mapping work in Step125 (WC split maps, umap cache off,
+userptr pin) is the fix that landed; the knobs stay as the A/B switch if it comes back.
