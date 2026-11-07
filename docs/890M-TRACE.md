@@ -7933,3 +7933,53 @@ Handed over from the fresh-install session (local_93191de7).
   (EC GPE), EC status 0x9, query 0xCE -> `_QCE` -> wrangler tickle -> "PMRD: Requesting full wake due to dark wake
   activity tickle", full wake promotion 895 ms. Lid (0x2F) and power button (0xCE) both wake the machine fully now.
   Still open: S0i3 not reached (not met: DISPLAY, NBIO).
+
+## Edge web video lag part 16: all Edge video is CPU-decoded; VCN does 1080p60 VP9 at 6x realtime (2026-11-07 15:10)
+
+Boot 25G332 14:29, plugin with buffer list in WindowServer (0 global BOs). The owner's normal use is iOS Simulator
+running next to a video, so these runs were taken with sim-perf's simulator up (SimMetalHost on the 890M, the
+simulator's MercuryPosterExtension crashing about every 20 s, ReportCrash ~85 %). That load is part of the test.
+
+### Measurements (probe Edge, YouTube LXb3EKWsInQ, rVFC/rAF gaps over CDP)
+
+| run | length | decoded | dropped | rVFC gaps > 25 ms | worst |
+|---|---|---|---|---|---|
+| 720p60, 2026-11-06, idle machine | 60 s | - | 0 | 7 | 33 ms |
+| 1080p60, 2026-11-06, idle machine | 45 s | - | 27 | 39 | 104 ms |
+| 720p60, 2026-11-07, simulator up | 45 s | 1716 | 374 | 479 | 651 ms |
+| 1080p60, 2026-11-07, simulator up | 40 s | 2397 | 164 | 225 | 99 ms |
+
+### Root cause: no hardware decoder for VideoToolbox, so Chromium decodes on the CPU
+
+`Media.enable` over CDP for the YouTube player:
+
+- `Cannot select VideoToolboxVideoDecoder for video decoding. status=kUnsupportedConfig` for vp9 and av1.
+- `Selected VpxVideoDecoder` (VP9, 1920x1080) / `Selected Dav1dVideoDecoder` (AV1) = software decoders in the renderer.
+- `sample` of the renderer (12 s): ~43 % of a core in Edge framework code; the GPU process only ~5 %.
+
+So every web video (VP9/AV1 on YouTube) is decoded by the CPU and competes with WindowServer, the simulator and
+everything else. With an idle machine 1080p60 still drops; with a simulator up even 720p60 drops. The buffer-list work
+lowered WindowServer's cost but cannot fix this: the frames are late before they reach the compositor.
+
+### VCN decode on the live RADV (no new install)
+
+Clip: 1920x1080 60 fps VP9 profile 0, 300 frames, 12 Mbit/s, made in the probe Edge with WebCodecs `VideoEncoder`
+(scratchpad `mkclip.mjs`, nothing downloaded). ffmpeg 8.0 from radv-video/ffinst, `VK_DRIVER_FILES=/Library/GPUBundles/nvmtl/radeon_icd.json`:
+
+| decoder | wall | CPU |
+|---|---|---|
+| libavcodec vp9, 1 thread | 4.94 s (1.0x realtime) | 4.94 s |
+| libavcodec vp9, auto threads | 1.35 s | 6.92 s (~134 % CPU while playing) |
+| Vulkan video on VCN (frames stay on GPU) | 0.81 s (6.2x realtime) | 0.57 s |
+| Vulkan video + `hwdownload` to NV12 | 2.72 s | 5.41 s (readback through uncached memory) |
+
+The VCN output is bit-exact with libavcodec (framemd5 NV12, 0 of 300 frames differ).
+
+### Plan: a real VideoToolbox decoder on VCN (replaces VTStub)
+
+- Same registration as VTStub (Step108: bundle in /System/Library/Video/Plug-Ins, runs in VTDecoderXPCService, claims
+  vp09/av01 as hardware so Chromium picks `VideoToolboxVideoDecoder`), but decoding for real through RADV Vulkan video.
+- Output must not be read back by the CPU (last row of the table): decode, then a GPU copy into the CVPixelBuffer's
+  IOSurface pages imported as host memory (the same no-copy import the NVMTL plugin uses for IOSurfaces).
+- Open questions before the first install: GPU access (NMXGPU user client, /Library/GPUBundles) from the
+  VTDecoderXPCService sandbox, and the VT decoder vtable fields Chromium uses (decode frame, finish, copy properties).
