@@ -7891,3 +7891,21 @@ Everything that changed between the good 14:31 boot and the 15:42 reboot (file m
   - Core Image keeps its own copy of a source texture it has seen, so only the blit pass checks CPU writes.
 - Installed (backup `nvmtl-plugin-20261106T095107Z` = 47f9d0ce, the camera-copy build) with the sbxmap refreshed. Buffer-list behaviour is unchanged (on in WindowServer only). Apps pick it up on launch, WindowServer at the next boot.
 - ClickToX (the owner's app, Release build) relaunched under the audit. The OCR path (Cmd-Shift-S) needs a real keypress: osascript may not send keystrokes. After a few captures, grep its log for `AUDIT MISS` / `texture binding on no-copy pages`.
+
+## Fresh Tahoe 26.7.2 (25G332): WindowServer has no Metal device = NMXAccel kernel-string gate (2026-11-07)
+
+Handed over from the fresh-install session (local_93191de7).
+- Symptom on 25G332: WindowServer logs "the 1002 accelerator does not claim this process" and "headless GPU: no device for WindowServer". NMXAccel logs "scanout gate CLOSED", `debug.nmxaccel_armed` stays 0, and the desktop is CPU-composited and freezes at login.
+- On live 25G241 nothing writes `debug.nvaccelfb`. The arm comes from NMXAccel itself:
+  - The `nmxArm` thread call sees NMXAMDFB and logs "NMX display bind: scanout ready", then `registerFramebufferLocked(1)` → "debug.nvaccelfb now reads 1" → "NMX display pipe armed".
+  - The `sysctl:` prefix in that log is only the registration helper's label.
+- That watch is only set up when `IOKitBuildVersion` is exactly the 25G241 kernel string: nvrm-accel.cpp, "native framebuffer watch %s" → "not on reviewed kernel profile".
+  - 25G241: `Tue Aug 18 17:46:40 PDT 2026; root:xnu-12377.161.15.700.19~2`
+  - 25G332: `Mon Oct 12 00:33:09 PDT 2026; root:xnu-12377.161.15.701.48~2`
+  - The gate guards private IOAcceleratorFamily2 offsets. The family is 487.4.4 on both builds, so the offsets still apply.
+- Fix on the Tahoe Data volume:
+  - `scripts/fresh-install/nmxaccel-kernel-gate.py` swaps in the 25G332 string (same length, one occurrence) and gives the binary a new LC_UUID: 7B94D937-…-3EF1 → …3EF0.
+  - Original: `/Library/StrixGraphicsFix/NMXAccel.25G241-orig`.
+  - kccheck now reports NMXAccel MISSING from the Tahoe AuxKC, so auxguard relinks it 45 s into the next Tahoe boot and reboots once.
+- Other binaries with the 25G241 string: only StrixAccel, which is off (`-strixaccoff`). The NMXGPU, NVRM, plugin and RADV binaries do not have it.
+- Proper fix (NMXAccel source): gate on the IOAcceleratorFamily2 version and the reviewed offsets, not the exact xnu build string. Otherwise every point update needs this patch.
