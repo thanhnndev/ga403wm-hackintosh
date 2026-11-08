@@ -78,3 +78,20 @@ sysctl -n debug.amdcppc.sensors; sudo build/s0ix-set idlestats show; ioreg -r -c
 ```
 Run that for `idle 0`, `idle 1`, `idle 2`. Safety: `idle 0` returns to the stock path at once; boot-arg
 `-s0ixidleoff` leaves the hook out.
+
+## Best practice: what asusctl and G-Helper do
+
+Sources read on 2026-11-08: asusctl 321b111 (gitlab asus-linux/asusctl), G-Helper 49dbbe1 (github seerge/g-helper).
+
+| | asusctl (Linux) | G-Helper (Windows) | AmdCppcPolicy here |
+|---|---|---|---|
+| Silent / Quiet (policy 2) | EPP `power` (255) | overlay "Best Power Efficiency" | 255 |
+| Performance / Balanced (policy 0) | EPP `balance_power` (191) | overlay "Balanced" | **128 → 191** (rog-control-macos branch `cppc-epp-asusctl-defaults`, installed) |
+| Turbo / Performance (policy 1) | EPP `performance` (0) | overlay "Best Performance" | 0 |
+| Default profile | Performance on AC, Quiet on battery (`platform_profile_on_ac/battery`) | last mode chosen per power source | RogControl: last mode per source |
+| CPU boost | not touched | not touched by default (`auto_boost` -1) | not touched |
+
+asusctl links EPP to the profile by default (`platform_profile_linked_epp: true`, asusd/src/config.rs). So Turbo with
+EPP 0 is what both tools do too, and they still idle cool: on Linux and Windows the idle cores sit in CC6 between
+bursts, which macOS on AMD does not do yet (cause 1). The profile mapping is a smaller lever (cause 3); the idle
+driver (fix 1) is the part that makes Turbo behave like it does on Linux/Windows.
