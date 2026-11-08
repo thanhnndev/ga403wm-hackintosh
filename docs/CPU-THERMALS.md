@@ -50,7 +50,9 @@ static and no app animating after the fixes.
    Turbo is the same. Balanced (Performance in RogControl) gives EPP 128, battery 191, Silent 255.
 4. **Interrupt load.** The touchpad I2C controller at 10k IRQs/s on CPU 0 (polling mode, because the touchpad's GPIO
    interrupt is not used), local timers at ~1.1 kHz on half the CPUs, ~1k/s from the 890M. Each one wakes a core
-   out of HLT. Smaller than 1-3 but it keeps CPU 0 from ever idling.
+   out of HLT. Smaller than 1-3 but it keeps CPU 0 from ever idling. The main session links the 11:19 panic (CPU 0
+   stuck in the APIC handleInterrupt path, docs/890M-TRACE.md) to this same 10k/s I2C load on CPU 0, so fixing the
+   touchpad interrupt mode is also a stability item, not only a power one.
 5. **RTX 5060 never leaves D0.** It sits on the shared heat pipes. D3cold needs `\_SB.PCI0.GPP9.PG00._OFF` (SSDT-5
    "OptRf2"), and NVRM has no runtime power management. Not changed here (ACPI and NullMoth are the owner's call).
    No dGPU telemetry is exposed (no power/temperature sysctl from NVRM), so its share is not measured.
