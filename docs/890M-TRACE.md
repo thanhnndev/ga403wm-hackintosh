@@ -8677,3 +8677,25 @@ slider and Fn keys change the panel, `NMXPagingWake` = Yes, `NMXPowerKeep: holdi
   Undo: `sudo scripts/macos-nvmtl-plugin-install.sh --undo`, then `scripts/macos-install-strixsbxmap.sh --refresh`.
 - After that boot: the 30 s reports (expired count, came-back buckets), WindowServer CPU with 1080p60 in Chrome, and
   screenshot / screen share (main session asked: the 23:18 capture abort followed a 5 s GPU hang, "vulkan down").
+
+### Screenshot-markup freeze (WindowServer abort 23:18): the faulting process and the mechanism
+
+- amdgpu's "pid 14947" is the xkpi task's `pid` = the thread id (`td_tid`), not a process id. TID 0x3a63 in the unified
+  log is **mediaanalysisd[1905]** (Live Text / TextRecognition, Espresso `default.metallib`) running on the screenshot
+  open in Preview. Not Preview, and not WindowServer.
+- Its last NVMTL lines before the fault (23:18:08): `surface 174 plane 0/1 ... fmt '420f' -> its own pages (host import,
+  written back after each command buffer)` and `storage twin: 1376x864 (IOSurface) is written through an optimal-tiled
+  storage copy`. 23:18:09.985: gfxhub `PERMISSION_FAULTS 0x5`, `RW 1`, client TCP.
+- Mechanism: the surface is mapped read-only in that process. A writable userptr pin then fails, and Step96
+  (`nmx_userptr_tail`) silently retries read-only, so the GPU PTEs have no WRITEABLE bit. NVMTL does not know and builds
+  a writable wrapper (write-back, storage twin, single-plane alias with rw=1). The GPU write faults, and the GFX job
+  hangs the shared ring until the 10 s job timeout.
+- WindowServer's NVMTL gives up on a fence after 5 s, so its backend is disabled and the next window capture aborts.
+
+Fixes (one reboot, with Step130):
+- NMXGPU out-9: `patches/amdgpu-gfx-timeout-3s.patch`, gfx/sdma/video job timeout 10 s -> 3 s, so soft recovery of the
+  guilty job finishes inside NVMTL's 5 s budget. One app's GPU fault must not take WindowServer down.
+- NVMTL plugin (edge-video session): check `VM_PROT_WRITE` of the range before a writable host import; a read-only
+  mapping gets a private image for writable wrappers.
+Verify: open a screenshot in Preview, draw with Markup, Live Text active. Expect no gfxhub fault, or a fault followed by
+`soft recovered` within ~3 s, and WindowServer staying up.
