@@ -16,7 +16,8 @@
 // is written to or patched. The event source is found by walking the controller's work loop chain under the work loop gate,
 // so a controller that goes away can not leave a dangling pointer.
 //
-// boot-arg itlkick=0 disables it, itlkick=<us> sets the period (default 1000), itlkickall=1 also kicks non-AMD controllers.
+// boot-arg itlkick=0 disables it, itlkick=<us> sets the period (default 1000), itlkickall=1 also kicks non-AMD controllers,
+// itlkickidle=<n> kicks a controller with no USB devices only every n periods (default 16, 1 = every period).
 #include <IOKit/IOService.h>
 #include <IOKit/IOLib.h>
 #include <IOKit/IOWorkLoop.h>
@@ -66,6 +67,7 @@ struct Target {
     IOWorkLoop *wl;           // retained
     uint64_t seenNs;
     uint32_t kicks, hits, miss;
+    uint32_t devs;            // USB devices under this controller (IOUSB plane), refreshed with each scan
     bool active;
 };
 static Target tg[8];
@@ -111,6 +113,20 @@ static bool wantController(IOService *prov, bool all)
     return vid == 0x1022;
 }
 
+// Number of devices attached to a controller. A controller with none only needs the slow kick: a hot-plug arrives as a
+// port-status change on interrupter 0, whose MSI does fire, and the slow kick then covers enumeration on ring 1.
+static uint32_t usbDevices(IOService *ctrl)
+{
+    const IORegistryPlane *pl = IORegistryEntry::getPlane("IOUSB");
+    if (!pl) return 1;                       // no IOUSB plane: be safe, treat as busy
+    OSIterator *it = ctrl->getChildIterator(pl);
+    if (!it) return 1;
+    uint32_t n = 0;
+    while (it->getNextObject()) n++;
+    it->release();
+    return n;
+}
+
 static void scan(bool all)
 {
     OSDictionary *m = IOService::serviceMatching("AppleUSBXHCIPCI");
@@ -133,16 +149,22 @@ static void scan(bool all)
         tg[ntg].ctrl = c; tg[ntg].prov = prov; tg[ntg].wl = wl;
         tg[ntg].seenNs = nowNs(); tg[ntg].active = false;
         tg[ntg].kicks = tg[ntg].hits = tg[ntg].miss = 0;
+        tg[ntg].devs = 1;
         ntg++;
     }
     it->release();
+    for (int i = 0; i < ntg; i++)
+        if (tg[i].ctrl && !tg[i].ctrl->isInactive()) tg[i].devs = usbDevices(tg[i].ctrl);
 }
 
 static void worker(void *)
 {
-    uint32_t period = 1000, all = 0;
+    uint32_t period = 1000, all = 0, idleDiv = 16;
     PE_parse_boot_argn("itlkick", &period, sizeof(period));
     PE_parse_boot_argn("itlkickall", &all, sizeof(all));
+    PE_parse_boot_argn("itlkickidle", &idleDiv, sizeof(idleDiv));   // empty controllers: kick every idleDiv periods (1 = always)
+    if (!idleDiv) idleDiv = 1;
+    uint32_t tick = 0;
     if (!period) { IOLog("ItlXhciKick: itlkick=0, off\n"); return; }
     if (period < 200) period = 200;
 
@@ -165,6 +187,8 @@ static void worker(void *)
                 if (now - t.seenNs < 3000000000ull) continue;
                 t.active = true;
             }
+            // Every kick wakes the controller's work loop thread (one IPI each); an empty controller has no ring-1 traffic to drain.
+            if (!t.devs && (tick % idleDiv) != 0) continue;
             KickCtx c = { t.wl, t.prov, 0 };
             t.wl->runAction(kickAction, nullptr, &c);
             t.kicks++;
@@ -176,10 +200,11 @@ static void worker(void *)
             char b[200];
             int n = snprintf(b, sizeof(b), "kick up=%us p=%uus", (unsigned)((now - t0) / 1000000000ull), period);
             for (int i = 0; i < ntg && n < (int)sizeof(b) - 40; i++)
-                n += snprintf(b + n, sizeof(b) - (size_t)n, " c%d:%u/%u/%u", i, tg[i].kicks, tg[i].hits, tg[i].miss);
+                n += snprintf(b + n, sizeof(b) - (size_t)n, " c%d:%u/%u/%u/d%u", i, tg[i].kicks, tg[i].hits, tg[i].miss, tg[i].devs);
             nvramSet("itlz0", b);
         }
         (void)total;
+        tick++;
         if (period >= 1000) IOSleep(period / 1000);
         else IODelay(period);
     }
