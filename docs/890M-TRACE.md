@@ -9032,3 +9032,4 @@ Same test as parts 22b/22c: scratch Chrome, video LXb3EKWsInQ at hd1080 (VP9 ita
   2. Then either raise the cap, or key the cap by bytes rather than count.
   3. Make the sweep incremental, so it stops walking all entries on every import.
 - Step133 measured (edge session, trace part 23 4e4f4e7, YouTube 1080p60 10 s): IOSimpleLockLock samples system-wide ~1230 -> 38 (WS 541 -> 9); WS CPU 11.2 -> 9.3 s per 10 s; surface-keep.release 1.24 -> 0.41 s (GEM close 338 -> 93); video 58.9 fps, 1.1 % dropped. Stripe locks: VERIFIED. Rest is plugin-side (prefault faults, keep cap 512 entries).
+- Pending for the next reboot: edge plugin cb1a5e6 (idle cap 2048 entries, sweep at most every 100 ms, idle-cap miss log), installed by the edge session at the owner's OK, signed f3068ae2; --undo goes back to keep30 a313ed1b (backup 20261108T080310Z).
