@@ -9339,3 +9339,41 @@ Boot 21:51, plugin a95189e (the 9c6d1ed hint fix is not installed). Docker hyper
 - There is a shutdown_stall report at 23:27 from the previous shutdown; not yet read.
 - No crash reports since boot. WindowServer at 1.6 %.
 - Post-boot verification tasks were sent to cpu-thermal, video-lag and Wi-Fi.
+
+## Trace part 28: Chrome surface hint live (plugin 9bfd0c5); YouTube 1080p60 plays at 60 fps with 1 drop in 60 s (2026-11-09 00:05)
+
+Boot 23:51: plugin 9bfd0c5 (UUID E26F136E) = the 9c6d1ed Chrome hint fix plus cpu-thermal's fence pool. NMXGPU is out-20. Docker hyperkit was running (14.3 s of CPU in the 10 s spindump). Measured with the new `tools/890m/yt-probe/probe.mjs`: scratch Chrome, pre-roll ad skipped (55 s), video LXb3EKWsInQ at hd1080 VP9, 60 s, with two pause/resume cycles of 3 s each.
+
+**1. Hint in Chrome works.**
+- The Chrome GPU process cannot write `/tmp/nvmtl.log` because of its sandbox, so the check uses the kernel counters.
+- `debug.nmx_surf_hint` grows ~0.5/s at idle (WindowServer only) and ~27/s while Chrome plays: 1715 → 10304 between 23:57:28 and 00:03:01, when the clip ended.
+- `surf_wire` = `surf_hint` throughout, with `surf_miss` 0.
+
+**2. Playback**, from the per-second timeline:
+
+| Metric | Part 27 (boot 21:51, hint off in Chrome) | Boot 23:51 |
+|---|---|---|
+| Decoded / rVFC in 60 s | ~60/s steady state | 3604 / 3599 |
+| Dropped | 28 in 40 s (burst on resume) | 1 in 60 s |
+| Drops in the 5 s after a resume | 6+ | 1 and 0 |
+| waiting / stalled | 0 / 0 | 0 / 0 |
+| rVFC processingDuration avg | 32 ms | 31.9 ms |
+
+**Chrome GPU process (CrGpuMain), 10 s spindump:**
+
+| Metric | Part 27 | Boot 23:51 |
+|---|---|---|
+| CPU | 3.12 s | 1.57 s |
+| `newTextureWithDescriptor:iosurface:` samples | 229 | 49 |
+| `nvmtl_prefault_write` samples | 98 | 0 |
+| userptr import samples | 129 | 46 |
+| GPU process total CPU | 4.7 s | 2.7 s |
+
+**3. Fence pool.**
+- No stall or corruption during playback. Two 1080p frames captured mid-play (t = 112 s and 117 s) are clean.
+- `nmx_timeouts` 0. `nmxaccel_fence_timeouts` is 1, but its only log line is at 23:52:45 (`iop: fence: surface 0xe pending 3496, done 3490 after 100 ms - copied anyway`). That is one minute after boot, before any test. Reported to main and cpu-thermal for their side.
+
+**Other numbers from the spindump:**
+- kernel_task: VM_compressor 1.37 + 0.68 s, pageout_scan 1.26 s per 10 s.
+- WindowServer: 6.2 s per 10 s.
+- `userrec_kept` 0.
