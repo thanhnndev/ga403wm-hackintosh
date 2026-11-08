@@ -9202,3 +9202,8 @@ Boot 20:52: NMXGPU out-18 (194BFE13), plugin a95189e (5FC87442). Normal desktop 
   - New counters: `debug.nmx_userrec_{live,made,freed,kept}`.
 - Step138b (c9d7c9f): `debug.nmx_pages_live` and `debug.nmx_userwire_{count,pages}`, to split the 5.8 GB NMXGPU tag between GTT/system pages and userptr wirings.
 - Build: out-20 (1B44E2DB, from aa92afc: Step137b + 138 + 138b + 138c; review fixes from edge-video-lag). Checks: 0 weak, 581 imports, NMXOwnsDisplay, counters present. Not installed.
+- Leak rate on out-18 (cpu-thermal zprint, 21:21 -> 21:43, same boot):
+  - kalloc var4.256 went 3.24 M -> 3.44 M (+~200k records, +~50 MB in 22 min, ~2.3 MB/min). That fits the page-record leak.
+  - var4.96 went 4.5 M -> 4.09 M. It shrinks, so it is not this leak.
+  - NMXGPU tag went 5.80 -> 4.89 GB: about 0.9 GB of it is dynamic.
+  - Check after out-20: var4.256 flat, `nmx_userrec_live` tracks pinned pages, `nmx_userrec_kept` ~0.
