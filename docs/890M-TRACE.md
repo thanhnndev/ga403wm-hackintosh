@@ -8889,3 +8889,21 @@ The owner suspects the AWDL work (boot-arg `itlmt_awdl=1`). The AWDL session has
 - WindowServer about 39 % with Edge + Chrome Remote Desktop open (edge plugin 5405e50 also live this boot).
 - New noise: bluetoothd ExcUserFault x5 since 12:01 (also before this boot; not ours to chase here).
 - Owner test 12:40: drawing in Preview Markup no longer freezes (the screenshot / Live Text freeze from Step130: 3 s gfx timeout in NMXGPU + read-only userptr check in plugin dd43056+). PASS.
+
+### Part 21: WindowServer compositor CPU breakdown, and a GPU fault from non-resident surface pages
+
+- WindowServer spindump (8 s, plugin 5405e50, busy desktop): main thread 356 of 801 samples waiting for messages; the
+  busy rest is spread thin (QuartzCore 54, SkyLight 43, NMXGPU kext 43, objc 34, malloc 31, radv 26, NVMTL 20 self).
+  UpdateDisplays 341 inclusive: render_update 218 (CoreAnimation OGL render 146: NVMTL draw 17, setFragmentTexture 12,
+  setRenderPipelineState 12), present 56 (CoreDisplay RunFullDisplayPipe 35, NVMTL submit 16), prepare_coreanimation
+  40. No single hotspot left in the plugin; display at 120 Hz, ~4.6 ms of main-thread CPU per composited frame.
+  `renderCommandEncoderWithDescriptor:` formats an NSString per encoder (3 samples): small, noted.
+- 12:42:49 GPU fault: mediaanalysisd (thread 0x13e39, Live Text), gfxhub PERMISSION_FAULTS 0x5, TCP RW 1; GFX ring timeout
+  soft-recovered 3 s later; WindowServer `slowest submit 3008 ms` (screen stalled 3 s). The surface was mediaanalysisd's
+  own new 420f surface (398, plane host, written back after each command buffer): a writable mapping, so dd43056's check
+  passed. A fresh IOSurface has none of its pages resident (`mincore`: 0 of 297); the kernel's write pin of non-resident
+  pages fails and nmx_userptr_tail retries read-only (`NMX cs-trace: userptr_ro_retry -> 0`, the log budget used up by
+  WindowServer at 12:14:53).
+- Plugin 1f8b72d: each page of a writable span gets a `lock orb $0` before a writable host import (no byte changes;
+  297 of 297 resident after). `surface prefault: N writable host imports ...` in the log; NVMTL_PREFAULT=0 skips it.
+  Kernel side proposed to the main session: fault pages in for write before the read-only retry, count retries in a sysctl.
