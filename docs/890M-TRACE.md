@@ -8847,3 +8847,11 @@ Panics today:
   ~10k IRQs/s (VoodooI2C polling, CPU-THERMALS cause 4): a strong suspect for the 11:19 storm.
 
 The owner suspects the AWDL work (boot-arg `itlmt_awdl=1`). The AWDL session has been asked to confirm or rule it out.
+
+### Step131 installed (2026-11-08 12:11)
+
+- NMXGPU out-11 (fork 8c18558, UUID BB80044A, flip_import PAGE_MASK fix) installed with `scripts/macos-install-step130.sh`, backup `/Library/NullMoth/step130-bk-*`.
+- StrixS0ix 0.1.14 (runtime CC6 idle hook, idle mode 0 at boot = stock) installed with `scripts/macos-install-s0ix-idle.sh`, backup `/Library/NullMoth/s0ix-idle-bk-20261108T051048Z`.
+- AuxKC relinked twice, kccheck + new probes OK both times (rc 0). Reboot pending.
+- After boot check: `NMX flip: import` lines, `flip_submitted` rising, `beam_copy_us` ~0, WS/kernel_task CPU lower; StrixS0ix 0.1.14 mode 0; brightness; no panic.
+- Undo: `sudo scripts/macos-install-s0ix-idle.sh --undo`, then `sudo scripts/macos-install-step130.sh --undo` (back to out-10).
