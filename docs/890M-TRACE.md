@@ -8815,3 +8815,13 @@ Next: Wi-Fi/network session checks TSC sync across cores and HoRNDIS; if HoRNDIS
   then `-[NVMTLCommandQueue commandBuffer]` -> SkyLight `MetalContext::RenderEncoder`/`SetScissor` recursed until the stack
   guard (SIGSEGV). Open, for the plugin: commandBuffer must not hand SkyLight something that makes it recurse after the
   backend is down.
+
+### Step130c VERIFIED (boot 2026-11-08 11:47): picture + brightness from the NMXGPU source
+
+- NMXGPU out-10 (BC71D713) loaded without `-nmxbloff`. Picture is up, and there is no new panic. (The 11:46
+  shutdownStall belongs to the previous boot's reboot.)
+- `backlight handler published after the framebuffer (... initial 100%), panel sense LCD` at 11:47:06. IOGraphics then
+  built **AppleBacklightDisplay** (`backlight parameters on AppleBacklightDisplay`), and NMXAccel armed the display pipe.
+- End-to-end test with DisplayServicesSetBrightness: 0.5 gives `Backlight,Percent` 50 and restore gives 100, both rc 0,
+  failures 0. `NMXPagingWake` = Yes.
+- Visual confirmation (slider and Fn keys) is still owed by the owner.
