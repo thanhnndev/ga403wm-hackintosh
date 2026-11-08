@@ -157,8 +157,9 @@ static void scan(bool all)
         if (tg[i].ctrl && !tg[i].ctrl->isInactive()) tg[i].devs = usbDevices(tg[i].ctrl);
 }
 
-static void worker(void *)
+static void worker(void *arg)
 {
+    IOService *self = (IOService *)arg;
     uint32_t period = 1000, all = 0, idleDiv = 16;
     PE_parse_boot_argn("itlkick", &period, sizeof(period));
     PE_parse_boot_argn("itlkickall", &all, sizeof(all));
@@ -169,6 +170,7 @@ static void worker(void *)
     if (period < 200) period = 200;
 
     uint64_t t0 = nowNs(), lastScan = 0, lastLog = 0;
+    char lastHealth[160] = "";
     for (;;) {
         uint64_t now = nowNs();
         if (now - lastScan > 3000000000ull) { scan(all != 0); lastScan = now; }
@@ -201,7 +203,27 @@ static void worker(void *)
             int n = snprintf(b, sizeof(b), "kick up=%us p=%uus", (unsigned)((now - t0) / 1000000000ull), period);
             for (int i = 0; i < ntg && n < (int)sizeof(b) - 40; i++)
                 n += snprintf(b + n, sizeof(b) - (size_t)n, " c%d:%u/%u/%u/d%u", i, tg[i].kicks, tg[i].hits, tg[i].miss, tg[i].devs);
-            nvramSet("itlz0", b);
+            // Full counters go to the registry every time (free). NVRAM is flash: during the first two minutes it gets
+            // the full line every 10 s as before (it survives a panic in early boot); after that only when the health
+            // line changes (a controller gained/lost its event source, started missing, or gained/lost devices).
+            if (self) {
+                OSString *str = OSString::withCString(b);
+                if (str) { self->setProperty("itlz0", str); str->release(); }
+            }
+            if (now - t0 < 120000000000ull) {
+                nvramSet("itlz0", b);
+            } else {
+                char h[160];
+                int m = snprintf(h, sizeof(h), "kick p=%uus", period);
+                for (int i = 0; i < ntg && m < (int)sizeof(h) - 24; i++)
+                    m += snprintf(h + m, sizeof(h) - (size_t)m, " c%d:%s%s/d%u", i, tg[i].hits ? "hit" : "nohit",
+                                  tg[i].miss ? "+miss" : "", tg[i].devs ? 1u : 0u);
+                if (strcmp(h, lastHealth) != 0) {
+                    strlcpy(lastHealth, h, sizeof(lastHealth));
+                    snprintf(b, sizeof(b), "%s up=%us", h, (unsigned)((now - t0) / 1000000000ull));
+                    nvramSet("itlz0", b);
+                }
+            }
         }
         (void)total;
         tick++;
@@ -213,6 +235,7 @@ static void worker(void *)
 bool ItlXhciKick::start(IOService *provider)
 {
     if (!super::start(provider)) return false;
-    startThread(worker, nullptr);
+    retain();                       // the worker thread never exits and uses this object
+    startThread(worker, this);
     return true;
 }
