@@ -9305,3 +9305,15 @@ Boot 21:51, plugin a95189e (the 9c6d1ed hint fix is not installed). Docker hyper
 - The drop burst when play resumes.
 - The per-frame import cost in Chrome's GPU process. Fix 9c6d1ed is merged and waits for the next batch; re-measure after it is live.
 - Future probes skip ads: wait for the main video to start, i.e. when `currentTime` resets and the frame counters restart.
+
+### 2026-11-08 22:12 install batch for the next boot (owner OK)
+- Plugin 9c6d1ed (sha dcb03c9d, UUID 770FBF92; signed bundle binary e77766e8). Backup /Library/NullMoth/nvmtl-plugin-20261108T151155Z (was 2fc47b9a). StrixSbxMap pins refreshed on the ESP and live (routed=1, stale=0). Undo: `scripts/macos-nvmtl-plugin-install.sh --undo`, then `scripts/macos-install-strixsbxmap.sh --refresh`.
+- StrixS0ix 0.1.15 (A17EB334), with the pmDispatch version check (property `S0ix,PMDispatchVersion`), is in the AuxKC. kccheck passed; NMXGPU is still out-20 1B44E2DB. Undo: `scripts/macos-install-s0ix-idle.sh --undo`.
+- ItlXhciKick C4766DCE (merge of thermal/xhcikick-idle 3fd2fb1, `itlkickidle` default 16) is on the ESP. Backup: EFI/OC/Kexts-backup/ItlXhciKick.kext.20261108-221205 (BF038C9C).
+- Already staged by other sessions: BtLeDlFix 1.4.0, and the native Wi-Fi ABI gate 206D41C8.
+- Checks after boot:
+  - ioreg `S0ix,PMDispatchVersion` reads 0x66 and the hook is installed.
+  - ItlXhciKick stats show `/d` and IPIs go down.
+  - The plugin logs `surface hint: on` in Chrome GPU.
+  - `sysctl debug.btledlfix`.
+  - `ioreg -l | grep itlmt-native-abi` reads "ok: 10 classes".
