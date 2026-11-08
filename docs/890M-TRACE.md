@@ -8919,3 +8919,10 @@ The owner suspects the AWDL work (boot-arg `itlmt_awdl=1`). The AWDL session has
 - New counters: `debug.nmx_pin_write_fail`, `nmx_pin_write_retry_ok`, `nmx_pin_ro_retry`, `nmx_pin_last_rc`, `nmx_pin_last_rc2` (IOReturn), plus a budgeted `NMX pin: write wire ... failed` log line.
 - Userspace signal: on the RO fallback `args->flags` comes back with AMDGPU_GEM_USERPTR_READONLY (IOWR ioctl); a writer should refuse that import. The edge session's plugin 1f8b72d also prefaults writes before host-import.
 - Step132 installed 12:55: NMXGPU out-12 (fork 1c75638, UUID 97A9E93B) with `scripts/macos-install-step130.sh`, AuxKC relinked + checked, rc 0. Same reboot as the edge plugin 1f8b72d. After boot: read `sysctl debug | grep nmx_pin`.
+
+### Step132 boot (2026-11-08 14:23:43; owner restart, a shutdown stall report at 12:55)
+
+- NMXGPU 97A9E93B + StrixS0ix 0.1.14 loaded; edge plugin 1f8b72d (write prefault) in WS. 11 flip imports, `debug.nmx_timeouts` 0, brightness Writes 253 / Failures 0, `NMXPagingWake` Yes.
+- `debug.nmx_pin_write_fail` 328 = `nmx_pin_ro_retry` 328, `nmx_pin_write_retry_ok` 0, `last_rc` = `last_rc2` = 0x2 (KERN_PROTECTION_FAILURE). Every one is WindowServer (pid 207, thread 0x3c4) importing client surfaces mapped r--: the Step96 case, a read-only pin is right there and no GPU writes it.
+- So the read fault-in retry never helps a protection failure; it only costs one extra wire per WS import. Next NMXGPU build: skip the retry when rc is KERN_PROTECTION_FAILURE, keep it for other codes.
+- The 12:42-style fault (fresh RW IOSurface in mediaanalysisd) has not come back yet. If it does, `nmx_pin_last_rc` from a non-WS process says which code it was.
