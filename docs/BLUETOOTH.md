@@ -25,6 +25,14 @@ Linux subsystem reset (`btmtk_usb_subsys_reset`, MT7925 CONNV3) and loads the wh
 [mt7925-macos docs/BLUETOOTH.md](https://github.com/thanhnndev/mt7925-macos/blob/dev/awdl/docs/BLUETOOTH.md) (section
 "bluetoothd restart loop after a warm reboot").
 
+## LE advertising 718 loop on 26.7.2 (2026-11-08 20:53, fixed in BtLeDlFix 1.3.0)
+
+The 20:52 boot: the controller came up (MtkBtFw 0.2.0 recovered a hung firmware), but `bluetoothd` looped on LE advertising
+(~180×/s `STATUS 718`, 15-29 % CPU). BtLeDlFix's random-address patch held a `call` displacement that changed between 25G241
+and 25G332, so it no longer matched. BtLeDlFix 1.3.0 masks such build-specific bytes, so its patterns apply across macOS 26.x
+builds. Staged on the ESP 21:49, active next boot. Details and the check:
+[mt7925-macos docs/BLUETOOTH.md](https://github.com/thanhnndev/mt7925-macos/blob/dev/awdl/docs/BLUETOOTH.md).
+
 ## Pieces
 
 | Piece | What it does |
