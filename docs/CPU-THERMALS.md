@@ -460,3 +460,31 @@ Installing it means replacing the kext on the ESP (OpenCore), so it waits for th
 Also seen in the kext: it writes its statistics to NVRAM with `IONVRAM-FORCESYNCNOW` every minute after the first
 two minutes, i.e. a forced NVRAM flash write each minute for as long as the machine runs. Worth gating behind a
 boot-arg (not changed here).
+
+## Docker fix confirmed, clean IPI count, WindowServer split (22:05, boot 21:51, Docker started by the owner)
+
+**Docker (RyzenHV 0.7.17):** with a freshly booted guest (hyperkit up 2:41, 24 vCPUs), `monitor.log` has
+**0** `wrmsr to register 0xc0000502` lines (was ~4,000/s). com.docker.hyperkit uses 3–15 % CPU and
+com.docker.backend is no longer in the top 12 (was 95 %). Fixed.
+
+**Clean IPI trace** (root job started through `launchctl submit` 3 s after osascript exited, so no osascript in the
+trace): 20,690 remote ASTs/s with Docker running. ItlXhciKick → the four xHCI work loops is 3,631/s (18 %), the
+largest single kernel sender. Within user space, hyperkit's vCPU threads wake each other ~1,700/s.
+
+**WindowServer main thread** (`sample WindowServer 10`, same clean start; Claude animating, Docker up):
+7,430 samples, `render_update` 1,950, about half the thread busy. Busy leaf samples by owner:
+
+| Owner | Samples | Detail |
+|---|---|---|
+| Apple: Core Animation, objc, malloc, CoreFoundation (`render_update` layer walk) | ~1,400 | normal CA cost for the layers on screen |
+| **Apple, client-driven: `_XGetRegisteredCursorImages` → `memmove`** | **368** | a client asks WindowServer for every registered cursor image, and WindowServer copies them each time (~5 % of the thread). The requester is not identified: sampling Claude, its helpers and XKey did not catch it. WindowServer's busiest reply target is the Claude app (347 wakeups/s). |
+| IOSurface shared-event queries from CA (`IOSurfaceClientQueryTransactionList`) | 162 | Apple's path, triggered per layer image |
+| **Ours: RADV CS submit ioctl** | 241 | inherent per frame |
+| **Ours: `vkCreateFence` → `vk_drm_syncobj_init` per submit** (`nvmtl_vk_submit_begin_at`) | 95 | a new syncobj for every submit; a fence pool would remove it |
+| **Ours: `newTextureWithDescriptor:` (non-IOSurface) → `radv_bo_create`** | 64 + 28 VA ops | a new BO per transient CA texture; a small BO cache in the plugin would remove it |
+| **Ours: `__sysctl` in `nvmtlSubmitWithEvent`** | 47 | a sysctl read on every submit; read it once |
+| Ours: other plugin + RADV work (state emit, snapshots, btsh notes) | ~330 | |
+
+Our share is ~12 % of the main thread, and three items in it are avoidable (fence pool, texture BO cache,
+per-submit sysctl, ~200 samples together, ~2.7 % of the thread). The import path is gone (Step137). The remaining
+cost is mostly Core Animation itself plus the unexplained cursor-image requests.
