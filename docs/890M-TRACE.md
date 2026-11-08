@@ -9089,3 +9089,19 @@ Same repro as part 24, run once: `vcndec_test -v -p 30 1500 -n 3000` on the same
 | out-17 (20:33) | 3000/3000 frames, 100 pause/resume cycles, rc 0, no NMXGPU log lines, `debug.nmx_timeouts` 0 |
 
 The kernel does not log gate/ungate, so the number of real power-gate cycles is not counted. The pause pattern is identical (1.5 s > the 1 s VCN idle timeout). Pending: watch real video use (paused or background tabs) for `vcn_unified_0 timeout` over the next sessions.
+
+### 2026-11-08 19:04 hang (out-16 boot, no panic)
+
+- Owner confirms the machine froze; the log just stops at 19:04:03.5. There is no .panic and no WindowServer .ips. SMC cause 5 is meaningless here, because VirtualSMC reports 5 on every boot.
+- Sequence of events:
+  - 19:03:34.01: the AC adapter was unplugged (PMRD ac 0, pmset "Using Batt").
+  - RogControl `powerChanged()` then applied the battery set: firmware profile silent (2), with battery limits SPL 20 / SPPT 25 / FPPT 35.
+  - 19:03:36.03: NMXAccel "flip did not latch within 50 ms", so flip was turned off for the rest of the boot.
+  - 19:03:36.71: beam copy took 132 ms, LAPPED 3 times in a row.
+  - After that, no NMXGPU timeout, reset or fault was logged. 27 s later the system froze silently.
+- Earlier AC to battery switches today (12:41, 16:27) did not trip flip or hang, so the trigger is a candidate, not proven.
+- A drop of only 4 % battery between 19:04 and 20:26 means the machine was off most of that time, not hung at full power.
+- 15:18:55 (15:04 boot) was a different event: a gfx ring timeout, then MODE2 reset.
+- Next:
+  - A/B on AC: switch RogControl Silent <-> Performance a few times and watch for flip-latch misses or stalls.
+  - If it reproduces, out-18 logs SMU limit/clock changes around the flip.
