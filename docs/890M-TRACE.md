@@ -9201,4 +9201,4 @@ Boot 20:52: NMXGPU out-18 (194BFE13), plugin a95189e (5FC87442). Normal desktop 
   - The `nmx_user_pages_pin` failure path no longer pops pins of other requests.
   - New counters: `debug.nmx_userrec_{live,made,freed,kept}`.
 - Step138b (c9d7c9f): `debug.nmx_pages_live` and `debug.nmx_userwire_{count,pages}`, to split the 5.8 GB NMXGPU tag between GTT/system pages and userptr wirings.
-- Build: out-20 (includes Step137b). Not installed.
+- Build: out-20 (1B44E2DB, from aa92afc: Step137b + 138 + 138b + 138c; review fixes from edge-video-lag). Checks: 0 weak, 581 imports, NMXOwnsDisplay, counters present. Not installed.
