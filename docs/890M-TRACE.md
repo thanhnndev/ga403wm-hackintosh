@@ -9318,3 +9318,8 @@ Boot 21:51, plugin a95189e (the 9c6d1ed hint fix is not installed). Docker hyper
   - `sysctl debug.btledlfix`.
   - `ioreg -l | grep itlmt-native-abi` reads "ok: 10 classes".
 - Wi-Fi native 25F33563 (mt7925-macos dev/awdl dc0c88a: CCFaultReporter on its own idle work loop, plus the 206D41C8 ABI gate). It is on the ESP and replaces 206D41C8. Backup: EFI/OC/Kexts-backup/itlmt7925Native.kext.20261108-221302. Check after boot: the ctl:faultLoop=own trace, and CCFaultReporter wakes near 0.
+- The plugin in the batch is now 9bfd0c5: cpu-thermal's fence pool, plus reading `debug.nmxaccel_fence_wait` at most once a second, on top of 9c6d1ed. Built by main: UUID E26F136E, sha c8670a0c, signed bundle binary ec1a057d. SbxMap pins refreshed (stale=0).
+  - Backups:
+    - /Library/NullMoth/nvmtl-plugin-20261108T151939Z = 9c6d1ed, so `--undo` goes back to 9c6d1ed.
+    - /Library/NullMoth/nvmtl-plugin-20261108T151155Z = a95189e (2fc47b9a).
+  - The env var `NVMTL_FENCE_POOL=0` turns the pool off.
