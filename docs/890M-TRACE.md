@@ -8711,3 +8711,29 @@ NMXGPU out-9 built 09:49: 4d4e6563 (UUID 8A149786), fork 521730c = Step130 + gfx
   `surface-out: surface N is mapped read-only` after the boot; NVMTL_SURF_RO_CHECK=0 turns it off.
 
 Installed 2026-11-08 ~10:00: Step130 (NMXGPU out-9 8A149786, AuxKC checked twice, NMXBacklight.kext and displaytrace/wsreset daemons gone) + NVMTL plugin dd43056 (00660e02, edge-video session: read-only mapping check + surface keep). Reboot pending.
+
+### Step130 boots read from Windows: both ended without a shutdown and without a panic (2026-11-08 10:10)
+
+Data pulled from Windows (dissect.apfs, read only) at 10:10: system.log, logd.0.log, fsck_apfs.log, wifi.log,
+nmx-flip-default.log, bootguard.log, Persist/Special/Signpost tracev3, NVRAM under the Apple GUID.
+
+| | Boot A (first Step130 boot) | Boot B |
+|---|---|---|
+| kernel start | 10:02:57 (`BOOT_TIME 1794106977`) | ~10:05:14 (logd up 10:05:18, same +4 s as boot A) |
+| fsck / flips on | 10:03:03 / 10:03:05 | 10:05:19 / 10:05:21 |
+| desktop | bootguard "came up and stayed up" 10:03:49 | no bootguard line |
+| last sign of life | wifi health check 10:04:04 (next one due 10:04:34 never written), logd 10:04:50 | NVRAM `nmxgpu-alive` beat 14 at 21578 ms (~10:05:36) |
+| end | no `SHUTDOWN_TIME`, no "No userlevel firehose clients left" | Persist `...5e` and Special `...45` allocated but all zeros (data never flushed) |
+
+- NVRAM after boot B: `nmxgpu-stage` ... `8562:fb modeset done|8571:fb published|8571:hold released|`;
+  `nmxgpu-alive` = `21578 ms beat 14 irq 759 nvrm NMXAMDFB after 893 ms`. The beats run once a second for 40 s from
+  "hold released", so they stopped after 14 of 40. No `aapl,panic-info`, no .panic report.
+- Boot A's Persist `...5d` was flushed only to 67.6 s uptime (10:04:04); the last ~50 s before its end are not on disk.
+- From the disk alone a hard hang and a forced power-off look the same. Both boots ended with no shutdown record
+  and no panic: boot A ~2 min after the desktop came up, boot B at ~22 s uptime, before airportd's first log.
+  Boot B never reached the desktop; it stopped about where boot A was starting WindowServer/loginwindow.
+- The Step129 boot before them (09:12-10:02) ran 50 min. WindowServer crashed at 10:02:18 (stack guard,
+  `-[NVMTLCommandQueue commandBuffer]` under `RenderEncoder` <-> `SetScissor` recursion, the 2026-11-06 14:07 pattern:
+  the NVMTL backend had stopped giving command buffers). The shutdown stall report is from 10:02:42.
+- Open: what the screen showed at the end of each boot (frozen picture, black, or still moving). The next boot needs
+  a longer record: the 40 s beat window misses a hang at ~2 min.
