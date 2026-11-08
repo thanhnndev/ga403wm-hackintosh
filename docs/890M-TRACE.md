@@ -8955,3 +8955,10 @@ Network is native Wi-Fi (en1); HoRNDIS is not loaded, so YouTube is safe to test
 
 Decode is no longer the cost: VCN handles VP9 and frame pacing is close to 60 fps. The remaining cost is WindowServer compositing at about 86 % CPU while a 1080p60 video plays (idle desktop: 36 %). That matches part 21's diffuse SkyLight/CoreAnimation profile; next step is a WS spindump during this exact playback to split the 86 %.
 - Step132b installed 14:4x: NMXGPU out-13 (fork a3e5484, UUID C112960E, same 579 imports as out-12), AuxKC relinked + checked, rc 0. Loads at the next reboot (no reboot asked for it alone). After boot: `sysctl debug | grep nmx_pin_other`.
+
+### Step133: one page-registry spin lock was ~4 s of CPU per 10 s of YouTube (building)
+
+- Edge session spindump, 10 s of YouTube 1080p60 VP9 in Chrome (WS ~86 % CPU): samples running inside IOSimpleLockLock: WS 541 (~1.8 s of WS's 11.2 s), Claude Helper 315, Chrome 239, kernel_task 52, VTDecoder 26; ~4 s CPU spinning in total.
+- All on `pg_lock` in xkpi `bsdcompat/src/nmx_page.c`, taken once per page by every userptr pin (`nmx_phys_to_page`, pin-list push in `nmx_user_pages_pin`) and every unpin (`vm_page_unwire_noq` -> `page_pop_pin`, from `amdgpu_ttm_tt_unpopulate` on GEM close), plus TTM pool alloc/free. One lock for every GPU process, a 1266-page surface = thousands of acquisitions per frame.
+- Fix (fork, out-14): the page registry and the per-page pin lists move to 256 stripe locks keyed by the page's hash bucket; `pg_lock` keeps only the chunk/free list and live counts. No path nests two of these locks or takes a stripe under `pg_lock`.
+- Still open on the plugin side (edge session): WS's `nvmtl.surface-keep.release` thread spends 338/413 samples in GEM close, so some BO is still made and destroyed every frame.
