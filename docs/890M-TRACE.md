@@ -9225,3 +9225,42 @@ Boot 20:52: NMXGPU out-18 (194BFE13), plugin a95189e (5FC87442). Normal desktop 
   - userwire 807 descriptors, 349096 pages (~1.33 GB) of user/IOSurface wirings.
   - The 4.9-5.8 GB seen on out-18 needs re-measuring under daily load on this boot.
 - Bluetooth: 0 "STATUS 718" lines in 2 min, bluetoothd 1.9 % CPU. The LE advertising loop is fixed by BtLeDlFix 1.3.0 (masked patterns for 26.x).
+
+## Trace part 27: YouTube 1080p60 on boot 21:51 (out-20, Step138 live); sandboxed Chrome GPU never gets the surface hint (2026-11-08 22:05)
+
+Boot 21:51 runs NMXGPU out-20 (1B44E2DB), RyzenHV 0.7.17, BtLeDlFix 1.3.0, and plugin a95189e. Docker was not running during this test. The same probe as part 26 was used: scratch Chrome, video LXb3EKWsInQ at hd1080 (VP9 itag 303), 40 s.
+
+| Metric | Boot 20:52 (part 26) | Boot 21:51 |
+|---|---|---|
+| Frames shown (rVFC) | 33.3 fps | 42.1 fps |
+| Frames decoded in 40 s (`totalVideoFrames`) | 1507 | 1048 |
+| Dropped | 280 | 8 |
+| Gaps > 50 ms (max) | 91 (3233 ms) | 40 (525 ms) |
+| rAF | 65 | 108 |
+| WindowServer (top) | 47-94 % | 33-87 % |
+| kernel_task VM_compressor + pageout, per 10 s | 16.7 s | 3.4 s |
+| Wired before playback | 20 GB | 6.9 GB |
+
+**Step138 page counters**, sampled every 5 s:
+- Before playback: `userrec_live` 348 k, `userwire_pages` 535 k.
+- Playback peak: 664 k and 999 k. That is 3.8 GB of user pages pinned, mostly WS and Chrome surface imports.
+- 60 s after Chrome closed: back to 285 k and 418 k.
+- `userrec_kept` stayed at 0 throughout. The leak is fixed.
+
+**Video path: the Chrome GPU process imports every decoded frame through the per-page prefault.**
+- In the 10 s system spindump, CrGpuMain used 3.1 s.
+  - 229 / 999 samples are in `newTextureWithDescriptor:iosurface:plane:`.
+  - 129 of them are in the userptr BO create.
+  - 98 are in `nvmtl_prefault_write`.
+- In the installed binary (5FC87442), that call site (`nvmtlNewSurfaceTexture+1636`, return 0x8104) is the full-span fallback. It runs only when `nvmtl_surface_hint` (not inlined) fails.
+- Cause: the hint opens `/dev/dri/renderD128` with a plain `open()`, which the browser GPU sandbox refuses. RADV in the same process reaches the node through the drmx wrappers (NMXAccel NMDR connection), so its imports work, but the hint is off for that process.
+- The kernel's `nmx_surf_hint` / `surf_wire` (3176 / 3176, 0 miss) therefore come from WindowServer only.
+
+**Fix**, plugin branch `plugin/video-lag` 4e68b8b (built as UUID 2869ADAB, not installed):
+- The hint now opens, sends and closes through `nvmtl_drmx_w_open/_ioctl/_close`.
+- NMDR runs the ioctl from the caller's thread with no ioctl filter (`nmx_drm_uc.cpp` selIoctl → VNOP_IOCTL), so the kernel's per-task hint matches the caller's later userptr import.
+- WindowServer is unchanged: the real `open()` succeeds there.
+
+**Still open:**
+- Only 1048 frames were decoded in 40 s (about 26 fps at the source), with 40 gaps. This is either network buffering or GPU-process stalls behind the per-frame prefault; the fix above has to be tested first to tell them apart.
+- WS main thread: 4.9 s of CPU per 10 s. Its import share fell from 103 to 39 samples. That part belongs to main and cpu-thermal.
