@@ -9115,3 +9115,10 @@ The kernel does not log gate/ungate, so the number of real power-gate cycles is 
 - NMXGPU logged no timeout, reset or ringdump in that window, and debug.nmx_timeouts is still 0.
 - Conclusion: the VCN 4.0.5 register read-back fixes the hang after power-gate idle. out-18 does not need the vcn_pg_lock / PG-off A/B.
 - One limitation: the kernel does not log gate/ungate, so the number of actual gate cycles is inferred from the pause timing, not counted.
+
+### 2026-11-08 20:41 A/B: firmware profile Silent <-> Performance on AC (out-17)
+
+- The firmware profile was switched with a small AsusWmi client (selector 1, what=1; same path as RogControl), 4 rounds of 2 -> 0, 10 s apart, then 60 s of watching.
+- Result: no flip-latch miss, no LAPPED copy, no NMXGPU timeout/reset. nmxaccel_flip_tripped 0, nmx_timeouts 0.
+- The profile switch alone does not reproduce the 19:03 stall.
+- What is left is the real AC -> DC transition, i.e. what the firmware/SMU does on unplug beyond the profile. Test that only with the owner present.
