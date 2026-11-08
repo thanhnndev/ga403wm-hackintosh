@@ -9122,3 +9122,17 @@ The kernel does not log gate/ungate, so the number of real power-gate cycles is 
 - Result: no flip-latch miss, no LAPPED copy, no NMXGPU timeout/reset. nmxaccel_flip_tripped 0, nmx_timeouts 0.
 - The profile switch alone does not reproduce the 19:03 stall.
 - What is left is the real AC -> DC transition, i.e. what the firmware/SMU does on unplug beyond the profile. Test that only with the owner present.
+
+### 2026-11-08 20:52 boot: Step137 (out-18 194BFE13 + plugin a95189e) live
+
+- Loaded:
+  - NMXGPU 194BFE13
+  - RyzenHV 0.7.15
+  - `-FIOff` (ForgedInvariant loaded but disabled)
+  - StrixS0ix 0.1.14
+- Plugin on disk: 2fc47b9a.
+- No panic. The only report is a shutdown_stall at 20:52:30, the known userspace wait.
+- After 4 min: nmx_timeouts 0, flip_tripped 0, pin_ro_retry 165 (WS r-- imports, expected), pin_other_fail 0.
+- TSC is in sync on 24 threads. bluetoothd is up with no restarts.
+- Bug: the Step137 `debug.nmx_surf_*` counters are declared but never passed to `sysctl_register_oid`, so they are invisible. Whether the surface path pins anything cannot be read on this boot.
+  - Fixed in Step137b (fork f31cedf), building as out-19. It installs with the next batch.
