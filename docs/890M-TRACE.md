@@ -8888,3 +8888,4 @@ The owner suspects the AWDL work (boot-arg `itlmt_awdl=1`). The AWDL session has
 - StrixS0ix 0.1.14 loaded; the cpu-thermal session is cycling runtime idle mode 0/1/2 (12:23-12:25) for its A/B.
 - WindowServer about 39 % with Edge + Chrome Remote Desktop open (edge plugin 5405e50 also live this boot).
 - New noise: bluetoothd ExcUserFault x5 since 12:01 (also before this boot; not ours to chase here).
+- Owner test 12:40: drawing in Preview Markup no longer freezes (the screenshot / Live Text freeze from Step130: 3 s gfx timeout in NMXGPU + read-only userptr check in plugin dd43056+). PASS.
