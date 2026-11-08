@@ -9377,3 +9377,9 @@ Boot 23:51: plugin 9bfd0c5 (UUID E26F136E) = the 9c6d1ed Chrome hint fix plus cp
 - kernel_task: VM_compressor 1.37 + 0.68 s, pageout_scan 1.26 s per 10 s.
 - WindowServer: 6.2 s per 10 s.
 - `userrec_kept` 0.
+
+### 2026-11-09 00:10 NMXGPU out-21 built (not installed)
+- From nmx-source-port 17a6b28 (Step139): `debug.nmx_pin_by_proc` counts user-page pin calls and pages per process name, to attribute the ~56k pages/s userrec churn seen on the 23:51 boot.
+- The CS path does not re-pin (Step92 `if (0)`), so the churn comes from userptr BO create/free.
+- Build: UUID 7864AA59, 0 weak symbols, 581 imports (identical to out-20), NMXOwnsDisplay present.
+- It goes in the next batch.
