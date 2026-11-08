@@ -380,3 +380,15 @@ On AC: 27–40 W package, Tctl 78–91 °C.
     linuxkpi_irq_wq 0.07, nmx softclock 0.03 (≈0.7 s together).
   - Three unnamed priority-81 threads 0.65 s, NVMe 0.09, CCFaultReporter 0.08.
 - Nothing outside memory pressure needs a fix now. Re-measure after Step138 and a smaller Docker VM.
+
+### Update from the ryzenhv session (2026-11-08)
+
+- The WRMSR fix is RyzenHV 0.7.17 (ryzen-hypervisor.framework b57c8fa, branch research/ga403wm-zen5): the HyperKit
+  CPUID fix-up clears 0x80000021 EAX bit 22. Built and tested, not installed; the owner decides. It takes effect for a
+  newly booted guest, so restart Docker Desktop after the kext loads. Their flight recorder had 18 % of exits as
+  WRMSR ecx=0xC0000502.
+- The NPT faults are xAPIC accesses, mostly EOI writes (`mov [APIC fixmap + 0xB0], eax`). HyperKit emulates the
+  APIC in user space through EPT violations, as on an Intel Mac without APICv. Not a RyzenHV bug. Making them
+  cheaper needs AVIC or x2APIC support in HyperKit, a separate large project.
+- After installing: check `monitor.log` no longer shows `wrmsr to register 0xc0000502` and com.docker.backend drops
+  from ~95 % CPU.
