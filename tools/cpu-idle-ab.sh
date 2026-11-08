@@ -4,10 +4,10 @@ out=${1:-/tmp/cpu-idle-ab.txt}; SET=$(cd "$(dirname "$0")/.." && pwd)/build/s0ix
 w() { perl -e "select(undef,undef,undef,$1)"; }
 {
 date; w 25
-for m in 0 1 0 1 0 1; do
+for m in 0 1 2 0 1 2 0 1; do
   $SET idle $m >/dev/null; w 3; $SET idlestats reset >/dev/null
   f0=$(sysctl -n debug.nmxaccel_pipe_perform); sysctl -n debug.amdcppc.sensors >/dev/null; w 0.3; sysctl -n debug.amdcppc.sensors >/dev/null
-  cpu=$(iostat -w 25 -c 2 | tail -1 | awk '{print "us "$(NF-2)" sy "$(NF-1)" id "$NF}')
+  cpu=$(iostat -w 25 -c 2 | tail -1 | awk '{print "us "$(NF-5)" sy "$(NF-4)" id "$(NF-3)}')
   s=$(sysctl -n debug.amdcppc.sensors | cut -d' ' -f1,2); f1=$(sysctl -n debug.nmxaccel_pipe_perform)
   $SET idlestats show >/dev/null; st=$(ioreg -r -c StrixS0ix -d1 | grep IdleStats | cut -d'"' -f4 | cut -d, -f1,2)
   ws=$(ps -p $(pgrep -x WindowServer) -o %cpu=)

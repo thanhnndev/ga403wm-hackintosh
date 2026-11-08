@@ -122,3 +122,51 @@ Still to do: a true idle run (no video, no app animating, display on), same scri
 (`idle-clean.sh`: alternates `s0ix-set idle 0/1`, logs Tctl, package power, frames/s, WindowServer %CPU, idle
 residency). Expected: the mode 1 gain shows up there, where cores are idle >95 % of the time. The machine is left in
 idle mode 1 for this boot (boot default stays 0 until the idle run confirms it).
+
+## Idle A/B and the real cost: WindowServer per frame (18:00–18:40, 2026-11-08)
+
+**True idle** (`tools/idle-attrib.sh`, run detached, hands off, nothing animating): 5.5 W package, Tctl 47 °C,
+2–3 frames/s, WindowServer 1 %. The earlier "10 W idle" was the Claude app's spinner keeping the screen at ~80
+frames/s. ReportCrash at 11–13 % was the bluetoothd crash loop (handed to the BT session).
+
+**Idle mode A/B** (`tools/cpu-idle-ab.sh`):
+- 18:05, steady 80 frames/s, CPUs 95 % idle: modes 0, 1 and 2 all read 9.9–10.1 W.
+- 18:15: unusable, because another session started (69–120 frames/s, 14→27 W drift).
+- No gain is shown at this load. The boot default stays 0. True idle is not compared yet.
+
+**Why a small animation costs 5–20 W.** The Claude app only redraws a spinner and new text; its own processes
+use ~40 % (normal for Electron). WindowServer, however, uses 78–94 % of a core at 75–100 frames/s: 7.0 s user
+and 2.4 s system per 10 s. That is ~5 ms of compositor CPU per frame, against ~1 ms on a real Mac.
+
+`sample WindowServer 10` (root, ~100 frames/s, 1.33 ms per sample; the main thread is 66 % busy) gives this
+per-frame split:
+
+| Path (inclusive, main thread) | samples | ≈ ms/frame |
+|---|---|---|
+| `CDDisplay::render_update` (whole composite) | 3660 | 4.9 |
+| `CA::OGL::render` (layer encoding through NVMTL → RADV) | 2938 | 3.9 |
+| vibrancy / backdrop blur (`render_vibrant_color_matrix`, `capture_in_place_backdrop`, blur) | ~900 | 1.2 |
+| `commitAndWaitUntilSubmitted` (synchronous submit, `cs_submit` ioctl) | 585 | 0.8 |
+| `newTextureWithDescriptor:iosurface:` → `nvmtl_vk_buffer_import_host` → `amdgpu_create_bo_from_user_mem` + VA map | 532 | 0.7 |
+| `CoreDisplay::Display::Present` | 349 | 0.5 |
+| `nvmtl_prefault_write` | 210 | 0.3 |
+
+Worker threads also spend ~2.9 s per 10 s blocked in `drmSyncobjWait`, called from `nvmtl_vk_submit_finish` via
+`nvmtl_pump_buffers`. That time is blocked, not burning CPU. Short-lived workqueue threads account for about half
+of WindowServer's CPU time: thread create/exit churn from the pump.
+
+**Fixable items (all in the NVMTL WindowServer plugin, owned by the main session):**
+1. **IOSurface import every frame.** `nvmtlNewSurfaceTexture:` (`890m-ws-plugin/plugin/NVMTLDevice.m`) caches
+   only failed BAR imports (`!_vramOn`). Every successful wrap imports the surface memory again (userptr BO +
+   VA map ioctls) and frees it later. The fix is to cache the Vulkan memory import per (surface ID, plane) with a
+   weak entry, the same way the private-image path already shares one image. Saves ~0.7 ms per frame plus the
+   destroy cost.
+2. **Synchronous commit.** `commitAndWaitUntilSubmitted` blocks the compositor main thread on the submit
+   (0.8 ms per frame).
+3. **Pump thread churn.** Fence waits run on fresh dispatch workqueue threads. One long-lived waiter thread
+   would avoid the create/exit cost.
+4. Structural: every Metal call is translated to Vulkan on the CPU (encoder binds, sampler pipelines, snapshot
+   and resref bookkeeping). This is the bulk of the remaining 3.9 ms, and only shrinks with translator work.
+
+kernel_task at ~30 % during animation is not profiled yet. It needs a kernel profile (`spindump` or kperf),
+which is a separate step.
