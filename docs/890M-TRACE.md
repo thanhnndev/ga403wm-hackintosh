@@ -9207,3 +9207,7 @@ Boot 20:52: NMXGPU out-18 (194BFE13), plugin a95189e (5FC87442). Normal desktop 
   - var4.96 went 4.5 M -> 4.09 M. It shrinks, so it is not this leak.
   - NMXGPU tag went 5.80 -> 4.89 GB: about 0.9 GB of it is dynamic.
   - Check after out-20: var4.256 flat, `nmx_userrec_live` tracks pinned pages, `nmx_userrec_kept` ~0.
+- 2026-11-08 ~21:55: out-20 (1B44E2DB) installed with the owner's OK (step130 script: AuxKC relinked, probes ok, kccheck ok). It loads at the next reboot.
+  - Backup of out-18 is in /Library/NullMoth/step130-bk-*.
+  - Undo: `scripts/macos-install-step130.sh --undo`.
+  - The BT LE advertising loop was handed to the "Fix bluetoothd crash loop" session.
