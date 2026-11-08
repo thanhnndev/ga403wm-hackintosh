@@ -172,3 +172,51 @@ of WindowServer's CPU time: thread create/exit churn from the pump.
 
 kernel_task at ~30 % during animation is not profiled yet. It needs a kernel profile (`spindump` or kperf),
 which is a separate step.
+
+## Root cause of the IOSurface import cost: AMD surfaces are not GPU resources (trace 2026-11-08 19:00)
+
+Surface keep (the per-process cache) only lowers how often the cost is paid. The cost exists because on the 890M an
+IOSurface never becomes a GPU resource in the kernel.
+
+**NVIDIA path (upstream NullMoth, "item 7"):**
+- `NVAccel::resourceTypeForIOSurface` lets IOAcceleratorFamily2 build a per-surface device cache
+  (`IOGraphicsAccelerator2::deviceCacheForIOSurface`, an `NVResource` with VRAM).
+- The plugin imports it by surface ID (`nvmtl_vk_surface_vram` → NVK `stage_import` →
+  `nvAccelSurfVram`: `IOSurfaceRoot::lookupSurface`, device cache, RM share).
+- Result: one GPU allocation per surface, shared by every process, and its lifetime follows the IOSurface.
+
+**AMD path (NMX_ACCEL):**
+- `resourceTypeForIOSurface` returns 0x80 (`nvrm-accel.cpp`: "UMA IOSurfaces use the family system-memory path";
+  "Vulkan/RADV owns execution memory").
+- `nvmtl_vk_surface_share_on()` is off, because RADV has no `stage_import`.
+- So every process that wraps a surface imports it from its own user mapping:
+  `IOSurfaceGetBaseAddress` → `nvmtl_prefault_write` (one page fault per page in that process's fresh mapping) →
+  `amdgpu_create_bo_from_user_mem` (userptr: wire the pages through the task's VM map) → VA map.
+- It is repeated per process, and again after every surface keep drop.
+
+**Root fix (design, not built):** import IOSurfaces by ID in the kernel, the same shape as item 7.
+1. NMXGPU gets an ioctl that imports an IOSurface by ID:
+   - Look it up for the calling task with `IOSurfaceRoot::lookupSurface`, which also checks that the task can see it.
+   - Take `IOSurface::getMemoryDescriptor` and `prepare()` it once.
+   - Export it as a kernel dma-buf whose `map_dma_buf` returns the descriptor's physical segments. The port's
+     dma-buf exists (`override/src/nmx_dma_buf.c`); only file descriptors are missing, and none are needed here.
+   - `drm_gem_prime_import` it into the caller's DRM file, which returns a GEM handle.
+   - Cache one dma-buf per surface, and release it when the IOSurface dies. That release can come from the family's
+     device cache if `resourceTypeForIOSurface` stops returning 0x80 for these surfaces.
+2. RADV gets a `stage_import` equivalent (a patch next to `radv-nvmtl-surface-list.patch`): during
+   `vkAllocateMemory` with the staged record, it calls the ioctl and wraps the returned GEM handle
+   (`amdgpu_bo_import`, KMS handle type) instead of an fd.
+3. In the plugin, `nvmtl_vk_surface_share_on()` becomes true on AMD, so `nvmtl_vk_surface_vram` is the first path.
+   The userptr host import stays as the fallback.
+
+**What it removes:**
+- the per-process page faults (210 samples) and the userptr wire (240);
+- re-imports after keep drops: a re-wrap becomes a GEM lookup plus a VA map;
+- the hundreds of host-pointer BOs per process on the submit BO list (trace parts 7–9).
+
+**What it does not touch:** the Metal→Vulkan encode cost (~3.9 ms per frame) and the synchronous submit. Those
+are the next two root causes, each with its own design.
+
+**Risk:**
+- Coherency with CPU writes: IOSurface lock/unlock. The userptr path has the same issue today.
+- Surfaces mapped read-only (the 23:18 fault): the ioctl must take the access mode from the caller's mapping.
