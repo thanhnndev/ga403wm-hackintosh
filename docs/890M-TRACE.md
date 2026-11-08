@@ -9004,3 +9004,30 @@ System-wide spindump, 10 s, 3020 samples (~3.3 ms each), Chrome playing VP9 1080
 - `nmx_pin_write_fail` 109 = `ro_retry` 109, all WindowServer rc 2 (r-- client surfaces), `nmx_pin_other_fail` 0, `last_rc2` 0 (no pointless retries any more).
 - `nmx_timeouts` 1: `ring sdma0 timeout, signaled seq=31, emitted seq=31` at 14:52:06 (boot + 10 s), ring reset success. Signaled == emitted: the fence had completed and the timeout fired anyway (a late/missed fence interrupt at boot, not a hung engine). First sdma0 one today (earlier ones were vcn_unified_0, signaled = emitted - 1). Watch whether it repeats on the next boots.
 - CPU at idle 4 min after boot: WS 49 %, Claude Helper 63 %. The YouTube spindump re-run (edge session) gives the before/after for the lock + keep30 change.
+
+## Trace part 23: YouTube 1080p60 after out-14 (stripe locks) + plugin keep30, boot 14:51 (2026-11-08)
+
+Same test as parts 22b/22c: scratch Chrome, video LXb3EKWsInQ at hd1080 (VP9 itag 303), 40 s probe, then a 10 s system-wide spindump.
+
+| Metric | Before (14:23 boot) | After (14:51 boot) |
+|---|---|---|
+| Frames shown (rVFC) | 58.6 fps | 58.9 fps |
+| Dropped | 32 / 2396 (1.3 %) | 26 / 2397 (1.1 %) |
+| Gaps > 50 ms (max) | 3 (117 ms) | 1 (83 ms) |
+| WindowServer CPU (top) | ~86 % | ~81 % |
+| WS CPU in the 10 s spindump | 11.2 s | 9.3 s |
+| `IOSimpleLockLock` samples, whole system | ~1230 (WS 541) | 38 (WS 9) |
+| WS main: `newTextureWithDescriptor:iosurface:plane:` | 1378 | 797 |
+| …of which `nvmtl_vk_buffer_import_host` | 879 | 226 |
+| …of which `nvmtl_prefault_write` | 422 | 535 |
+| `nvmtl.surface-keep.release` CPU | 1.24 s (338 GEM close) | 0.41 s (93 GEM close) |
+
+- **out-14 removed the lock contention:** the pin/unpin spin is gone in every process (WS, Chrome, Claude, VTDecoder).
+- **Keep30 moved the misses.** Plugin reports per 30 s: hits 3286, misses 1012 (new surface 102, expired 8, **idle cap 902**), 602 entries, idle 503 MB.
+  - With a 30 s window the working set is larger than `NVMTL_KEEP_IDLE_MAX` (512), so the LRU cap now drops entries that come back.
+  - The sweep also grew to 849 µs average (2.5 ms max) per import, because it walks every entry.
+- **The biggest single plugin cost left is the write prefault** (18 % of the WS main thread). It is real page faults on the WS mapping of each newly imported surface, so it only drops with fewer re-imports.
+- **Next (plugin):**
+  1. Log what the cap drops (size, format) to see why WS has 600+ distinct surfaces during one video.
+  2. Then either raise the cap, or key the cap by bytes rather than count.
+  3. Make the sweep incremental, so it stops walking all entries on every import.
