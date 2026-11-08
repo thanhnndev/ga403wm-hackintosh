@@ -8701,3 +8701,11 @@ Verify: open a screenshot in Preview, draw with Markup, Live Text active. Expect
 `soft recovered` within ~3 s, and WindowServer staying up.
 
 NMXGPU out-9 built 09:49: 4d4e6563 (UUID 8A149786), fork 521730c = Step130 + gfx timeout 3 s. This is the build to install.
+- Same boot, 09:49: plugin dd43056 on top (installed sha256 00660e02, backup nvmtl-plugin-20261108T024947Z = 11b15ce6,
+  sbxmap stale 0, TextEdit loads it). Root cause from the main session: at 23:18 mediaanalysisd (Live Text on a Preview
+  screenshot) host-imported a surface mapped read-only in it as a writable wrapper; amdgpu pinned the pages read-only,
+  the GPU wrote them (gfxhub PERMISSION_FAULTS), the GFX ring hung and WindowServer's capture aborted. Fix:
+  `nvmtl_span_writable` (mach_vm_region, VM_PROT_WRITE over the span). Read-only mapping: a read-only wrapper imports
+  read-only (`_hostRO`), a writable one gets a private image, surface-out skips the CPU write-back. Unit check: rw 1, one
+  read-only page 0, hole 0, own IOSurface 1. Look for `mapping is read-only in this process` (apps, mediaanalysisd) and
+  `surface-out: surface N is mapped read-only` after the boot; NVMTL_SURF_RO_CHECK=0 turns it off.
