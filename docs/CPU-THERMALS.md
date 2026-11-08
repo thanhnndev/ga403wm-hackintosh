@@ -367,3 +367,16 @@ On AC: 27–40 W package, Tctl 78–91 °C.
 - powermetrics interrupt and wakeup data (needs root; the 21:15 run failed on a bad flag).
 - mds_stores cause (needs `fs_usage` as root).
 - Whether WindowServer's imports under load are hint misses: needs the out-19 counters.
+
+### kernel_task without memory pressure (21:16 spindump, 13.3 s of CPU in 10 s)
+
+- VM threads (2× VM_compressor, VM_pageout_scan, VM_cswap_trigger): 9.6 s. The cause is the wired memory above;
+  the NMXGPU leak is Step138 (a1c786c, video/main session) and the 5.8 GB NMXGPU tag is theirs too.
+- Everything else is ~3.7 s, about 0.37 of one core:
+  - USB XHCI threads 1.34 s. XHC0 0.36 s and its USB2 port 0x00300000 0.32 s (the UGREEN mouse dongle, so input
+    while moving the mouse). XHCI@81000000 0.27 s (ASUS FHD webcam bus; check whether the camera was streaming).
+    XHCI@80000000 0.20 s, XHCI@60000000 0.20 s.
+  - NMXGPU threads: NMXIrq 0.18, NMXDisplayPipe 0.11, gfx_0.0.0 0.11, dm_vblank_control 0.10, sdma0 0.09,
+    linuxkpi_irq_wq 0.07, nmx softclock 0.03 (≈0.7 s together).
+  - Three unnamed priority-81 threads 0.65 s, NVMe 0.09, CCFaultReporter 0.08.
+- Nothing outside memory pressure needs a fix now. Re-measure after Step138 and a smaller Docker VM.
