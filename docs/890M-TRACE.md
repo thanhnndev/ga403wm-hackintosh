@@ -8709,3 +8709,5 @@ NMXGPU out-9 built 09:49: 4d4e6563 (UUID 8A149786), fork 521730c = Step130 + gfx
   read-only (`_hostRO`), a writable one gets a private image, surface-out skips the CPU write-back. Unit check: rw 1, one
   read-only page 0, hole 0, own IOSurface 1. Look for `mapping is read-only in this process` (apps, mediaanalysisd) and
   `surface-out: surface N is mapped read-only` after the boot; NVMTL_SURF_RO_CHECK=0 turns it off.
+
+Installed 2026-11-08 ~10:00: Step130 (NMXGPU out-9 8A149786, AuxKC checked twice, NMXBacklight.kext and displaytrace/wsreset daemons gone) + NVMTL plugin dd43056 (00660e02, edge-video session: read-only mapping check + surface keep). Reboot pending.
