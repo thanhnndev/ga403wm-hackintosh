@@ -8737,3 +8737,38 @@ nmx-flip-default.log, bootguard.log, Persist/Special/Signpost tracev3, NVRAM und
   the NVMTL backend had stopped giving command buffers). The shutdown stall report is from 10:02:42.
 - Open: what the screen showed at the end of each boot (frozen picture, black, or still moving). The next boot needs
   a longer record: the 40 s beat window misses a hang at ~2 min.
+
+### Step130 black screen: NMXAccel never takes NMXAMDFB, so the display pipe is never armed (2026-11-08 10:40, read from Windows)
+
+Owner: both Step130 boots showed a **black screen**; the owner held the power button (so A and B were power-offs on a
+black panel, not hangs).
+
+Kernel log decoded from Windows (firehose entries with the absolute formatter: the format string is at
+`format_string_location` inside the kext image; NMXGPU image = AuxKC vm 0xe5000, NMXAccel = 0xc0000, from the catalog's
+pid-0 load table: NMXGPU 8A149786 at 0xff7f96deb000 size 0x8a4000, NMXAccel C18FD8B4 at 0xff7f96dc6000). NMXAccel is the
+same binary in Step129 and Step130, so its lines decode the same way for both boots.
+
+| | Step129 boot 09:12 (picture) | Step130 boot A 10:02:57 (black) |
+|---|---|---|
+| NMXAMDFB published | 8.73 s | 9.197 s (`boot hold released ... after 1380 ms`) |
+| NMXAccel `NMXAMDFB published -- display machine framebuffer count = 0` | 8.731 | **missing** |
+| `NMX display bind: scanout ready` / `pipe armed on owned native framebuffer` | 8.731 | **missing** |
+| `GATES after deliverModeChange: pipe 0 active = 1` | 8.731 | **missing** |
+| WindowServer open, mode change | later, gate open | 13.695 `initFramebufferResource ... gate 0`, `scanout gate CLOSED -- returning NULL` (x3) |
+| backlight | (NMXBacklight inert) | `backlight handler published (initial 100%)`, `backlight set brightness = 100`, `100% applied (rc 0)` |
+
+- The backlight itself worked (100 %, rc 0). The panel was black because WindowServer's pipe had no scanout: NMXAccel's
+  `fbPublished` never logged, so `nmxArm` never ran. `fbPublished` returns silently unless the new service is an
+  `NMXGPUFB`, its provider's provider is NMXAccel's PCI device, and it carries `NMXScanoutBridgeVersion`. Same signature
+  as the Step128 black boots (no arm, no `GATES`, no `flip: API up`, NVRAM stages end at `hold released` without
+  `nmxFlipCaps`).
+- The only Step130 change on that path is in `NMXAMDFB::start()` (fork 521730c, `xnu/nmx_fb.cpp`): before the
+  framebuffer registers, it now attaches the `backlight` child and calls `registerService(kIOServiceSynchronous)` on it
+  (kernel log 9.196991 `childPublished | backlight`, then 9.197218 `childPublished | NMXAMDFB`). NMXPowerKeep (new child of
+  NMXGPU) and the 3 s job timeout do not touch the framebuffer publish. Which `fbPublished` check fails is not visible
+  in the log (it returns without a line).
+- Test that isolates it without a rebuild: boot-arg `-nmxbloff` (NMXAMDFB skips `publishBacklight()`, back to Step129's
+  start order; no slider). Picture with it = the backlight child registration is the cause.
+- Source fix to build on macOS: publish the backlight child after `fb->registerService()` in `nmx_fb_publish()` (still
+  before WindowServer's first open at ~13.7 s), not synchronously inside `start()`; and log every early return in
+  NMXAccel's `fbPublished`.
