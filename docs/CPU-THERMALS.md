@@ -220,3 +220,43 @@ are the next two root causes, each with its own design.
 **Risk:**
 - Coherency with CPU writes: IOSurface lock/unlock. The userptr path has the same issue today.
 - Surfaces mapped read-only (the 23:18 fault): the ioctl must take the access mode from the caller's mapping.
+
+### Step137: IOSurface imports pin the surface's own memory (built 2026-11-08, not installed)
+
+Root fix, step 1. RADV and libdrm do not change: the plugin keeps importing host pointers. The kernel's userptr pin now
+takes the IOSurface's pages from the surface itself, instead of faulting the range in through the process's map.
+
+**Kernel: NMXGPU out-18 66db7c2c** (fork `nmx-source-port` 8f9364c, on top of Step136 out-17)
+- `patches/amdgpu-nmx-surface-hint.patch`: driver ioctl `DRM_AMDGPU_NMX_SURFACE_HINT` (0x5e,
+  `{addr, size, surface_id}`), DRM_RENDER_ALLOW. It records "this task's range [addr, addr + size) is IOSurface N"
+  in a 64-entry ring that expires after 2 s.
+- `xnu/nmx_mm.cpp` `nmx_xnu_user_wire`: when a hint matches the exact range being wired, the pin goes through
+  `surf_wire`:
+  - `IOSurfaceRoot::lookupSurface(id, task)`: only a surface that task may use.
+  - `IOSurface::getMemoryDescriptor` → `prepare()`, and the pages come from it.
+  - The claim is checked first: the range's first page is wired through the process's map, with the access asked
+    for, and must be the surface's first page.
+  - Any failure falls back to the old user wire. The hint survives a failed attempt, so the read-only retry (Step96,
+    WindowServer's r-- client surfaces) still uses it.
+- New imports: `IOSurfaceRoot::lookupSurface` and `IOSurface::getMemoryDescriptor`, both already imported by
+  NMXAccel and NVAccel (Step128 rule). `com.apple.iokit.IOSurface` was added to OSBundleLibraries.
+- Counters: `debug.nmx_surf_{hint,wire,miss,bad_page,no_surf,short,prep_fail}`.
+- Boot-arg `nmxsurfwire=0` turns the surface path off.
+
+**Plugin a95189e** (`nmx-plugin-camcopy`, on top of the edge session's 5ba6363 tile keep)
+- Before each host import, the plugin sends the hint on its own `/dev/dri/renderD128` fd.
+- When the hint is accepted, it faults in only the first page instead of the whole surface.
+- On a kernel without the ioctl, the first hint gets EINVAL and the hint is turned off for that process. Tested on
+  the live out-17: `surfkeep_test 50` PASS, log `surface hint: refused (Invalid argument), off for this process`.
+- `NVMTL_SURF_HINT=0` turns it off.
+- Binary `out/NVMTLDriver-surfhint` (7db6968c). It includes the tile keep fix, so it replaces `NVMTLDriver-tiles`.
+
+**Verify after the boot:**
+- `sysctl debug.nmx_surf_wire` grows, and `nmx_surf_bad_page` / `miss` stay small.
+- The WindowServer sample from 18:30 (Claude app animating): `nvmtl_prefault_write` and
+  `amdgpu_create_bo_from_user_mem` should be near 0 under `newTextureWithDescriptor:iosurface:`.
+- No gfxhub faults. The Step135 romap print names any read-only mapping that is hit.
+
+**Undo:**
+- Plugin: the plugin installer's `--undo`.
+- Kernel: `nmxsurfwire=0`, or the Step130 installer `--undo` / reinstall out-17.
