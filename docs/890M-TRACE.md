@@ -8937,3 +8937,20 @@ The owner suspects the AWDL work (boot-arg `itlmt_awdl=1`). The AWDL session has
 - WS CPU 36 % at 12 min uptime, idle desktop. Video measurement with the local clip still to do on this boot.
 - Undo plugin: `scripts/macos-nvmtl-plugin-install.sh --undo` (back to 8201eaaa, 5405e50), then `scripts/macos-install-strixsbxmap.sh --refresh`.
 - Correction (edge session): the 1028 WS failures are client surfaces mapped r-- (Step96 case); the RO pin is right, no wire bug. The 20340 KB prefault was a different, writable import. Region-info request withdrawn. out-13 = Step132b as written above (no retry on rc 2, non-WS failures counted apart), installs with the next reboot batch.
+
+## Trace part 22b: YouTube 1080p60 in Chrome, boot 14:23 (2026-11-08)
+
+Network is native Wi-Fi (en1); HoRNDIS is not loaded, so YouTube is safe to test on this boot. Scratch Chrome (`--user-data-dir` in the scratchpad), video LXb3EKWsInQ forced to hd1080, 40 s probe (requestVideoFrameCallback, rAF, getVideoPlaybackQuality), `top` sampled every 5 s.
+
+| Metric | Value |
+|---|---|
+| Stream | VP9 profile 0 8-bit (itag 303), 1920x1080@60 |
+| Decode | VTDecoderXPCService 6-8 % CPU (VCNDec on VCN) |
+| Frames shown (rVFC) | 58.6 fps |
+| rAF | 117 fps |
+| Dropped | 32 / 2396 (1.3 %) |
+| Gaps > 50 ms | 3, max 117 ms |
+| WindowServer CPU | 82-91 %, avg ~86 % |
+| Google Chrome (all processes, summed by top name) | ~41 % |
+
+Decode is no longer the cost: VCN handles VP9 and frame pacing is close to 60 fps. The remaining cost is WindowServer compositing at about 86 % CPU while a 1080p60 video plays (idle desktop: 36 %). That matches part 21's diffuse SkyLight/CoreAnimation profile; next step is a WS spindump during this exact playback to split the 86 %.
