@@ -8954,3 +8954,4 @@ Network is native Wi-Fi (en1); HoRNDIS is not loaded, so YouTube is safe to test
 | Google Chrome (all processes, summed by top name) | ~41 % |
 
 Decode is no longer the cost: VCN handles VP9 and frame pacing is close to 60 fps. The remaining cost is WindowServer compositing at about 86 % CPU while a 1080p60 video plays (idle desktop: 36 %). That matches part 21's diffuse SkyLight/CoreAnimation profile; next step is a WS spindump during this exact playback to split the 86 %.
+- Step132b installed 14:4x: NMXGPU out-13 (fork a3e5484, UUID C112960E, same 579 imports as out-12), AuxKC relinked + checked, rc 0. Loads at the next reboot (no reboot asked for it alone). After boot: `sysctl debug | grep nmx_pin_other`.
