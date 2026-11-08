@@ -8825,3 +8825,25 @@ Next: Wi-Fi/network session checks TSC sync across cores and HoRNDIS; if HoRNDIS
 - End-to-end test with DisplayServicesSetBrightness: 0.5 gives `Backlight,Percent` 50 and restore gives 100, both rc 0,
   failures 0. `NMXPagingWake` = Yes.
 - Visual confirmation (slider and Fn keys) is still owed by the owner.
+
+## Step131: zero-copy flips were off since the source port (PAGE_MASK) (2026-11-08 12:10)
+
+From cpu-thermal (docs/CPU-THERMALS.md, cause 2): on every boot since Step129, `NMX flip: import failed at
+descriptor page (0)` (8 refusals), `flip_submitted 0`. NMXAccel therefore CPU-copied every frame: ~100 fps x 20.7 MB,
+the NMXDisplayPipe thread at 16 % of a core, and `beam_copy_us` 3.3-7.4 s per 10 s.
+
+Root cause: `override/src/nmx_fb_bridge.c` `flip_import()` tests `pa & PAGE_MASK`. That file includes LinuxKPI
+headers, where `PAGE_MASK` is Linux's `~(PAGE_SIZE - 1)`, not BSD's `PAGE_SIZE - 1`. So every non-zero physical
+address looked misaligned. The cave build (`scripts/nmx-flip/import.c`) tested `pa & 4095`; the source port changed the
+spelling and not the meaning. `nmx_linux_cdev.c` already carries a comment about this trap. The other `PAGE_MASK` users
+are BSD-side (`bsdcompat`) or Linux code that means the Linux mask.
+
+Fix: fork 8c18558, test `pa & (PAGE_SIZE - 1)`. NMXGPU out-11. Expected after the reboot: `NMX flip: import N:
+2880x1800 ...` lines, `flip_submitted` rising, `beam_copy_us` near 0, and lower WindowServer/kernel_task CPU.
+
+Panics today:
+- 11:23 and 11:57: `fq_codel` `now >= *pkt_enq_time` under HoRNDIS (USB tethering).
+- 11:19: TLB flush timeout, CPU 0 stuck in APIC interrupt handling. CPU 0 also takes the touchpad I2C controller's
+  ~10k IRQs/s (VoodooI2C polling, CPU-THERMALS cause 4): a strong suspect for the 11:19 storm.
+
+The owner suspects the AWDL work (boot-arg `itlmt_awdl=1`). The AWDL session has been asked to confirm or rule it out.
