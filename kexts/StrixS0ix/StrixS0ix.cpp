@@ -428,8 +428,63 @@ static void s0ixHalt(void)
     gLastFast = fast;
 }
 
+// ---- 0.1.14: runtime CPU idle (pmDispatch MachineIdle) -------------------------------------------------------------
+// machine_idle() (25G332, checked in the kernel binary) calls pmDispatch->MachineIdle (offset 0x10) with interrupts off
+// when it is set, and otherwise runs "sti; hlt; cli". HLT is C1: on AMD nothing else registers MachineIdle, so a core
+// that is awake never power-gates (CC6) and the package never idles deeply, which keeps an idle macOS hot. Linux
+// acpi_idle uses the firmware _CST: C1 MWAIT, C2 IO port 0x414 (18 us), C3 IO port 0x415 (350 us). An IO C-state read
+// with IF=0 ends on any interrupt (the sleep path above relies on the same), and the local APIC timer keeps running in
+// CC6 (CPUID 6 ARAT, machdep.cpu.thermal.invariant_APIC_timer = 1). The pending interrupt is taken by "sti; nop; cli".
+// The state comes from a per-CPU average of the last idle lengths (a small "menu" governor): below S0ix,IdleC2us HLT,
+// then C2, and in mode 2 C3 above S0ix,IdleC3us when PM1 BM_STS shows no bus master activity (Linux acpi_idle_bm_check).
+// S0ix,IdleMode (boot-arg s0ix_idle, runtime s0ix-set idle): 0 = stock HLT (default), 1 = HLT/C2, 2 = HLT/C2/C3.
+// Boot-arg -s0ixidleoff leaves MachineIdle unregistered (the kernel's own sti; hlt).
+namespace { constexpr size_t kDispMachineIdle = 0x10 / 8; }
+static inline void outw16(uint16_t port, uint16_t v) { asm volatile("outw %0, %1" :: "a"(v), "Nd"(port)); }
+static volatile uint32_t gIdleMode, gIdleC2us = 40, gIdleC3us = 2000;
+static volatile uint64_t gIdleC2Tsc, gIdleC3Tsc;
+struct alignas(64) IdleStat { uint64_t pred, n[3], tsc[3], bmDemote; };
+static IdleStat gIdle[64];
+
+static void idleThresholds()
+{
+    gIdleC2Tsc = gTscHz / 1000000 * gIdleC2us;
+    gIdleC3Tsc = gTscHz / 1000000 * gIdleC3us;
+}
+
+static uint64_t s0ixMachineIdle(uint64_t)
+{
+    int c = cpu_number();
+    uint32_t mode = gIdleMode;
+    uint16_t base = gCstBase;
+    if (!mode || !base || c < 0 || c >= 64) {
+        asm volatile("sti; hlt; cli" ::: "memory");
+        return 0;
+    }
+    IdleStat &s = gIdle[c];
+    unsigned k = s.pred < gIdleC2Tsc ? 0 : 1;
+    if (k == 1 && mode >= 2 && s.pred >= gIdleC3Tsc) {
+        if (inw(gPm1Sts) & 0x10) { outw16(gPm1Sts, 0x10); s.bmDemote++; }   // BM_STS: write 1 to clear, C2 this time
+        else k = 2;
+    }
+    uint64_t t0 = rdtsc64(), dt;
+    if (k == 0) {
+        asm volatile("sti; hlt; cli" ::: "memory");
+        dt = rdtsc64() - t0;
+    } else {
+        (void)inb(uint16_t(base + k));
+        dt = rdtsc64() - t0;
+        asm volatile("sti; nop; cli" ::: "memory");
+    }
+    s.pred = s.pred - (s.pred >> 3) + (dt >> 3);
+    s.n[k]++;
+    s.tsc[k] += dt;
+    return 0;
+}
+
 class StrixS0ix : public IOService {
     OSDeclareDefaultStructors(StrixS0ix)
+    void publishIdle(bool reset);
     IOACPIPlatformDevice *pep = nullptr;
     IOPCIDevice *rc = nullptr;                  // 00:00.0, for SMN index/data
     IOMemoryMap *pmcMap = nullptr, *smuMap = nullptr;
@@ -917,9 +972,50 @@ void StrixS0ix::publishPci()
 }
 
 // "S0ix,BootCC6" = true/false from user space (scripts/macos-syssleep-test.sh): no reboot needed to try it
+// "S0ix,IdleStats": per idle state the entry count and the time spent in it, summed over all CPUs since the last reset
+void StrixS0ix::publishIdle(bool reset)
+{
+    uint64_t n[3] = {}, t[3] = {}, bm = 0;
+    for (auto &s : gIdle) {
+        for (int k = 0; k < 3; k++) { n[k] += s.n[k]; t[k] += s.tsc[k]; }
+        bm += s.bmDemote;
+    }
+    uint64_t khz = gTscHz / 1000 ? gTscHz / 1000 : 1;
+    char buf[200];
+    snprintf(buf, sizeof buf, "mode %u: HLT %llu x %llu ms, C2 %llu x %llu ms, C3 %llu x %llu ms, bm demote %llu",
+             unsigned(gIdleMode), n[0], t[0] / khz, n[1], t[1] / khz, n[2], t[2] / khz, bm);
+    setProperty("S0ix,IdleStats", buf);
+    if (reset)
+        for (auto &s : gIdle) { for (int k = 0; k < 3; k++) { s.n[k] = 0; s.tsc[k] = 0; } s.bmDemote = 0; }
+}
+
 IOReturn StrixS0ix::setProperties(OSObject *properties)
 {
     auto d = OSDynamicCast(OSDictionary, properties);
+    if (auto n = d ? OSDynamicCast(OSNumber, d->getObject("S0ix,IdleMode")) : nullptr) {
+        if (!gDispatch[kDispMachineIdle] || !gCstBase) return kIOReturnUnsupported;
+        gIdleMode = n->unsigned32BitValue() > 2 ? 2 : n->unsigned32BitValue();
+        setProperty("S0ix,IdleMode", gIdleMode, 32);
+        publishIdle(true);
+        IOLog("StrixS0ix: runtime idle mode now %u (0 HLT, 1 HLT/C2, 2 HLT/C2/C3)\n", unsigned(gIdleMode));
+        return kIOReturnSuccess;
+    }
+    if (auto n = d ? OSDynamicCast(OSNumber, d->getObject("S0ix,IdleC2us")) : nullptr) {
+        gIdleC2us = n->unsigned32BitValue();
+        idleThresholds();
+        setProperty("S0ix,IdleC2us", gIdleC2us, 32);
+        return kIOReturnSuccess;
+    }
+    if (auto n = d ? OSDynamicCast(OSNumber, d->getObject("S0ix,IdleC3us")) : nullptr) {
+        gIdleC3us = n->unsigned32BitValue();
+        idleThresholds();
+        setProperty("S0ix,IdleC3us", gIdleC3us, 32);
+        return kIOReturnSuccess;
+    }
+    if (auto b0 = d ? OSDynamicCast(OSBoolean, d->getObject("S0ix,IdleStats")) : nullptr) {
+        publishIdle(b0->isTrue());              // true = publish and reset the counters, false = publish only
+        return kIOReturnSuccess;
+    }
     if (auto n = d ? OSDynamicCast(OSNumber, d->getObject("S0ix,D3Mode")) : nullptr) {
         gD3Mode = n->unsigned32BitValue() > 5 ? 5 : n->unsigned32BitValue();
         setProperty("S0ix,D3Mode", gD3Mode, 32);
@@ -1017,6 +1113,17 @@ bool StrixS0ix::installHalt()
     ml_set_interrupts_enabled(ie);
     if (st != kLcpuRun) { IOLog("StrixS0ix: lcpu state at +%#zx is %u, not RUN: no halt hook\n", kLcpuState, st); return false; }
     gDispatch[kDispHalt] = reinterpret_cast<void *>(&s0ixHalt);
+    if (!PE_parse_boot_argn("-s0ixidleoff", nullptr, 0)) {
+        UInt32 v = 0;
+        PE_parse_boot_argn("s0ix_idle", &v, sizeof v);
+        gIdleMode = v > 2 ? 2 : v;
+        idleThresholds();
+        gDispatch[kDispMachineIdle] = reinterpret_cast<void *>(&s0ixMachineIdle);
+    }
+    setProperty("S0ix,IdleHook", gDispatch[kDispMachineIdle] != nullptr);
+    setProperty("S0ix,IdleMode", gIdleMode, 32);
+    setProperty("S0ix,IdleC2us", gIdleC2us, 32);
+    setProperty("S0ix,IdleC3us", gIdleC3us, 32);
     pmKextRegister(kPMDispatchVersion, gDispatch, gCallbacks);
     reinterpret_cast<void (*)(void)>(gCallbacks[kCbInitComplete])();
     IOLog("StrixS0ix: pmCPUHalt registered (TSC %llu MHz, MWAITX timeout %u)\n", hz / 1000000, gTimeoutTsc);
