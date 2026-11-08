@@ -8910,3 +8910,11 @@ The owner suspects the AWDL work (boot-arg `itlmt_awdl=1`). The AWDL session has
 - Installed 12:47: plugin 1f8b72d, sha256 796125b9 (backup nvmtl-plugin-20261108T054744Z = 8201eaaa), sbxmap stale 0.
   TextEdit loads it (`surface prefault: 1 writable host imports faulted in ... (1052 KB)`); WindowServer at the next boot.
   Watch: no gfxhub PERMISSION_FAULTS from Live Text (mediaanalysisd) on screenshots.
+
+### Step132: userptr write pin falls back to read-only on a fresh IOSurface (GPU fault 12:42, building)
+
+- 12:42:49 GPU fault PERMISSION_FAULTS 0x5 (TCP write) from mediaanalysisd (thread 0x13e39), gfx ring timeout, soft recover after 3 s; WindowServer "slowest submit 3008 ms" (screen stuck 3 s). Found by the edge-video session.
+- The surface was a 420f IOSurface mediaanalysisd had just made, mapped RW, 0/297 pages resident. The writable pin failed with -EFAULT, Step96's read-only retry then pinned it RO ("userptr_ro_retry -> 0"; the log budget was already spent at boot), and the GPU wrote into it. Plugin dd43056's check only catches r-- mappings, so it let this one through.
+- Fix in NMXGPU (fork, out-12): `nmx_xnu_user_wire` retries a failed writable `prepare()` once after a read-only wire faults the range in; the RO fallback only follows a second failure. No new kernel imports (no vm_fault: Step128 rule).
+- New counters: `debug.nmx_pin_write_fail`, `nmx_pin_write_retry_ok`, `nmx_pin_ro_retry`, `nmx_pin_last_rc`, `nmx_pin_last_rc2` (IOReturn), plus a budgeted `NMX pin: write wire ... failed` log line.
+- Userspace signal: on the RO fallback `args->flags` comes back with AMDGPU_GEM_USERPTR_READONLY (IOWR ioctl); a writer should refuse that import. The edge session's plugin 1f8b72d also prefaults writes before host-import.
