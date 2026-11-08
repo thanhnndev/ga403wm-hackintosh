@@ -8918,3 +8918,4 @@ The owner suspects the AWDL work (boot-arg `itlmt_awdl=1`). The AWDL session has
 - Fix in NMXGPU (fork, out-12): `nmx_xnu_user_wire` retries a failed writable `prepare()` once after a read-only wire faults the range in; the RO fallback only follows a second failure. No new kernel imports (no vm_fault: Step128 rule).
 - New counters: `debug.nmx_pin_write_fail`, `nmx_pin_write_retry_ok`, `nmx_pin_ro_retry`, `nmx_pin_last_rc`, `nmx_pin_last_rc2` (IOReturn), plus a budgeted `NMX pin: write wire ... failed` log line.
 - Userspace signal: on the RO fallback `args->flags` comes back with AMDGPU_GEM_USERPTR_READONLY (IOWR ioctl); a writer should refuse that import. The edge session's plugin 1f8b72d also prefaults writes before host-import.
+- Step132 installed 12:55: NMXGPU out-12 (fork 1c75638, UUID 97A9E93B) with `scripts/macos-install-step130.sh`, AuxKC relinked + checked, rc 0. Same reboot as the edge plugin 1f8b72d. After boot: read `sysctl debug | grep nmx_pin`.

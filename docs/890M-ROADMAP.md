@@ -5,6 +5,30 @@ composited on the iGPU (this is what removes the 500-900 % WindowServer CPU: it 
 because no Metal device exists). Route B decision (2026-10-17, Step31): build our own stack from NullMoth v2.0.4 sources, then replace
 the headless accelerator, then replace the NVIDIA userland.
 
+## State 2026-11-08 (boot 12:14, Step131) - supersedes the sections below
+
+| # | Milestone | Status |
+|---|---|---|
+| M1 | Own kernel driver (NMXGPU) | done; built from source since Step129 (fork nmx-source-port), no caves |
+| M2 | Graphics jobs reliable | mostly: 3 s gfx timeout + soft recover (Step130); open: userptr RO fallback faults (Step132 pending) |
+| M3 | WindowServer on the 890M | done; zero-copy flips back since Step131 (were CPU copies since the source port) |
+| M3b | Apps get a Metal device | done (allow list `*`, sandboxed apps, Chrome/Edge/Safari WebGL) |
+| M4 | Own userland | partly: NVMTL plugin from fork source; RADV/libdrm still NullMoth binaries |
+| M5 | No NullMoth kexts on the 890M path | partly: NMXGPU own source build; NMXAccel still NullMoth |
+
+Daily-use gate:
+1. App Metal: done. Video: plane host in WS (plugin 5405e50), 1080p60 0 dropped frames.
+2. Display sleep: PASS. Brightness: own handler in NMXGPU (Step130c, owner verified). System sleep: paging wake in
+   NMXGPU, full sleep test waits for the owner.
+3. Stability: panics today were HoRNDIS fq_codel (USB tethering) x3 and one CPU 0 APIC/TLB timeout; RyzenHV/TSC is
+   its own session. No GPU-caused panic since Step130.
+4. VCN decode: done (VCNDec VideoToolbox decoder live).
+5. HiDPI: done.
+
+Next, in order: Step132 verify (`debug.nmx_pin_*`), CPU thermals A/B (idle mode, EPP; cpu-thermal session),
+WindowServer CPU (SkyLight/CoreAnimation layer cost), hybrid RTX Metal device, RADV/libdrm from source, NMXAccel from
+source, technical debt below (registry busy hold, nmx_thread_lock).
+
 ## State 2026-11-04 (Step105c boot) - supersedes the milestone table below
 
 Step105c boot: M3b done (allow list `*`, sandboxed apps through NMDR, Chrome/Edge and Safari WebGL on the 890M, Chrome
