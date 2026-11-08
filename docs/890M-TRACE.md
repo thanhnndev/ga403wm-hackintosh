@@ -8660,3 +8660,20 @@ Install: `sudo scripts/macos-install-step130.sh ~/develop/projects/nmx-build-xkp
 new probes, checks the Step130 strings and that NMXBacklight is gone). Undo: `--undo`.
 Verify after reboot: `ioreg -c AppleBacklightDisplay` present, `NullMoth display: backlight handler published`,
 slider and Fn keys change the panel, `NMXPagingWake` = Yes, `NMXPowerKeep: holding NMXGPU`.
+
+### Part 19: WindowServer re-imports video surfaces (surface keep "expired")
+
+- 1080p60 VP9 in a scratch-profile Chrome (VCNDec live, picture verified on screen): WindowServer ~85 % CPU. A 10 s
+  spindump puts 26 % of its main thread in `-[NVMTLDevice newTextureWithDescriptor:iosurface:plane:]`, 21 % of it in
+  `nvmtl_vk_buffer_import_host` (ioctls). The 30 s surface keep reports show why: up to 1460 of 1775 misses per 30 s are
+  "after drop: expired".
+- Cause found in the sweep: a held entry (surface retained elsewhere) kept the time of its last wrap, so a surface held
+  longer than NVMTL_KEEP_MS (3 s) without a new wrap expired at the first sweep after its release.
+- Fix: plugin 9f3e2b6 (nmx-plugin-camcopy). Held entries restart their idle time at each sweep. The 30 s report adds when
+  expired surfaces came back (< 250 ms / < 1 s / < 3 s / later) and the held refresh count; up to 6 expired misses per
+  window are logged with size, format and idle time at the drop.
+- Installed 2026-11-08 09:44: NVMTLDriver sha256 11b15ce6 (backup /Library/NullMoth/nvmtl-plugin-20261108T024416Z =
+  ad4b5c35), strixsbxmap --refresh stale 0. WindowServer loads it at the next boot (together with Step130).
+  Undo: `sudo scripts/macos-nvmtl-plugin-install.sh --undo`, then `scripts/macos-install-strixsbxmap.sh --refresh`.
+- After that boot: the 30 s reports (expired count, came-back buckets), WindowServer CPU with 1080p60 in Chrome, and
+  screenshot / screen share (main session asked: the 23:18 capture abort followed a 5 s GPU hang, "vulkan down").
