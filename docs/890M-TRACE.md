@@ -8778,3 +8778,20 @@ same binary in Step129 and Step130, so its lines decode the same way for both bo
 line changed (+10 bytes), XML parses, ESP unmounted. Backup `config.plist.bk-bloff-20261108T105940`. To undo, drop the
 flag. Expected on the next boot: `-nmxbloff: no backlight` in the kernel log, no brightness slider or keys, and
 `getAppleSense` no longer reports LCD. Picture = the backlight child registration in `start()` is the cause.
+
+## Side check: "NullMoth" menu bar item, Olaz, and the two 11:19/11:23 panics (2026-11-08)
+
+**Menu bar item ("Power off Card" x3).** Not a NullMoth app. It is Apple's own `ExpressCard.menu` in SystemUIServer. NullMoth installs no menu bar app, LaunchAgent or login item (its installer only adds two OpenCore picker entries, "1401: Remove NVIDIA driver" and "1401: Start once without NVIDIA driver"). The menu shows because the root ports GPP4 and GPP9 report PCIe hot-plug (`IOPCIHotPlug = Yes`, `IOPCIHPType = 33`), so IOPCIFamily treats their children as removable cards:
+- Display Controller = RTX 5060 (10de:2d59, GPP9/PEGP)
+- Multimedia Device = RTX HDMI audio (10de:22eb, GPP9/HDAU)
+- Unknown Card Type = Realtek RTS525A SD reader (10ec:525a, class ff, GPP4/SDCR)
+
+Nothing to uninstall. Do not click "Power off Card" on the RTX entries (it ejects the GPU under NVRM). Hiding the menu means clearing hot-plug on GPP4/GPP9 (ACPI/DeviceProperties in config.plist); not done, it touches the ESP config and the RTX D3cold path. Side effect worth knowing: the "removable" flag is also why WindowServer's `gpu-policies` is `avoidRemovable`, which keeps apps off the RTX.
+
+**Olaz.** `app.olaz.mac`, the owner's own native Zalo client (`~/develop/projects/zalo-swift-re`, ad-hoc signed, AVFoundation + Network + ScreenCapture, rebuilt 11:22:53). No crash report for Olaz exists in either DiagnosticReports folder. It did not crash by itself: the machine panicked under it.
+
+**Panic B, `Kernel-2026-11-08-112352.panic`** (boot 11:19:45, panic at 206 s = ~11:23:11): `assertion failed: now >= *pkt_enq_time` in `fq_codel_dq`. The backtrace is `HoRNDIS::outputStart -> IONetworkInterface::dequeueOutputPackets -> ifclassq/fq_codel`. A OnePlus 13 was plugged in for USB tethering at 11:22:10 (HoRNDIS en2 published, `AppleUserECMData::start fail`), 61 s before the panic. Not the Wi-Fi driver and not the GPU stack. A packet's enqueue time was later than the dequeue time: either HoRNDIS (old third-party kext, 9.3) dequeues on a path that breaks fq_codel's clock order, or the TSC is not in sync across cores and HoRNDIS just happened to be the dequeuer. The cross-core TSC check was handed to the Wi-Fi/network session. HoRNDIS was live again in the next boot (11:24:47) with no panic so far, so it is not deterministic.
+
+**Panic A, `Kernel-2026-11-08-111949.panic`** (a boot that ended at 23 s, before 11:19:45): `NMIPI for unresponsive processor: TLB flush timeout`; CPU 0 sat in `AppleAPICInterruptController::handleInterrupt` under `AppleACPIPlatformExpert::dispatchGlobalInterrupt` (a level-triggered global interrupt firing again and again), and airportd on CPU 22 waited for it in a pmap TLB shootdown. airportd is the victim, not the cause. That boot left no unified log (it died before the log was flushed), so the interrupt source is unknown. Candidates: a GPIO/ACPI interrupt left asserted early in boot (I2C touchpad runs `-vi2c-force-polling`, AsusWmi EC, StrixS0ix). Next trace: log the GSI number in a kernel-side handler or read `ioreg` interrupt counts right after login when it repeats.
+
+Next: Wi-Fi/network session checks TSC sync across cores and HoRNDIS; if HoRNDIS is confirmed, use the phone's tethering over Wi-Fi/Bluetooth or remove HoRNDIS from OpenCore (owner decides).
