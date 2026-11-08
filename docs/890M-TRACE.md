@@ -8656,7 +8656,7 @@ display bug reports) and `com.nullmoth.wsreset` (restart WindowServer once per b
 counter for the boot picker), `recover` (NVRAM-flag uninstall safety net, exits at once), `wsdeath` (ours, Step81,
 captures logs when WindowServer dies: needed for the screenshot-markup freeze), `nmx-flip-default`, `auxguard`.
 
-Install: `sudo scripts/macos-install-step130.sh ~/develop/projects/nmx-build-xkpi/out-8/NMXGPU.kext` (relinks AuxKC,
+Install: `sudo scripts/macos-install-step130.sh ~/develop/projects/nmx-build-xkpi/out-9/NMXGPU.kext` (relinks AuxKC,
 new probes, checks the Step130 strings and that NMXBacklight is gone). Undo: `--undo`.
 Verify after reboot: `ioreg -c AppleBacklightDisplay` present, `NullMoth display: backlight handler published`,
 slider and Fn keys change the panel, `NMXPagingWake` = Yes, `NMXPowerKeep: holding NMXGPU`.
@@ -8699,3 +8699,5 @@ Fixes (one reboot, with Step130):
   mapping gets a private image for writable wrappers.
 Verify: open a screenshot in Preview, draw with Markup, Live Text active. Expect no gfxhub fault, or a fault followed by
 `soft recovered` within ~3 s, and WindowServer staying up.
+
+NMXGPU out-9 built 09:49: 4d4e6563 (UUID 8A149786), fork 521730c = Step130 + gfx timeout 3 s. This is the build to install.

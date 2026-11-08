@@ -17,7 +17,7 @@
 #      com.nullmoth.displaytrace (continuous log streams) and com.nullmoth.wsreset (one WindowServer restart per boot);
 #   5. relinks the AuxKC with new auxguard probes and checks it (kccheck, strings, no NMXBacklight).
 #
-#   sudo scripts/macos-install-step130.sh ~/develop/projects/nmx-build-xkpi/out-8/NMXGPU.kext
+#   sudo scripts/macos-install-step130.sh ~/develop/projects/nmx-build-xkpi/out-9/NMXGPU.kext
 #   sudo scripts/macos-install-step130.sh --undo   # everything back from the last Step130 backup, relink
 set -euo pipefail
 [[ $EUID == 0 ]] || { echo "run as root"; exit 1; }
