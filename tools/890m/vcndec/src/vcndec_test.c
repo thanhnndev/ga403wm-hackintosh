@@ -10,6 +10,7 @@
 #include <string.h>
 #include <sys/resource.h>
 #include <time.h>
+#include <unistd.h>
 
 #pragma clang diagnostic ignored "-Wdeprecated-declarations"
 
@@ -46,15 +47,18 @@ static void dump_frame(CVPixelBufferRef pb, int w, int h, const char *path) {
 }
 
 int main(int argc, char **argv) {
-  int md5 = 0, loops = 1, dumpn = -1;
+  int md5 = 0, loops = 1, dumpn = -1, verbose = 0, from = 0, upto = -1, burst = 0, pausems = 0;
   const char *path = NULL;
   for (int i = 1; i < argc; i++) {
     if (!strcmp(argv[i], "-m")) md5 = 1;
     else if (!strcmp(argv[i], "-l") && i + 1 < argc) loops = atoi(argv[++i]);
     else if (!strcmp(argv[i], "-d") && i + 1 < argc) dumpn = atoi(argv[++i]);
+    else if (!strcmp(argv[i], "-p") && i + 2 < argc) { burst = atoi(argv[++i]); pausems = atoi(argv[++i]); }   // pause <ms> after every <burst> packets (VCN idle / power gating)
+    else if (!strcmp(argv[i], "-v")) verbose = 1;   // one stderr line per packet before it is sent (last line before a VCN hang = the packet)
+    else if (!strcmp(argv[i], "-n") && i + 1 < argc) upto = atoi(argv[++i]);   // stop after this many packets
     else path = argv[i];
   }
-  if (!path) { fprintf(stderr, "usage: vcndec_test [-m] [-l loops] clip.ivf\n"); return 2; }
+  if (!path) { fprintf(stderr, "usage: vcndec_test [-m] [-v] [-n packets] [-l loops] clip.ivf\n"); return 2; }
   FILE *f = fopen(path, "rb");
   if (!f) { perror(path); return 2; }
   uint8_t hdr[32];
@@ -80,7 +84,7 @@ int main(int argc, char **argv) {
   CVPixelBufferPoolRef pool = NULL;
   CVPixelBufferPoolCreate(NULL, NULL, attrs, &pool);
 
-  int n = 0;
+  int n = 0, pk = 0; (void)from;
   uint8_t *buf = malloc(8 << 20);
   t0 = now(); c0 = cpu();
   for (int l = 0; l < loops; l++) {
@@ -90,8 +94,10 @@ int main(int argc, char **argv) {
       int eof = fread(fh, 1, 12, f) != 12;
       if (!eof) {
         uint32_t sz = fh[0] | fh[1] << 8 | fh[2] << 16 | (uint32_t)fh[3] << 24;
-        if (sz > (8u << 20) || fread(buf, 1, sz, f) != sz) eof = 1;
+        if (sz > (8u << 20) || fread(buf, 1, sz, f) != sz || (upto >= 0 && pk >= upto)) eof = 1;
+        else if (verbose && (fprintf(stderr, "pkt %d size %u out %d\n", pk, sz, n), fflush(stderr), 0)) {}
         else if (vcn_send(d, buf, sz, n) < 0) { fprintf(stderr, "send: %s\n", vcn_last_error(d)); return 1; }
+        else { pk++; if (burst > 0 && pk % burst == 0) { if (verbose) fprintf(stderr, "pause %d ms after pkt %d\n", pausems, pk - 1); usleep((useconds_t)pausems * 1000); } }
       }
       if (eof && l == loops - 1) vcn_flush(d);
       for (;;) {

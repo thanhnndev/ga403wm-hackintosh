@@ -9051,3 +9051,18 @@ Same test as parts 22b/22c: scratch Chrome, video LXb3EKWsInQ at hd1080 (VP9 ita
 - **Plugin read-only handling:** the plugin never reuses an RO host import for a write request, and it refuses write imports on spans that are not writable. Gap: when the CPU mapping is writable but the kernel write wire fails, the kernel silently pins RO and the plugin cannot tell (RADV never passes `AMDGPU_GEM_USERPTR_READONLY`). Asked main for an RO-fallback ring that is matched against fault addresses.
 - Edge session: the 15:18 VCN timeout and the 10:02 / 12:26 ones were all inside AV1 1080p sessions (VP9 sessions never timed out): an AV1-on-VCN bug in VCNDec, owned by the edge session. For 15:17 it saw QuickLookUIService (CoreImage/Espresso, "storage twin ... written through an optimal-tiled storage copy", 128 parts submitted 150 ms before). With `nmx_pin_other_fail` 0 that write was not into a Step96 read-only userptr.
 - Step135 installed 16:4x: NMXGPU out-16 (fork ffee0b1, UUID 7103416C, 579 imports; = out-15 + romap). New patches `amdgpu-romap-gem.patch` / `amdgpu-romap-gmc11.patch`: GEM_VA MAP/REPLACE records ranges mapped without write (kind 1 read-only userptr, kind 2 no AMDGPU_VM_PAGE_WRITEABLE) per pasid with comm/pid in a 1024-entry ring; UNMAP/CLEAR drop them; a gmc11 page fault prints "NMX: address is inside <kind> map #n [start,end) by <proc> pid N" or "in no recorded read-only mapping". Next reboot.
+
+## Trace part 24: VCN hang = power gating cycle, not AV1 content (2026-11-08 17:31)
+
+**Stream captured.** A scratch browser played YouTube AV1 1080p60 (Big Buck Bunny, itag 399). The capture holds 11471 packets: profile 0, 8-bit, no film grain, 128x128 superblocks, some IntraBC frames. It is kept locally only, not in the repo: `~/develop/projects/radv-video/clips/yt-av1-399-bbb.ivf`.
+
+| Run (`tools/890m/vcndec/build/vcndec_test`) | Result |
+|---|---|
+| Continuous, 3 loops (`-v -l 3`) | 34413 frames at 559 fps, no hang |
+| 1.5 s pause after every 30 packets (`-v -p 30 1500 -n 3000`) | Hang after pause #35 (packets 1050-1053, right after the resume): `ring vcn_unified_0 timeout, signaled 49684 / emitted 49685`, MODE2 reset 17:31:26, VK_ERROR_DEVICE_LOST in the process |
+
+The VCN idle timeout is about 1 s, so each pause powers VCN down and the next submit powers it up. The three real hangs today (10:02, 12:26, 15:18) also came in sessions with sparse submits (about 10 per second: paused, background or buffering video), not steady 60 fps decoding.
+
+**Conclusion:** the hang is in VCN power gate / ungate in NMXGPU (`amdgpu_vcn_idle_work_handler`, `amdgpu_vcn_ring_begin_use`, VCN 4.0.5 DPG pause). It is not in VCNDec or the AV1 bitstream. Handed to the main session with the repro command. A/B next: VCN power gating off.
+
+`vcndec_test` gained `-v` (one stderr line per packet before it is sent), `-n <packets>`, and `-p <burst> <ms>` (pause after every burst).
