@@ -8603,3 +8603,16 @@ Fix (fork `nmx-source-port`, not yet booted):
   (`WSCaptureCreateIOSurfaceMachPortForWindowList` -> `MetalIOSurfaceBacking::PrepareForUse` -> `AbortWithTextureInfo`:
   a capture IOSurface did not get a Metal texture), and 22:13:36 a CoreDisplay assert in `RunFullDisplayPipe` (uptime
   5800 s, the reboot into ed82aa34). Open: the capture abort (screenshot/screen-share path through NVMTL).
+
+**WindowServer abort 23:18:29 (cave boot), root cause chain** (edge-video session + kernel log):
+1. 23:18:09.985 amdgpu `[gfxhub] page fault (src_id:0 ring:40 vmid:2 pasid:32803)`, client TCP, `PERMISSION_FAULTS 0x5`,
+   `RW 1`: a shader of some app (amdgpu names "pid 14947" with an empty process name: the xkpi task identity, not a
+   macOS pid that logged anything) wrote to a page mapped read-only (likely a read-only userptr import, Step92).
+2. The GFX queue stalls: NMXAccel `iop: fence ... after 100 ms - copied anyway` from 23:18:10, WindowServer's NVMTL
+   `vk: fence wait -> 2 after 5027 ms; disabling backend` at 23:18:15, CoreAnimation `GPU event segment submission
+   failed`, `MTLTexture creation failed - (vulkan down)`.
+3. The next window capture needs a texture: `AbortWithTextureInfo`, WindowServer abort.
+Open (NMXGPU/xkpi, mine): one app's GPU write fault must not take WindowServer down. Next: name the faulting process
+(pasid -> process in the xkpi VM fault print), and check whether the read-only userptr retry hands a writable target
+to the GPU; and whether amdgpu's job timeout/ring reset recovers before NVMTL's 5 s budget in WindowServer.
+This happened on the cave build (591E7D5A); Step129's source build has the same userptr code (35c6815).
