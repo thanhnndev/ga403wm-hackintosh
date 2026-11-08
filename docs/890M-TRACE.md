@@ -9182,3 +9182,23 @@ Boot 20:52: NMXGPU out-18 (194BFE13), plugin a95189e (5FC87442). Normal desktop 
   - Find out what the 5.8 GB on the NMXGPU tag is.
 - Owner's call: Docker's VM memory. RyzenHV wires all of it, so 8 GB is gone for macOS whenever Docker runs.
 - Then repeat this probe under the same load.
+
+### 2026-11-08 21:40 Step138: page-record leak for pinned user pages (found by edge-video-lag)
+
+- Symptom on boot 20:52:
+  - YouTube 1080p60 runs at 33 fps with 280/1507 frames dropped.
+  - kernel_task uses 21.7 s CPU per 10 s, 16.7 s of it VM compressor/pageout: the machine is thrashing.
+  - Wired memory is 20 GB of 32 GB:
+    - RyzenHV 8.4 GB: Docker VM 8 GB, wired in full.
+    - NMXGPU tag 5.8 GB.
+    - Zones 2.8 GB. kalloc var4.256 holds ~3.2 M elements and grows during video.
+- Cause: `nmx_phys_to_page` made a permanent BK_FICTITIOUS record (backing + vm_page + reg_entry) for every user page ever pinned. `vm_page_free` returned early for those and nothing unregistered them.
+  - The registry grows with uptime.
+  - WindowServer imports spend 73 of 87 samples walking the hash chains (`reg_find_locked`).
+- Fix, Step138 (fork a1c786c):
+  - Records for user pages are BK_USER. They are freed when the last reference goes and no pin is left.
+  - If any other path (PHYS_TO_VM_PAGE / virt_to_page) reaches the record, it turns permanent, as before.
+  - The `nmx_user_pages_pin` failure path no longer pops pins of other requests.
+  - New counters: `debug.nmx_userrec_{live,made,freed,kept}`.
+- Step138b (c9d7c9f): `debug.nmx_pages_live` and `debug.nmx_userwire_{count,pages}`, to split the 5.8 GB NMXGPU tag between GTT/system pages and userptr wirings.
+- Build: out-20 (includes Step137b). Not installed.
