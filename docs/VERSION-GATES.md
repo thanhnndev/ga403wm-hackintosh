@@ -11,10 +11,10 @@ Rule (owner, 2026-11-08): every compatibility check covers the whole major relea
 |---|---|---|
 | High | StrixS0ix: `kPMDispatchVersion 0x66` hardcoded. `pmKextRegister` panics on a mismatch, so a 26.x that bumps it would panic every boot. | **Fixed in 0.1.15 (bd3c608).** It reads the version from the running kernel's `cmp edi, imm` and skips the hook on a mismatch. Built (A17EB334), not installed. |
 | High | NMXAccel on nmx-source-port / camera-copy-890m still required the exact 25G241 kernel string. Only the side branch `nmxaccel-family-gate` had the layout gate. | **Fixed:** merged into nmx-source-port (7224025, gpu-port unchanged) and camera-copy-890m (2cf8da6, plugin/ unchanged). |
-| Med-High | itlmt7925 Native Wi-Fi: IO80211 layouts generated from 25G241, checked only by static_assert. | Sent to the BT/Wi-Fi session: runtime `getClassSize()` gate, fail closed. |
+| Med-High | itlmt7925 Native Wi-Fi: IO80211 layouts generated from 25G241, checked only by static_assert. | Open: needs a Wi-Fi owner (the BT session is Bluetooth only). Fix: runtime `getClassSize()` gate, fail closed so the legacy shim takes over. |
 | Medium | NMXAGDC subclasses AppleGraphicsDeviceControl (0x110 bytes, reconstructed vtable) with no runtime check. | Open (main): add a size/slot gate like NMXAccel. |
 | Medium | NMXAccel gate checks class sizes only; reordered vtable slots would pass. | Open (main): add vtable sentinels as StrixAccel does. |
-| Medium | BtLeDlFix `kAdvOriginal`: unmasked disp32. | Sent to the BT session. |
+| Medium | BtLeDlFix `kAdvOriginal`: unmasked disp32. | **Kept unmasked on purpose:** slot 0x9c0 is the only identifier (masked, it matches 24-62 capability checks). A miss is safe (adv sets stay off, no loop). BtLeDlFix 1.4.0 (mt7925-macos 0a23a6c) adds per-patch hit counters (`sysctl debug.btledlfix`), plus `tools/btledl-check.py` for an offline check. Built, not installed. |
 | Low | StrixAccel ABI profile and StrixHeadroom patterns pinned to one build. | Dormant on Tahoe. Convert or retire. |
 | Low | 9 old install scripts check `sw_vers -buildVersion == 25G241`. | Stale. Archive them, or gate on major 26 plus feature checks. |
 | Low | Native Wi-Fi recorder `kWorkQueueStatic` static address. | Diagnostics only. |
