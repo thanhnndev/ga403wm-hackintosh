@@ -8880,3 +8880,11 @@ The owner suspects the AWDL work (boot-arg `itlmt_awdl=1`). The AWDL session has
 - WindowServer spindump (8 s, main thread 5.17 s CPU): UpdateDisplays 341 samples, CompositorMetal 199, CoreAnimation
   OGL render 146, present 56; NVMTL submit 60 (radv cs submit 27), surface import 19. What is left is mostly SkyLight /
   CoreAnimation CPU work per layer, then submit cost: the next lead for compositor CPU.
+
+### Step131 VERIFIED (boot 2026-11-08 12:13:58, after the 12:14 HoRNDIS fq_codel panic)
+
+- NMXGPU BB80044A loaded. `NMX flip: import 8..11: 2880x1800 pitch 11520, 5063 pages` at 12:14:13, 0 import failures: zero-copy flip works again (was off since the source port).
+- Brightness: handler published, `Backlight,Writes` 252, Failures 0, LastRc 0. `NMXPagingWake` = Yes.
+- StrixS0ix 0.1.14 loaded; the cpu-thermal session is cycling runtime idle mode 0/1/2 (12:23-12:25) for its A/B.
+- WindowServer about 39 % with Edge + Chrome Remote Desktop open (edge plugin 5405e50 also live this boot).
+- New noise: bluetoothd ExcUserFault x5 since 12:01 (also before this boot; not ours to chase here).
