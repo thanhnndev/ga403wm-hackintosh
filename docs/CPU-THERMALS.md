@@ -556,3 +556,47 @@ minute.
 - Build note: `build/build_plugin.sh` builds from `~/nvmtl-build/LIVE` and lacks `-framework IOKit`, which 9c6d1ed
   needs. I built with the same flags plus `-framework IOKit`, using the Vulkan headers from
   `nmx-plugin-890m/out/vk/include` (`~/Vulkan-Headers` does not exist on this machine).
+
+## Boot 23:51 check (plugin 9bfd0c5, ItlXhciKick 5D179C74, StrixS0ix 0.1.15, Wi-Fi 25F33563), 23:55–00:07
+
+Load: Chrome video, Claude app, Docker (pathcan containers idle), pathcan python backend.
+
+**Power:** 17–28 W, Tctl 64–66 °C (20:52 boot: 27–40 W, 78–91 °C). Wired 16.3 GB, compressor 1.7 GB.
+
+**Plugin fence pool and sysctl cache work** (`sample WindowServer 10`, 7,517 main-thread samples):
+`vk_drm_syncobj_init`, `vk_common_CreateFence` and `DestroyFence` have 0 samples (95 before). `__sysctl` has 1 (47 before).
+The main thread is ~45 % busy, with `render_update` 1,653 and the Chrome video import path
+(`nvmtl_vk_buffer_import_host`) 117. Cursor copies are 0 (the mouse was not moving over Claude).
+
+**Hands-off run** (00:06, owner away from mouse and keyboard for ~35 s, root job started 8 s after the password):
+the WindowServer main thread was idle, 85 of 8,814 samples (~1 %). Only ~13 wakeups/s came from clients.
+Chrome's video was not drawing in that window (Chrome dropped out of `top`), so Chrome's own cost could not be
+isolated. The result says that **with no interaction and no visible animation, WindowServer costs ~1 %**; everything
+above that follows what is on screen and what the user does.
+
+**IPIs (remote ASTs):**
+
+| | Normal use (00:03) | Hands off (00:06) |
+|---|---|---|
+| Total | 65,390/s (includes 7.3k/s WindowServer ↔ another session's osascript) | 28,553/s |
+| hyperkit vCPU → vCPU | 9,145 | 15,401 |
+| Docker backend ↔ itself, hyperkit, kernel | ~2,700 | ~4,500 |
+| ItlXhciKick → xHCI work loops | 1,957 (busy 920 + 920, empty 58 + 58) | 1,825 |
+| k:71938/k:64276 → k:583 | ~610 | 552 |
+
+- **ItlXhciKick:** the two empty controllers are now woken 58/s instead of ~916/s. Its total went from 3,631/s
+  to ~1,950/s, as designed.
+- **Docker is now the largest IPI source**, with every container idle: the 24-vCPU guest's vCPU threads wake each
+  other 9–15k/s, plus ~4k/s from the backend. hyperkit uses 73–124 % CPU while user-space sampling sees only ~0.15
+  core in `hv_vmx_vcpu_run`, so most of that time is inside the kext (exits ~9.4k/s, NPT ~6.4k/s, 0 WRMSR lines).
+  Fewer vCPUs for the Docker VM (Docker Desktop setting, owner's call) should cut both. The in-kext time is a lead
+  for the ryzenhv session.
+- **CCFaultReporter:** not confirmed. The spindump for thread names failed (wrong `spindump` argument form), and an
+  unnamed kernel thread k:583 is still woken ~550–610/s by one kernel thread. That matches the old CCFaultReporter
+  pattern; it needs one named kernel stackshot to settle.
+
+**NMXGPU user-page records (`debug.nmx_userrec_*`):** live 131,524 at 23:55. From 23:59 it was stable at
+457k–469k over 3 minutes (30 s samples), so there is no growth after warm-up and the Step138 fix holds. Pinned user
+pages: 828k–860k (~3.3 GB). The churn is high: `made` and `freed` both rise by ~1.7 M per 30 s, i.e. **~56,000 page
+records created and freed per second** during video. That is per-frame userptr pin/unpin and worth a per-caller
+counter (main/video sessions).
