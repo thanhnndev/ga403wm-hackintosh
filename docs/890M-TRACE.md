@@ -8772,3 +8772,9 @@ same binary in Step129 and Step130, so its lines decode the same way for both bo
 - Source fix to build on macOS: publish the backlight child after `fb->registerService()` in `nmx_fb_publish()` (still
   before WindowServer's first open at ~13.7 s), not synchronously inside `start()`; and log every early return in
   NMXAccel's `fbPublished`.
+
+**Applied (2026-11-08 10:59, from Windows, owner's request):** `-nmxbloff` appended to the boot-args in ESP
+`EFI/OC/config.plist` (`NVRAM > Add > 7C436110-… > boot-args`; OpenCore rewrites the NVRAM value each boot). Only that
+line changed (+10 bytes), XML parses, ESP unmounted. Backup `config.plist.bk-bloff-20261108T105940`. To undo, drop the
+flag. Expected on the next boot: `-nmxbloff: no backlight` in the kernel log, no brightness slider or keys, and
+`getAppleSense` no longer reports LCD. Picture = the backlight child registration in `start()` is the cause.
