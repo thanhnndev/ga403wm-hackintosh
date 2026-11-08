@@ -8907,3 +8907,6 @@ The owner suspects the AWDL work (boot-arg `itlmt_awdl=1`). The AWDL session has
 - Plugin 1f8b72d: each page of a writable span gets a `lock orb $0` before a writable host import (no byte changes;
   297 of 297 resident after). `surface prefault: N writable host imports ...` in the log; NVMTL_PREFAULT=0 skips it.
   Kernel side proposed to the main session: fault pages in for write before the read-only retry, count retries in a sysctl.
+- Installed 12:47: plugin 1f8b72d, sha256 796125b9 (backup nvmtl-plugin-20261108T054744Z = 8201eaaa), sbxmap stale 0.
+  TextEdit loads it (`surface prefault: 1 writable host imports faulted in ... (1052 KB)`); WindowServer at the next boot.
+  Watch: no gfxhub PERMISSION_FAULTS from Live Text (mediaanalysisd) on screenshots.
