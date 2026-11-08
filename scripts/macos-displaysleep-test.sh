@@ -1,6 +1,6 @@
 #!/bin/bash
 # SPDX-License-Identifier: BSD-3-Clause-Clear
-# Display sleep test for NMXGPU with NMXPowerKeep (NMXBacklight 0.2.0). No root needed. Stage 1 of the sleep plan
+# Display sleep test for NMXGPU with NMXPowerKeep (in NMXGPU since Step130). No root needed. Stage 1 of the sleep plan
 # (docs/890M-TRACE.md Step106): display sleep only, the system stays awake.
 #   scripts/macos-displaysleep-test.sh [seconds]    sleep the display, wake it after N s (default 20), collect logs
 # Pass = NMXPowerKeep held state 1, NMXGPU logged no setPowerState(0), the panel came back, WindowServer did not time out.
@@ -8,7 +8,7 @@
 set -uo pipefail
 OUT=~/ga403-logs/displaysleep-$(date +%Y%m%d-%H%M%S); mkdir -p "$OUT"
 collect() {  # $1 = start time
-    /usr/bin/log show --start "$1" --predicate 'senderImagePath CONTAINS "NMXGPU" OR senderImagePath CONTAINS "NMXAccel" OR senderImagePath CONTAINS "NMXBacklight" OR eventMessage CONTAINS "amdgpu"' \
+    /usr/bin/log show --start "$1" --predicate 'senderImagePath CONTAINS "NMXGPU" OR senderImagePath CONTAINS "NMXAccel" OR eventMessage CONTAINS "amdgpu"' \
         2>/dev/null | cut -c1-240 > "$OUT/kernel.txt"
     /usr/bin/log show --start "$1" --predicate 'process == "WindowServer" AND NOT eventMessage CONTAINS "gamma" AND (eventMessage CONTAINS[c] "timed out" OR eventMessage CONTAINS[c] "timeout" OR eventMessage CONTAINS "displayDidWake" OR eventMessage CONTAINS "displayWillSleep")' \
         2>/dev/null | cut -c1-240 > "$OUT/windowserver.txt"

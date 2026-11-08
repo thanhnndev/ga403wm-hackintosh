@@ -12,7 +12,7 @@ PATH=/usr/bin:/bin:/usr/sbin:/sbin
 HERE=$(cd "$(dirname "$0")" && pwd); REPO=$(cd "$HERE/.." && pwd)
 L=/Library/Extensions; E=$L/StrixS0ix.kext; KC=/Library/KernelCollections/AuxiliaryKernelExtensions.kc
 G=/Library/StrixGraphicsFix; TS=$(date -u +%Y%m%dT%H%M%SZ)
-KX="$L/NMXGPU.kext $L/NMXAccel.kext $L/NMXAGDC.kext $L/NMXBacklight.kext $L/NVRM.kext $L/NVAccel.kext $L/NVRMFB.kext $L/NVRMAGDC.kext $L/StrixS0ix.kext"
+KX="$L/NMXGPU.kext $L/NMXAccel.kext $L/NMXAGDC.kext $L/NVRM.kext $L/NVAccel.kext $L/NVRMFB.kext $L/NVRMAGDC.kext $L/StrixS0ix.kext"
 mkdir -p /Library/NullMoth
 exec > >(tee -a "/Library/NullMoth/step126-$TS.log") 2>&1
 relink() {

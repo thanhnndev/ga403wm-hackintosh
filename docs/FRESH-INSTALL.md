@@ -78,7 +78,6 @@ the identifiers and fails on a leak) has to be run again before the repo copy ca
 | NMXAGDC | 0.1 | `37a390a5bcce8b7c` | PolyForm; fork CI + Step74 rename |
 | NVRM | 2.7.1 | `dca5eac6cfca8e7c` | PolyForm; built from `nmx-translator-271` (`-nvrmnohold` build, installed by step112b) |
 | NVRMFB, NVRMAGDC, NVAccel | 2.7.1 | `83390f17…`, `c90a08af…`, `de322206…` | PolyForm; NullMoth 2.7.1 upstream |
-| NMXBacklight | 0.4.0 | `1a8e9b7d2fbb9f00` | BSD, `kexts/NMXBacklight` |
 | StrixS0ix | 0.1.4 | `8cbe47a450be660c` | BSD, `kexts/StrixS0ix` |
 | StrixAccel 0.1.21, StrixGOP 0.1.11 | | | BSD; still in the AuxKC but turned off with `-strixaccoff -strixgopoff` (drop them in the fresh profile) |
 
@@ -177,7 +176,7 @@ Both need authenticated root disabled (0x800 in csr) and must be redone after ev
  S4  stage "le + userland", all offline   (resume daemon, then admin password #2 in the app)
    │   post-migration cleanup: remove graphics-bootstrap, com.nullmoth.crashcheck (Migration Assistant restores them)
    │   NullMoth 2.7.1 upstream install.sh (tarball sha-checked) with NMXAudio held back
-   │   → golden overlay: NMXGPU, NMXAccel (family gate, 74a6f5c), NMXAGDC, NVRM, NMXBacklight, StrixS0ix
+   │   → golden overlay: NMXGPU, NMXAccel (family gate, 74a6f5c), NMXAGDC, NVRM, StrixS0ix
    │     → /Library/Extensions as root, root:wheel 755/644
    │   → 890M plugin + translator, RADV/libdrm, allow list, flip-default daemon, helpers/apps/agents
    │   → StrixSbxMap built with the pins of the files just installed → ESP
@@ -235,7 +234,7 @@ the first boot cannot work, or cannot be used with the built-in keyboard and tou
 | boot-args `keepsyms=1 debug=0x100 -v` | USB only | verbose boot while installing; dropped in the full profile |
 | full `config.plist` (csr 0x0A43, AMFI args, AMFIPass, Kernel/Block, DeviceProperties, trace flags removed) | post-install (stage efi) | SIP/AMFI must change only once macOS is installed (rule 1) |
 | `StrixVFCT`, `StrixProbe`, `StrixMetalGate`, `StrixHeadroom`, `StrixSbxMap` (built after the GPU bundles) | post-install (stage efi / le) | iGPU, only useful with NMXGPU |
-| NMXGPU, NMXAccel, NMXAGDC, NMXBacklight, NullMoth 2.7.1 (NVRM, NVRMFB, NVAccel, NVRMAGDC), 890M userland, allow list, flip daemon | post-install (stage le) | iGPU and NVIDIA; AuxKC |
+| NMXGPU, NMXAccel, NMXAGDC, NullMoth 2.7.1 (NVRM, NVRMFB, NVAccel, NVRMAGDC), 890M userland, allow list, flip daemon | post-install (stage le) | iGPU and NVIDIA; AuxKC |
 | `StrixS0ix`, `SSDT-S0IDLE`, `SSDT-PTS5` + `_PTS` rename, `SSDT-ECRAM`, `ACAD._PSR` patch | post-install (stage efi / le) | sleep, shutdown, EC access, AC detection |
 | `AmdCppc` + `AmdCppcPolicy`, `RyzenHV` | post-install | CPU power policy, hypervisor |
 | `AppleALC` (`alcverbs=1`), `StrixAmp`, RogAudio | post-install | audio |
@@ -437,7 +436,7 @@ When S4 builds for another volume (a target disk mounted at `/Volumes/X`), prefi
 Static (before each reboot):
 
 * `verify.sh MANIFEST --stage <s>`: sha256 of every installed file.
-* `kccheck AuxKC`: the LC_UUID of NMXGPU, NMXAccel, NMXAGDC, NMXBacklight, NVRM, NVAccel, NVRMFB, NVRMAGDC (and
+* `kccheck AuxKC`: the LC_UUID of NMXGPU, NMXAccel, NMXAGDC, NVRM, NVAccel, NVRMFB, NVRMAGDC (and
   StrixS0ix) appears in the collection, and each cave probe window (`offset length` lines, as in
   `/Library/StrixGraphicsFix/nmx-relink.probes`, Step100c) appears exactly once. This replaces the python parts of
   `uuids_in()` (`macos-install-nvidia-2.7.1.sh:76`) and `check_kc()` (`nmx-relink/nmx-relink.sh:24`): a fresh macOS
@@ -464,7 +463,7 @@ run:
 * WindowServer on the 890M: the NVMTL log line for WindowServer names RADV STRIX1 (as in Step102b); its CPU use
   after 60 s idle is under a threshold.
 * NVIDIA: `ioreg -rc NVRM` present, headless, NVRM hold released (boot-time audit).
-* Brightness: NMXBacklight present; Wi-Fi: `itlmt7925Native` interface up; audio: RogAudio HAL device listed;
+* Brightness: `AppleBacklightDisplay` under NMXAMDFB (NMXGPU's own handler, Step130); Wi-Fi: `itlmt7925Native` interface up; audio: RogAudio HAL device listed;
   `pmset -g` sane (no sleep test here: a sleep test is the owner's call).
 * `system_profiler SPDisplaysDataType` shows "AMD Radeon 890M" with 512 MB (DeviceProperties).
 

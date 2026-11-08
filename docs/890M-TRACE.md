@@ -8616,3 +8616,47 @@ Open (NMXGPU/xkpi, mine): one app's GPU write fault must not take WindowServer d
 (pasid -> process in the xkpi VM fault print), and check whether the read-only userptr retry hands a writable target
 to the GPU; and whether amdgpu's job timeout/ring reset recovers before NVMTL's 5 s budget in WindowServer.
 This happened on the cave build (591E7D5A); Step129's source build has the same userptr code (35c6815).
+
+## Step130: brightness slider dead on Step129; NMXBacklight removed, its work moved into the NMXGPU source (2026-11-08)
+
+Owner: the brightness slider no longer works (first boot on the source-built NMXGPU, Step129).
+
+Root cause: NMXBacklight 0.4.0 called NMXGPU by **fixed file address** (`linux_backlight_update_status` 0x6c3970,
+`nmx_backlight_next` 0x6d25f0, `__ZTV8NMXGPUFB` 0x8f4f10, checked against byte signatures of the NullMoth cave build)
+and swapped NMXAMDFB's vtable for a private copy. The source build has another layout, so at 09:12:41
+`NMXBacklight: vtable ... is not NMXGPUFB's, inert`: no "backlight" child under the framebuffer, `getAppleSense` not
+LCD, so IOGraphics made a plain `AppleDisplay` (no `AppleBacklightDisplay`, no slider, no Fn brightness). The same
+kext also carried the Step109d **paging wake** (WindowServer hang after a system sleep), so that fix was off too: a
+system sleep on Step129 would have hung WindowServer after wake. StrixGOP 0.1.11 is loaded but silent (it serves the
+firmware GOP framebuffer, which is not there under NMXGPU).
+
+**Rule (do not repeat): no kext may call into NMXGPU (or any of our own drivers) by address, by byte signature or by
+patching its vtable. Anything NMXGPU-specific goes into the NMXGPU source (fork nmx-source-port), where the compiler
+keeps it right across rebuilds.** Address-based hooks were only acceptable while NMXGPU was a NullMoth binary we could
+not rebuild; since Step129 we own the source.
+
+Fix (fork nmx-source-port, NMXGPU out-8):
+- `override/src/linux_pci.c`: `nmx_backlight_percent(set, &pct)` over xkpi's backlight registry and amdgpu's own
+  backlight ops (`amdgpu_dm_backlight_update_status` -> DC, AUX nits on the OLED). Same path NMXBacklight used.
+- `xnu/nmx_fb.cpp`: NMXAMDFB publishes the `backlight` IODisplayParameterHandler (`NMXFBBacklight`, applies from a
+  thread call, `Backlight,*` properties on the framebuffer) before registerService, and overrides `getAppleSense` (LCD
+  for connection 0). `-nmxbloff` leaves it out.
+- `xnu/nmx_fb.cpp`: the Step109d paging wake as members (WillSleep tap, gate on the framebuffer workloop, power-on in
+  `setPowerState`, 3 s fallback armed on WillPowerOn and HasPoweredOn). `NMXPagingWake` property; `-nmxfbwakeoff`.
+- `xnu/nmx_kext.cpp`: NMXPowerKeep (Step106 display-sleep hold of NMXGPU, sleep/wake timeline) is a child NMXGPU
+  starts itself; `-nmxkeepoff`, `nmxkeep_dsleep=0` as before.
+
+Cleanup: `kexts/NMXBacklight` and `scripts/macos-install-nmxpowerkeep.sh` deleted; NMXBacklight dropped from
+`scripts/build.sh`, auxguard, nmx-relink, step126 and the sleep test scripts. Older step installers (100..125) still
+name it; they install the NullMoth cave chain and are history, superseded by Step125/130.
+
+NullMoth daemons reviewed: `com.nullmoth.displaytrace` (continuous NVRM/WindowServer log streams for NullMoth's NVIDIA
+display bug reports) and `com.nullmoth.wsreset` (restart WindowServer once per boot, NVIDIA flicker stopgap; last ran
+2026-11-03) are removed by the Step130 installer (plists kept in the backup). Kept: `bootguard` (NVIDIA boot-good
+counter for the boot picker), `recover` (NVRAM-flag uninstall safety net, exits at once), `wsdeath` (ours, Step81,
+captures logs when WindowServer dies: needed for the screenshot-markup freeze), `nmx-flip-default`, `auxguard`.
+
+Install: `sudo scripts/macos-install-step130.sh ~/develop/projects/nmx-build-xkpi/out-8/NMXGPU.kext` (relinks AuxKC,
+new probes, checks the Step130 strings and that NMXBacklight is gone). Undo: `--undo`.
+Verify after reboot: `ioreg -c AppleBacklightDisplay` present, `NullMoth display: backlight handler published`,
+slider and Fn keys change the panel, `NMXPagingWake` = Yes, `NMXPowerKeep: holding NMXGPU`.

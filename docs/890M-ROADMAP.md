@@ -84,7 +84,7 @@ So only the kernel driver is ours. Everything between the driver and WindowServe
 ## Backlog (2026-11-04, after Step100)
 
 Done since this audit: DC display on the 890M (NMXGPU), page flips and zero copy (Step98-99), H2 interrupt-loss root
-cause (Step100 irqfix), stale xkpi records (Step100 mmfix2), brightness slider via amdgpu DC (NMXBacklight, owner
+cause (Step100 irqfix), stale xkpi records (Step100 mmfix2), brightness slider via amdgpu DC (NMXBacklight then, inside NMXGPU since Step130, owner
 verified), cave registry check (`scripts/nmx-caves/check.py`).
 
 Open, in order:
@@ -96,7 +96,7 @@ Open, in order:
    identity views share the image view (view destroys ~200/s were the last epoch churn), installed, measure next boot.
 2. **HiDPI scaled modes** (owner: "not now, keep it on the roadmap"). System Settings shows one resolution tile and no
    refresh menu because NMXGPUFB reports a single mode. Root cause and plan: `docs/890M-TRACE.md`, section
-   "HiDPI scaled modes: root cause and plan". Pieces: more backing sizes reported from NMXBacklight's vtable copy,
+   "HiDPI scaled modes: root cause and plan". Pieces: more backing sizes reported by NMXAMDFB itself (source),
    a per-mode VRAM buffer plus plane src rect = fb size in the flip cave (DC plane scaler), NMXAccel copy fallback
    for a surface size different from the home buffer. One reboot batch; fallback boot-arg `-nmxbloff`.
 3. xkpi mm lifetime as a source build: fork branch `mm-lifetime` 163d117 (the binary steps would have to move into

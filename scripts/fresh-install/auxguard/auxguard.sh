@@ -11,7 +11,7 @@ exec >>"$ROOT/auxguard.log" 2>&1
 echo "== $(date -u '+%F %T') build $(sw_vers -buildVersion)"
 KC=/Library/KernelCollections/AuxiliaryKernelExtensions.kc
 L=/Library/Extensions
-KX="$L/NMXGPU.kext $L/NMXAccel.kext $L/NMXAGDC.kext $L/NMXBacklight.kext $L/NVRM.kext $L/NVAccel.kext $L/NVRMFB.kext $L/NVRMAGDC.kext $L/StrixS0ix.kext"
+KX="$L/NMXGPU.kext $L/NMXAccel.kext $L/NMXAGDC.kext $L/NVRM.kext $L/NVAccel.kext $L/NVRMFB.kext $L/NVRMAGDC.kext $L/StrixS0ix.kext"
 check() { "$ROOT/kccheck" "$1" --probes "$ROOT/nmx-relink.probes" "$L/NMXGPU.kext/Contents/MacOS/NMXGPU" $KX; }
 build() {
     rm -f "$KC.relink"
