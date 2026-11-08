@@ -9264,3 +9264,21 @@ Boot 21:51 runs NMXGPU out-20 (1B44E2DB), RyzenHV 0.7.17, BtLeDlFix 1.3.0, and p
 **Still open:**
 - Only 1048 frames were decoded in 40 s (about 26 fps at the source), with 40 gaps. This is either network buffering or GPU-process stalls behind the per-frame prefault; the fix above has to be tested first to tell them apart.
 - WS main thread: 4.9 s of CPU per 10 s. Its import share fell from 103 to 39 samples. That part belongs to main and cpu-thermal.
+
+### 2026-11-08 22:20 video re-measure on boot 21:51 + plugin 9c6d1ed (video-lag hint fix merged)
+
+- edge-video-lag (trace part 27, dc5924e) measured YouTube 1080p60 VP9 in Chrome with Docker off:
+  - rVFC 42.1 fps (was 33.3), 8 dropped (was 280), max gap 525 ms (was 3233 ms).
+  - kernel_task VM work 3.4 s per 10 s (was 16.7).
+  - Step138 counters: live / userwire went 348k / 535k before -> 664k / 999k at peak -> 285k / 418k 60 s after Chrome closed; kept stayed 0.
+  - Conclusion: the leak is fixed.
+- Remaining video-path cost: the sandboxed Chrome GPU process could not open /dev/dri, so its IOSurface hint never ran. Each frame then took the full-span `nvmtl_prefault_write`: 98 of 999 CrGpuMain samples.
+- Fix: plugin/video-lag 4e68b8b. The hint now goes through `nvmtl_drmx_w_*`, so it falls back to the NMDR user client, whose ioctls run on the caller's thread. WS is unchanged. Reviewed and merged into camera-copy-890m as 9c6d1ed.
+- Built from 9c6d1ed: `nmx-plugin-camcopy/out/NVMTLDriver-9c6d1ed`, sha dcb03c9d, UUID 770FBF92. Not installed.
+- After install, check:
+  - Chrome GPU spindump: `nvmtl_prefault_write` under nvmtlNewSurfaceTexture should be ~0.
+  - `nmx_surf_hint` should rise faster during playback.
+- Next install batch, each only with the owner's OK:
+  - this plugin
+  - StrixS0ix 0.1.15 (A17EB334, version gate)
+  - BtLeDlFix 1.4.0, which the BT session installs
