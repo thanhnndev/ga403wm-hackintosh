@@ -261,7 +261,7 @@ takes the IOSurface's pages from the surface itself, instead of faulting the ran
 - Plugin: the plugin installer's `--undo`.
 - Kernel: `nmxsurfwire=0`, or the Step130 installer `--undo` / reinstall out-17.
 
-Installed 2026-11-08 20:41 with the out-17 reboot still pending:
+Installed 2026-11-08 20:41 (out-17 has been live since the 20:26 boot), loads at the next reboot:
 - NMXGPU out-18: UUID 194BFE13, AuxKC relinked and checked. Backup `/Library/NullMoth/step130-bk-20261108T134013Z`
   is out-17.
 - Plugin a95189e: UUID 5FC87442. Backup `nvmtl-plugin-20261108T134105Z` is the edge session's tile build.
