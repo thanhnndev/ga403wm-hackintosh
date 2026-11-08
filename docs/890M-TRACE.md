@@ -8936,3 +8936,4 @@ The owner suspects the AWDL work (boot-arg `itlmt_awdl=1`). The AWDL session has
 - `nmx_pin_write_fail` 1028 = `nmx_pin_ro_retry` 1028, all from WS thread 0x3c4 with rc 0x2. That is the r-- client-surface case covered in the Step132 boot section above, not a wire bug. The plugin skips writable imports on r-- spans (dd43056), so those surfaces are never written by the GPU.
 - WS CPU 36 % at 12 min uptime, idle desktop. Video measurement with the local clip still to do on this boot.
 - Undo plugin: `scripts/macos-nvmtl-plugin-install.sh --undo` (back to 8201eaaa, 5405e50), then `scripts/macos-install-strixsbxmap.sh --refresh`.
+- Correction (edge session): the 1028 WS failures are client surfaces mapped r-- (Step96 case); the RO pin is right, no wire bug. The 20340 KB prefault was a different, writable import. Region-info request withdrawn. out-13 = Step132b as written above (no retry on rc 2, non-WS failures counted apart), installs with the next reboot batch.
