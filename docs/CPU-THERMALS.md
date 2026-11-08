@@ -156,11 +156,13 @@ Worker threads also spend ~2.9 s per 10 s blocked in `drmSyncobjWait`, called fr
 of WindowServer's CPU time: thread create/exit churn from the pump.
 
 **Fixable items (all in the NVMTL WindowServer plugin, owned by the main session):**
-1. **IOSurface import every frame.** `nvmtlNewSurfaceTexture:` (`890m-ws-plugin/plugin/NVMTLDevice.m`) caches
-   only failed BAR imports (`!_vramOn`). Every successful wrap imports the surface memory again (userptr BO +
-   VA map ioctls) and frees it later. The fix is to cache the Vulkan memory import per (surface ID, plane) with a
-   weak entry, the same way the private-image path already shares one image. Saves ~0.7 ms per frame plus the
-   destroy cost.
+1. **IOSurface import on surface keep misses.** The live plugin (`nmx-plugin-camcopy` cb1a5e6) already caches
+   imports ("surface keep"). The 0.7 ms/frame is the miss path: `nvmtlNewSurfaceTexture:` → `nvmtl_prefault_write`
+   (210 samples, a write fault per page) plus `nvmtl_vk_buffer_import_host` (240, userptr BO + VA map). That comes
+   to roughly 10 misses/s, each costing a few ms. The 30 s reports show where they come from: new surfaces (20–25
+   per 30 s), "same surface other key" (14), expired (6–20), and idle-cap drops of Electron tile surfaces
+   (1472×256, 768×64, 320×64) after ~28 s idle that come back within 40–200 ms. Handed to the edge-video-lag session,
+   which owns surface keep.
 2. **Synchronous commit.** `commitAndWaitUntilSubmitted` blocks the compositor main thread on the submit
    (0.8 ms per frame).
 3. **Pump thread churn.** Fence waits run on fresh dispatch workqueue threads. One long-lived waiter thread
