@@ -270,3 +270,12 @@ Installed 2026-11-08 20:41 (out-17 has been live since the 20:26 boot), loads at
 Undo:
 - Kernel: `sudo scripts/macos-install-step130.sh --undo`, or keep it and boot with `nmxsurfwire=0`.
 - Plugin: `sudo scripts/macos-nvmtl-plugin-install.sh --undo`, then `scripts/macos-install-strixsbxmap.sh --refresh`.
+
+Review by the edge-video session (2026-11-08): the hint path is correct as written.
+- Sandboxed processes (VTDecoderXPCService, com.apple.WebKit.GPU) cannot open `/dev/dri`. The hint is off in them,
+  so for now the gain is in WindowServer only. Later step: send the hint through the sandbox-safe DRM path RADV uses
+  in those processes.
+- A failed surface pin falls back to a plain wire on pages that were not prefaulted beyond the first. That costs the
+  Step132 retry, so watch `debug.nmx_surf_miss` after the boot.
+- `nvmtl_surface_hint`'s static fd is set without a lock. That is safe while every caller runs under
+  `@synchronized(device)`, as they do today.
