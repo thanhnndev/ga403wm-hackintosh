@@ -598,5 +598,50 @@ above that follows what is on screen and what the user does.
 **NMXGPU user-page records (`debug.nmx_userrec_*`):** live 131,524 at 23:55. From 23:59 it was stable at
 457k–469k over 3 minutes (30 s samples), so there is no growth after warm-up and the Step138 fix holds. Pinned user
 pages: 828k–860k (~3.3 GB). The churn is high: `made` and `freed` both rise by ~1.7 M per 30 s, i.e. **~56,000 page
-records created and freed per second** during video. That is per-frame userptr pin/unpin and worth a per-caller
-counter (main/video sessions).
+records created and freed per second** in that window. (Correction 00:12: Chrome had not been started on this boot,
+so this was not Chrome video; see the attribution below.)
+
+**Who makes the user-page records (00:10–00:12, boot 23:51):**
+
+- Root ktrace of every BSD syscall for 3.3 s (`ktrace dump -f S0x040c`, detached with `launchctl submit`).
+  WindowServer is the **only** process that issued DRM ioctls:
+
+  | ioctl | rate |
+  |---|---|
+  | AMDGPU_CS (`0xc0186444`) | 162/s |
+  | SYNCOBJ_WAIT (`0xc02864c3`) | 162/s |
+  | SYNCOBJ_RESET (`0xc01064c4`) | 162/s |
+  | GEM_VA (`0xc0406448`) | 19/s |
+  | GEM_CLOSE (`0x80086409`) | 10/s |
+  | **GEM_USERPTR (`0xc0186451`)** | **5/s** |
+  | surface hint (`0x8018649e`) | 4/s |
+
+  `userrec_made` rose 22,568 in the same window, i.e. ~1,350 pages (~5 MB) per userptr import. No WebKit GPU,
+  Chrome or app process created a userptr BO.
+- The rate is **bursty, not steady**. Sampled once a second for 15 s at 00:12 (light use): `0 0 0 0 1350 560 0 ...`,
+  one import per burst. Over 10 s: 56 records/s. The capture window had the admin password dialog on screen, which
+  makes new surfaces. The cumulative count is 20.3 M in ~20 min (average ~17k/s), mostly from boot-time imports and
+  window or dialog activity. `userrec_live` fell from ~460k to 245k as idle entries expired.
+- **WindowServer's plugin already caches imports by IOSurface** (`NVMTLSurfKey` = surface ID + plane + size +
+  format + options; the backing holds the surface, so the ID can't be reused while the entry exists). Its 30 s reports
+  on this boot show:
+  - 23–88 misses per 30 s (1–3/s) against 79–2,599 hits;
+  - most misses are **new surfaces** (fresh IOSurface IDs from apps);
+  - expired entries that came back within 250 ms: at most 10 per 30 s; the rest came back after more than 3 s.
+  - An extra import cache keyed by surface ID (+ seed / address) would only catch hits the keep cache already gets,
+    so I am not proposing one. A new IOSurface has new pages and has to be pinned once.
+- Unexplained: what drove the 1.7 M per 30 s at 23:59–00:02. Without Chrome running, the candidates are the boot
+  catch-up (apps' first frames, Spotlight, Docker, the simulator service) and the other session's osascript storm.
+  `debug.nmx_pin_by_proc` (NMXGPU 17a6b28, out-21) will answer that directly the next time it happens.
+
+**Fence timeout (`debug.nmxaccel_fence_timeouts` = 1, 23:52:45):** still 1 at 00:12, out of 61k+ fenced frames
+(waited 39,901, average wait 1.76 ms, `nmx_timeouts` 0). It is not the fence pool:
+- `NMXFenceDone` is written only in `nvmtlFinishExecution` → `nvmtl_nmx_fence_done_all`, after
+  `nvmtl_vk_submit_finish`'s `vkWaitForFences` returned `VK_SUCCESS`.
+- A pooled fence goes back to the pool only after that successful wait **and** a successful `vkResetFences`;
+  otherwise it is destroyed.
+- A stale signaled fence would make done **early**, not 100 ms late.
+- Each in-flight submit holds its own fence handle.
+
+So a late done means that frame's GPU work, or its finish, took more than 100 ms. That fits the first minute after
+boot (shader compiles), so it is a warm-up one-off.
