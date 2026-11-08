@@ -392,3 +392,39 @@ On AC: 27–40 W package, Tctl 78–91 °C.
   cheaper needs AVIC or x2APIC support in HyperKit, a separate large project.
 - After installing: check `monitor.log` no longer shows `wrmsr to register 0xc0000502` and com.docker.backend drops
   from ~95 % CPU.
+
+## Re-baseline on the 21:51 boot (out-20 Step138, RyzenHV 0.7.17, BtLeDlFix 1.3.0), 21:56–22:00
+
+Load: Chrome video, the Claude app, the pathcan backend's python dev server (one full core, another project).
+**Docker was not started on this boot** (no hyperkit, RyzenHV `vmCreates 0`), so this is not like-for-like with
+20:52 and the Docker fix is not confirmed yet. Starting Docker is the owner's call.
+
+| | 20:52 boot (21:15–21:43) | 21:51 boot (21:56) |
+|---|---|---|
+| Package power / Tctl | 27–40 W / 78–91 °C | 20–41 W / 79–90 °C (python dev server at 85–100 %) |
+| Wired total | 19.2–20.0 GB | 7.68 GB |
+| RyzenHV wired | 8.42 GB | 96 KB (no VM) |
+| NMXGPU tag | 5.80 → 4.89 GB | 3.07 GB |
+| zones | 2.81–2.91 GB | 1.37 GB |
+| `kalloc.type.var4.256` | 810 → 860 MB, growing | 12 KB (leak fixed) |
+| Compressor / swap | 4–7 GB / 0 | 0 / 0 |
+| kernel_task CPU per 10 s | 13.3–21.7 s | 3.4 s |
+| of which VM threads | 9.6–16.7 s | 1.2 s |
+| WS main thread busy | 50 % (21:00) | 22 % |
+| `render_update` samples | 1,979 | 315 |
+| bluetoothd | 14–33 % | ~2 % (BtLeDlFix, no STATUS 718) |
+
+- Step137 counters (out-20): `nmx_surf_hint` 886, `nmx_surf_wire` 886, `nmx_surf_miss` 0. Every hinted surface import
+  is pinned through the IOSurface path. `nmx_userwire_pages` 555,021 (2.1 GB of user pages pinned at the time),
+  `nmx_userrec_kept` 0.
+- WindowServer main thread (`sample WindowServer 10`, Chrome video + Claude): the import path is nearly gone
+  (`nvmtl_vk_buffer_import_host` 22, `amdgpu_create_bo_from_user_mem` 15 of 8,171). What remains is Core Animation
+  layer rendering inside `render_update` (~250), reply `mach_msg` to clients (~190) and voucher disposal (~160).
+- kernel_task without VM threads: ~2.2 s per 10 s. USB XHCI threads ~0.96 s, dm_vblank_control 0.13, Wi-Fi
+  input 0.12, NVMe 0.11, NMXIrq 0.06.
+- powermetrics interrupts (5 s): IPI 51,870/s, timer 14,452/s, NVMe 1,317/s, I2C touchpad (I2CA) 836/s, GPU 334/s.
+  IPIs and timers sit mostly on the even CPUs (0, 2, 4, 6: 3.5–5.2k IPI/s each). The IPI rate is the next thing
+  to attribute: 52k/s is high for this load.
+- Still open: confirm the Docker WRMSR fix once Docker runs (expect no `wrmsr to register 0xc0000502` lines in
+  `monitor.log` and com.docker.backend near idle), then measure the full daily mix again. With Docker the wired
+  total will add ~8.4 GB for the VM.
