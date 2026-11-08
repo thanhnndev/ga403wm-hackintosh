@@ -536,3 +536,23 @@ is the owner's call.
 an `itlz0` registry property on the service. NVRAM keeps the 10 s writes for the first two minutes (early-boot
 panics), then is written only when the per-controller health line changes. Before, it forced a flash write every
 minute.
+
+## Plugin items from the WindowServer split (branch `plugin/thermal`, fork thanhnndev/nvidia-macos-driver)
+
+`9bfd0c5` on top of camera-copy-890m 9c6d1ed. Built in `~/develop/projects/nmx-plugin-thermal/out/plugin-9bfd0c5`
+(UUID 4893C10D), not installed, not run yet.
+
+- **Fence pool** (`nvmtl_vk.c`): `nvmtl_vk_submit_begin_at` took a new `VkFence` on every commit, which RADV turns into
+  a DRM syncobj create and destroy (95 of 7,430 WindowServer main-thread samples). Fences now come from a 32-entry
+  pool. One goes back only after a successful wait and `vkResetFences`. A failed or timed-out wait still keeps the
+  fence out, as before. `NVMTL_FENCE_POOL=0` restores the old behaviour.
+- **Fence-wait sysctl** (`NVMTLEventSync.m`): `debug.nmxaccel_fence_wait` was read on every commit (47 samples). It is
+  still a runtime toggle, but now read at most once a second.
+- **Texture BO cache: not done.** WindowServer already parks images for reuse by exact descriptor
+  (`nvmtl_vk_image_park`). At 22:14 it had made only ~128 such textures since the 21:51 boot (42 hits, 86 misses), so
+  the 64 `radv_bo_create` samples were a few large allocations of varying size, not per-frame work. Reusing memory
+  across sizes would touch the VRAM budget, residency eviction and system-memory spill paths inside WindowServer,
+  for ~0.9 % of its main thread. Not worth the risk.
+- Build note: `build/build_plugin.sh` builds from `~/nvmtl-build/LIVE` and lacks `-framework IOKit`, which 9c6d1ed
+  needs. I built with the same flags plus `-framework IOKit`, using the Vulkan headers from
+  `nmx-plugin-890m/out/vk/include` (`~/Vulkan-Headers` does not exist on this machine).
