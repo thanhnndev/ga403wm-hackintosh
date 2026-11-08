@@ -9323,3 +9323,19 @@ Boot 21:51, plugin a95189e (the 9c6d1ed hint fix is not installed). Docker hyper
     - /Library/NullMoth/nvmtl-plugin-20261108T151939Z = 9c6d1ed, so `--undo` goes back to 9c6d1ed.
     - /Library/NullMoth/nvmtl-plugin-20261108T151155Z = a95189e (2fc47b9a).
   - The env var `NVMTL_FENCE_POOL=0` turns the pool off.
+
+### 2026-11-08 23:51 boot with the batch
+- Loaded:
+  - ItlXhciKick 5D179C74
+  - StrixS0ix 0.1.15 A17EB334 (PMDispatchVersion = 102 = 0x66, HaltHook Yes)
+  - itlmt7925Native 25F33563
+  - BtLeDlFix 1.4.0 (`debug.btledlfix` adv=on)
+  - NMXGPU out-20 1B44E2DB
+  - StrixSbxMap
+  - plugin 9bfd0c5 installed
+- ItlXhciKick at 119 s: busy controllers c0/c2 were kicked 106912 times (1 ms), empty ones c1/c3 6682 times (≈16 ms). No misses.
+- Wi-Fi is up on en1. `itlmt-native-abi` was not found in ioreg; I asked the Wi-Fi session to check.
+- debug.nmx_surf_wire 605, userrec_kept 0, userrec_live 138763 at 3 min (the trend is tracked by cpu-thermal).
+- There is a shutdown_stall report at 23:27 from the previous shutdown; not yet read.
+- No crash reports since boot. WindowServer at 1.6 %.
+- Post-boot verification tasks were sent to cpu-thermal, video-lag and Wi-Fi.
