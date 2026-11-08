@@ -1082,9 +1082,38 @@ IOReturn StrixS0ix::setProperties(OSObject *properties)
     return kIOReturnSuccess;
 }
 
+/*
+ * The PM_DISPATCH_VERSION the running kernel accepts, read from pmKextRegister's own check: it starts with
+ * cmp edi, imm8 (83 ff ib) or cmp edi, imm32 (81 ff id) within its first bytes (after the frame setup).
+ * 0 when no such compare is found: the caller then leaves pmKextRegister alone.
+ */
+static uint32_t kernelPMDispatchVersion()
+{
+    const uint8_t *p = reinterpret_cast<const uint8_t *>(&pmKextRegister);
+    for (int i = 0; i < 48; i++) {
+        if (p[i] == 0x83 && p[i + 1] == 0xff)
+            return p[i + 2];
+        if (p[i] == 0x81 && p[i + 1] == 0xff)
+            return uint32_t(p[i + 2]) | uint32_t(p[i + 3]) << 8 | uint32_t(p[i + 4]) << 16 | uint32_t(p[i + 5]) << 24;
+        if (p[i] == 0xc3 || p[i] == 0xe8)      // ret or a call before any compare: not the layout we know
+            return 0;
+    }
+    return 0;
+}
+
 bool StrixS0ix::installHalt()
 {
     if (version_major != 25) { IOLog("StrixS0ix: Darwin %d, built for 25: no halt hook\n", version_major); return false; }
+    // pmKextRegister panics on a version mismatch, and a 26.x point release may bump PM_DISPATCH_VERSION: read the
+    // version this kernel checks (its first "cmp edi, imm") and register only if it is the layout we were built for
+    {
+        uint32_t want = kernelPMDispatchVersion();
+        setProperty("S0ix,PMDispatchVersion", want, 32);
+        if (want != kPMDispatchVersion) {
+            IOLog("StrixS0ix: kernel PM dispatch version %#x, built for %#x: no halt hook\n", want, kPMDispatchVersion);
+            return false;
+        }
+    }
     uint32_t r[4];
     cpuid(0x80000001, r);
     if (!(r[2] & (1u << 29))) { IOLog("StrixS0ix: no MONITORX/MWAITX: no halt hook\n"); return false; }
