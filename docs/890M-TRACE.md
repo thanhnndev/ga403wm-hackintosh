@@ -9282,3 +9282,26 @@ Boot 21:51 runs NMXGPU out-20 (1B44E2DB), RyzenHV 0.7.17, BtLeDlFix 1.3.0, and p
   - this plugin
   - StrixS0ix 0.1.15 (A17EB334, version gate)
   - BtLeDlFix 1.4.0, which the BT session installs
+
+## Trace part 27b: the "26 fps decode" was a YouTube pre-roll ad, not a stall (2026-11-08 22:08)
+
+Boot 21:51, plugin a95189e (the 9c6d1ed hint fix is not installed). Docker hyperkit was running. Probe v2 logs one line per second: play rate (currentTime / wall time), decoded, dropped, rVFC callbacks, seconds buffered ahead, YouTube buffer health, and waiting/stalled events.
+
+- **Play-now run** (as in part 27):
+  - Seconds 1-25 play at rate 1.00 with 25 decoded, 25 rVFC and 0 dropped per second. The buffer drains from 21 s to 0.2 s and is never refilled. This is a 25 fps pre-roll ad, fully preloaded.
+  - At second 26, `currentTime` jumps back and the frame counters reset: the main video starts.
+  - From then on it runs at 60 decoded / 60 rVFC per second with 0 dropped.
+  - Part 27's "1048 frames in 40 s" was the ad plus the switch, not a decode or GPU stall.
+- **Prebuffered run** (main video paused until 16 s were buffered, then 40 s measured):
+  - Rate 0.974 (the first second resumes from pause), 62.5 decoded/s, 57.6 rVFC/s.
+  - 28 dropped, mostly in the first 5 s after resume; 0-1 per second after that.
+  - Buffer stays 24-27 s ahead. 0 waiting, 0 stalled.
+  - rVFC processingDuration averages 32 ms, max 154 ms.
+- top during that run: WindowServer 21-65 %, kernel_task 17-37 %.
+
+**Conclusion:** neither network buffering nor a GPU-process stall limits the decode rate. The VCNDec + Chrome path sustains 1080p60 under daily load (Docker running).
+
+**Left:**
+- The drop burst when play resumes.
+- The per-frame import cost in Chrome's GPU process. Fix 9c6d1ed is merged and waits for the next batch; re-measure after it is live.
+- Future probes skip ads: wait for the main video to start, i.e. when `currentTime` resets and the frame counters restart.
