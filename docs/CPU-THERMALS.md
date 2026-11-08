@@ -279,3 +279,25 @@ Review by the edge-video session (2026-11-08): the hint path is correct as writt
   Step132 retry, so watch `debug.nmx_surf_miss` after the boot.
 - `nvmtl_surface_hint`'s static fd is set without a lock. That is safe while every caller runs under
   `@synchronized(device)`, as they do today.
+
+**Step137 boot (2026-11-08 20:52, out-18 194BFE13 + plugin a95189e)**
+- Loaded. WindowServer logs `surface hint: on` and hinted its first import (20 MB). No GPU faults or NMX pin errors.
+- `sample WindowServer 10` at 21:00 with the Claude app animating, compared with 18:30 (both out of ~7.5–7.9k main-thread samples):
+
+  | WindowServer main thread | 18:30 (before) | 21:00 (Step137) |
+  |---|---|---|
+  | `newTextureWithDescriptor:iosurface:` | 524 | 67 |
+  | `nvmtl_prefault_write` | 210 | 0 |
+  | `nvmtl_vk_buffer_import_host` | 240 | 75 |
+  | `commitAndWaitUntilSubmitted` | 585 | 403 |
+  | `CDDisplay::render_update` | 3660 | 1979 |
+  | main thread busy | 66 % | 50 % |
+
+  The import path is down ~87 %, and the per-page prefault is gone. The 21:00 run also includes the tile keep fix.
+- The whole-system comparison is not valid yet. Eight minutes after boot, Docker (~150 %), Spotlight indexing and
+  a spindump were running, at 40 W and 91 °C.
+- The `debug.nmx_surf_*` counters were never registered in out-18 (no `sysctl_register_oid`). Fixed in Step137b,
+  nmx-source-port 4422c10, building as out-19. It only adds the counters, so it goes into the next batch.
+- New lead from the WindowServer log: `pre-submit prologue census: 16384 submits carried 126277 uploads ... 5087922
+  KB buffer-texture shadow`. That is ~310 KB of CPU upload per submit for buffer textures, the next hot spot to
+  profile.
