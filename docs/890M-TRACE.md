@@ -8997,3 +8997,10 @@ System-wide spindump, 10 s, 3020 samples (~3.3 ms each), Chrome playing VP9 1080
 - Step133 installed 14:5x: NMXGPU out-14 (fork fde4618, UUID FE95BAD4, includes Step132b; 579 imports), AuxKC relinked + checked, rc 0. Next reboot. Edge plugin 5786ad9 (keep 30 s) built, waits for the owner's OK to go in the same reboot.
 - Edge plugin 5786ad9 (NVMTL_KEEP_MS 30 s, sha f45f15bc) installed 14:5x at the owner's OK, StrixSbxMap --refresh rc 0 (ESP pins + live sysctl). WS loads it with NMXGPU out-14 at the next reboot. Undo: `sudo scripts/macos-nvmtl-plugin-install.sh --undo` (back to 796125b9) + --refresh.
 - Correction: the edge session installed the same plugin 23 s earlier (backup 20261108T074851Z = 796125b9); this session's second install left backup 20261108T074914Z = a313ed1b (the new plugin itself), so plain --undo would be a no-op. Undo instead: `sudo scripts/macos-nvmtl-plugin-install.sh /Library/NullMoth/nvmtl-plugin-20261108T074851Z/NVMTLDriver.bundle/Contents/MacOS/NVMTLDriver` then `sudo scripts/macos-install-strixsbxmap.sh --refresh`.
+
+### Step133 boot (2026-11-08 14:51:56; shutdown stall report 14:50:42 again on the way down)
+
+- NMXGPU FE95BAD4 (out-14: stripe locks + Step132b), StrixS0ix 0.1.14 loaded; plugin keep30 (a313ed1b) in WS. 11 flip imports, brightness Writes 252 / Failures 0, `NMXPagingWake` Yes. No panic.
+- `nmx_pin_write_fail` 109 = `ro_retry` 109, all WindowServer rc 2 (r-- client surfaces), `nmx_pin_other_fail` 0, `last_rc2` 0 (no pointless retries any more).
+- `nmx_timeouts` 1: `ring sdma0 timeout, signaled seq=31, emitted seq=31` at 14:52:06 (boot + 10 s), ring reset success. Signaled == emitted: the fence had completed and the timeout fired anyway (a late/missed fence interrupt at boot, not a hung engine). First sdma0 one today (earlier ones were vcn_unified_0, signaled = emitted - 1). Watch whether it repeats on the next boots.
+- CPU at idle 4 min after boot: WS 49 %, Claude Helper 63 %. The YouTube spindump re-run (edge session) gives the before/after for the lock + keep30 change.
