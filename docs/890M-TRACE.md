@@ -8855,3 +8855,28 @@ The owner suspects the AWDL work (boot-arg `itlmt_awdl=1`). The AWDL session has
 - AuxKC relinked twice, kccheck + new probes OK both times (rc 0). Reboot pending.
 - After boot check: `NMX flip: import` lines, `flip_submitted` rising, `beam_copy_us` ~0, WS/kernel_task CPU lower; StrixS0ix 0.1.14 mode 0; brightness; no panic.
 - Undo: `sudo scripts/macos-install-s0ix-idle.sh --undo`, then `sudo scripts/macos-install-step130.sh --undo` (back to out-10).
+
+### Part 20: plane host in WindowServer (plugin 5405e50), measured on the 12:14 boot
+
+- Plugin 5405e50 on 0a2f577 (installed 12:11, sha256 8201eaaa, backup nvmtl-plugin-20261108T051123Z = 00660e02,
+  sbxmap stale 0; WindowServer loaded it at the 12:14 boot):
+  - plane host import on in WindowServer (`surface planes: host import ... shadowed on the GPU`, NV12 planes `-> its own
+    pages`, no more G13 surface-in uploads of video planes);
+  - surface keep: a live wrapper (the backing or a view of it) keeps its entry up to 60 s after its last wrap
+    (`held entries refreshed N (by a live wrapper M)`);
+  - WindowServer exits with the reason when a device that was up is lost, instead of SkyLight's RenderEncoder ->
+    SetScissor recursion (WindowServer-2026-11-08-100218.ips); a failed begin returns its capacity slot.
+- Test: local 1080p60 VP9 clip (WebCodecs, remuxed to WebM, served on 127.0.0.1; no network: the 11:57/12:14 panics are
+  HoRNDIS fq_codel `now >= *pkt_enq_time`, network side) in a scratch-profile Chrome, VCNDec decoding.
+
+| Plugin in WindowServer | dropped / frames (40 s) | rVFC gaps > 25 ms | worst | `newTextureWithDescriptor:iosurface:` share of WS main thread |
+|---|---|---|---|---|
+| dd43056 (private plane images) | 4 / 2397 | 97 | 75 ms | 26 % (11-07 spindump, YouTube) |
+| 5405e50 (plane host) | 0 / 2398 | 40 | 50 ms | 3 % (25 of 801 samples) |
+
+- Picture checked on screen: the clip's frame counter advances (132 -> 182 between two captures), colours right.
+- Video's own WindowServer cost is now small: pause vs play moved WindowServer ~37 -> ~40 % in a quiet window; the rest
+  of WindowServer's 40-90 % follows whatever else is on screen (the owner's Edge was playing at the same time).
+- WindowServer spindump (8 s, main thread 5.17 s CPU): UpdateDisplays 341 samples, CompositorMetal 199, CoreAnimation
+  OGL render 146, present 56; NVMTL submit 60 (radv cs submit 27), surface import 19. What is left is mostly SkyLight /
+  CoreAnimation CPU work per layer, then submit cost: the next lead for compositor CPU.
