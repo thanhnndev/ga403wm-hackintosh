@@ -8962,3 +8962,35 @@ Decode is no longer the cost: VCN handles VP9 and frame pacing is close to 60 fp
 - All on `pg_lock` in xkpi `bsdcompat/src/nmx_page.c`, taken once per page by every userptr pin (`nmx_phys_to_page`, pin-list push in `nmx_user_pages_pin`) and every unpin (`vm_page_unwire_noq` -> `page_pop_pin`, from `amdgpu_ttm_tt_unpopulate` on GEM close), plus TTM pool alloc/free. One lock for every GPU process, a 1266-page surface = thousands of acquisitions per frame.
 - Fix (fork, out-14): the page registry and the per-page pin lists move to 256 stripe locks keyed by the page's hash bucket; `pg_lock` keeps only the chunk/free list and live counts. No path nests two of these locks or takes a stripe under `pg_lock`.
 - Still open on the plugin side (edge session): WS's `nvmtl.surface-keep.release` thread spends 338/413 samples in GEM close, so some BO is still made and destroyed every frame.
+
+## Trace part 22c: where WindowServer's 86 % goes during YouTube 1080p60 (2026-11-08 14:40)
+
+System-wide spindump, 10 s, 3020 samples (~3.3 ms each), Chrome playing VP9 1080p60 (part 22b). WindowServer used 11.2 s CPU in 10 s.
+
+| WS thread | CPU in 10 s |
+|---|---|
+| main (ws_main_thread) | 8.0 s |
+| nvmtl.surface-keep.release | 1.24 s |
+| CoreAnimation render-server | 0.63 s |
+| nvmtl.execution | 0.47 s |
+
+**Main thread:** 1378 of 3020 samples (46 %) are in `-[NVMTLDevice newTextureWithDescriptor:iosurface:plane:]`:
+- `nvmtl_vk_buffer_import_host` (userptr pin + GPU map): 879.
+- `nvmtl_prefault_write`: 422. These are real page faults (`user_trap` → `vm_fault_enter` → `pmap_enter_options`) that the kernel wire would otherwise take, so the prefault moves the cost but does not add much.
+- Plugin log: about 1000 surface imports per 30 s, mostly small writable surfaces (128 KB) plus the decoder's 420v planes (read-only imports).
+
+**Release thread:** 338 of 413 samples are the GEM close ioctl (`drmCloseBufferHandle`). The plugin frees as many userptr BOs as it imports.
+
+**Kernel hot spot: one global IOSimpleLock in NMXGPU's linuxkpi page shim.** Samples spinning (`IOSimpleLockLock`, state running), by process: WindowServer 541 (~1.8 s), Claude Helper 315, Chrome 239, kernel_task 52, VTDecoderXPCService 26. That is about 4 s of CPU across the system spent spinning in 10 s. Callers, all per page:
+
+| Caller | Path | Samples (WS / Claude / Chrome) |
+|---|---|---|
+| `vm_page_unwire_noq` | `linux_release_pages` ← `amdgpu_ttm_tt_unpopulate` (unpin on close) | 211 / 111 / 32 |
+| `nmx_user_pages_pin` | ← `nmx_userptr_pin` | 150 / 87 / 17 |
+| `nmx_phys_to_page` | ← `nmx_user_pages_pin` ← `lkpi_get_user_pages` | 130 / 102 / 209 |
+| `vm_page_alloc_noobj` | ← `ttm_pool_alloc` | 44 WS |
+| `vm_page_free` | ← `ttm_pool_free_range` | 49 kernel_task |
+
+**Two fixes, in order of size:**
+1. Kernel (NMXGPU, main session): take the page lock once per range instead of once per page, or split it into buckets or make the phys→page lookup lock-free. This helps every GPU process, not just WS.
+2. Plugin: stop the import/free churn. Keep entries expire after 3 s idle, and most misses are "expired", so small writable surfaces come back and are pinned again. Next build should log which surfaces are re-imported (size, owner, age) before changing keep times.
