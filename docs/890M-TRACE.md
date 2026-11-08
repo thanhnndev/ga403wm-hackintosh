@@ -9043,3 +9043,9 @@ Same test as parts 22b/22c: scratch Chrome, video LXb3EKWsInQ at hd1080 (VP9 ita
 - Step134 (fork, building out-15): `td_name` is set from the process record's `p_comm` when a thread record is made or recycled, so amdgpu fault prints name the process.
 - Correction (cpu-thermal session): shutdown stalls are older than StrixS0ix 0.1.14 (11 reports since 11-06, today also 10:02 and 11:46). StrixS0ix+20600 is the cli after hlt in s0ixMachineIdle = idle CPUs; shutdown/offline goes through pmCPUHalt, not the idle hook. The stall is userspace waiting for processes to exit (caffeinate started at boot, crashpad handlers, securityd, duetexpertd). Not a kernel issue.
 - Step134 installed 16:4x: NMXGPU out-15 (fork c811a92, UUID 5E71137B, 579 imports; = out-14 + td_name), AuxKC relinked + checked. Next reboot.
+
+## Side note: 15:17 gfxhub fault and VCN AV1 timeouts (2026-11-08, boot 15:04)
+
+- **VCN:** all three `vcn_unified_0 timeout` events today came during AV1 1920x1080 sessions in VTDecoderXPCService (VCNDec): sessions started at 10:00:32, 12:23:45 and 15:18:03, timeouts at 10:02:05, 12:26:11 and 15:18:54. No VP9 session timed out (12:08, 12:29, 14:37, 14:57). This is an AV1 decode hang on VCN, in VCNDec's scope; to be traced.
+- **15:17:30 fault:** `PERMISSION_FAULTS 0x5`, TCP write, vmid 5. About 150 ms earlier QuickLookUIService (CoreImage + Espresso) submitted 128 parts, after writing an IOSurface storage twin (1088x1376, VkFormat 98). It is the main suspect; the xkpi tid could not be mapped to a process.
+- **Plugin read-only handling:** the plugin never reuses an RO host import for a write request, and it refuses write imports on spans that are not writable. Gap: when the CPU mapping is writable but the kernel write wire fails, the kernel silently pins RO and the plugin cannot tell (RADV never passes `AMDGPU_GEM_USERPTR_READONLY`). Asked main for an RO-fallback ring that is matched against fault addresses.
