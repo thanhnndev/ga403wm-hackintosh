@@ -221,7 +221,7 @@ are the next two root causes, each with its own design.
 - Coherency with CPU writes: IOSurface lock/unlock. The userptr path has the same issue today.
 - Surfaces mapped read-only (the 23:18 fault): the ioctl must take the access mode from the caller's mapping.
 
-### Step137: IOSurface imports pin the surface's own memory (built 2026-11-08, not installed)
+### Step137: IOSurface imports pin the surface's own memory (installed 2026-11-08 20:41, next reboot)
 
 Root fix, step 1. RADV and libdrm do not change: the plugin keeps importing host pointers. The kernel's userptr pin now
 takes the IOSurface's pages from the surface itself, instead of faulting the range in through the process's map.
@@ -260,3 +260,13 @@ takes the IOSurface's pages from the surface itself, instead of faulting the ran
 **Undo:**
 - Plugin: the plugin installer's `--undo`.
 - Kernel: `nmxsurfwire=0`, or the Step130 installer `--undo` / reinstall out-17.
+
+Installed 2026-11-08 20:41 with the out-17 reboot still pending:
+- NMXGPU out-18: UUID 194BFE13, AuxKC relinked and checked. Backup `/Library/NullMoth/step130-bk-20261108T134013Z`
+  is out-17.
+- Plugin a95189e: UUID 5FC87442. Backup `nvmtl-plugin-20261108T134105Z` is the edge session's tile build.
+- strixsbxmap refreshed, stale 0.
+
+Undo:
+- Kernel: `sudo scripts/macos-install-step130.sh --undo`, or keep it and boot with `nmxsurfwire=0`.
+- Plugin: `sudo scripts/macos-nvmtl-plugin-install.sh --undo`, then `scripts/macos-install-strixsbxmap.sh --refresh`.
