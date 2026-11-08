@@ -8588,3 +8588,18 @@ Fix (fork `nmx-source-port`, not yet booted):
   `NMX flip: API up`, imports, desktop on the 890M, no panic; `nmxgpu-boot-hold` "released: NMXAMDFB published".
 - Undo from macOS: `sudo scripts/macos-install-step125.sh --undo` (+ `macos-install-step126.sh --undo`). If the boot
   fails: the Windows restore of `step125-bk-*` as in the 23:14 revert.
+
+### Step129 VERIFIED (boot 2026-11-08 09:12): the source-built NMXGPU drives the OLED
+
+- Loaded: NMXGPU B9229F5F (4fa624f9, fork 57ae789), StrixS0ix 0.1.13. No new panic file (latest is still the 23:08 report
+  of the ed82aa34 boot, CR2 0x120 at 9.79 s, the cause fixed here).
+- `boot hold released: NMXAMDFB published after 1393 ms`; NMXAMDFB has `IOFBDependentID` 0x4E4D584700000001 and
+  `NMXOwnsDisplay`; NMXAccel `delivering display_mode_will_change/did_change` with no fault, `GATES ... pipe 0 active = 1`,
+  `pipe armed`; NVRM `890M wait: NMXAMDFB registered after 892 ms`; `NMX flip: API up` at 09:12:47; `nmxgpu-stage` ends
+  `fb published | hold released | 14914:nmxFlipCaps` (the NVRAM marks do persist on a live boot). 890M Metal 3.
+- So the whole technical-debt build (lock-free curthread, boot hold, all caves in source, IPS trace) is live. Next: one
+  sleep test (owner starts it) for the `NullMoth ips:` and `StrixS0ix: link` lines.
+- Also on the earlier cave boots, not from Step129: WindowServer abort 23:18:29 (uptime 110 s) in window capture
+  (`WSCaptureCreateIOSurfaceMachPortForWindowList` -> `MetalIOSurfaceBacking::PrepareForUse` -> `AbortWithTextureInfo`:
+  a capture IOSurface did not get a Metal texture), and 22:13:36 a CoreDisplay assert in `RunFullDisplayPipe` (uptime
+  5800 s, the reboot into ed82aa34). Open: the capture abort (screenshot/screen-share path through NVMTL).
