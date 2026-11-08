@@ -9136,3 +9136,49 @@ The kernel does not log gate/ungate, so the number of real power-gate cycles is 
 - TSC is in sync on 24 threads. bluetoothd is up with no restarts.
 - Bug: the Step137 `debug.nmx_surf_*` counters are declared but never passed to `sysctl_register_oid`, so they are invisible. Whether the surface path pins anything cannot be read on this boot.
   - Fixed in Step137b (fork f31cedf), building as out-19. It installs with the next batch.
+
+## Trace part 26: YouTube 1080p60 lag on boot 20:52 (Step137 live) is memory pressure plus an NMXGPU page-record leak (2026-11-08 21:20)
+
+Boot 20:52: NMXGPU out-18 (194BFE13), plugin a95189e (5FC87442). Normal desktop load: Docker (hyperkit, 8 GB VM), Claude, and another session's clang build. The owner's point stands: this load must not make video lag on an HX 370 with 32 GB of RAM.
+
+**Step137 in WS (idle):**
+- The plugin logs `surface hint: on` and never logs `refused`.
+- In a 6 s WS spindump with no video, the import path is almost gone: `radv_bo_from_ptr` 2 samples, no prefault.
+- The kernel `nmx_surf_*` counters are still invisible (out-19).
+
+**YouTube LXb3EKWsInQ at hd1080 (VP9 itag 303), scratch Chrome, 40 s probe:**
+
+| Metric | Part 23 (boot 14:51) | Boot 20:52 |
+|---|---|---|
+| Frames shown (rVFC) | 58.9 fps | 33.3 fps |
+| Dropped | 26 / 2397 | 280 / 1507 |
+| Gaps > 50 ms (max) | 1 (83 ms) | 91 (3233 ms) |
+| rAF | ~117 | 65 |
+| WindowServer (top) | ~81 % | 47-94 % |
+
+**System-wide 10 s spindump during playback:**
+- kernel_task used 21.7 s of CPU: VM_compressor 6.7 + 2.6 s, VM_pageout_scan 5.2 s, VM_cswap_trigger 2.2 s. The machine is thrashing.
+- `vm_stat`: 47 k free pages, 2.79 M pages in the compressor, swap 0.
+
+**Wired memory (`zprint`): 20.0 GB of 32 GB.**
+
+| Owner | Wired |
+|---|---|
+| com.overlorddev.RyzenHV | 8.42 GB (Docker hyperkit `-m 8192M`, the guest RAM wired in full) |
+| com.nullmoth.NMXGPU | 5.80 GB |
+| zones | 2.81 GB, of which `kalloc.type.var4.256` 3.24 M elements (~810 MB, growing during playback) and `kalloc.type.var4.96` 4.5 M (~420 MB) |
+| PTE / PMAP | 590 / 317 MB |
+| IOSurface | 314 MB |
+
+**NMXGPU page-record leak (`bsdcompat/src/nmx_page.c`):**
+- Every user page pinned for a userptr BO (`nmx_user_pages_pin`) gets a `BK_FICTITIOUS` record from `nmx_phys_to_page()`: a backing plus a vm_page (~256 B), and a registry entry.
+- Nothing removes these records. `vm_page_free()` returns early for `BK_FICTITIOUS`, and no path unregisters them.
+- The registry (65536 buckets) therefore grows toward one record per physical page ever pinned (up to 8.4 M on 32 GB). Lookups get slower with uptime.
+- In the playback spindump, each WS surface import (`nvmtl_vk_buffer_import_host`, 96 samples) spends 87 samples in `amdgpu_gem_userptr_ioctl` → `nmx_user_pages_pin`. 73 of those are in `nmx_phys_to_page+83`, the `reg_find_locked` chain walk.
+
+**Next:**
+- Kernel (main session):
+  - Free a fictitious user-page record when its last pin is dropped, or keep user pins out of the registry.
+  - Find out what the 5.8 GB on the NMXGPU tag is.
+- Owner's call: Docker's VM memory. RyzenHV wires all of it, so 8 GB is gone for macOS whenever Docker runs.
+- Then repeat this probe under the same load.
