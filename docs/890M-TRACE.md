@@ -9211,3 +9211,17 @@ Boot 20:52: NMXGPU out-18 (194BFE13), plugin a95189e (5FC87442). Normal desktop 
   - Backup of out-18 is in /Library/NullMoth/step130-bk-*.
   - Undo: `scripts/macos-install-step130.sh --undo`.
   - The BT LE advertising loop was handed to the "Fix bluetoothd crash loop" session.
+
+### 2026-11-08 21:51 boot: out-20 (1B44E2DB) + RyzenHV 0.7.17 + BtLeDlFix 1.3.0 live
+
+- No panic. nmx_timeouts 0, flip on, pin_other_fail 0.
+- Step138 works at +2 min:
+  - userrec: made 374748, freed 136943, live 237805 (~0.9 GB of pinned user pages), **kept 0**. No other path turns records permanent.
+- Step137 verified:
+  - nmx_surf_hint 312, nmx_surf_wire 312, all miss/bad_page/no_surf/short/prep_fail 0.
+  - Every hinted import pins the IOSurface's own memory.
+- What NMXGPU holds wired:
+  - pages_live 364748: ~1.39 GB of port page records (GTT/system).
+  - userwire 807 descriptors, 349096 pages (~1.33 GB) of user/IOSurface wirings.
+  - The 4.9-5.8 GB seen on out-18 needs re-measuring under daily load on this boot.
+- Bluetooth: 0 "STATUS 718" lines in 2 min, bluetoothd 1.9 % CPU. The LE advertising loop is fixed by BtLeDlFix 1.3.0 (masked patterns for 26.x).
