@@ -97,3 +97,28 @@ asusctl links EPP to the profile by default (`platform_profile_linked_epp: true`
 EPP 0 is what both tools do too, and they still idle cool: on Linux and Windows the idle cores sit in CC6 between
 bursts, which macOS on AMD does not do yet (cause 1). The profile mapping is a smaller lever (cause 3); the idle
 driver (fix 1) is the part that makes Turbo behave like it does on Linux/Windows.
+
+## After the Step131 reboot (12:14 boot: NMXGPU out-11 + StrixS0ix 0.1.14)
+
+- **Flip fixed** (out-11, PAGE_MASK in `nmx_fb_bridge.c`): `flip_tripped 0`, `import_fail 0`, 10 imports, every frame
+  submitted and latched in hardware, `beam_copy_us` stays 0. kernel_task ~30 % → ~19 % of a core. Cause 2 is gone.
+- **Idle hook works**: in mode 1 the cores spend ~90 % of their time in `_CST` C2 (CC6), e.g. 1.0 M C2 entries and
+  506 CPU-seconds of C2 per 25 s phase over 24 CPUs; HLT drops to ~1 %. Mode 2 also enters C3, but PM1 BM_STS demotes
+  it often (5-7k of ~25k tries per 30 s). No hang, no visible lag in 6 mode switches.
+- **Package power did not drop measurably yet.** Alternating 0/1(/2) on the same boot, 25-40 s per phase:
+
+  | Run | mode 0 | mode 1 | mode 2 |
+  |---|---|---|---|
+  | chat streaming, round 1 / 2 / 3 | 25.3 / 39.6 / 14.9 W | 24.9 / 34.0 / 15.1 W | 22.7 / 30.3 W |
+  | hands off, 3 pairs (12:33-12:36) | 25.2 / 21.4 / 26.9 W | 26.8 / 23.5 / 24.9 W | - |
+
+  The "hands off" run was not idle: the screen still updated 80-110 frames/s and WindowServer used 57-95 % of a core,
+  because Microsoft Edge was playing video (Edge helper 41 %, VTDecoderXPCService 6 %; the edge-video-lag session's
+  test), plus Chrome and the Claude GPU process (39 %). Under that load the package is held up by the SoC
+  (890M compose and video decode, display, memory), not by the cores, so C1 vs CC6 makes little difference.
+- Profile was Balanced (EPP 191) for these runs.
+
+Still to do: a true idle run (no video, no app animating, display on), same script
+(`idle-clean.sh`: alternates `s0ix-set idle 0/1`, logs Tctl, package power, frames/s, WindowServer %CPU, idle
+residency). Expected: the mode 1 gain shows up there, where cores are idle >95 % of the time. The machine is left in
+idle mode 1 for this boot (boot default stays 0 until the idle run confirms it).
