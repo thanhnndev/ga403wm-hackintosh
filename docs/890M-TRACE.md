@@ -8795,3 +8795,23 @@ Nothing to uninstall. Do not click "Power off Card" on the RTX entries (it eject
 **Panic A, `Kernel-2026-11-08-111949.panic`** (a boot that ended at 23 s, before 11:19:45): `NMIPI for unresponsive processor: TLB flush timeout`; CPU 0 sat in `AppleAPICInterruptController::handleInterrupt` under `AppleACPIPlatformExpert::dispatchGlobalInterrupt` (a level-triggered global interrupt firing again and again), and airportd on CPU 22 waited for it in a pmap TLB shootdown. airportd is the victim, not the cause. That boot left no unified log (it died before the log was flushed), so the interrupt source is unknown. Candidates: a GPIO/ACPI interrupt left asserted early in boot (I2C touchpad runs `-vi2c-force-polling`, AsusWmi EC, StrixS0ix). Next trace: log the GSI number in a kernel-side handler or read `ioreg` interrupt counts right after login when it repeats.
 
 Next: Wi-Fi/network session checks TSC sync across cores and HoRNDIS; if HoRNDIS is confirmed, use the phone's tethering over Wi-Fi/Bluetooth or remove HoRNDIS from OpenCore (owner decides).
+
+## Step130c: -nmxbloff boot confirms the backlight child; fix installed (2026-11-08 ~11:40)
+
+- Boot 11:23:50 with `-nmxbloff`: picture. `NullMoth display: -nmxbloff: no backlight`; NMXAccel
+  `GATES after deliverModeChange: pipe 0 active = 1` and `display pipe armed`; `NMX flip: API up`. On the same
+  boot: `NMXPagingWake` = Yes, NMXPowerKeep `holding NMXGPU` (state 1), and plugin dd43056 loaded in WindowServer.
+  So the synchronous registration of the `backlight` child inside `NMXAMDFB::start()` is the cause of the black panel.
+- Fix (fork 6c7de24, NMXGPU out-10, UUID BC71D713):
+  - `NMXScanoutBridgeVersion` is set right after `IOFramebuffer::start()`.
+  - `publishBacklight()` moved out of `start()` into `nmx_fb_publish()`, after `fb->registerService()`. The
+    child's `registerService()` is now asynchronous, with `fLcd` set first. This is the point where the old NMXBacklight
+    attached, and its slider worked.
+- Installed with `macos-install-step130.sh .../out-10` (AuxKC checked twice). `-nmxbloff` removed from the ESP
+  boot-args with `tools/occonfig.py args del` (backup `EFI/OC/config.plist.step130c`).
+- If the panel is black again, put `-nmxbloff` back from Windows (copy `config.plist.step130c` back) and add logging of
+  every early return in NMXAccel's `fbPublished`.
+- WindowServer crash 10:02:18 (Step129 boot, during the reboot to Step130): `GPU reset` at 10:02:05 during shutdown,
+  then `-[NVMTLCommandQueue commandBuffer]` -> SkyLight `MetalContext::RenderEncoder`/`SetScissor` recursed until the stack
+  guard (SIGSEGV). Open, for the plugin: commandBuffer must not hand SkyLight something that makes it recurse after the
+  backend is down.
