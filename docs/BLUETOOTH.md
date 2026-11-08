@@ -11,6 +11,20 @@ interrupt packets), System Information shows `State: On`, `Chipset: THIRD_PARTY_
 address. `bluetoothd` logs `addScanFilterByUUID failed 0x1812` (Apple's LE scan-filter offload, not present on non-Apple
 controllers; the same message appears with Intel + BlueToolFixup). Pairing headphones / mouse / keyboard: not tested yet.
 
+## bluetoothd restart loop after a warm reboot (2026-11-08, fixed in MtkBtFw 0.2.0)
+
+A warm reboot keeps the Bluetooth firmware of the previous session. When it had hung (UHW `WDT status` = 1), MtkBtFw 0.1.0
+still reported `ready`; `bluetoothd` timed out on HCI Reset, wrote NVRAM `bluetoothExternalDongleFailed` = `01`, and every later
+`bluetoothd` of that boot skipped the USB controller, fell back to the MacBookPro16,2 UART transport (`H4BC`,
+`/dev/cu.BLTH`), timed out after 15 s and restarted, each time with an `ExcUserFault_bluetoothd` report (ReportCrash 11-13 % CPU
+at idle). A cold boot clears the chip, which is why it always fixed it.
+
+MtkBtFw 0.2.0 checks the watchdog status before loading and sends its own HCI Reset after FUNC_CTRL; on failure it runs the
+Linux subsystem reset (`btmtk_usb_subsys_reset`, MT7925 CONNV3) and loads the whole firmware again. Installed on the ESP
+2026-11-08 18:31, active from the next boot. Full analysis, live recovery tool (`tools/mtkbtctl`) and undo:
+[mt7925-macos docs/BLUETOOTH.md](https://github.com/thanhnndev/mt7925-macos/blob/dev/awdl/docs/BLUETOOTH.md) (section
+"bluetoothd restart loop after a warm reboot").
+
 ## Pieces
 
 | Piece | What it does |
