@@ -428,3 +428,35 @@ Load: Chrome video, the Claude app, the pathcan backend's python dev server (one
 - Still open: confirm the Docker WRMSR fix once Docker runs (expect no `wrmsr to register 0xc0000502` lines in
   `monitor.log` and com.docker.backend near idle), then measure the full daily mix again. With Docker the wired
   total will add ~8.4 GB for the VM.
+
+## Who sends the IPIs (21:59–22:01, boot 21:51)
+
+Method: `powermetrics --samplers interrupts,tasks` on its own, then a 2 s `ktrace dump -f S0x0140,C0x17,C0x19`
+(scheduler, pmap, MP), with each `MACH_SCHED_REMOTE_AST` matched to the `MACH_MKRUNNABLE` just before it on the
+same CPU (waker → wakee). Thread names come from the spindump of the same boot.
+
+- **The 51,870 IPIs/s from the 21:56 capture was mostly my own tooling.** Measured with powermetrics alone it is
+  26–34k/s; in the ktrace, remote ASTs run at 27.6k/s.
+- **There are no TLB shootdowns** (no `PMAP_flush_*` or `MP_TLB_FLUSH` events), so user-page wiring is not the cause.
+  Every IPI is a scheduler wakeup of a thread on another core (`MACH_SCHED_REMOTE_AST`).
+- IPIs land on the even CPUs (0, 2, … 22: 0.7–4k/s each; odd CPUs ~30/s). Those are the SMT primaries, where the
+  scheduler places threads first.
+
+| Waker → wakee | IPIs/s | What it is |
+|---|---|---|
+| WindowServer ↔ osascript | 5,945 + 5,660 | **measurement artefact**: while an `osascript … with administrator privileges` command runs, osascript and WindowServer ping-pong ~6k messages a second. It also inflates WindowServer's CPU in every root capture. The 47 min of osascript CPU seen at 21:28 was another session's hung prompt doing the same. |
+| ItlXhciKick worker → 4 xHCI work loops | 3,657 (≈916 each) | our `ItlXhciKick` (docs/USB-XHCI-LAG.md) signals each AMD xHCI controller every 1 ms. Two of the four (XHC3@60000000, XHC4@81000000) have no USB devices. |
+| apps → WindowServer, Claude app and helpers | ~4,000 | normal client/server traffic |
+| thread call kernel-high → CCFaultReporter | ~600 | CoreCapture; the only CoreCapture pipes on the system belong to `itlmt7925` (Wi-Fi). Lead for the Wi-Fi owner. |
+| NMXGPU threads (linuxkpi_irq_wq, gfx_0.0.0, ttm, NMXIrq, thread call high) | ~1,600 | GPU fence and IRQ work, roughly per frame |
+| idle → IONVMeController, mds, corespotlightd, HID | ~1,900 | disk I/O, Spotlight, input |
+
+**Fix for the ItlXhciKick share** (branch `thermal/xhcikick-idle`, 3fd2fb1, built UUID F05A2652, not installed):
+a controller with no device in the IOUSB plane is kicked every 16 ms instead of every 1 ms. A hot-plug arrives on
+interrupter 0, whose MSI works, and the slow kick covers enumeration until the next 3 s scan marks the controller
+busy. Expected: ~1,800 fewer wakeups and IPIs a second. Boot-arg `itlkickidle=<n>`; `itlkickidle=1` = old behaviour.
+Installing it means replacing the kext on the ESP (OpenCore), so it waits for the owner and the next batch.
+
+Also seen in the kext: it writes its statistics to NVRAM with `IONVRAM-FORCESYNCNOW` every minute after the first
+two minutes, i.e. a forced NVRAM flash write each minute for as long as the machine runs. Worth gating behind a
+boot-arg (not changed here).
