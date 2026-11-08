@@ -9076,3 +9076,16 @@ The VCN idle timeout is about 1 s, so each pause powers VCN down and the next su
 - 17:33 restart (owner did not start it): no panic report, no shutdown/logout sequence; the unified log just stops at 17:33:22.57 mid normal activity (Wi-Fi, mdworker, tcp). DumpPanic: "previous shutdown cause 5" (not trustworthy on this machine). That is a hard reset / hang with no panic, 1 min 54 s after the VCN repro's MODE2 GPU reset at 17:31:28 ("GPU reset(3) succeeded"). Earlier VCN resets today (10:02, 12:26, 15:18) did not take the machine down, so the link is likely but not proven. Until out-17 is in, the vcndec_test pause repro should not be run again (each run costs a GPU reset).
 - Step136 installed 17:4x: NMXGPU out-17 (fork 6adeee4, UUID 0FE4163C, 579 imports; = out-16 + VCN 4.0.5 read-back). Next reboot, then the edge session reruns the pause repro.
 - Pending for the next reboot with out-17: edge plugin 5ba6363 (tiles <= 2 MB kept 120 s, idle x bytes eviction cap, other-key miss log; for the ~7 % WS core on Electron tiles), installed by the edge session at the owner's OK, signed 53b67f84; --undo goes back to cb1a5e6 (backup 20261108T114130Z).
+
+## Trace part 25: VCN power-gate hang fixed by out-17 (2026-11-08 20:33, boot 20:26)
+
+NMXGPU out-17 (0FE4163C, Step136) adds the upstream "read back register after written for VCN v4.0.5" fix: one `RREG32 regUVD_STATUS` at the end of `start_dpg_mode`, `start` (per instance) and `stop_dpg_mode`.
+
+Same repro as part 24, run once: `vcndec_test -v -p 30 1500 -n 3000` on the same clip (YouTube AV1 1080p60, `~/develop/projects/radv-video/clips/yt-av1-399-bbb.ivf`).
+
+| Kernel | Result |
+|---|---|
+| out-16 (17:31) | hang after pause 35, `vcn_unified_0 timeout` signaled = emitted - 1, MODE2 reset (machine hard-reset ~2 min later) |
+| out-17 (20:33) | 3000/3000 frames, 100 pause/resume cycles, rc 0, no NMXGPU log lines, `debug.nmx_timeouts` 0 |
+
+The kernel does not log gate/ungate, so the number of real power-gate cycles is not counted. The pause pattern is identical (1.5 s > the 1 s VCN idle timeout). Pending: watch real video use (paused or background tabs) for `vcn_unified_0 timeout` over the next sessions.
