@@ -9033,3 +9033,11 @@ Same test as parts 22b/22c: scratch Chrome, video LXb3EKWsInQ at hd1080 (VP9 ita
   3. Make the sweep incremental, so it stops walking all entries on every import.
 - Step133 measured (edge session, trace part 23 4e4f4e7, YouTube 1080p60 10 s): IOSimpleLockLock samples system-wide ~1230 -> 38 (WS 541 -> 9); WS CPU 11.2 -> 9.3 s per 10 s; surface-keep.release 1.24 -> 0.41 s (GEM close 338 -> 93); video 58.9 fps, 1.1 % dropped. Stripe locks: VERIFIED. Rest is plugin-side (prefault faults, keep cap 512 entries).
 - Pending for the next reboot: edge plugin cb1a5e6 (idle cap 2048 entries, sweep at most every 100 ms, idle-cap miss log), installed by the edge session at the owner's OK, signed f3068ae2; --undo goes back to keep30 a313ed1b (backup 20261108T080310Z).
+
+### Boot 2026-11-08 15:04 (out-14 + plugin cb1a5e6), Step134 building
+
+- Live: NMXGPU FE95BAD4, StrixS0ix 0.1.14, plugin f3068ae2 (cb1a5e6). No panic. Brightness Writes 256 / Failures 0. `nmx_pin_ro_retry` 950 (all WS), `nmx_pin_other_fail` 0.
+- 15:17:30 gfxhub PERMISSION_FAULTS 0x5, TCP write (RW 1), vmid 5, pasid 32795, xkpi tid 29052, VA 0x80010fc40000; gfx "timeout, but soft recovered". No non-WS read-only pin happened this boot, so this write hit either a WS read-only client import or another read-only BO. Finder / QuickLookUIService were busy at the time. The fault print said "in process  pid 29052": xkpi never filled `td_name`, so amdgpu's task_info comm was empty.
+- 15:18:54 `vcn_unified_0 timeout, signaled 508, emitted 509` (third VCN timeout today: 10:02, 12:26, 15:18).
+- Shutdown stall reports at 12:55, 14:50, 15:04: every shutdown since StrixS0ix 0.1.14 loaded. Spindump of 15:04 shows nothing busy (0.57 s CPU), NMXGPU threads waiting, idle CPUs in the StrixS0ix idle hook. Passed to the cpu-thermal session.
+- Step134 (fork, building out-15): `td_name` is set from the process record's `p_comm` when a thread record is made or recycled, so amdgpu fault prints name the process.
