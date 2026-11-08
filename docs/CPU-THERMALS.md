@@ -253,7 +253,7 @@ takes the IOSurface's pages from the surface itself, instead of faulting the ran
 
 **Verify after the boot:**
 - `sysctl debug.nmx_surf_wire` grows, and `nmx_surf_bad_page` / `miss` stay small.
-- The WindowServer sample from 18:30 (Claude app animating): `nvmtl_prefault_write` and
+- The WindowServer sample from 18:30 (Claude app in use; Reduce Motion is on, so not an animation — see the correction at the end): `nvmtl_prefault_write` and
   `amdgpu_create_bo_from_user_mem` should be near 0 under `newTextureWithDescriptor:iosurface:`.
 - No gfxhub faults. The Step135 romap print names any read-only mapping that is hit.
 
@@ -282,7 +282,7 @@ Review by the edge-video session (2026-11-08): the hint path is correct as writt
 
 **Step137 boot (2026-11-08 20:52, out-18 194BFE13 + plugin a95189e)**
 - Loaded. WindowServer logs `surface hint: on` and hinted its first import (20 MB). No GPU faults or NMX pin errors.
-- `sample WindowServer 10` at 21:00 with the Claude app animating, compared with 18:30 (both out of ~7.5–7.9k main-thread samples):
+- `sample WindowServer 10` at 21:00 with the Claude app in use (not animating: Reduce Motion is on), compared with 18:30 (both out of ~7.5–7.9k main-thread samples):
 
   | WindowServer main thread | 18:30 (before) | 21:00 (Step137) |
   |---|---|---|
@@ -471,7 +471,7 @@ com.docker.backend is no longer in the top 12 (was 95 %). Fixed.
 trace): 20,690 remote ASTs/s with Docker running. ItlXhciKick → the four xHCI work loops is 3,631/s (18 %), the
 largest single kernel sender. Within user space, hyperkit's vCPU threads wake each other ~1,700/s.
 
-**WindowServer main thread** (`sample WindowServer 10`, same clean start; Claude animating, Docker up):
+**WindowServer main thread** (`sample WindowServer 10`, same clean start; Claude app in use, Docker up):
 7,430 samples, `render_update` 1,950, about half the thread busy. Busy leaf samples by owner:
 
 | Owner | Samples | Detail |
@@ -488,3 +488,51 @@ largest single kernel sender. Within user space, hyperkit's vCPU threads wake ea
 Our share is ~12 % of the main thread, and three items in it are avoidable (fence pool, texture BO cache,
 per-submit sysctl, ~200 samples together, ~2.7 % of the thread). The import path is gone (Step137). The remaining
 cost is mostly Core Animation itself plus the unexplained cursor-image requests.
+
+## Correction: no Claude animation; what changes every frame (22:10)
+
+The owner has Reduce Motion on, so the Claude app runs no animations. "Claude animating" in the sections above was
+wrong; this is what the traces actually show.
+
+**Who wakes WindowServer** (clean 2 s ktrace, `MACH_MKRUNNABLE` of WindowServer threads by other processes):
+
+| Client → WindowServer thread | Wakeups/s |
+|---|---|
+| Claude app → main thread (window server messages, cursor queries) | 162 |
+| Chrome GPU process → CA render server (CA commits from Chrome) | 50 |
+| Claude app → CA render server (CA commits) | 46 |
+| HID drivers / kernel → event threads | ~250 |
+
+**The Claude app polls the system cursor on every mouse move.** `sample Claude 8` at 1 ms: 946 samples (12 % of its
+main thread) in
+
+`-[NSTrackingArea mouseMoved:]` → Electron → `+[NSCursor(NSDeprecated) currentSystemCursor]` → `SLSCopyRegisteredCursorImages`
+
+and on the server side WindowServer runs `_XGetRegisteredCursorImages` and copies every registered cursor image
+(the 368 `memmove` samples, ~5 % of WindowServer's main thread). The cost scales with mouse-event rate over a
+Claude window (the UGREEN dongle reports at a high rate). It is Electron/Claude-app behaviour, not ours, and not
+fixable on our side; it disappears when the mouse is still or over another app.
+
+**Claude's message rate follows input, not frames:** `top -stats msgsent` every 2 s over 20 s gave 285–2,800
+messages/s, moving with its CPU (3.6–37 %). A per-frame animation would be flat. So the `render_update` and Core
+Animation cost in WindowServer comes from real content changes: Claude's own redraws while the owner types and
+scrolls, its hover/cursor updates while the mouse moves, and Chrome's ~50 commits/s (the video or page in Chrome).
+
+**Corrected WindowServer split** (22:05 sample, 7,430 main-thread samples):
+- ~19 % Core Animation layer walk and draw for those real updates (Apple code, driven by Claude input redraws and
+  Chrome's commits);
+- ~5 % cursor-image copies requested by Claude on mouse moves (Apple code, Claude-driven);
+- ~2 % IOSurface shared-event queries by Core Animation;
+- ~12 % ours (plugin + RADV + ioctls), of which ~2.7 % is avoidable (fence pool, texture BO cache, per-submit sysctl);
+- the rest idle.
+
+Not tested: a run with the mouse still and nothing typed, which would isolate Chrome's commit rate alone.
+
+**Memory with Docker running again:** `top` at 22:11 shows 18 GB wired and 5.3 GB in the compressor, back to the
+20:52 pattern minus the NMXGPU leak. The 8 GB Docker VM (RyzenHV wires it in full) is again the main term; the size
+is the owner's call.
+
+**ItlXhciKick NVRAM** (branch `thermal/xhcikick-idle`, b862dec, UUID 7BE7395F, not installed): full counters now go to
+an `itlz0` registry property on the service. NVRAM keeps the 10 s writes for the first two minutes (early-boot
+panics), then is written only when the per-controller health line changes. Before, it forced a flash write every
+minute.
