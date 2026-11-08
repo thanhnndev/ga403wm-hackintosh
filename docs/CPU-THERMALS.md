@@ -297,7 +297,73 @@ Review by the edge-video session (2026-11-08): the hint path is correct as writt
 - The whole-system comparison is not valid yet. Eight minutes after boot, Docker (~150 %), Spotlight indexing and
   a spindump were running, at 40 W and 91 °C.
 - The `debug.nmx_surf_*` counters were never registered in out-18 (no `sysctl_register_oid`). Fixed in Step137b,
-  nmx-source-port 4422c10, building as out-19. It only adds the counters, so it goes into the next batch.
+  nmx-source-port f31cedf, built as out-19 (0DEC255D). It only adds the counters, so it goes into the next batch.
 - New lead from the WindowServer log: `pre-submit prologue census: 16384 submits carried 126277 uploads ... 5087922
   KB buffer-texture shadow`. That is ~310 KB of CPU upload per submit for buffer textures, the next hot spot to
   profile.
+
+## Daily load re-baseline: video + Claude + Docker (boot 20:52, 21:15–21:30, 2026-11-08)
+
+Video, the Claude app and Docker running together is normal use on this machine, so this is the load to fix.
+On AC: 27–40 W package, Tctl 78–91 °C.
+
+**Where the CPU goes (`top`, 3 s, 21:28):**
+
+| Process | CPU | Cause |
+|---|---|---|
+| com.docker.backend (two processes) | 95 % (39 min of CPU since boot) | parses ~4,000 HyperKit log lines a second (regex + Go GC) |
+| WindowServer | 55–78 % | see the sections above; import path back to ~8 % of the main thread under load |
+| com.docker.hyperkit | 54–86 % | its vCPU threads print one line per guest WRMSR |
+| mds_stores | 36 % | not traced (possibly the Docker log files rotating every 1–2 s) |
+| kernel_task | 22–130 % | memory compression, see below |
+| bluetoothd | 14–33 % | LE advertising restart loop, ~15,000 log lines a second |
+
+### 1. Docker: the guest writes MSR 0xC0000502 on context switches and HyperKit logs every write
+
+- `~/Library/Containers/com.docker.docker/Data/log/host/monitor.log` rotates 1 MB every 1–2 s, all of it
+  `main.hyperkit: wrmsr to register 0xc0000502(0x1) on vcpu N`: 8,482 lines in 2.15 s, spread over all 24 vCPUs.
+  The backend log carries the same lines again.
+- 0xC0000502 is `MSR_AMD_WORKLOAD_HRST`, the Zen 5 workload-classification history reset. Linux writes it on task
+  switches when CPUID 0x80000021 EAX bit 22 (`X86_FEATURE_AMD_WORKLOAD_CLASS`) is set. The guest is
+  7.0.14-linuxkit.
+- The host sets that bit (`cpuid 0x80000021`: EAX 0x597fffcf, bit 22 = 1). RyzenHV's HyperKit CPUID clean-up
+  (`kext/Source/HvFrontend.cpp`, `tVcpuRun`) handles leaves 0x80000001, 0x80000008 and 0x80000026, but not 0x80000021,
+  so the guest sees the feature. HyperKit does not emulate the MSR, so every write goes to user space and prints.
+- `sample com.docker.hyperkit 5`: `vmexit_wrmsr → fprintf` has 2,830 samples, more than `hv_vmx_vcpu_run` (1,556,
+  which includes guest run time). Most of those are vCPUs waiting on the stderr lock, so guest threads stall too.
+- Fix (RyzenHV, owned by the ryzenhv session; reported, not patched here): clear 0x80000021 EAX bit 22 in the
+  HyperKit fix-up, or treat the MSR write as a no-op in the kernel. Either removes the exits, the log lines,
+  the backend's parsing and the log churn. Expected saving: most of the backend's ~1 core plus part of HyperKit.
+- Separate: RyzenHV counts ~26,000 NPT faults a second with all 2,097,152 guest pages already mapped. HyperKit's
+  MMIO paths (`vmexit_inst_emul`, `emulate_mem`) are nearly absent from the sample, so these are not user-space
+  MMIO. They need an exit-reason trace in RyzenHV (ryzenhv session).
+
+### 2. Memory pressure drives kernel_task (with docs/890M-TRACE.md part 26)
+
+- 20.0 GB of 32 GB is wired: RyzenHV 8.42 GB (Docker's 8 GB guest, wired in full), NMXGPU 5.80 GB, zones 2.81 GB,
+  PTE+PMAP 0.9 GB, IOSurface 314 MB. No swap.
+- kernel_task's CPU is VM_compressor (two threads), VM_pageout_scan and VM_cswap_trigger: 9.6 s of 13.3 s per 10 s
+  in the 21:16 spindump. The rest is USB XHCI threads (~1.3 s) and NMXIrq (0.18 s).
+- Part 26 found the NMXGPU fictitious page-record leak (`nmx_phys_to_page`, records never freed) and
+  `kalloc.type.var4.256` growing during playback. That is the main session's fix.
+- Docker's VM size is the owner's call. With RyzenHV wiring guest RAM, a 4–6 GB VM gives macOS 2–4 GB back.
+
+### 3. bluetoothd: LE advertising fails and is retried with no back-off
+
+- `log stream --process bluetoothd` for 5 s: 74,872 lines. About 140 times a second, `Server.LE.Advertise` starts
+  the four Continuity instances (Apple types 16, 9, 18), the stack answers `multipleAdvStartCb Could not start
+  advertising : STATUS 718 (status=65535)` / `failed to start advertising instance 1 ... Abort`, and the server
+  starts again at once. Each round also dumps the full advertising-set parameters.
+- `system_profiler`: Transport UART, Chipset THIRD_PARTY_DONGLE. status 65535 looks like no HCI status came back,
+  so the controller (or the UART path) does not answer the extended-advertising enable for instance 1.
+- The two busy threads (0xd67 HCI receive, 0xd66 run loop) used 1.8 s of CPU in 10 s, mostly short wakeups.
+- Fix belongs to the Bluetooth work (MtkBtFw / mt7925-macos): find the HCI command that fails for instance 1
+  (PacketLogger or the MtkBtFw HCI log), then either make the controller accept it or report fewer advertising
+  sets so bluetoothd stops asking. A quick user-side test: turn off Handoff and AirDrop and see whether the loop stops.
+- The USB XHCI kernel threads in kernel_task may be the same loop if the UART path runs over USB. Not checked.
+
+### Not done yet
+
+- powermetrics interrupt and wakeup data (needs root; the 21:15 run failed on a bad flag).
+- mds_stores cause (needs `fs_usage` as root).
+- Whether WindowServer's imports under load are hint misses: needs the out-19 counters.
