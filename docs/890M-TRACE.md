@@ -9317,3 +9317,4 @@ Boot 21:51, plugin a95189e (the 9c6d1ed hint fix is not installed). Docker hyper
   - The plugin logs `surface hint: on` in Chrome GPU.
   - `sysctl debug.btledlfix`.
   - `ioreg -l | grep itlmt-native-abi` reads "ok: 10 classes".
+- Wi-Fi native 25F33563 (mt7925-macos dev/awdl dc0c88a: CCFaultReporter on its own idle work loop, plus the 206D41C8 ABI gate). It is on the ESP and replaces 206D41C8. Backup: EFI/OC/Kexts-backup/itlmt7925Native.kext.20261108-221302. Check after boot: the ctl:faultLoop=own trace, and CCFaultReporter wakes near 0.
