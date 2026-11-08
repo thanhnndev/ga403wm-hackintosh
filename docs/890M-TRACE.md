@@ -9105,3 +9105,13 @@ The kernel does not log gate/ungate, so the number of real power-gate cycles is 
 - Next:
   - A/B on AC: switch RogControl Silent <-> Performance a few times and watch for flip-latch misses or stalls.
   - If it reproduces, out-18 logs SMU limit/clock changes around the flip.
+
+### 2026-11-08 20:33 VCN repro on out-17 (Step136): PASS
+
+- Command: `vcndec_test -v -p 30 1500 -n 3000`, using the same clip as the out-16 run (yt-av1-399-bbb).
+- Run once, 20:33:23 to 20:36:03.
+- Result: 3000/3000 frames, all 100 pauses of 1.5 s done, rc 0.
+  - For comparison, out-16 hung at pause 35 (17:31). Each 1.5 s pause is longer than VCN_IDLE_TIMEOUT (1 s), so every pause lets the power gate kick in.
+- NMXGPU logged no timeout, reset or ringdump in that window, and debug.nmx_timeouts is still 0.
+- Conclusion: the VCN 4.0.5 register read-back fixes the hang after power-gate idle. out-18 does not need the vcn_pg_lock / PG-off A/B.
+- One limitation: the kernel does not log gate/ungate, so the number of actual gate cycles is inferred from the pause timing, not counted.
