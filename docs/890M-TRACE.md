@@ -8928,3 +8928,11 @@ The owner suspects the AWDL work (boot-arg `itlmt_awdl=1`). The AWDL session has
 - The 12:42-style fault (fresh RW IOSurface in mediaanalysisd) has not come back yet. If it does, `nmx_pin_last_rc` from a non-WS process says which code it was.
 - Edge session (14:3x): WS write wires fail 100 % (1028/1028, rc 0x2) even after its plugin prefaulted the spans (resident, CPU-writable). Correction to the log text: "after a read fault-in failed 0x2" is the second *write* prepare; the read-only wire works. So xnu refuses a writable UPL on these IOSurface entries while the CPU can write them. Asked the edge session for mach_vm_region_recurse info (protection/max_protection/share_mode/user_tag/object, purgeable state) on failing spans.
 - Step132b (building as out-13, not installed): no fault-in retry on KERN_PROTECTION_FAILURE; failures outside WindowServer kept apart: `debug.nmx_pin_other_fail`, `nmx_pin_other_rc`, `nmx_pin_other_name`; the log line names the process (WS budget 4, others 24). Uses only proc_name/proc_pid/current_proc, already imported.
+
+## Trace part 22: plugin 1f8b72d (write prefault) live, boot 14:23 (2026-11-08)
+
+- Plugin 796125b9 (1f8b72d) loaded in WindowServer (pid 207). It logged `surface prefault: 1 writable host imports faulted in for writing first (20340 KB this one)`, so the writable path runs before the import.
+- After about 12 min: `debug.nmx_timeouts` 0. No `PERMISSION_FAULTS`, no `ring gfx timeout`, no `slowest submit` this boot. The last fault is still 12:42, from the previous boot (mediaanalysisd, non-resident pages; the prefault is the fix for that).
+- `nmx_pin_write_fail` 1028 = `nmx_pin_ro_retry` 1028, all from WS thread 0x3c4 with rc 0x2. That is the r-- client-surface case covered in the Step132 boot section above, not a wire bug. The plugin skips writable imports on r-- spans (dd43056), so those surfaces are never written by the GPU.
+- WS CPU 36 % at 12 min uptime, idle desktop. Video measurement with the local clip still to do on this boot.
+- Undo plugin: `scripts/macos-nvmtl-plugin-install.sh --undo` (back to 8201eaaa, 5405e50), then `scripts/macos-install-strixsbxmap.sh --refresh`.
