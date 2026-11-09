@@ -9492,3 +9492,4 @@ Cost: ~4 ns per call, so it reads process-local state and makes no kernel call.
   - Cause of the idle Docker cost: ~53k exits/s, 35k of them xAPIC nested page faults. The kext did a full TLB flush on every VMRUN.
   - Fix: flush by ASID, write DR/TSC_AUX only when they change, FPU self-check on 1 VMRUN in 64.
   - Not installed.
+- Shutdown stalls closed (Fix RyzenHV session): the vCPUs are idle in HyperKit's own cvwait, not in RyzenHV. Docker Desktop quits without stopping its VM, so hyperkit is orphaned under launchd and lives until the final kill. The reports are the normal 2 s sample, not a hang; one at 12:55 had no Docker at all. Fix, if wanted: quit Docker Desktop before shutdown. RyzenHV 0.7.18 is pushed (research/ga403wm-zen5 9993875).
