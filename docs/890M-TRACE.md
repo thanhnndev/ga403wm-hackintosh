@@ -9574,3 +9574,12 @@ Cost: ~4 ns per call, so it reads process-local state and makes no kernel call.
   config.plist.pre-strixgate-live). Next boot = first real RTX power off: StrixDgpuClaim 3 s after start puts HDAU + PEGP in
   D3hot and runs GPP9.PG00._OFF; expect gate-powered-off Yes, pg00-sta 0. If it hangs: the loop guard gives the next boot to
   NVRM; also `-strixgate_off` in the picker. Check after boot: gate props, battery W on battery vs ~31 W before, panics.
+- 2026-11-09 11:52, boot 11:45 (gate live, no dry): boot OK, no panic, gate-held Yes, loop guard cleared. But PG00._OFF
+  did NOT run: gate-state "eco: PG00._OFF 0xe00002c2, PG00._STA 4294967295". 0xe00002c2 = kIOReturnBadArgument for both
+  "\\_SB.PCI0.GPP9.PG00._OFF" and "PG00._OFF"; Apple's IOACPIPlatformDevice evaluate* takes one NameSeg relative to the
+  device, and PG00 is a PowerResource with no IOACPIPlane node. The card is only in PMCSR D3hot with the rail on. Battery on
+  DC: 32.6 W steady (pkg_mw 7.5 W) at uptime 5 min, the same ~31 W class as before, so D3hot alone saves nothing visible.
+  Fix (sent to the gate session): the firmware Optimus path with 4-char names only: PEGP._DSM NVOP
+  (a486d8f8-0bda-471b-a72b-6042a6b5bee0, rev 0x100, func 0x1A, Arg3 {01 00 00 03} -> OMPR=3), then PEGP._PS3, which runs
+  PG00._OFF (SSDT-5 963-980); status via GPP9.GSTA (1 on / 0 off), PEGP._PSC, vendor 0xFFFF. StrixS0ix 0.1.16 dgpuOff
+  has the same dotted-path bug (dormant, no s0ix_dgpuoff).
