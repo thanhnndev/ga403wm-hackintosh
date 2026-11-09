@@ -9591,3 +9591,9 @@ Cost: ~4 ns per call, so it reads process-local state and makes no kernel call.
   the collection): the 0.1.16 `s0ix_dgpuoff` path is deleted (it had the same rejected dotted ACPI path as gate 0.1.0, and a
   second RTX power-off path could fight StrixDgpuGate). No dgpu strings left in the binary; idle-mode code unchanged.
   Rides the same reboot as StrixDgpuGate 8b33c13. RyzenHV 0.7.21 verified live by its session (front end 1.53 -> 0.64 us/exit).
+- 2026-11-09 13:12, boot 13:06 (StrixDgpuGate 8b33c13 + StrixS0ix 0.1.17): RTX POWERED OFF, first time on macOS.
+  gate-state "eco: dsm0 0 dsm1A 0 ps3 0 gsta 1->0 psc 3 vid 0xffff" (NVOP _DSM func0 + 0x1A ok, PEGP._PS3 ok, GPP9.GSTA
+  1->0, _PSC 3, config space reads 0xFFFF = link down). gate-powered-off Yes, loop guard cleared. 890M healthy (NMXAccel
+  registered, WindowServer 1.6 %), StrixS0ix 0.1.17 + RyzenHV 0.7.21 loaded, no panic. On AC (charging 49.8 W), so the DC
+  figure is still to measure against 32.6 W. Open: shutdown_stall 13:06:06 (third reboot in a row with one, unread spindump);
+  system sleep with the RTX off not tested (owner starts sleep tests).
