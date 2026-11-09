@@ -9493,3 +9493,16 @@ Cost: ~4 ns per call, so it reads process-local state and makes no kernel call.
   - Fix: flush by ASID, write DR/TSC_AUX only when they change, FPU self-check on 1 VMRUN in 64.
   - Not installed.
 - Shutdown stalls closed (Fix RyzenHV session): the vCPUs are idle in HyperKit's own cvwait, not in RyzenHV. Docker Desktop quits without stopping its VM, so hyperkit is orphaned under launchd and lives until the final kill. The reports are the normal 2 s sample, not a hang; one at 12:55 had no Docker at all. Fix, if wanted: quit Docker Desktop before shutdown. RyzenHV 0.7.18 is pushed (research/ga403wm-zen5 9993875).
+
+### 2026-11-09 09:58 install batch (owner OK)
+- Plugin 0317f25 (UUID 977F9F64; signed bundle binary ae638a67). Backup: /Library/NullMoth/nvmtl-plugin-20261109T0257*, which holds 9bfd0c5. SbxMap pins refreshed (stale=0).
+- NMXGPU out-21 7864AA59 (Step139 nmx_pin_by_proc) went in through macos-install-step130.sh. AuxKC relinked; kccheck OK for all 8 kexts.
+- Wi-Fi native A62C12D2 on the ESP. Backup: 25F33563 at EFI/OC/Kexts-backup/itlmt7925Native.kext.20261109-095805.
+- Already staged by the Wi-Fi session: core 2773F995.
+- RyzenHV 0.7.18 D6B9AF8B is being installed by the Fix RyzenHV session.
+- Checks after boot:
+  - `sysctl debug.nmx_pin_by_proc`
+  - Chrome AV1 1080p60 maximised: keep hits > 0, userrec_made/s
+  - WS keep "by IOSurfaceIsInUse" count stays small
+  - ioreg itlmt-native-(abi|faultloop)
+  - hyperkit CPU and exits/s
