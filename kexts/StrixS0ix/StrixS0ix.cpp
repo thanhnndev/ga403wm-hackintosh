@@ -500,11 +500,7 @@ class StrixS0ix : public IOService {
     void setupCc6();
     void setupEcWake();
     void setupGpio();
-    // 0.1.16: dGPU D3cold. With s0ix_dgpuoff=1 and no driver on the RTX (boot with -nvoff), power it off through
-    // \_SB.PCI0.GPP9.PG00._OFF (its _PR0/_PR3 power resource) 20 s after start, the way Linux runtime PM does D3cold.
-    thread_call_t dgpuCall = nullptr;
-    static void dgpuOff(thread_call_param_t self, thread_call_param_t);
-    void setupDgpuOff();
+    // 0.1.17: the 0.1.16 dGPU D3cold path (s0ix_dgpuoff) is removed; StrixDgpuGate owns RTX power-off.
     static void gpioEvt(thread_call_param_t self, thread_call_param_t);
     IOACPIPlatformDevice *gpioDev = nullptr;
     IOMemoryMap *gpioMap = nullptr;
@@ -1180,97 +1176,6 @@ IOReturn StrixS0ix::dsm(UInt32 fn, OSObject **result)
 }
 
 
-// 0.1.16: RTX D3cold for an iGPU-only boot. Refuses unless the NVIDIA function and its HDMI audio function have no
-// registered driver (NVRM is off with -nvoff); then both go to D3hot through PMCSR and the GPP9 power resource is
-// turned off. The bridge, IOPCIFamily and the ACPI method itself then own the link (PG00._OFF does DL23 + POFF).
-// Undo: boot without s0ix_dgpuoff (the firmware powers the RTX at every boot).
-static bool hasDriver(IOService *dev)
-{
-    bool any = false;
-    if (OSIterator *it = dev->getChildIterator(gIOServicePlane)) {
-        while (OSObject *o = it->getNextObject()) {
-            IOService *c = OSDynamicCast(IOService, o);
-            if (c && !c->isInactive() && (c->getState() & kIOServiceRegisteredState)) any = true;
-        }
-        it->release();
-    }
-    return any;
-}
-
-static uint32_t numProp(IORegistryEntry *e, const char *k)
-{
-    uint32_t v = 0xffffffff;
-    if (OSData *d = OSDynamicCast(OSData, e->getProperty(k)))
-        if (d->getLength() >= 4) memcpy(&v, d->getBytesNoCopy(), 4);
-    return v;
-}
-
-void StrixS0ix::setupDgpuOff()
-{
-    UInt32 on = 0;
-    PE_parse_boot_argn("s0ix_dgpuoff", &on, sizeof on);
-    setProperty("S0ix,DgpuOff", on ? "pending" : "off (s0ix_dgpuoff=0)");
-    if (!on) return;
-    dgpuCall = thread_call_allocate(&StrixS0ix::dgpuOff, this);
-    uint64_t dl;
-    clock_interval_to_deadline(20, kSecondScale, &dl);
-    if (dgpuCall) thread_call_enter_delayed(dgpuCall, dl);
-}
-
-void StrixS0ix::dgpuOff(thread_call_param_t self, thread_call_param_t)
-{
-    StrixS0ix *me = static_cast<StrixS0ix *>(self);
-    IOPCIDevice *gpu = nullptr, *aud = nullptr;
-    if (OSDictionary *m = IOService::serviceMatching("IOPCIDevice")) {
-        if (OSIterator *it = IOService::getMatchingServices(m)) {
-            while (OSObject *o = it->getNextObject()) {
-                IOPCIDevice *d = OSDynamicCast(IOPCIDevice, o);
-                if (!d || (numProp(d, "vendor-id") & 0xffff) != 0x10de) continue;
-                uint32_t cls = numProp(d, "class-code") >> 16;
-                if (cls == 0x03 && !gpu) { gpu = d; gpu->retain(); }
-                else if (cls == 0x04 && !aud) { aud = d; aud->retain(); }
-            }
-            it->release();
-        }
-        m->release();
-    }
-    const char *why = nullptr;
-    char msg[160];
-    IORegistryEntry *gppE = IORegistryEntry::fromPath("IOACPIPlane:/_SB/PCI0@0/GPP9@30001");
-    IOACPIPlatformDevice *gpp = OSDynamicCast(IOACPIPlatformDevice, gppE);
-    if (!gpu) why = "no NVIDIA display function";
-    else if (hasDriver(gpu)) why = "a driver is attached to the RTX (boot with -nvoff)";
-    else if (aud && hasDriver(aud)) why = "a driver is attached to the RTX audio function";
-    else if (!gpp) why = "no ACPI GPP9 device";
-    if (why) {
-        snprintf(msg, sizeof msg, "refused: %s", why);
-    } else {
-        // PMCSR D3hot on both functions first (Linux: pci_set_power_state(D3hot) before the power resource goes off)
-        IOPCIDevice *fns[2] = { aud, gpu };
-        for (IOPCIDevice *d : fns) {
-            if (!d) continue;
-            uint8_t pm = 0;
-            if (d->findPCICapability(kIOPCIPowerManagementCapability, &pm) && pm) {
-                uint16_t v = d->configRead16(pm + 4);
-                d->configWrite16(pm + 4, uint16_t((v & ~0x8003u) | 3));
-            }
-        }
-        IOSleep(10);
-        // absolute path first (ACPICA resolves it from any handle), the relative one if that is refused
-        IOReturn r = gpp->evaluateObject("\\_SB.PCI0.GPP9.PG00._OFF");
-        if (r != kIOReturnSuccess) r = gpp->evaluateObject("PG00._OFF");
-        UInt32 sta = 0xff;
-        if (gpp->evaluateInteger("\\_SB.PCI0.GPP9.PG00._STA", &sta) != kIOReturnSuccess)
-            gpp->evaluateInteger("PG00._STA", &sta);
-        snprintf(msg, sizeof msg, "PG00._OFF %#x, PG00._STA %u (0 = off)", r, unsigned(sta));
-    }
-    me->setProperty("S0ix,DgpuOff", msg);
-    IOLog("StrixS0ix: dGPU D3cold: %s\n", msg);
-    if (gppE) gppE->release();
-    if (gpu) gpu->release();
-    if (aud) aud->release();
-}
-
 bool StrixS0ix::start(IOService *provider)
 {
     if (!IOService::start(provider)) return false;
@@ -1283,7 +1188,6 @@ bool StrixS0ix::start(IOService *provider)
     setupEcWake();
     setupGpio();
     setupCc6();
-    setupDgpuOff();
     {
         UInt32 v = 1;
         PE_parse_boot_argn("s0ix_halthint", &v, sizeof v);

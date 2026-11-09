@@ -9587,3 +9587,7 @@ Cost: ~4 ns per call, so it reads process-local state and makes no kernel call.
   config unchanged (#47, no dry). Reviewed: GSTA before on GPP9, PEGP _DSM NVOP func 0 (bitmap logged) + func 0x1A {01 00 00 03},
   PMCSR D3hot on HDAU+PEGP, PEGP._PS3, then GSTA/_PSC/vendor published (gsta-before/after, psc, vendor-after). Next boot
   expect gate-state "eco: dsm0 0 dsm1A 0 ps3 0 gsta 1->0 psc 3 vid 0xffff" and a lower DC wattage than 32.6 W.
+- 2026-11-09 12:15, StrixS0ix 0.1.17 (UUID 1700FABF) in the AuxKC (kccheck ok, NMXGPU 7864AA59 + NVIDIA kexts unchanged in
+  the collection): the 0.1.16 `s0ix_dgpuoff` path is deleted (it had the same rejected dotted ACPI path as gate 0.1.0, and a
+  second RTX power-off path could fight StrixDgpuGate). No dgpu strings left in the binary; idle-mode code unchanged.
+  Rides the same reboot as StrixDgpuGate 8b33c13. RyzenHV 0.7.21 verified live by its session (front end 1.53 -> 0.64 us/exit).
