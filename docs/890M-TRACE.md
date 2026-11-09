@@ -9541,3 +9541,14 @@ Cost: ~4 ns per call, so it reads process-local state and makes no kernel call.
   now equals the one in `config.plist.pre-dgpuoff`; XML parses, ESP unmounted. Backup of the dGPU-off config:
   `EFI/OC/config.plist.bk-nvoff-20261109T103845`. StrixS0ix 0.1.16 and RyzenHV 0.7.20 stay installed; without
   `s0ix_dgpuoff=1` the dGPU-off code in StrixS0ix only sets `S0ix,DgpuOff = off`.
+- 2026-11-09 11:05, root cause of the failed dGPU-off boot (main): `-nvoff` is NullMoth's "park every GPU driver" flag,
+  not an NVRM-only switch. It is read by NVRM/NVRMFB/NVAccel/NVRMAGDC (`nvrm_driver_off()`), and also by NMXGPU
+  `opted_in()` (nmx_kext.cpp:551, checked before `nmxamd=1`), NMXNPU `opted_in()` and NMXAGDC `nvrm_driver_off()`.
+  With `-strixgopoff` set, nothing drove the 890M, so the panel had no framebuffer. Mistake: the boot-arg went on the ESP
+  without a grep of every kext's handling of it. Fix direction: no `-nvoff`. The RTX is kept from NVRM by StrixDgpuGate
+  (rog-control-macos feat/gpu-mode 90b7e08): default-category claim, score 2000 > NVRM 1000, decided from NVRAM
+  `strix-gpu-mode`, with a loop guard (`strix-gpu-eco-try`) and `-strixgate_off` for recovery. Review sent: NVAccel
+  (IOAccelerator, score 100) waits 30 s for `nvrm-claimed` in start(), so the gate needs an IOAccelerator hold
+  personality, and the Eco decision has to be cached once for all personalities. Audit: NMXGPU only reads NVRM in
+  nmx_beat (optional); HDAU 10de:22eb has no driver; no kext parses strixgate_*/strix-gpu-*; OC NVRAM Delete leaves the
+  keys alone. StrixS0ix 0.1.16 `s0ix_dgpuoff` stays dormant (no arg) and is superseded by the gate.
