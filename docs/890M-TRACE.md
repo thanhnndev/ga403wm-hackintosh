@@ -9457,3 +9457,33 @@ WS lets go after one frame, as on a real Mac. Use count is not what grows a pool
 - Not a WindowServer or use-count issue.
 - 9983f0c stays as the guard for when the cycle exceeds the cap.
 - Re-run the post-install check with AV1 (`probe.mjs` with an AV1 video) and the scratch window maximised, so the part 29 case is the one measured.
+
+## Trace part 31: what IOSurfaceIsInUse sees, and the keep cache's held test (2026-11-09)
+
+Main's follow-up to part 30: use IOSurfaceIsInUse for the keep cache's held/idle decision. First, what it reports. Scratch tests on Tahoe 26:
+
+| state of the surface | IsInUse |
+|---|---|
+| one IOSurfaceRef in this process | 0 |
+| + a mach port (IOSurfaceCreateMachPort) | 1 |
+| + a second object from IOSurfaceLookupFromMachPort | 1 |
+| port deallocated, one object again | 0 |
+| locked | 1 |
+| another process holds it (IOSurfaceLookup by global ID) | **0** |
+| use count incremented (what CoreAnimation does while displaying) | 1 |
+
+Cost: ~4 ns per call, so it reads process-local state and makes no kernel call.
+
+**What this means for the keep cache:**
+- It sees exactly what the retain-count test misses: a port or another object in the same process. That is how Chrome's GPU process holds GpuMemoryBuffer surfaces.
+- It does not see other processes' references. So in WindowServer it adds only the use count, which CoreAnimation sets while a layer shows the surface. It cannot hold every client app's surfaces.
+- Our own import does not set it: inuse-test with a cached plugin texture saw IsInUse drop to 0 one frame after WindowServer released the surface (part 30).
+
+**Change:** plugin `plugin/video-lag` 0317f25 on 9983f0c, built `NVMTLDriver-0317f25` UUID 6F15C136, sha d43c60ef, not installed.
+- A surface IsInUse reports as held counts as held, like a live wrapper.
+- Bounded by NVMTL_KEEP_VIEW_MS (60 s) after the last wrap, so nothing is pinned forever.
+- The 30 s report has a new field: "by IOSurfaceIsInUse N".
+
+**To check after install:**
+- WindowServer (`/tmp/nvmtl.log`): the "by IOSurfaceIsInUse" count is small, and entries and idle MB do not grow over 10+ minutes compared with before.
+- Chrome GPU (`$TMPDIR/nvmtl.log`, sandbox off) during AV1 1080p60 in a maximised window: hits > 0 and idle-cap misses near 0.
