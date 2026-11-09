@@ -9552,3 +9552,12 @@ Cost: ~4 ns per call, so it reads process-local state and makes no kernel call.
   personality, and the Eco decision has to be cached once for all personalities. Audit: NMXGPU only reads NVRM in
   nmx_beat (optional); HDAU 10de:22eb has no driver; no kext parses strixgate_*/strix-gpu-*; OC NVRAM Delete leaves the
   keys alone. StrixS0ix 0.1.16 `s0ix_dgpuoff` stays dormant (no arg) and is superseded by the gate.
+- 2026-11-09 11:25, StrixDgpuGate dry run staged (owner OK, main). Kext built from rog-control-macos feat/gpu-mode 9b73c81
+  (0.1.0, UUID 52DE19FB, 0 weak symbols), copied to EFI/OC/Kexts, Kernel Add #47 (Min 25.0.0, Max 25.99.99). OC-injected, so
+  it is on PEGP before the AuxKC brings NVRM. ESP boot-args + `strixgate_dry=1` (parsed only by StrixDgpuGate).
+  NVRAM `strix-gpu-mode=eco`, `strix-gpu-eco-try` cleared. Backup: EFI/OC/config.plist.pre-strixgate.
+  Audit: no `-nvoff`; NMXGPU/NMXAGDC/NMXNPU read nothing from the gate; the plugin's WindowServer/Vulkan picks fall back to
+  NMXAccel when there is no NVAccel (nvmtl_vk.c 116-160). Expected next boot: `ioreg -c StrixDgpuClaim` + StrixDgpuAccelHold on
+  PEGP, no NVRM/NVAccel, gate-state "eco: ... dry run", RTX still powered, HDMI dead, 890M/OLED as before.
+  Undo: OC picker boot-arg `-strixgate_off`, or `sudo nvram strix-gpu-mode=standard`, or Kernel Add #47 Enabled=false /
+  restore config.plist.pre-strixgate. A boot that does not reach 90 s uptime trips the loop guard (next boot NVRM).
