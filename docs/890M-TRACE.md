@@ -9680,3 +9680,31 @@ The earlier runs at 13:35 and 13:39 gave 180 and 98 drops and 9.7 ms/frame for W
   dropped at once (NVMTL_KEEP_DEAD=0 to disable). WS keeps the old policy and loads it on its next start; Chrome/VS Code pick
   it up when their GPU process restarts. Before (13:44): 470 drops/60 s, nmx_userwire 6.3 GB, WS 15.7 ms/frame, Chrome +
   VS Code GPU idle ~1 GB each. Undo: macos-nvmtl-plugin-install.sh --undo, then strixsbxmap --refresh.
+
+## Trace part 34: AFTER, plugin 6797e1f live in user processes (2026-11-09 13:58)
+
+Plugin 6797e1f (UUID 0106C6CD) was installed by main without a reboot. A fresh scratch Chrome loads it (log line `surface keep: dead entries dropped at once (NVMTL_KEEP_DEAD)`). WindowServer and the owner's already-running apps still use 0317f25. The run is the same as part 33: maximised window, VP9 1080p60, 60 s, same counters, same daily load.
+
+| metric | before (13:44, 0317f25) | after (13:58, 6797e1f) |
+|---|---|---|
+| dropped / 60 s | 470 (4-12 every second) | 407 (14-25/s at 15-22 s, otherwise 2-8/s) |
+| `nmx_userwire_pages` avg (peak) | 1.66 M = 6.3 GB (1.71 M) | 1.40 M = 5.3 GB (1.51 M) |
+| `nmx_userrec_live` avg | 1.36 M | 1.08 M |
+| `nmx_userrec_made` | 68.4k/s | 61.5k/s |
+| Chrome GPU keep idle | 1017-1022 MB (cap) | **0 MB** |
+| Chrome GPU entries | 264-348 | 83-122 |
+| drops from Chrome GPU keep per 30 s | idle cap 47-93 | 225-357, all dead (idle cap 0, expired 0) |
+| WindowServer | 945 ms/s = 15.7 ms/frame | 546 ms/s = 9.1 ms/frame |
+| system wired / compressor | 13.4 GB / 7.1 GB | 13.9 GB / 8.0 GB |
+
+**Reading:**
+- The dead drop works. Chrome's GPU process no longer holds ~1 GB of released 3392x1536 surfaces. Its share of userwire falls by about 1 GB, and userrec_live by about 280k pages.
+- The "dead N" misses (16-125 per 30 s) are surface IDs that came back after a dead drop. They are the kernel reusing a freed ID for Chrome's next allocation (part 30), not a wrong drop: hits were 0-2 before as well.
+- Drops are only slightly lower. The remaining cost is not memory held by the cache: every new window-size surface (~10/s) is still a full USERPTR import, 87 % in the create ioctl (part 33).
+- System memory pressure did not fall, because other processes (VS Code, still on the old plugin; Docker; Edge) and WS still hold their imports.
+- WS ms/frame is lower in this run, but WS still runs the old plugin binary, so treat that as load variation.
+- The 30 s report line overflowed the log buffer and cut off the new "dead entries dropped at once N (MB)" field. Plugin b9b74d7 (UUID 8D94637B, sha256 882d0bae4608316b, build only) logs it on its own line.
+
+**Next for the video path:**
+- The import itself (main's (a): lazy pin, or pin on GPU use).
+- Why Chromium makes a new window-size surface ~10 times a second in a maximised window ((c)).
