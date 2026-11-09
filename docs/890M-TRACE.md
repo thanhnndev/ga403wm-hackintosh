@@ -9389,3 +9389,35 @@ Boot 23:51: plugin 9bfd0c5 (UUID E26F136E) = the 9c6d1ed Chrome hint fix plus cp
 - Shutdown stalls at 23:27 and 00:17 (reports decoded with `spindump -i`). In both, Docker was still running when shutdown sampled: com.docker.hyperkit with 24 vCPU threads idle, plus docker-agent. Other common processes were crashpad handlers and caffeinate. None of our kexts is in a blocked stack.
 - Lead: shutdown waits for the Docker VM to exit. It goes to the RyzenHV session (does a vCPU blocked in the kext delay exit on SIGTERM?).
 - Next batch candidates: NMXGPU out-21 7864AA59 (Step139 nmx_pin_by_proc), Wi-Fi native A62C12D2 (ABI and faultloop properties visible).
+
+## Trace part 29: the ~56k page records/s during Chrome video are keep-cache thrash in Chrome's GPU process (2026-11-09)
+
+Question from main (cpu-thermal saw `nmx_userrec_made/freed` rise ~56k/s during the part 28 probe). Plugin 9bfd0c5 (E26F136E), NMXGPU out-20.
+
+**Rates.** Counters sampled every 1 s around a 60 s probe at 00:13-00:15:
+- Idle before playback: 0-1k records/s.
+- During playback: 34-67k/s, made ≈ freed, `nmx_userrec_live` flat at ~555k.
+- `nmx_surf_hint` rises 16-32/s, so roughly 2000-4000 pages per hinted import.
+- The rate stayed at ~45k/s after the scratch Chrome closed, because the owner's own Chrome was then playing a video (VTDecoder busy). Any Chrome video does this.
+
+**Attribution:**
+- WindowServer: its 30 s keep reports show 1-3 misses/s, so it is not the source.
+- VCNDec alone: `vcndec_test` on the AV1 1080p clip, 1200 frames, `imports 1`, 1031 records in total. It caches its import per surface, so it is not the source either.
+- Chrome GPU process:
+  - The plugin's log is not in `/tmp/nvmtl.log`. That file is owned by `_windowserver` and is mode 644, so user processes log to `$TMPDIR/nvmtl.log` (`/var/folders/.../T/nvmtl.log`). A scratch Chrome run with `--disable-gpu-sandbox` (logging only) wrote there.
+  - Its keep reports: `hits 0, misses 433 (new surface 3, idle cap 430)`, idle 1016 MB (the cap). idle-cap drops came back < 250 ms: 59, < 1 s: 286, < 3 s: 14.
+  - The drops are all `2816x1472 fmt 80` (16.6 MB, window size), idle 3-4 s at the drop, back after 67-470 ms.
+  - So Chrome cycles about 65 window-size surfaces while the video plays. 14 re-imports/s × ~4000 pages ≈ 56k records/s.
+
+**Cause:** the cap drop order from 5ba6363 (idle age × bytes, oldest first) is the worst case for a cycle larger than the cap. It always drops the surface that comes back next.
+
+**Fix**, plugin `plugin/video-lag` 9983f0c on camera-copy-890m 9bfd0c5, built `NVMTLDriver-9983f0c` UUID 5D8E67D8, not installed:
+- When the idle cap binds, large surfaces (> NVMTL_KEEP_SMALL_KB) still go before small tiles.
+- Among large ones, bytes first, then the most recently idle first (MRU). A fixed part of the cycle stays resident and only the overflow re-imports.
+- Small tiles keep the old order.
+
+**To check after install:**
+- Chrome GPU keep reports (in `$TMPDIR/nvmtl.log`, needs the GPU sandbox off) show hits instead of 0.
+- `nmx_userrec_made` per second during 1080p60 drops well below 56k.
+
+**Open question:** why Chrome keeps ~65 window-size buffers in rotation. If it is Chrome's IOSurface pool reacting to surfaces in use, it is a separate issue on the Chrome/WS side.
