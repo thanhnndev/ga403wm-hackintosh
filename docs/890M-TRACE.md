@@ -9674,3 +9674,9 @@ The earlier runs at 13:35 and 13:39 gave 180 and 98 drops and 9.7 ms/frame for W
   - 15 are the keep sweep (sorting idle entries at the cap). The dead drop also removes this: with dead entries gone, the cap stops binding.
 - No VA-map or BO-destroy ioctls in the user stacks, so their cost is small next to the create.
 - The kernel split inside the create (IOMemoryDescriptor wire, page records, sg/GART bind) needs a kernel spindump. The last one with kernel frames is part 26 (WindowServer, before Step138): 87 of 96 import samples in `nmx_user_pages_pin`.
+- 2026-11-09 14:00, plugin 6797e1f (plugin/video-lag on 0317f25, UUID 0106C6CD, ad-hoc signed, bundle sha 5e85194f) installed
+  on owner OK; backup /Library/NullMoth/nvmtl-plugin-20261109T065737Z (0317f25, ae638a67); StrixSbxMap refreshed (8 files,
+  route ok). Change: outside WindowServer a keep entry with no holder (texture retain 1, surface retain 1, not IsInUse) is
+  dropped at once (NVMTL_KEEP_DEAD=0 to disable). WS keeps the old policy and loads it on its next start; Chrome/VS Code pick
+  it up when their GPU process restarts. Before (13:44): 470 drops/60 s, nmx_userwire 6.3 GB, WS 15.7 ms/frame, Chrome +
+  VS Code GPU idle ~1 GB each. Undo: macos-nvmtl-plugin-install.sh --undo, then strixsbxmap --refresh.
