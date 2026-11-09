@@ -9597,3 +9597,8 @@ Cost: ~4 ns per call, so it reads process-local state and makes no kernel call.
   registered, WindowServer 1.6 %), StrixS0ix 0.1.17 + RyzenHV 0.7.21 loaded, no panic. On AC (charging 49.8 W), so the DC
   figure is still to measure against 32.6 W. Open: shutdown_stall 13:06:06 (third reboot in a row with one, unread spindump);
   system sleep with the RTX off not tested (owner starts sleep tests).
+- 2026-11-09 13:29, DC measurement with the RTX off (owner unplugged at ~13:15, uptime 12-22 min, Claude + iOS simulator
+  running, no Docker): capacity method 87 mAh in 300 s at 16.1 V = 16.8 W average; AvgTimeToEmpty 173-248 min at 3.0 Ah;
+  pkg_mw 5.4-12 W. InstantAmperage is unusable for this: it sat at 0 for minutes and then held 33.0 W (stale/latched values),
+  so the earlier 31-32.6 W "RTX on" figures, read the same way, are not a sound baseline. A same-method RTX-on number needs a
+  Standard boot (nvram strix-gpu-mode=standard); not done.
