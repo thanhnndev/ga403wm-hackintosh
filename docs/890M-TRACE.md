@@ -9531,3 +9531,9 @@ Cost: ~4 ns per call, so it reads process-local state and makes no kernel call.
     - sleep/wake;
     - RyzenHV hvf-smoke before Docker.
 - RyzenHV 0.7.20 0D48F260 is on the ESP (backups: 0.7.18 broken, 0.7.17). The batch is complete; ready to reboot.
+- 2026-11-09 10:36, read from Windows (ESP read-only): the owner reports the dGPU-off batch does not boot. The only
+  boot-args difference from `config.plist.pre-dgpuoff` is `-nvoff s0ix_dgpuoff=1`. `-nvoff` also parks NMXGPU:
+  `opted_in()` in nmx_kext.cpp (nmx-source-port) returns false on `-nvoff` before it looks at `nmxamd=1`. With
+  `-strixgopoff` also set, no driver takes the 890M, so the panel has no framebuffer (same lever ruled out at line
+  ~8311). The dGPU-off test cannot be run with `-nvoff` as the switch: it needs an NVRM-only off flag, or `opted_in()`
+  must let `nmxamd=1` win over `-nvoff`. Not changed on the ESP (owner's call).
