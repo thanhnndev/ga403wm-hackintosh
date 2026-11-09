@@ -646,3 +646,94 @@ doesn't show in the plugin logs. Attribution of this window is pending video-lag
 
 So a late done means that frame's GPU work, or its finish, took more than 100 ms. That fits the first minute after
 boot (shader compiles), so it is a warm-up one-off.
+
+## Re-baseline, boot 13:06 on 2026-11-09 (RTX off, ItlXhciKick 5D179C74, RyzenHV 0.7.21, StrixS0ix 0.1.17 mode 0)
+
+Load during the measurement was **not light**:
+- a Swift build (`swift-frontend` 77 %);
+- Chrome with video (VTDecoder active);
+- the owner's Edge;
+- the iOS simulator with Claude iOS Sim;
+- Termius, Cloudflare WARP.
+
+Docker was not running.
+
+| | 13:34–13:37 |
+|---|---|
+| Package power (RAPL, 5 s windows) | 6.3–36 W, median ~19 W |
+| Tctl | 47–65 °C |
+| Remote ASTs (IPIs) | 34.3k/s (3 s ktrace) |
+| kernel_task | 22–49 % in `top`; spindump below |
+| WindowServer | 27–54 % |
+| Idle mode | 0 (stock HLT): there is no C-state residency to report until the A/B |
+
+Compared with earlier boots: 20:52 → 27–40 W, 78–91 °C; 23:51 → 17–28 W, 64–66 °C. Main measured DC at 16.8 W
+total by the capacity method.
+
+**kernel_task (spindump, all processes, 10 s at 5 ms; first profile of the "~30 %"):**
+
+| Thread | CPU in 10 s |
+|---|---|
+| VM_compressor ×2 | 11.4 s |
+| VM_pageout_scan | 3.2 s |
+| VM_cswap_trigger | 0.7 s |
+| Both AppleUSBXHCIPCI work loops | 0.5 s |
+| NMXIrq | 0.23 s |
+| sdma0 / gfx | 0.23 s |
+| Everything else | < 0.1 s each |
+
+So **kernel_task's cost is memory compression: ~1.5 cores in bursts.**
+- Memory state: 32 GB RAM, wired 11.2 GB, compressor 5.4 GB holding 11 GB, 4.2 M compressions since boot.
+- In a quiet 10 s window afterwards: 0 compressions/s, 2.6k decompressions/s, kernel_task 22 %.
+- Pinned by NMXGPU: `nmx_userwire_pages` 793k (3.1 GB); `userrec_live` 663k.
+- The compressor runs when the build or the simulator allocates on top of 11 GB of wired memory. The lever is wired
+  memory, not a kernel_task bug.
+
+**IPI sources (by waking process):**
+
+| Source | Rate |
+|---|---|
+| kernel threads | 11.5k/s |
+| — of which ItlXhciKick → the two busy xHCI work loops | ~1.9k/s (as designed) |
+| — of which one kernel thread waking 3 others | ~1.5k/s (unnamed in this run) |
+| diagnosticd | **4.0k/s** |
+| Chrome GPU + renderer | 5.5k/s |
+| WindowServer | 2.6k/s |
+| VTDecoder | 0.95k/s |
+| apsd | 0.8k/s |
+| Termius | 1k/s |
+
+- **diagnosticd** (9–13 % CPU, 4k IPI/s) is fed by a `log stream` that the Claude app's iOS-simulator helper keeps
+  open (`simctl spawn … log stream --predicate process == "backboardd" …` for orientation changes). It goes away with
+  the simulator session.
+- Other spindump outliers in the window:
+  - the simulator's AccessibilityControlsExtension: 17.9 s in 10 s (bursty; 0 % a minute later);
+  - WirelessRadioManagerd: 7.4 s (also 0 % afterwards).
+
+**Verdict (13:40):**
+
+Fixed and verified:
+- HLT-only idle: hook in place; the mode A/B is still to run.
+- 890M flip → CPU copy.
+- Docker WRMSR log loop.
+- bluetoothd LE loop.
+- ItlXhciKick on empty controllers: 3.6k → 1.9k IPI/s.
+- Plugin fence pool + sysctl cache.
+- RTX now off.
+- At a light load comparable to 20:52, package power is down from 27–40 W / 78–91 °C to ~6–36 W (median ~19 W) /
+  47–65 °C, even with a build running.
+
+Still costing power (rough core-to-watt estimates at 3–5 W per boosted core):
+1. **Memory compression** in kernel_task: ~1.5 cores in bursts, ≈ 4–7 W while bursting. It is driven by 11 GB wired
+   (3.1 GB NMXGPU-pinned user pages) plus build or simulator allocations.
+2. **WindowServer** at 27–54 % whenever anything animates: ≈ 1–2 W.
+3. **The iOS simulator stack**: AccessibilityControlsExtension bursts, plus the `log stream` → diagnosticd 4k IPI/s
+   (~0.15 core): ≈ 1 W while the simulator is open.
+4. **ItlXhciKick** on the two busy controllers: 1.9k IPI/s (until interrupter 1 gets its own MSI).
+5. **Idle mode 0**: cores HLT instead of CC6. Not measured yet; this is the A/B below.
+
+Next:
+- The s0ix idle 0/1/2 A/B (`tools/cpu-idle-ab.sh`), ~4.5 min hands-off. Close the build and the simulator first,
+  otherwise the result measures them.
+- A wired-memory breakdown (`zprint`, root): who holds the 11 GB.
+- Why `nmx_userwire_pages` is 3.1 GB.
