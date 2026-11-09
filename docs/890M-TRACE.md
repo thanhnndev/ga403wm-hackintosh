@@ -9506,3 +9506,4 @@ Cost: ~4 ns per call, so it reads process-local state and makes no kernel call.
   - WS keep "by IOSurfaceIsInUse" count stays small
   - ioreg itlmt-native-(abi|faultloop)
   - hyperkit CPU and exits/s
+- RyzenHV 0.7.18 D6B9AF8B is on the ESP (Fix RyzenHV session). Backup: 0.7.17 5B53EE91 at EFI/OC/Kexts-backup/RyzenHV.kext.20261109-095823. The batch is complete; ready to reboot.
