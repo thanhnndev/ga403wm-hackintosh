@@ -9570,3 +9570,7 @@ Cost: ~4 ns per call, so it reads process-local state and makes no kernel call.
   works). 890M: NMXAccel registered, NMXGPU + NMXAGDC loaded, system_profiler shows only Radeon 890M Metal 3 2880x1800,
   WindowServer 2.8 % CPU. No new panic. shutdown_stall 11:37:23 (the reboot itself) is binary spindump, not read yet.
   On AC, so no battery figure. Next: drop strixgate_dry=1 so PG00._OFF runs (first real D3cold), owner's OK.
+- 2026-11-09 11:50, owner OK "Bỏ dry, tắt RTX": `strixgate_dry=1` removed from the ESP boot-args (only change; backup
+  config.plist.pre-strixgate-live). Next boot = first real RTX power off: StrixDgpuClaim 3 s after start puts HDAU + PEGP in
+  D3hot and runs GPP9.PG00._OFF; expect gate-powered-off Yes, pg00-sta 0. If it hangs: the loop guard gives the next boot to
+  NVRM; also `-strixgate_off` in the picker. Check after boot: gate props, battery W on battery vs ~31 W before, panics.
