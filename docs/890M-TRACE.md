@@ -9721,3 +9721,7 @@ Plugin 6797e1f (UUID 0106C6CD) was installed by main without a reboot. A fresh s
 - 2026-11-09 14:22, out-22 built (Step140 a1acf3b): NMXGPU UUID BE2AA02D, 0 weak, 581 imports, NMXOwnsDisplay present,
   nmx_user_pages_pin now hashes with >> 0x21. Not installed. Baseline for the A/B (14:03:57-14:04:57, part 34 setup,
   plugin 6797e1f): 382 drops/60 s, userrec_made 61.5k/s, userwire 5.54 GB, WS 9.4 ms/frame.
+- 2026-11-09 14:40, out-22 (BE2AA02D, Step140) installed in the AuxKC on owner OK (step130 installer, kccheck ok;
+  NMXAccel/NMXAGDC/NVIDIA kexts/StrixS0ix 0.1.17 unchanged in the collection). Reboot pending. After boot: rerun the
+  maximised Chrome VP9 1080p60 60 s run (edge-video-lag session) vs 382 drops / 5.54 GB / 9.4 ms; kernel spindump to confirm
+  nmx_user_pages_pin is no longer chain-bound. Undo: macos-install-step130.sh with out-21.
