@@ -9718,3 +9718,6 @@ Plugin 6797e1f (UUID 0106C6CD) was installed by main without a reboot. A fresh s
   pages per 3392x1536 surface, x ~10 surfaces/s. So lazy pin would not help (every imported BO is used and libdrm sets
   USERPTR_VALIDATE). Fix: REG_BUCKETS 1<<21 (16 MB table), hash pfn ^ (pfn >> 21); nmx-source-port commit (Step140),
   building out-22. Expected: import samples dominated by the xnu wire, Chrome drops/60 s well below 407.
+- 2026-11-09 14:22, out-22 built (Step140 a1acf3b): NMXGPU UUID BE2AA02D, 0 weak, 581 imports, NMXOwnsDisplay present,
+  nmx_user_pages_pin now hashes with >> 0x21. Not installed. Baseline for the A/B (14:03:57-14:04:57, part 34 setup,
+  plugin 6797e1f): 382 drops/60 s, userrec_made 61.5k/s, userwire 5.54 GB, WS 9.4 ms/frame.
