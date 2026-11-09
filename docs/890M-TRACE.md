@@ -9383,3 +9383,9 @@ Boot 23:51: plugin 9bfd0c5 (UUID E26F136E) = the 9c6d1ed Chrome hint fix plus cp
 - The CS path does not re-pin (Step92 `if (0)`), so the churn comes from userptr BO create/free.
 - Build: UUID 7864AA59, 0 weak symbols, 581 imports (identical to out-20), NMXOwnsDisplay present.
 - It goes in the next batch.
+
+### 2026-11-09 09:31 boot (no changes since 23:51)
+- Loaded: the same batch (NMXGPU out-20, native 25F33563, ItlXhciKick 5D179C74, StrixS0ix 0.1.15). No new panic or crash reports.
+- Shutdown stalls at 23:27 and 00:17 (reports decoded with `spindump -i`). In both, Docker was still running when shutdown sampled: com.docker.hyperkit with 24 vCPU threads idle, plus docker-agent. Other common processes were crashpad handlers and caffeinate. None of our kexts is in a blocked stack.
+- Lead: shutdown waits for the Docker VM to exit. It goes to the RyzenHV session (does a vCPU blocked in the kext delay exit on SIGTERM?).
+- Next batch candidates: NMXGPU out-21 7864AA59 (Step139 nmx_pin_by_proc), Wi-Fi native A62C12D2 (ABI and faultloop properties visible).
