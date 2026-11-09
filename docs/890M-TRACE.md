@@ -9564,3 +9564,9 @@ Cost: ~4 ns per call, so it reads process-local state and makes no kernel call.
 - 2026-11-09 11:30, next-boot batch checked (main): RyzenHV 0.7.21 B37AAE98 on the ESP (Fix RyzenHV session, owner OK; 0.7.20 in
   Kexts-backup/RyzenHV.kext.20261109-112219) + StrixDgpuGate dry run 52DE19FB (Kernel Add #47, strixgate_dry=1,
   strix-gpu-mode=eco). Config still carries both gate changes. One reboot covers both.
+- 2026-11-09 11:42, boot 11:37 (RyzenHV 0.7.21 + StrixDgpuGate dry run): PASS. PEGP children = StrixDgpuClaim,
+  StrixDgpuAccelHold, NVRMFBClaim (category holder, !registered); no NVRM/NVAccel service. gate-state "eco: RTX held away
+  from NVRM, dry run (no power off)", gate-held Yes, tripped No; strix-gpu-eco-try cleared to 0 after 90 s (loop guard
+  works). 890M: NMXAccel registered, NMXGPU + NMXAGDC loaded, system_profiler shows only Radeon 890M Metal 3 2880x1800,
+  WindowServer 2.8 % CPU. No new panic. shutdown_stall 11:37:23 (the reboot itself) is binary spindump, not read yet.
+  On AC, so no battery figure. Next: drop strixgate_dry=1 so PG00._OFF runs (first real D3cold), owner's OK.
