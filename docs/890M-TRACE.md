@@ -9637,3 +9637,40 @@ Cost: ~4 ns per call, so it reads process-local state and makes no kernel call.
 1. Make a first-time import cheap, since re-use is not available: lazy pin, or pinning only what the GPU touches.
 2. Release dead entries at once (retain 1, IsInUse 0, no live wrapper) in non-WindowServer processes, so Chrome does not keep 1 GB of released surfaces pinned.
 3. Find why Chromium reallocates, for example something in the IOSurface properties or Metal capabilities we report that defeats its pool.
+
+## Trace part 33: dead-entry drop outside WindowServer (plugin 6797e1f), "before" numbers, and Chrome's import cost (2026-11-09 13:4x)
+
+**Change**: plugin `plugin/video-lag` 6797e1f on 0317f25, built `NVMTLDriver-6797e1f` UUID 0106C6CD, sha256 3a29b877e856adcf. Not installed.
+- Outside WindowServer, the keep sweep drops an entry at once when it is dead:
+  - the IOSurfaceRef has retain 1 (only the entry holds it);
+  - IOSurfaceIsInUse is 0 (no port, no second object, no use count);
+  - the texture has retain 1 (no wrapper).
+- The entry is dropped before the idle rules, and the texture is released off the main thread, which unpins and frees the BO.
+- WindowServer keeps the old policy.
+- `NVMTL_KEEP_DEAD=0/1` overrides it.
+- The 30 s report adds:
+  - "dead N": dead drops whose surface ID came back, which here means ID reuse;
+  - "dead entries dropped at once N (M MB)".
+
+**Before** (live plugin 0317f25, 13:44, scratch Chrome maximised, VP9 1080p60, 60 s). Docker, VS Code, Edge (owner's), Claude and Termius were running.
+
+| metric | value |
+|---|---|
+| dropped / 60 s | 470 (4-12 every second) |
+| `nmx_userwire_pages` | avg 1.66 M (6.3 GB), peak 1.71 M |
+| `nmx_userrec_live` | avg 1.36 M |
+| `nmx_userrec_made` | 68.4k/s |
+| WindowServer CPU | 945 ms/s = 15.7 ms/frame |
+| Chrome GPU keep | idle 1017-1022 MB (cap), hits 0-2, misses 264-345 per 30 s (new 241-257) |
+| VS Code GPU keep (owner's) | 1661 entries, idle 1023 MB (cap), idle-cap misses 473 per 30 s |
+| system | 3.52 M pages wired (13.4 GB), compressor occupies 1.86 M pages (7.1 GB) |
+
+The earlier runs at 13:35 and 13:39 gave 180 and 98 drops and 9.7 ms/frame for WindowServer. The machine was under more memory pressure at 13:44.
+
+**Where a Chrome surface import goes** (`sample` of the scratch Chrome GPU process, 8 s during maximised playback, user-side stacks):
+- Main thread `newTextureWithDescriptor:iosurface:plane:`: 229 samples.
+  - 200 (87 %) are `nvmtl_vk_buffer_import_host` → `radv_bo_from_ptr` → `amdgpu_create_bo_from_user_mem`, one `nvmtl_drmx_w_ioctl` (NMDR user client, `IOConnectCallMethod`). That is the USERPTR BO create in the kernel: the pin and the page records.
+  - 3 are `nvmtl_prefault_write`: the surface hint works, so there is no per-page prefault.
+  - 15 are the keep sweep (sorting idle entries at the cap). The dead drop also removes this: with dead entries gone, the cap stops binding.
+- No VA-map or BO-destroy ioctls in the user stacks, so their cost is small next to the create.
+- The kernel split inside the create (IOMemoryDescriptor wire, page records, sg/GART bind) needs a kernel spindump. The last one with kernel frames is part 26 (WindowServer, before Step138): 87 of 96 import samples in `nmx_user_pages_pin`.
