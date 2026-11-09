@@ -9602,3 +9602,38 @@ Cost: ~4 ns per call, so it reads process-local state and makes no kernel call.
   pkg_mw 5.4-12 W. InstantAmperage is unusable for this: it sat at 0 for minutes and then held 33.0 W (stale/latched values),
   so the earlier 31-32.6 W "RTX on" figures, read the same way, are not a sound baseline. A same-method RTX-on number needs a
   Standard boot (nvram strix-gpu-mode=standard); not done.
+
+## Trace part 32: post-boot checks on the 13:06 boot (2026-11-09: RTX off, plugin 0317f25 977F9F64, NMXGPU out-21)
+
+**Video path without NVAccel:**
+- Every process's plugin log (`/tmp/nvmtl.log`, `$TMPDIR/nvmtl.log`) since 13:06 shows `GPU vendor 1002 (AMD, RADV)`.
+- No NVAccel or NVRM lookups or errors. Only NMXAccel is registered as an IOAccelerator.
+- VCNDec: `vt_test` on the AV1 1080p clip gave 11471/11471 frames, 0 errors, 418 fps, all GPU copy, `imports 1`.
+
+**WindowServer keep with IsInUse** (30 s reports since boot):
+- "by IOSurfaceIsInUse" was 0-32 per report, against 32-1378 retain-count refreshes.
+- Entries stayed flat at 145-180, and idle was 0-168 MB.
+- So no surfaces are pinned beyond the 60 s bound.
+
+**Chrome, scratch profile, `--start-maximized`** (viewport 1440x757 pt at 2x):
+- YouTube served VP9 even with `yt-player-av1-pref=8192`. Docker and the owner's apps were running.
+
+| run | dropped / 60 s | decoded | keep in Chrome GPU (per 30 s) | userrec_made | WS CPU |
+|---|---|---|---|---|---|
+| default | 180 (bursts at 14-26 s) | 3605 | hits 0-10, misses 433-685 (new 104-575, idle cap 99-283), idle 1019 MB | 66.5k/s | 584 ms/s = 9.7 ms/frame |
+| `--disable-mac-overlays` | 98 (2-4 every 1-2 s) | 3606 | hits 0, misses 95-347 (new 80-333, cap 0-207), idle ~1 GB | 60.8k/s | 586 ms/s = 9.8 ms/frame |
+| no scratch Chrome (baseline) | - | - | - | 4.7k/s | 465 ms/s |
+
+**What the numbers say:**
+- In a maximised window, Chrome's GPU process creates **new** 3392x1536 surfaces (20.8 MB each) at about 10-19 per second.
+- IsInUse is 0 for them: Chrome does not hold them as ports, it really releases them.
+- An idle-cap miss "back after 34-79 ms" is the kernel handing the freed ID to Chrome's next allocation (part 30), not the same surface returning.
+- So neither 9983f0c (MRU) nor 0317f25 (IsInUse) can produce hits here. Every new surface is a full import (~4000 pages), which is where the ~60k page records/s come from.
+- Disabling Chrome's CALayer overlays does not stop the allocations, so the overlay path is not what drives them.
+- The owner's VS Code GPU process (Electron) does the same with small surfaces: 837 new 512x320 / 2880x480 surfaces in 30 s.
+- WindowServer: video adds ~120 ms/s over the 465 ms/s baseline, about 2 ms/frame. The baseline belongs to cpu-thermal's scope.
+
+**Next:**
+1. Make a first-time import cheap, since re-use is not available: lazy pin, or pinning only what the GPU touches.
+2. Release dead entries at once (retain 1, IsInUse 0, no live wrapper) in non-WindowServer processes, so Chrome does not keep 1 GB of released surfaces pinned.
+3. Find why Chromium reallocates, for example something in the IOSurface properties or Metal capabilities we report that defeats its pool.
