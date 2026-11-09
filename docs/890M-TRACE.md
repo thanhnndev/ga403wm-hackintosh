@@ -9561,3 +9561,6 @@ Cost: ~4 ns per call, so it reads process-local state and makes no kernel call.
   PEGP, no NVRM/NVAccel, gate-state "eco: ... dry run", RTX still powered, HDMI dead, 890M/OLED as before.
   Undo: OC picker boot-arg `-strixgate_off`, or `sudo nvram strix-gpu-mode=standard`, or Kernel Add #47 Enabled=false /
   restore config.plist.pre-strixgate. A boot that does not reach 90 s uptime trips the loop guard (next boot NVRM).
+- 2026-11-09 11:30, next-boot batch checked (main): RyzenHV 0.7.21 B37AAE98 on the ESP (Fix RyzenHV session, owner OK; 0.7.20 in
+  Kexts-backup/RyzenHV.kext.20261109-112219) + StrixDgpuGate dry run 52DE19FB (Kernel Add #47, strixgate_dry=1,
+  strix-gpu-mode=eco). Config still carries both gate changes. One reboot covers both.
