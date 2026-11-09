@@ -20,3 +20,4 @@ nv*.txt
 tools/bin/
 scripts/nmx-cstrace/cave.o
 tools/890m/vcndec/clips/*.ivf
+tools/890m/inuse-test/inuse_test
