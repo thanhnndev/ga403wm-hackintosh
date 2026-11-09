@@ -9708,3 +9708,13 @@ Plugin 6797e1f (UUID 0106C6CD) was installed by main without a reboot. A fresh s
 **Next for the video path:**
 - The import itself (main's (a): lazy pin, or pin on GPU use).
 - Why Chromium makes a new window-size surface ~10 times a second in a maximised window ((c)).
+- 2026-11-09 14:15, Step140 (main): root cause of the slow userptr import is the page registry hash, not pinning itself.
+  Kernel spindump 14:04 (root via launchctl submit, 5 s at 10 ms, throttled) during the maximised scratch-Chrome VP9
+  1080p60 run, symbolicated against out-21: Chrome GPU (27730) import path amdgpu_gem_userptr_ioctl -> nmx_userptr_pin ->
+  lkpi_get_user_pages -> nmx_user_pages_pin = 215 samples; 171 (79 %) "running" at nmx_user_pages_pin+611 = the
+  `cmpq %r12,(%rax)` / `movq 0x10(%rax)` chain walk of the inlined reg_find_locked; only 27 in nmx_xnu_user_wire (the
+  IOMemoryDescriptor wire) and ~10 in malloc. The registry had REG_BUCKETS 65536 for ~1.7M records (debug.nmx_pages_live
+  854k + nmx_userrec_live 826k): ~26 heap nodes per chain, walked twice per new page (miss + re-check after malloc), x ~4000
+  pages per 3392x1536 surface, x ~10 surfaces/s. So lazy pin would not help (every imported BO is used and libdrm sets
+  USERPTR_VALIDATE). Fix: REG_BUCKETS 1<<21 (16 MB table), hash pfn ^ (pfn >> 21); nmx-source-port commit (Step140),
+  building out-22. Expected: import samples dominated by the xnu wire, Chrome drops/60 s well below 407.
