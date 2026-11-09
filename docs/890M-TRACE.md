@@ -9530,3 +9530,4 @@ Cost: ~4 ns per call, so it reads process-local state and makes no kernel call.
     - battery watts against ~31 W;
     - sleep/wake;
     - RyzenHV hvf-smoke before Docker.
+- RyzenHV 0.7.20 0D48F260 is on the ESP (backups: 0.7.18 broken, 0.7.17). The batch is complete; ready to reboot.
