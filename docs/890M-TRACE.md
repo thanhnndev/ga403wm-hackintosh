@@ -9507,3 +9507,9 @@ Cost: ~4 ns per call, so it reads process-local state and makes no kernel call.
   - ioreg itlmt-native-(abi|faultloop)
   - hyperkit CPU and exits/s
 - RyzenHV 0.7.18 D6B9AF8B is on the ESP (Fix RyzenHV session). Backup: 0.7.17 5B53EE91 at EFI/OC/Kexts-backup/RyzenHV.kext.20261109-095823. The batch is complete; ready to reboot.
+
+### 2026-11-09 ~10:03 panic after AC unplug, boot ~10:05
+- On the boot after the batch reboot, the owner unplugged AC and the machine froze. With debug=0x100 the panic screen stays up, so the freeze was the panic.
+- Panic (Kernel-2026-11-09-100606.panic, uptime 163 s): a GP fault in OSMetaClass::applyToInstances, under IOService::copyExistingServices / getMatchingServices / is_io_service_get_matching_services_ool, process CloudflareWARP. RAX = 0x656372756f736552 = "Resource": a dangling object in a metaclass instance set whose memory has been reused. That is a use-after-free in some kext's IOKit object lifetime; WARP's enumeration on the power change only tripped over it.
+- The current boot loaded the whole batch: out-21 7864AA59 (`nmx_pin_by_proc` works), native A62C12D2 (abi ok, faultloop own), core 2773F995, RyzenHV 0.7.18 D6B9AF8B. It is running on battery with no repeat so far.
+- Investigation: a timeline and class attribution are in progress; the Wi-Fi, RyzenHV and video sessions were asked to audit their object lifetimes.
