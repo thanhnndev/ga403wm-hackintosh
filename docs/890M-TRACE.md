@@ -9487,3 +9487,8 @@ Cost: ~4 ns per call, so it reads process-local state and makes no kernel call.
 **To check after install:**
 - WindowServer (`/tmp/nvmtl.log`): the "by IOSurfaceIsInUse" count is small, and entries and idle MB do not grow over 10+ minutes compared with before.
 - Chrome GPU (`$TMPDIR/nvmtl.log`, sandbox off) during AV1 1080p60 in a maximised window: hits > 0 and idle-cap misses near 0.
+- Plugin 0317f25 (video-lag part 31) merged on top of 9983f0c. The keep cache now treats IOSurfaceIsInUse as held, still bounded by NVMTL_KEEP_VIEW_MS, so surfaces Chrome holds through a mach port count as in use. Built by main: UUID 977F9F64, sha 9401582a. This replaces 9983f0c as the next-batch plugin.
+- RyzenHV 0.7.18 D6B9AF8B is ready (Fix RyzenHV session, research/ga403wm-zen5 9993875).
+  - Cause of the idle Docker cost: ~53k exits/s, 35k of them xAPIC nested page faults. The kext did a full TLB flush on every VMRUN.
+  - Fix: flush by ASID, write DR/TSC_AUX only when they change, FPU self-check on 1 VMRUN in 64.
+  - Not installed.
