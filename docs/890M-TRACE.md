@@ -9513,3 +9513,10 @@ Cost: ~4 ns per call, so it reads process-local state and makes no kernel call.
 - Panic (Kernel-2026-11-09-100606.panic, uptime 163 s): a GP fault in OSMetaClass::applyToInstances, under IOService::copyExistingServices / getMatchingServices / is_io_service_get_matching_services_ool, process CloudflareWARP. RAX = 0x656372756f736552 = "Resource": a dangling object in a metaclass instance set whose memory has been reused. That is a use-after-free in some kext's IOKit object lifetime; WARP's enumeration on the power change only tripped over it.
 - The current boot loaded the whole batch: out-21 7864AA59 (`nmx_pin_by_proc` works), native A62C12D2 (abi ok, faultloop own), core 2773F995, RyzenHV 0.7.18 D6B9AF8B. It is running on battery with no repeat so far.
 - Investigation: a timeline and class attribution are in progress; the Wi-Fi, RyzenHV and video sessions were asked to audit their object lifetimes.
+
+### 2026-11-09 battery drain, dGPU D3cold (StrixS0ix 0.1.16)
+- On battery after boot: ~31 W from the battery (AppleSmartBattery −3.98 A → −2.1 A at 14.5 V), but the CPU package is only 7.2 W (debug.amdcppc.sensors RAPL). The RTX 5060 is in PCI D0 the whole time: NVRM 2.7.1 has no runtime power management (RTD3/GC6 off), so the card and its PCIe link never sleep.
+- ACPI (SSDT-5 "OptRf2"): GPP9 has _PR0/_PR3 = PG00. PEGP._PS3 calls PG00._OFF only after the NVIDIA Optimus _DSM sets OMPR=3. PG00._OFF clears EC VGAT, then does BPGF, link disable (DL23), POFF and APGF.
+- StrixS0ix 0.1.16 (C7BB7761): boot-arg `s0ix_dgpuoff=1`. 20 s after start, if neither RTX function has a registered driver (boot with `-nvoff`), it puts both into D3hot through PMCSR and evaluates `\_SB.PCI0.GPP9.PG00._OFF`. The result goes to the property `S0ix,DgpuOff` ("PG00._OFF rc, PG00._STA"). If any driver is attached it refuses.
+- This is an iGPU-only boot mode: no RTX, no HDMI (the HDMI port is on the RTX).
+- Not installed. The proper fix, RTD3 inside NVRM so the card powers off when idle without a reboot, is a separate NVRM port project.
