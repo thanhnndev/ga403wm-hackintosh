@@ -9537,3 +9537,7 @@ Cost: ~4 ns per call, so it reads process-local state and makes no kernel call.
   `-strixgopoff` also set, no driver takes the 890M, so the panel has no framebuffer (same lever ruled out at line
   ~8311). The dGPU-off test cannot be run with `-nvoff` as the switch: it needs an NVRM-only off flag, or `opted_in()`
   must let `nmxamd=1` win over `-nvoff`. Not changed on the ESP (owner's call).
+- 2026-11-09 10:38, from Windows, owner's request: `-nvoff s0ix_dgpuoff=1` removed from the ESP boot-args. The string
+  now equals the one in `config.plist.pre-dgpuoff`; XML parses, ESP unmounted. Backup of the dGPU-off config:
+  `EFI/OC/config.plist.bk-nvoff-20261109T103845`. StrixS0ix 0.1.16 and RyzenHV 0.7.20 stay installed; without
+  `s0ix_dgpuoff=1` the dGPU-off code in StrixS0ix only sets `S0ix,DgpuOff = off`.
