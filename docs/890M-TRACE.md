@@ -9425,3 +9425,4 @@ Question from main (cpu-thermal saw `nmx_userrec_made/freed` rise ~56k/s during 
   - What it fixes: Chrome's GPU process cycles ~65 window-size surfaces while a video plays, more than the 1 GB keep cap holds. The old oldest-first drop always evicted the next surface to come back, so 0 hits and ~56k page records/s.
   - The change: when the idle cap binds, large surfaces are dropped MRU (bytes first, then newest idle first).
   - Built by main: UUID 503C0AC5, sha cff7a9ed. Not installed; next-batch candidate.
+- Wi-Fi core itlmt7925 2773F995 (dev/awdl 4568bf2: sniffer-config width code fix for the 160 MHz AP hang) was put on the ESP by the Wi-Fi session with the owner's OK. Backup: BBFBA198 at EFI/OC/Kexts-backup/itlmt7925.kext.20261109-094632. It loads at the next boot.
