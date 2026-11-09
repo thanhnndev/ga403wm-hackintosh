@@ -9426,3 +9426,34 @@ Question from main (cpu-thermal saw `nmx_userrec_made/freed` rise ~56k/s during 
   - The change: when the idle cap binds, large surfaces are dropped MRU (bytes first, then newest idle first).
   - Built by main: UUID 503C0AC5, sha cff7a9ed. Not installed; next-batch candidate.
 - Wi-Fi core itlmt7925 2773F995 (dev/awdl 4568bf2: sniffer-config width code fix for the 160 MHz AP hang) was put on the ESP by the Wi-Fi session with the owner's OK. Backup: BBFBA198 at EFI/OC/Kexts-backup/itlmt7925.kext.20261109-094632. It loads at the next boot.
+
+## Trace part 30: why Chrome "rotates ~65 window-size surfaces" (2026-11-09, plugin E26F136E, NMXGPU out-20)
+
+Open question from part 29: is Chrome's IOSurface pool growing because surfaces stay "in use"?
+
+**WindowServer in-use time is normal.** `tools/890m/inuse-test` (c093972) does what Chrome's compositor does: a CALayer gets a new IOSurface each frame at 60 Hz, and a surface is reused only once `IOSurfaceIsInUse()` is false.
+
+| mode at 2816x1472 | in use after replace | pool size |
+|---|---|---|
+| CPU writes | p50 16.7 ms, p90 17.4 ms | 4 surfaces |
+| Metal clear, cached texture | p50 16.7 ms | 3 surfaces |
+| Metal clear, new texture per frame | p50 16.7 ms | 3 surfaces |
+
+WS lets go after one frame, as on a real Mac. Use count is not what grows a pool.
+
+**IOSurface object semantics (scratch test `look.c`):**
+- `IOSurfaceLookupFromMachPort` returns a new IOSurfaceRef object on each lookup, even while another object for the same surface is alive in the process.
+- So the keep cache's "held" test (`CFGetRetainCount(_surf) > 1`) cannot see a surface that Chrome holds as a mach port (a GpuMemoryBuffer handle) and looks up per use. Such a surface counts as idle while Chrome still uses it. That is why part 29's surfaces were "idle 3-4 s" yet came back.
+- A freed surface's ID is handed out again at once. So "back after N ms" can also be a new surface that reused the ID.
+
+**Re-run today (09:44, VP9 1080p60, scratch Chrome, Docker up):**
+- The GPU process (pid 8737) wrote no 30 s keep report at all; it only reports on a miss, so it had no sustained misses after warm-up.
+- No 2816x1472 surfaces were seen, and the part 29 thrash did not reproduce.
+- Playback was 2700 decoded in 45 s; 64 drops, all in the first second (quality switch).
+- `ioclasscount IOSurface`, default cap vs `NVMTL_KEEP_IDLE_MB=64`: plateau ~1015 vs ~885, inconclusive. The owner's own Chrome shares the counter, and the B probe returned no result.
+- Part 29 ran AV1 at a window-size backing of 2816x1472, with the owner's Chrome also playing. The trigger is probably codec or window size; still open.
+
+**Conclusion:**
+- Not a WindowServer or use-count issue.
+- 9983f0c stays as the guard for when the cycle exceeds the cap.
+- Re-run the post-install check with AV1 (`probe.mjs` with an AV1 video) and the scratch window maximised, so the part 29 case is the one measured.
