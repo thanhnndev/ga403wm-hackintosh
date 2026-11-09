@@ -9421,3 +9421,7 @@ Question from main (cpu-thermal saw `nmx_userrec_made/freed` rise ~56k/s during 
 - `nmx_userrec_made` per second during 1080p60 drops well below 56k.
 
 **Open question:** why Chrome keeps ~65 window-size buffers in rotation. If it is Chrome's IOSurface pool reacting to surfaces in use, it is a separate issue on the Chrome/WS side.
+- Plugin 9983f0c (video-lag, trace part 29) merged into camera-copy-890m.
+  - What it fixes: Chrome's GPU process cycles ~65 window-size surfaces while a video plays, more than the 1 GB keep cap holds. The old oldest-first drop always evicted the next surface to come back, so 0 hits and ~56k page records/s.
+  - The change: when the idle cap binds, large surfaces are dropped MRU (bytes first, then newest idle first).
+  - Built by main: UUID 503C0AC5, sha cff7a9ed. Not installed; next-batch candidate.
