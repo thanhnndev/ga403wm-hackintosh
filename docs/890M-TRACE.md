@@ -9583,3 +9583,7 @@ Cost: ~4 ns per call, so it reads process-local state and makes no kernel call.
   (a486d8f8-0bda-471b-a72b-6042a6b5bee0, rev 0x100, func 0x1A, Arg3 {01 00 00 03} -> OMPR=3), then PEGP._PS3, which runs
   PG00._OFF (SSDT-5 963-980); status via GPP9.GSTA (1 on / 0 off), PEGP._PSC, vendor 0xFFFF. StrixS0ix 0.1.16 dgpuOff
   has the same dotted-path bug (dormant, no s0ix_dgpuoff).
+- 2026-11-09 12:05, StrixDgpuGate 8b33c13 (UUID D48A1ED0) on the ESP, replacing 52DE19FB (Kexts-backup/StrixDgpuGate.kext.52DE19FB);
+  config unchanged (#47, no dry). Reviewed: GSTA before on GPP9, PEGP _DSM NVOP func 0 (bitmap logged) + func 0x1A {01 00 00 03},
+  PMCSR D3hot on HDAU+PEGP, PEGP._PS3, then GSTA/_PSC/vendor published (gsta-before/after, psc, vendor-after). Next boot
+  expect gate-state "eco: dsm0 0 dsm1A 0 ps3 0 gsta 1->0 psc 3 vid 0xffff" and a lower DC wattage than 32.6 W.
