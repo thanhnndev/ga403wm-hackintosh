@@ -9520,3 +9520,13 @@ Cost: ~4 ns per call, so it reads process-local state and makes no kernel call.
 - StrixS0ix 0.1.16 (C7BB7761): boot-arg `s0ix_dgpuoff=1`. 20 s after start, if neither RTX function has a registered driver (boot with `-nvoff`), it puts both into D3hot through PMCSR and evaluates `\_SB.PCI0.GPP9.PG00._OFF`. The result goes to the property `S0ix,DgpuOff` ("PG00._OFF rc, PG00._STA"). If any driver is attached it refuses.
 - This is an iGPU-only boot mode: no RTX, no HDMI (the HDMI port is on the RTX).
 - Not installed. The proper fix, RTD3 inside NVRM so the card powers off when idle without a reboot, is a separate NVRM port project.
+- 2026-11-09 install batch for the dGPU-off test:
+  - StrixS0ix 0.1.16 C7BB7761 is in the AuxKC; kccheck OK.
+  - The ESP config.plist boot-args gained `-nvoff s0ix_dgpuoff=1`. Backup: EFI/OC/config.plist.pre-dgpuoff; restore it to undo. A first edit landed in the repo's efi/OC copy by mistake and was reverted.
+  - RyzenHV 0.7.20 0D48F260 (root-cause fix: header deps, ABI self-check, variable-size stats) is being installed by the Fix RyzenHV session.
+  - After boot, check:
+    - `ioreg -l | grep S0ix,DgpuOff` should read PG00._STA 0;
+    - the RTX is gone from the bus or its link is down;
+    - battery watts against ~31 W;
+    - sleep/wake;
+    - RyzenHV hvf-smoke before Docker.
