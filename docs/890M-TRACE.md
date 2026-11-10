@@ -9760,3 +9760,9 @@ Boot 09:14, Standard mode: the RTX is on NVRM/NVAccel again, because StrixDgpuGa
   drops 382 -> 7, rVFC 3222 -> 3598 of ~3605, userrec_live 1.13 M -> 0.79 M, userwire 5.54 -> 4.67 GB, WS 9.4 -> 8.7
   ms/frame; userrec_made 61.5k -> 81.3k/s (more frames shown = more imports, each now cheap). Caveat: boot 14 min old,
   compressor 2.7 GB vs 8.0 GB; repeat after hours of daily load (tools/890m/yt-probe/run-max.sh).
+- Repeat at 09:34:14-09:35:15 (same boot and script):
+  - 5 drops, 3602 decoded, 3594 rVFC.
+  - userrec_made 82.4k/s, userwire 4.71 GB, userrec_live 0.81 M.
+  - WindowServer 12.8 ms/frame (769 ms/s). It varies from run to run with the owner's activity.
+  - Compressor 2.7 GB.
+- Still to do: rerun `run-max.sh` after several hours of daily load, and report drops, userwire and compressor.
