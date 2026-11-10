@@ -5,6 +5,29 @@ composited on the iGPU (this is what removes the 500-900 % WindowServer CPU: it 
 because no Metal device exists). Route B decision (2026-10-17, Step31): build our own stack from NullMoth v2.0.4 sources, then replace
 the headless accelerator, then replace the NVIDIA userland.
 
+## State 2026-11-10 (boot 19:46, Eco) - supersedes the sections below
+
+Live: NMXGPU out-22 (registry 2M buckets, Chrome max 1080p60 drops 382 -> 7/60 s), plugin 6797e1f, StrixDgpuGate
+694511EA (Eco, RTX off, heartbeat), AsusWmi 0.3.0, RogControl 0.6.0 (GPU tile), StrixS0ix 0.1.17, RyzenHV 0.7.21.
+
+Daily-use priorities, in order:
+1. Memory and battery: wired 11.2 GB of 32 (NMXGPU user pins ~3-4.7 GB), kernel_task memory compression 4-7 W when
+   busy. Find who holds the wired memory (`zprint`, root) and cut NMXGPU userwire. Then the idle-mode A/B (s0ix idle
+   0/1/2, needs 4.5 min hands-off from the owner; cpu-thermal session).
+2. Stability: the 11-09 10:06 kernel use-after-free (CloudflareWARP matching, dangling "Resource" object, owner kext not
+   found; Wi-Fi/core kexts audited clean, AsusWmi/AmdCppc create nothing at run time); unread shutdown-stall spindumps.
+3. Sleep/wake with the RTX off in Eco (owner starts sleep tests).
+4. Open PRs to merge: rog-control-macos #17 (GPU mode, gate, AsusWmi 0.3.0, RogControl 0.6.0), #16 (cpu-thermal).
+5. Video: rerun tools/890m/yt-probe/run-max.sh after hours of daily load (edge-video-lag session).
+6. Remaining CPU: ItlXhciKick ~1900 IPI/s on two busy controllers, WindowServer translation ~5 ms/frame,
+   diagnosticd 9-13 % while the iOS simulator log stream is open.
+
+Deferred (owner 2026-11-10: slow tests, later):
+- Eco charger hang (09:14): test 3 = reboot, plug in at the login window within the first minute. Tests 1-2 passed,
+  RTX stays off on every AC change; heartbeat stays armed (NVRAM strix-gpu-hb) in case it repeats.
+- Plugin log-line fix b9b74d7 (built, not installed).
+- HiDPI extra modes, RADV/libdrm and NMXAccel from source, hybrid RTX Metal device.
+
 ## State 2026-11-08 (boot 12:14, Step131) - supersedes the sections below
 
 | # | Milestone | Status |
