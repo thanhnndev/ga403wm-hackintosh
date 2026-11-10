@@ -9775,3 +9775,24 @@ Boot 09:14, Standard mode: the RTX is on NVRM/NVAccel again, because StrixDgpuGa
   on an AC change while PG00 is off and nobody owns the link (hang on a dead link); (2) a pre-existing AC-change hang
   independent of the RTX. Next: heartbeat + GPP9 GSTA/vendor sampling into NVRAM for 20 s after every power-source change
   (survives a hang), then a controlled plug/unplug test with the owner.
+- 2026-11-10 10:30, Eco charger hang, analysis (no new install):
+  - AC-change ACPI path mapped. ACAD._PSR -> ALIB(1) -> A018 writes the MP1 BIOS mailbox (SMN 0x3B10928 msg, 0x3B10978
+    resp, 0x3B10998.. args) through the root-complex index/data pair 0xA0/0xA4 (AGRB 0xE0000000), then spins
+    `While (A158 == Zero)` with AM00 held: an unbounded wait on the SMU. Our SMN users (AmdCppc, StrixS0ix) use the 0x60/0x64
+    pair and the PMC mailbox, so there is no shared mailbox. SSDT-22 GPIO _EVT pins 0x05/0x10 Notify(PEGP, 0x81) +
+    ATKD.IANE(0xC0); nothing on that path touches PG00.
+  - Counter-evidence for "Eco + charger always hangs": 11-09 13:51 the owner plugged in during the 13:07 Eco boot (RTX off)
+    and it ran on to 17:49 (pmset log). The 11-09 ~10:03 "unplug freeze" was a panic (CloudflareWARP matching UAF), not a hang.
+  - The 09:14 hang boot was at the login window (no console user). AC 09:14:01.2 -> PowerChime played the chime normally
+    (AppleHDA engine start 09:14:03.6, stop 09:14:04.96, 50176 frames). From 09:14:03.639 audiomxd loops on
+    "audioaccessoryd died ... No user logged in" at ~110 000 log lines/s (740 k lines in 6 s) until the log ends at
+    09:14:09.943. Kernel lines stop after 09:14:04.96 (audio engine stop); locationd still logs at 09:14:08.98. Next boot
+    starts 09:14:23, so the log end is close to the forced power-off: the system was still scheduling 5 s after the chime.
+    The audiomxd loop appears once (normal count 1) on the 09:14:28 boot and on the 11-09 13:07 boot.
+  - New lead (3): charger at the login window -> PowerChime -> audiomxd/audioaccessoryd spin, independent of the RTX.
+    Leads (1) dGPU re-power on AC and (2) SMU AC/DC message wait stay open.
+  - Heartbeat build reviewed: rog-control-macos a26cd32, StrixDgpuGate 694511EA (ACAD notify + 1 s battery poll, 20 s
+    sampler at 250 ms: GSTA, vendor/PMCSR/_PSC every 4th tick, no config read on a dead link, NVRAM strix-gpu-hb synced
+    every 2 s, property hb-ring). Not installed (live D48A1ED0).
+  - Test plan with the owner, in Eco: (a) plug in inside a user session; (b) log out, plug in at the login window. After
+    each: `ioreg -l | grep hb-` and `nvram strix-gpu-hb`; on a hang, read strix-gpu-hb on the next boot.
