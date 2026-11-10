@@ -9756,3 +9756,7 @@ Boot 09:14, Standard mode: the RTX is on NVRM/NVAccel again, because StrixDgpuGa
 - Main's spindump put 79 % of Chrome's userptr import in the registry chain walk. With 2M buckets, the same import stream (more of it: 81k records/s, because frames are no longer dropped) no longer stalls the GPU process. 1080p60 in a maximised window plays at 60 fps, as in the small window in part 28.
 - Caveat: this boot is 14 min old, and compressor pressure is a third of the 14:03 run's (2.7 vs 8.0 GB). Repeat the run after several hours of daily load before calling it closed.
 - Chrome still makes ~15-22 new window-size surfaces/s. Each is a full import, now cheap enough. (c), why Chromium reallocates, remains open but is no longer the frame-drop cause.
+- 2026-11-10 09:35, Step140 verified (out-22 BE2AA02D): maximised scratch Chrome VP9 1080p60, 60 s (part 35, 0cde4fc):
+  drops 382 -> 7, rVFC 3222 -> 3598 of ~3605, userrec_live 1.13 M -> 0.79 M, userwire 5.54 -> 4.67 GB, WS 9.4 -> 8.7
+  ms/frame; userrec_made 61.5k -> 81.3k/s (more frames shown = more imports, each now cheap). Caveat: boot 14 min old,
+  compressor 2.7 GB vs 8.0 GB; repeat after hours of daily load (tools/890m/yt-probe/run-max.sh).
