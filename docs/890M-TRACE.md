@@ -9766,3 +9766,12 @@ Boot 09:14, Standard mode: the RTX is on NVRM/NVAccel again, because StrixDgpuGa
   - WindowServer 12.8 ms/frame (769 ms/s). It varies from run to run with the owner's activity.
   - Compressor 2.7 GB.
 - Still to do: rerun `run-max.sh` after several hours of daily load, and report drops, userwire and compressor.
+- 2026-11-10 09:50, owner confirms: the 09:13 Eco boot froze when the charger was plugged in (forced restart). Findings:
+  AC came in at 09:14:01.225 (PMRD ac 1, SmartBattery polls); the unified log runs on normally to 09:14:09 and then stops,
+  with no panic report (debug=0x100 would leave AAPL,PanicInfo and a .panic) = a hard hang, not a panic. ACAD._PSR ->
+  ALIB(1) -> A026 -> A011 -> A018(0x11/0x12) is only an SMU AC/DC message (SSDT-1 221-258, 644, 7309); _Q3F/_QA4 only
+  Notify ACAD. AmdCppcPolicy only rewrites EPP (no WMI). Against "the gate causes it": 11-09 morning an unplug froze with
+  the RTX in D0, and the 11-09 13:15 unplug in Eco did not freeze. Hypotheses: (1) EC or SMU re-powers / retrains the dGPU
+  on an AC change while PG00 is off and nobody owns the link (hang on a dead link); (2) a pre-existing AC-change hang
+  independent of the RTX. Next: heartbeat + GPP9 GSTA/vendor sampling into NVRAM for 20 s after every power-source change
+  (survives a hang), then a controlled plug/unplug test with the owner.
