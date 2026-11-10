@@ -737,3 +737,39 @@ Next:
   otherwise the result measures them.
 - A wired-memory breakdown (`zprint`, root): who holds the 11 GB.
 - Why `nmx_userwire_pages` is 3.1 GB.
+
+## 2026-11-10: ItlXhciKick fix status, idle A/B script (branch thermal/idle-ab)
+
+**ItlXhciKick IPI fix:** nothing to rebase or build.
+- 3fd2fb1 (empty controllers kicked every 16 ms) and b862dec (NVRAM only on a health change) are already on
+  `research/890m-cobalt64`. `git diff HEAD thermal/xhcikick-idle -- kexts/ItlXhciKick` is empty.
+- They have been live since the 2026-11-08 23:51 boot as **5D179C74-BC40-3513-AC54-E68E18446B88**
+  (`build/ItlXhciKick.kext`, `kextstat` shows the same UUID).
+- The registry on the current boot (`itlz0`, up 1319 s): `c0:75077/…/d0 c1:1201226/…/d3 c2:1201226/…/d1
+  c3:75077/…/d0`. The two empty controllers get 1/16 of the kicks, with no misses.
+- `origin/main` does not have it yet (54 lines in ItlXhciKick.cpp); that merge is main's call.
+- Imports are public KPI only:
+  - IOService / IORegistryEntry / OSData / OSString / IOFilterInterruptEventSource metaclass;
+  - `kernel_thread_start`, `thread_deallocate`, `IOSleep`, `IODelay`, `PE_parse_boot_argn`, `mach_absolute_time`,
+    `absolutetime_to_nanoseconds`;
+  - libc string functions.
+  
+  There are no private symbols and no address hooks.
+- Risk: a hot-plug on an empty controller is drained within 16 ms instead of 1 ms, and its first port change arrives
+  on interrupter 0, whose MSI does fire. `itlkickidle=1` restores the old behaviour.
+
+**Idle A/B script: `tools/idle-ab.sh`** (replaces `tools/cpu-idle-ab.sh` for this test). The owner runs
+`sudo tools/idle-ab.sh` and keeps hands off for ~4.5 min, with no build, no simulator, no video and no chat
+streaming.
+- Timing: 20 s settle, then 6 phases of ~36 s in the order 0 1 2 0 1 2.
+- Measured per phase:
+  - package power from the RAPL energy counter, averaged over the whole phase (ESU from the unit register, 32-bit
+    wrap handled), not the 5 s `pkg_mw`;
+  - Tctl;
+  - frames/s;
+  - kernel_task and WindowServer %CPU (`top`, 30 s);
+  - `S0ix,IdleStats` (entries and time per state);
+  - a 3 s ktrace (`S0x0140,S0x0105`) counting remote ASTs (IPIs) and `INTERRUPT` entries, i.e. CPU wakeups. It uses
+    the ktrace because top's IDLEW column is always 0 here and the hook counts nothing in mode 0.
+- The idle mode is put back to its start value at the end, and also on Ctrl-C.
+- Results go to `/var/tmp/idle-ab-<date>/idle-ab.txt`, which survives the reboot cleanup of /tmp.
