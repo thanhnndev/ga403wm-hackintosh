@@ -9803,3 +9803,9 @@ Boot 09:14, Standard mode: the RTX is on NVRM/NVAccel again, because StrixDgpuGa
   857B71C9 (backup EFI/OC/Kexts-backup/AsusWmi.kext.0.2.2-857B71C9); RogControl 0.6.0 (feat/gpu-mode 01e0adb: GPU tile in
   popover + window, Diagnostics card with gate + heartbeat) in /Applications, 0.5.3 kept at ~/develop/app-backups. The
   running 0.5.3 stays until the reboot. Batch for the next boot: StrixDgpuGate 694511EA + AsusWmi 0.3.0 + RogControl 0.6.0, Eco.
+- 2026-11-10 19:46 boot (Eco, 694511EA + AsusWmi 0.3.0 + RogControl 0.6.0): gate-effective 1, gsta 1->0, psc 3, vid 0xffff,
+  not tripped. Boot-time ACAD notify gave hb event 1 (80 ticks, g0 throughout). 81 C after boot = post-boot load (load 19.8,
+  syspolicyd YARA scan of the new app, Spotlight), 68-76 C at 16-27 W at 6 min.
+- Test 1 (owner, in a user session, ~20:12): charger plugged in, no hang. hb event 2 src acad ac1, 80 ticks, max gap 252 ms,
+  gsta flips 0, vendor 0xffff, _PSC 3 the whole 20 s: the EC/SMU does not re-power the RTX on an AC change in a session.
+  Next: test 2, plug-in at the login window (the 09:14 case).
