@@ -9819,3 +9819,20 @@ Boot 09:14, Standard mode: the RTX is on NVRM/NVAccel again, because StrixDgpuGa
   Leads (1) dGPU re-power on AC: ruled out for a running system (4 AC changes, GSTA 0 throughout). The heartbeat stays
   armed on every AC change, so a repeat will leave strix-gpu-hb behind. Possible test 3: reboot, plug in at the login
   window within the first minute.
+
+## Step141: wired memory, GPU pages never went back to macOS (2026-11-10 20:25)
+- Boot 19:46, uptime 35 min, no Docker: PhysMem 9975M wired. zprint (root via launchctl submit) wired by tag:
+  NMXGPU 3412 MB, IOSurface 1404 MB, COUNT_RESERVED 1719 MB (firmware), PTE 530 MB, PMAP 317 MB, SECURITY 145 MB, apfs 66 MB.
+  NMX counters: pages_live 377986 (1.44 GB handed to Linux), userwire 1250 descriptors / 344239 pages (1.31 GB).
+- IOSurface 1.4 GB = the surfaces NMX imports: surf_wire() prepare()s the IOSurface's own descriptor for the BO's life
+  (counted in userwire). Needed while the GPU uses the BO; lever = BO lifetime (plugin dead-drop), not changed here.
+- NMXGPU 3.4 GB vs 1.44 GB live: two pools that never shrink.
+  1. xkpi page chunks (nmx_page.c): freed single pages went onto one global free list across all 2 MB chunks; a chunk was
+     only released at unload (the header comment said otherwise). The pool stayed at its peak (~1.9 GB free here).
+  2. TTM's WC/UC page pool: page_pool_size = 50 % of RAM (16 GB), trimmed only by the MM shrinker, which LinuxKPI runs on
+     vm_lowmem; xnu never fires vm_lowmem, so freed GTT pages of closed surfaces stayed pooled (counted as live).
+- Fix (nmx-source-port 50e3dbb, building out-23): patch ttm-pool-cap.patch caps the TTM pool at 32768 pages (128 MB;
+  ttm_pool_free trims after every free; the TT page limit is unchanged). nmx_page.c: per-chunk free lists + an `avail`
+  list; a wholly free chunk is unlinked and released from a thread call once 64 MB (CHUNK_RESERVE) stay pooled without
+  it. New sysctls debug.nmx_page_chunks / nmx_page_free / nmx_page_chunks_freed.
+  Expected: NMXGPU wired close to pages_live + 64 MB, falling back after video/Chrome load instead of staying at peak.
