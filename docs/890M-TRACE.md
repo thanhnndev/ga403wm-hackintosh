@@ -9799,3 +9799,7 @@ Boot 09:14, Standard mode: the RTX is on NVRM/NVAccel again, because StrixDgpuGa
 - 2026-11-10 10:45, owner OK: StrixDgpuGate 694511EA (heartbeat, rog-control-macos a26cd32) on the ESP, replacing D48A1ED0
   (backup EFI/OC/Kexts-backup/StrixDgpuGate.kext.D48A1ED0). NVRAM strix-gpu-mode=eco, strix-gpu-eco-try=0, so the next
   boot is Eco. Undo: copy the backup back.
+- 2026-11-10 11:05, owner OK, same reboot batch: AsusWmi 0.3.0 42C34ABF (ABI 6, GPU selectors) on the ESP replacing 0.2.2
+  857B71C9 (backup EFI/OC/Kexts-backup/AsusWmi.kext.0.2.2-857B71C9); RogControl 0.6.0 (feat/gpu-mode 01e0adb: GPU tile in
+  popover + window, Diagnostics card with gate + heartbeat) in /Applications, 0.5.3 kept at ~/develop/app-backups. The
+  running 0.5.3 stays until the reboot. Batch for the next boot: StrixDgpuGate 694511EA + AsusWmi 0.3.0 + RogControl 0.6.0, Eco.
