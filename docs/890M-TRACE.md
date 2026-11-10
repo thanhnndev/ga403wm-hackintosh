@@ -9841,3 +9841,6 @@ Boot 09:14, Standard mode: the RTX is on NVRM/NVAccel again, because StrixDgpuGa
   nmx_page_free / nmx_page_chunks_freed in the binary. Not installed. After boot, check: debug.nmx_page_chunks x 2 MB
   against pages_live (expect free <= ~64 MB plus partial chunks), chunks_freed rising after a Chrome video is closed,
   zprint NMXGPU tag well below 3.4 GB at the same uptime, no panic. Undo: macos-install-step130.sh with out-22.
+- 2026-11-10 20:45, owner OK: out-23 (5CAE35B7, Step141) installed in the AuxKC (step130 installer rc 0, kccheck ok;
+  NMXAccel/NMXAGDC/NVIDIA kexts/StrixS0ix 1700FABF unchanged). Live until reboot: out-22 BE2AA02D. Reboot pending.
+  Undo: macos-install-step130.sh with out-22.
