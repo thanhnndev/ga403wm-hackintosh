@@ -9725,3 +9725,12 @@ Plugin 6797e1f (UUID 0106C6CD) was installed by main without a reboot. A fresh s
   NMXAccel/NMXAGDC/NVIDIA kexts/StrixS0ix 0.1.17 unchanged in the collection). Reboot pending. After boot: rerun the
   maximised Chrome VP9 1080p60 60 s run (edge-video-lag session) vs 382 drops / 5.54 GB / 9.4 ms; kernel spindump to confirm
   nmx_user_pages_pin is no longer chain-bound. Undo: macos-install-step130.sh with out-21.
+- 2026-11-10 09:30, boots 09:13:14 and 09:14:28 (out-22 BE2AA02D live, no panic report). The 09:13 boot was Eco
+  (gate claimed the RTX) and ended abruptly at 09:14:09 at the login window, 7 s after PowerChime spawned (09:14:02 =
+  charger plugged in). No graceful-shutdown messages, no .panic in DiagnosticReports (old AAPL,PanicInfo vars are in
+  NVRAM, unparsed). The loop guard worked: the 09:14 boot is Standard ("standard: loop guard (previous Eco boot did not
+  finish)", gate-tripped Yes), so NVRM drives the RTX again; strix-gpu-mode is still eco.
+  Suspect, not proven: ACAD._PSR on an AC change calls ALIB(1, AC/DC), AMD's AC/DC notification to the SMU (power limits,
+  PCIe link policy) while GPP9's link is down and PG00 is off; _Q3F/_QA4 only Notify ACAD. Note that the machine also froze
+  on an unplug on 11-09 morning with the RTX in D0, so an AC-change hang may exist without the gate. Need: the owner's
+  account of 09:13-09:14 (plugged in? froze? who restarted?) and a controlled AC plug/unplug test in Eco.
