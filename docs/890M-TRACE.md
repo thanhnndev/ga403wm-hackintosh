@@ -9796,3 +9796,6 @@ Boot 09:14, Standard mode: the RTX is on NVRM/NVAccel again, because StrixDgpuGa
     every 2 s, property hb-ring). Not installed (live D48A1ED0).
   - Test plan with the owner, in Eco: (a) plug in inside a user session; (b) log out, plug in at the login window. After
     each: `ioreg -l | grep hb-` and `nvram strix-gpu-hb`; on a hang, read strix-gpu-hb on the next boot.
+- 2026-11-10 10:45, owner OK: StrixDgpuGate 694511EA (heartbeat, rog-control-macos a26cd32) on the ESP, replacing D48A1ED0
+  (backup EFI/OC/Kexts-backup/StrixDgpuGate.kext.D48A1ED0). NVRAM strix-gpu-mode=eco, strix-gpu-eco-try=0, so the next
+  boot is Eco. Undo: copy the backup back.
