@@ -9836,3 +9836,8 @@ Boot 09:14, Standard mode: the RTX is on NVRM/NVAccel again, because StrixDgpuGa
   list; a wholly free chunk is unlinked and released from a thread call once 64 MB (CHUNK_RESERVE) stay pooled without
   it. New sysctls debug.nmx_page_chunks / nmx_page_free / nmx_page_chunks_freed.
   Expected: NMXGPU wired close to pages_live + 64 MB, falling back after video/Chrome load instead of staying at peak.
+- 2026-11-10 20:35, out-23 built (nmx-source-port 50e3dbb + 73a9809, pushed to fork): NMXGPU UUID 5CAE35B7, 581 imports
+  identical to out-22, 0 weak, NMXOwnsDisplay present, ttm_device.c has the 32768-page cap, sysctls nmx_page_chunks /
+  nmx_page_free / nmx_page_chunks_freed in the binary. Not installed. After boot, check: debug.nmx_page_chunks x 2 MB
+  against pages_live (expect free <= ~64 MB plus partial chunks), chunks_freed rising after a Chrome video is closed,
+  zprint NMXGPU tag well below 3.4 GB at the same uptime, no panic. Undo: macos-install-step130.sh with out-22.
