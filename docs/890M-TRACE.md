@@ -9734,3 +9734,25 @@ Plugin 6797e1f (UUID 0106C6CD) was installed by main without a reboot. A fresh s
   PCIe link policy) while GPP9's link is down and PG00 is off; _Q3F/_QA4 only Notify ACAD. Note that the machine also froze
   on an unplug on 11-09 morning with the RTX in D0, so an AC-change hang may exist without the gate. Need: the owner's
   account of 09:13-09:14 (plugged in? froze? who restarted?) and a controlled AC plug/unplug test in Eco.
+
+## Trace part 35: NMXGPU out-22 (Step140, page registry 2M buckets): maximised Chrome VP9 1080p60 drops 382 → 7 per 60 s (2026-11-10 09:28)
+
+Boot 09:14, Standard mode: the RTX is on NVRM/NVAccel again, because StrixDgpuGate's loop guard tripped. NMXGPU out-22 BE2AA02D, plugin 6797e1f (0106C6CD).
+- **Vendor picks with NVAccel present:** WindowServer (pid 207), loginwindow and every user process with the plugin log `GPU vendor 1002 (AMD, RADV)`. WS and Chrome stay on the 890M.
+- **Run:** new `tools/890m/yt-probe/run-max.sh` (the part 32-34 run as one script: maximised scratch Chrome, probe, 1 s counters). VP9 1080p60 after a 15 s ad, measured 09:28:35-09:29:36. Main took a kernel spindump inside this window.
+
+| metric | part 34 run (2026-11-09 14:03, out-21) | out-22 (09:28) |
+|---|---|---|
+| dropped / 60 s | 382 | **7** (1 at 13 s, 6 at 27 s) |
+| decoded / rVFC | 3605 / 3222 | 3608 / 3598 |
+| `nmx_userrec_made` | 61.5k/s | 81.3k/s |
+| `nmx_userrec_live` avg | 1.13 M | 0.79 M |
+| `nmx_userwire_pages` avg | 5.54 GB | 4.67 GB |
+| WindowServer | 9.4 ms/frame | 8.7 ms/frame (523 ms/s) |
+| Chrome GPU keep per 30 s | hits 0, idle 0 MB | hits 0-42, misses 462-672, 90-94 entries, idle 0 MB |
+| system wired / compressor | 13.9 / 8.0 GB | 12.2 / 2.7 GB |
+
+**Reading:**
+- Main's spindump put 79 % of Chrome's userptr import in the registry chain walk. With 2M buckets, the same import stream (more of it: 81k records/s, because frames are no longer dropped) no longer stalls the GPU process. 1080p60 in a maximised window plays at 60 fps, as in the small window in part 28.
+- Caveat: this boot is 14 min old, and compressor pressure is a third of the 14:03 run's (2.7 vs 8.0 GB). Repeat the run after several hours of daily load before calling it closed.
+- Chrome still makes ~15-22 new window-size surfaces/s. Each is a full import, now cheap enough. (c), why Chromium reallocates, remains open but is no longer the frame-drop cause.
