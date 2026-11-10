@@ -9844,3 +9844,9 @@ Boot 09:14, Standard mode: the RTX is on NVRM/NVAccel again, because StrixDgpuGa
 - 2026-11-10 20:45, owner OK: out-23 (5CAE35B7, Step141) installed in the AuxKC (step130 installer rc 0, kccheck ok;
   NMXAccel/NMXAGDC/NVIDIA kexts/StrixS0ix 1700FABF unchanged). Live until reboot: out-22 BE2AA02D. Reboot pending.
   Undo: macos-install-step130.sh with out-22.
+
+### 2026-11-10 RyzenHV 0.7.22 on the ESP (same reboot as out-23)
+- 0.7.22 (56360452, sha 5c865167; ryzen-hypervisor research/ga403wm-zen5 319c2ff): per-vCPU ASIDs + VMCB clean bits. Built and unit-tested by the Fix RyzenHV session.
+- Copied to EFI/OC/Kexts; config.plist unchanged (lint OK). The 0.7.21 backup is Kexts-backup/RyzenHV.kext.0.7.21-B37AAE98.
+- After boot: kext 0.7.22 loaded, hvf-exit-bench 2, Docker stack + alpine curl, `rhv-info stats` guest TLB flush X% well below 100, guest+switch <= 10.67 us.
+- Undo: copy the backup back to Kexts/RyzenHV.kext.
