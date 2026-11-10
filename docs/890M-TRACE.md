@@ -10049,3 +10049,112 @@ Same setup as part 39 (`run-max.sh`, maximised scratch Chrome, VP9 1080p60, 60 s
 - A/B: `sysctl debug.nmx_userptr_park_ms=0` (park off, live, set by main as root); video rerun ×2 running.
 - Step141c (nmx-source-port 539474d + 679e4a7): when an allocation leaves free < reserve/2, a fill thread call tops the pool up to 256 MB. Counters debug.nmx_page_chunks_filled / _inline. Unload covers both calls.
 - out-27 = out-26 + Step141c: rc 0, 581 imports identical to out-23, 0 weak, NMXOwnsDisplay present.
+## Step142: IOSurface wired memory = every imported surface stays wired for its BO's life (2026-11-10 22:30)
+Question: why zprint's IOSurface tag held 1404 MB wired 35 min after boot (boot 19:46, Step141 above), with
+`debug.nmx_userwire_*` at 1250 descriptors / 344239 pages (1.31 GB). Source: nmx-source-port 73a9809 + the applied
+drm-kmod series. Side session, no build/install.
+
+**Path, import to release** (who holds the wiring, and when it goes):
+1. The plugin sends `DRM_AMDGPU_NMX_SURFACE_HINT` (surface id, addr, size), then RADV's `amdgpu_create_bo_from_user_mem`
+   sends `GEM_USERPTR` (libdrm always sets VALIDATE).
+2. `nmx_userptr_pin` (amdgpu-userptr-amdgpu_gem.patch) -> `get_user_pages` -> `nmx_user_pages_pin` -> `nmx_xnu_user_wire`.
+   With a hint, `surf_wire()` retains the IOSurface's own descriptor and `prepare()`s it. These pages are tagged by
+   the IOSurface kext's descriptor, so zprint counts them under IOSurface, not NMXGPU. Without a hint, a plain user
+   range is wired.
+3. One `user_pin` per import. Each page gets a record and a pin entry. The BO keeps the records in `ttm->pages`.
+4. The only release is `amdgpu_ttm_tt_unpopulate` (amdgpu-userptr-amdgpu_ttm.patch). It puts every page; the last
+   put runs `nmx_xnu_user_unwire` = `complete()` + `release()`. Unpopulate runs when TTM destroys the BO, i.e. after
+   the last GEM handle is closed, the VM mappings are gone, and the fences have signalled.
+- So the BO holds the wiring, and the BO lives as long as user space keeps the VkDeviceMemory: the plugin's
+  surface-keep cache (WindowServer keeps the old policy; apps up to the 1 GB idle cap, part 33), RADV, the process.
+  Nothing in the kernel ever unwires an idle BO. CS never fetches pages again (Step92 `if (0)`), and there is no
+  notifier or shrinker.
+
+**Leak check:**
+- No kernel import cache. Each hint is consumed by one import (`hint_find(take)`), and two imports of one surface
+  make two BOs with two `prepare()`s of the same descriptor.
+  - userwire counts both, so it overstates physical memory when a surface is imported twice.
+  - The new orphan count shows the other case.
+- Leak found: a userptr BO that is pinned but never populated (no VALIDATE, or destroyed before populate). Its
+  unpopulate is skipped (`ttm_tt_unpopulate` returns early when the TT is not populated), so those pages stayed
+  wired forever. RADV always validates, so this is probably rare; it is now released and counted
+  (`nmx_upin_destroy_rec`).
+- Other release paths are sound:
+  - GEM close removes `bo_va`.
+  - Delayed destroy waits for fences.
+  - Swapout skips EXTERNAL TTs.
+  - Gutting does not apply to device BOs.
+- Latent hazard, fixed in passing: any unpopulate other than destroy (`ttm_device_clear_dma_mappings`) left NULL pages
+  that a later populate would have bound. Populate now restores them.
+
+**Fix: Step142, fork branch `surf-wire-release` 333b109 (on 73a9809; pushed to fork, not merged, not built):**
+- **Owned pins** (nmx_page.c `nmx_upin_*`):
+  - A userptr BO owns its pin. Dropping its page records no longer drops the wiring.
+  - The wiring can be parked and restored.
+  - put_pages removes this pin's own entry from each page (it used to remove whichever entry came first).
+- **Wire records** (nmx_mm.cpp):
+  - Each wiring is a record: kind, process, age.
+  - `nmx_xnu_user_park` drops the wiring of an IOSurface descriptor with `complete()` and keeps the descriptor held, so
+    the memory stays allocated but becomes pageable/compressible.
+  - `nmx_xnu_user_rewire` runs `prepare()` again and returns the new physical pages.
+  - Plain user ranges are never parked, because re-wiring them needs the task's map.
+- **Idle park** (new patch amdgpu-userptr-park.patch, last in the series):
+  - A sweep runs every 1 s while anything can be parked.
+  - It picks IOSurface BOs that no CS has listed for `debug.nmx_userptr_park_ms` (default 10000).
+  - Skipped: BOs with unsignalled fences, pinned BOs (scanout), exported/imported BOs, and BOs whose reservation is
+    already locked (trylock).
+  - A picked BO is validated to CPU (system placement: GART unbound, bo_va invalidated) and then unpopulated, which
+    parks the wiring.
+  - The next CS that lists the BO validates it into GTT. Populate re-wires it and rebuilds the records, then bind and
+    `amdgpu_vm_handle_moved` use the new pages.
+  - This is upstream's userptr re-fetch flow, with the IOSurface descriptor in place of HMM.
+  - Until then the PTEs of a parked BO are rewritten as not valid (system placement), so a stray access faults
+    instead of reading memory that is no longer pinned.
+- **Off switches**: `sysctl debug.nmx_userptr_park_ms=0` (runtime), boot-arg `nmxpark=0`. Boot-arg audit: no hit in
+  our trees or /Library/Extensions, /Library/NullMoth.
+- **Checks:**
+  - The series replays 37/37 on a fresh drm-kmod checkout in a private GPU_SRC.
+  - amdgpu_ttm/cs/gem, nmx_page, nmx_mm and nmx_kext compile.
+  - No new kernel imports. `__bzero` and the stack guard are already imported by other objects; the new symbols all
+    resolve inside the kext.
+  - Not linked.
+
+**New counters:**
+
+| sysctl | meaning |
+|---|---|
+| `debug.nmx_userwire_by_kind` | surface/plain: wired, older than 60 s, parked; surface orphans (descriptor held by NMX only = the IOSurface is gone, only the BO keeps the memory); top 8 processes |
+| `nmx_surfwire_count` / `nmx_surfwire_pages` | NMX's share of zprint IOSurface |
+| `nmx_userwire_parked` / `nmx_userwire_parked_pages` | parked now |
+| `nmx_userwire_parks` / `nmx_userwire_unparks` / `nmx_userwire_unpark_fail` | since boot |
+| `nmx_upin_restore_fail` | restores that failed |
+| `nmx_upin_destroy_rec` | the leak above |
+| `nmx_park_skip_busy` / `nmx_park_fail` | sweep skips and failed parks |
+| `nmx_userptr_park_ms` | the knob |
+
+`nmx_userwire_*` now counts wired-only; parked records are counted apart.
+
+**Expected saving:**
+- At the 35 min point, about 1.31 GB of userwire, almost all IOSurface-tagged. Only surfaces that some CS listed in
+  the last 10 s stay wired.
+- On an idle desktop that is the visible windows' surfaces: estimate 0.2-0.4 GB (a maximised 3392x1536 window
+  surface is ~20 MB).
+- Expect the IOSurface tag about 0.9-1.1 GB lower at idle, and `nmx_userwire_parked_pages` about 230-280k.
+- This is wired -> pageable, not freed. The memory leaves the wired count and the compressor can take it; it is freed
+  only when the cache drops the BO.
+- Video (Chrome): its live frames are listed every frame, so no change during playback; released frames already go
+  through dead-drop.
+
+**Risks to watch on the first boot:**
+- GPU page faults or ring timeouts (`nmx_timeouts`), meaning a BO used without being in the CS list.
+  - RADV lists every referenced BO, and with a global list it lists them all on every CS, so those BOs never park.
+- A stall when an idle window comes back: a re-wire plus a rebind of ~20 MB.
+- `nmx_upin_restore_fail` must stay 0.
+
+**After boot, with idle desktop + daily load:**
+
+    sysctl debug.nmx_userwire_by_kind debug.nmx_surfwire_pages debug.nmx_userwire_parked_pages debug.nmx_userwire_parks debug.nmx_userwire_unparks debug.nmx_upin_restore_fail debug.nmx_upin_destroy_rec debug.nmx_park_skip_busy debug.nmx_timeouts
+
+Also take zprint's IOSurface tag at 35 min and compare it with 1404 MB, and run A/B with `nmx_userptr_park_ms=0`.
+If `surface orphan` pages are large, the plugin holds textures of surfaces that were released: that is a plugin fix
+(the WS keep policy), not a kernel one.
