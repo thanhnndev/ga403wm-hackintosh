@@ -9850,3 +9850,29 @@ Boot 09:14, Standard mode: the RTX is on NVRM/NVAccel again, because StrixDgpuGa
 - Copied to EFI/OC/Kexts; config.plist unchanged (lint OK). The 0.7.21 backup is Kexts-backup/RyzenHV.kext.0.7.21-B37AAE98.
 - After boot: kext 0.7.22 loaded, hvf-exit-bench 2, Docker stack + alpine curl, `rhv-info stats` guest TLB flush X% well below 100, guest+switch <= 10.67 us.
 - Undo: copy the backup back to Kexts/RyzenHV.kext.
+
+## Trace part 36: Step141 (out-23) review for the video path, and the post-reboot run (2026-11-10)
+
+Main asked before installing NMXGPU out-23 (Step141, nmx-plugin-890m 50e3dbb + 73a9809). The change has two parts:
+- TTM page pool capped at 128 MB.
+- Per-chunk free lists: a wholly free 2 MB chunk goes back to the system through a thread call, once more than 64 MB (CHUNK_RESERVE 16384 pages) is pooled without it.
+
+Could it hurt video? Reading the diff:
+- **Surface imports are not chunk pages.** The big page-record stream on the video path is userptr (Chrome and WS IOSurface imports, 60-80k records/s, parts 29-35). Those are pinned user pages with their own records, not `single_alloc` chunk pages. Step141 does not touch that path.
+- **VCN and GTT BOs.**
+  - Our GTT is cached (Step88, `nmx_gtt_wc=0`, `ttm_cached`). TTM's pool keeps only WC/UC pages, so the 128 MB cap hardly applies to WS, Chrome or VCN GTT BOs.
+  - Their pages come from `single_alloc` and go back to chunk free lists.
+  - VCNDec allocates its DPB and bitstream BOs once per session and imports each VT surface once (`imports 1`). Steady playback therefore has little BO churn.
+  - A session start or quality switch is served from the 64 MB reserve before any new chunk is made.
+- **No ping-pong.** A new chunk is made only when no chunk has a free page. One is released only when another 64 MB stays pooled. The 64 MB hysteresis rules out a create/release cycle per frame.
+- **Off the caller's path.** Release (512 registry removals with the 2M buckets, descriptor free) runs from the thread call, outside `pg_lock` and the allocator's caller.
+  - `thread_call_enter` is called after the spin lock is dropped.
+  - A second enter while the worker runs is picked up, because the worker swaps the queue under the lock.
+- **Code issues found:** none.
+  - One note: `single_alloc` takes from the most recently refilled chunk (LIFO on `avail`). That can keep partly used chunks alive longer, which slows giving memory back. It does not affect latency.
+- **Verdict:** low risk for the video path. The thing to watch is chunk churn during playback, which should be about 0.
+
+**Post-reboot run, prepared:**
+- `tools/890m/yt-probe/run-max.sh` now samples `debug.nmx_pages_live`, `nmx_page_chunks`, `nmx_page_free` and `nmx_page_chunks_freed` every second, shown as "-" on a kext without them.
+- It prints before / during-window (min-max) / after values and the chunks freed in each phase. Verified on out-22 (columns "-") and on synthetic data.
+- Compare against out-22 part 35 (7 and 5 drops / 60 s, userwire ~4.7 GB, WS 8.7-12.8 ms/frame). Expected: chunks freed in the window ≈ 0, and the free pool staying above 64 MB.
