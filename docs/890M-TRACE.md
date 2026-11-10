@@ -9809,3 +9809,13 @@ Boot 09:14, Standard mode: the RTX is on NVRM/NVAccel again, because StrixDgpuGa
 - Test 1 (owner, in a user session, ~20:12): charger plugged in, no hang. hb event 2 src acad ac1, 80 ticks, max gap 252 ms,
   gsta flips 0, vendor 0xffff, _PSC 3 the whole 20 s: the EC/SMU does not re-power the RTX on an AC change in a session.
   Next: test 2, plug-in at the login window (the 09:14 case).
+- Test 2 (owner, ~20:14): unplug 20:14:30, log out, plug-in at the login window 20:14:58 (chime played), no hang. hb events
+  3 and 4 (unplug + plug), 80 ticks each, gsta flips 0, max gap 259 ms: the RTX stays off on both AC changes.
+  The audiomxd "audioaccessoryd died" loop came back at the logout itself (20:14:43-20:14:53, ~250 k lines, ~30 k/s),
+  before the chime, and stopped on its own; audiomxd is idle now. So the loop belongs to "no console user", not to the
+  charger, and is not enough for a hang (it ran here 10 s with no harm).
+- Not reproduced: Eco + charger in a session, and at the login window after a logout. What 09:14 had and the tests did not:
+  a fresh boot (~50 s uptime, a login window that never had a user, inside the gate's 90 s loop-guard window).
+  Leads (1) dGPU re-power on AC: ruled out for a running system (4 AC changes, GSTA 0 throughout). The heartbeat stays
+  armed on every AC change, so a repeat will leave strix-gpu-hb behind. Possible test 3: reboot, plug in at the login
+  window within the first minute.
