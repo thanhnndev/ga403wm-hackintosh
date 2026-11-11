@@ -9967,3 +9967,10 @@ Step141b changes how free chunks go back:
 **Verdict:** no race on the video path's hot paths. Fix the unload window and initialise `empty_at` when convenient.
 
 After out-25 is live: `run-max.sh` under the same load, noting flutter/clang, ideally without them. Expect chunks freed in the window ≈ 0, free never at 0, drops ≤ 7.
+
+### 2026-11-11 Step141b: out-23 video regression, out-26 built (88328F15), not installed
+- edge-video-lag (part 37): out-23 drops 21/60 s vs 7 on out-22 (flutter + clang load, no Docker). The 13-drop second = 22 chunks released, then 93 created: Chrome's ~120 MB bursts beat the 64 MB reserve, so the pool was released and refilled.
+- Step141b (nmx-source-port 828d4c2 + ce89550): a free chunk goes back only after 5 s unused, by a 1 s thread-call sweep armed only while chunks wait; reserve 256 MB. Review fixes: new chunks get empty_at; unload sets stopping and waits for sweeps/arms in flight.
+- out-25 (Step141b without the review fixes) is a build check only. out-24 (Step142 alone) is superseded.
+- out-26 = Step141b + review fixes + Step142 (IOSurface idle park): rc 0, 581 imports identical to out-23, 0 weak, NMXOwnsDisplay present.
+- Verify: run-max.sh with chunks freed in the window ≈ 0, free pool never 0, drops ≤ 7; IOSurface tag drops; nmx_userwire_parked > 0, unpark_fail 0.
