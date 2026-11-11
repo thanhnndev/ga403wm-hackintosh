@@ -32,7 +32,7 @@ for (let i = 0; i < 30; i++) { await wait(1000); if (await ev(`document.querySel
 await wait(4000);   // let the quality switch settle
 log('measure start', JSON.stringify(await ev(`(()=>{const p=document.getElementById('movie_player'); const v=document.querySelector('video');
   let c=''; try{c=p.getStatsForNerds().codecs;}catch(e){} return {h:v.videoHeight, codec:c};})()`)));
-const r = await ev(`(async()=>{const p=document.getElementById('movie_player'); const v=document.querySelector('video');
+const measure = () => ev(`(async()=>{const p=document.getElementById('movie_player'); const v=document.querySelector('video');
   const evs={waiting:0,stalled:0,seeking:0}; for(const k in evs) v.addEventListener(k,()=>evs[k]++);
   const tl=[]; let rv=0, procMax=0, procSum=0;
   const cb=(now,md)=>{rv++; if(md.processingDuration!=null){procSum+=md.processingDuration; if(md.processingDuration>procMax) procMax=md.processingDuration;} v.requestVideoFrameCallback(cb);};
@@ -52,6 +52,11 @@ const r = await ev(`(async()=>{const p=document.getElementById('movie_player'); 
   return {h:v.videoHeight, decoded:q1.totalVideoFrames-q0.totalVideoFrames, dropped:q1.droppedVideoFrames-q0.droppedVideoFrames, rvfc:rv,
     procAvgMs:(procSum/Math.max(rv,1)*1000).toFixed(2), procMaxMs:(procMax*1000).toFixed(1), evs, resumes,
     timeline:'sec playRate decoded dropped rvfc aheadS readyState\\n'+tl.join('\\n')};})()`);
+// The page can navigate under the evaluate (YouTube reloads the watch page after some ads): the result is then not an
+// object. Say what came back and measure once more.
+let r = await measure();
+if (!r || typeof r !== 'object') { log('measure failed:', JSON.stringify(r)); await wait(5000); r = await measure(); }
+if (!r || typeof r !== 'object') { log('measure failed again:', JSON.stringify(r)); process.exit(2); }
 console.log(r.timeline); delete r.timeline;
 log('summary', JSON.stringify(r));
 ws.close();

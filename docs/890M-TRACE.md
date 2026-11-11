@@ -9980,3 +9980,38 @@ After out-25 is live: `run-max.sh` under the same load, noting flutter/clang, id
 - No panic. RyzenHV 0.7.22, Eco gate (gsta 1->0, psc 3, vid 0xffff).
 - 10 min: chunks 830, page_free 65603 (256 MB reserve holds), chunks_freed 438. Step142: parked 298 BOs / 170444 pages (666 MB unwired), parks 3501, unparks 1382, unpark_fail / restore_fail / destroy_rec / park_fail all 0. surfwire 96 / 124976 pages (488 MB) still wired. Total wired 6160 MB.
 - Video rerun (edge-video-lag) and the re-wire test (IOSurface session) are running.
+
+## Trace part 39: out-26 (Step141b aged chunk release + Step142 IOSurface park): 38 drops / 60 s; the bursts sit on park re-wires and on a pool-empty burst (2026-11-11 22:49)
+
+Boot ~22:38, NMXGPU out-26 88328F15, plugin 6797e1f. Docker and flutter/clang were not running; load average 3-6. Run: `run-max.sh`, maximised scratch Chrome, VP9 1080p60, measured 22:49:33-22:50:33.
+- The first try at 22:48 failed in probe.mjs: `Runtime.evaluate` returned no object, the page having navigated under it, as on 2026-11-09 13:37.
+- probe.mjs now logs what came back and measures once more.
+
+| | out-22 (part 35) | out-23 (part 37) | **out-26** |
+|---|---|---|---|
+| dropped / 60 s | 7 / 5 | 21 | **38**: 21 at 44 s, 9 at 46 s, 7 at 51 s, 1 at 52 s |
+| decoded | 3608 | 3606 | 3603 |
+| userrec_made | 81k/s | 93k/s | 91.5k/s |
+| userwire avg | 4.7 GB | 2.0 GB | **1.21 GB** |
+| WS | 8.7-12.8 ms/frame | 10.1 | 10.3 |
+| chunks before / during / after | - | 705 / 762-923 / 743 | 886 / 1036-1213 / 1146 |
+| min free pages in window | - | 186 | 494 |
+| chunks freed in window | - | 310 | 122 (at 5-7 s and 20 s; none near a drop) |
+| IOSurface park over the run | - | - | parks +561, unparks +114, every fail 0 |
+
+**Per second:**
+- **44 s (21 drops):** no chunk event, and 56k pages were free. Userwire fell 340k → 199k pages over 38-41 s (surfaces parked after `nmx_userptr_park_ms` 10000), then rose **+50k pages (≈200 MB) in the 44 s sample** and +15k at 45 s. That is a re-wire of parked IOSurfaces, or new imports wired in a burst, on the GPU's path. 46 s (9 drops) follows it.
+- **51-53 s (7+1 drops):** a burst of +43k, +6k and +71k pages took the chunk pool from 62k free to **494**. 165 chunks were made in 3 s, and userwire rose another 120k pages. One burst is larger than the 256 MB reserve.
+- Chunk releases (5-7 s, 20 s) had no drops near them. The 5 s ageing does its job.
+
+**Reading:**
+- Step141b fixed the release/refill churn of part 37.
+- The drops now come from two other things:
+  1. Step142 park: surfaces idle 10 s get unwired. When Chrome or WS touch them again, ~200 MB is re-wired in one go on the GPU path.
+  2. Allocation bursts (~280 MB in 3 s) that outrun the 256 MB reserve.
+- Userwire is much lower (1.2 GB), which is what the park is for.
+
+**Suggested A/B for main (root):**
+- (a) Raise `debug.nmx_userptr_park_ms` (e.g. 60000, or park off) for one run. If the 44 s-type bursts go away, the park is the cause. Then park only surfaces that are not part of a live swap chain, or unpark ahead of time / in slices.
+- (b) For the pool bursts, grow chunks ahead of time when free < reserve/2, from the thread call, so the allocation path rarely makes chunks itself.
+- `run-max.sh` now samples `nmx_userwire_parks` / `unparks` every second and prints parks, unparks and the largest 1 s userwire rise in the window.

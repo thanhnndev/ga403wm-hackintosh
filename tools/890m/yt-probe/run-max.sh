@@ -5,14 +5,15 @@
 # usage: run-max.sh outdir [seconds=60] [extra chrome flags...]
 # writes outdir/{probe,rec,gpu-log}.txt and prints the summary, the measured window and the averages over it.
 # rec.txt columns: time userrec_made ws_cputime userwire_pages userrec_live pages_live page_chunks page_free chunks_freed
-# (the last three are NMXGPU Step141, out-23; "-" when the running kext has no such sysctl)
+#   parks unparks
+# (page_chunks.. are NMXGPU Step141 out-23, parks/unparks Step142 out-26; "-" when the running kext has no such sysctl)
 D=${1:?outdir}; N=${2:-60}; shift 2 2>/dev/null; EXTRA=("$@")
 mkdir -p $D; P=$D/chrome-prof; R=${0:a:h}/probe.mjs; L=$TMPDIR/nvmtl.log; WS=$(pgrep -x WindowServer)
 c() { local v=$(sysctl -n $1 2>/dev/null); printf '%s' "${v:--}"; }   # zsh's echo drops a lone "-"
 kill_scratch() { pkill -f "user-data-dir=$P"; }
 kill_scratch; perl -e 'select(undef,undef,undef,2)'
 mark=$(wc -l < $L 2>/dev/null || echo 0)
-( while :; do echo "$(date +%T) $(sysctl -n debug.nmx_userrec_made) $(ps -o cputime= -p $WS) $(sysctl -n debug.nmx_userwire_pages) $(sysctl -n debug.nmx_userrec_live) $(c debug.nmx_pages_live) $(c debug.nmx_page_chunks) $(c debug.nmx_page_free) $(c debug.nmx_page_chunks_freed)"
+( while :; do echo "$(date +%T) $(sysctl -n debug.nmx_userrec_made) $(ps -o cputime= -p $WS) $(sysctl -n debug.nmx_userwire_pages) $(sysctl -n debug.nmx_userrec_live) $(c debug.nmx_pages_live) $(c debug.nmx_page_chunks) $(c debug.nmx_page_free) $(c debug.nmx_page_chunks_freed) $(c debug.nmx_userwire_parks) $(c debug.nmx_userwire_unparks)"
   perl -e 'select(undef,undef,undef,1)'; done ) > $D/rec.txt &
 smp=$!
 open -na "Google Chrome" --args --user-data-dir=$P --remote-debugging-port=9333 --no-first-run --no-default-browser-check \
@@ -33,3 +34,6 @@ grep -E '^[0-9:]+ [0-9]+ ' $D/rec.txt | awk -v a=$a -v b=$b '$7!="-"{
   l6=$6; l7=$7; l8=$8; l9=$9 }
   END{ if(f){ printf "during: chunks %d-%d, free %d-%d pages, chunks freed in window %d (before window %d)\n", mn,mx,fm,fx, ce-cw, cw-cf0;
        printf "after:  pages_live %d chunks %d free %d chunks_freed %d (%d after the window)\n", l6,l7,l8,l9, l9-ce } }'
+# Step142 IOSurface park: parks / unparks inside the window, and the worst single-second userwire rise
+grep -E '^[0-9:]+ [0-9]+ ' $D/rec.txt | awk -v a=$a -v b=$b '$10!="-" && $10!=""{ if($1>=a && $1<=b){ if(!w){w=1; p0=$10; u0=$11} d=$4-pw; if(n && d>mx){mx=d; at=$1} n++; p1=$10; u1=$11 } pw=$4 }
+  END{ if(w) printf "park: parks %d, unparks %d in the window; largest 1 s userwire rise %d pages at %s\n", p1-p0, u1-u0, mx, at }'
