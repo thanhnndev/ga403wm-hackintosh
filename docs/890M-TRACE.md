@@ -9890,3 +9890,39 @@ Could it hurt video? Reading the diff:
 - Build rc 0; 581 imports, identical to out-23; 0 weak; NMXOwnsDisplay present.
 - Expected: most of the 1563 MB IOSurface tag becomes pageable. Risk: missing textures or a GPU fault after a re-wire.
 - Undo: scripts/macos-install-step130.sh ~/develop/projects/nmx-build-xkpi/out-23/NMXGPU.kext
+
+## Trace part 37: out-23 (Step141) on the video path: chunk churn is real and lines up with the drop bursts (2026-11-10 18:5x)
+
+Boot 18:49: NMXGPU out-23 5CAE35B7, plugin 6797e1f, no panic. Docker was **not** running. The owner's flutter tests and clang were running (load avg 11-19). Run: `run-max.sh`, maximised scratch Chrome, VP9 1080p60, 60 s.
+
+| | run 1 (18:53:29) | run 2 (18:57:10) | out-22 (part 35) |
+|---|---|---|---|
+| dropped / 60 s | 96 (5 at 15 s; 23+17+51 at 36-42 s, during a network stall) | **21** (13 at 27 s, 3 at 16 s, 1-2 at 28/31/33/39 s) | 7 / 5 |
+| decoded | 3338 (1 `waiting`; seconds ahead fell 14 → 0, 4 s stalled) | 3606 | 3608 / 3602 |
+| userrec_made | 73.9k/s | 93.2k/s | 81-82k/s |
+| userwire avg | 1.96 GB | 2.01 GB | 4.7 GB |
+| WS | 8.4 ms/frame | 10.1 ms/frame | 8.7-12.8 |
+| chunks (before / during / after) | 630 / 702-869 / 669 | 705 / 762-923 / 743 | - |
+| free pages during | 0-57508 | 186-82655 | - |
+| chunks freed: before window / in window / after | 602 / 372 / 34 | 348 / 310 / 72 | - |
+| GTT page churn, mean of \|Δpages_live\| | 12.6k pages/s | 11.7k pages/s | - |
+
+Idle for 60 s with no scratch Chrome, same boot: \|Δpages_live\| 5.9k pages/s and 24 chunks freed.
+
+**Reading:**
+- Run 1's large burst is network: the buffer ahead drained to 0 and playback stalled. Not counted.
+- The video path does churn GTT pages, about 50 MB/s, twice idle. These are not userptr pages; it is probably Chrome's GPU process allocating private textures and buffers next to its IOSurface imports.
+- With the 64 MB reserve, Step141 releases chunks in the quiet second, and the next burst finds the pool empty. Run 2 at 18:57:34-37:
+  - 22 chunks released;
+  - then +30k pages allocated, free fell to 403, then 186;
+  - 93 new chunks were made in the allocation path (`backing_alloc` 2 MB wired + 512 registry inserts each);
+  - at the same second, 13 frames were dropped, the largest burst of the run.
+  - The smaller drops at 16 s, 31 s and 33 s also fall on chunk releases or creations.
+- One burst (~30k pages, 120 MB) is larger than CHUNK_RESERVE (16384 pages, 64 MB). The hysteresis I counted on in part 36 is too small for this load.
+- I was wrong in part 36: "chunks freed in the window ≈ 0" did not hold. 310-372 chunks are freed per minute of playback.
+- Userwire is lower than out-22 (2.0 vs 4.7 GB), but that is boot age, not Step141.
+
+**Suggestion to main (NMXGPU side, Step141b), keeping the memory give-back:**
+- Release a wholly free chunk only after it has been free for some seconds (e.g. 5 s, swept by the thread call), and/or raise CHUNK_RESERVE to about 256 MB (65536 pages).
+- Either way the pool stays warm across video bursts, while memory still goes back when the GPU goes quiet.
+- Verify with run-max.sh: chunks freed in the window ≈ 0, free never at 0, drops back to ≤ 7.
