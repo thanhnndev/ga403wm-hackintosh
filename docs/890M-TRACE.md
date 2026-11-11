@@ -9882,3 +9882,5 @@ Could it hurt video? Reading the diff:
 - Step141 at 3 min: pages_live 306617 (1.17 GB), chunks 640 (1.25 GB), page_free 21911 (86 MB), chunks_freed 554 (1.1 GB returned). Before the fix, the free pool kept about 1.9 GB.
 - Total wired 5780 MB at 3 min (no Docker). zprint by tag at ~35 min, to compare with 3412 MB NMXGPU / 9975 MB wired on out-22.
 - userwire 519 / 182765 pages (714 MB); surf_wire 806, all misses 0. The IOSurface fix is surf-wire-release 333b109 (fork), the out-24 candidate.
+- 18:53 zprint (4 min, no Docker): total 7.3 GB tagged. NMXGPU tag 1818 MB vs pages_live 379416 (1482 MB) + page_free 25912 (101 MB): about 340 MB above live. On out-22 the tag was 3412 MB vs 1440 MB live (about 2 GB above). Step141 works: pool overhead fell from ~2 GB to ~0.3 GB. chunks_freed 1372 (2.7 GB returned so far).
+- Still large: IOSurface 1563 MB (userwire_pages 530976), Reserved 1553 MB, PTE 505 MB, PMAP 310 MB. The IOSurface tag is the out-24 target (surf-wire-release 333b109).
