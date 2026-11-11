@@ -5,15 +5,16 @@
 # usage: run-max.sh outdir [seconds=60] [extra chrome flags...]
 # writes outdir/{probe,rec,gpu-log}.txt and prints the summary, the measured window and the averages over it.
 # rec.txt columns: time userrec_made ws_cputime userwire_pages userrec_live pages_live page_chunks page_free chunks_freed
-#   parks unparks
-# (page_chunks.. are NMXGPU Step141 out-23, parks/unparks Step142 out-26; "-" when the running kext has no such sysctl)
+#   parks unparks chunks_filled chunks_inline page_hwm
+# (page_chunks.. are NMXGPU Step141 out-23, parks/unparks Step142 out-26, filled/inline Step141c and hwm Step141d out-28;
+#  "-" when the running kext has no such sysctl)
 D=${1:?outdir}; N=${2:-60}; shift 2 2>/dev/null; EXTRA=("$@")
 mkdir -p $D; P=$D/chrome-prof; R=${0:a:h}/probe.mjs; L=$TMPDIR/nvmtl.log; WS=$(pgrep -x WindowServer)
 c() { local v=$(sysctl -n $1 2>/dev/null); printf '%s' "${v:--}"; }   # zsh's echo drops a lone "-"
 kill_scratch() { pkill -f "user-data-dir=$P"; }
 kill_scratch; perl -e 'select(undef,undef,undef,2)'
 mark=$(wc -l < $L 2>/dev/null || echo 0)
-( while :; do echo "$(date +%T) $(sysctl -n debug.nmx_userrec_made) $(ps -o cputime= -p $WS) $(sysctl -n debug.nmx_userwire_pages) $(sysctl -n debug.nmx_userrec_live) $(c debug.nmx_pages_live) $(c debug.nmx_page_chunks) $(c debug.nmx_page_free) $(c debug.nmx_page_chunks_freed) $(c debug.nmx_userwire_parks) $(c debug.nmx_userwire_unparks)"
+( while :; do echo "$(date +%T) $(sysctl -n debug.nmx_userrec_made) $(ps -o cputime= -p $WS) $(sysctl -n debug.nmx_userwire_pages) $(sysctl -n debug.nmx_userrec_live) $(c debug.nmx_pages_live) $(c debug.nmx_page_chunks) $(c debug.nmx_page_free) $(c debug.nmx_page_chunks_freed) $(c debug.nmx_userwire_parks) $(c debug.nmx_userwire_unparks) $(c debug.nmx_page_chunks_filled) $(c debug.nmx_page_chunks_inline) $(c debug.nmx_page_hwm)"
   perl -e 'select(undef,undef,undef,1)'; done ) > $D/rec.txt &
 smp=$!
 open -na "Google Chrome" --args --user-data-dir=$P --remote-debugging-port=9333 --no-first-run --no-default-browser-check \
@@ -37,3 +38,6 @@ grep -E '^[0-9:]+ [0-9]+ ' $D/rec.txt | awk -v a=$a -v b=$b '$7!="-"{
 # Step142 IOSurface park: parks / unparks inside the window, and the worst single-second userwire rise
 grep -E '^[0-9:]+ [0-9]+ ' $D/rec.txt | awk -v a=$a -v b=$b '$10!="-" && $10!=""{ if($1>=a && $1<=b){ if(!w){w=1; p0=$10; u0=$11} d=$4-pw; if(n && d>mx){mx=d; at=$1} n++; p1=$10; u1=$11 } pw=$4 }
   END{ if(w) printf "park: parks %d, unparks %d in the window; largest 1 s userwire rise %d pages at %s\n", p1-p0, u1-u0, mx, at }'
+# Step141c/d prefill: chunks the fill thread call made vs chunks the allocation path made itself, and the 60 s peak
+grep -E '^[0-9:]+ [0-9]+ ' $D/rec.txt | awk -v a=$a -v b=$b '$12!="-" && $12!=""{ if($1>=a && $1<=b){ if(!w){w=1; f0=$12; i0=$13} f1=$12; i1=$13; if($14>hx)hx=$14 } }
+  END{ if(w) printf "prefill: chunks filled %d, made inline %d in the window; page_hwm max %d pages\n", f1-f0, i1-i0, hx }'

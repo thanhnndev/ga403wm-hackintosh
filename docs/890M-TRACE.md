@@ -10049,3 +10049,26 @@ Same setup as part 39 (`run-max.sh`, maximised scratch Chrome, VP9 1080p60, 60 s
 - A/B: `sysctl debug.nmx_userptr_park_ms=0` (park off, live, set by main as root); video rerun ×2 running.
 - Step141c (nmx-source-port 539474d + 679e4a7): when an allocation leaves free < reserve/2, a fill thread call tops the pool up to 256 MB. Counters debug.nmx_page_chunks_filled / _inline. Unload covers both calls.
 - out-27 = out-26 + Step141c: rc 0, 581 imports identical to out-23, 0 weak, NMXOwnsDisplay present.
+
+## Trace part 41: review of Step141c prefill + Step141d 60 s peak floor + Step142b park 60 s (nmx-plugin-890m 539474d..7108ebb, nmx_page.c), 2026-11-11
+
+Read-only review; out-28 is not installed.
+
+**Correct as written:**
+- `chunk_live` changes only under `pg_lock`: `++` in `single_alloc`, `--` in the BK_CHUNK branch of `vm_page_free`. Those are the only paths that hand out or take back chunk pages, so it stays balanced. A chunk is released only when `live == 0`, so it never counts pages that are no longer in the pool.
+- Floor: `free - nfree >= CHUNK_RESERVE + (hwm - live)` is the same as pool − chunk ≥ reserve + hwm. If use climbs back to the peak, the reserve is still there. `free_count` is lowered inside the loop as chunks are unlinked, so one sweep can't release past the floor.
+- Prefill and release don't fight. Fill only tops up to `CHUNK_RESERVE`; release only acts above it (≥ floor ≥ reserve). One fill run is bounded to 128 chunks, which is exactly the reserve.
+- `fill_armed` is cleared at the end of the fill run. An allocation that sees it still set during that window skips the arm, but the next allocation below reserve/2 arms it again. Nothing is lost while allocations continue.
+- `sweep_busy` and `sweep_stopping`: every arm holds a busy count until `thread_call_enter*` returns. Unload waits for busy 0 before `thread_call_free`. The remaining window is the worker's entry and return through kext text before it reaches or after it leaves `pg_lock`. That is unload-only and the same as in part 38.
+- New sysctls are registered: `nmx_page_chunks_filled`, `_inline`, `_hwm`.
+
+**Weak spots (not crashes):**
+1. **Re-base to the current value.** After 60 s the peak becomes `chunk_live` at that instant. During a video, `chunk_live` swings ±25-50k pages a second (part 40), so the re-base can land on a dip. The floor then drops to the bare reserve mid-playback, idle chunks above it go after 5 s, and the next swing refills through prefill/inline. Better: two windows, `hwm_prev` (peak of the last full 60 s) and `hwm_cur` (since the rollover). Use `max(hwm_prev, hwm_cur) - live`, and at rollover set prev = cur, cur = live. That is a true 60-120 s peak at the same cost.
+2. **Sweep 1/s while the floor holds.** During a whole video the sweep walks the `avail` list under the spin lock every second (`waiting = 1` from the floor). The list is up to ~1500 chunks in part 40, and the GPU allocation path takes the same lock. If the only reason to wait is the floor, arm for `chunk_hwm_at + CHUNK_HWM_NS` instead of 1 s. Then measure the lock hold.
+3. **Floor has no cap.** When Chrome closes, up to the whole peak (part 40: ~3 GB of chunk pages) stays wired for 60 + 5 s. This is fine for video. A cap on the excess (e.g. 1 GB) bounds it.
+
+**Gap-then-start (main's question):** after more than 60 s idle the floor is the bare 256 MB, so a start burst (~490 MB in 3 s) relies on prefill. Prefill has to make ~80 chunks/s from one thread call against an allocation path that makes them inline. A floor that covers this at a bounded cost:
+- keep a second, slow peak over 10 min, capped at 512 MB above the reserve: `floor = reserve + max(hwm60 - live, min(512 MB, hwm10min - live))`.
+- After a break of less than 10 min, a restart finds ≥ 768 MB pooled. Idle cost: at most 768 MB wired for 10 min after the last video. After longer breaks prefill carries it, and `nmx_page_chunks_inline` will show whether it keeps up.
+
+`run-max.sh` now samples `nmx_page_chunks_filled`, `_inline` and `_hwm` (rec.txt columns 12-14) and prints filled vs inline chunks and the max hwm in the window.
