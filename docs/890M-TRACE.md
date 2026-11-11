@@ -9876,3 +9876,9 @@ Could it hurt video? Reading the diff:
 - `tools/890m/yt-probe/run-max.sh` now samples `debug.nmx_pages_live`, `nmx_page_chunks`, `nmx_page_free` and `nmx_page_chunks_freed` every second, shown as "-" on a kext without them.
 - It prints before / during-window (min-max) / after values and the chunks freed in each phase. Verified on out-22 (columns "-") and on synthetic data.
 - Compare against out-22 part 35 (7 and 5 drops / 60 s, userwire ~4.7 GB, WS 8.7-12.8 ms/frame). Expected: chunks freed in the window ≈ 0, and the free pool staying above 64 MB.
+
+### 2026-11-11 18:49 boot: out-23 + RyzenHV 0.7.22 + itlmt7925 (Wi-Fi session) live
+- No panic (last one is still 2026-11-09 10:16). NMXGPU 5CAE35B7, RyzenHV 0.7.22 56360452 (tsc check OK, InvalidExits 0, FpuMismatches 0), StrixDgpuGate Eco: gsta 1->0, psc 3, vid 0xffff.
+- Step141 at 3 min: pages_live 306617 (1.17 GB), chunks 640 (1.25 GB), page_free 21911 (86 MB), chunks_freed 554 (1.1 GB returned). Before the fix, the free pool kept about 1.9 GB.
+- Total wired 5780 MB at 3 min (no Docker). zprint by tag at ~35 min, to compare with 3412 MB NMXGPU / 9975 MB wired on out-22.
+- userwire 519 / 182765 pages (714 MB); surf_wire 806, all misses 0. The IOSurface fix is surf-wire-release 333b109 (fork), the out-24 candidate.
