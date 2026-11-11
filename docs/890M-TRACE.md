@@ -9926,3 +9926,44 @@ Idle for 60 s with no scratch Chrome, same boot: \|Δpages_live\| 5.9k pages/s a
 - Release a wholly free chunk only after it has been free for some seconds (e.g. 5 s, swept by the thread call), and/or raise CHUNK_RESERVE to about 256 MB (65536 pages).
 - Either way the pool stays warm across video bursts, while memory still goes back when the GPU goes quiet.
 - Verify with run-max.sh: chunks freed in the window ≈ 0, free never at 0, drops back to ≤ 7.
+
+## Trace part 38: race review of Step141b (nmx-plugin-890m 828d4c2, nmx_page.c), 2026-11-11
+
+Step141b changes how free chunks go back:
+- A wholly free chunk is no longer released in `vm_page_free`. It is stamped `empty_at` instead.
+- A thread-call sweep (`release_worker`, every 1 s while armed) releases chunks that have been free for ≥ 5 s, while 256 MB (CHUNK_RESERVE 65536) stays pooled without them.
+
+**Sweep vs `single_alloc` / `vm_page_free`: safe.**
+- The sweep picks and unlinks chunks under `pg_lock`, and only those with `live == 0`.
+- `single_alloc` takes pages from `avail` under the same lock, so it cannot take a page from a chunk being released. Once unlinked, a chunk is off `avail`.
+- A chunk that is reused and empties again gets a new `empty_at`.
+- `backing_release` runs after the unlock, on chunks nobody can reach.
+- The sweep stops releasing as soon as the reserve would be breached: `free_count` drops chunk by chunk under the lock.
+
+**`sweep_armed`: no lost wakeup.**
+- A chunk that empties while the sweep is dequeued but has not taken the lock yet is seen by that sweep (`waiting`, re-arm).
+- One that empties after the sweep's unlock sees the updated flag and arms.
+- The worst case is a double `thread_call_enter_delayed` (vm_page_free arming while the sweep re-arms). That only reschedules the one call, which is harmless.
+
+**New chunks start with `empty_at = 0`** (`backing_alloc` uses M_ZERO).
+- Between `single_alloc` dropping the lock after `avail_add` and taking it again, a sweep would see the chunk as idle forever.
+- It is protected because a chunk is only made when `avail` is empty, so the reserve check fails.
+- Suggest `bk->empty_at = mach_absolute_time()` at creation anyway.
+
+**Missed release (memory only, not a race).**
+- Only the free that empties a chunk arms the sweep, and only if the reserve condition holds at that moment.
+- A chunk that emptied below the reserve stays until another chunk empties above it. Memory is returned late or not at all while the pool sits just above 256 MB. This does not affect latency.
+
+**Unload: one real race.**
+- `nmx_page_fini` does `thread_call_cancel` (which does not wait for a running call), then `thread_call_free`, then `release_call = NULL` without `pg_lock`.
+- A sweep running at that moment computes `rearm` from `release_call != NULL` under the lock, then calls `sweep_arm()` after the unlock. `sweep_arm` re-reads the global and calls `thread_call_enter_delayed` on a freed or NULL call.
+- The kext text can also go away under a still-running worker.
+- `vm_page_free`'s `sweep_arm()` has the same window if a page is freed during fini.
+- Practical risk is low, because NMXGPU normally never unloads. It was already there in Step141 with `thread_call_enter`.
+- Fix: set a `stopping` flag under `pg_lock` in fini so neither path arms; have the worker mark itself running under the lock; wait for it to clear (bounded IOSleep loop); then cancel and free. Pass the call pointer read under the lock into `sweep_arm` instead of re-reading the global.
+
+**Cost:** the sweep walks `avail` (~900 chunks) under the spin lock once a second, a few µs, only while armed. Fine.
+
+**Verdict:** no race on the video path's hot paths. Fix the unload window and initialise `empty_at` when convenient.
+
+After out-25 is live: `run-max.sh` under the same load, noting flutter/clang, ideally without them. Expect chunks freed in the window ≈ 0, free never at 0, drops ≤ 7.
