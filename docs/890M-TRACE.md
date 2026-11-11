@@ -10158,3 +10158,60 @@ drm-kmod series. Side session, no build/install.
 Also take zprint's IOSurface tag at 35 min and compare it with 1404 MB, and run A/B with `nmx_userptr_park_ms=0`.
 If `surface orphan` pages are large, the plugin holds textures of surfaces that were released: that is a plugin fix
 (the WS keep policy), not a kernel one.
+
+### Step142 post-install test plan (out-24)
+Baseline on out-23 at 4 min uptime: IOSurface tag 1563 MB, userwire_pages 530976 (2.03 GB).
+Probe: `tools/890m/park-probe.sh <outdir> [seconds]`. It samples the counters every second, collects NMXGPU
+fault/timeout/reset lines from the kernel log, and prints a summary with the by-kind table. It is read-only.
+
+**0. Loaded (right after boot):** `sysctl debug.nmx_userptr_park_ms` returns 10000, and `debug.nmx_userwire_by_kind`
+returns a table. If either is missing, out-24 is not live.
+
+**1. Idle park.** Log in, open the usual windows, then leave the desktop untouched for 2 min:
+`park-probe.sh ~/park-idle 120`.
+
+| Check | Pass |
+|---|---|
+| `nmx_userwire_parked_pages` | rises within ~15 s of going idle; ≥ 150k pages (≥ 600 MB) by the end |
+| `nmx_surfwire_pages` | falls by about the same amount; idle level ≤ ~100k pages (≤ 400 MB) |
+| `nmx_userwire_unpark_fail`, `nmx_upin_restore_fail`, `nmx_park_fail` | 0 |
+| `nmx_timeouts` | no increase |
+| faults.txt | 0 fault lines |
+| `by_kind` | "surface orphan" pages are small; a large value is a plugin keep-cache issue, see Step142 |
+
+- `nmx_park_skip_busy` may rise; it only counts BOs that were in use or locked.
+- Large plain pages in `by_kind` are not parked by design.
+
+**2. zprint at 35 min uptime** (root, via launchctl submit as before):
+- Pass: IOSurface tag ≤ ~600 MB, against 1404 MB (out-22) and 1563 MB (out-23 at 4 min).
+- Expected saving: 0.9-1.1 GB less wired.
+- Compare `vm_stat` / Activity Monitor wired as well. The memory moves from wired to pageable; it is not freed.
+
+**3. Re-wire under real load.** Run `park-probe.sh ~/park-load 300` while doing the steps below. Wait more than 15 s
+of idle before each step, so the surfaces are parked first.
+- **a. Chrome tabs.** Open 6+ tabs with images or video, leave them 30 s, then switch through all of them twice.
+  Pass: every tab redraws fully, with no black, stale or garbled tiles.
+- **b. Mission Control and App Exposé.** Open, wait, close; switch Spaces (ctrl-←/→); un-minimise a window from the
+  Dock that has been minimised for more than 30 s. Pass: every thumbnail and window has its content, nothing is black
+  or flashes old content.
+- **c. Video.**
+  - Start `tools/890m/yt-probe/run-max.sh ~/park-yt 60` after more than 30 s idle.
+  - Then pause the video for 20 s (its frames park), resume, and seek.
+  - Pass: drops similar to part 35 (single digits per 60 s), and no frozen or garbled frame after the resume.
+- **d. App switching.** Cmd-tab through 6+ apps that have been idle for more than 30 s (VS Code, Preview, Notes,
+  Terminal, Finder) and resize one of them. Pass: content appears immediately.
+- **e. Sleep the display** (not the system) for 1 min, then wake it. Pass: the desktop redraws.
+
+**Pass for the whole of step 3:**
+- `nmx_userwire_unparks` rises by tens to hundreds. That shows the re-wire path ran.
+- `unpark_fail` / `restore_fail` / `park_fail` stay 0.
+- `nmx_timeouts` does not increase.
+- faults.txt has no `fault` or `NMX: address` line.
+- No process logs VK_ERROR_DEVICE_LOST.
+- WindowServer does not restart (its pid is the same before and after).
+
+**On failure:**
+- Note the step and the time, and save faults.txt.
+- Turn parking off at runtime with `sudo sysctl debug.nmx_userptr_park_ms=0`; parked BOs re-wire on their next use.
+- Then run step 3 again for an A/B. The problem is Step142 only if it goes away with the knob at 0.
+- If the next boot hangs or faults early, use boot-arg `nmxpark=0`. Full undo: `macos-install-step130.sh` with out-23.
