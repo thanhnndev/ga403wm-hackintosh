@@ -9884,3 +9884,9 @@ Could it hurt video? Reading the diff:
 - userwire 519 / 182765 pages (714 MB); surf_wire 806, all misses 0. The IOSurface fix is surf-wire-release 333b109 (fork), the out-24 candidate.
 - 18:53 zprint (4 min, no Docker): total 7.3 GB tagged. NMXGPU tag 1818 MB vs pages_live 379416 (1482 MB) + page_free 25912 (101 MB): about 340 MB above live. On out-22 the tag was 3412 MB vs 1440 MB live (about 2 GB above). Step141 works: pool overhead fell from ~2 GB to ~0.3 GB. chunks_freed 1372 (2.7 GB returned so far).
 - Still large: IOSurface 1563 MB (userwire_pages 530976), Reserved 1553 MB, PTE 505 MB, PMAP 310 MB. The IOSurface tag is the out-24 target (surf-wire-release 333b109).
+
+### 2026-11-11 Step142: out-24 built (A0E19DDD), not installed
+- Source: nmx-source-port 333b109 (IOSurface session): an IOSurface userptr BO idle for 10 s (no fence, not pinned, not exported) is moved to system placement and unpopulated, so it is unwired with the descriptor kept; the next CS re-wires it. Plain user ranges are never parked. nmxpark=0 boot-arg / debug.nmx_userptr_park_ms=0 turn it off.
+- Build rc 0; 581 imports, identical to out-23; 0 weak; NMXOwnsDisplay present.
+- Expected: most of the 1563 MB IOSurface tag becomes pageable. Risk: missing textures or a GPU fault after a re-wire.
+- Undo: scripts/macos-install-step130.sh ~/develop/projects/nmx-build-xkpi/out-23/NMXGPU.kext
