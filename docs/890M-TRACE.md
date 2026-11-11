@@ -10215,3 +10215,33 @@ of idle before each step, so the surfaces are parked first.
 - Turn parking off at runtime with `sudo sysctl debug.nmx_userptr_park_ms=0`; parked BOs re-wire on their next use.
 - Then run step 3 again for an A/B. The problem is Step142 only if it goes away with the knob at 0.
 - If the next boot hangs or faults early, use boot-arg `nmxpark=0`. Full undo: `macos-install-step130.sh` with out-23.
+
+### 2026-11-11 22:48-22:58 Step142 live test on out-26 (88328F15), boot 22:38
+Probe: `park-probe.sh ~/park-load 420` (22:48:41-22:55:41) plus the steps below. The owner's apps and another
+session's scratch-Chrome video were running at the same time.
+
+**Result: PASS for the re-wire path that ran; the video part has to be repeated.**
+- Over the whole run: 0 GPU fault lines, 0 timeout/reset lines (NMXGPU/amdgpu kernel log since boot),
+  `nmx_timeouts` 0, unpark_fail / restore_fail / park_fail / destroy_rec 0, surface orphans 0, WindowServer pid 207
+  unchanged. No new crash or hang reports.
+- **Idle (10 min after boot):** 171k pages parked (668 MB), 111k pages of IOSurface wired (434 MB). Peak parked during
+  the run: 419k pages (1.6 GB).
+- **Chrome tabs** (scratch profile, 6 Wikipedia tabs with images, 35 s idle, then each tab activated twice over CDP;
+  the Aurora tab again after 20 s): every tab drew its text and images fully; screenshots of the Chrome window
+  checked. Unparks +26, so the inactive tabs held few surfaces.
+- **Mission Control, first open (22:52:02):** 480 unparks in 1 s, parked 373k -> 191k pages, i.e. ~710 MB of window
+  surfaces wired again at once. No fault, no timeout, WindowServer unchanged. The Dock draws Mission Control and
+  cannot be screenshotted from here, so its thumbnails were not checked by eye.
+- **From 22:52:13 `debug.nmx_userptr_park_ms` was 0** (set by someone with root, probably for an A/B). Everything
+  below ran with parking off:
+  - the second Mission Control pass (unparks +0);
+  - VP9 1080p60 playback with a 20 s pause, resume and seek: resume OK (9.7 s played, 586 decoded, 8 dropped in
+    the first 10 s), seek OK.
+  - These do not test the re-wire path.
+- With the knob at 0, IOSurface wired climbed back to 3.8 GB: 990k surface pages, 627k of them wired for more than 60 s.
+  WindowServer alone held 716k pages, under daily load with video. The parked ones (124k pages) stay parked until
+  used. So the saving depends on the knob being on.
+- Still to do with the knob at 10000:
+  - the video pause of more than 10 s, then resume;
+  - Mission Control, with the owner looking at the thumbnails;
+  - zprint at 35 min.
