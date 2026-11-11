@@ -10232,8 +10232,8 @@ session's scratch-Chrome video were running at the same time.
 - **Mission Control, first open (22:52:02):** 480 unparks in 1 s, parked 373k -> 191k pages, i.e. ~710 MB of window
   surfaces wired again at once. No fault, no timeout, WindowServer unchanged. The Dock draws Mission Control and
   cannot be screenshotted from here, so its thumbnails were not checked by eye.
-- **From 22:52:13 `debug.nmx_userptr_park_ms` was 0** (set by someone with root, probably for an A/B). Everything
-  below ran with parking off:
+- **From 22:52:13 `debug.nmx_userptr_park_ms` was 0** (main's park-off A/B, part 40). Everything below ran with
+  parking off:
   - the second Mission Control pass (unparks +0);
   - VP9 1080p60 playback with a 20 s pause, resume and seek: resume OK (9.7 s played, 586 decoded, 8 dropped in
     the first 10 s), seek OK.
