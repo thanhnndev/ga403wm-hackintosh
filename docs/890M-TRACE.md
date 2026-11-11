@@ -10072,3 +10072,19 @@ Read-only review; out-28 is not installed.
 - After a break of less than 10 min, a restart finds ≥ 768 MB pooled. Idle cost: at most 768 MB wired for 10 min after the last video. After longer breaks prefill carries it, and `nmx_page_chunks_inline` will show whether it keeps up.
 
 `run-max.sh` now samples `nmx_page_chunks_filled`, `_inline` and `_hwm` (rec.txt columns 12-14) and prints filled vs inline chunks and the max hwm in the window.
+
+### 2026-11-11 park-off A/B; Step141d/e + Step142b; out-29 built (3DF88CD9), not installed
+- Park-off A/B on out-26 (edge-video-lag part 40, Docker load 34-38): run 1 had 0 drops; run 2 had 142. Between the runs the aged release returned 194 chunks; the video start then took ~490 MB in 3 s and single_alloc made 107 chunks itself. With the park off, the re-wire burst from part 39 did not come back.
+- IOSurface session: tabs + first Mission Control PASS with the park on (0 faults, 710 MB re-wired in 1 s). Video / second Mission Control were not exercised (park off).
+- out-28 (13AAA70E) = Step141c prefill + Step141d 60 s peak floor + Step142b park after 60 s. Superseded by out-29 after review part 41.
+- out-29 = out-28 + Step141e (4f6825b):
+  - two-window peaks;
+  - a 10 min slow peak capped at 512 MB;
+  - a 1 GB cap on the 60 s peak;
+  - a held-only sweep every 10 s.
+  Build rc 0, 581 imports identical to out-23, 0 weak, NMXOwnsDisplay present.
+- Verify on out-29:
+  - run-max.sh ×2 with a pause between: chunks_inline ≈ 0, drops ≤ 7;
+  - nmx_page_hwm;
+  - park re-wire tests (pause > 60 s, Mission Control);
+  - zprint at 35 min.
