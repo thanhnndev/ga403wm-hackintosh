@@ -10015,3 +10015,31 @@ Boot ~22:38, NMXGPU out-26 88328F15, plugin 6797e1f. Docker and flutter/clang we
 - (a) Raise `debug.nmx_userptr_park_ms` (e.g. 60000, or park off) for one run. If the 44 s-type bursts go away, the park is the cause. Then park only surfaces that are not part of a live swap chain, or unpark ahead of time / in slices.
 - (b) For the pool bursts, grow chunks ahead of time when free < reserve/2, from the thread call, so the allocation path rarely makes chunks itself.
 - `run-max.sh` now samples `nmx_userwire_parks` / `unparks` every second and prints parks, unparks and the largest 1 s userwire rise in the window.
+
+## Trace part 40: out-26 with the IOSurface park off (`debug.nmx_userptr_park_ms` 0), two back-to-back runs under Docker load (2026-11-11 22:52-22:57)
+
+Same setup as part 39 (`run-max.sh`, maximised scratch Chrome, VP9 1080p60, 60 s). Docker was running (hyperkit 120-190 % CPU, several node processes); load average 34 → 38. A run in between (22:54) is not counted: probe.mjs hung (its measure never resolved, video at 480p), so no numbers.
+
+| | run 1 (22:52:50) | run 2 (22:56:30) |
+|---|---|---|
+| dropped / decoded | **0** / 3605 | **142** / 3602 |
+| proc avg / max | 31.5 / 59 ms | 34.4 / **193** ms |
+| userwire avg | 2.73 GB | 3.89 GB |
+| WS | 12.8 ms/frame | 18.5 ms/frame |
+| chunks at window start | ~1437 | 1557, after **194 chunks were released before the window** (idle gap between runs) |
+| chunks made in the window | 0 | **107** (48 + 36 + 23 in 22:56:38-40) |
+| chunks freed in the window | 175 | 80 |
+| min free pages | 39136 | **1585** (22:56:38) |
+| seconds with free < reserve/2 (32768) | 0 | 4 (38, 39, 44, 48 s) |
+| seconds with userwire rise > 20000 pages | 1 (+21.5k) | 10 (largest **+61.1k = 240 MB**, 22:56:38) |
+| parks / unparks | 0 / 0 | 0 / 0 |
+
+**Reading:**
+- With the park off there are no re-wire bursts from parked surfaces; parks and unparks stay 0. Run 1 had 0 drops, so the part 39 44 s burst was the park.
+- Run 2 is the other cause from part 39: the aged release had handed back 194 chunks in the idle gap, then the video start allocated ~490 MB in 3 s (+54k, +61k, +51k pages). Free fell to 1585 pages and the allocation path made 107 chunks itself. Later in run 2 userwire keeps swinging ±25-50k pages per second, at a higher average (3.9 GB vs 2.7 GB) and with WS at 18.5 ms/frame.
+- The run-to-run spread is large (0 vs 142) under the same load. Run 2 started from a pool the release had shrunk; run 1 did not.
+- probe.mjs gives drops only as a total, so the drops in run 2 can't be tied to single seconds yet.
+
+**For main:**
+- Keep the park off for video, or park only surfaces outside a live swap chain.
+- Prefill from the thread call when free < reserve/2 would cover the start burst only if it keeps up with ~160 MB/s. A floor on the aged release (keep chunks at the last minute's high-water mark, not just the 256 MB reserve) would avoid the refill entirely.
