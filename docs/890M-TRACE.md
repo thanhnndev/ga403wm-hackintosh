@@ -9974,3 +9974,4 @@ After out-25 is live: `run-max.sh` under the same load, noting flutter/clang, id
 - out-25 (Step141b without the review fixes) is a build check only. out-24 (Step142 alone) is superseded.
 - out-26 = Step141b + review fixes + Step142 (IOSurface idle park): rc 0, 581 imports identical to out-23, 0 weak, NMXOwnsDisplay present.
 - Verify: run-max.sh with chunks freed in the window ≈ 0, free pool never 0, drops ≤ 7; IOSurface tag drops; nmx_userwire_parked > 0, unpark_fail 0.
+- out-26 installed in the AuxKC (rc 0, AuxKC relinked and checked), reboot pending, same boot as itlmt7925 B9E6878A (Wi-Fi session). Undo: scripts/macos-install-step130.sh ~/develop/projects/nmx-build-xkpi/out-23/NMXGPU.kext (or out-22).
