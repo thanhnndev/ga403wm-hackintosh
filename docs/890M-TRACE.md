@@ -10088,3 +10088,4 @@ Read-only review; out-28 is not installed.
   - nmx_page_hwm;
   - park re-wire tests (pause > 60 s, Mission Control);
   - zprint at 35 min.
+- out-29 installed in the AuxKC (rc 0, relinked and checked), reboot pending. Undo: scripts/macos-install-step130.sh ~/develop/projects/nmx-build-xkpi/out-23/NMXGPU.kext (or out-22).
