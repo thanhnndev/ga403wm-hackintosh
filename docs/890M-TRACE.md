@@ -10043,3 +10043,9 @@ Same setup as part 39 (`run-max.sh`, maximised scratch Chrome, VP9 1080p60, 60 s
 **For main:**
 - Keep the park off for video, or park only surfaces outside a live swap chain.
 - Prefill from the thread call when free < reserve/2 would cover the start burst only if it keeps up with ~160 MB/s. A floor on the aged release (keep chunks at the last minute's high-water mark, not just the 256 MB reserve) would avoid the refill entirely.
+
+### 2026-11-11 out-26 video: 38 drops / 60 s; A/B park off; Step141c out-27 built (8BBA69D6), not installed
+- edge-video-lag part 39 (no Docker, load 3-6): out-26 38 drops / 60 s (out-22 7, out-23 21). Two causes: (1) at 44 s parked surfaces were re-wired at once (+50k pages) → 21 drops; (2) at 51-53 s one allocation burst was larger than the 256 MB reserve and single_alloc made 165 chunks itself in 3 s (free 62k → 494).
+- A/B: `sysctl debug.nmx_userptr_park_ms=0` (park off, live, set by main as root); video rerun ×2 running.
+- Step141c (nmx-source-port 539474d + 679e4a7): when an allocation leaves free < reserve/2, a fill thread call tops the pool up to 256 MB. Counters debug.nmx_page_chunks_filled / _inline. Unload covers both calls.
+- out-27 = out-26 + Step141c: rc 0, 581 imports identical to out-23, 0 weak, NMXOwnsDisplay present.
