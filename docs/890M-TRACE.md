@@ -9975,3 +9975,8 @@ After out-25 is live: `run-max.sh` under the same load, noting flutter/clang, id
 - out-26 = Step141b + review fixes + Step142 (IOSurface idle park): rc 0, 581 imports identical to out-23, 0 weak, NMXOwnsDisplay present.
 - Verify: run-max.sh with chunks freed in the window ≈ 0, free pool never 0, drops ≤ 7; IOSurface tag drops; nmx_userwire_parked > 0, unpark_fail 0.
 - out-26 installed in the AuxKC (rc 0, AuxKC relinked and checked), reboot pending, same boot as itlmt7925 B9E6878A (Wi-Fi session). Undo: scripts/macos-install-step130.sh ~/develop/projects/nmx-build-xkpi/out-23/NMXGPU.kext (or out-22).
+
+### 2026-11-11 ~22:38 boot: out-26 live (88328F15) + itlmt7925 B9E6878A
+- No panic. RyzenHV 0.7.22, Eco gate (gsta 1->0, psc 3, vid 0xffff).
+- 10 min: chunks 830, page_free 65603 (256 MB reserve holds), chunks_freed 438. Step142: parked 298 BOs / 170444 pages (666 MB unwired), parks 3501, unparks 1382, unpark_fail / restore_fail / destroy_rec / park_fail all 0. surfwire 96 / 124976 pages (488 MB) still wired. Total wired 6160 MB.
+- Video rerun (edge-video-lag) and the re-wire test (IOSurface session) are running.
