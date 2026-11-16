@@ -10327,3 +10327,76 @@ session's scratch-Chrome video were running at the same time.
   - the video pause of more than 10 s, then resume;
   - Mission Control, with the owner looking at the thumbnails;
   - zprint at 35 min.
+
+### 2026-11-16 18:41-18:54 Step142b re-wire test on out-29 (3DF88CD9, park_ms 60000), boot 18:39
+
+Probe `tools/890m/park-probe.sh ~/park-load3` ran 18:41:42-18:54:22 (711 samples), alongside the video session's
+two run-max runs (until 18:44:48) and then my scratch Chrome on port 9444. The RTX was powered this boot.
+
+| counter (whole run) | value |
+|---|---|
+| parks | +3141 (151 -> 3292) |
+| unparks | +1347 (4 -> 1351) |
+| unpark_fail / restore_fail / park_fail | 0 / 0 / 0 |
+| destroy_rec / skip_busy | 0 / 0 |
+| nmx_timeouts | 0 |
+| parked max / at end | 2634 MB / 1575 MB |
+| userwire / surfwire at end | 826 MB / 807 MB |
+| NMXGPU fault, timeout, reset, `NMX: address` lines since boot | 0 (the one hit is the TMZ "default" boot line) |
+| WindowServer | pid 207 for the whole boot |
+
+- **Video pause > 60 s, then resume: PASS.** 1080p60 YouTube in the scratch Chrome, played 15 s (901 decoded,
+  0 dropped), then paused 75 s. During the pause, parked memory rose from 289k to 674k pages (2.6 GB) as the paused
+  tab's and other surfaces aged past 60 s. On resume: 1 drop in the first 5 s (465 decoded: 225 catch-up frames
+  in second 1, then 60/s) and 5 drops in the next 15 s (all in one second, at +8 s). Unparks went 851 -> 917
+  over the 20 s after resume, all of them successful.
+  - The first attempt (18:45) was invalid: the scratch window was closed by hand during the pause, so `play()`
+    never returned. No CDP client was attached and there was no crash or fault in the log. The window was closed
+    again at 18:51:22, so the tab test ran in a fresh single window.
+- **Tab switch after > 60 s idle: PASS.** Aurora, Aquarium (WebGL) and Lion were opened in one window. Lion was in
+  front for 75 s (parks 3070 -> 3292). Then:
+  - Aquarium came to front: 33 unparks in about 2 s, and it drew fully at 120 fps (screenshot).
+  - Aurora came to front after about 2 min idle: 1 unpark, page and images complete (screenshot).
+  - No missing or black textures, no faults.
+- **Not checked here:** Mission Control thumbnails (the Dock can't be granted to computer use; main relays the
+  owner check below) and zprint at 35 min (root; main runs it about 19:15 and records the IOSurface tag).
+
+Owner check for Mission Control (after at least 2 min with no window activity, so most surfaces are parked):
+1. Leave several apps open (Chrome with 3+ tabs, Finder, Terminal) and don't touch anything for 2 min.
+2. Open Mission Control (F3 or a three-finger swipe up) and look at every thumbnail: each should show its window's
+   real content within a second. No black, grey, stale or garbled thumbnails.
+3. Click into a window that was idle, switch a Chrome tab, then open Mission Control again. Same check. Note any
+   stutter longer than about half a second on the first open.
+
+## Step142 / Step142b final state (2026-11-16, closing this sub-session)
+
+**Proved (out-26 park_ms 10000 on 11-11, out-29 park_ms 60000 on 11-16):**
+- The idle sweep parks IOSurface-backed userptr BOs (complete() the surface descriptor, pages unwired). The next CS
+  that lists the BO re-wires it in populate.
+- Re-wire under real load works with 0 failures and 0 GPU faults across Chrome tab switching, a WebGL page,
+  YouTube pause/resume and Mission Control: 480 unparks in 1 s on out-26, 1347 unparks on out-29.
+- The leak fix holds: a BO pinned but never populated no longer leaks wired pages (destroy_rec 0, orphans 0).
+
+**Saving, expected vs measured:**
+- Expected (Step142 analysis, 11-10): 0.9-1.1 GB less wired memory at idle.
+- Measured on out-26 at 10 s: 668 MB parked after 10 min at idle, 1.6 GB peak.
+- Measured on out-29 at 60 s: 1575 MB parked at the end of this run and 2.6 GB at peak, with WindowServer alone
+  at 281k parked pages (1.1 GB). With parking off (part 40), surface-wired memory went to 3.8 GB.
+- IOSurface zprint tag at 35 min: main records it (19:15 run).
+
+**Not tested / open:**
+- Mission Control thumbnails by eye: owner check above.
+- zprint at 35 min on out-29: main.
+- Long-run behaviour (hours of load, sleep/wake with parked surfaces).
+- Drops on the video path: part 39 tied out-26's bursts to park re-wires. On out-29 at 60 s, part 42 saw 0 and 10
+  drops / 60 s, and this run 6 drops in the 20 s after a 75 s pause.
+
+**Idea, not built: swap-chain skip.** If the uniform 60 s still costs drops, have the sweep skip BOs that a CS
+listed in the last N frames of a presenting swap chain, or give those BOs a longer park_ms (about 60 s for
+presenting surfaces, 10 s for the rest). That way it never parks surfaces a playing video is about to reuse.
+Code to change: `nmx_park_one` in patches/amdgpu-userptr-park.patch (fork branch surf-wire-release /
+nmx-source-port 7108ebb), plus a flag the plugin passes with the surface hint.
+
+**Where things are:** kernel code on nmx-source-port (333b109 Step142, 7108ebb Step142b park 60 s).
+Probe: tools/890m/park-probe.sh. The raw out-29 run (rec.txt, faults.txt, by-kind-start/end.txt) is in
+~/park-load3; the out-26 run is in ~/park-load.
