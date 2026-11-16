@@ -68,14 +68,19 @@ Page side (one row per second, from the page itself):
 - **iv p95 / p99 / max (ms)**: intervals between `expectedDisplayTime` of consecutive presented frames. At 60 fps on
   the 120 Hz panel the ideal is 16.67 ms; 25 / 33 ms means a frame stayed up one or two extra vsyncs.
 - **late**: count of intervals longer than 1.5 frame periods (judder events, including the ones around a drop).
-- **hidden s / unfocused s**: seconds the page was not visible / its window not focused. A run with hidden seconds is
-  disturbed and should be repeated.
+- **hidden s / unfocused s**: seconds the page was not visible / its window not focused. When the page is hidden
+  (window covered, another Space, screen locked) Chrome stops decoding, so the case measured nothing: `drive.mjs`
+  marks it `DISTURBED` and exits 4, and `run.sh` retries the case up to twice (the last attempt is kept). Unfocused
+  but visible (a maximised window behind a small one) is recorded, not retried.
 - **decoder**: from CDP `Media` events. `VideoToolbox` = platform decoder (VCNDec on this machine for VP9/AV1, the
   hardware VT decoder for H.264); `Vpx`, `Dav1d`, `Ffmpeg` = software, shown as `(SW)`.
 
 Runner side (sampled once a second, aligned to the page rows by wall time; averaged over the window):
 - **pkg W**: package power from the RAPL energy counter in `debug.amdcppc.sensors` (energy delta / time, no root).
-  **W over idle** = case watts minus the same round's `idle` watts.
+  **pre-idle W**: the same sampler over 15 s with no scratch Chrome, right before each case (`VS_PREIDLE` seconds).
+  **W over pre-idle** = case watts minus that: the power cost of the video. The background load (Docker, Claude,
+  builds) moved package power by ~4 W between two idle runs 20 minutes apart, so a round-level idle is not enough.
+  The `idle` case stays as the round's desktop reference.
 - **Tctl**: from `debug.amdcppc.sensors`.
 - **CPU %** (100 = one core), from `ps` cputime deltas: Chrome GPU process, renderer(s), WindowServer,
   `VTDecoderXPCService`, Docker (Docker.app/com.docker/vfkit/qemu processes), all processes. `kernel_task` from a
@@ -99,6 +104,9 @@ while paused, unparks in the 5 s after resume.
 - Drops are counted by Chrome and by rVFC; a frame the compositor shows late but rVFC reports on time is invisible
   here. A camera or screen capture with the burned-in counter would be the ground truth.
 - 1 s sampling cannot split events closer than a second (e.g. a park burst vs a chunk fill).
-- Package power includes everything the owner runs. "W over idle" subtracts the same round's idle, but the background
-  load (Docker, Claude, builds) changes between rounds; the TSV records it per second.
+- Package power includes everything the owner runs. "W over pre-idle" subtracts a 15 s idle taken just before the
+  case, but the background still moves during the 70 s case; the TSV records Docker / Claude / other-app CPU per
+  second so a disturbed second can be found.
+- Power state (ASUS profile, EPP, AC, Docker) is recorded per case in `<case>.json` `ctx`; other sessions or the owner
+  changed EPP (0 -> 191) during the first day. Compare runs only with the same `ctx`.
 - Sampling itself costs ~2-3 % of one core (one `ps` and two `sysctl` per second), in idle and video cases alike.

@@ -23,8 +23,8 @@ export function row(s, idleW) {
   const m = s.phases?.measure || {}; const r = s.phases?.resume5 || {}; const p = s.phases?.pause || {};
   return { case: s.case, dec: (s.decoder || '-').replace('VideoDecoder', '') + (s.hwDecoder ? '' : ' (SW)'), secs: m.secs,
     decoded: m.decoded, dropped: m.dropped, skipped: m.skipped, late: m.late, p95: m.ivP95, p99: m.ivP99, max: m.ivMax,
-    hidden: m.hiddenSecs, unfocused: m.unfocusedSecs, fsSecs: m.fsSecs, view: m.viewport,
-    W: m.watts, dW: m.watts != null && idleW != null ? +(m.watts - idleW).toFixed(2) : null, tctl: m.tctl,
+    hidden: m.hiddenSecs, input: m.inputSecs, unfocused: m.unfocusedSecs, fsSecs: m.fsSecs, view: m.viewport,
+    W: m.watts, preW: s.preIdle?.watts ?? null, dW: m.wattsOverPre ?? (m.watts != null && idleW != null ? +(m.watts - idleW).toFixed(2) : null), tctl: m.tctl,
     gpu: m.cpu?.gpu, rend: m.cpu?.renderer, ws: m.cpu?.windowserver, kt: m.cpu?.kernel_task, vtd: m.cpu?.vtdecoder,
     docker: m.cpu?.docker, claude: m.cpu?.claude, total: m.cpu?.total, fps: m.nmx?.frames_per_s,
     chunks: m.nmx ? `${m.nmx.chunks_filled}/${m.nmx.chunks_inline}/${m.nmx.chunks_freed}` : null,
@@ -35,9 +35,9 @@ export function row(s, idleW) {
     resumeUnparks: s.phases?.resume5 ? r.nmx?.unparks : null, timedOut: s.timedOut, dist: s.disturbed ? 'DISTURBED' : '' };
 }
 const COLS = [['case', 'case'], ['dec', 'decoder'], ['decoded', 'decoded'], ['dropped', 'dropped'], ['skipped', 'skipped'], ['late', 'late'],
-  ['p95', 'iv p95 ms'], ['p99', 'iv p99'], ['max', 'iv max'], ['W', 'pkg W'], ['dW', 'W over idle'], ['tctl', 'Tctl'],
+  ['p95', 'iv p95 ms'], ['p99', 'iv p99'], ['max', 'iv max'], ['W', 'pkg W'], ['preW', 'pre-idle W'], ['dW', 'W over pre-idle'], ['tctl', 'Tctl'],
   ['gpu', 'GPU-proc %'], ['rend', 'renderer %'], ['ws', 'WS %'], ['kt', 'kernel_task %'], ['vtd', 'VTDec %'], ['docker', 'Docker %'], ['total', 'all CPU %'],
-  ['fps', 'NMX frames/s'], ['chunks', 'chunks fill/inl/free'], ['parks', 'parks/unparks'], ['fails', 'fails'], ['hidden', 'hidden s'], ['unfocused', 'unfocused s'], ['dist', 'note']];
+  ['fps', 'NMX frames/s'], ['chunks', 'chunks fill/inl/free'], ['parks', 'parks/unparks'], ['fails', 'fails'], ['hidden', 'hidden s'], ['unfocused', 'unfocused s'], ['input', 'input s'], ['dist', 'note']];
 const fmt = (v) => (v == null ? '-' : String(v));
 function idleOf(cases) { return cases.idle?.window?.watts ?? null; }
 export function roundTable(cases) {
@@ -53,7 +53,7 @@ export function roundTable(cases) {
   }
   return L.join('\n');
 }
-const SPREAD = [['dropped', 'dropped'], ['skipped', 'skipped'], ['late', 'late'], ['p95', 'iv p95 ms'], ['W', 'pkg W'], ['dW', 'W over idle'], ['gpu', 'GPU-proc %'], ['ws', 'WS %'], ['kt', 'kernel_task %'], ['docker', 'Docker %']];
+const SPREAD = [['dropped', 'dropped'], ['skipped', 'skipped'], ['late', 'late'], ['p95', 'iv p95 ms'], ['W', 'pkg W'], ['dW', 'W over pre-idle'], ['gpu', 'GPU-proc %'], ['ws', 'WS %'], ['kt', 'kernel_task %'], ['docker', 'Docker %']];
 export const med = (a) => { const s = a.filter((x) => x != null).sort((x, y) => x - y); return s.length ? s[Math.floor((s.length - 1) / 2)] : null; };
 export function spreadTable(rounds) {
   const names = [...new Set(rounds.flatMap((r) => Object.keys(r.cases)))];

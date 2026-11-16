@@ -41,6 +41,9 @@ export const NMX = ['nmx_pages_live', 'nmx_page_chunks', 'nmx_page_free', 'nmx_p
   'nmx_park_fail', 'nmx_userrec_live', 'nmx_userrec_made', 'nmx_timeouts', 'nmxaccel_pipe_perform', 'nmxaccel_fence_timeouts'];
 const GROUPS = ['gpu', 'renderer', 'browser', 'chrome_other', 'windowserver', 'vtdecoder', 'docker', 'claude', 'owner_apps', 'total'];
 
+// seconds since the last keyboard/mouse/trackpad input (IOHIDSystem HIDIdleTime, no root)
+export const hidIdle = () => sh('ioreg', ['-c', 'IOHIDSystem', '-d', '4']).then((r) => { const m = /"HIDIdleTime" = (\d+)/.exec(r.stdout); return m ? +m[1] / 1e9 : null; }, () => null);
+
 // ---------- sampler: power, temperature, CPU per group, driver counters, once a second ----------
 function classify(args, profile) {
   if (profile && args.includes(`--user-data-dir=${profile}`)) {
@@ -64,17 +67,18 @@ export function startSampler(profile) {
   top.stdout.on('data', (d) => { tbuf += d; const ls = tbuf.split('\n'); tbuf = ls.pop(); for (const l of ls) { const m = /^0\s+([\d.]+)/.exec(l); if (m) ktask = +m[1]; } });
   const one = async () => {
     const t = Date.now();
-    const [sens, ps, ctl] = await Promise.all([
+    const [sens, ps, ctl, hid] = await Promise.all([
       sh('sysctl', ['-n', 'debug.amdcppc.sensors']).then((r) => r.stdout, () => ''),
       sh('ps', ['-A', '-o', 'pid=,time=,args='], { maxBuffer: 16 << 20 }).then((r) => r.stdout, () => ''),
       sh('sysctl', NMX.map((n) => 'debug.' + n)).then((r) => r.stdout, (e) => e.stdout || ''),
+      hidIdle(),
     ]);
     const rm = /rapl=([0-9a-f]+)\/([0-9a-f]+)/.exec(sens), tm = /tctl=(\d+)/.exec(sens);
     const esu = rm ? (parseInt(rm[1], 16) >> 8) & 31 : 16, energy = rm ? parseInt(rm[2], 16) : null;
     const procs = new Map();
     for (const l of ps.split('\n')) { const m = /^\s*(\d+)\s+(\S+)\s+(.*)$/.exec(l); if (m) procs.set(+m[1], { cpu: cpuSecs(m[2]), g: classify(m[3], profile) }); }
     const nmx = {}; for (const l of ctl.split('\n')) { const m = /^debug\.(\S+): (.*)$/.exec(l); if (m) nmx[m[1]] = +m[2]; }
-    const s = { t, tctl: tm ? +tm[1] / 1000 : null, ktask, nmx };
+    const s = { t, tctl: tm ? +tm[1] / 1000 : null, ktask, nmx, hid };
     if (prev) {
       const dt = (t - prev.t) / 1000;
       s.watts = energy != null && prev.energy != null ? (((energy - prev.energy) >>> 0) / 2 ** esu) / dt : null;
@@ -102,7 +106,7 @@ export function windowStats(samples, t0, t1) {
   const d = (k) => (first[k] == null || last[k] == null ? null : last[k] - first[k]);
   const cpu = {}; for (const k of GROUPS) cpu[k] = r1(avg(w.map((s) => s.cpu[k])));
   return {
-    n: w.length, watts: r2(avg(w.map((s) => s.watts).filter((x) => x != null))), tctl: r1(avg(w.map((s) => s.tctl))), tctlMax: r1(Math.max(...w.map((s) => s.tctl))),
+    n: w.length, inputSecs: w.filter((s) => s.hid != null && s.hid < 1.5).length, watts: r2(avg(w.map((s) => s.watts).filter((x) => x != null))), tctl: r1(avg(w.map((s) => s.tctl))), tctlMax: r1(Math.max(...w.map((s) => s.tctl))),
     cpu: { ...cpu, kernel_task: r1(avg(w.map((s) => s.ktask).filter((x) => x != null))) },
     nmx: { chunks_filled: d('nmx_page_chunks_filled'), chunks_inline: d('nmx_page_chunks_inline'), chunks_freed: d('nmx_page_chunks_freed'),
       parks: d('nmx_userwire_parks'), unparks: d('nmx_userwire_unparks'), unpark_fail: d('nmx_userwire_unpark_fail'), park_fail: d('nmx_park_fail'),
@@ -141,6 +145,9 @@ async function runCase(name, out) {
   summary.ctx = await machineCtx();
   if (c.kind === 'idle') {
     killScratch(profile);
+    const WI = +(process.env.VS_WAIT_IDLE ?? 20), WMAX = +(process.env.VS_WAIT_MAX ?? 900); const w0 = Date.now();
+    if (WI > 0) { let h; while (((h = await hidIdle()) ?? WI) < WI && Date.now() - w0 < WMAX * 1000) await wait(Math.max(1000, (WI - h) * 1000)); }
+    summary.waitedForIdleSecs = Math.round((Date.now() - w0) / 1000);
     const smp = startSampler(null); await wait((c.secs + 5) * 1000); smp.stop();
     const t1 = smp.samples.at(-1).t, t0 = t1 - c.secs * 1000;
     Object.assign(summary, { window: windowStats(smp.samples, t0, t1) });
@@ -154,6 +161,14 @@ async function runCase(name, out) {
   const port = 8791; const rows = []; const events = []; let done = false, startWall = null;
   const srv = await startServer(port, { onReport: (o) => { if (o.type === 'row') rows.push(o); else { events.push(o); if (o.type === 'done') done = true; if (o.type === 'start') startWall = o.wall; } } });
   const smp = startSampler(profile);
+  // own idle reference right before the case: the background load (Docker, Claude, builds) moves package power by
+  // several watts within minutes, so a round-level idle can't give "W over idle" to ~1 W
+  // the owner uses this machine: wait until there was no input for VS_WAIT_IDLE s (default 20, up to VS_WAIT_MAX s)
+  const WI = +(process.env.VS_WAIT_IDLE ?? 20), WMAX = +(process.env.VS_WAIT_MAX ?? 900); const w0 = Date.now();
+  if (WI > 0) { let h; while (((h = await hidIdle()) ?? WI) < WI && Date.now() - w0 < WMAX * 1000) await wait(Math.max(1000, (WI - h) * 1000)); }
+  summary.waitedForIdleSecs = Math.round((Date.now() - w0) / 1000);
+  const PRE = +(process.env.VS_PREIDLE ?? 15);
+  if (PRE > 0) { killScratch(profile); await wait((PRE + 1.5) * 1000); const t1 = Date.now(); summary.preIdle = windowStats(smp.samples, t1 - PRE * 1000, t1); }
   let b;
   try {
     b = await launch(profile, 9341, { extra: c.mode === 'windowed' ? ['--window-size=1280,800', '--window-position=80,60'] : ['--start-maximized'] });
@@ -186,6 +201,7 @@ async function runCase(name, out) {
     if (ph === 'load' || ph === 'warm') continue;
     const pr = rows.filter((r) => r.phase === ph);
     summary.phases[ph] = { ...pageStats(pr, fps), ...windowStats(smp.samples, pr[0].wall - 1000, pr.at(-1).wall) };
+    if (summary.preIdle?.watts != null && summary.phases[ph].watts != null) summary.phases[ph].wattsOverPre = +(summary.phases[ph].watts - summary.preIdle.watts).toFixed(2);
   }
   if (c.scenario === 'seekpause') {
     const pr = rows.filter((r) => ['pre', 'seek', 'resume5', 'post'].includes(r.phase));
@@ -200,13 +216,13 @@ async function runCase(name, out) {
 
 function writeTsv(out, name, rs, period = 1000 / 60) {
   const hdr = ['time', 'sec', 'phase', 'decoded', 'dropped', 'skipped', 'rvfc', 'iv_max', 'late', 'vis', 'focus', 'fs', 'ready', 'ahead', 'waiting',
-    'watts', 'tctl', ...GROUPS.map((g) => 'cpu_' + g), 'cpu_kernel_task', ...NMX.map((n) => n.replace(/^nmx(accel)?_/, (m) => (m === 'nmxaccel_' ? 'acc_' : ''))) ];
+    'input', 'watts', 'tctl', ...GROUPS.map((g) => 'cpu_' + g), 'cpu_kernel_task', ...NMX.map((n) => n.replace(/^nmx(accel)?_/, (m) => (m === 'nmxaccel_' ? 'acc_' : ''))) ];
   const lines = [hdr.join('\t')];
   for (const { r, s } of rs) {
     const iv = r?.intervals || [];
     lines.push([new Date(r?.wall ?? s.t).toTimeString().slice(0, 8), r?.sec ?? '', r?.phase ?? 'idle', r?.decoded ?? '', r?.dropped ?? '', r?.skipped ?? '', r?.rvfc ?? '',
       iv.length ? Math.max(...iv).toFixed(1) : '', r ? iv.filter((x) => x > period * 1.5).length : '', r?.vis ?? '', r ? +r.focus : '', r ? +r.fs : '', r?.readyState ?? '', r?.ahead ?? '', r?.waiting ?? '',
-      s?.watts?.toFixed(2) ?? '-', s?.tctl ?? '-', ...GROUPS.map((g) => s?.cpu?.[g] ?? '-'), s?.ktask ?? '-', ...NMX.map((n) => s?.nmx?.[n] ?? '-')].join('\t'));
+      s?.hid == null ? '-' : +(s.hid < 1.5), s?.watts?.toFixed(2) ?? '-', s?.tctl ?? '-', ...GROUPS.map((g) => s?.cpu?.[g] ?? '-'), s?.ktask ?? '-', ...NMX.map((n) => s?.nmx?.[n] ?? '-')].join('\t'));
   }
   fs.writeFileSync(path.join(out, name + '.tsv'), lines.join('\n') + '\n');
 }
