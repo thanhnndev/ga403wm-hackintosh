@@ -1,0 +1,34 @@
+== health probe 'final'  2026-11-16 18:56:36  boot Mon Nov 16 18:39:01 2026  60s
+macOS 26.7.2 (25G332); NMXGPU 3DF88CD9; Chrome running: no; video decoders: 0
+
+| metric | value |
+|---|---|
+| package power (RAPL, 60s avg) | 62.2 W |
+| Tctl min/avg/max | 91 / 95 / 96 °C |
+| fans (asuswmi raw) | cpu_fan=59 gpu_fan=60  |
+| profile / GPU |  profile=3 gpu_mux=1 dgpu_disable=0|
+| EPP (value x CPUs listed) | 0 x8 (0 = max performance, 255 = max saving) |
+| idle mode / stats | mode 0  |
+| memory | wired 19.5 GB, compressor 5.6 GB (holds 12.0 GB), swap 0.00M |
+| NMX pinned user pages | 111265 (434 MB), userrec live 89788, pages_live 427877 |
+| NMX frames / fence timeouts | 41231 / 0 |
+| battery | on AC, 2604 mAh |
+| IPIs / interrupts | (run with sudo) |
+
+top 15 by CPU (60s average):
+PID    COMMAND          %CPU  MEM   
+35288  com.docker.hyper 445.1 2322M+
+0      kernel_task      108.4 553M+ 
+35381  qemu-system-x86_ 95.9  905M+ 
+35261  com.docker.backe 76.6  102M- 
+35727  python3.13       51.9  298M+ 
+35728  python3.13       48.1  303M+ 
+35723  python3.13       45.4  318M+ 
+35724  python3.13       40.6  322M+ 
+35744  python3.13       33.8  301M+ 
+35725  python3.13       32.8  306M+ 
+35771  python3.13       31.0  296M+ 
+35778  python3.13       29.4  276M+ 
+961    Claude Helper (R 16.0  607M+ 
+33052  claude           13.6  251M+ 
+34994  claude           12.2  231M- 

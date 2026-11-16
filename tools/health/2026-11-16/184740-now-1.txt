@@ -1,0 +1,34 @@
+== health probe 'now-1'  2026-11-16 18:47:40  boot Mon Nov 16 18:39:01 2026  60s
+macOS 26.7.2 (25G332); NMXGPU 1>
+
+| metric | value |
+|---|---|
+| package power (RAPL, 60s avg) | 30.4 W |
+| Tctl min/avg/max | 62 / 71 / 78 °C |
+| fans (asuswmi raw) | cpu_fan=25 gpu_fan=28  |
+| profile / GPU | profile=1 profile=3 gpu_mux=1 dgpu_disable=0 |
+| EPP (value x CPUs) | 0 x10 |
+| idle mode / stats | mode 0  |
+| memory | wired 9.0 GB, compressor 0.2 GB (holds 0.4 GB), swap 0.00M |
+| NMX pinned user pages | 459914 (1796 MB), userrec live 353906, pages_live 535586 |
+| NMX frames / fence timeouts | 23922 / 0 |
+| battery | on AC, 2604 mAh |
+| IPIs / interrupts | (run with sudo) |
+
+top 15 by CPU (60s average):
+PID    COMMAND          %CPU MEM   
+12149  Google Chrome He 42.9 838M+ 
+207    WindowServer     37.1 776M- 
+0      kernel_task      23.0 324M- 
+961    Claude Helper (R 14.3 564M+ 
+657    Claude           10.3 301M+ 
+98     logd             7.6  9972K-
+12195  Google Chrome He 5.6  20M-  
+850    Claude Helper    4.5  242M+ 
+12141  Google Chrome    3.9  115M+ 
+1376   claude           3.4  179M+ 
+231    coreaudiod       3.2  4776K-
+1656   claude           3.2  171M+ 
+1721   claude           2.9  195M- 
+17624  VTDecoderXPCServ 2.6  112M- 
+12271  VTDecoderXPCServ 2.1  131M+ 
