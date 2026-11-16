@@ -10096,3 +10096,36 @@ Read-only review; out-28 is not installed.
 - StrixDgpuGate: "standard: loop guard (previous Eco boot did not finish)", gate-tripped Yes, RTX powered. strix-gpu-eco-try was still 1 at probe, so the last Eco boot before this one never reached 90 s of uptime (or its NVRAM clear did not land). The unified log holds no boot between 11-11 23:00 and this one. Open: ask the owner whether a boot hung after the out-29 install.
 - Video double run (edge-video-lag) and park re-wire tests (IOSurface session) handed off.
 - Owner: no boot hung before the 11-16 boot, so the loop guard trip is a false positive. Code read (rog-control-macos-gpumode StrixDgpuGate.cpp): try=1 in start() with forced sync, try=0 from a thread call at 90 s with forced sync; the 11-11 22:38 Eco boot ran 30+ min. Candidates: a silent early reset during the restart (two boots seen as one), the 90 s clear not persisting, or a second start() in that session. NVRAM holds stale AAPL,PanicInfo000K..N fragments (no 0000 chunk). Handed to the RogControl/gate session: boot counter + cleared counter + read-back in NVRAM, clear again at 5 min and at power-off. Eco returns on the next boot (try is 0 now).
+
+## Trace part 42: out-29 (Step141c prefill + Step141d/e capped 60 s / 10 min peak floor + Step142b park 60 s) on the video path (2026-11-16 18:41-18:48)
+
+Boot 18:39, no panic. The dGPU gate stood down this boot (loop guard), so the RTX was powered (standard mode, not Eco). Light load: load average 3-5, no Docker. Two pairs of `run-max.sh` runs, each pair with a 30 s pause. The second run of the first pair and the first run of the second pair don't count: the probe measured during an unskipped 25 fps ad (AV1 codec, buffer draining, `waiting` events; 711 and 1014 frames decoded). Valid runs:
+
+| | run 1 (18:41:52) | run 4 (18:47:13, 30 s after a run) |
+|---|---|---|
+| dropped / decoded | **0** / 3603 | **10** / 3600 (4 at 5 s, 3 at 48 s, 3 at 50 s) |
+| proc avg / max | 29.2 / 58 ms | 29.8 / 161 ms |
+| userwire avg | 1.79 GB | 2.80 GB |
+| WS | 4.8 ms/frame | 9.6 ms/frame |
+| chunks filled before / during / after | 148 / 0 / 0 | 0 / **135** / 0 |
+| chunks made inline (allocation path) | 0 / 0 / 0 | 0 / **0** / 0 |
+| chunks freed before / during / after | 0 / 0 / 0 | 0 / **79** / 0 |
+| min free pages in window | 93410 | 42287 |
+| parks / unparks in window | 201 / 1 | 462 / 9 |
+
+The invalid runs also made 0 chunks inline (90 and 432 filled before their windows). Over the 4 runs and the boot, `nmx_page_chunks_inline` stayed at 1.
+
+**Run 4 per second:**
+- **5 s (4 drops):** the release sweep gave back 41 chunks over 5-7 s (`chunks_freed` 27 → 68). Free was ~200k pages, above reserve + the 512 MB cap (196608), so the floor allowed it. The page_hwm sysctl went 102849 → 131072, the cap, in the same second. This is the first drop that lines up with a release since Step141b.
+- **45-46 s:** userwire rose +68k and +67k pages (~530 MB in 2 s). The fill call made 67 chunks at 46 s and 68 at 50 s; nothing was made inline. Free bottomed out at 42287 at 49 s.
+- **46-52 s (3 + 3 drops at 48 and 50 s):** parks ran at a steady +32 per second (1503 → 1695), with almost no unparks. Surfaces from the run start were reaching the 60 s idle mark. page_hwm re-based from 131072 to 108, then 0, at 49-51 s. The drops sit on the fill runs and the park stream; one sample a second can't separate the two.
+
+**Reading:**
+- Step141c prefill works: 0 inline chunks across the whole session, including a ~530 MB burst.
+- Step142b moved the park from 10 s to 60 s. In a 60 s run it now fires in the last seconds, 32 surfaces a second. Unparks are rare, so the cost is the unwire itself, not re-wires.
+- 10 drops in run 4 against 38 (part 39) and 142 (part 40, under Docker). This boot had no Docker; the daily-load run is still owed.
+
+**Next:**
+- Rerun under the daily load (Docker on).
+- Keep the run going past 60 s (e.g. 120 s) so the park stream sits in the middle of the window.
+- If the 5 s release recurs, don't release while chunk_live is rising (e.g. skip a sweep when hwm moved in the last few seconds).
