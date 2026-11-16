@@ -1,0 +1,42 @@
+RyzenHV counters
+  probeRuns       : 1
+  enableCalls     : 1
+  enableCpusOk    : 24
+  enableFailures  : 0
+  disableCalls    : 0
+  sleepEvents     : 0
+  wakeEvents      : 0
+  clientOpens     : 7
+  clientCalls     : 7
+  assertFailures  : 0
+  selftestRuns    : 1
+  selftestCpusOk  : 24
+  logBytesTotal   : 615850
+  logLevel        : 4
+  vmCreates       : 36
+  vmRuns          : 165502189
+  vmExits         : 211848486
+  vmInvalidExits  : 0
+  vmMaps          : 26
+  vmMapFailures   : 0
+  vmUnmaps        : 20
+  vmProtects      : 0
+  vmNptFaults     : 109102126
+  vmPagesMapped   : 2097152
+  vmFpuMismatches : 0
+  vmCycTrap       : 6185108832500
+  vmTraps         : 165490226
+  vmCycRun        : 5804858065597
+  vmCycPre        : 327271788265
+  vmCycGuest      : 4974913236440
+  vmCycPost       : 152223356340
+  vmProfExits     : 211832620
+  vmCycFeIn       : 105607078580
+  vmCycRunEx      : 5978860874640
+  vmCycFeOut      : 100640879280
+  vmTlbFlushes    : 28679552
+  vmAsidNew       : 28671828
+  per trap        : 18.72 us (run 17.57 us), 1.28 VMRUNs per trap
+  trap split      : front end in 0.32 us, runEx 18.10 us (run 17.57), front end out 0.30 us
+  per VMRUN       : pre 0.77 us, guest+switch 11.76 us, post 0.36 us
+  guest TLB       : flushed on 13.5% of VMRUNs, new ASID on 13.5%
