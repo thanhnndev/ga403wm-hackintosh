@@ -10171,3 +10171,8 @@ The video side session (branch `research/890m-cobalt64`) closes here. It covered
 - `tools/890m/yt-probe/probe.mjs`: YouTube only, retired.
 - `tools/890m/inuse-test/`.
 - `tools/890m/video-suite/checks/` (VideoToolbox encoder list, WebCodecs/MSE check).
+
+### 2026-11-16 18:58 zprint under daily load (out-29, Docker running, 20 min uptime)
+- Wired 20.7 GB, 4054 pages free, compressor 11 GB of pages in 5.2 GB. Tags: RyzenHV 12339 MB, NMXGPU 2621 MB (pages_live 469185 = 1833 MB, page_free 161935 = 632 MB, hwm at the 512 MB cap), Reserved 1462, IOSurface 1130, PTE 594, PMAP 310.
+- RyzenHV wires the whole Docker guest (12.3 GB); it is the largest wired consumer under daily load, about 6x what Steps 141-142 saved. Health probe at the same time: 62 W package, Tctl 96 °C, kernel_task 108 %.
+- chunks_inline still 1 (filled 1666, freed 436). Sub-sessions closed out; see docs/HANDOFF-2026-11-16.md sections 10-12.
