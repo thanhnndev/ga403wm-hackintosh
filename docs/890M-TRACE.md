@@ -10131,6 +10131,276 @@ The invalid runs also made 0 chunks inline (90 and 432 filled before their windo
 - If the 5 s release recurs, don't release while chunk_live is rising (e.g. skip a sweep when hwm moved in the last few seconds).
 - out-29 video (edge-video-lag part 42, light load, RTX powered, no Docker): 0/3603 and 10/3600 drops; chunks_inline stayed 1, the prefill made every chunk. Two runs invalid (the probe measured a 25 fps ad). Next: Docker load, 120 s window, Eco, and the ad-free local suite.
 
+## Step142: IOSurface wired memory = every imported surface stays wired for its BO's life (2026-11-10 22:30)
+Question: why zprint's IOSurface tag held 1404 MB wired 35 min after boot (boot 19:46, Step141 above), with
+`debug.nmx_userwire_*` at 1250 descriptors / 344239 pages (1.31 GB). Source: nmx-source-port 73a9809 + the applied
+drm-kmod series. Side session, no build/install.
+
+**Path, import to release** (who holds the wiring, and when it goes):
+1. The plugin sends `DRM_AMDGPU_NMX_SURFACE_HINT` (surface id, addr, size), then RADV's `amdgpu_create_bo_from_user_mem`
+   sends `GEM_USERPTR` (libdrm always sets VALIDATE).
+2. `nmx_userptr_pin` (amdgpu-userptr-amdgpu_gem.patch) -> `get_user_pages` -> `nmx_user_pages_pin` -> `nmx_xnu_user_wire`.
+   With a hint, `surf_wire()` retains the IOSurface's own descriptor and `prepare()`s it. These pages are tagged by
+   the IOSurface kext's descriptor, so zprint counts them under IOSurface, not NMXGPU. Without a hint, a plain user
+   range is wired.
+3. One `user_pin` per import. Each page gets a record and a pin entry. The BO keeps the records in `ttm->pages`.
+4. The only release is `amdgpu_ttm_tt_unpopulate` (amdgpu-userptr-amdgpu_ttm.patch). It puts every page; the last
+   put runs `nmx_xnu_user_unwire` = `complete()` + `release()`. Unpopulate runs when TTM destroys the BO, i.e. after
+   the last GEM handle is closed, the VM mappings are gone, and the fences have signalled.
+- So the BO holds the wiring, and the BO lives as long as user space keeps the VkDeviceMemory: the plugin's
+  surface-keep cache (WindowServer keeps the old policy; apps up to the 1 GB idle cap, part 33), RADV, the process.
+  Nothing in the kernel ever unwires an idle BO. CS never fetches pages again (Step92 `if (0)`), and there is no
+  notifier or shrinker.
+
+**Leak check:**
+- No kernel import cache. Each hint is consumed by one import (`hint_find(take)`), and two imports of one surface
+  make two BOs with two `prepare()`s of the same descriptor.
+  - userwire counts both, so it overstates physical memory when a surface is imported twice.
+  - The new orphan count shows the other case.
+- Leak found: a userptr BO that is pinned but never populated (no VALIDATE, or destroyed before populate). Its
+  unpopulate is skipped (`ttm_tt_unpopulate` returns early when the TT is not populated), so those pages stayed
+  wired forever. RADV always validates, so this is probably rare; it is now released and counted
+  (`nmx_upin_destroy_rec`).
+- Other release paths are sound:
+  - GEM close removes `bo_va`.
+  - Delayed destroy waits for fences.
+  - Swapout skips EXTERNAL TTs.
+  - Gutting does not apply to device BOs.
+- Latent hazard, fixed in passing: any unpopulate other than destroy (`ttm_device_clear_dma_mappings`) left NULL pages
+  that a later populate would have bound. Populate now restores them.
+
+**Fix: Step142, fork branch `surf-wire-release` 333b109 (on 73a9809; pushed to fork, not merged, not built):**
+- **Owned pins** (nmx_page.c `nmx_upin_*`):
+  - A userptr BO owns its pin. Dropping its page records no longer drops the wiring.
+  - The wiring can be parked and restored.
+  - put_pages removes this pin's own entry from each page (it used to remove whichever entry came first).
+- **Wire records** (nmx_mm.cpp):
+  - Each wiring is a record: kind, process, age.
+  - `nmx_xnu_user_park` drops the wiring of an IOSurface descriptor with `complete()` and keeps the descriptor held, so
+    the memory stays allocated but becomes pageable/compressible.
+  - `nmx_xnu_user_rewire` runs `prepare()` again and returns the new physical pages.
+  - Plain user ranges are never parked, because re-wiring them needs the task's map.
+- **Idle park** (new patch amdgpu-userptr-park.patch, last in the series):
+  - A sweep runs every 1 s while anything can be parked.
+  - It picks IOSurface BOs that no CS has listed for `debug.nmx_userptr_park_ms` (default 10000).
+  - Skipped: BOs with unsignalled fences, pinned BOs (scanout), exported/imported BOs, and BOs whose reservation is
+    already locked (trylock).
+  - A picked BO is validated to CPU (system placement: GART unbound, bo_va invalidated) and then unpopulated, which
+    parks the wiring.
+  - The next CS that lists the BO validates it into GTT. Populate re-wires it and rebuilds the records, then bind and
+    `amdgpu_vm_handle_moved` use the new pages.
+  - This is upstream's userptr re-fetch flow, with the IOSurface descriptor in place of HMM.
+  - Until then the PTEs of a parked BO are rewritten as not valid (system placement), so a stray access faults
+    instead of reading memory that is no longer pinned.
+- **Off switches**: `sysctl debug.nmx_userptr_park_ms=0` (runtime), boot-arg `nmxpark=0`. Boot-arg audit: no hit in
+  our trees or /Library/Extensions, /Library/NullMoth.
+- **Checks:**
+  - The series replays 37/37 on a fresh drm-kmod checkout in a private GPU_SRC.
+  - amdgpu_ttm/cs/gem, nmx_page, nmx_mm and nmx_kext compile.
+  - No new kernel imports. `__bzero` and the stack guard are already imported by other objects; the new symbols all
+    resolve inside the kext.
+  - Not linked.
+
+**New counters:**
+
+| sysctl | meaning |
+|---|---|
+| `debug.nmx_userwire_by_kind` | surface/plain: wired, older than 60 s, parked; surface orphans (descriptor held by NMX only = the IOSurface is gone, only the BO keeps the memory); top 8 processes |
+| `nmx_surfwire_count` / `nmx_surfwire_pages` | NMX's share of zprint IOSurface |
+| `nmx_userwire_parked` / `nmx_userwire_parked_pages` | parked now |
+| `nmx_userwire_parks` / `nmx_userwire_unparks` / `nmx_userwire_unpark_fail` | since boot |
+| `nmx_upin_restore_fail` | restores that failed |
+| `nmx_upin_destroy_rec` | the leak above |
+| `nmx_park_skip_busy` / `nmx_park_fail` | sweep skips and failed parks |
+| `nmx_userptr_park_ms` | the knob |
+
+`nmx_userwire_*` now counts wired-only; parked records are counted apart.
+
+**Expected saving:**
+- At the 35 min point, about 1.31 GB of userwire, almost all IOSurface-tagged. Only surfaces that some CS listed in
+  the last 10 s stay wired.
+- On an idle desktop that is the visible windows' surfaces: estimate 0.2-0.4 GB (a maximised 3392x1536 window
+  surface is ~20 MB).
+- Expect the IOSurface tag about 0.9-1.1 GB lower at idle, and `nmx_userwire_parked_pages` about 230-280k.
+- This is wired -> pageable, not freed. The memory leaves the wired count and the compressor can take it; it is freed
+  only when the cache drops the BO.
+- Video (Chrome): its live frames are listed every frame, so no change during playback; released frames already go
+  through dead-drop.
+
+**Risks to watch on the first boot:**
+- GPU page faults or ring timeouts (`nmx_timeouts`), meaning a BO used without being in the CS list.
+  - RADV lists every referenced BO, and with a global list it lists them all on every CS, so those BOs never park.
+- A stall when an idle window comes back: a re-wire plus a rebind of ~20 MB.
+- `nmx_upin_restore_fail` must stay 0.
+
+**After boot, with idle desktop + daily load:**
+
+    sysctl debug.nmx_userwire_by_kind debug.nmx_surfwire_pages debug.nmx_userwire_parked_pages debug.nmx_userwire_parks debug.nmx_userwire_unparks debug.nmx_upin_restore_fail debug.nmx_upin_destroy_rec debug.nmx_park_skip_busy debug.nmx_timeouts
+
+Also take zprint's IOSurface tag at 35 min and compare it with 1404 MB, and run A/B with `nmx_userptr_park_ms=0`.
+If `surface orphan` pages are large, the plugin holds textures of surfaces that were released: that is a plugin fix
+(the WS keep policy), not a kernel one.
+
+### Step142 post-install test plan (out-24)
+Baseline on out-23 at 4 min uptime: IOSurface tag 1563 MB, userwire_pages 530976 (2.03 GB).
+Probe: `tools/890m/park-probe.sh <outdir> [seconds]`. It samples the counters every second, collects NMXGPU
+fault/timeout/reset lines from the kernel log, and prints a summary with the by-kind table. It is read-only.
+
+**0. Loaded (right after boot):** `sysctl debug.nmx_userptr_park_ms` returns 10000, and `debug.nmx_userwire_by_kind`
+returns a table. If either is missing, out-24 is not live.
+
+**1. Idle park.** Log in, open the usual windows, then leave the desktop untouched for 2 min:
+`park-probe.sh ~/park-idle 120`.
+
+| Check | Pass |
+|---|---|
+| `nmx_userwire_parked_pages` | rises within ~15 s of going idle; ≥ 150k pages (≥ 600 MB) by the end |
+| `nmx_surfwire_pages` | falls by about the same amount; idle level ≤ ~100k pages (≤ 400 MB) |
+| `nmx_userwire_unpark_fail`, `nmx_upin_restore_fail`, `nmx_park_fail` | 0 |
+| `nmx_timeouts` | no increase |
+| faults.txt | 0 fault lines |
+| `by_kind` | "surface orphan" pages are small; a large value is a plugin keep-cache issue, see Step142 |
+
+- `nmx_park_skip_busy` may rise; it only counts BOs that were in use or locked.
+- Large plain pages in `by_kind` are not parked by design.
+
+**2. zprint at 35 min uptime** (root, via launchctl submit as before):
+- Pass: IOSurface tag ≤ ~600 MB, against 1404 MB (out-22) and 1563 MB (out-23 at 4 min).
+- Expected saving: 0.9-1.1 GB less wired.
+- Compare `vm_stat` / Activity Monitor wired as well. The memory moves from wired to pageable; it is not freed.
+
+**3. Re-wire under real load.** Run `park-probe.sh ~/park-load 300` while doing the steps below. Wait more than 15 s
+of idle before each step, so the surfaces are parked first.
+- **a. Chrome tabs.** Open 6+ tabs with images or video, leave them 30 s, then switch through all of them twice.
+  Pass: every tab redraws fully, with no black, stale or garbled tiles.
+- **b. Mission Control and App Exposé.** Open, wait, close; switch Spaces (ctrl-←/→); un-minimise a window from the
+  Dock that has been minimised for more than 30 s. Pass: every thumbnail and window has its content, nothing is black
+  or flashes old content.
+- **c. Video.**
+  - Start `tools/890m/yt-probe/run-max.sh ~/park-yt 60` after more than 30 s idle.
+  - Then pause the video for 20 s (its frames park), resume, and seek.
+  - Pass: drops similar to part 35 (single digits per 60 s), and no frozen or garbled frame after the resume.
+- **d. App switching.** Cmd-tab through 6+ apps that have been idle for more than 30 s (VS Code, Preview, Notes,
+  Terminal, Finder) and resize one of them. Pass: content appears immediately.
+- **e. Sleep the display** (not the system) for 1 min, then wake it. Pass: the desktop redraws.
+
+**Pass for the whole of step 3:**
+- `nmx_userwire_unparks` rises by tens to hundreds. That shows the re-wire path ran.
+- `unpark_fail` / `restore_fail` / `park_fail` stay 0.
+- `nmx_timeouts` does not increase.
+- faults.txt has no `fault` or `NMX: address` line.
+- No process logs VK_ERROR_DEVICE_LOST.
+- WindowServer does not restart (its pid is the same before and after).
+
+**On failure:**
+- Note the step and the time, and save faults.txt.
+- Turn parking off at runtime with `sudo sysctl debug.nmx_userptr_park_ms=0`; parked BOs re-wire on their next use.
+- Then run step 3 again for an A/B. The problem is Step142 only if it goes away with the knob at 0.
+- If the next boot hangs or faults early, use boot-arg `nmxpark=0`. Full undo: `macos-install-step130.sh` with out-23.
+
+### 2026-11-11 22:48-22:58 Step142 live test on out-26 (88328F15), boot 22:38
+Probe: `park-probe.sh ~/park-load 420` (22:48:41-22:55:41) plus the steps below. The owner's apps and another
+session's scratch-Chrome video were running at the same time.
+
+**Result: PASS for the re-wire path that ran; the video part has to be repeated.**
+- Over the whole run: 0 GPU fault lines, 0 timeout/reset lines (NMXGPU/amdgpu kernel log since boot),
+  `nmx_timeouts` 0, unpark_fail / restore_fail / park_fail / destroy_rec 0, surface orphans 0, WindowServer pid 207
+  unchanged. No new crash or hang reports.
+- **Idle (10 min after boot):** 171k pages parked (668 MB), 111k pages of IOSurface wired (434 MB). Peak parked during
+  the run: 419k pages (1.6 GB).
+- **Chrome tabs** (scratch profile, 6 Wikipedia tabs with images, 35 s idle, then each tab activated twice over CDP;
+  the Aurora tab again after 20 s): every tab drew its text and images fully; screenshots of the Chrome window
+  checked. Unparks +26, so the inactive tabs held few surfaces.
+- **Mission Control, first open (22:52:02):** 480 unparks in 1 s, parked 373k -> 191k pages, i.e. ~710 MB of window
+  surfaces wired again at once. No fault, no timeout, WindowServer unchanged. The Dock draws Mission Control and
+  cannot be screenshotted from here, so its thumbnails were not checked by eye.
+- **From 22:52:13 `debug.nmx_userptr_park_ms` was 0** (main's park-off A/B, part 40). Everything below ran with
+  parking off:
+  - the second Mission Control pass (unparks +0);
+  - VP9 1080p60 playback with a 20 s pause, resume and seek: resume OK (9.7 s played, 586 decoded, 8 dropped in
+    the first 10 s), seek OK.
+  - These do not test the re-wire path.
+- With the knob at 0, IOSurface wired climbed back to 3.8 GB: 990k surface pages, 627k of them wired for more than 60 s.
+  WindowServer alone held 716k pages, under daily load with video. The parked ones (124k pages) stay parked until
+  used. So the saving depends on the knob being on.
+- Still to do with the knob at 10000:
+  - the video pause of more than 10 s, then resume;
+  - Mission Control, with the owner looking at the thumbnails;
+  - zprint at 35 min.
+
+### 2026-11-16 18:41-18:54 Step142b re-wire test on out-29 (3DF88CD9, park_ms 60000), boot 18:39
+
+Probe `tools/890m/park-probe.sh ~/park-load3` ran 18:41:42-18:54:22 (711 samples), alongside the video session's
+two run-max runs (until 18:44:48) and then my scratch Chrome on port 9444. The RTX was powered this boot.
+
+| counter (whole run) | value |
+|---|---|
+| parks | +3141 (151 -> 3292) |
+| unparks | +1347 (4 -> 1351) |
+| unpark_fail / restore_fail / park_fail | 0 / 0 / 0 |
+| destroy_rec / skip_busy | 0 / 0 |
+| nmx_timeouts | 0 |
+| parked max / at end | 2634 MB / 1575 MB |
+| userwire / surfwire at end | 826 MB / 807 MB |
+| NMXGPU fault, timeout, reset, `NMX: address` lines since boot | 0 (the one hit is the TMZ "default" boot line) |
+| WindowServer | pid 207 for the whole boot |
+
+- **Video pause > 60 s, then resume: PASS.** 1080p60 YouTube in the scratch Chrome, played 15 s (901 decoded,
+  0 dropped), then paused 75 s. During the pause, parked memory rose from 289k to 674k pages (2.6 GB) as the paused
+  tab's and other surfaces aged past 60 s. On resume: 1 drop in the first 5 s (465 decoded: 225 catch-up frames
+  in second 1, then 60/s) and 5 drops in the next 15 s (all in one second, at +8 s). Unparks went 851 -> 917
+  over the 20 s after resume, all of them successful.
+  - The first attempt (18:45) was invalid: the scratch window was closed by hand during the pause, so `play()`
+    never returned. No CDP client was attached and there was no crash or fault in the log. The window was closed
+    again at 18:51:22, so the tab test ran in a fresh single window.
+- **Tab switch after > 60 s idle: PASS.** Aurora, Aquarium (WebGL) and Lion were opened in one window. Lion was in
+  front for 75 s (parks 3070 -> 3292). Then:
+  - Aquarium came to front: 33 unparks in about 2 s, and it drew fully at 120 fps (screenshot).
+  - Aurora came to front after about 2 min idle: 1 unpark, page and images complete (screenshot).
+  - No missing or black textures, no faults.
+- **Not checked here:** Mission Control thumbnails (the Dock can't be granted to computer use; main relays the
+  owner check below) and zprint at 35 min (root; main runs it about 19:15 and records the IOSurface tag).
+
+Owner check for Mission Control (after at least 2 min with no window activity, so most surfaces are parked):
+1. Leave several apps open (Chrome with 3+ tabs, Finder, Terminal) and don't touch anything for 2 min.
+2. Open Mission Control (F3 or a three-finger swipe up) and look at every thumbnail: each should show its window's
+   real content within a second. No black, grey, stale or garbled thumbnails.
+3. Click into a window that was idle, switch a Chrome tab, then open Mission Control again. Same check. Note any
+   stutter longer than about half a second on the first open.
+
+## Step142 / Step142b final state (2026-11-16, closing this sub-session)
+
+**Proved (out-26 park_ms 10000 on 11-11, out-29 park_ms 60000 on 11-16):**
+- The idle sweep parks IOSurface-backed userptr BOs (complete() the surface descriptor, pages unwired). The next CS
+  that lists the BO re-wires it in populate.
+- Re-wire under real load works with 0 failures and 0 GPU faults across Chrome tab switching, a WebGL page,
+  YouTube pause/resume and Mission Control: 480 unparks in 1 s on out-26, 1347 unparks on out-29.
+- The leak fix holds: a BO pinned but never populated no longer leaks wired pages (destroy_rec 0, orphans 0).
+
+**Saving, expected vs measured:**
+- Expected (Step142 analysis, 11-10): 0.9-1.1 GB less wired memory at idle.
+- Measured on out-26 at 10 s: 668 MB parked after 10 min at idle, 1.6 GB peak.
+- Measured on out-29 at 60 s: 1575 MB parked at the end of this run and 2.6 GB at peak, with WindowServer alone
+  at 281k parked pages (1.1 GB). With parking off (part 40), surface-wired memory went to 3.8 GB.
+- IOSurface zprint tag at 35 min: main records it (19:15 run).
+
+**Not tested / open:**
+- Mission Control thumbnails by eye: owner check above.
+- zprint at 35 min on out-29: main.
+- Long-run behaviour (hours of load, sleep/wake with parked surfaces).
+- Drops on the video path: part 39 tied out-26's bursts to park re-wires. On out-29 at 60 s, part 42 saw 0 and 10
+  drops / 60 s, and this run 6 drops in the 20 s after a 75 s pause.
+
+**Idea, not built: swap-chain skip.** If the uniform 60 s still costs drops, have the sweep skip BOs that a CS
+listed in the last N frames of a presenting swap chain, or give those BOs a longer park_ms (about 60 s for
+presenting surfaces, 10 s for the rest). That way it never parks surfaces a playing video is about to reuse.
+Code to change: `nmx_park_one` in patches/amdgpu-userptr-park.patch (fork branch surf-wire-release /
+nmx-source-port 7108ebb), plus a flag the plugin passes with the surface hint.
+
+**Where things are:** kernel code on nmx-source-port (333b109 Step142, 7108ebb Step142b park 60 s).
+Probe: tools/890m/park-probe.sh. The raw out-29 run (rec.txt, faults.txt, by-kind-start/end.txt) is in
+~/park-load3; the out-26 run is in ~/park-load.
+
 ## Video path: final state of the video side session (2026-11-16)
 
 The video side session (branch `research/890m-cobalt64`) closes here. It covered the video path: VCNDec/VT, surfaces into the Chrome GPU process, frame pacing, and the plugin and NMXGPU code video uses. YouTube is no longer used for measurement (owner, 2026-11-16). The replacement is planned in `docs/VIDEO-SUITE-PLAN.md`.
