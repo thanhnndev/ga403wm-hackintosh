@@ -1,0 +1,10 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>video-suite play</title>
+<!-- ds-allow-hardcode: measurement harness page; black letterbox is the test condition, not UI styling -->
+<style>
+  html, body { margin: 0; height: 100%; background: #000; /* ds-allow-hardcode */ overflow: hidden; }
+  video { display: block; width: 100vw; height: 100vh; object-fit: contain; background: #000; /* ds-allow-hardcode */ }
+</style>
+<video id="v" muted playsinline preload="auto"></video>
+<script src="suite.js"></script>

@@ -21,3 +21,8 @@ tools/bin/
 scripts/nmx-cstrace/cave.o
 tools/890m/vcndec/clips/*.ivf
 tools/890m/inuse-test/inuse_test
+
+# video suite: clips are generated on the machine (default cache ~/Library/Caches/ga403wm-video-suite)
+tools/890m/video-suite/clips/
+tools/890m/video-suite/results/**/.prime/
+*.webm.part
