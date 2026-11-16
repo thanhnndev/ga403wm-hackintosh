@@ -1,8 +1,11 @@
 # RyzenHV: guest memory and VM exit cost (2026-11-16)
 
 Sub-session report for the main coordinator. Source: `~/develop/projects/ryzen-hypervisor.framework`. The base is branch
-`research/ga403wm-zen5` @ 50275d0 (live 0.7.22). The patch is on branch **`research/guest-mem-lazy` @ b7daa2f** (0.7.23, compile-checked only,
-not loaded). Everything below was measured read-only at about 19:20, on the boot of 18:39. Docker had been restarted at about 18:59 (hyperkit pid 35288).
+`research/ga403wm-zen5` @ 50275d0 (live 0.7.22). The patches are on branch **`research/guest-mem-lazy`** (0.7.23, compile-checked only,
+not loaded):
+
+- b7daa2f: step 1, lazy wiring.
+- **f1df9fb**: step 2, reclaim of cold chunks. It is off by default and switched at run time. Everything below was measured read-only at about 19:20, on the boot of 18:39. Docker had been restarted at about 18:59 (hyperkit pid 35288).
 
 ## 0. Corrections to the handoff
 
@@ -52,8 +55,13 @@ whatever the guest uses.
   - There is no KPI for its root (`pm_cr3` is a private struct field: a layout hack, against the owner's rules, and it changes per build).
   - xnu's TLB shootdown only IPIs CPUs that have that pmap live in CR3. Guest ASIDs would never be flushed on pageout, so a guest could write into a
     freed page.
-- `hv_callbacks_t` has a **`memory_pressure`** callback. RyzenHV registers callbacks but leaves this one NULL (`HvFrontend.cpp`, about line 1475). It is
-  the sanctioned hook for a reclaim policy. Where xnu calls it was not verified.
+- `hv_callbacks_t` has a `memory_pressure` callback, but **xnu never calls it**, so RyzenHV does not register it:
+  - `osfmk/kern/hv_support_kext.c` initialises it as `.memory_pressure = NULL, /* (unused) */`. It is copied by `hv_set_callbacks`, and nothing in
+    that file reads it.
+  - A GitHub code search for `hv_callbacks` in apple-oss-distributions/xnu returns only `hv_support_kext.c/.h`, `osfmk/i386/pcb.c` (`volatile_state`,
+    `preempt`, `dispatch`), `pcb_native.c` (`thread_destroy`) and `machine_task.c` (`task_destroy`). None of them calls `memory_pressure`.
+  - Caveat: this covers the public main branch of the open source. The shipping 26.x kernel could differ, but nothing suggests it does.
+  - Step 2 therefore runs on its own period, not on a pressure signal.
 
 **Conclusion:** the correct design open to a third-party kext is "the NPT only ever points at wired pages; wire on first touch,
 and unwire on our own schedule after removing the NPT entry and flushing". The kext controls both edges, so it needs no notifier.
@@ -106,16 +114,30 @@ Guest `/proc/meminfo` (read via `docker exec`, VM-wide):
 - `rhv_lazymap=0` restores the eager path. That boot-arg is the owner's to set.
 - For 8 GiB, at most 4096 first-touch faults happen per VM lifetime.
 
-**Step 2 design (not written):**
+**Step 2 (commit f1df9fb, written, off by default). The design:**
 
 1. `Npt.hpp` gains `scanClearAccessed(lo, hi)`. The NPT leaf A bit is bit 5, which AMD sets on nested walks.
 2. A per-VM `thread_call` runs every 10 s. It clears the A bits of the mapped lazy chunks and bumps `fNptGen` once, so translations re-walk and set A
    again. A chunk whose A bits stay clear for N scans (≥ 60 s) is cold.
 3. Eviction runs in batches under the write lock after `kickAll`: `fNpt.unmap` of the chunk's leaves → `dropPage` → `complete()` (unwire), then one
    `fNptGen` bump per batch.
-4. The rate is capped at about 256 MB per 10 s, with no cap when `memory_pressure` fires (register `cb.memory_pressure`).
+4. The rate is capped by the batch setting (default 256 MiB per scan per VM). There is no pressure trigger: xnu has none for hv (1.3).
 5. The unwired pages stay resident until the host needs them. The next guest touch goes through `faultIn` again (a compressor page-in, in ms).
-6. Cost: one ASID flush per vCPU per scan period, which is negligible at 13k exits/s per vCPU.
+6. Cost: one ASID flush per vCPU per scan period, which is negligible at 13k exits/s per vCPU. A scan reads about 2M NPT entries for 8 GiB:
+   a few ms per period, under the read lock, while vCPUs keep running.
+
+What was built:
+
+- One `thread_call` serves all VMs. It runs with the VM registry lock held, so a VM cannot be freed during a scan.
+- `Npt::scanAccessed` handles one leaf table per chunk and is covered by `npt_test`.
+- Phase 1 holds the read lock and clears the A bits. Phase 2 runs only when there are victims: kick, write lock, unmap, then one `nptGen` bump per batch.
+- Each lazy range keeps a byte per chunk: a cold-scan count and an evicted bit. A split range gets its own copy of that array.
+- Controls, set as admin and readable by anyone, with no boot-arg and no reboot: `rhv-info hv reclaim [0|1 | period MS | cold N | batch MIB]`. The
+  defaults are off, 10000 ms, 6 scans and 256 MiB. They map to HvControl commands 9-12, where value `~0` only reads.
+- New counters, stats V5, 43 words (the V4 layout of 0.7.22 is still accepted): `vmLazyFaults`, `vmLazyRefaults`, `vmLazyRefaultCyc`, `vmReclaimScans`,
+  `vmReclaimScanned`, `vmReclaimEvicted`. `rhv-info stats` also prints a summary line: MiB wired now, faults, re-faults with µs each, and evicted
+  out of scanned chunks.
+- `rhv_lazymap=0` turns off both steps, because reclaim only works on lazy ranges.
 
 This is "balloon-less overcommit", the same behaviour Apple's hv gives Docker on Intel Macs.
 
@@ -166,9 +188,16 @@ the rest are TMICT (`icrtmr`, the one-shot timer: AMD has no TSC-deadline) and I
 |---|---|---|---|---|
 | 1 | **Owner: Docker vCPUs 24 → 8** | 0.2-0.4 (fewer IPI targets, fewer idle↔busy timer/HLT/EOI cycles; guest busy is ~3 vCPUs) | low | setting + restart |
 | 2 | **Owner: the p0 postgres workload** (2.4) | up to 1-2 cores while it runs; it is the largest consumer | none to the VM | owner's call |
-| 3 | Trim the kernel exit path: cache host TSC_AUX per CPU, skip DR0-3/6/7 reads and writes when the guest never used DRs, keep the guest FPU across in-kernel re-entries | ~0.05-0.1 | low | ~half a day |
+| 3 | Trim the kernel exit path: cache host TSC_AUX per CPU, skip DR0-3/6/7 reads and writes when the guest never used DRs, keep the guest FPU across in-kernel re-entries | ~0.05-0.1 | low | **skipped** (see below) |
 | 4 | Apple's in-kernel APIC API in RyzenHV: task traps 10 `intctl(atpic/ioapic/lapic)` and 11 `lapic_msi`, thread trap 13 `apic` (already named in `HvFrontend.cpp`) | removes most of the 0.5 HyperKit-userland cores and most NPT faults, **but only for a client that uses it**: Virtualization.framework, i.e. Docker with `UseVirtualizationFramework=true`. VZ on this machine is unexplored. | high | weeks |
 | 5 | A modified HyperKit (open source, moby/hyperkit) with x2APIC and a KVM-style PV EOI/IPI | similar to 4 | high; replaces Docker's binary | weeks, owner decision |
+
+Option 3 was looked at and skipped:
+
+- Keeping the guest's TSC_AUX loaded between VMRUNs would let any thread scheduled on that CPU in between read a wrong RDPID/RDTSCP value.
+- Skipping the DR swap needs new DR-write intercepts, because in VMX mode the guest's DR accesses pass through.
+- The two XSAVE/XRSTOR pairs per trap are needed anyway.
+- What is left is at most ~0.05 cores, which does not justify a change to the run loop.
 
 The old "in-kernel APIC timer/ICR or AVIC" plan drops out (2.2). The cheap wins are 1-3. For heat, the guest's own work dominates:
 1.6 cores in the guest, against about 0.75 cores of exit overhead in kernel and userland together.
@@ -191,28 +220,76 @@ I could not determine which host process drives it: `com.docker.backend` only fo
 | Setting | Now | Recommend | Effect |
 |---|---|---|---|
 | Memory | 8 GB | **6 GB** | wired −2 GB at once on 0.7.22; the guest's hot set is ~2.5 GB, MemAvailable today 5.6 GB |
-| CPUs | 24 | **8** | fewer exits; the guest averages ~3 busy vCPUs |
+| CPUs | 24 | **8** (agreed by the owner; main changed the settings file, effective at the next Docker restart) | fewer exits; the guest averages ~3 busy vCPUs |
 | Android emulator RAM (if used with Docker) | ? | as small as the work allows | wired 1:1 by RyzenHV until step 2 |
 | p0 test/migration loop | running | stop it when idle; for a throwaway dev DB, `fsync=off`, `synchronous_commit=off` | up to 1-2 cores |
 
-## 4. Tests after main builds and installs 0.7.23
+## 4. Tests after main builds and installs 0.7.23 (both steps, one reboot)
 
-Build with `make kext-release` from `research/guest-mem-lazy`. My check build passed clean, with both symbol and ABI checks.
+Build with `make kext-release` and `make tools` from `research/guest-mem-lazy` @ f1df9fb. My check build passed clean: symbols 408 resolve,
+ABI 344-byte RHVStats, `make test` all OK. Install the **new `build/rhv-info` too**: the old one cannot show the V5 counters or set
+reclaim.
+
+Setting reclaim needs root: run `sudo build/rhv-info hv reclaim ...` through osascript with administrator privileges. Reading
+(`rhv-info stats`, `rhv-info hv reclaim`) works without root. Docker restarts with 8 vCPUs at the same time, so compare exits/s against a
+first sample taken with reclaim still off.
+
+### 4.1 Step 1, lazy wiring (reclaim off, the default)
 
 1. Load: `kextstat` shows 0.7.23, with no new panic. `rhv-info log | grep "VM map (lazy)"` shows two lines (low and high RAM) when Docker starts.
-2. Yield: right after Docker starts, `rhv-info stats` `vmPagesMapped` must be far below 2,097,152, and `zprint -t | grep RyzenHV` should be about
-   `vmPagesMapped` × 4 KiB. Record both at 1 min, 10 min and 1 h of daily load.
+   `rhv-info hv reclaim` shows `on: 0`.
+2. Yield: right after Docker starts, `vmPagesMapped` must be far below 2,097,152, and the lazy summary line shows the wired MiB.
+   `zprint -t | grep RyzenHV` should be about that much. Record both at 1 min, 10 min and 1 h of daily load.
 3. Correctness: the compose stack is healthy, `docker run alpine` with curl works, and the guest dmesg (privileged) has no oops.
-   - Fill guest RAM: `docker run --rm alpine sh -c 'dd if=/dev/zero of=/dev/shm/x bs=1M count=5000; rm /dev/shm/x'`.
-   - Then `vmPagesMapped` rises, no `cannot bring in guest RAM` appears in `rhv-info log`, and the VM stays up.
-4. Regression: `hvf-smoke`, `hvf-exit-bench 2` (their maps are under 64 MiB, so they stay eager), `rhv-map-test`. Exits/s and the per-VMRUN times
-   must not change beyond the one-time first-touch faults.
-5. Fail (panic, VM abort, vmentry error): boot with `rhv_lazymap=0` (owner) or restore 0.7.22 (`Kexts-backup`).
-6. Not testable yet: memory going back to the host. That needs step 2.
+   - Fill guest RAM: `docker run --rm --tmpfs /t:size=5g alpine sh -c 'dd if=/dev/zero of=/t/x bs=1M count=5000; rm /t/x'`.
+   - Then `vmPagesMapped` and `vmLazyFaults` rise, no `cannot bring in guest RAM` appears in `rhv-info log`, and the VM stays up.
+4. Regression: `hvf-smoke`, `hvf-exit-bench 2` (their maps are under 64 MiB, so they stay eager), `rhv-map-test`. The per-VMRUN times must not
+   change beyond the one-time first-touch faults.
+
+### 4.2 Step 2, reclaim (switched on at run time)
+
+1. Quick settings for the test: `hv reclaim period 5000`, `hv reclaim cold 3`, then `hv reclaim 1` (a chunk is cold after 15 s).
+2. After 2-3 minutes of normal Docker use, a pass looks like this:
+   - `vmReclaimScans` grows by one per period per VM.
+   - `vmReclaimEvicted` > 0.
+   - The wired MiB in the lazy line, and the zprint RyzenHV tag, fall toward the guest's hot set (expected 2.5-3.5 GB, against the 8 GB of 0.7.22).
+   - The re-faults stay well below the evictions (`vmLazyRefaults` / `vmReclaimEvicted` < ~0.2 over 10 minutes).
+   - A re-fault takes under ~100 µs while the page is still resident.
+3. Exit cost: `guest TLB flushed on X %` may rise only by about one flush per vCPU per period. The per-VMRUN pre/post and guest+switch times stay
+   within ±5 % of the reclaim-off sample. hyperkit's CPU in `top` must not rise.
+4. Workload correctness: compose healthy, postgres answering, alpine curl, no guest oops or segfaults, for at least 30 minutes of daily load.
+5. **Failure test: the guest under memory pressure while the host compresses.** Reclaim stays on with the quick settings.
+   1. In the guest, write data that cannot be compressed away and remember its hash:
+      ```bash
+      docker run --rm --name rhvfill --tmpfs /t:size=4g alpine sh -c 'dd if=/dev/urandom of=/t/x bs=1M count=3000 && md5sum /t/x && sleep 600 && md5sum /t/x && dd if=/dev/urandom of=/t/y bs=1M count=500 && md5sum /t/y && md5sum /t/y'
+      ```
+   2. Wait about 30 s, so the chunks behind `/t/x` go cold and are unwired: `vmReclaimEvicted` jumps by about 1500.
+   3. Put the host under pressure: `memory_pressure -l warn`, then `memory_pressure -l critical` (`/usr/bin/memory_pressure`, a few minutes), while
+      Chrome video and Claude keep running.
+   4. Watch `vm_stat`: compressions and swapouts rise, and hyperkit's footprint falls.
+   5. While the host is still under pressure, the container re-reads `/t/x` (the second `md5sum`) and then writes and reads `/t/y`.
+
+   **Pass:**
+   - Both `/t/x` hashes are identical, and both `/t/y` hashes agree.
+   - `vmLazyRefaults` rises by about the number of chunks re-read. Re-fault latency rises (ms, from compressor page-ins) but stays bounded.
+   - No `cannot bring in guest RAM`, no guest oops, no VM abort, no host panic or watchdog.
+   - The Mac stays usable, and the host compressor holds the guest's cold pages instead of other apps'.
+
+   **Fail:**
+   - A hash mismatch or a guest segfault/oops. That means memory corruption: stop at once with `hv reclaim 0`, keep `rhv-info log`, and report.
+   - A panic, or a VM that hangs or aborts.
+6. Off switch: `hv reclaim 0`. `vmReclaimScans` must go flat, evicted chunks come back as the guest touches them, and nothing else changes.
+7. Fallbacks:
+   - At run time: `hv reclaim 0`.
+   - At the next boot: `rhv_lazymap=0` (owner) turns off both steps.
+   - Otherwise restore 0.7.22 (`Kexts-backup`).
+8. To keep after the test (owner's choice): `period 10000`, `cold 6`, `batch 256`, with `hv reclaim 1` re-run after each boot, because the setting is not
+   persistent. If that proves worth it, a LaunchDaemon or a boot-arg default can come later.
 
 ## 5. Open questions
 
 - Was the 12.3 GB at 18:58 the emulator or the orphaned hyperkit? Re-take `zprint` with the emulator running.
-- Where does xnu call `hv_callbacks_t.memory_pressure`, and at what levels? This is needed for step 2.
+- ~~Where does xnu call `hv_callbacks_t.memory_pressure`?~~ Answered: nowhere (1.3). Step 2 is periodic.
+- Should reclaim follow host pressure (`kern.memorystatus_vm_pressure_level`), instead of only age? Decide after test 4.2.
 - Does Virtualization.framework start a VM on this machine at all? It would make option 2.3-4 worthwhile.
 - Which host process runs the p0 DDL loop (it belongs to the owner's project)?
