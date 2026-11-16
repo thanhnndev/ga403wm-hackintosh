@@ -773,3 +773,53 @@ streaming.
     the ktrace because top's IDLEW column is always 0 here and the hook counts nothing in mode 0.
 - The idle mode is put back to its start value at the end, and also on Ctrl-C.
 - Results go to `/var/tmp/idle-ab-<date>/idle-ab.txt`, which survives the reboot cleanup of /tmp.
+
+## 2026-11-16 health probe (boot 18:39, NMXGPU out-29 3DF88CD9, RyzenHV 0.7.22, on AC)
+
+**Daily probe: `tools/health-probe.sh [label] [seconds] [out-dir]`.** It needs no root; with sudo it adds IPIs and
+interrupts from a 3 s ktrace. It prints one table per run, so boots can be compared:
+- package power (RAPL energy averaged over the window);
+- Tctl min/avg/max (every 5 s);
+- asuswmi fan values (raw);
+- profile / MUX / dGPU;
+- EPP;
+- StrixS0ix idle mode and stats;
+- wired / compressor / swap;
+- NMX pinned pages and frame / fence counters;
+- battery discharge in W by the capacity method (on battery only; InstantAmperage is not used);
+- the top 15 processes by CPU over the window.
+
+**This boot is standard mode, not Eco:** StrixDgpuGate says `gate-state = "standard: loop guard (previous Eco boot
+did not finish)"`, `gate-powered-off = No`, so the RTX is powered.
+
+| | "now" 18:47 (another session's Chrome 1080p video test + Claude) | idle desktop 18:54 (Claude app + 5 CLI sessions, nothing else) |
+|---|---|---|
+| Package power (60 s RAPL) | **30.4 W** | **16.4 W** |
+| Tctl min/avg/max | 62 / 71 / 78 °C | 60 / 64 / 67 °C |
+| EPP | 0 on every CPU listed | 0 |
+| Idle mode | 0 (HLT, no CC6) | 0 |
+| Wired / compressor | 9.0 / 0.2 GB | 7.6 / 0.2 GB, no swap |
+| NMX pinned user pages | 1.8 GB | 411 MB |
+| Top processes | Chrome GPU 43 %, WS 37 %, kernel_task 23 %, Claude 29 % (3 procs), logd 7.6 %, VTDecoder 4.7 % | Claude 33 % (3 procs), kernel_task 12 %, WS 10 %, claude CLIs ~11 % |
+
+The reference from 2026-11-08 20:41 (true idle, hands off, nothing animating) was **5.5 W / 47 °C**. The idle
+desktop today is 3× that.
+
+**Top fixable causes (estimates):**
+
+| # | Cause | Evidence | Estimate | Fix / owner |
+|---|---|---|---|---|
+| 1 | **EPP 0 (Turbo) on AC.** Every short burst runs at full boost. | `debug.amdcppc.report`: `epp 0` on all CPUs; profile 3. On 11-08, EPP 128 instead of 0 at the same load gave 37 → 22 W and 26 → 16 W, −13 °C. | **−5 to −15 W** at light load | Balanced on AC (EPP 191) or 128 in RogControl. Owner's choice, instant, reversible. |
+| 2 | **Idle mode 0**: cores HLT instead of power-gating into CC6. | `S0ix,IdleMode = 0` at boot; StrixS0ix 0.1.17 hook present. | several W at idle; measured by the A/B | Run `sudo tools/idle-ab.sh` (4.5 min hands-off), then make the best mode the boot default. |
+| 3 | **RTX powered** (gate loop guard tripped this boot). | `gate-powered-off = No`. Not in the CPU RAPL number, but in the battery drain and the heat in the shared chassis. | ≈ 3–8 W of system power (Eco measured 16.8 W DC total) | Main: find why the previous Eco boot did not finish, then re-arm the gate. |
+| 4 | **`caffeinate -dimsu`** started at boot (reparented to launchd, 8 min old at 18:47). It blocks display AND system sleep (`pmset`: sleep prevented by coreaudiod, Claude, caffeinate). | `pgrep -lf caffeinate`. | Unattended on battery the OLED + WindowServer never stop: the largest drain while away. | Find the starter (very likely the Claude app's keep-awake setting) and use it only during long jobs. |
+| 5 | **Claude desktop app + WindowServer** while idle: Claude ~0.33 core, WS 10 % (cursor-image polling on mouse move, input redraws; Reduce Motion is on). With video: Chrome GPU 43 % + WS 37 % = **+14 W** over idle. | top above; 11-08 traces. | 2–4 W idle, +14 W with video | Video path: video-lag session. WS per-frame cost: main / plugin. The Claude app is not ours. |
+
+Also open:
+- kernel_task is 12 % at idle with the compressor near empty (0.2 GB). That is not the 11-09 compression cause; it
+  needs a root spindump to name the threads.
+- logd is 7.6 % during the video test (log volume from the test or the plugin).
+
+**Linux target:** our traces have no Linux measurement on this machine. The same RAPL read (`turbostat` or
+`/sys/class/powercap`) during one Linux boot at idle and with 1080p video would give the target. The 11-08 macOS true
+idle of 5.5 W / 47 °C (Tctl) is the best macOS number so far.
