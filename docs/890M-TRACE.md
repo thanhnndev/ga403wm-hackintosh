@@ -10089,3 +10089,9 @@ Read-only review; out-28 is not installed.
   - park re-wire tests (pause > 60 s, Mission Control);
   - zprint at 35 min.
 - out-29 installed in the AuxKC (rc 0, relinked and checked), reboot pending. Undo: scripts/macos-install-step130.sh ~/develop/projects/nmx-build-xkpi/out-23/NMXGPU.kext (or out-22).
+
+### 2026-11-16 18:39 boot: out-29 live (3DF88CD9); dGPU gate stood down (loop guard)
+- No panic file newer than 2026-11-09. NMXGPU 3DF88CD9, RyzenHV 0.7.22, itlmt7925 B9E6878A.
+- 2 min: chunks 704, free 110852 (433 MB = reserve 256 + kept 156), chunks_filled 703, chunks_inline 1, chunks_freed 0; park_ms 60000, parks 0; surfwire 240106 pages (938 MB); wired 6251 MB.
+- StrixDgpuGate: "standard: loop guard (previous Eco boot did not finish)", gate-tripped Yes, RTX powered. strix-gpu-eco-try was still 1 at probe, so the last Eco boot before this one never reached 90 s of uptime (or its NVRAM clear did not land). The unified log holds no boot between 11-11 23:00 and this one. Open: ask the owner whether a boot hung after the out-29 install.
+- Video double run (edge-video-lag) and park re-wire tests (IOSurface session) handed off.
