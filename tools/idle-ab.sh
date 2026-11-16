@@ -18,6 +18,8 @@ rapl() { sysctl -n debug.amdcppc.sensors | sed -E 's/.*rapl=([0-9a-f]+)\/([0-9a-
 now() { perl -MTime::HiRes=time -e 'printf "%.3f", time'; }
 {
 echo "idle A/B $(date)  mode at start: $mode0  $(sysctl -n kern.osversion)"
+echo "EPP (value x CPUs): $(sysctl -n debug.amdcppc.report | grep -oE 'epp [0-9]+' | sort | uniq -c | awk '{printf "%s x%s ", $3, $1}')  asuswmi: $(sysctl -n debug.asuswmi.status 2>/dev/null | grep -oE '(profile|dgpu_disable)=[0-9]+' | tr '\n' ' ')"
+echo "EPP and the profile must stay the same for the whole run; compare modes only between phases with the same frames/s."
 echo "settling 20 s (hands off)"; w 20
 p=0
 for m in 0 1 2 0 1 2; do
@@ -35,7 +37,7 @@ for m in 0 1 2 0 1 2; do
   pw=$(perl -e "printf '%.2f', $de / (2**$esu) / ($t1 - $t0)")
   awk '/^PID/{n++; next} n==2 && $1 ~ /^[0-9]+$/ {if ($1==0) k=$(NF); if ($2=="WindowServer") ws=$(NF)}
        END{printf "kernel_task %s%%  WS %s%%", k, ws}' $out/top-$p-m$m.txt > $out/.t
-  echo "phase $p mode $m: pkg $pw W  $s  frames $(( (f1-f0)*10/ (${t1%.*}-${t0%.*}) / 10 ))/s  $(cat $out/.t)  stats: $st"
+  echo "phase $p mode $m: pkg $pw W  $s  epp $(sysctl -n debug.amdcppc.report | grep -oE 'epp [0-9]+' | sort -u | awk '{printf "%s,", $2}')  frames $(( (f1-f0)*10/ (${t1%.*}-${t0%.*}) / 10 ))/s  $(cat $out/.t)  stats: $st"
 done
 $SET idle $mode0 >/dev/null; echo "idle mode back to $mode0  $(date)"
 echo "per phase, from the 3 s ktrace: IPIs (remote ASTs) and interrupts (CPU wakeups) per second"

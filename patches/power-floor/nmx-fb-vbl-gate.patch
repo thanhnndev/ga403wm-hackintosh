@@ -1,0 +1,85 @@
+--- a/gpu-port/xkpi/xnu/nmx_fb.cpp	2026-11-16 19:27:21
++++ b/gpu-port/xkpi/xnu/nmx_fb.cpp	2026-11-16 19:27:21
+@@ -129,10 +129,15 @@
+     nmx_fb_display_info fDisplay = {};
+     uint32_t fRefresh16 = 60 << 16;
+     uint64_t fFrameNs = 16666667ull;
+-    struct Irq { IOFBInterruptProc proc = nullptr; OSObject *target = nullptr; void *ref = nullptr; };
++    struct Irq { IOFBInterruptProc proc = nullptr; OSObject *target = nullptr; void *ref = nullptr; volatile bool on = true; };
+     Irq fVbl, fConnect;
+     thread_call_t fVblTimer = nullptr;
+     uint64_t fVblNext = 0;
++    /* power floor: the software VBL timer runs only while IOFramebuffer has the VBL interrupt enabled (a real
++     * framebuffer masks its vblank interrupt the same way). fVblArmed = a timer is pending or running.
++     * Boot-arg nmxvblgate=0: fire forever at the panel rate, as before. */
++    volatile UInt32 fVblArmed = 0;
++    bool fVblGate = true;
+     volatile bool fStopping = false;
+     bool fPowerRegistered = false;
+     bool fForeign = false;      // head 4 of NVAccel's display machine (the NV controller group)
+@@ -277,7 +282,12 @@
+ 
+     static void vblFire(thread_call_param_t p0, thread_call_param_t) {
+         NMXAMDFB *me = (NMXAMDFB *)p0;
+-        if (me->fStopping) return;
++        if (me->fStopping) { me->fVblArmed = 0; return; }
++        if (me->fVblGate && (!me->fVbl.on || !me->fVbl.proc)) {
++            me->fVblArmed = 0;                    /* masked: stop; setInterruptState(on) re-arms */
++            if (me->fVbl.on && me->fVbl.proc) me->vblArm();   /* enabled again between the test and the clear */
++            return;
++        }
+         if (me->fVbl.proc) me->fVbl.proc(me->fVbl.target, me->fVbl.ref);
+         uint64_t period;
+         nanoseconds_to_absolutetime(me->fFrameNs, &period);
+@@ -286,6 +296,14 @@
+         thread_call_enter_delayed(me->fVblTimer, me->fVblNext);
+     }
+ 
++    void vblArm() {
++        if (fStopping || !fVblTimer || !OSCompareAndSwap(0, 1, &fVblArmed)) return;
++        uint64_t period, now = mach_absolute_time();
++        nanoseconds_to_absolutetime(fFrameNs, &period);
++        fVblNext = now + period;
++        thread_call_enter_delayed(fVblTimer, fVblNext);
++    }
++
+ public:
+     bool initWith(void *dev, const nmx_fb_info &info) {
+         if (!init()) return false;
+@@ -364,10 +382,15 @@
+         setProperty("NMXEDIDBytes", (unsigned long long)fDisplay.edid_size, 32);
+         if (fDisplay.edid_size) setProperty("NMXEDIDSource", "drm-connector");
+         fVblTimer = thread_call_allocate(vblFire, this);
++        {
++            uint32_t g = 1;
++            if (PE_parse_boot_argn("nmxvblgate", &g, sizeof(g))) fVblGate = g != 0;
++        }
+         if (fVblTimer) {
+             uint64_t d;
+             clock_interval_to_deadline((uint32_t)(fFrameNs / 1000), kMicrosecondScale, &d);
+             fVblNext = d;
++            fVblArmed = 1;
+             thread_call_enter_delayed(fVblTimer, d);
+         }
+         /* the power driver is registered in open(): see there */
+@@ -528,8 +551,18 @@
+         if (type == kIOFBConnectInterruptType) { fConnect = { proc, target, ref }; if (iref) *iref = &fConnect; return kIOReturnSuccess; }
+         return kIOReturnUnsupported;
+     }
+-    IOReturn unregisterInterrupt(void *) override { return kIOReturnSuccess; }
+-    IOReturn setInterruptState(void *, UInt32) override { return kIOReturnSuccess; }
++    IOReturn unregisterInterrupt(void *iref) override {
++        if (iref == &fVbl) { fVbl.on = false; fVbl.proc = nullptr; }   /* the timer stops at its next fire */
++        if (iref == &fConnect) fConnect.proc = nullptr;
++        return kIOReturnSuccess;
++    }
++    IOReturn setInterruptState(void *iref, UInt32 state) override {
++        if (iref == &fVbl) {
++            fVbl.on = state != 0;                 /* kEnabledInterruptState = 1 */
++            if (fVbl.on && fVbl.proc) vblArm();
++        }
++        return kIOReturnSuccess;
++    }
+     IOReturn setGammaTable(UInt32, UInt32, UInt32, void *) override { return kIOReturnSuccess; }
+     IOReturn setGammaTable(UInt32, UInt32, UInt32, void *, bool) override { return kIOReturnSuccess; }
+     IOReturn setCLUTWithEntries(IOColorEntry *, UInt32, UInt32, IOOptionBits) override { return kIOReturnSuccess; }
