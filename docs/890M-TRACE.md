@@ -10130,3 +10130,44 @@ The invalid runs also made 0 chunks inline (90 and 432 filled before their windo
 - Keep the run going past 60 s (e.g. 120 s) so the park stream sits in the middle of the window.
 - If the 5 s release recurs, don't release while chunk_live is rising (e.g. skip a sweep when hwm moved in the last few seconds).
 - out-29 video (edge-video-lag part 42, light load, RTX powered, no Docker): 0/3603 and 10/3600 drops; chunks_inline stayed 1, the prefill made every chunk. Two runs invalid (the probe measured a 25 fps ad). Next: Docker load, 120 s window, Eco, and the ad-free local suite.
+
+## Video path: final state of the video side session (2026-11-16)
+
+The video side session (branch `research/890m-cobalt64`) closes here. It covered the video path: VCNDec/VT, surfaces into the Chrome GPU process, frame pacing, and the plugin and NMXGPU code video uses. YouTube is no longer used for measurement (owner, 2026-11-16). The replacement is planned in `docs/VIDEO-SUITE-PLAN.md`.
+
+**Test case for all rows:** scratch Chrome, maximised window, VP9 1080p60 (YouTube `LXb3EKWsInQ`), 60 s, `tools/890m/yt-probe/run-max.sh`.
+
+| build | what changed | drops / 60 s | part |
+|---|---|---|---|
+| out-20/21 + plugin 0317f25 | keep cache held test | 470 | 33 |
+| plugin 6797e1f | dead-entry drop outside WS | 407 | 34 |
+| out-22 (BE2AA02D) | Step140 page registry 2M buckets | **382 → 7**, 5 | 35, 37 |
+| out-23 (5CAE35B7) | Step141 per-chunk free lists, release at a 64 MB reserve | 21 (bursts on chunk release/refill churn) | 37 |
+| out-26 (88328F15) | Step141b 5 s aged release + 256 MB reserve, Step142 park at 10 s | 38 park on; park off: **0** and 142 (under Docker, after the aged release had shrunk the pool) | 39, 40 |
+| out-29 (3DF88CD9) | Step141c prefill + Step141d/e capped 60 s / 10 min peak floor + Step142b park at 60 s | **0** and **10** (light load, no Docker, RTX powered) | 42 |
+
+**Proven:**
+- The registry chain walk was the main cause of the maximised-window drops (out-22: 382 → 7).
+- Chunk release/refill churn causes drop bursts (out-23). The 5 s ageing removes the churn (out-26).
+- The 10 s IOSurface park re-wired whole swap chains mid-video (out-26 park on vs off: 38 vs 0). At 60 s (Step142b) the parks fall at the end of a 60 s run.
+- Prefill keeps chunk creation off the allocation path: on out-29, `nmx_page_chunks_inline` stayed at 1 for the whole session, including a ~530 MB burst.
+- Dead surfaces pinned in the plugin keep cache (6797e1f) and the keep-cache thrash (MRU, 9983f0c) are fixed. Those plugin commits are local on `plugin/video-lag` in `~/develop/projects/nmx-plugin-video`. b9b74d7 (dead-drop log on its own line) is built only.
+
+**Not measured:**
+- out-29 under the daily load (Docker on). The only Docker runs were on out-26 (part 40).
+- A 120 s window. The 60 s park now lands at the end of a 60 s window.
+- RTX in Eco: out-29 ran with the dGPU powered (the gate stood down, loop guard).
+- out-22's 7 drops after hours of load (compressor at its usual size). It was never rerun.
+- Codecs other than VP9 (AV1, H.264, HEVC), Safari, QuickTime, fullscreen, PiP, and two videos at once. All are in the suite plan.
+
+**Open suggestions for NMXGPU (not implemented):**
+- Skip a release sweep while `chunk_hwm` moved in the last few seconds. On out-29 a 41-chunk release at 5 s lined up with 4 drops (part 42).
+- Attribute park stream vs fill: the drops at 48/50 s on out-29 sit on both a fill run and a 32/s park stream. One-second sampling can't split them. Count parks and fills per 100 ms, or run with `debug.nmx_userptr_park_ms` raised to 120000.
+- From the part 41 review: re-base the peak with two windows instead of the instantaneous value; arm the sweep for the peak's expiry instead of every second while the floor holds; cap the floor's excess. The capped 10 min floor (Step141e) is in out-29. Whether the other two were applied isn't checked here.
+- Plugin: b9b74d7 is ready to merge if the keep report is wanted on its own log line.
+
+**Tools left behind:**
+- `tools/890m/yt-probe/run-max.sh`: the sampler and summaries, reusable.
+- `tools/890m/yt-probe/probe.mjs`: YouTube only, retired.
+- `tools/890m/inuse-test/`.
+- `tools/890m/video-suite/checks/` (VideoToolbox encoder list, WebCodecs/MSE check).
