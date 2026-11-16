@@ -10129,3 +10129,4 @@ The invalid runs also made 0 chunks inline (90 and 432 filled before their windo
 - Rerun under the daily load (Docker on).
 - Keep the run going past 60 s (e.g. 120 s) so the park stream sits in the middle of the window.
 - If the 5 s release recurs, don't release while chunk_live is rising (e.g. skip a sweep when hwm moved in the last few seconds).
+- out-29 video (edge-video-lag part 42, light load, RTX powered, no Docker): 0/3603 and 10/3600 drops; chunks_inline stayed 1, the prefill made every chunk. Two runs invalid (the probe measured a 25 fps ad). Next: Docker load, 120 s window, Eco, and the ad-free local suite.
