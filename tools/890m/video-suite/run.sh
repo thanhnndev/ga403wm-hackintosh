@@ -44,8 +44,13 @@ VS_MEASURE=2 VS_WARM=1 perl -e 'alarm 60; exec @ARGV' node $H/drive.mjs vp9-1080
 for r in $(seq 1 $rounds); do
   d=$out; [ $rounds -gt 1 ] && d=$out/r$r && mkdir -p $d
   for c in $cases; do
-    perl -e 'alarm 260; exec @ARGV' node $H/drive.mjs $c $d 2> >(grep -v 'shader cache' >&2)
-    pause 4
+    # exit 4 = the page was hidden (window covered or another Space): retry up to twice, keep the last attempt
+    for try in 1 2 3; do
+      perl -e 'alarm 260; exec @ARGV' node $H/drive.mjs $c $d 2> >(grep -v 'shader cache' >&2)
+      rc=$?; pause 4
+      [ $rc -eq 4 ] || break
+      [ $try -lt 3 ] && echo "$c: retry $((try+1))"
+    done
   done
 done
 node $H/table.mjs $out > $out/table.md

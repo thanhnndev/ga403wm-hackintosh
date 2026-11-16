@@ -32,12 +32,12 @@ export function row(s, idleW) {
     freeMin: m.nmx?.page_free_min,
     r5drop: s.phases?.resume5 ? `${r.dropped}/${r.skipped}/${r.late}` : null,
     pauseW: p.watts ?? null, pauseParks: s.phases?.pause ? `${p.nmx?.parks}/${p.nmx?.unparks}` : null,
-    resumeUnparks: s.phases?.resume5 ? r.nmx?.unparks : null, timedOut: s.timedOut };
+    resumeUnparks: s.phases?.resume5 ? r.nmx?.unparks : null, timedOut: s.timedOut, dist: s.disturbed ? 'DISTURBED' : '' };
 }
 const COLS = [['case', 'case'], ['dec', 'decoder'], ['decoded', 'decoded'], ['dropped', 'dropped'], ['skipped', 'skipped'], ['late', 'late'],
   ['p95', 'iv p95 ms'], ['p99', 'iv p99'], ['max', 'iv max'], ['W', 'pkg W'], ['dW', 'W over idle'], ['tctl', 'Tctl'],
   ['gpu', 'GPU-proc %'], ['rend', 'renderer %'], ['ws', 'WS %'], ['kt', 'kernel_task %'], ['vtd', 'VTDec %'], ['docker', 'Docker %'], ['total', 'all CPU %'],
-  ['fps', 'NMX frames/s'], ['chunks', 'chunks fill/inl/free'], ['parks', 'parks/unparks'], ['fails', 'fails'], ['hidden', 'hidden s'], ['unfocused', 'unfocused s']];
+  ['fps', 'NMX frames/s'], ['chunks', 'chunks fill/inl/free'], ['parks', 'parks/unparks'], ['fails', 'fails'], ['hidden', 'hidden s'], ['unfocused', 'unfocused s'], ['dist', 'note']];
 const fmt = (v) => (v == null ? '-' : String(v));
 function idleOf(cases) { return cases.idle?.window?.watts ?? null; }
 export function roundTable(cases) {

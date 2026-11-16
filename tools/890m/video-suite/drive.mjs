@@ -123,12 +123,22 @@ export function pageStats(rows, fps) {
     fsSecs: rows.filter((r) => r.fs).length, viewport: rows.length ? `${rows.at(-1).vw}x${rows.at(-1).vh}@${rows.at(-1).dpr}` : null };
 }
 
+// power-relevant state at the start of each case (other sessions may change profile/EPP between cases)
+async function machineCtx() {
+  const o = (c, a) => sh(c, a).then((r) => r.stdout, () => '');
+  const [st, rep, batt, dock] = await Promise.all([o('sysctl', ['-n', 'debug.asuswmi.status']), o('sysctl', ['-n', 'debug.amdcppc.report']), o('pmset', ['-g', 'batt']), o('pgrep', ['-f', 'com.docker.backend'])]);
+  const f = (k) => (new RegExp(' ' + k + '=(\\d+)').exec(' ' + st) || [])[1] ?? null;
+  const epp = {}; for (const m of rep.matchAll(/epp (\d+)/g)) epp[m[1]] = (epp[m[1]] || 0) + 1;
+  return { profile: f('profile'), set_profile: f('set_profile'), dgpu_disable: f('dgpu_disable'), epp, ac: /AC Power/.test(batt), docker: !!dock.trim() };
+}
+
 // ---------- one case ----------
 async function runCase(name, out) {
   const c = CASES[name]; if (!c) throw new Error('unknown case ' + name);
   if (c.todo) { console.log(`${name}: TODO (${c.todo}), skipped`); return; }
   const profile = path.join(process.env.VS_PROFILE_ROOT || path.join(CLIPS, '..'), 'chrome-run');
   const summary = { case: name, ...c, started: new Date().toISOString() };
+  summary.ctx = await machineCtx();
   if (c.kind === 'idle') {
     killScratch(profile);
     const smp = startSampler(null); await wait((c.secs + 5) * 1000); smp.stop();
@@ -181,6 +191,8 @@ async function runCase(name, out) {
     const pr = rows.filter((r) => ['pre', 'seek', 'resume5', 'post'].includes(r.phase));
     summary.phases.measure = { ...pageStats(pr, fps), note: 'playing phases pre+seek+resume5+post (35 s); pause excluded' };
   }
+  // the page was hidden (window covered, other Space, screen locked): Chrome stops decoding, the case measured nothing real
+  summary.disturbed = Object.entries(summary.phases).filter(([k, p]) => k !== 'pause' && p.hiddenSecs > 0).map(([k, p]) => `${k}: hidden ${p.hiddenSecs} s`).join(', ') || null;
   writeTsv(out, name, rows.map((r) => ({ r, s: nearest(smp.samples, r.wall) })), 1000 / fps);
   fs.writeFileSync(path.join(out, name + '.json'), JSON.stringify(summary, null, 1));
   return summary;
@@ -205,5 +217,6 @@ if (import.meta.url === `file://${process.argv[1]}`) {
   fs.mkdirSync(out, { recursive: true });
   const s = await runCase(name, out).catch((e) => { console.error(`${name}: FAILED ${e.stack}`); process.exit(1); });
   if (s) { const m = s.phases?.measure; console.log(`${name}: ${m ? `dropped ${m.dropped} skipped ${m.skipped} late ${m.late} ivP95 ${m.ivP95} hidden ${m.hiddenSecs}s ${m.watts ?? ''} W` : `${s.window?.watts} W`} decoder ${s.decoder ?? '-'}`); }
+  if (s?.disturbed) { console.log(`${name}: DISTURBED (${s.disturbed})`); process.exit(4); }
   process.exit(0);
 }
