@@ -11,7 +11,7 @@ not loaded):
 
 | Handoff says | Measured |
 |---|---|
-| "RyzenHV wires the whole guest: 12.3 GB" | The Docker guest is **8 GiB** (`hyperkit -m 8192M`, `docker info`: 7.747 GiB), not "no explicit memory limit". Now `zprint -t` shows the RyzenHV tag at **8.03 GB**, and `rhv-info stats` shows `vmPagesMapped` = 2,097,152 = exactly 8 GiB of 4 KiB pages. The 12.3 GB at 18:58 was 8 GiB of Docker plus another Hypervisor.framework VM. Most likely that was the Android emulator (`qemu-system-x86_64` with HVF, listed in STATE.md, not running now), or the orphaned hyperkit from before Docker's restart. Any HVF client's RAM is wired the same way. |
+| "RyzenHV wires the whole guest: 12.3 GB" | 12.3 GB = Docker 8192 MB + **the Android emulator's 4096 MB** (its last launch at 19:05: `~/.android/avd/Medium_Phone.avd/hardware-qemu.ini` has `hw.ramSize = 4096`, 6 vCPUs, swiftshader GPU; `config.ini` says 2048, but the launch overrides it). See section 6. The Docker guest is **8 GiB** (`hyperkit -m 8192M`, `docker info`: 7.747 GiB), not "no explicit memory limit". Now `zprint -t` shows the RyzenHV tag at **8.03 GB**, and `rhv-info stats` shows `vmPagesMapped` = 2,097,152 = exactly 8 GiB of 4 KiB pages. The 12.3 GB at 18:58 was 8 GiB of Docker plus another Hypervisor.framework VM. Most likely that was the Android emulator (`qemu-system-x86_64` with HVF, listed in STATE.md, not running now), or the orphaned hyperkit from before Docker's restart. Any HVF client's RAM is wired the same way. |
 | "~65k exits/s go to HyperKit, ~91k handled in the kernel" | 0.7.22 counters: 148k traps/s return to HyperKit, against 217k exits/s (1.28 VMRUNs per trap). Most exits reach user space. STATE.md's own figure (226k/s to HyperKit) agrees. |
 | "Next CPU lever: in-kernel APIC timer/ICR or AVIC" | **Not possible as long as the client is HyperKit** (section 2.2). |
 | postgres 217 % "real work or spinning?" | Real work, driven from the host (section 2.4). |
@@ -286,9 +286,104 @@ first sample taken with reclaim still off.
 8. To keep after the test (owner's choice): `period 10000`, `cold 6`, `batch 256`, with `hv reclaim 1` re-run after each boot, because the setting is not
    persistent. If that proves worth it, a LaunchDaemon or a boot-arg default can come later.
 
+## 6. Android emulator (QEMU with HVF)
+
+The emulator was not running during this check. I did not start it.
+
+Sources:
+- SDK emulator 37.2.13 (build 16740729). `qemu-system-x86_64` imports `hv_vm_map/unmap/protect`, `hv_vcpu_*` and `hv_vmx_*`.
+- AOSP `platform/external/qemu` @ emu-master-dev: `target/i386/hvf-all.c`, and `android/android-emu/android/snapshot/MemoryWatch_darwin.cpp`
+  plus `RamLoader.cpp`.
+- The SDK's `emulator/lib/advancedFeatures.ini`.
+
+**Verdict: covered as is in the owner's configuration, for both step 1 and step 2.** One non-default emulator feature would cancel the saving (6.2).
+
+### 6.1 What the emulator does with guest RAM
+
+- **Maps:** `hvf_set_phys_mem` creates one HVF slot per QEMU RAM `MemoryRegionSection` and calls `hv_vm_map(hva, gpa, size, RWX)` once per slot
+  (`__hvf_set_memory_with_flags_locked`).
+  - A 4 GB guest is one large slot below the PCI hole plus RAM above 4 GiB, both ≥ 64 MiB, so both are lazy. The BIOS/ROM/legacy pieces are small and stay eager.
+  - QEMU allows 512 slots. Our 16 lazy slots are enough: the extras are smaller than 64 MiB.
+- **Unmap/remap:**
+  - When a section changes, the slot is unmapped whole and mapped again (`hv_vm_unmap` + `hv_vm_map`). On the big RAM slot this happens rarely. An
+    identical re-add returns early. Our `forgetLazyLocked` then a fresh `mapLazy` handle it.
+  - `hvf_user_backed_ram_map/unmap` maps host buffers at run time (the goldfish address-space device, hostmem). These buffers use the same paths: lazy
+    if ≥ 64 MiB, otherwise eager, as on 0.7.22.
+- **`hv_vm_protect`:**
+  - Only `hvf_protect_safe` calls it, and only `MemoryWatch_darwin.cpp` uses that, through `guest_mem_protect_call`.
+  - MemoryWatch is the on-demand snapshot loader (`RamLoader` uses it only when `MemoryAccessWatch::isSupported()`, i.e. feature
+    `OnDemandSnapshotLoad`).
+  - **That feature is `off` in the SDK's `advancedFeatures.ini`** (`WindowsOnDemandSnapshotLoad = on` applies only to Windows), and there is no
+    user override in `~/.android/advancedFeatures.ini`.
+  - The VGA dirty tracking is compiled out (`#ifdef DIRTY_VGA_TRACKING ... #error`).
+  - So on this machine the emulator **never calls `hv_vm_protect`**. Quickboot loads the snapshot synchronously with `memcpy` through the host
+    mapping, without any hv call.
+  - The snapshot save on exit (`RamSaver`) reads RAM through the host mapping too. I did not read `RamSaver.cpp`, but no other protect caller exists.
+- **NPF handling:** QEMU's `EXIT_REASON_EPT_FAULT` path treats a fault outside every slot as MMIO and decodes it. A fault inside a RAM slot only calls
+  `qemu_ram_load(hva, 4096)`, which is the on-demand loader and does nothing when that loader is off.
+  - Our kernel swallows first-touch faults in lazy ranges, so QEMU never sees them, and it would have ignored them anyway.
+  - Re-injection (`exitIntInfo`) works the same as for HyperKit: it is core code and does not depend on the client.
+- **vCPUs:** 6 at the last launch (`config.ini` says 12). That does not matter for lazy or reclaim.
+
+Expected effect: a 4 GB emulator no longer wires 4 GB at start. Wired memory grows with what Android touches. A Quickboot load fills the snapshot's
+non-zero pages (the snapshot is 596 MB on disk, compressed) on the host side, without wiring them. With reclaim on, a backgrounded emulator's cold chunks
+are unwired like Docker's.
+
+### 6.2 The case that is not covered: `OnDemandSnapshotLoad = on`
+
+If the owner (or a future SDK) turns on `OnDemandSnapshotLoad`, here is what happens.
+
+1. `registerMemoryRange` calls `hv_vm_protect(gpa, size, 0)` over the RAM, then `mprotect(PROT_NONE)` on the host pages.
+2. `fillPage` makes each 4 KiB page RWX again (`mprotect`, then `hv_vm_protect(page, RWX)`) as the loader fills it.
+3. On 0.7.23, the first `protect` over a lazy range runs `materializeLocked`. That wires the whole range (all 4 GB), so the saving is lost for that VM.
+   It is still correct: the wiring happens before the `mprotect(PROT_NONE)`.
+
+The obvious fix, recording `protect` per chunk and applying it at fault-in, is **not safe here**. By the time the guest touches a chunk, its host
+pages are `PROT_NONE`, so wiring the 2 MiB chunk (`prepare` → `vm_map_wire` with read/write) fails, and the VM would abort.
+
+A correct design, sketched and **not implemented**:
+
+- `protect(…, 0)` on not-yet-faulted lazy pages enters **unwired placeholder leaves**: owner = a sentinel, not present, no host page.
+- `protect(…, range perm)` on a placeholder removes it, so the page becomes lazy again.
+- Any other permission wires that one 4 KiB page.
+- `faultIn` falls back to wiring only the faulting 4 KiB page when the chunk wiring fails on protection.
+- The sentinel must then be special-cased:
+  - `dropPage` ignores it.
+  - Reclaim must never evict a placeholder, because that would let the guest see unloaded memory.
+  - `readPhys` must refuse it.
+  - The VMX permission lookup and `unmap` must handle it.
+
+I did not do it: the change touches protect, unmap, reclaim and the debug read path, for a feature that is off here. Recommendation: keep
+`OnDemandSnapshotLoad` off. If it is ever wanted, build the placeholder design with its own test, not inside this batch.
+
+### 6.3 Owner settings for the emulator (owner decides)
+
+| Setting (AVD) | Last launch | Suggest | Effect |
+|---|---|---|---|
+| RAM (`hw.ramSize`) | 4096 MB | 2048 MB (as `config.ini` already says) | on 0.7.22, −2 GB wired at once; on 0.7.23, a lower ceiling |
+| vCPUs (`hw.cpu.ncore`) | 6 | 4 | fewer exits |
+| GPU (`hw.gpu.mode`) | swiftshader (software rendering on the host CPU) | try `host` | probably most of the ~100 % CPU the emulator used; `host` on the 890M/NMX stack is **untested** |
+| `OnDemandSnapshotLoad` | off | keep off | see 6.2 |
+
+### 6.4 Emulator test steps (after 0.7.23 is installed; the owner starts the emulator)
+
+1. Before: note `rhv-info stats` `vmPagesMapped` and `vmProtects` with Docker running.
+2. Start the AVD with Quickboot (the default). `rhv-info log | grep "VM map (lazy)"` shows the emulator's RAM range or ranges (about 4 GB in total). The
+   emulator boots from its snapshot, and apps open and run.
+3. Yield: the increase in `vmPagesMapped` × 4 KiB, and of the zprint RyzenHV tag, stays well below 4 GB at 1 min. It grows with use. On 0.7.22 it was
+   4 GB at once.
+4. `vmProtects` must not change. If it rises, on-demand loading is on (6.2): expect full wiring, and report it.
+5. No `cannot bring in guest RAM` in the log, no emulator crash, and a cold boot (`-no-snapshot-load`, owner) also works.
+6. Exit the emulator: the Quickboot save completes, and the next start loads it.
+7. Reclaim (with `hv reclaim 1`): leave the emulator idle in the background for a few minutes, and its chunks are evicted (`vmReclaimEvicted` rises,
+   wired falls). Then use it: the re-faults stay fast and the UI does not freeze.
+8. Fail: an emulator abort or hang, or a guest crash right after the snapshot load. Use `hv reclaim 0` first. If step 1 is at fault, `rhv_lazymap=0` or
+   0.7.22.
+
 ## 5. Open questions
 
-- Was the 12.3 GB at 18:58 the emulator or the orphaned hyperkit? Re-take `zprint` with the emulator running.
+- ~~What was the extra 4.3 GB at 18:58?~~ Answered: the Android emulator, launched with 4096 MB (section 6).
+
 - ~~Where does xnu call `hv_callbacks_t.memory_pressure`?~~ Answered: nowhere (1.3). Step 2 is periodic.
 - Should reclaim follow host pressure (`kern.memorystatus_vm_pressure_level`), instead of only age? Decide after test 4.2.
 - Does Virtualization.framework start a VM on this machine at all? It would make option 2.3-4 worthwhile.
