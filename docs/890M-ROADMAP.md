@@ -307,3 +307,8 @@ The owner's rule: fix these at the root in the NMXGPU source, with no new binary
    - Fix: written in the NullMoth source fork, branch `xkpi-thread-lockfree` (e249183 fix, e4fa61a stress test). Not built, not installed.
 
 Until both exist, the live NMXGPU stays at 5760efb6 (Step100c caves + s0ix + Step112c FADT re-read). The rebuild must then re-apply or replace the s0ix and FADT patches in source (`nmx_port_power` stype 3, and an FADT re-read before suspend), so they do not come back as caves.
+
+## Owner priorities 2026-11-16
+
+1. **Battery, heat, CPU usage, memory.** The chip should run cool. cpu-thermal session: daily health probe (power, temps, per-process CPU, wakeups, wired/compressed, C-state residency), ranked causes, Linux numbers as the target. Main: wired memory (out-29 chunk pool + IOSurface park), restore Eco (the gate stood down on the 11-16 boot, RTX powered).
+2. **Video testing without YouTube.** YouTube ads and network stalls spoil the runs. edge-video-lag session: local, ad-free suite covering ordinary use (Chrome windowed/maximised/fullscreen/PiP, Safari, QuickTime, scroll during playback, seek, pause/resume, two videos, with and without Docker), one table per run.
