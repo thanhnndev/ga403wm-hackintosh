@@ -823,3 +823,69 @@ Also open:
 **Linux target:** our traces have no Linux measurement on this machine. The same RAPL read (`turbostat` or
 `/sys/class/powercap`) during one Linux boot at idle and with 1080p video would give the target. The 11-08 macOS true
 idle of 5.5 W / 47 °C (Tctl) is the best macOS number so far.
+
+### 18:56 full run: the owner's daily load started during the run
+
+Raw outputs of all three runs: `tools/health/2026-11-16/` (`184740-now-1`, `185424-idle-1`, `185636-final`).
+
+| | 18:56 (Docker + Android emulator + pathcan backend + Claude) |
+|---|---|
+| Package power (60 s RAPL) | **62.2 W** |
+| Tctl min/avg/max | **91 / 95 / 96 °C**, fans 59/60 (raw) |
+| EPP / idle mode | 0 / 0 |
+| Wired / compressor | **19.5 GB / 5.6 GB (holds 12 GB)**, no swap |
+| Top processes | `com.docker.hyperkit` **445 %**, kernel_task **108 %**, Android emulator `qemu-system-x86_64` (Medium_Phone_API_37) 96 %, `com.docker.backend` 77 %, 8 × pathcan backend `python3.13` 29–52 % each (~3.1 cores), Claude ~0.4 core |
+
+This is the "video + Claude + Docker" class of daily load, with an emulator instead of video. The owner's apps are
+untouched; the pathcan server is the owner's project.
+
+## Ranked causes and final state (2026-11-16, close-out of the thermal side session)
+
+**Ranked fixable causes**, each with the number measured on this machine:
+
+| # | Cause | Measured | Fix | Who |
+|---|---|---|---|---|
+| 1 | **Docker VM: hyperkit + backend.** It holds a 24-vCPU guest: 9–15k vCPU↔vCPU IPI/s, most of its time inside RyzenHV. | 18:56: hyperkit 445 % + backend 77 % ≈ 5.2 cores. With idle containers on 11-09: 73–124 %. kernel_task at 108 % alongside it. | Fewer vCPUs and less RAM for the Docker VM (Docker Desktop setting, owner's call); RyzenHV exit and NPT cost (ryzenhv session). | owner, ryzenhv |
+| 2 | **EPP 0 (Turbo profile 3) on AC**: every burst at full boost. | A/B on 11-08: EPP 128 vs 0 at the same load gave 37 → 22 W and 26 → 16 W, −13 °C. EPP 0 on every CPU on this boot. | Balanced (EPP 191) or 128 on AC in RogControl. Instant, reversible. | owner |
+| 3 | **Memory pressure → kernel_task compression.** Wired memory crowds out pageable memory. | 18:56: wired 19.5 GB, compressor 5.6 GB holding 12 GB, kernel_task 108 %. 11-09 spindump: VM_compressor ×2 + pageout ≈ 1.5 cores. Idle 18:54: wired 7.6 GB, compressor 0.2 GB, kernel_task 12 %. | Smaller Docker VM RAM (the hyperkit RSS 2.3 GB is only the resident part); NMXGPU wired fixes (out-23..29 TTM pool cap / chunk release are live). Next: a root `zprint` under this load to split the 19.5 GB. | owner, main |
+| 4 | **Idle mode 0**: no CC6 when idle. | Not measured yet. Idle desktop 16.4 W / 64 °C vs the 11-08 hands-off true idle of 5.5 W / 47 °C. | `sudo tools/idle-ab.sh` (4.5 min hands-off), then the best mode as the boot default. | owner, then main |
+| 5 | **Video / WindowServer path.** | +14 W over idle with Chrome 1080p (30.4 vs 16.4 W): Chrome GPU 43 %, WS 37 %. | Plugin and NMXGPU frame cost. | video-lag, main |
+| 6 | **RTX powered** (StrixDgpuGate loop guard, standard mode this boot). | Not in RAPL. Eco boot measured 16.8 W total DC. | Find why the previous Eco boot did not finish, re-arm. | main |
+| 7 | **`caffeinate -dimsu` from boot** blocks display and system sleep. | `pmset -g`: sleep prevented by caffeinate (×2), coreaudiod, Claude. | Turn off the Claude app's keep-awake when not needed. | owner |
+| 8 | **Claude desktop app** at idle. | ~0.33 core (Claude 11 % + renderer 17 % + helper 4 %). | Not ours. | n/a |
+
+**Linux target:** none measured on this machine. One Linux boot with `turbostat` (idle, 1080p video, and this daily
+load) on the same RAPL counter gives the target. The best macOS numbers so far: true idle 5.5 W / 47 °C (11-08);
+idle desktop with Claude 16.4 W / 64 °C (this boot).
+
+**Final state.**
+
+Live:
+- ItlXhciKick 5D179C74: empty controllers kicked every 16 ms; on the 11-10 boot 75k vs 1.2M kicks, total
+  ~1.9k IPI/s, was 3.6k.
+- Plugin fence pool + sysctl cache (9bfd0c5, in the plugin builds since).
+- RyzenHV WRMSR fix (0.7.17+).
+- BtLeDlFix (no 718 loop).
+- StrixS0ix idle hook (mode 0 at boot).
+- NMXGPU out-29 with the wired-memory work.
+
+Proven:
+- IPIs are scheduler remote ASTs only, with no TLB shootdowns. Docker vCPUs are the largest source, then
+  ItlXhciKick.
+- The userptr churn is WindowServer per new surface and is already cached by IOSurface.
+- The fence timeout was a one-off at boot warm-up.
+- kernel_task under load is VM compression.
+- EPP 0 vs 128 is worth ~10–15 W at light load.
+
+Waits for the owner:
+1. Idle A/B: `sudo tools/idle-ab.sh`, 4.5 min hands-off with no build, simulator, emulator, video or Docker.
+2. An Eco-boot rerun of `tools/health-probe.sh` (RTX off) for idle, video, and this daily load.
+3. A Docker-load rerun after the Docker VM is resized, plus `sudo tools/health-probe.sh` for IPIs and interrupts,
+   and a root `zprint` for the wired split.
+4. The EPP decision for AC.
+
+Tools:
+- `tools/health-probe.sh`: daily table, no root.
+- `tools/idle-ab.sh`: root, hands-off.
+
+Both are on branch `thermal/idle-ab`, not yet merged into `research/890m-cobalt64`.
