@@ -5,6 +5,7 @@
 #include "vcndec.h"
 #include <CommonCrypto/CommonDigest.h>
 #include <IOSurface/IOSurface.h>
+#include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -34,6 +35,24 @@ static void md5_frame(CVPixelBufferRef pb, int w, int h, FILE *o, int n) {
   fprintf(o, "\n");
 }
 
+// frame index burned into the video-suite clips (same reader as vt_check.m: 16-bit strip, bottom left)
+static int read_index(CVPixelBufferRef pb, int *border) {
+  OSType f = CVPixelBufferGetPixelFormatType(pb);
+  int ten = f == kCVPixelFormatType_420YpCbCr10BiPlanarVideoRange || f == kCVPixelFormatType_420YpCbCr10BiPlanarFullRange;
+  CVPixelBufferLockBaseAddress(pb, kCVPixelBufferLock_ReadOnly);
+  const uint8_t *y = CVPixelBufferGetBaseAddressOfPlane(pb, 0);
+  size_t bpr = CVPixelBufferGetBytesPerRowOfPlane(pb, 0);
+  int H = (int)CVPixelBufferGetHeight(pb);
+  double s = H / 1080.0; int c = (int)lround(28 * s); double x0 = 30 * s, y0 = H - 30 * s - c, m = 4 * s;
+#define LUMA(x, yy) (ten ? (((const uint16_t *)(y + (size_t)(yy) * bpr))[(int)(x)] >> 8) : y[(size_t)(yy) * bpr + (int)(x)])
+  *border = LUMA(x0 - m / 2, y0 + c / 2.0);
+  int idx = 0;
+  for (int b = 0; b < 16; b++) idx = (idx << 1) | (LUMA(x0 + b * c + c / 2.0, y0 + c / 2.0) > 128);
+#undef LUMA
+  CVPixelBufferUnlockBaseAddress(pb, kCVPixelBufferLock_ReadOnly);
+  return idx;
+}
+
 static void dump_frame(CVPixelBufferRef pb, int w, int h, const char *path) {
   FILE *o = fopen(path, "wb");
   CVPixelBufferLockBaseAddress(pb, kCVPixelBufferLock_ReadOnly);
@@ -47,6 +66,7 @@ static void dump_frame(CVPixelBufferRef pb, int w, int h, const char *path) {
 }
 
 int main(int argc, char **argv) {
+  int ten = 0, chk = 0, ok = 0, bad = 0, unreadable = 0;
   int md5 = 0, loops = 1, dumpn = -1, verbose = 0, from = 0, upto = -1, burst = 0, pausems = 0;
   const char *path = NULL;
   for (int i = 1; i < argc; i++) {
@@ -54,11 +74,13 @@ int main(int argc, char **argv) {
     else if (!strcmp(argv[i], "-l") && i + 1 < argc) loops = atoi(argv[++i]);
     else if (!strcmp(argv[i], "-d") && i + 1 < argc) dumpn = atoi(argv[++i]);
     else if (!strcmp(argv[i], "-p") && i + 2 < argc) { burst = atoi(argv[++i]); pausems = atoi(argv[++i]); }   // pause <ms> after every <burst> packets (VCN idle / power gating)
+    else if (!strcmp(argv[i], "-x")) ten = 1;       // 10-bit output pool (P010 'x420'): VP9 profile 2, AV1 10-bit
+    else if (!strcmp(argv[i], "-i")) chk = 1;       // check the video-suite frame-index strip (output n = frame n); exit 3 on a mismatch
     else if (!strcmp(argv[i], "-v")) verbose = 1;   // one stderr line per packet before it is sent (last line before a VCN hang = the packet)
     else if (!strcmp(argv[i], "-n") && i + 1 < argc) upto = atoi(argv[++i]);   // stop after this many packets
     else path = argv[i];
   }
-  if (!path) { fprintf(stderr, "usage: vcndec_test [-m] [-v] [-n packets] [-l loops] clip.ivf\n"); return 2; }
+  if (!path) { fprintf(stderr, "usage: vcndec_test [-m] [-x] [-i] [-v] [-n packets] [-l loops] clip.ivf\n"); return 2; }
   FILE *f = fopen(path, "rb");
   if (!f) { perror(path); return 2; }
   uint8_t hdr[32];
@@ -74,7 +96,7 @@ int main(int argc, char **argv) {
   if (!d) { fprintf(stderr, "vcn_open: %s\n", err); return 1; }
   double topen = now() - t0;
 
-  int32_t fmt = kCVPixelFormatType_420YpCbCr8BiPlanarVideoRange;
+  int32_t fmt = ten ? kCVPixelFormatType_420YpCbCr10BiPlanarVideoRange : kCVPixelFormatType_420YpCbCr8BiPlanarVideoRange;
   CFNumberRef nf = CFNumberCreate(NULL, kCFNumberSInt32Type, &fmt), nw = CFNumberCreate(NULL, kCFNumberSInt32Type, &w),
               nh = CFNumberCreate(NULL, kCFNumberSInt32Type, &h);
   CFDictionaryRef io = CFDictionaryCreate(NULL, NULL, NULL, 0, &kCFTypeDictionaryKeyCallBacks, &kCFTypeDictionaryValueCallBacks);
@@ -106,6 +128,9 @@ int main(int argc, char **argv) {
         if (r < 0) { fprintf(stderr, "receive: %s\n", vcn_last_error(d)); return 1; }
         if (!r) break;
         if (md5) md5_frame(pb, w, h, stdout, n);
+        if (chk) { int b, idx = read_index(pb, &b);
+          if (b < 170) { if (unreadable++ < 5) fprintf(stderr, "frame %d: strip unreadable (border %d)\n", n, b); }
+          else if (idx == n % 65536) ok++; else if (bad++ < 5) fprintf(stderr, "frame %d: shows index %d\n", n, idx); }
         if (n == dumpn) dump_frame(pb, w, h, "vcn-frame.nv12");
         CVPixelBufferRelease(pb);
         n++;
@@ -119,5 +144,6 @@ int main(int argc, char **argv) {
           codec == 'av01' ? "av1" : "vp9", w, h, n, wall, n / wall, cp, cp * 1000 / (n ? n : 1), topen,
           (unsigned long long)g, (unsigned long long)c, (unsigned long long)im);
   vcn_close(d);
+  if (chk) { fprintf(stderr, "index check: %d ok, %d wrong, %d unreadable\n", ok, bad, unreadable); if (bad || unreadable || !ok) return 3; }
   return 0;
 }
