@@ -1209,3 +1209,72 @@ So the feasible parts are:
 - Imports already parked stay parked until their next listed use.
 - **Better:** keep parking, and take the surface list out of the non-WindowServer processes with (c) (the `launchctl` variant works today), until the audit has named the path.
 - If the owner prefers the kernel knob, watch the WindowServer row of `debug.nmx_gtt`.
+
+### 12.8 out-37 review state, and the audit run plan for after the install
+
+**Commit 16d2675** (`fix/out31`, remote `fork`) answers the review of c6555b4..76707b9. Main built it as out-37 (NMXGPU 5159A44F, NMXAccel D454C218). It contains:
+- R4, the park re-clear after a failed clear fence.
+- B1-B4, the fault kick, behind `debug.nmx_fault_kick_on` (default 0).
+- C1 and C2, the flip re-arm fixes.
+
+With the kick off, behaviour equals c6555b4 apart from prints and one lock/unlock per timeout.
+
+**Open before the kick is ever switched on.** These are held until out-37 is verified.
+- **N1:** if the kicked `work_tdr` runs more than 100 ms late, `take` returns 0. The early timeout is then handled as a genuine one on whatever job is at the head, with full escalation. Fix: a token that exists but is stale must still put an innocent head back (compare against the head job's own start time) and never escalate early.
+- **N2:** the R4 reset of `cleared` happens only when stage 2 is reached. If the park is dropped while the errored clear fence is still pending, `cleared` stays true, so a later park issues no update and can unwire with valid PTEs. Fix: on any drop with `nmx_fpt` set, take the root trylock and reset `cleared`, or re-check that fence's error at the next stage 1.
+- **N3:** the rate limiter is one global slot. Two alternating pasids get past it, and the slot is used up even when the token recheck refuses the kick. Fix: a small per-pasid table, updated only after the token is set.
+
+**Checked: `nmxFlipTrip` / `nmxFlipTripEx` callers and `gFl.lock`.** All 11 call sites run with `gFl.lock` held:
+- `nmxFlipWatch` (lock at the top, and again after the unlocked fence wait).
+- `nmxFlipRetire` and `nmxFlipResync`. They are reached only from `nmxFlipPresent`, from `nmxFlipPending` (under `IOLockTryLock`), from `nmxFlipSubmit` (whose callers are Present and Watch, both locked) and from Retire itself.
+- `nmxFlipPresent` (lock at entry; every trip comes before its unlocks).
+
+The only writes outside the lock are the `debug.nmxaccel_flip_tripped` handler's (C2): an int and a bool, so a race only decides which of two re-arms wins. The poll thread never trips.
+
+#### Audit run plan
+
+**What is installed now** (read 2026-11-18 21:xx, before out-37):
+- `/Library/NullMoth/nvmtl-bl-audit` has been present since Nov 6 (empty, root). The audit is therefore **already on in every process**, and `log show` has "AUDIT ON" lines from WindowServer, mediaanalysisd 1758, iconservicesagent, WebKit.GPU and others.
+- The installed `NVMTLDriver.bundle` (sha1 11814c6a4f29) is a non-release build (`NVMTL: %s`, LOG_NOTICE syslog). It **predates 920832a**: it has no `nvmtl-sl-ws-only` string, and surface-list IOSurface imports are not registered with the audit. Today's audit therefore covers only no-copy buffers and cannot see the row 12 path. WindowServer's count reads 32768 parts, 24274 no-copy uses, 0 not named.
+
+**Preconditions (main):**
+1. Install the plugin at **920832a** (`fix/out31-plugin`, remote `fork`), built **without** `-DNVMTL_RELEASE=1`. In a release build `nvlog` only syslogs lines that `nvmtl_log_failure()` passes. "AUDIT ON", "AUDIT MISS" and the summary line contain none of its words (FAIL, REFUS, fault, missing, ...), so a release build is silent. If a release build has to be used, add `strstr(text, "AUDIT")` to `nvmtl_log_failure.h` first. That is a one-line change; ask me.
+2. Leave `/Library/NullMoth/nvmtl-bl-audit` where it is. The plugin reads it once per process, at the first audit call, and caches it. To turn the audit off: `sudo rm /Library/NullMoth/nvmtl-bl-audit`, then restart the processes. Per process, `NVMTL_BL_AUDIT=0/1` in the environment overrides the file.
+3. **Do not** create `/Library/NullMoth/nvmtl-sl-ws-only`, and do not set `launchctl setenv NVMTL_SURFACE_LIST 0`, during the run. Either takes the surface list out of mediaanalysisd, and its IOSurface imports are then never registered: the audit goes blind to exactly the path we want. The cost: the run happens with the row 12 exposure on (mediaanalysisd's imports listed per part and parkable). out-37's park ordering (11.9) applies.
+4. The plugin loads when the process starts. After installing, restart the processes under test: `killall mediaanalysisd photoanalysisd` (launchd restarts them on demand) and quit Photos/Preview. WindowServer picks up the new plugin at the next login or boot.
+
+**What to exercise**, under the normal daily load (video + Claude + Docker; row 12 happened under it):
+- **mediaanalysisd via VisionKit Live Text** (repeatable): open 3-4 screenshots that contain text in Preview. Wait for the Live Text button, select text, and use "Show text" / "Copy text". VisionKit sends the analysis to mediaanalysisd (MADService). That is the Espresso/TextRecognition path that faulted (thread 104330, TCP write).
+- **Photos:** open the library and scroll the grid. Search for a word that appears in photos (text search runs on the OCR index). Open a photo with text and use Live Text and Visual Look Up (the "i" button).
+- **Quick Look:** space-bar on screenshots in Finder (Live Text in Quick Look goes through the same analyzer).
+- **Background:** leave Photos open on AC for 10-15 min. photoanalysisd and mediaanalysisd do their own library analysis when the machine is idle-ish. PhotosReliveWidget also uses the GPU.
+- Not without the owner's OK: `vision-fault-repro.swift`.
+
+**What to grep:**
+- **Plugin.** It syslogs at LOG_NOTICE, into the unified log. Don't use `/tmp/nvmtl.log`: that file belongs to `_windowserver` with mode 0644, so other processes fall back to their own `$TMPDIR/nvmtl.log`.
+  ```
+  /usr/bin/log show --last 1h --style compact --predicate 'eventMessage CONTAINS "NVMTL: vk: buffer-list"'
+  /usr/bin/log show --last 1h --style compact --predicate 'eventMessage CONTAINS "AUDIT MISS"'
+  /usr/bin/log show --last 1h --style compact --predicate 'eventMessage CONTAINS "disabling backend"'
+  ```
+  - **AUDIT ON** with `(buffer list off)` in a non-WindowServer process confirms the run is live there.
+  - **AUDIT MISS (seal): import 0x... (no-copy buffer or surface-list IOSurface) ... slot S, bound by SYM +OFF** is the finding. SYM is the Metal entry point that bound it. The slot decodes as `which*1000 + i` (descriptor buffer, `which` = stage), `+200`/`+300` (texture paths), `+500` (address table buffer) and `+600` (address table texture). Each process logs at most 8 verbatim (`nvlog` per-format limit), then every 4096th.
+  - **The summary line ("N parts ... K NOT named")** appears only every 4096 parts per process. mediaanalysisd may never reach that many, so a missing summary proves nothing. Only MISS lines (or their absence after the exercise) count.
+- **Kernel:**
+  ```
+  /usr/bin/log show --last 1h --style compact --predicate 'sender == "NMXGPU" AND (eventMessage CONTAINS "page fault" OR eventMessage CONTAINS "NMX:" OR eventMessage CONTAINS "timeout")'
+  sysctl debug.nmx_park_abort debug.nmx_park_pt_update debug.nmx_park_skip_vm debug.nmx_fault_kick debug.nmx_fault_kick_ignored debug.nmx_fault_kick_fail debug.nmx_fault_kick_on
+  ```
+  - `nmx_park_pt_update` should grow with parks.
+  - `nmx_park_abort` counts parks dropped by a CS and R4 restarts.
+  - Every `nmx_fault_kick*` counter must stay 0 with the kick off.
+  - A fault line now carries `IOSurface <id>` on the live-mapping line.
+
+**Reading the result:**
+
+| plugin | kernel | means | next |
+|---|---|---|---|
+| MISS in mediaanalysisd naming SYM | any | a path that reaches a surface import without listing it | list it at SYM in the plugin (the fix goes in our source) |
+| no MISS | fault at a parked IOSurface import again | the listing is complete; the write came through PTEs the park still had | kernel: the 11.9 ordering or N2, with the fault time against `nmx_park_*` |
+| no MISS | no fault | inconclusive (exposure too short) | repeat; then consider the owner-approved repro |
+| MISS in WindowServer | — | the buffer list (no-copy) gap of part 12 is back | same fix site; WindowServer only |
