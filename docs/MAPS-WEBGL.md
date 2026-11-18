@@ -279,6 +279,12 @@ page hidden and throttles rAF.
 ![live z16 after the fix](img/maps-webgl/live-fixed-z16.jpg)
 ![after a minute of pan/zoom](img/maps-webgl/live-fixed-after-pan.jpg)
 
+Regression checks on the same boot:
+- **Chrome video:** `tools/890m/yt-probe/run-max.sh`, maximised, 1080p AV1, 60 s. 1518 frames decoded, 0 dropped, no
+  waiting or stall events. WindowServer used 3.1 ms per frame. The GPU log had no errors.
+- **WindowServer:** 10-22 % CPU at idle around the tests.
+- **Safari:** not reopened. The repro was 45/45 there before the fix, and main asked to open Safari only if needed.
+
 Log notes from the same boot:
 - `kept descriptors: N dispatch(es) ran an all-lowered module`: 1 to 128 dispatches per process, 1-2 kernels each.
 - No `REFUSED` lines from Chrome.
