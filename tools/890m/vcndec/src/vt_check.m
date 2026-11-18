@@ -10,6 +10,26 @@
 #import <VideoToolbox/VideoToolbox.h>
 #include <dlfcn.h>
 #include <stdio.h>
+#include <string.h>
+#include <unistd.h>
+
+// memory test: VT_REPEAT=n runs n sessions in this process, VT_HOLD=s waits s seconds after each, and after each
+// session (and after the hold) prints the footprint of the process that decodes: the newest VTDecoderXPCService, or
+// this process with -b (in-process VCNDec). Shows whether decoded surfaces outlive their sessions.
+static int g_inproc;
+static void foot(const char *when, int k) {
+  char cmd[256];
+  if (g_inproc) snprintf(cmd, sizeof cmd, "footprint %d 2>/dev/null", getpid());
+  else snprintf(cmd, sizeof cmd, "footprint $(pgrep -n VTDecoderXPCService) 2>/dev/null");
+  FILE *f = popen(cmd, "r"); char l[512], out[512] = "";
+  while (f && fgets(l, sizeof l, f)) {
+    if (strstr(l, "Footprint:") || strstr(l, "Owned physical footprint") || strstr(l, " IOSurface\n")) {
+      l[strcspn(l, "\n")] = 0; char *t = l; while (*t == ' ') t++;
+      strncat(out, t, sizeof out - strlen(out) - 4); strncat(out, " | ", sizeof out - strlen(out) - 1); }
+  }
+  if (f) pclose(f);
+  printf("FOOT session %d %s: %s\n", k, when, out); fflush(stdout);
+}
 
 static int g_fps, g_ok, g_bad, g_unreadable, g_err, g_out;
 static OSType g_fmt;
@@ -31,10 +51,16 @@ static int read_index(CVPixelBufferRef pb, int *border) {
   return idx;
 }
 
+// VT_KEEP=n: keep the last n pictures alive (a player's frame queue), so the session's pixel-buffer pool grows the
+// way it does under AVPlayer (Aerials wallpaper, Safari, QuickTime)
+static CVImageBufferRef g_keep[512]; static int g_nkeep, g_kpos;
+static void keep_release(void) { for (int i = 0; i < 512; i++) if (g_keep[i]) { CVBufferRelease(g_keep[i]); g_keep[i] = NULL; } g_kpos = 0; }
+
 static void out_cb(void *ref, void *src, OSStatus st, VTDecodeInfoFlags fl, CVImageBufferRef img, CMTime pts, CMTime dur) {
   if (st || !img) { if (g_err++ < 5) fprintf(stderr, "frame at %.3f: status %d flags %x\n", CMTimeGetSeconds(pts), (int)st, (unsigned)fl); return; }
   g_out++;
   if (!g_fmt) g_fmt = CVPixelBufferGetPixelFormatType(img);
+  if (g_nkeep) { int i = g_kpos++ % g_nkeep; if (g_keep[i]) CVBufferRelease(g_keep[i]); g_keep[i] = CVBufferRetain(img); }
   int border, idx = read_index(img, &border), want = (int)lround(CMTimeGetSeconds(pts) * g_fps);
   if (border < 170) { if (g_unreadable++ < 5) fprintf(stderr, "frame at %.3f: strip unreadable (border %d)\n", CMTimeGetSeconds(pts), border); }
   else if (idx == want) g_ok++;
@@ -48,10 +74,15 @@ int main(int argc, char **argv) {
       void *h = dlopen(argv[2], RTLD_NOW);
       void (*reg)(void) = h ? dlsym(h, "VCNDec_RegisterInProcess") : NULL;
       if (!reg) { fprintf(stderr, "cannot load %s: %s\n", argv[2], dlerror()); return 2; }
-      reg(); a = 3;
+      reg(); a = 3; g_inproc = 1;
     }
     if (argc - a != 2) { fprintf(stderr, "usage: vt_check [-b bundle-binary] clip.mp4 fps\n"); return 2; }
     g_fps = atoi(argv[a + 1]);
+    int reps = getenv("VT_REPEAT") ? atoi(getenv("VT_REPEAT")) : 1, hold = getenv("VT_HOLD") ? atoi(getenv("VT_HOLD")) : 0;
+    int rc = 0;
+    g_nkeep = getenv("VT_KEEP") ? atoi(getenv("VT_KEEP")) : 0; if (g_nkeep > 512) g_nkeep = 512;
+    for (int k = 1; k <= reps; k++) @autoreleasepool {
+    g_out = g_ok = g_bad = g_unreadable = g_err = 0;
     AVURLAsset *as = [AVURLAsset URLAssetWithURL:[NSURL fileURLWithPath:@(argv[a])] options:nil];
     NSError *e = nil;
     AVAssetReader *rd = [AVAssetReader assetReaderWithAsset:as error:&e];
@@ -78,10 +109,16 @@ int main(int argc, char **argv) {
     VTDecompressionSessionFinishDelayedFrames(ses);
     VTDecompressionSessionWaitForAsynchronousFrames(ses);
     double dt = CFAbsoluteTimeGetCurrent() - t0;
+    if (g_nkeep && getenv("VT_REPEAT")) foot("decoded, frames still kept", k);
+    if (getenv("VT_IDLE")) { sleep(atoi(getenv("VT_IDLE"))); foot("session open, idle", k); }   // idle trim test
     VTDecompressionSessionInvalidate(ses);
     CFRelease(ses);
+    keep_release();
     printf("%s: %d samples, %d pictures (hw %s, format %c%c%c%c), index ok %d, wrong %d, unreadable %d, errors %d, %.0f fps\n", argv[a], n, g_out,
            hw == kCFBooleanTrue ? "yes" : "no", (char)(g_fmt >> 24), (char)(g_fmt >> 16), (char)(g_fmt >> 8), (char)g_fmt, g_ok, g_bad, g_unreadable, g_err, n / dt);
-    return (g_out == n && g_ok == n && hw == kCFBooleanTrue) ? 0 : 1;
+    if (!(g_out == n && g_ok == n && hw == kCFBooleanTrue)) rc = 1;
+    if (getenv("VT_REPEAT") || hold) { foot("closed", k); if (hold) { sleep(hold); foot("after hold", k); } }
+    }
+    return rc;
   }
 }

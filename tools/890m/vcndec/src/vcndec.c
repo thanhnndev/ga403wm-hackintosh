@@ -25,6 +25,7 @@ typedef struct {
   VkDeviceMemory mem;
   VkBuffer buf;
   uint64_t last_use;
+  VkDeviceSize size; // bytes pinned for the GPU (wired) while cached
 } import_ent;
 
 struct vcn_dec {
@@ -48,6 +49,15 @@ struct vcn_dec {
   VkDeviceSize stage_size;
   import_ent cache[NCACHE];
   uint64_t tick;
+  // Import cache bound (2026-11-18, out-33 wired-memory hang): every cached import pins (wires) a whole output
+  // surface, 24.9 MB for 4K P010. A count of 32 let one session wire ~800 MB, kept surfaces alive after VideoToolbox's
+  // pool had retired them, and when the client's pool cycled more than 32 surfaces (a player's frame queue: Aerials
+  // wallpaper, Safari, QuickTime) the LRU missed on every frame: a pin + GPU map + unpin per frame (12.9 ms CPU per
+  // 4K10 frame, mostly kernel). Now: a byte budget (VCN_CACHE_MB, default 256), no eviction of an entry that is still in
+  // use (a miss then takes the staging copy, 5.2 ms), stale entries (left the pool) evicted, vcn_trim() on idle and on
+  // memory pressure.
+  VkDeviceSize cache_bytes, cache_peak, cache_budget;
+  uint64_t n_hits, n_staged;
   uint64_t n_frames, n_gpu, n_cpu, n_imports;
   uint64_t n_slow, max_wait_ms; // copies whose fence took longer than 100 ms, longest wait
   char err[256];
@@ -122,6 +132,7 @@ static int setup_copy(vcn_dec *d) {
     if (!d->GetMemoryHostPointerPropertiesEXT) d->have_host_import = 0;
   }
   d->host_align = 4096;
+  { const char *mb = getenv("VCN_CACHE_MB"); d->cache_budget = (VkDeviceSize)(mb ? atoi(mb) : 256) << 20; }
   if (getenv("VCN_NO_IMPORT")) d->have_host_import = 0;
   d->no_seed = getenv("VCN_NO_SEED") != NULL; // test only: reproduce the stale-frame bug
 
@@ -239,24 +250,36 @@ static uint32_t find_type(vcn_dec *d, uint32_t bits, VkMemoryPropertyFlags want,
 }
 
 static void drop_import(vcn_dec *d, import_ent *e) {
+  d->cache_bytes -= e->size;
   if (e->buf) d->DestroyBuffer(d->vd, e->buf, NULL);
   if (e->mem) d->FreeMemory(d->vd, e->mem, NULL);
   if (e->surf) CFRelease(e->surf);
   memset(e, 0, sizeof *e);
 }
 
-// VkBuffer over the IOSurface's own pages, cached per surface.
+// entries unused for this many lookups have left the client's pool (a pool reuses each of its surfaces every
+// <pool size> frames): their pin and their surface retain are released before they would be reused
+#define STALE_TICKS (4 * NCACHE)
+
+// VkBuffer over the IOSurface's own pages, cached per surface within the byte budget. VK_NULL_HANDLE = use the
+// staging copy for this frame.
 static VkBuffer surface_buffer(vcn_dec *d, IOSurfaceRef s) {
   void *base = IOSurfaceGetBaseAddress(s);
-  import_ent *slot = &d->cache[0];
+  ++d->tick;
+  import_ent *slot = NULL, *lru = NULL;
   for (int i = 0; i < NCACHE; i++) {
     import_ent *e = &d->cache[i];
-    if (e->surf == s && e->base == base) { e->last_use = ++d->tick; return e->buf; }
-    if (!e->surf) slot = e;
-    else if (slot->surf && e->last_use < slot->last_use) slot = e;
+    if (e->surf == s && e->base == base) { e->last_use = d->tick; d->n_hits++; return e->buf; }
+    if (e->surf && d->tick - e->last_use > STALE_TICKS) { drop_import(d, e); }  // retired by the pool
+    if (!e->surf) { if (!slot) slot = e; }
+    else if (!lru || e->last_use < lru->last_use) lru = e;
   }
   if (((uintptr_t)base & (d->host_align - 1))) return VK_NULL_HANDLE;
   VkDeviceSize size = (IOSurfaceGetAllocSize(s) + d->host_align - 1) & ~(d->host_align - 1);
+  // over budget or no free slot: every cached surface is still in the pool's rotation (none stale), so evicting one
+  // would only make the next frame miss too; this frame goes through the staging buffer instead
+  if (!slot || d->cache_bytes + size > d->cache_budget) { d->n_staged++; return VK_NULL_HANDLE; }
+  (void)lru;
   VkMemoryHostPointerPropertiesEXT hp = {VK_STRUCTURE_TYPE_MEMORY_HOST_POINTER_PROPERTIES_EXT};
   if (d->GetMemoryHostPointerPropertiesEXT(d->vd, VK_EXTERNAL_MEMORY_HANDLE_TYPE_HOST_ALLOCATION_BIT_EXT, base, &hp))
     return VK_NULL_HANDLE;
@@ -275,14 +298,28 @@ static VkBuffer surface_buffer(vcn_dec *d, IOSurfaceRef s) {
   VkDeviceMemory mem;
   if (ti == UINT32_MAX || d->AllocateMemory(d->vd, &mai, NULL, &mem)) { d->DestroyBuffer(d->vd, buf, NULL); return VK_NULL_HANDLE; }
   if (d->BindBufferMemory(d->vd, buf, mem, 0)) { d->DestroyBuffer(d->vd, buf, NULL); d->FreeMemory(d->vd, mem, NULL); return VK_NULL_HANDLE; }
-  if (slot->surf) drop_import(d, slot);
   slot->surf = (IOSurfaceRef)CFRetain(s);
   slot->base = base;
   slot->mem = mem;
   slot->buf = buf;
-  slot->last_use = ++d->tick;
+  slot->size = size;
+  slot->last_use = d->tick;
+  d->cache_bytes += size;
+  if (d->cache_bytes > d->cache_peak) d->cache_peak = d->cache_bytes;
   d->n_imports++;
   return buf;
+}
+
+// release every cached import (pins and surface retains); safe between frames (each copy waits for its fence)
+size_t vcn_trim(vcn_dec *d) {
+  if (!d || !d->vd) return 0;
+  size_t freed = (size_t)d->cache_bytes;
+  for (int i = 0; i < NCACHE; i++) if (d->cache[i].surf) drop_import(d, &d->cache[i]);
+  return freed;
+}
+
+void vcn_cache_stats(vcn_dec *d, uint64_t *hits, uint64_t *staged, uint64_t *peak_bytes, uint64_t *budget_bytes) {
+  *hits = d->n_hits; *staged = d->n_staged; *peak_bytes = d->cache_peak; *budget_bytes = d->cache_budget;
 }
 
 static VkBuffer staging(vcn_dec *d, VkDeviceSize size) {

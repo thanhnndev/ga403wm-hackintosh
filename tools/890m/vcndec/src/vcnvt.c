@@ -8,6 +8,8 @@
 #include <CoreMedia/CoreMedia.h>
 #include <CoreVideo/CoreVideo.h>
 #include <VideoToolbox/VideoToolbox.h>
+#include <dispatch/dispatch.h>
+#include <time.h>
 #include <os/log.h>
 #include <pthread.h>
 #include <stdlib.h>
@@ -72,7 +74,53 @@ typedef struct {
   uint64_t in, out, dropped, errors;
   uint8_t *buf;
   size_t bufn;
+  // releases the decoder's output-surface imports (GPU pins = wired memory) when the session idles (paused video,
+  // a player holding its last frames) and on memory pressure; see vcndec.c "Import cache bound"
+  dispatch_queue_t tq;
+  dispatch_source_t idle, mem;
+  uint64_t last_ns, trim_idle, trim_mem, trim_bytes;
 } Storage;
+
+#define IDLE_TRIM_NS (2ull * 1000000000ull)
+
+static void trim_now(Storage *s, int pressure) {
+  pthread_mutex_lock(&s->lock);
+  if (s->dec && (pressure || clock_gettime_nsec_np(CLOCK_UPTIME_RAW) - s->last_ns > IDLE_TRIM_NS)) {
+    size_t b = vcn_trim(s->dec);
+    if (b) { s->trim_bytes += b; if (pressure) s->trim_mem++; else s->trim_idle++; }
+  }
+  pthread_mutex_unlock(&s->lock);
+}
+static void on_idle(void *ctx) { trim_now(ctx, 0); }
+static void on_pressure(void *ctx) { trim_now(ctx, 1); }
+static void noop(void *ctx) { (void)ctx; }
+
+static void start_trim(Storage *s) {
+  if (s->tq) return;
+  s->tq = dispatch_queue_create("com.ga403wm.vcndec.trim", DISPATCH_QUEUE_SERIAL);
+  s->idle = dispatch_source_create(DISPATCH_SOURCE_TYPE_TIMER, 0, 0, s->tq);
+  dispatch_source_set_timer(s->idle, dispatch_time(DISPATCH_TIME_NOW, NSEC_PER_SEC), NSEC_PER_SEC, NSEC_PER_SEC / 2);
+  dispatch_set_context(s->idle, s);
+  dispatch_source_set_event_handler_f(s->idle, on_idle);
+  s->mem = dispatch_source_create(DISPATCH_SOURCE_TYPE_MEMORYPRESSURE, 0,
+                                  DISPATCH_MEMORYPRESSURE_WARN | DISPATCH_MEMORYPRESSURE_CRITICAL, s->tq);
+  dispatch_set_context(s->mem, s);
+  dispatch_source_set_event_handler_f(s->mem, on_pressure);
+  dispatch_resume(s->idle);
+  dispatch_resume(s->mem);
+}
+// call without s->lock held: a handler may be waiting for it
+static void stop_trim(Storage *s) {
+  if (!s->tq) return;
+  dispatch_source_cancel(s->idle);
+  dispatch_source_cancel(s->mem);
+  dispatch_sync_f(s->tq, NULL, noop); // no handler runs after this
+  dispatch_release(s->idle);
+  dispatch_release(s->mem);
+  dispatch_release(s->tq);
+  s->idle = s->mem = NULL;
+  s->tq = NULL;
+}
 
 static os_log_t g_log;
 static void mk_log(void) { g_log = os_log_create("com.ga403wm.vcndec", "decoder"); }
@@ -86,11 +134,14 @@ static const char *cc(FourCharCode c, char b[5]) { b[0] = c >> 24; b[1] = c >> 1
 
 static void teardown(Storage *s) {
   if (s->dec) {
-    uint64_t f, g, c, i, slow, maxw;
+    uint64_t f, g, c, i, slow, maxw, hits, staged, peak, budget;
     vcn_stats(s->dec, &f, &g, &c, &i);
     vcn_copy_waits(s->dec, &slow, &maxw);
-    os_log(L(), "VCNDEC close: in %llu out %llu dropped %llu errors %llu (gpu-copy %llu cpu-copy %llu imports %llu; slow copies %llu, longest %llu ms)",
-           s->in, s->out, s->dropped, s->errors, g, c, i, slow, maxw);
+    vcn_cache_stats(s->dec, &hits, &staged, &peak, &budget);
+    os_log(L(), "VCNDEC close: in %llu out %llu dropped %llu errors %llu (gpu-copy %llu cpu-copy %llu imports %llu; slow copies %llu, longest %llu ms; "
+           "cache hits %llu, staged %llu, peak %llu of %llu MB, trims idle %llu pressure %llu, %llu MB released)",
+           s->in, s->out, s->dropped, s->errors, g, c, i, slow, maxw, hits, staged, peak >> 20, budget >> 20,
+           s->trim_idle, s->trim_mem, s->trim_bytes >> 20);
     vcn_close(s->dec);
     s->dec = NULL;
   }
@@ -98,11 +149,13 @@ static void teardown(Storage *s) {
 
 static OSStatus b_invalidate(CMBaseObjectRef o) {
   Storage *s = CMBaseObjectGetDerivedStorage(o);
+  stop_trim(s);
   pthread_mutex_lock(&s->lock); teardown(s); pthread_mutex_unlock(&s->lock);
   return 0;
 }
 static void b_finalize(CMBaseObjectRef o) {
   Storage *s = CMBaseObjectGetDerivedStorage(o);
+  stop_trim(s);
   teardown(s);
   if (s->fmt) CFRelease(s->fmt);
   if (s->color) CFRelease(s->color);
@@ -195,6 +248,8 @@ static OSStatus d_start(VTVideoDecoderRef d, VTVideoDecoderSession sess, CMVideo
     os_log_error(L(), "VCNDEC StartSession %{public}s %dx%d: %{public}s", cc(s->codec, b), dim.width, dim.height, err);
     return kErrDecoderFailed;
   }
+  s->last_ns = clock_gettime_nsec_np(CLOCK_UPTIME_RAW);
+  start_trim(s);
   int32_t fmt = depth == 10 ? (full ? kCVPixelFormatType_420YpCbCr10BiPlanarFullRange : kCVPixelFormatType_420YpCbCr10BiPlanarVideoRange)
                             : (full ? kCVPixelFormatType_420YpCbCr8BiPlanarFullRange : kCVPixelFormatType_420YpCbCr8BiPlanarVideoRange);
   int32_t w = dim.width, h = dim.height;
@@ -232,6 +287,7 @@ static OSStatus d_decode(VTVideoDecoderRef d, VTVideoDecoderFrame fr, CMSampleBu
   CMBlockBufferRef bb = CMSampleBufferGetDataBuffer(sb);
   size_t n = bb ? CMBlockBufferGetDataLength(bb) : 0;
   s->in++;
+  s->last_ns = clock_gettime_nsec_np(CLOCK_UPTIME_RAW);
   if (!s->dec || !n) { st = s->dec ? kErrBadData : kErrDecoderFailed; goto emit; }
   if (n > s->bufn) { free(s->buf); s->bufn = n + 65536; s->buf = malloc(s->bufn); }
   if (CMBlockBufferCopyDataBytes(bb, 0, n, s->buf)) { st = kErrBadData; goto emit; }

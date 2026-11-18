@@ -135,3 +135,50 @@ node tools/890m/video-suite/matrix-report.mjs after-out30     # results/matrix-a
 
 Expected: every cell "HW (VCNDec 8/10-bit)" and PASS. Safari VP9 should show VCNDec
 in `com.apple.WebKit.GPU` (in-process) with "StartSession vp09 ... on the 890M VCN".
+
+## Wired memory: VCNDec import cache (out-33 hang 17:46, 2026-11-18)
+
+Question from main: VTDecoderXPCService pid 7309 held 7.5 GB at the wired-memory hang (~300 4K P010 frames, 24.9 MB
+each); pid 5628 on out-34 held 902 MB in 38 "owned physical footprint (unmapped)" regions.
+
+**Who is the client.** Both services hosted only **WallpaperAerialsExtension** (the macOS Aerial wallpaper, 4K 10-bit
+HEVC, a new clip every ~4-5 min, two sessions per clip). Before VCNDec 0.2.0 it decoded on Apple's software HEVC.
+All sessions were closed: pid 7309 31 started / 31 closed (last close 17:44:26, ~2 min before the hang), pid 5628 6 / 6.
+
+**Do closed sessions leak?** No.
+- 8 consecutive 4K10 sessions through the installed VCNDec (XPC service, client releases each frame): service
+  footprint 14-18 MB, IOSurface 0 B after every close and after a 5 s hold.
+- Pin leak test: 5 sessions, ~3000 import/evict cycles of 24.9 MB surfaces: system wired before 12797 MB, 10 s after
+  12795 MB (-2 MB). VCNDec's host imports release their wired pages.
+
+So the frames owned by the service after its sessions closed are kept alive by the client (Aerials' player queue /
+layers; the service owns them, the client maps them). What wires them after close is not VCNDec (its imports are
+gone); the display path (WindowServer / NMX surface wiring of displayed layers) is the next place to look.
+
+**What VCNDec itself did wrong (while a session is open)** - `src/vcndec.c: surface_buffer()`, cache of 32 entries:
+- every cached import pins (wires) the whole output surface: 32 x 24.9 MB = ~800 MB wired per 4K10 session (Aerials
+  runs two at a clip change), and the cache's `CFRetain` kept surfaces alive after VideoToolbox's pool retired them;
+- a client that keeps frames (`vt_check` with `VT_KEEP=40`, like AVPlayer) makes the pool cycle > 32 surfaces: the LRU
+  then missed on **every** frame (imports 600 of 600): pin + GPU map + unpin per frame.
+
+| 4K10 HEVC, 600 frames, in-process | CPU / frame | wired peak | imports | max fps |
+|---|---|---|---|---|
+| client keeps 0 (pool small), before and after | 1.9-2.0 ms | +30-80 MB | 1 | 188-196 |
+| client keeps 40, **before** (32-entry LRU) | **12.9 ms** (6.9 s sys) | **+1247 MB** | 600 | 80 |
+| client keeps 40, staging only (`VCN_NO_IMPORT`) | 5.2 ms | (not wired) | 0 | 119 |
+| client keeps 40, **after** | **5.1 ms** | **+256 MB** | 10 | 119 |
+| client keeps 40, after, 5 s idle with the session open | - | released by the idle trim (237 MB) | 10 | 118 |
+
+**Fix** (`vcndec.c`, `vcnvt.c`): byte budget per session (`VCN_CACHE_MB`, default 256 MB, still at most 32 entries:
+10 surfaces at 4K10, 20 at 4K 8-bit, 32 at 1080p); an entry still in the pool's rotation is never evicted, so when the
+cache is full a miss goes through the staging copy (5.2 ms) instead of a one-frame import (12.9 ms); entries unused for
+128 lookups (retired by the pool) are released with their surface retain; `vcn_trim()` releases all imports after 2 s
+without a decode (paused video, a player holding its last frames) and on memory pressure (dispatch memory-pressure
+source, warn + critical); the close line reports `cache hits, staged, peak of budget MB, trims idle / pressure, MB
+released`. All 9 MP4 clips with `VT_KEEP=40` and the VP9 / AV1 / VP9 p2 WebMs: every frame index right, 0 errors.
+Not tested: a real memory-pressure event (simulating one needs root); it calls the same trim as the idle path.
+
+**Do output surfaces need to be wired while only cached?** Only to skip the per-frame import: the GPU copy writes
+through a host-pointer import, which pins the pages. Wiring is now bounded (256 MB per session) and dropped on idle,
+pressure, retirement and close. The zero-wire alternative is the staging copy for every frame (5.2 vs 2.0 ms CPU per
+4K10 frame); `VCN_CACHE_MB=0` selects it without a rebuild.

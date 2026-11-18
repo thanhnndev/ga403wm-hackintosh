@@ -21,6 +21,10 @@ int vcn_receive(vcn_dec *d, CVPixelBufferPoolRef pool, CVPixelBufferRef *out, in
 void vcn_close(vcn_dec *d);
 
 // Stats for logging: frames out, GPU-copy frames, CPU-fallback frames, imported surfaces.
+// release every cached output-surface import (GPU pins); returns bytes released. Call between frames.
+size_t vcn_trim(vcn_dec *d);
+// import cache: frames copied into a cached import, frames copied through staging, peak and budget bytes
+void vcn_cache_stats(vcn_dec *d, uint64_t *hits, uint64_t *staged, uint64_t *peak_bytes, uint64_t *budget_bytes);
 // copies that waited > 100 ms on their fence (busy or power-gated VCN), and the longest wait in ms
 void vcn_copy_waits(vcn_dec *d, uint64_t *slow, uint64_t *max_ms);
 void vcn_stats(vcn_dec *d, uint64_t *frames, uint64_t *gpu_copies, uint64_t *cpu_copies, uint64_t *imports);
