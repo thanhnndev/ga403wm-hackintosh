@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BSD-3-Clause-Clear
-// vcndec: VP9 / AV1 on the 890M VCN (RADV Vulkan video through libavcodec), GPU copy into IOSurface pages.
+// vcndec: VP9 / AV1 / H.264 / HEVC (8 and 10 bit) on the 890M VCN (RADV Vulkan video through libavcodec), GPU copy into IOSurface pages.
 // See vcndec.h. The decoded Vulkan image is copied with vkCmdCopyImageToBuffer into a VkBuffer that imports
 // the destination IOSurface's own pages (VK_EXT_external_memory_host); one import per IOSurface, cached.
 // When the import is not possible the copy goes through one host-cached staging buffer plus memcpy.
@@ -148,8 +148,10 @@ vcn_dec *vcn_open(uint32_t codec, int width, int height, const uint8_t *extra, s
   pthread_once(&once, global_init);
   vcn_dec *d = calloc(1, sizeof *d);
   int r;
-  const AVCodec *c = avcodec_find_decoder(codec == 'av01' ? AV_CODEC_ID_AV1 : AV_CODEC_ID_VP9);
-  if (codec != 'vp09' && codec != 'av01') { seterr(d, "codec not handled%s%.0d", "", 0); goto fail; }
+  enum AVCodecID id = codec == 'av01' ? AV_CODEC_ID_AV1 : codec == 'vp09' ? AV_CODEC_ID_VP9 : codec == 'avc1' ? AV_CODEC_ID_H264
+                     : (codec == 'hvc1' || codec == 'hev1') ? AV_CODEC_ID_HEVC : AV_CODEC_ID_NONE;
+  if (id == AV_CODEC_ID_NONE) { seterr(d, "codec not handled%s%.0d", "", 0); goto fail; }
+  const AVCodec *c = avcodec_find_decoder(id);
   if (!c) { seterr(d, "no libavcodec decoder%s%.0d", "", 0); goto fail; }
   if ((r = av_hwdevice_ctx_create(&d->dev, AV_HWDEVICE_TYPE_VULKAN, NULL, NULL, 0)) < 0) {
     seterr(d, "Vulkan device: %s (%d)", av_err2str(r), r); goto fail; }
@@ -161,6 +163,8 @@ vcn_dec *vcn_open(uint32_t codec, int width, int height, const uint8_t *extra, s
   d->cc->width = width;
   d->cc->height = height;
   d->cc->pkt_timebase = (AVRational){1, 1000000};
+  // H.264 / HEVC: decode-order output (ff-build.sh patches), one picture per VideoToolbox sample; the client reorders
+  if (id == AV_CODEC_ID_H264 || id == AV_CODEC_ID_HEVC) d->cc->flags |= AV_CODEC_FLAG_LOW_DELAY;
   if (extra && extran) {
     d->cc->extradata = av_mallocz(extran + AV_INPUT_BUFFER_PADDING_SIZE);
     memcpy(d->cc->extradata, extra, extran);
@@ -271,9 +275,15 @@ static int copy_out(vcn_dec *d, AVFrame *f, CVPixelBufferRef pb) {
   AVHWDeviceContext *hd = (AVHWDeviceContext *)d->dev->data;
   AVVulkanDeviceContext *vk = hd->hwctx;
   AVVkFrame *vf = (AVVkFrame *)f->data[0];
-  if (fc->sw_format != AV_PIX_FMT_NV12) { seterr(d, "sw_format %s not NV12%.0d", av_get_pix_fmt_name(fc->sw_format), 0); return -1; }
+  // NV12 (8-bit) or P010 (10-bit, MSB-aligned in 16-bit words; IOSurface format 'x420' has the same layout)
+  if (fc->sw_format != AV_PIX_FMT_NV12 && fc->sw_format != AV_PIX_FMT_P010) {
+    seterr(d, "sw_format %s not NV12/P010%.0d", av_get_pix_fmt_name(fc->sw_format), 0); return -1; }
+  int bps = fc->sw_format == AV_PIX_FMT_P010 ? 2 : 1; // bytes per sample
   IOSurfaceRef s = CVPixelBufferGetIOSurface(pb);
   if (!s) { seterr(d, "pixel buffer has no IOSurface%s%.0d", "", 0); return -1; }
+  OSType spf = IOSurfaceGetPixelFormat(s);
+  if ((bps == 2) != (spf == kCVPixelFormatType_420YpCbCr10BiPlanarVideoRange || spf == kCVPixelFormatType_420YpCbCr10BiPlanarFullRange)) {
+    seterr(d, "surface format does not match the %s-bit frame%.0d", bps == 2 ? "10" : "8", 0); return -1; }
 
   int w = f->width, h = f->height, cw = (w + 1) / 2, ch = (h + 1) / 2;
   size_t ybpr = IOSurfaceGetBytesPerRowOfPlane(s, 0), cbpr = IOSurfaceGetBytesPerRowOfPlane(s, 1);
@@ -307,9 +317,9 @@ static int copy_out(vcn_dec *d, AVFrame *f, CVPixelBufferRef pb) {
   d->CmdPipelineBarrier(d->cmd, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 0, NULL, 0,
                         NULL, nimg, ib);
   VkBufferImageCopy rg[2] = {
-      {direct ? yoff : sy, (uint32_t)ybpr, 0, {nimg == 1 ? VK_IMAGE_ASPECT_PLANE_0_BIT : VK_IMAGE_ASPECT_COLOR_BIT, 0, 0, 1},
+      {direct ? yoff : sy, (uint32_t)(ybpr / bps), 0, {nimg == 1 ? VK_IMAGE_ASPECT_PLANE_0_BIT : VK_IMAGE_ASPECT_COLOR_BIT, 0, 0, 1},
        {0, 0, 0}, {(uint32_t)w, (uint32_t)h, 1}},
-      {direct ? coff : sc, (uint32_t)(cbpr / 2), 0, {nimg == 1 ? VK_IMAGE_ASPECT_PLANE_1_BIT : VK_IMAGE_ASPECT_COLOR_BIT, 0, 0, 1},
+      {direct ? coff : sc, (uint32_t)(cbpr / (2 * bps)), 0, {nimg == 1 ? VK_IMAGE_ASPECT_PLANE_1_BIT : VK_IMAGE_ASPECT_COLOR_BIT, 0, 0, 1},
        {0, 0, 0}, {(uint32_t)cw, (uint32_t)ch, 1}}};
   d->CmdCopyImageToBuffer(d->cmd, vf->img[0], VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, dst, 1, &rg[0]);
   d->CmdCopyImageToBuffer(d->cmd, vf->img[nimg - 1], VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, dst, 1, &rg[1]);
