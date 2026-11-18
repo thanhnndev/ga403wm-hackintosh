@@ -37,6 +37,25 @@ on the out-29 boot (11-16 18:39) or on this morning's 08:54 boot. Not reproduced
 0.5-3 s idle pauses: longest copy wait 9 ms). Next step: VCNDec logs the GPU VA range of each imported surface (needs
 `bufferDeviceAddress`) so the fault address can be matched, or an A/B with imports off (staging copy) under QuickTime.
 
+## After (installed 2026-11-18 15:54 boot: RADV 379787c4 all codecs, VCNDec 0.2.0, NMXGPU out-33)
+
+**58 pass, 0 fail** (1 without a clip: 10-bit AV1 WebM). **38 cells fixed, 20 were already on the VCN, 0 still failing.**
+Every cell: [`results/matrix-after-out33.md`](../tools/890m/video-suite/results/matrix-after-out33.md); per cell
+before/after decoder and CPU: [`results/compare-before-out30-after-out33.md`](../tools/890m/video-suite/results/compare-before-out30-after-out33.md)
+(`node compare.mjs before-out30 after-out33`).
+
+- `vkcaps`: decode queue family `videoOps 0xf`, `VK_KHR_video_decode_h264/h265`.
+- `vt_check` (installed VCNDec, no `-b`): all 9 MP4 clips (H.264 1080p60 / fMP4 / 4K, HEVC 8-bit / fMP4 / 4K, HEVC Main10,
+  AV1 8/10-bit) hw yes, every frame index right, 0 errors.
+- CPU (VideoToolbox XPC + the app's decoding process), before -> after: QuickTime H.264/HEVC 39-127 % -> 0-13 %;
+  Safari HEVC 129-233 % -> 15-44 %, Safari VP9 137-516 % -> 9-52 %, Safari H.264 84-164 % -> 7-18 % (one 1080p30
+  cell 139 %: WebKit GPU process rendering, decode on the VCN); Chrome HEVC 64-183 % -> 22-28 %. Chrome H.264 before
+  reads low (8-21 %) because FFmpeg decoded in the renderer, which is not in this column; after 13-23 % is the GPU process.
+- gfx page faults / ring timeouts since the boot: **0** (17 on the out-30 boot). VCNDec: 89 sessions, 0 frame errors,
+  0 copy waits over 100 ms (longest 23 ms), no "copy fence" errors.
+- Harness fix found in this run: `lib/vcnlog.mjs` kept one record per process, so a codec probe (`CreateInstance hvc1`)
+  in Safari's VTDecoderXPCService relabelled a running AV1 session and the cell read "SW"; sessions are now per pid:thread.
+
 ## Root causes and fixes
 
 | # | symptom | root cause (file: function) | fix (commit) |

@@ -1,0 +1,135 @@
+{
+ "app": "Safari",
+ "id": "safari-mx-av1-1080p30-mse",
+ "clip": "mx-av1-1080p30.webm",
+ "codec": "AV1",
+ "depth": "main 8-bit",
+ "size": "1080p30",
+ "container": "WebM",
+ "mime": "video/webm; codecs=\"av01.0.08M.08\"",
+ "fps": 30,
+ "mode": "mse",
+ "cpu": {
+  "vtdecoder": 4.8,
+  "webkit_gpu": 6.5,
+  "webcontent": 3.7,
+  "quicktime": 0
+ },
+ "vtActive": [
+  {
+   "pid": 78252,
+   "cpu": 4.6,
+   "vcndec": true
+  }
+ ],
+ "decoded": 183,
+ "dropped": 57,
+ "advanced": 5.01,
+ "plays": "yes",
+ "hidden": true,
+ "check": {
+  "ok": 4,
+  "near": 2,
+  "timerReads": 0,
+  "bad": 0,
+  "unreadable": 0,
+  "first": []
+ },
+ "errors": [],
+ "rows": [
+  {
+   "sec": 0,
+   "decoded": 35,
+   "dropped": 0,
+   "rvfc": 18,
+   "skipped": 10,
+   "vis": "hidden",
+   "focus": false,
+   "ct": 1.106,
+   "paused": false,
+   "rs": 4,
+   "ahead": 28.9
+  },
+  {
+   "sec": 1,
+   "decoded": 32,
+   "dropped": 13,
+   "rvfc": 12,
+   "skipped": 20,
+   "vis": "hidden",
+   "focus": false,
+   "ct": 2.256,
+   "paused": false,
+   "rs": 4,
+   "ahead": 27.7
+  },
+  {
+   "sec": 2,
+   "decoded": 25,
+   "dropped": 7,
+   "rvfc": 7,
+   "skipped": 15,
+   "vis": "hidden",
+   "focus": false,
+   "ct": 3.137,
+   "paused": false,
+   "rs": 4,
+   "ahead": 26.9
+  },
+  {
+   "sec": 3,
+   "decoded": 30,
+   "dropped": 12,
+   "rvfc": 0,
+   "skipped": 0,
+   "vis": "hidden",
+   "focus": false,
+   "ct": 4.042,
+   "paused": false,
+   "rs": 4,
+   "ahead": 26
+  },
+  {
+   "sec": 4,
+   "decoded": 30,
+   "dropped": 12,
+   "rvfc": 1,
+   "skipped": 60,
+   "vis": "hidden",
+   "focus": false,
+   "ct": 5.073,
+   "paused": false,
+   "rs": 4,
+   "ahead": 24.9
+  },
+  {
+   "sec": 5,
+   "decoded": 31,
+   "dropped": 13,
+   "rvfc": 0,
+   "skipped": 0,
+   "vis": "hidden",
+   "focus": false,
+   "ct": 6.118,
+   "paused": false,
+   "rs": 4,
+   "ahead": 23.9
+  }
+ ],
+ "vcn": {
+  "v": "vcn",
+  "s": [
+   {
+    "pid": 78252,
+    "proc": "VTDecoderXPCService",
+    "codec": "av01",
+    "started": true,
+    "refused": null,
+    "errors": [],
+    "close": null,
+    "size": "1920x1080",
+    "depth": 8
+   }
+  ]
+ }
+}

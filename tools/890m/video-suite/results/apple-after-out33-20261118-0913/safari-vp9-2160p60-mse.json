@@ -1,0 +1,147 @@
+{
+ "app": "Safari",
+ "id": "safari-vp9-2160p60-mse",
+ "clip": "vp9-2160p60.webm",
+ "codec": "VP9",
+ "depth": "profile 0 8-bit",
+ "size": "2160p60",
+ "container": "WebM",
+ "mime": "video/webm; codecs=\"vp09.00.51.08\"",
+ "fps": 60,
+ "mode": "mse",
+ "cpu": {
+  "vtdecoder": 0,
+  "webkit_gpu": 22.5,
+  "webcontent": 14.3,
+  "quicktime": 0
+ },
+ "vtActive": [],
+ "decoded": 437,
+ "dropped": 45,
+ "advanced": 5.96,
+ "plays": "yes",
+ "hidden": true,
+ "check": {
+  "ok": 0,
+  "near": 3,
+  "timerReads": 0,
+  "bad": 0,
+  "unreadable": 0,
+  "first": []
+ },
+ "errors": [],
+ "rows": [
+  {
+   "sec": 0,
+   "decoded": 78,
+   "dropped": 1,
+   "rvfc": 6,
+   "skipped": 26,
+   "vis": "hidden",
+   "focus": false,
+   "ct": 1.262,
+   "paused": false,
+   "rs": 3,
+   "ahead": 2.7
+  },
+  {
+   "sec": 1,
+   "decoded": 52,
+   "dropped": 6,
+   "rvfc": 10,
+   "skipped": 76,
+   "vis": "hidden",
+   "focus": false,
+   "ct": 2.142,
+   "paused": false,
+   "rs": 4,
+   "ahead": 3.7
+  },
+  {
+   "sec": 2,
+   "decoded": 59,
+   "dropped": 5,
+   "rvfc": 6,
+   "skipped": 32,
+   "vis": "hidden",
+   "focus": false,
+   "ct": 3.08,
+   "paused": false,
+   "rs": 4,
+   "ahead": 6.2
+  },
+  {
+   "sec": 3,
+   "decoded": 61,
+   "dropped": 6,
+   "rvfc": 0,
+   "skipped": 0,
+   "vis": "hidden",
+   "focus": false,
+   "ct": 4.17,
+   "paused": false,
+   "rs": 4,
+   "ahead": 11.6
+  },
+  {
+   "sec": 4,
+   "decoded": 182,
+   "dropped": 27,
+   "rvfc": 0,
+   "skipped": 0,
+   "vis": "hidden",
+   "focus": false,
+   "ct": 7.149,
+   "paused": false,
+   "rs": 4,
+   "ahead": 14.8
+  },
+  {
+   "sec": 5,
+   "decoded": 1,
+   "dropped": 0,
+   "rvfc": 0,
+   "skipped": 0,
+   "vis": "hidden",
+   "focus": false,
+   "ct": 7.171,
+   "paused": false,
+   "rs": 4,
+   "ahead": 14.9
+  },
+  {
+   "sec": 6,
+   "decoded": 4,
+   "dropped": 0,
+   "rvfc": 0,
+   "skipped": 0,
+   "vis": "hidden",
+   "focus": false,
+   "ct": 7.219,
+   "paused": false,
+   "rs": 4,
+   "ahead": 14.9
+  }
+ ],
+ "vcn": {
+  "v": "vcn",
+  "s": [
+   {
+    "pid": 77334,
+    "proc": "com.apple.WebKit.GPU",
+    "codec": "vp09",
+    "started": true,
+    "refused": null,
+    "errors": [],
+    "close": {
+     "in": 617,
+     "out": 617,
+     "dropped": 0,
+     "errors": 0
+    },
+    "size": "3840x2160",
+    "depth": 8
+   }
+  ]
+ }
+}

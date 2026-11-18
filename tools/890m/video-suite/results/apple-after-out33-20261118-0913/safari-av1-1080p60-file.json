@@ -1,0 +1,153 @@
+{
+ "app": "Safari",
+ "id": "safari-av1-1080p60-file",
+ "clip": "av1-1080p60.webm",
+ "codec": "AV1",
+ "depth": "main 8-bit",
+ "size": "1080p60",
+ "container": "WebM",
+ "mime": "video/webm; codecs=\"av01.0.08M.08\"",
+ "fps": 60,
+ "mode": "file",
+ "cpu": {
+  "vtdecoder": 18.5,
+  "webkit_gpu": 29.1,
+  "webcontent": 4.5,
+  "quicktime": 0
+ },
+ "vtActive": [
+  {
+   "pid": 7309,
+   "cpu": 11.7,
+   "vcndec": true
+  },
+  {
+   "pid": 78252,
+   "cpu": 6.8,
+   "vcndec": true
+  }
+ ],
+ "decoded": 463,
+ "dropped": 263,
+ "advanced": 1.75,
+ "plays": "yes",
+ "hidden": true,
+ "check": {
+  "ok": 1,
+  "near": 0,
+  "timerReads": 0,
+  "bad": 0,
+  "unreadable": 0,
+  "first": []
+ },
+ "errors": [],
+ "rows": [
+  {
+   "sec": 0,
+   "decoded": 361,
+   "dropped": 199,
+   "rvfc": 6,
+   "skipped": 4,
+   "vis": "hidden",
+   "focus": false,
+   "ct": 5.902,
+   "paused": false,
+   "rs": 4,
+   "ahead": 84.1
+  },
+  {
+   "sec": 1,
+   "decoded": 0,
+   "dropped": 0,
+   "rvfc": 0,
+   "skipped": 0,
+   "vis": "hidden",
+   "focus": false,
+   "ct": 5.918,
+   "paused": false,
+   "rs": 4,
+   "ahead": 84.1
+  },
+  {
+   "sec": 2,
+   "decoded": 0,
+   "dropped": 0,
+   "rvfc": 0,
+   "skipped": 0,
+   "vis": "hidden",
+   "focus": false,
+   "ct": 5.918,
+   "paused": false,
+   "rs": 4,
+   "ahead": 84.1
+  },
+  {
+   "sec": 3,
+   "decoded": 0,
+   "dropped": 0,
+   "rvfc": 0,
+   "skipped": 0,
+   "vis": "hidden",
+   "focus": false,
+   "ct": 5.918,
+   "paused": false,
+   "rs": 4,
+   "ahead": 84.1
+  },
+  {
+   "sec": 4,
+   "decoded": 0,
+   "dropped": 0,
+   "rvfc": 0,
+   "skipped": 0,
+   "vis": "hidden",
+   "focus": false,
+   "ct": 5.919,
+   "paused": false,
+   "rs": 4,
+   "ahead": 84.1
+  },
+  {
+   "sec": 5,
+   "decoded": 101,
+   "dropped": 60,
+   "rvfc": 0,
+   "skipped": 0,
+   "vis": "hidden",
+   "focus": false,
+   "ct": 7.641,
+   "paused": false,
+   "rs": 4,
+   "ahead": 82.4
+  },
+  {
+   "sec": 6,
+   "decoded": 1,
+   "dropped": 4,
+   "rvfc": 0,
+   "skipped": 0,
+   "vis": "hidden",
+   "focus": false,
+   "ct": 7.653,
+   "paused": false,
+   "rs": 4,
+   "ahead": 82.3
+  }
+ ],
+ "vcn": {
+  "v": "vcn",
+  "s": [
+   {
+    "pid": 78252,
+    "proc": "VTDecoderXPCService",
+    "codec": "av01",
+    "started": true,
+    "refused": null,
+    "errors": [],
+    "close": null,
+    "size": "1920x1080",
+    "depth": 8
+   }
+  ]
+ }
+}

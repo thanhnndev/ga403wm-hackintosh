@@ -1,22 +1,42 @@
 #!/usr/bin/env node
-// Per-case diff of two results directories (medians across rounds when a directory has several).
-// usage: node compare.mjs <A> <B>   (compare.sh wraps it)
+// Before/after codec matrix: one row per app x clip x mode from two labels' results (latest run per cell),
+// decoder and CPU (VideoToolbox XPC + the app's decoding process) side by side.
+// usage: node compare.mjs <before-label> <after-label> [out.md]   (default results/compare-<before>-<after>.md)
+import fs from 'node:fs';
 import path from 'node:path';
-import { load, row, med } from './table.mjs';
+import { SUITE } from './lib/server.mjs';
 
-const [A, B] = process.argv.slice(2).map((d) => ({ dir: d, rounds: load(d) }));
-const KEYS = [['dropped', 'drops'], ['skipped', 'skipped'], ['late', 'late'], ['p95', 'iv p95'], ['W', 'pkg W'], ['dW', 'W>idle'], ['gpu', 'GPU %'], ['ws', 'WS %'], ['kt', 'kt %'], ['docker', 'Docker %']];
-const agg = (X, n) => { const rs = X.rounds.filter((r) => r.cases[n]).map((r) => row(r.cases[n], r.cases.idle?.window?.watts ?? null));
-  return Object.fromEntries(KEYS.map(([k]) => [k, med(rs.map((r) => r[k]))])); };
-const names = [...new Set([...A.rounds, ...B.rounds].flatMap((r) => Object.keys(r.cases)))];
-console.log(`A = ${path.basename(A.dir)} (${A.rounds.length} round(s))   B = ${path.basename(B.dir)} (${B.rounds.length} round(s)); values A -> B (B-A)\n`);
-const w = 20;
-console.log('case'.padEnd(18) + KEYS.map(([, h]) => h.padStart(w)).join(''));
-for (const n of names) {
-  const a = agg(A, n), b = agg(B, n);
-  console.log(n.padEnd(18) + KEYS.map(([k]) => {
-    if (a[k] == null && b[k] == null) return '-'.padStart(w);
-    const d = a[k] != null && b[k] != null ? b[k] - a[k] : null;
-    return `${a[k] ?? '-'}->${b[k] ?? '-'}${d != null ? ` (${d > 0 ? '+' : ''}${+d.toFixed(2)})` : ''}`.padStart(w);
-  }).join(''));
+const [bl, al] = process.argv.slice(2); if (!bl || !al) { console.error('usage: node compare.mjs <before> <after> [out.md]'); process.exit(2); }
+const R = path.join(SUITE, 'results');
+function load(label) {
+  const m = new Map();
+  for (const d of fs.readdirSync(R).filter((d) => d.startsWith(`matrix-${label}-`) || d.startsWith(`apple-${label}-`)).sort())
+    for (const f of fs.readdirSync(path.join(R, d))) if (f.endsWith('.json')) {
+      const r = JSON.parse(fs.readFileSync(path.join(R, d, f))); r.app ??= 'Chrome';
+      m.set(`${r.app}:${r.clip ?? r.id}:${r.mode}`, r);
+    }
+  return m;
 }
+const B = load(bl), A = load(al);
+const dec = (r) => !r ? '-' : r.plays !== 'yes' ? (r.plays === 'no clip' ? 'no clip' : 'does not play')
+  : r.vcn?.v === 'vcn' ? 'VCN' : r.app === 'Chrome' && !r.platform ? `SW ${(r.decoder || '').replace('VideoDecoder', '')}` : 'SW';
+const client = (r) => r.app === 'Chrome' ? r.cpu?.gpu : r.app === 'Safari' ? r.cpu?.webkit_gpu : r.cpu?.quicktime;
+const cpu = (r) => { if (!r?.cpu) return '-'; const v = (r.cpu.vtdecoder ?? 0) + (client(r) ?? 0); return v.toFixed(0); };
+const pass = (r) => r && r.plays === 'yes' && r.vcn?.v === 'vcn';
+const order = ['H.264', 'HEVC', 'VP9', 'AV1'], apps = ['Chrome', 'Safari', 'QuickTime'];
+const keys = [...new Set([...B.keys(), ...A.keys()])].map((k) => ({ k, r: A.get(k) || B.get(k) }))
+  .sort((x, y) => order.indexOf(x.r.codec) - order.indexOf(y.r.codec) || String(x.r.depth).localeCompare(String(y.r.depth))
+    || String(x.r.size).localeCompare(String(y.r.size)) || String(x.r.container + x.r.mode).localeCompare(String(y.r.container + y.r.mode)) || apps.indexOf(x.r.app) - apps.indexOf(y.r.app));
+let fixed = 0, still = 0, was = 0;
+const L = [`# Codec matrix: ${bl} -> ${al}`, '', 'CPU % = VideoToolbox XPC service + the app\'s decoding process (Chrome GPU process, WebKit GPU process, QuickTime Player) over the measured window (Safari cells: a background window).', '',
+  '| codec | profile / depth | size | container | app | before | after | CPU % before | CPU % after | |', '|---|---|---|---|---|---|---|---|---|---|'];
+for (const { k, r } of keys) {
+  const b = B.get(k), a = A.get(k);
+  const st = pass(a) && !pass(b) ? 'fixed' : pass(a) ? 'was HW' : a?.plays === 'no clip' ? 'no clip' : '**still failing**';
+  if (st === 'fixed') fixed++; else if (st === 'was HW') was++; else if (st.includes('still')) still++;
+  L.push(`| ${r.codec} | ${r.depth} | ${r.size} | ${r.mode === 'mse' ? 'MSE ' + r.container : r.container} | ${r.app} | ${dec(b)} | ${dec(a)} | ${cpu(b)} | ${cpu(a)} | ${st} |`);
+}
+L.push('', `${fixed} cells fixed, ${was} already on the VCN before, ${still} still failing.`);
+const out = process.argv[4] || path.join(R, `compare-${bl}-${al}.md`);
+fs.writeFileSync(out, L.join('\n') + '\n');
+console.log(`${out}: ${fixed} fixed, ${was} already HW, ${still} still failing`);
