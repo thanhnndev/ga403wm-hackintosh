@@ -180,8 +180,14 @@ vcn_dec *vcn_open(uint32_t codec, int width, int height, const uint8_t *extra, s
   if (id == AV_CODEC_ID_NONE) { seterr(d, "codec not handled%s%.0d", "", 0); goto fail; }
   const AVCodec *c = avcodec_find_decoder(id);
   if (!c) { seterr(d, "no libavcodec decoder%s%.0d", "", 0); goto fail; }
-  if ((r = av_hwdevice_ctx_create(&d->dev, AV_HWDEVICE_TYPE_VULKAN, NULL, NULL, 0)) < 0) {
-    seterr(d, "Vulkan device: %s (%d)", av_err2str(r), r); goto fail; }
+  if ((r = av_hwdevice_ctx_create(&d->dev, AV_HWDEVICE_TYPE_VULKAN, NULL, NULL, 0)) < 0 && !getenv("FF_VULKAN_ICD")) {
+    // The loader found no driver: in WebKit's GPU process (Safari runs VP9 supplemental decoders in-process) the sandbox
+    // denies getegid, the loader then counts the process as elevated and ignores VK_DRIVER_FILES. Use RADV directly
+    // (ff-build.sh "loader-less" patch); it is the ICD the NVMTL plugin already maps in that process.
+    setenv("FF_VULKAN_ICD", "/Library/GPUBundles/nvmtl/libvulkan_radeon.dylib", 0);
+    r = av_hwdevice_ctx_create(&d->dev, AV_HWDEVICE_TYPE_VULKAN, NULL, NULL, 0);
+  }
+  if (r < 0) { seterr(d, "Vulkan device: %s (%d)", av_err2str(r), r); goto fail; }
   if (!device_decodes(d, id)) { seterr(d, "refused: the Vulkan device has no video decode for this codec (RADV built without it)%s%.0d", "", 0); goto fail; }
   if (setup_copy(d) < 0) goto fail;
   d->cc = avcodec_alloc_context3(c);
