@@ -397,3 +397,67 @@ took the time and any memory stall that overlaps it:
 - no stall, `wake`/`handoff` large -> cause 2 (confirm with the `nvmtl-exec-qos-ui` A/B in the same boot);
 - no stall, small `gpu`/`wake`, `scanout` with `missed` > 0 and a VBL-timer phase spread -> cause 3;
 - no stall, long kernel-only stages (`worker`, `notify`) while Docker is busy -> the RyzenHV question in 3.1.
+
+## 9. out-31: structural fixes for rows 1-3 (2026-11-18, compile-checked only)
+
+Branches on `fork` (one out-31 build): kernel + NMXAccel `fix/out31` (on top of `fix/cs-enomem` ff060ea, which sits on the
+trace `8d1a8c2`); plugin `fix/out31-plugin` (on `fix/cs-enomem-plugin` 97725ba, on `integ/out30-plugin`). Commits:
+`6430f73` rows 1+3 (shared flip ABI v2), `720f6c9` + `4caa56d` row 2, `e555852` trace flags + GTT, plugin `a46e451`.
+Every change has its new behaviour on by default and a runtime switch back to the old path; boot-args
+`nmxkfence=0` / `nmxflipirq=0` / `nmxvblirq=0` (grep-audited against every kext under /Library/Extensions and
+/System/Library/Extensions and our sources: no other user; kexts OpenCore injects from the ESP were not checked).
+Compile checks: NMXGPU bridge, nmx_fb, nmx_kext, nmx_mm, nmx_page and the patched `amdgpu_cs.c`, `amdgpu_ttm.c`,
+`amdgpu_dm.c` with the xkpi scripts; NMXAccel built and linked with `build/nmxaccel_build.sh` (ogkm615, NM_TAHOE=1);
+both new vendor patches apply (`patch --dry-run`) on the out-30 tree; the plugin adds no syntax error (22 before, 22 after).
+
+### 9.1 Row 1: the render fence travels in the kernel
+
+| | |
+|---|---|
+| Linux | `amdgpu_cs_submit` adds the job fence to the BOs' `dma_resv`; the KMS client's commit takes the plane fence (`drm_gem_plane_helper_prepare_fb` / `drm_atomic_set_fence_for_plane`) and `commit_tail` -> `drm_atomic_helper_wait_for_fences` waits before the flip is programmed |
+| here | `amdgpu-nmx-surface-fence.patch`: after `p->fence` exists, every userptr BO of the job that was wired from an IOSurface (`UserWire.sid` via `surf_wire`) records the fence under that IOSurface ID (`nmx_surf_fence_set`, 64 entries, LRU, record time). `flip_submit` v2 with `NMX_FLIP_SUBMIT_FENCE_ONLY` sets `plane_state->fence` (this drm-kmod has no `drm_atomic_set_fence_for_plane`; its `prepare_fb` keeps a fence already set) and the helper commit's `commit_tail` waits, on the commit worker, not on the pipe thread. NMXAccel no longer sleeps in `nmxFenceWait` for those frames |
+| ordering gap found | NVMTL marks a command buffer "scheduled" **before** its CS ioctl and a later part may write the surface, so at the transaction the kernel can still hold the previous frame's job. Linux never has this (the compositor's `vkQueueSubmit` returned before it asks for the flip). So: the plugin writes `NMXFenceSubmitted = n` after the last surface-writing part passed `vkQueueSubmit` (RADV on amdgpu: native timelines, immediate submit, the CS ioctl is inside); NMXAccel uses the kernel fence only when `NMXFenceSubmitted >= NMXFencePending`, and passes `NMXFencePendingT` as `fenceAfterNs` so NMXGPU refuses a fence recorded before the frame's commit. Otherwise, or when refused, the old `NMXFenceDone` wait. Alternative (bigger plugin change, no IOSurface properties at all): give `waitUntilScheduled` its Metal meaning in WindowServer (scheduled = every surface-writing part passed the CS ioctl); asked main |
+| xnu risks | (1) the recorded fence is the surface's **last** job, read or write: a later read job only delays the flip, never shows an unfinished frame. (2) a surface wired through the plain path (no sid) has no fence: counted (`nmx_flip_nofence`, `nmxaccel_kfence_refused`), old wait. (3) a GPU hang now blocks the commit worker in `dma_fence_wait` instead of the pipe thread (Linux identical; `amdgpu_fence_driver_force_completion` on reset signals it); the 50 ms latch cap in NMXAccel still trips flips off. (4) CPU paths (K6 copy, copy home, VRAM chain mode 2) always wait the old way first. (5) 64 entries: WindowServer's surfaces are few; an aged-out entry = old wait |
+| verify | `debug.nmx_flip_fenced` and `debug.nmxaccel_kfence_flips` grow with flips; `nmxaccel_kfence_not_submitted` / `_refused` small; `debug.nmxaccel_frametrace` waited = 2 on those frames; aggregate: `wake`/`handoff` disappear for them, the GPU wait shows in `worker` (sub0 -> armed); total p99 and "handoff > 4 ms" (138 in the first run) must drop; no torn or stale frames on screen; A/B with `sysctl debug.nmxaccel_flip_kfence=0` |
+
+### 9.2 Row 3: flip completion from the pageflip IRQ, real presentation time
+
+| | |
+|---|---|
+| Linux | `dm_pflip_high_irq` sends the DRM event with the flip's vblank time; the compositor wakes on it |
+| here | `amdgpu-dm-nmx-flipdone.patch`: after the event went out, `nmx_fb_flip_done` calls NMXAccel's registered callback (`nmxFlipNotify`, ABI v2), which only `thread_call_enter`s the completion. `nmxFlipPoll` in notify mode looks once (no 200 us spin, no CPU burn), re-arms 2 ms if the latch is not visible yet (VRR front porch sends the event from the next vblank), 50 ms cap unchanged; the first check is a 4 ms safety net the IRQ moves up. Status v2 returns `latchNs` (pageflip IRQ `mach_absolute_time`); NMXAccel writes it to `tx+0x170` before `signalTransactionInterrupt`, where `completeTransaction` would stamp its own (later) completion time: only if `tx+0x158 != 0`, `tx+0x170 == 0`, `pipe+0x248 == tx`, `version_major == 25` |
+| xnu risks | the callback runs on NMXGPU's IH thread: it must never block (it doesn't); a notify and the fallback can both run: one `claimed` CAS completes, `busy` is cleared after `result` as before; NMXAccel must not unload while registered (it never does); `tx` layout read on 25G332 only, gated to Darwin 25 and to the pipe's current transaction; `debug.nmxaccel_flip_ts=0` turns it off |
+| verify | `debug.nmx_flip_notified` ~= flips, `debug.nmxaccel_flip_notified` same, `nmxaccel_flip_rearm` small; aggregate `notify` (pflip -> latch seen) p50 well under 1 ms (was the 200 us poll plus thread-call wake); `nmxaccel_flip_ts_set` grows; WindowServer CPU time in the pipe thread drops (spindump of WindowServer, root, main runs it); A/B `debug.nmxaccel_flip_notify=0` |
+
+### 9.3 Row 2: IOFramebuffer VBL from the CRTC vblank
+
+| | |
+|---|---|
+| Linux | a vblank consumer holds `drm_crtc_vblank_get` while it wants vblanks; `drm_crtc_handle_vblank` runs from `dm_crtc_high_irq`; `drm_crtc_vblank_put` lets the IRQ go and idle optimisations return (`amdgpu_dm_crtc_vblank_control_worker`, `active_vblank_irq_count`) |
+| here | NMXAMDFB keeps up to 4 `'vbl '` registrations and honours `setInterruptState` / `unregisterInterrupt` (were no-ops, so IOFramebuffer's `deferredVBLDisable` did nothing and the 120 Hz timer ran forever). While any registration is on, a thread call takes the DRM vblank reference (`nmx_fb_vbl_ref`); `dm_crtc_high_irq` -> `nmx_ft_vblank` -> sink -> thread call runs the procs. The timer delivers only as fallback (no reference: CRTC off, retried ~1/s; or no CRTC vblank for > 2 frames), otherwise checks every 100 ms, and stops when nothing is on |
+| xnu risks | IOFramebuffer's VBL handler now runs from a thread call kicked by the IH thread instead of the timer thread call (same context type); if a client never turns its registration off, the vblank IRQ stays on (Linux same; no worse than the timer); a 5th registration gets `kIOReturnNoResources` (seen: 2); DPMS off with the reference held: vblank IRQ stops, the watchdog switches to the timer, `drm_crtc_vblank_on` re-enables the IRQ because the reference is still held |
+| verify | `debug.nmx_vbl_delivered` ~ refresh rate while the pipe has VBL on, 0 when idle; trace head: `vbl_timer fires` stops growing (only the 10 Hz watchdog) and the phase histogram is no longer spread; `psr ... active_vblank_irq_count` 1 while on, 0 when idle, and `ips` counters / `idle_allowed` should now move when the screen is static; NMXAMDFB log "vblank ref held/dropped"; A/B `debug.nmx_vbl_irq=0` |
+
+### 9.4 Trace review notes, flags, GTT accounting
+
+- Review notes (in `8d1a8c2`): `ft_submit_end` before `spin_unlock(&flip.lock)`; `nmx_ft_armed` ignores commits that are
+  not the bridge's (`crtc->state->commit != r->commit`); wire vs surf counted apart (no double count); `debug.nmx_ft=0`
+  and `debug.nmxaccel_ft=0` turn every hook off.
+- New trace lines: `psr feature_enabled allow_active version replay active_vblank_irq_count` (the inputs of
+  `dcn35_apply_idle_power_optimizations`) and `out31 ...` (switches + counters). The report and aggregate tools print
+  both; `frame-path-capture.sh` also saves `debug.nmx_gtt` per snapshot.
+- `debug.nmx_gtt`: GTT and VRAM managers' used/size, then per open DRM file pid, process, resident system/GTT/VRAM,
+  evicted, GEM handles (`amdgpu_vm_get_memory`, the fdinfo source). The next CS -ENOMEM: GTT near size = TTM placement
+  (`ttm_bo.c` turns -ENOSPC into -ENOMEM); room left = page allocation (`debug.nmx_page_alloc_fails`).
+
+### 9.5 The page pool: memory-pressure release instead of timers (proposal, not written)
+
+`debug.nmx_pages_live` went 1.11 M -> 660 k by 11:10, so it shrinks on the Step141 timers: timer-driven release, not a
+leak. Linux releases on pressure: the TTM pool shrinker (`ttm_pool_shrinker_scan`) and `ttm_global_swapout` run when
+the MM asks. xnu gives a third-party kext no shrinker callback (`vm_lowmem`/zone GC hooks are not KPI). The contained
+equivalent: the pool's existing timer reads `kern.memorystatus_vm_pressure_level` (1 normal, 2 warn, 4 critical) and
+on warn frees every free chunk at once and parks idle userptr BOs after 5 s instead of 60 s; on normal it keeps the
+pool (no periodic release while memory is plentiful, so no re-fill bursts during video). Not written: it needs
+`sysctlbyname`, a new kernel import for NMXGPU (the import rule that made the trace use `current_proc`/`proc_pid`), and
+it still polls. The real equivalent (a pressure notification) would be a kernel-side `EVFILT_MEMORYSTATUS`-like hook
+that xnu does not export to kexts. Decision for main: accept the new import, or keep the timers.

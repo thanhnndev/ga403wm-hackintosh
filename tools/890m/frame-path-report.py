@@ -55,7 +55,7 @@ def read_gpu(path):
             stalls.append({"kind": f[1], "t0": t0, "t1": t0 + int(f[3]) * 1000, "ms": int(f[3]) / 1000,
                            "pages": int(f[4]), "pid": int(f[5])})
             continue
-        if f[0] in ("flips", "vbl_timer", "ips"):
+        if f[0] in ("flips", "vbl_timer", "ips", "psr", "out31"):
             head[f[0]] = line.strip()
             continue
         if len(f) != 10 or not f[0].isdigit():
@@ -86,7 +86,7 @@ def main():
         sys.exit(__doc__)
     acc = read_accel(sys.argv[1])
     gpu, head, stalls = read_gpu(sys.argv[2])
-    for k in ("flips", "vbl_timer", "ips"):
+    for k in ("flips", "vbl_timer", "ips", "psr", "out31"):
         if k in head:
             print(head[k])
     for line in head.get("stall", []):

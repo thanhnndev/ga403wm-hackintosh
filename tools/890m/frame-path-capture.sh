@@ -11,6 +11,7 @@ while [ "$(date +%s)" -lt "$end" ]; do
     t=$(date +%H%M%S)
     sysctl -n debug.nmxaccel_frametrace > "$dir/accel-$t.txt" 2>/dev/null
     sysctl -n debug.nmx_frametrace > "$dir/gpu-$t.txt" 2>/dev/null
+    sysctl -n debug.nmx_gtt > "$dir/gtt-$t.txt" 2>/dev/null   # out-31: GTT/VRAM use per process (absent before out-31)
     perl -e 'select(undef, undef, undef, 4)'
 done
 for a in "$dir"/accel-*.txt; do

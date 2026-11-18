@@ -16,7 +16,11 @@ for seq in sorted(set(acc) & set(gpu)):
              pipe=r.d(a["fence"], g["sub0"]), worker=r.d(g["sub0"], g["armed"]), scanout=r.d(g["armed"], g["pflip"]),
              notify=r.d(g["pflip"], a["latch"]), total=r.d(a["cpend"], g["pflip"]), t0=a["cpend"] or a["entry"], t1=g["pflip"] or g["seen"],
              missed=(g["vbl_pflip"]-g["vbl_armed"]-1) if g["pflip"] and g["armed"] else None, idle=g["idle"])
+    if a["waited"] == 2:     # out-31 kernel fence: the GPU wait runs in NMXGPU's commit (worker); no plugin hand-off
+        R["wake"] = R["handoff"] = None
+    R["kf"] = a["waited"] == 2
     rows.append(R)
+print("kernel-fence frames (waited 2)", sum(1 for x in rows if x["kf"]), "of", len(rows))
 print("frames joined", len(rows), "seq", rows[0]["seq"], "-", rows[-1]["seq"], "span s", (rows[-1]["t0"]-rows[0]["t0"])/1e9)
 for k in ["gpu","wake","handoff","pipe","worker","scanout","notify","total"]:
     xs=[x[k] for x in rows if x[k] is not None]
@@ -39,5 +43,5 @@ print("late frames overlapping stalls", len(over), over[:10])
 for x in sorted(vlate,key=lambda x:-x["total"])[:8]:
     print("  vlate", x["seq"], {k:round(x[k],2) for k in ["total","gpu","wake","handoff","worker","scanout","notify"] if x[k] is not None}, "missed", x["missed"])
 print("idle flags", collections.Counter(x["idle"] for x in rows))
-for l in ("flips","vbl_timer","ips"): print(last.get(l))
+for l in ("flips","vbl_timer","ips","psr","out31"): print(last.get(l))
 for l in last.get("stall",[]): print(l)
