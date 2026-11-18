@@ -251,6 +251,44 @@ Behaviour notes:
      the river must stay continuous. Note the panning frame rate for the lag item.
    - Regression: WindowServer, Safari WebGL probe, Chrome video (VCN path), and `log show --last 5m | grep -i 'NVMTL.*kept descriptors\|REFUSED'`.
 
+### Result after install (2026-11-18, boot ~10:40)
+
+Installed by main:
+- plugin AECB755C (`integ/out30-plugin` 17b4cdf = 6797e1f + e4ea8af + a session-F trace commit)
+- translator 6208982, with StrixSbxMap pins refreshed
+- NMXGPU out-30 (trace build), RTX gated, Balanced profile
+
+Verdict: **fixed.**
+
+| Check | Before | After |
+|---|---|---|
+| `offset-matrix` | 14 failing cells | 0 failing; offsets 2, 4, 8 and 438 read correctly |
+| `nvmtl.log` grid | 16 (NVIDIA value) | `multiples of 4 (device minStorageBufferOffsetAlignment 4)` |
+| `nvmtl.log` kept | (no line) | `buffer 0 (kept on its descriptor, mask 0x3) is bound at offset 2 … all-lowered module` |
+| cap7 replay 2560x1514 | strokes missing per tile | full map: roads, whole lake, river, POIs |
+| replay vs `alignIdx=1` | differed (section 7 remainder) | byte-identical, so the remainder is gone too |
+| bisect vs SwiftShader | first bad draw at the re-pack | no bad draw; every draw through 9141 is within 0.007 % (rounding) |
+| `run.mjs` | 45/45 | 45/45 |
+| live Maps, zoom 14-17 | broken strokes | continuous roads, lake and river at every zoom and after panning |
+| live pan/zoom, 60 s | ~119 fps but wrong tiles | 36 gestures, 7020 frames, 116.5 fps, p50 8.3 ms, p95 9.2 ms, p99 9.4 ms; 10 frames over 50 ms (max 565 ms) |
+
+The frames over 50 ms came during wheel zoom, while new tiles loaded. The on-screen test needs the scratch window kept
+in front: `FRONT_PID=<pid> node tools/890m/webgl-repro/onscreen.mjs 9521 <prefix> 60`. Without that, Chrome marks the
+page hidden and throttles rAF.
+
+![live z16 after the fix](img/maps-webgl/live-fixed-z16.jpg)
+![after a minute of pan/zoom](img/maps-webgl/live-fixed-after-pan.jpg)
+
+Log notes from the same boot:
+- `kept descriptors: N dispatch(es) ran an all-lowered module`: 1 to 128 dispatches per process, 1-2 kernels each.
+- No `REFUSED` lines from Chrome.
+- WindowServer's `buffer texture: refused on alignment … bind at 32 vs alignment 256` (4 lines) belongs to the
+  buffer-texture path, not the storage-buffer grid.
+- Spotlight and Dock log `function constants: re-translate FAILED: … "custom_fn" … no linked function supplies it`.
+  It is the eager attempt on a SwiftUI `custom_effect_fragment`. The next line defers it to pipeline creation, where
+  the link supplies `clampToEdges_v1`/`custom_fn`. Kept descriptors do not touch that path. The line is noisy rather
+  than a failure. No older log in `~/ga403-logs` holds it, so its age is unknown.
+
 ## 7. Open points, and earlier assumptions that were wrong
 
 - **Remainder after the re-pack fix:** in the `alignIdx=1` replay a few tiles, POI icons and part of the lake (south
@@ -259,6 +297,8 @@ Behaviour notes:
     paths). The compute fix covers these too.
   - a render-stage kept buffer at 2 mod 4. The plugin now logs it.
   - Re-bisect after install to tell them apart.
+  - **Closed 2026-11-18:** after install the bisect finds no differing draw, and the full replay matches
+    `alignIdx=1`. The remainder was the same kept-root class, and the compute fix covers it.
 - **Wrong assumption 1:** the plugin log text "reachable only through the address table". Since 1e49d8c (Oct 21) the
   translator keeps some buffers on descriptors, so the line misled every earlier reading of it.
   - Step117 (Zalo) logged `buffer slot 0 is bound at offset 108, not a multiple of 16` and moved on.
