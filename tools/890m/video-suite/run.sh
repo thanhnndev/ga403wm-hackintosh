@@ -30,6 +30,7 @@ kx() { kextstat 2>/dev/null | awk -v k="$1" '$6==k{print $7, $8}'; }
   echo "asus: $(echo " $st" | grep -oE ' (profile|set_profile|dgpu_disable|gpu_mux|cpu_fan|gpu_fan|panel_overdrive)=[0-9]+' | tr -d '\n')"
   echo "dGPU gate: $(ioreg -r -c StrixDgpuGate -d1 2>/dev/null | sed -n 's/.*"gate-state" = "\(.*\)"/\1/p')"
   echo "EPP: $(sysctl -n debug.amdcppc.report 2>/dev/null | grep -oE 'epp [0-9]+' | sort | uniq -c | awk '{printf "%s x%s ", $3, $1}')"
+  echo "iOS Simulator running: $(pgrep -q -x Simulator && echo yes || echo no)   diagnosticd CPU: $(ps -o %cpu= -p $(pgrep -x diagnosticd | head -1) 2>/dev/null | tr -d ' ')%   RTX (asus dgpu_disable): $(echo " $st" | grep -oE ' dgpu_disable=[0-9]+' | cut -d= -f2)"
   echo "Docker running: $(pgrep -q com.docker.backend && echo yes || echo no)   owner Chrome running: $(pgrep -f 'Google Chrome.app/Contents/MacOS/Google Chrome$' >/dev/null && echo yes || echo no)"
   echo "memory: $(vm_stat | awk -F: '/wired down/{w=$2} /occupied by compressor/{c=$2} END{printf "wired %.1f GB, compressor %.1f GB", w*4096/2^30, c*4096/2^30}'), swap $(sysctl -n vm.swapusage | awk '{print $6}')"
   echo "display: $(system_profiler SPDisplaysDataType 2>/dev/null | sed -n 's/.*UI Looks like: //p' | head -1)   Tctl now: $(sysctl -n debug.amdcppc.sensors | sed -E 's/.*tctl=([0-9]+).*/\1/' | awk '{print $1/1000}') C"
@@ -38,6 +39,8 @@ kx() { kextstat 2>/dev/null | awk -v k="$1" '$6==k{print $7, $8}'; }
 } > $out/context.txt
 cat $out/context.txt | grep -v '^  '
 
+# keep the display awake only for this run (no standing caffeinate on this machine)
+caffeinate -d -w $$ &
 # prime the scratch profile (first launch, shader cache, clip in the file cache) so round 1 starts like the others
 VS_MEASURE=2 VS_WARM=1 perl -e 'alarm 60; exec @ARGV' node $H/drive.mjs vp9-1080p60-win $out/.prime >/dev/null 2>&1; rm -rf $out/.prime; pause 3
 
@@ -46,7 +49,7 @@ for r in $(seq 1 $rounds); do
   for c in $cases; do
     # exit 4 = the page was hidden (window covered or another Space): retry up to twice, keep the last attempt
     for try in 1 2 3; do
-      perl -e 'alarm 260; exec @ARGV' node $H/drive.mjs $c $d 2> >(grep -v 'shader cache' >&2)
+      perl -e "alarm $((260 + ${VS_WAIT_MAX:-90})); exec @ARGV" node $H/drive.mjs $c $d 2> >(grep -v 'shader cache' >&2)
       rc=$?; pause 4
       [ $rc -eq 4 ] || break
       [ $try -lt 3 ] && echo "$c: retry $((try+1))"
