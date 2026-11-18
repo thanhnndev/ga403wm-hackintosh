@@ -1233,7 +1233,7 @@ The only writes outside the lock are the `debug.nmxaccel_flip_tripped` handler's
 
 #### Audit run plan
 
-**What is installed now** (read 2026-11-18 21:xx, before out-37):
+**What is installed now** (read 2026-11-18 21:24, before out-37):
 - `/Library/NullMoth/nvmtl-bl-audit` has been present since Nov 6 (empty, root). The audit is therefore **already on in every process**, and `log show` has "AUDIT ON" lines from WindowServer, mediaanalysisd 1758, iconservicesagent, WebKit.GPU and others.
 - The installed `NVMTLDriver.bundle` (sha1 11814c6a4f29) is a non-release build (`NVMTL: %s`, LOG_NOTICE syslog). It **predates 920832a**: it has no `nvmtl-sl-ws-only` string, and surface-list IOSurface imports are not registered with the audit. Today's audit therefore covers only no-copy buffers and cannot see the row 12 path. WindowServer's count reads 32768 parts, 24274 no-copy uses, 0 not named.
 
