@@ -1,0 +1,130 @@
+{
+ "app": "Safari",
+ "id": "safari-av1-1080p60-file",
+ "clip": "av1-1080p60.webm",
+ "codec": "AV1",
+ "depth": "main 8-bit",
+ "size": "1080p60",
+ "container": "WebM",
+ "mime": "video/webm; codecs=\"av01.0.08M.08\"",
+ "fps": 60,
+ "mode": "file",
+ "cpu": {
+  "vtdecoder": 5.2,
+  "webkit_gpu": 5.4,
+  "webcontent": 2,
+  "quicktime": 0
+ },
+ "vtActive": [
+  {
+   "pid": 29873,
+   "cpu": 5.2,
+   "vcndec": true
+  }
+ ],
+ "decoded": 1315,
+ "dropped": 933,
+ "plays": "yes",
+ "check": {
+  "ok": 6,
+  "near": 1,
+  "timerReads": 2,
+  "bad": 0,
+  "unreadable": 0,
+  "first": []
+ },
+ "errors": [],
+ "rows": [
+  {
+   "sec": 3,
+   "decoded": 62,
+   "dropped": 46,
+   "rvfc": 0,
+   "skipped": 0,
+   "vis": "hidden",
+   "focus": false,
+   "ct": 4.216,
+   "paused": false,
+   "rs": 4,
+   "ahead": 85.8
+  },
+  {
+   "sec": 4,
+   "decoded": 53,
+   "dropped": 37,
+   "rvfc": 0,
+   "skipped": 0,
+   "vis": "hidden",
+   "focus": false,
+   "ct": 5.106,
+   "paused": false,
+   "rs": 4,
+   "ahead": 84.9
+  },
+  {
+   "sec": 5,
+   "decoded": 1200,
+   "dropped": 850,
+   "rvfc": 0,
+   "skipped": 0,
+   "vis": "hidden",
+   "focus": false,
+   "ct": 25.133,
+   "paused": false,
+   "rs": 4,
+   "ahead": 64.9
+  },
+  {
+   "sec": 6,
+   "decoded": 0,
+   "dropped": 0,
+   "rvfc": 0,
+   "skipped": 0,
+   "vis": "hidden",
+   "focus": false,
+   "ct": 25.138,
+   "paused": false,
+   "rs": 4,
+   "ahead": 64.9
+  },
+  {
+   "sec": 7,
+   "decoded": 0,
+   "dropped": 0,
+   "rvfc": 0,
+   "skipped": 0,
+   "vis": "hidden",
+   "focus": false,
+   "ct": 25.139,
+   "paused": false,
+   "rs": 4,
+   "ahead": 64.9
+  },
+  {
+   "sec": 8,
+   "decoded": 0,
+   "dropped": 0,
+   "rvfc": 0,
+   "skipped": 0,
+   "vis": "hidden",
+   "focus": false,
+   "ct": 25.139,
+   "paused": false,
+   "rs": 4,
+   "ahead": 64.9
+  },
+  {
+   "sec": 9,
+   "decoded": 0,
+   "dropped": 0,
+   "rvfc": 0,
+   "skipped": 0,
+   "vis": "hidden",
+   "focus": false,
+   "ct": 25.139,
+   "paused": false,
+   "rs": 4,
+   "ahead": 64.9
+  }
+ ]
+}

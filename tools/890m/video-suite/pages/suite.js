@@ -75,5 +75,5 @@ v.addEventListener('playing', () => {
   schedule();
 }, { once: false });
 window.__vs = { v, fullscreen: () => v.requestFullscreen(), state: () => ({ started, sec, phase: plan[pi] && plan[pi][0] }) };
-v.src = '/clips/' + clip;
+if (window.vsSource) window.vsSource(v); else v.src = '/clips/' + clip;
 v.play().catch((e) => post({ type: 'error', msg: 'play(): ' + e.message }));

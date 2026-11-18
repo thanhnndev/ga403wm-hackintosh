@@ -2,7 +2,7 @@
 //  - ?mse=<mime>: plays the clip through Media Source Extensions (1 MB appends, like a streaming site) instead of src=.
 //  - frame-counter check: on every 6th presented frame, reads the 16-bit frame index strip (bottom left, drawn by
 //    gen/content.js and gen/genmp4.swift) from the video and compares it with round(mediaTime * fps). A wrong index
-//    means a wrong or repeated frame; an unreadable strip (its white border not white) means a corrupt picture.
+//    more than 6 frames off ("bad") means a wrong picture; 1-6 off ("near") is a late draw (drawImage takes the newest frame); an unreadable strip (its white border not white) means a corrupt picture.
 //    Posts {type:'check'} once a second: ok / bad / unreadable and the first few mismatches.
 (() => {
   const P = new URLSearchParams(location.search);
@@ -33,7 +33,7 @@
 
   // strip geometry, same as content.js / genmp4.swift: cell c = round(28 s), x0 = 30 s, bottom edge 30 s above the frame bottom
   let cv = null, ctx = null, geo = null;
-  let ok = 0, bad = 0, unreadable = 0, n = 0; const mism = [];
+  let ok = 0, bad = 0, near = 0, unreadable = 0, n = 0; const mism = [];
   const read = (md) => {
     const W = v.videoWidth, H = v.videoHeight; if (!W) return;
     if (!geo || geo.H !== H) {
@@ -51,9 +51,14 @@
     let idx = 0;
     for (let b = 0; b < 16; b++) idx = (idx << 1) | (luma(g.m + b * g.c + g.c / 2, g.m + g.c / 2) > 128 ? 1 : 0);
     const want = Math.round(md.mediaTime * fps);
-    if (idx === want) ok++; else { bad++; if (mism.length < 5) mism.push({ t: +md.mediaTime.toFixed(3), want, got: idx }); }
+    if (idx === want) ok++; else if (Math.abs(idx - want) <= 6) near++; else { bad++; if (mism.length < 5) mism.push({ t: +md.mediaTime.toFixed(3), want, got: idx }); }
   };
-  const cb = (now, md) => { if (++n % 6 === 0) { try { read(md); } catch (e) { unreadable++; if (mism.length < 5) mism.push({ err: e.message }); } } v.requestVideoFrameCallback(cb); };
+  let lastCb = 0, timerReads = 0;
+  const safe = (md) => { try { read(md); } catch (e) { unreadable++; if (mism.length < 5) mism.push({ err: e.message }); } };
+  const cb = (now, md) => { lastCb = performance.now(); if (++n % 6 === 0) safe(md); v.requestVideoFrameCallback(cb); };
   v.requestVideoFrameCallback(cb);
-  setInterval(() => { if (ok + bad + unreadable) post({ type: 'check', wall: Date.now(), ok, bad, unreadable, mism: mism.splice(0) }); ok = bad = unreadable = 0; }, 1000);
+  // Safari in a background window gives no rVFC callbacks at all: read on a timer against currentTime instead
+  // (the clock, not the shown frame: only "bad" = more than 6 frames off counts as a wrong picture there)
+  setInterval(() => { if (!v.paused && v.readyState >= 2 && performance.now() - lastCb > 500) { timerReads++; safe({ mediaTime: v.currentTime }); } }, 100);
+  setInterval(() => { if (ok + near + bad + unreadable) post({ type: 'check', wall: Date.now(), ok, near, bad, unreadable, timerReads, mism: mism.splice(0) }); ok = near = bad = unreadable = timerReads = 0; }, 1000);
 })();
