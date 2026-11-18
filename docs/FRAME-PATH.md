@@ -90,8 +90,8 @@ Effect columns: pacing (P), latency (L), memory (M), power (W).
 | rank | step | Linux | here | divergence | effect | evidence / confidence | fix in our source | risk |
 |---|---|---|---|---|---|---|---|---|
 | **1** | GPU done -> flip allowed (L4/L5 vs P4/P6/P8) | render fence on the BO's `dma_resv` -> `plane_state->fence` -> waited by the kernel commit worker; signalled from the IRQ | GPU done is seen by a **user-space thread at default QoS** in WindowServer (`nvmtl.execution`, no QoS attribute), which then does one IOSurface IPC per surface; the pipe thread **polls that property every 100 µs** | the "frame is ready" signal crosses user space and depends on a normal-priority thread being scheduled while the owner's apps, Docker vCPU threads and Claude compete for the cores | P, L (directly added to every frame that waited: 88 % of frames); W (100 µs poll wakeups) | source (high); counters: 88 % frames wait, 1.47 ms mean (high); share of that caused by scheduling under load: **unknown -> instrumentation (4)**; `ps -M` on WindowServer: 5 threads at 79R (fixed priority), 3 at 31T (default timeshare, where a no-QoS dispatch queue runs) and 1 at 37T; which one is `nvmtl.execution` needs `spindump` (root) (medium) | NMXGPU: record the last write fence per IOSurface in the CS path (we already map surface id <-> user range: `nmx_xnu_surface_hint`, `amdgpu-nmx-surface-hint.patch`), and in `flip_submit` do `drm_atomic_set_fence_for_plane(ps, fence)` so `drm_atomic_helper_wait_for_fences` waits in the commit worker as on Linux. NMXAccel: skip `nmxFenceWait` when NMXGPU reports `NMX_FLIP_CAP_FENCE`; submit immediately. Plugin: keep the property only as a fallback. Short-term, lower-risk step: create `nvmtl.execution` with `dispatch_queue_attr_make_with_qos_class(..., QOS_CLASS_USER_INTERACTIVE, 0)` in WindowServer | medium (fence lookup by surface must match the BO actually written; wrong fence = tearing, missing fence = today's behaviour) |
-| **2** | frame clock (L6/L7 vs P12) | compositor schedules from the flip-done / vblank timestamps of the real CRTC | IOFramebuffer VBL is a free-running `thread_call` at the nominal period; phase vs the real vblank is arbitrary per boot and drifts with clock mismatch and thread-call latency | anything timed from IOFB VBL aims at an imaginary vblank: a frame finished "just in time" can latch one refresh late, and the margin changes over minutes and across boots (consistent with the 0-142 drop spread on one build) | P | source (high); whether Tahoe's WindowServer/CoreDisplay times frames from IOFB VBL or from IOPresentment: **section 5 (pending)**; phase drift: not measured | `nmx_fb.cpp`: deliver `fVbl.proc` from `dm_crtc_high_irq` (a hook in `amdgpu_dm_crtc_handle_vblank` -> `nmx_fb_vblank(crtc)`), take `drm_crtc_vblank_get` while IOFramebuffer enables the VBL interrupt (`setInterruptState`), keep the timer only as a fallback when vblank IRQs are off | low-medium (VBL proc runs on the IH work-loop thread; must not block) |
-| **3** | flip completion (L6 vs P11) | `dm_pflip_high_irq` completes the event in the IRQ | the IRQ already completes `flip_done`, but NMXAccel learns it by **polling every 200 µs on a thread call** (up to 50 ms) | +0-200 µs and a thread-call wake per frame; 5 000 wakeups/s while a flip is pending | L, W | source (high); 5.85 ms mean submit->seen | NMXGPU: add `nmxFlipNotify` (callback + refcon registered by NMXAccel) called from `flip_refresh` path in the pflip handler (hook after `drm_crtc_send_vblank_event` for our CRTC); NMXAccel calls `signalTransactionInterrupt` from a thread call kicked by it | low |
+| **2** | vblank delivery to Apple's side (L6/L7 vs P12) | the real CRTC vblank / flip-done IRQ drives the compositor's clock | `NMXAMDFB` keeps **one** `'vbl '` slot fed by a free-running 120 Hz `thread_call`; `setInterruptState` and `unregisterInterrupt` are no-ops. `IOFramebuffer::open` registers `handleVBL` and `IOAccelDisplayPipe::displayModeDidChange` registers `signalVBLInterrupt` in the same slot: the last one wins (this boot: two registrations, 08:54:46 and 08:55:44 when WindowServer started) | the pipe's vblank (its timestamp at pipe+0x268, its answers to user-space "notify me at the next vblank" requests, its per-vblank `isTransactionComplete` check) or IOFramebuffer's vblank shmem runs on a timer whose phase vs. the scan-out is arbitrary and drifts; the other consumer gets nothing; callbacks fire at 120 Hz even when nobody enabled them | P (frame scheduling against an imaginary vblank; can explain run-to-run spread on one build), W (120 Hz wakeups at idle) | Apple side: section 5 (high). Our side: source + this boot's log (high). Which registration won this boot: not proven (the trace line carries no callback address) | `nmx_fb.cpp`: a list of `'vbl '` registrations with per-ref enable state (`setInterruptState`) and a real `unregisterInterrupt`; deliver them from `dm_crtc_high_irq` (hook in `amdgpu_dm_crtc_handle_vblank` -> `nmx_fb_vblank()`), with `drm_crtc_vblank_get` held while any ref is enabled and dropped when none is (vblank off and IPS allowed when idle, as on Linux); the timer stays only as a fallback when the CRTC is off | low-medium (callbacks run on the IH work-loop thread; `signalVBLInterrupt` only stamps and kicks event sources, safe) |
+| **3** | flip completion (L6 vs P11) | `dm_pflip_high_irq` completes the event in the IRQ | the IRQ already completes `flip_done`, but NMXAccel learns it by **polling every 200 µs on a thread call** (up to 50 ms) | +0-200 µs and a thread-call wake per frame; 5 000 wakeups/s while a flip is pending | L, W, **P** | source (high); 5.85 ms mean submit->seen. Section 5: Apple's completion carries the presentation time at **tx+0x170**; AMD writes it at its flip-done IRQ, Intel from hardware; if 0 the family writes the completion time, so WindowServer is told our poll's time, not the scan-out time (high for the family, medium that CoreDisplay paces from it) | NMXAccel: write the latching vblank's time into tx+0x170 before `signalTransactionInterrupt` (NMXGPU `nmxFlipStatus` already returns `vblankNs`; better: the pageflip IRQ time from the trace hook). NMXGPU: add `nmxFlipNotify` (callback + refcon registered by NMXAccel) called from `flip_refresh` path in the pflip handler (hook after `drm_crtc_send_vblank_event` for our CRTC); NMXAccel calls `signalTransactionInterrupt` from a thread call kicked by it | low |
 | **4** | serial present thread (L4 vs P6/P7) | non-blocking commit returns at once (`-EBUSY` if pending); fence wait on the commit worker | `performTransaction` waits for the fence (to 100 ms) and for the previous flip (to 20 ms) inline on the one pipe thread | one late frame delays the next transaction behind it; WindowServer's transaction queue backs up | P, L | source (high), drops 0 so far (the queue absorbs it) | follows from 1 and 3: with the fence in the commit and the latch notified, `performTransaction` never sleeps | low |
 | **5** | client -> compositor sync (L2/L3 vs P1/P2) | one BO and one resv shared by all processes; the compositor's GPU job waits in the scheduler | each process has its own userptr BO of the same pages; ordering lives in user space (completion pumps, seeds); non-host-backed surfaces take CPU copies (`nvmtlSurfaceIn/Out`) | clients may wait for GPU completion on the CPU before CoreAnimation commits; CPU copies scale with resolution | P, L, W (CPU) in the apps the owner names (Electron strokes, Maps) | source (medium); how often surface-in/out copy under load: not counted -> instrumentation | NMXGPU: one GEM object per IOSurface ID shared by all importing processes (lookup through the surface hint, `drm_gem_object` refcount), so the CS adds and waits fences on one resv (`amdgpu_sync_resv`) as on Linux | high (cross-process object lifetime, WindowServer stability) |
 | **6** | vblank refs and IPS (L7/L8 vs P13) | compositors hold vblank on while animating, so IPS/PSR stay off during motion | only the flips hold refs; at ~27 presents/s the CRTC's vblank IRQ can go off between presents (`disable_immediate` on DCN 3.5 APU without PSR) and `dc_allow_idle_optimizations(true)`; the next flip flushes `vblank_control_workqueue` to exit idle first | IPS entry/exit per content frame adds exit latency to the flip and churns DMUB | L, W | code path (high); whether IPS actually enters on this boot: **unknown** (`ips_support`, DMUB IPS counters only printed at suspend, `amdgpu-dm-ips-trace.patch`) | same as fix 2 (vblank ref while WindowServer wants VBL); export the DMUB IPS entry/exit counters as a sysctl (instrumentation) | low |
@@ -120,12 +120,33 @@ copy to the panel (fallback 0, K6/beam counters 0), pipe drops (0), flip timeout
 - "YouTube dropped frames" measures Chrome's frame production; the pipe itself reported 0 drops. Rank by stage
   timestamps instead (section 7).
 
-## 5. Closed side (REA) — in progress
+## 5. Closed side (REA): what Apple's display pipe and framebuffer expect
 
-NMXAccel and NMXAGDC are our source (above). The Apple side of the contract (IOAcceleratorFamily2 `IOAccelDisplayPipe`
-VBL/transaction methods, what reference display-pipe drivers in the kernel collections do, and whether Tahoe's
-CoreDisplay times frames from IOFramebuffer VBL or IOPresentment) is being read from
-`/System/Library/KernelCollections/*.kc` with `tools/kc_disasm.py`; results go here.
+NMXAccel and NMXAGDC are our source, so reverse engineering covered only Apple's side, statically, in
+`/System/Library/KernelCollections/SystemKernelExtensions.kc` (IOAcceleratorFamily2, IOGraphicsFamily, AMDRadeonX6000,
+AppleParavirtGPU, AppleIntel*Framebuffer; `tools/kc_disasm.py`). Full notes with disassembly excerpts:
+`side-session-notes/.../frame-path-apple-re.md` (sibling notes folder). System-KC addresses.
+
+| finding | function (address) | confidence |
+|---|---|---|
+| The pipe gets the hardware vblank from the framebuffer: `displayModeDidChange` calls `fb->registerForInterruptType('vbl ', IOAccelDisplayPipe::signalVBLInterrupt, this, 0, &pipe+0xd8)`, then `setInterruptState(ref, 0)` | `IOAccelDisplayPipe::displayModeDidChange` (0x14baf6e2) | high |
+| `enable/disableVBLInterrupt` are refcounted `fb->setInterruptState(ref, 1/0)`; callers: the user-client "notify at next vblank" request and `enableTransactionInterrupt` | 0x14bb25c0 / 0x14bb25fe, `request_notify_gated` (0x14bb2de0) | high |
+| `signalVBLInterrupt` = the per-vblank entry: stamps uptime at pipe+0x268, calls `signalTransactionInterrupt` if "complete on vblank" (+0x281) is set, wakes `vbl_interrupt_gated`, which answers waiting user clients with {vbl time, vbl time + frame length} and turns the vblank off again | 0x14baf886, 0x14bb1cb4 | high |
+| Base `enableTransactionInterrupt` = `enableVBLInterrupt` + set +0x281: by default completion is checked on every vblank | 0x14bb2634 | high |
+| Completion to user space: 11 qwords from tx+0x158; **tx+0x170 = presentation time**; the family writes `mach_absolute_time()` there at completion only if the driver left it 0 | `completeTransaction` (0x14bb2326), `sendNotification` (0x14bb2478) | high (mechanics), medium (meaning of +0x178..+0x190) |
+| `beginTransaction`, `signalTransactionComplete` are empty; `submitTransaction` returns unsupported unless overridden | 0x14bb2674, 0x14bb267a, 0x14bb218c | high |
+| AMD X6000: registers framebuffer interrupts `'txni'` (flip done -> `processTransactionInterrupt`, which sets tx+0x170 if 0, then `signalTransactionInterrupt`) and `'fstr'` (frame start, VRR); falls back to vblank polling | `AMDRadeonX6000_AMDAccelDisplayPipe` (0xbdd0d2d, 0xbdd0df4, 0xbdd0ece) | high |
+| Paravirt: its host IRQ calls `signalVBLInterrupt` directly | `AppleParavirtDisplayPipe::signalDisplay` (0x148a3834) | high |
+| Intel: base vblank path; writes tx+0x170..0x190 from hardware timestamps | `AppleIntelFramebuffer::reportTimestamps` (0x141f353e) | high |
+| IOFramebuffer: `open` registers `'vbl '` -> `handleVBL` (vblank time/delta/count in StdFBShmem, wait-for-vblank sleepers); the base class only implements `'mccs'`, so `'vbl '` is the subclass's job; consumers found: gamma/CLUT timing, `getVBLTime`; no WindowServer frame-pacing use found | 0x14cfd976 / 0x14cfe15d, 0x14cf870a, 0x14d04960 | high / medium |
+
+Not established: the meaning of tx+0x178..0x190; which user-client selector is the vblank-notify one and whether
+CoreDisplay/IOPresentment use it (no extracted CoreDisplay/IOPresentment on disk; `ipsw` not installed; downloading
+needs main's OK); which registration owns NMXAMDFB's slot on a given boot.
+
+Consequences for us: rows 2 and 3. The stock family already polls completion on each real vblank once the pipe gets
+real vblanks, so NMXAccel's own 200 µs poll becomes unnecessary; AMD's own driver is the model (flip-done interrupt ->
+tx+0x170 -> `signalTransactionInterrupt`).
 
 ## 6. Linux-side evidence on this machine and what one Linux boot would add
 
@@ -208,4 +229,25 @@ WindowServer restart (log out/in) is the A/B for row 1.
 
 ## 8. The short answer
 
-Pending section 5; current ranking above.
+**Three most likely root causes of stutter under multitasking**, all structural, none about allocator policy:
+
+1. **"GPU work done" travels through user space at default priority** (row 1). In WindowServer the plugin's
+   `nvmtl.execution` queue (no QoS, so 31T) waits the syncobj, then does an IOSurface IPC; the display pipe polls that
+   property every 100 µs. 88 % of frames wait on it. Under load that thread competes with every app and Docker's vCPUs,
+   so each frame's present is delayed by however long the scheduler takes to run it. Linux waits for the same fence in
+   the kernel commit worker, woken from the interrupt.
+2. **WindowServer's notion of vblank and of "frame shown" is not the hardware's** (rows 2 and 3). One `'vbl '` slot fed
+   by a free-running timer (the pipe's vblank, or IOFramebuffer's, gets nothing, and the one that does runs at a phase
+   unrelated to scan-out), and presentation timestamps that are the poll's time rather than the flip IRQ's (tx+0x170
+   left 0). Frames get scheduled against an imaginary vblank whose offset differs per boot and drifts.
+3. **Client -> WindowServer ordering is also user space** (row 5): each process has its own pinned BO of the same
+   IOSurface, so apps (Chrome/Electron) cannot hand a frame over with a kernel fence; they finish or copy on the CPU
+   first, which is where "strokes break up" in old Electron apps would come from.
+
+**The single experiment that separates them:** one boot with the trace build (section 7), under the owner's normal
+load, `tools/890m/frame-path-capture.sh 300`. For each late frame the report names the stage that took the time:
+`wake`/`handoff` large -> cause 1; `scanout` with `missed` > 0 while `gpu`/`wake` are small, together with the VBL
+timer phase histogram -> cause 2; WindowServer's commit (`cpend`) arriving late while every later stage is small ->
+the time was lost before WindowServer, in the client -> cause 3 (then trace a client the same way). Optional second
+pass in the same boot for cause 1: the `nvmtl-exec-qos-ui` file and a logout/login; if `wake` shrinks and late frames
+drop, cause 1 is confirmed and the kernel-fence fix (row 1) is the real cure.
