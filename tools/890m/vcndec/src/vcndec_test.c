@@ -75,7 +75,7 @@ int main(int argc, char **argv) {
     else if (!strcmp(argv[i], "-d") && i + 1 < argc) dumpn = atoi(argv[++i]);
     else if (!strcmp(argv[i], "-p") && i + 2 < argc) { burst = atoi(argv[++i]); pausems = atoi(argv[++i]); }   // pause <ms> after every <burst> packets (VCN idle / power gating)
     else if (!strcmp(argv[i], "-x")) ten = 1;       // 10-bit output pool (P010 'x420'): VP9 profile 2, AV1 10-bit
-    else if (!strcmp(argv[i], "-i")) chk = 1;       // check the video-suite frame-index strip (output n = frame n); exit 3 on a mismatch
+    else if (!strcmp(argv[i], "-i")) chk = 1;       // check the video-suite frame-index strip (output n of a loop = frame n); exit 3 on a mismatch
     else if (!strcmp(argv[i], "-v")) verbose = 1;   // one stderr line per packet before it is sent (last line before a VCN hang = the packet)
     else if (!strcmp(argv[i], "-n") && i + 1 < argc) upto = atoi(argv[++i]);   // stop after this many packets
     else path = argv[i];
@@ -109,8 +109,9 @@ int main(int argc, char **argv) {
   int n = 0, pk = 0; (void)from;
   uint8_t *buf = malloc(8 << 20);
   t0 = now(); c0 = cpu();
+  int n0 = 0; // output count at the start of this loop (the clip's frame index restarts at 0)
   for (int l = 0; l < loops; l++) {
-    fseek(f, data0, SEEK_SET);
+    fseek(f, data0, SEEK_SET); n0 = n;
     uint8_t fh[12];
     for (;;) {
       int eof = fread(fh, 1, 12, f) != 12;
@@ -130,7 +131,7 @@ int main(int argc, char **argv) {
         if (md5) md5_frame(pb, w, h, stdout, n);
         if (chk) { int b, idx = read_index(pb, &b);
           if (b < 170) { if (unreadable++ < 5) fprintf(stderr, "frame %d: strip unreadable (border %d)\n", n, b); }
-          else if (idx == n % 65536) ok++; else if (bad++ < 5) fprintf(stderr, "frame %d: shows index %d\n", n, idx); }
+          else if (idx == (n - n0) % 65536) ok++; else if (bad++ < 5) fprintf(stderr, "frame %d: shows index %d\n", n, idx); }
         if (n == dumpn) dump_frame(pb, w, h, "vcn-frame.nv12");
         CVPixelBufferRelease(pb);
         n++;

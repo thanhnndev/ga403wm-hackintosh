@@ -36,6 +36,7 @@ struct vcn_dec {
   VkDevice vd;
   VkPhysicalDevice pd;
   int qf, have_host_import, no_seed;
+  int fence_lost; // a copy never signalled: its fence (and command buffer) may still be in use, never reuse them
   VkDeviceSize host_align;
   VkCommandPool pool;
   VkCommandBuffer cmd;
@@ -335,6 +336,7 @@ static int copy_out(vcn_dec *d, AVFrame *f, CVPixelBufferRef pb) {
     if (!dst) { seterr(d, "staging buffer%s%.0d", "", 0); return -1; }
   }
   int nimg = vf->img[1] ? 2 : 1;
+  if (d->fence_lost) { seterr(d, "an earlier copy never finished%s%.0d", "", 0); return -1; }
 
   vfc->lock_frame(fc, vf);
   d->ResetCommandBuffer(d->cmd, 0);
@@ -379,9 +381,13 @@ static int copy_out(vcn_dec *d, AVFrame *f, CVPixelBufferRef pb) {
     }
   vfc->unlock_frame(fc, vf);
   if (vr != VK_SUCCESS) { seterr(d, "copy submit failed%s %d", "", vr); return -1; }
-  vr = d->WaitForFences(d->vd, 1, &d->fence, VK_TRUE, 2000000000ull);
+  // A copy waits on the decode's timeline semaphore, so a busy VCN (another process decoding 4K flat out) can hold it
+  // for seconds. Keep waiting: resetting a fence whose submission is still pending (what a 2 s timeout used to do) is
+  // invalid, and the next frame's submit on it failed too, turning one slow frame into a run of decode errors.
+  int waited = 0;
+  do vr = d->WaitForFences(d->vd, 1, &d->fence, VK_TRUE, 1000000000ull); while (vr == VK_TIMEOUT && ++waited < 10);
+  if (vr != VK_SUCCESS) { d->fence_lost = 1; seterr(d, "copy fence%s %d", waited >= 10 ? " (10 s)" : "", vr); return -1; }
   d->ResetFences(d->vd, 1, &d->fence);
-  if (vr != VK_SUCCESS) { seterr(d, "copy fence%s %d", "", vr); return -1; }
 
   if (direct) {
     // The GPU wrote the surface's pages behind IOSurface's back: a write lock/unlock moves its seed, so consumers

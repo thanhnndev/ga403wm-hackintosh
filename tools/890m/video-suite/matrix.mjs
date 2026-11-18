@@ -30,10 +30,10 @@ const cells = [];
 for (const [name, m] of Object.entries(manifest)) {
   if (!name.startsWith('mx-') && !['vp9-1080p60.webm', 'av1-1080p60.webm', 'h264-1080p30.mp4', 'vp9-2160p60.webm'].includes(name)) continue;
   if (filter && !name.includes(filter)) continue;
-  if (m.unsupported) { cells.push({ id: name.replace(/\.\w+$/, '') + '-file', clip: name, notMade: m.unsupported, d: describe(name, { ...m, height: '?', fps: '?' }) }); continue; }
+  if (m.unsupported) { cells.push({ id: name.replace(/\.mp4$/, '-mp4').replace(/\.\w+$/, '') + '-file', clip: name, notMade: m.unsupported, d: describe(name, { ...m, height: '?', fps: '?' }) }); continue; }
   const d = describe(name, m);
-  if (!m.frag) cells.push({ id: name.replace(/\.\w+$/, '') + '-file', clip: name, d, mode: 'file' });
-  if (d.mime && (name.endsWith('.webm') || m.frag)) cells.push({ id: name.replace(/\.\w+$/, '') + '-mse', clip: name, d, mode: 'mse' });
+  if (!m.frag) cells.push({ id: name.replace(/\.mp4$/, '-mp4').replace(/\.\w+$/, '') + '-file', clip: name, d, mode: 'file' });
+  if (d.mime && (name.endsWith('.webm') || m.frag)) cells.push({ id: name.replace(/\.mp4$/, '-mp4').replace(/\.\w+$/, '') + '-mse', clip: name, d, mode: 'mse' });
 }
 
 const out = path.join(SUITE, 'results', `matrix-${label}-${new Date().toISOString().slice(0, 16).replace(/[-:]/g, '').replace('T', '-')}`);

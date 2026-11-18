@@ -28,7 +28,8 @@ export async function vcnSessions(t0, t1) {
 // verdict for one cell: fourcc(s) the clip uses -> 'vcn' (VCNDec decoded it), 'refused' (VCNDec said no -> VT fell back),
 // 'error' (VCNDec failed), or 'none' (VCNDec never asked)
 export function vcnVerdict(sessions, fourccs) {
-  const mine = sessions.filter((s) => fourccs.includes(s.codec));
+  // sessions of the VCNDec test tools (vt_check, vt_test, vcndec_test) running at the same time are not the app's
+  const mine = sessions.filter((s) => fourccs.includes(s.codec) && !/^(vt_check|vt_test|vcndec_test)$/.test(s.proc));
   if (mine.some((s) => s.started && (!s.close || (s.close.out > 0 && !s.close.errors)) && !s.errors.length)) return { v: 'vcn', s: mine };
   if (mine.some((s) => s.refused)) return { v: 'refused', s: mine };
   if (mine.length) return { v: 'error', s: mine };

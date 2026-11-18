@@ -13,7 +13,7 @@ const cells = new Map();
 for (const d of dirs) for (const f of fs.readdirSync(path.join(R, d))) {
   if (!f.endsWith('.json')) continue;
   const r = JSON.parse(fs.readFileSync(path.join(R, d, f))); r.app ??= 'Chrome'; r.run = d;
-  cells.set(`${r.app}:${r.id}`, r);   // later runs (sorted by date) replace earlier ones
+  cells.set(`${r.app}:${r.clip ?? r.id}:${r.mode}`, r);   // later runs (sorted by date) replace earlier ones; clip, not id: a WebM and an MP4 can share a base name
 }
 const depthOf = (r) => r.vcn?.s?.find((x) => x.started)?.depth ?? 8;
 function hw(r) {
@@ -45,7 +45,7 @@ for (const r of rows) {
   L.push(`| ${r.codec} | ${r.depth} | ${r.size} | ${r.mode === 'mse' ? 'MSE ' + r.container : r.container} | ${r.app} | ${r.plays} | ${hw(r)} | ${check(r)} | ${r.dropped ?? '-'} / ${r.decoded ?? '-'} | ${r.cpu?.vtdecoder ?? '-'} | ${client} | ${pass(r)} | ${note} |`);
 }
 const sum = { PASS: 0, '**FAIL**': 0, 'no clip': 0 }; for (const r of rows) sum[pass(r)]++;
-L.push('', `${sum.PASS} pass, ${sum['**FAIL**']} fail, ${sum['no clip']} without a clip (no 10-bit VP9 encoder on this machine).`);
+L.push('', `${sum.PASS} pass, ${sum['**FAIL**']} fail, ${sum['no clip']} without a clip (no encoder on this machine for it, e.g. 10-bit AV1 WebM).`);
 const out = process.argv[3] || path.join(R, `matrix-${label}.md`);
 fs.writeFileSync(out, L.join('\n') + '\n');
 console.log(`${out}: ${rows.length} cells, ${sum.PASS} pass, ${sum['**FAIL**']} fail`);

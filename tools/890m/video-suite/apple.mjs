@@ -63,7 +63,7 @@ const cells = [];
 for (const [name, m] of Object.entries(manifest)) {
   if (m.unsupported || (!name.startsWith('mx-') && !['vp9-1080p60.webm', 'av1-1080p60.webm', 'h264-1080p30.mp4', 'vp9-2160p60.webm'].includes(name))) continue;
   if (filter && !name.includes(filter)) continue;
-  const d = describe(name, m), id = name.replace(/\.\w+$/, '');
+  const d = describe(name, m), id = name.replace(/\.mp4$/, '-mp4').replace(/\.\w+$/, '');
   if (which !== 'quicktime') {
     if (!m.frag) cells.push({ app: 'Safari', id: `safari-${id}-file`, clip: name, d, mode: 'file' });
     if (d.mime && (name.endsWith('.webm') || m.frag)) cells.push({ app: 'Safari', id: `safari-${id}-mse`, clip: name, d, mode: 'mse' });
