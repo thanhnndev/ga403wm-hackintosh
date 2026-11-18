@@ -156,15 +156,56 @@ cat /sys/kernel/debug/dri/0/amdgpu_pm_info | grep -i -A3 vcn
 (VCN power state between frames). The names of the debugfs files differ between kernels; `ls /sys/kernel/debug/dri/0/`
 first.
 
-## 7. Instrumentation (to rank 1-3 and 6-7 with one run)
+## 7. Instrumentation (ranks rows 1-4 and 6 with one run)
 
-Branches (not built, not installed; main builds):
-- `frame-path/kernel-trace` (NMXGPU + NMXAccel, repo `nvidia-macos-driver-ws`, off `nmx-source-port` 4f6825b),
-  worktree `~/develop/projects/frame-path-kernel`.
-- `frame-path/plugin-trace` (plugin, off `ci/amd-plugin-890m` 899c64f), worktree `~/develop/projects/frame-path-plugin`.
+Branches, pushed to `fork` only, compile-checked, **not built into a kext by me, not installed**:
 
-Details, build and run steps: section 7 is completed with the patch.
+| branch | commit | files |
+|---|---|---|
+| `frame-path/kernel-trace` (repo `nvidia-macos-driver-ws`, off `nmx-source-port` 4f6825b) | 64c11a5 | `gpu-port/xkpi/patches/amdgpu-dm-frametrace.patch` (+ `series`), `override/src/nmx_fb_bridge.c`, `xnu/nmx_fb.cpp`, `xnu/nmx_kext.cpp`, `kexts/NVRM/accel/nvrm-accel.cpp` |
+| `frame-path/plugin-trace` (off `ci/amd-plugin-890m` 899c64f) | aa72666 | `plugin/NVMTLEventSync.m` |
+| this repo, `claude/hungry-mclean-f82082` | | `tools/890m/frame-path-report.py`, `tools/890m/frame-path-capture.sh` |
+
+What each piece records (all `mach_absolute_time` ns, which on x86 equals the plugin's `CLOCK_UPTIME_RAW` ns):
+- **Plugin** (WindowServer only, where the fence marks already exist): `NMXFencePendingT` with `NMXFencePending` at
+  commit, `NMXFenceDoneT` (completion thread saw the syncobj) and `NMXFenceGpuEndT` (GPU end from the calibrated
+  timestamps the plugin already collects) with `NMXFenceDone`. Same number of IOSurface calls as before
+  (`IOSurfaceSetValues` with a dictionary instead of `IOSurfaceSetValue`). Optional A/B: the file
+  `/Library/GPUBundles/nvmtl-exec-qos-ui` (absent = today's behaviour) creates `nvmtl.execution` at
+  `QOS_CLASS_USER_INTERACTIVE`.
+- **NMXAccel** `debug.nmxaccel_frametrace` (RD, any user): last 512 transactions: entry, the three plugin stamps read from
+  the surface, fence seen, flip submit, latch seen by the poll, `signalTransactionInterrupt`, flip seq.
+  `debug.nmxaccel_ft=0` stops the three extra property reads.
+- **NMXGPU** `debug.nmx_frametrace` (RD): last 512 flips: `flip_submit` entry, commit returned, `prepare_flip_isr`
+  (armed, with the vblank count and `dc->idle_optimizations_allowed`), `dm_pflip_high_irq` (with the vblank count),
+  status seen; counts of vblank and pageflip IRQs on the panel CRTC; a 16-bin histogram of where in the real frame the
+  IOFramebuffer VBL timer fires (and how often the vblank IRQ was off then); DMUB IPS rcg/ips1/ips2 entry/exit counters.
+  The amdgpu hooks only take a timestamp and `drm_crtc_vblank_count`.
+
+Checks done: the patch series replays on the vendor HEAD with `--fuzz=0` and yields exactly the patched
+`amdgpu_dm.c`; `amdgpu_dm.c`, `nmx_fb_bridge.c`, `nmx_fb.cpp`, `nmx_kext.cpp` compile with the tree's own scripts
+(`cc.sh`, `cclk.sh`, `ccxx.sh`); new undefined symbols are only internal ones (`nmx_ft_*`, `nmx_dm_ips_counts`,
+`drm_crtc_vblank_count`) plus `mach_absolute_time`/`IOMalloc`/`IOFree`, already imported by out-29, so the 581 rule
+should hold (main's `nm -u` check decides). NMXAccel builds with `OGKM=~/ogkm615 NM_TAHOE=1
+build/nmxaccel_build.sh kexts/NVRM <out>`; its undefined symbols are identical to the installed NMXAccel (883 = 883,
+empty diff). The plugin passes `clang -fsyntax-only` with the tree's flags. Not run on the machine.
+
+How main builds it:
+1. NMXGPU: in `~/develop/projects/nmx-build-xkpi/src` (branch `nmx-source-port` @ 4f6825b) `git merge --ff-only
+   frame-path/kernel-trace` (or cherry-pick 64c11a5), then `~/develop/projects/nmx-build-xkpi/build.sh out-30` in the
+   background; usual checks (581 undefined, 0 weak, `NMXOwnsDisplay`).
+2. NMXAccel from the same commit: `OGKM=~/ogkm615 NM_TAHOE=1 build/nmxaccel_build.sh kexts/NVRM <out>` (or the CI
+   workflow `build-nmxaccel.yml`).
+3. Plugin from `frame-path/plugin-trace` with the usual `build_plugin.sh` flow.
+All three are needed for the full join; NMXGPU alone already gives the scanout side (armed -> pageflip -> seen, VBL
+timer phase, IPS).
+
+How to run (no root): after the boot, with the owner's normal load (video playing, Docker up, Claude, the apps that
+stutter), `tools/890m/frame-path-capture.sh 300`; the owner notes the clock time of any visible stutter. Then read
+`report.txt` (per-stage p50/p90/p99/max, late frames and the stage that took the most time in each, IPS-path flips).
+A second run with `touch /Library/GPUBundles/nvmtl-exec-qos-ui` (root; main gives the owner the command) and a
+WindowServer restart (log out/in) is the A/B for row 1.
 
 ## 8. The short answer
 
-Pending section 5 and one instrumented run; current ranking above.
+Pending section 5; current ranking above.
