@@ -28,3 +28,7 @@ clang -arch x86_64 -O2 -Wall -fobjc-arc -mmacosx-version-min=14.0 -o build/vt_ch
   -framework AVFoundation -framework CoreMedia -framework CoreVideo -framework VideoToolbox
 codesign -f -s - build/vt_check
 echo built: build/vt_check "(H.264/HEVC frame-index check: build/vt_check -b $B/Contents/MacOS/VCNDec clip.mp4 fps)"
+clang -arch x86_64 -O2 -Wall -mmacosx-version-min=14.0 -I$VKH -o build/vkcaps src/vkcaps.c /Library/GPUBundles/nvmtl/libvulkan.1.dylib \
+  -Wl,-rpath,/Library/GPUBundles/nvmtl
+codesign -f -s - build/vkcaps
+echo built: build/vkcaps "(VK_DRIVER_FILES=/Library/GPUBundles/nvmtl/radeon_icd.json build/vkcaps: decode videoOps must be 0xf)"

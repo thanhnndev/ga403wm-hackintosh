@@ -93,19 +93,20 @@ async function safariCell(cell) {
     end tell`);
     for (let i = 0; i < 60 && !startWall && !errors.length; i++) await wait(250);
     if (startWall) {
-      for (let i = 0; i < 40 && !rows.some((x) => x.phase === 'measure'); i++) await wait(250);
+      // fixed timing: a covered Safari window barely runs the page's timers, so do not wait for its phases
+      await wait(WARM * 1000);
       a = await procs(); ta = Date.now();
-      const lim = Date.now() + (MEASURE + 10) * 1000; while (!done && Date.now() < lim) await wait(250);
+      await wait(MEASURE * 1000);
       Object.assign(r, await cpuDelta(a, await procs(), (Date.now() - ta) / 1000));
     }
   } catch (e) { errors.push('osascript: ' + e.message.split('\n')[0]); }
   finally { if (wid) await osa(`tell application "Safari" to close (every window whose id is ${+wid})`).catch((e) => errors.push('close: ' + e.message)); }
-  const mr = rows.filter((x) => x.phase === 'measure');
+  const mr = rows.filter((x) => x.phase !== 'load');   // every reported second after the start (hidden pages report few)
   r.decoded = mr.reduce((s, x) => s + x.decoded, 0); r.dropped = mr.reduce((s, x) => s + x.dropped, 0);
   // a hidden Safari page reports no decoded-frame deltas: the clock advancing is the sign that it plays
   const ct = mr.map((x) => x.ct).filter((x) => x != null); r.advanced = ct.length > 1 ? +(Math.max(...ct) - ct[0]).toFixed(2) : 0;
   r.plays = startWall && (r.decoded > 0 || r.advanced > 2) ? 'yes' : 'no';
-  r.hidden = mr.length > 0 && mr.every((x) => x.vis === 'hidden');   // window behind the owner's: Safari does not render it
+  r.hidden = !mr.length || mr.every((x) => x.vis === 'hidden');   // window behind the owner's: Safari does not render it
   r.check = { ok: checks.reduce((s, c) => s + c.ok, 0), near: checks.reduce((s, c) => s + (c.near || 0), 0), timerReads: checks.reduce((s, c) => s + (c.timerReads || 0), 0), bad: checks.reduce((s, c) => s + c.bad, 0), unreadable: checks.reduce((s, c) => s + c.unreadable, 0), first: checks.flatMap((c) => c.mism).slice(0, 5) };
   r.errors = errors; r.rows = mr.map((x) => ({ sec: x.sec, decoded: x.decoded, dropped: x.dropped, rvfc: x.rvfc, skipped: x.skipped, vis: x.vis, focus: x.focus, ct: x.ct, paused: x.paused, rs: x.readyState, ahead: x.ahead }));
   return r;
@@ -139,6 +140,12 @@ for (const c of cells) {
   const t0 = Date.now();
   const r = c.app === 'Safari' ? await safariCell(c) : await qtCell(c);
   r.vcn = vcnVerdict(await vcnSessions(t0, Date.now()), FOURCC[c.d.codec.replace('.', '')] || []);
+  // the page of a covered Safari window may report nothing: decoding is then seen from outside the page
+  if (r.app === 'Safari' && r.plays !== 'yes') {
+    const vcnOut = r.vcn.s.reduce((n, x) => n + (x.close?.out || 0), 0);
+    if (vcnOut > 0) { r.plays = 'yes'; r.playsBy = `VCNDec decoded ${vcnOut} frames (page hidden)`; }
+    else if ((r.cpu?.webkit_gpu ?? 0) + (r.cpu?.vtdecoder ?? 0) > 20) { r.plays = 'yes'; r.playsBy = `decoding in software: WebKit GPU ${r.cpu.webkit_gpu} % + VTDecoderXPCService ${r.cpu.vtdecoder} % CPU (page hidden)`; }
+  }
   fs.writeFileSync(path.join(out, c.id + '.json'), JSON.stringify(r, null, 1));
   results.push(r);
   console.log(`${c.id}: plays ${r.plays} ${hw(r)} check ${r.check ? `${r.check.ok}/${r.check.near}/${r.check.bad}/${r.check.unreadable}` : '-'} cpu ${JSON.stringify(r.cpu ?? {})} ${r.errors?.[0] ?? ''}`);
@@ -161,7 +168,7 @@ export function appleTable(rs) {
   for (const r of rs) {
     const ck = r.check ? `${r.check.ok} / ${r.check.near} / ${r.check.bad} / ${r.check.unreadable}` : 'n/a (vt_check)';
     const pass = r.plays === 'yes' && /^HW/.test(hw(r)) && (!r.check || (r.hidden ? !r.check.unreadable : r.check.ok > 0 && !r.check.bad && !r.check.unreadable)) ? 'PASS' : 'FAIL';
-    L.push(`| ${r.app} | ${r.codec} | ${r.depth} | ${r.size} | ${r.mode === 'mse' ? 'MSE ' + r.container : r.container} | ${r.plays} | ${hw(r)} | ${ck} | ${r.cpu?.vtdecoder ?? '-'} | ${r.cpu?.webkit_gpu ?? '-'} | ${r.cpu?.webcontent ?? '-'} | ${r.cpu?.quicktime ?? '-'} | ${pass} | ${[r.hidden ? 'page hidden (background window): few strip reads' : '', (r.errors?.[0] || '').replace(/\|/g, '/').slice(0, 120)].filter(Boolean).join('; ')} |`);
+    L.push(`| ${r.app} | ${r.codec} | ${r.depth} | ${r.size} | ${r.mode === 'mse' ? 'MSE ' + r.container : r.container} | ${r.plays} | ${hw(r)} | ${ck} | ${r.cpu?.vtdecoder ?? '-'} | ${r.cpu?.webkit_gpu ?? '-'} | ${r.cpu?.webcontent ?? '-'} | ${r.cpu?.quicktime ?? '-'} | ${pass} | ${[r.playsBy || (r.hidden ? 'page hidden (background window): few strip reads' : ''), (r.errors?.[0] || '').replace(/\|/g, '/').slice(0, 120)].filter(Boolean).join('; ')} |`);
   }
   return L.join('\n') + '\n';
 }

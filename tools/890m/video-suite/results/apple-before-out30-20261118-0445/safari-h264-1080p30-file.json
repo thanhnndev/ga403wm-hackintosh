@@ -10,39 +10,65 @@
  "fps": 30,
  "mode": "file",
  "cpu": {
-  "vtdecoder": 2.9,
-  "webkit_gpu": 110.7,
-  "webcontent": 0.6,
+  "vtdecoder": 1.7,
+  "webkit_gpu": 154.9,
+  "webcontent": 0.7,
   "quicktime": 0
  },
  "vtActive": [
   {
    "pid": 69739,
-   "cpu": 2.9,
+   "cpu": 1.7,
    "vcndec": false
   }
  ],
- "decoded": 0,
- "dropped": 0,
+ "decoded": 358,
+ "dropped": 120,
  "advanced": 0,
- "plays": "no",
+ "plays": "yes",
  "hidden": true,
  "check": {
-  "ok": 1,
+  "ok": 0,
   "near": 1,
   "timerReads": 2,
   "bad": 1,
   "unreadable": 0,
   "first": [
    {
-    "t": 18.279,
-    "want": 548,
-    "got": 284
+    "t": 11.641,
+    "want": 349,
+    "got": 0
    }
   ]
  },
  "errors": [],
  "rows": [
+  {
+   "sec": 2,
+   "decoded": 0,
+   "dropped": 1,
+   "rvfc": 0,
+   "skipped": 0,
+   "vis": "hidden",
+   "focus": false,
+   "ct": 11.753,
+   "paused": false,
+   "rs": 4,
+   "ahead": 38.2
+  },
+  {
+   "sec": 0,
+   "decoded": 353,
+   "dropped": 118,
+   "rvfc": 0,
+   "skipped": 0,
+   "vis": "hidden",
+   "focus": false,
+   "ct": 11.749,
+   "paused": false,
+   "rs": 4,
+   "ahead": 38.3
+  },
   {
    "sec": 6,
    "decoded": 0,
@@ -51,10 +77,23 @@
    "skipped": 0,
    "vis": "hidden",
    "focus": false,
-   "ct": 27.297,
+   "ct": 11.755,
    "paused": false,
    "rs": 4,
-   "ahead": 23.7
+   "ahead": 38.2
+  },
+  {
+   "sec": 1,
+   "decoded": 5,
+   "dropped": 1,
+   "rvfc": 0,
+   "skipped": 0,
+   "vis": "hidden",
+   "focus": false,
+   "ct": 11.753,
+   "paused": false,
+   "rs": 4,
+   "ahead": 38.2
   },
   {
    "sec": 3,
@@ -64,10 +103,10 @@
    "skipped": 0,
    "vis": "hidden",
    "focus": false,
-   "ct": 27.293,
+   "ct": 11.754,
    "paused": false,
    "rs": 4,
-   "ahead": 23.7
+   "ahead": 38.2
   },
   {
    "sec": 4,
@@ -77,10 +116,10 @@
    "skipped": 0,
    "vis": "hidden",
    "focus": false,
-   "ct": 27.295,
+   "ct": 11.754,
    "paused": false,
    "rs": 4,
-   "ahead": 23.7
+   "ahead": 38.2
   },
   {
    "sec": 5,
@@ -90,36 +129,10 @@
    "skipped": 0,
    "vis": "hidden",
    "focus": false,
-   "ct": 27.296,
+   "ct": 11.754,
    "paused": false,
    "rs": 4,
-   "ahead": 23.7
-  },
-  {
-   "sec": 7,
-   "decoded": 0,
-   "dropped": 0,
-   "rvfc": 0,
-   "skipped": 0,
-   "vis": "hidden",
-   "focus": false,
-   "ct": 27.298,
-   "paused": false,
-   "rs": 4,
-   "ahead": 23.7
-  },
-  {
-   "sec": 8,
-   "decoded": 0,
-   "dropped": 0,
-   "rvfc": 0,
-   "skipped": 0,
-   "vis": "hidden",
-   "focus": false,
-   "ct": 27.298,
-   "paused": false,
-   "rs": 4,
-   "ahead": 23.7
+   "ahead": 38.2
   },
   {
    "sec": 9,
@@ -129,10 +142,36 @@
    "skipped": 0,
    "vis": "hidden",
    "focus": false,
-   "ct": 27.299,
+   "ct": 11.757,
    "paused": false,
    "rs": 4,
-   "ahead": 23.7
+   "ahead": 38.2
+  },
+  {
+   "sec": 7,
+   "decoded": 0,
+   "dropped": 0,
+   "rvfc": 0,
+   "skipped": 0,
+   "vis": "hidden",
+   "focus": false,
+   "ct": 11.755,
+   "paused": false,
+   "rs": 4,
+   "ahead": 38.2
+  },
+  {
+   "sec": 8,
+   "decoded": 0,
+   "dropped": 0,
+   "rvfc": 0,
+   "skipped": 0,
+   "vis": "hidden",
+   "focus": false,
+   "ct": 11.756,
+   "paused": false,
+   "rs": 4,
+   "ahead": 38.2
   }
  ],
  "vcn": {

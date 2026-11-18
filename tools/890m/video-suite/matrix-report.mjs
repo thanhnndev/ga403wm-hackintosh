@@ -41,7 +41,7 @@ const L = [`# Codec matrix: ${label}`, '', `Runs: ${dirs.join(', ')}`, '',
   '|---|---|---|---|---|---|---|---|---|---|---|---|---|'];
 for (const r of rows) {
   const client = r.app === 'Chrome' ? (r.cpu?.gpu ?? '-') : r.app === 'Safari' ? (r.cpu?.webkit_gpu ?? '-') : (r.cpu?.quicktime ?? '-');
-  const note = [r.hidden ? 'background window' : '', ...(r.errors || []).slice(0, 1).map((e) => e.replace(/\|/g, '/').slice(0, 110)), r.notMade || ''].filter(Boolean).join('; ');
+  const note = [r.playsBy || (r.hidden ? 'background window' : ''), ...(r.errors || []).slice(0, 1).map((e) => e.replace(/\|/g, '/').slice(0, 110)), r.notMade || ''].filter(Boolean).join('; ');
   L.push(`| ${r.codec} | ${r.depth} | ${r.size} | ${r.mode === 'mse' ? 'MSE ' + r.container : r.container} | ${r.app} | ${r.plays} | ${hw(r)} | ${check(r)} | ${r.dropped ?? '-'} / ${r.decoded ?? '-'} | ${r.cpu?.vtdecoder ?? '-'} | ${client} | ${pass(r)} | ${note} |`);
 }
 const sum = { PASS: 0, '**FAIL**': 0, 'no clip': 0 }; for (const r of rows) sum[pass(r)]++;
