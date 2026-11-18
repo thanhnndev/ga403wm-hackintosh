@@ -943,7 +943,12 @@ If the counters stay 0 on a static screen with `idle_allowed 1`, compare the IPS
 - RADV lists every source and destination BO of those commands itself (`radv_meta_copy.c` :73/:347/:354/:423/:561/:568/:613/:864/:865, `radv_meta_buffer.c` :246/:259/:344/:345);
 - mipmap blits and timestamps are not marked.
 
-**If it were ever incomplete,** the import still has its VM mapping while it is wired, so the data is correct. Once parked, its PTEs are V = 0 and the GPU faults, and (d) and (f) name the process and the parked BO ("placement 0, userptr 1"). The failure is loud, never a silent stale read.
+**Correction (review of out-34, finding 2).** An earlier version of this section said "once parked, its PTEs are V = 0". That is wrong.
+- `nmx_park_one` moves the BO to SYSTEM, which only puts its `bo_va` on the VM's invalidated list, and then unwires.
+- The PTEs keep pointing at the old physical pages until that VM's next CS runs `amdgpu_vm_handle_moved` (`amdgpu_cs.c` 1308).
+- So an unlisted use by a CS submitted **after** the park faults loudly: the PTEs are rewritten V = 0 first.
+- But an unlisted use by a job **already in flight** at park time reaches unwired, pageable pages silently.
+- 11.9 closes that window.
 
 **What (e) changes in behaviour:**
 - WindowServer's idle imports start parking after 60 s.
@@ -955,3 +960,51 @@ If the counters stay 0 on a static screen with `idle_allowed 1`, compare the IPS
 - old60 pages in `nmx_userwire_by_kind` fall;
 - WindowServer's log shows "transfer-only one-shot submits exact" and "carried the surface list" barely growing;
 - `debug.nmx_gtt` shows real pids and names.
+
+### 11.9 Park ordering: when may the pages go? (design for the review's finding 2; no code until out-34 is verified)
+
+**What Linux does.**
+- Userptr invalidation (`amdgpu_hmm_invalidate_gfx`, `amdgpu_hmm.c:81`) waits for the **BO's own** reservation fences (BOOKKEEP), then returns, and the pages may go.
+- Eviction (`ttm_bo_evict`, then `amdgpu_bo_move_notify`, then `amdgpu_vm_bo_invalidate`) does the same wait.
+- Neither clears PTEs. The VM's next CS rewrites them (`amdgpu_vm_handle_moved`).
+- Linux is safe because of the CS contract: every BO a job touches is in its BO list, or is VM-always-valid and covered by the root reservation. So the job's fence is on that BO's reservation, and waiting for it covers every job that can use the pages.
+- The window the review describes exists on Linux too, for a client that breaks the contract. The review's "Linux never has this window" holds only for contract-abiding clients.
+
+**Our park against that.**
+- `nmx_park_one` skips the BO unless `dma_resv_test_signaled(BOOKKEEP)` holds. It also requires that no CS listed the BO for 60 s.
+- For a job that **listed** the BO, that is the same guarantee as Linux. No such job can be in flight when the pages go.
+- The window is therefore exactly "a job uses the import without listing it". Until (e), that could not hurt: an unlisted import stayed wired forever. With parking, the completeness of the surface list matters.
+- The plugin's lists are built by hand (`g_sl_use`, exact marks), not by the kernel, so we should not depend on them alone.
+
+**Proposed ordering: defence in depth, and no sweep ever waits.** Split the park into states driven by the existing 1 s sweep.
+1. **Move.** The BO is idle by its reservation and unused for 60 s.
+   - Validate it to SYSTEM, as today. Its `bo_va` goes on `vm->invalidated` and the pages stay **wired**.
+   - Record `f_vm`: a snapshot of the owning VM root reservation's BOOKKEEP fences (`dma_resv_get_singleton`). Every job of that VM in flight at this moment is in it, listed or not.
+   - An import BO maps in exactly one VM: the importing process's. Exported BOs are not parked.
+2. **Clear.** On a later sweep, if `f_vm` has signaled:
+   - if the VM's next CS has already rewritten the mapping (the `bo_va` is no longer on `invalidated`), take that update's fence `f_pt`;
+   - otherwise update it here: trylock the root reservation, then `amdgpu_vm_bo_update(adev, bo_va, clear = true)`. `handle_moved` does exactly this for a BO it cannot lock. That writes V = 0 PTEs and sets `flush_tlb`, and gives `f_pt`.
+3. **Unwire.** On a later sweep, if `f_pt` has signaled: `ttm_tt_unpopulate` and `nmx_upin_park`, as today.
+   - Any job submitted after step 1 went through `handle_moved` first, and a stale TLB entry is flushed at that VM's next VMID grab (`vm->tlb_seq`).
+   - No job can reach the pages any more, listed or not.
+4. **Abort.** If a CS validates the BO back to GTT at any point before step 3, the park is simply undone. The pages were never unwired, so there is nothing to restore.
+
+**Cost and risk.**
+- The pages are unwired 2 to 3 s later than today (two more sweeps). WindowServer's root reservation is busy almost all the time, but `f_vm` is a snapshot, so it signals within a frame or two.
+- One extra page-table update per park, on the SDMA/VM entity, happens only when the VM had no CS of its own in between.
+- New state per `amdgpu_ttm_tt`: a stage and two fence pointers, all under the BO's reservation as today.
+- The trylocks fail softly: retry next sweep.
+
+**Can this window explain the out-30 faults or copy errors?** Mostly no:
+- A job that **listed** the BO cannot be in the window, because of the reservation check.
+- The window only produces silent wrong data for an **unlisted** use by a job in flight at the moment of the park. A BO picked by the park has not been listed for 60 s, so that job would itself have had to leave it out. It never produces a V = 0 fault: a fault needs the PTEs rewritten, which happens only at a later CS, and that is the loud "after" case.
+- **mediaanalysisd** (10.5) had **0 parked pages**, so neither case applies to it.
+- **VTDecoderXPCService** parks (16k pages on 2026-11-18). An unlisted use of a parked import by a later CS would give exactly row 12's signature: a gfxhub write through V = 0 with the page tables present. So it stays a candidate for the VTDecoder faults.
+- (f)'s new print decides it: "live mapping ... placement 0 ... userptr 1" means parked or unlisted, while "FREED ... ms ago" means a freed VA.
+- Silent corruption from the in-flight case cannot be ruled out for the VCN/VT copy errors without (f) data. It needs an unlisted surface, which (e)'s completeness argument excludes for our transfer submits, and 11.9 removes in any case.
+
+**Other review follow-ups, for the same next commit:**
+- **(1)** `nvrm-accel.cpp` stuck-flip redo: `rs->retain()` before dropping `gFl.lock` for `nmxFenceWait`, `release()` after relocking.
+- **(3)** fault printer: read `tbo.resource` and `tbo.ttm` only under `dma_resv_trylock(bo->tbo.base.resv)`, else print "bo busy".
+- **(4)** freed-range scan: collect at most 4 hits under the spinlock, print after unlocking.
+- **(5)** flips off after 600 NotReady answers: make sure that one line is logged once per boot.
