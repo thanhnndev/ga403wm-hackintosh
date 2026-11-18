@@ -110,6 +110,7 @@ static void b_finalize(CMBaseObjectRef o) {
 }
 static CFStringRef b_desc(CMBaseObjectRef o) { return CFStringCreateWithFormat(NULL, NULL, CFSTR("<VCNDec 890M decoder %p>"), o); }
 static OSStatus b_copyProperty(CMBaseObjectRef o, CFStringRef key, CFAllocatorRef a, void *out) {
+  if (getenv("VCN_VERBOSE")) { char k[128]; CFStringGetCString(key, k, sizeof k, kCFStringEncodingUTF8); fprintf(stderr, "VCNDEC copyProperty %s\n", k); }
   if (CFEqual(key, kVTDecompressionPropertyKey_UsingHardwareAcceleratedVideoDecoder)) {
     *(CFTypeRef *)out = kCFBooleanTrue;
     return 0;
@@ -258,8 +259,15 @@ emit:
   return 0;
 }
 
+// VT forwards a session property to the decoder only if it is listed here; with an empty dictionary
+// VTSessionCopyProperty(UsingHardwareAcceleratedVideoDecoder) answered false although b_copyProperty says true.
 static OSStatus d_props(VTVideoDecoderRef d, CFDictionaryRef *out) {
-  *out = CFDictionaryCreate(NULL, NULL, NULL, 0, &kCFTypeDictionaryKeyCallBacks, &kCFTypeDictionaryValueCallBacks);
+  const void *ik[] = {kVTPropertyTypeKey, kVTPropertyReadWriteStatusKey, kVTPropertyShouldBeSerializedKey};
+  const void *iv[] = {kVTPropertyType_Boolean, kVTPropertyReadWriteStatus_ReadOnly, kCFBooleanFalse};
+  CFDictionaryRef info = CFDictionaryCreate(NULL, ik, iv, 3, &kCFTypeDictionaryKeyCallBacks, &kCFTypeDictionaryValueCallBacks);
+  const void *k[] = {kVTDecompressionPropertyKey_UsingHardwareAcceleratedVideoDecoder}, *v[] = {info};
+  *out = CFDictionaryCreate(NULL, k, v, 1, &kCFTypeDictionaryKeyCallBacks, &kCFTypeDictionaryValueCallBacks);
+  CFRelease(info);
   return 0;
 }
 static OSStatus d_setprops(VTVideoDecoderRef d, CFDictionaryRef p) { return 0; }
