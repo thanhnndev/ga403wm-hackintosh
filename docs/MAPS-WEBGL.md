@@ -73,6 +73,37 @@ node tools/890m/webgl-repro/bisect.mjs 9511 9512 http://127.0.0.1:9590 cap7.bin 
   shaders, textures or uniforms.
 - **Remaining gap:** a few tiles and POI icons still differ in that run. See section 7.
 
+### On screen (2026-11-18, after session D's baseline)
+
+**Chrome**, windowed scratch profile with the normal GPU sandbox (`--user-data-dir=~/ga403-logs/maps-webgl/prof-screen`):
+- Renderer: `ANGLE Metal Renderer: AMD Radeon 890M … (NVMTL over …)`.
+- Maps at Hanoi zoom 16 loads with the Hoàn Kiếm lake and most roads missing.
+- After panning, roads are present in some tiles and missing in others, and the river is cut at tile edges. This is
+  the same per-tile pattern as the replay.
+- Frame rate, measured as the page's own requestAnimationFrame intervals with the window visible:
+  - idle: 119.4 fps (p50 8.4 ms, max 9.3 ms)
+  - while panning with CDP mouse drags: 118.8 fps (p50 8.3 ms, p95 9.1 ms), one 92 ms hitch
+- Maps draws in a worker, so these numbers are the page's frame clock, not the GPU work per frame. The fault the owner
+  sees is **wrong rendering, not pacing or presentation**.
+- While the window is covered, Chrome marks the page `hidden` and throttles requestAnimationFrame to ~0. Any
+  frame-time test must keep the window visible.
+
+| on screen, loaded | on screen, after panning |
+|---|---|
+| ![](img/maps-webgl/screen-chrome-loaded.jpg) | ![](img/maps-webgl/screen-chrome-after-pan.jpg) |
+
+**Safari 27.2** (WebKit GPU process on our plugin: `NVMTLDriver` mapped in `com.apple.WebKit.GPU`, and
+`debug.strixsbx.status` routes it):
+- Repro page: **45/45 PASS**. The page POSTs its results to `serve.mjs` (`?report=safari`).
+- Google Maps, same view, read-only screenshot after the tiles loaded: roads continuous, lake and river filled
+  correctly. While tiles were still loading, square tile blocks briefly showed the wrong fill; they settled within
+  ~10 s.
+- Not panned: the browser grant is read-only. No Safari screenshot is kept, because the default Safari profile shows
+  the owner's account data.
+- So the stroke bug was **not** seen in Safari in this view. WebKit's ANGLE most likely re-packed these draws on the
+  CPU here. The plugin path is shared, so Safari stays at risk wherever WebKit picks the GPU re-pack. Section 8's
+  prediction is weakened to "same risk, not observed".
+
 ## 2. A/B (which layer)
 
 | run | result | points at |

@@ -509,4 +509,6 @@ T('maps_index_pattern_492B_busy_60frames', mapsIndexPattern(60, 40));
     gl.bindFramebuffer(gl.FRAMEBUFFER, null); await new Promise(res => setTimeout(res, 0));
   }
   say(`${results.filter(r => r.pass).length}/${results.length} PASS`); window.__done = true;
+  const rep = new URLSearchParams(location.search).get('report');   // ?report=<name>: POST the results to serve.mjs
+  if (rep) fetch('/report?name=' + encodeURIComponent(rep), { method: 'POST', body: JSON.stringify({ ua: navigator.userAgent, renderer: out.firstChild && out.firstChild.textContent, results }) }).catch(() => {});
 })();
