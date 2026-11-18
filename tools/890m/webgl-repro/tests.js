@@ -422,6 +422,80 @@ for (const [tag, off0, inst] of [['unaligned_2mod4', 2, 1], ['unaligned_2mod4_in
   gl.bindVertexArray(null); const r = compare(read(), gridExp); r.info += ` (byte offsets mod 4: ${offs.map(o => o % 4).join('')})`; return r;
 });
 
+// --- 32+. Same draws, but through the paths that make ANGLE re-pack the indices ON THE GPU (its fixIndexBuffer compute
+// kernel reads the ushort index buffer bound at the unaligned byte offset). Big / dynamic / GPU-written index buffers.
+function unalignedIndexDraw({ bytes = 0, usage = gl.STATIC_DRAW, gpuCopy = false, rewrite = false, mixAligned = false, flushFirst = false }) {
+  return () => {
+    const p = prog(`layout(location=0) in vec2 pos; layout(location=1) in vec4 col; out vec4 c; void main(){ gl_Position=vec4(pos,0,1); c=col; }`, `in vec4 c; out vec4 o; void main(){ o=c; }`);
+    const verts = [], cols = []; for (let i = 0; i < 16; i++) { const r = cellRect(i), c = cellCol(i);
+      for (const [qx, qy] of [[0, 0], [1, 0], [0, 1], [1, 1]]) { verts.push(r[0] + qx * r[2], r[1] + qy * r[3]); cols.push(c[0] / 255, c[1] / 255, c[2] / 255, 1); } }
+    const va = gl.createVertexArray(); gl.bindVertexArray(va);
+    const vb = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, vb); gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(verts), gl.STATIC_DRAW); gl.enableVertexAttribArray(0); gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0);
+    const cb = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, cb); gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(cols), gl.STATIC_DRAW); gl.enableVertexAttribArray(1); gl.vertexAttribPointer(1, 4, gl.FLOAT, false, 0, 0);
+    const n = Math.max(8 * 16 + 24, bytes >> 1), base = (n - (8 * 16 + 24)) & ~1;   // indices live near the END of a big buffer
+    const idx = new Uint16Array(n); const offs = [];
+    // mixAligned: cell 0 sits at an aligned offset and is drawn first, so the index buffer itself is bound by a real
+    // draw (GPU-busy) before the unaligned draws; ANGLE then re-packs those on the GPU instead of from its CPU copy.
+    for (let i = 0; i < 16; i++) { const e = mixAligned && i === 0 ? base : base + 1 + 7 * i + (mixAligned ? 8 : 0); idx.set([0, 1, 2, 2, 1, 3].map(k => i * 4 + k), e); offs.push(e * 2); }
+    const ib = gl.createBuffer(); gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, ib);
+    if (gpuCopy) {   // indices reach the index buffer only through a GPU copy (no CPU-side copy of them in the IB)
+      // WebGL only copies between buffers of the same kind, so the source is an element-array buffer too
+      const src = gl.createBuffer(); gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, src); gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, idx, gl.STATIC_DRAW);
+      gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, ib); gl.bindBuffer(gl.COPY_READ_BUFFER, src);
+      gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, idx.byteLength, usage); gl.copyBufferSubData(gl.COPY_READ_BUFFER, gl.ELEMENT_ARRAY_BUFFER, 0, 0, idx.byteLength);
+    } else gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, idx, usage);
+    const n0 = (8 * 16 + 16); if (mixAligned && n < base + n0) throw new Error('buffer too small');
+    fbo(); gl.useProgram(p);
+    for (let i = 0; i < 16; i++) {
+      if (flushFirst && i === 1) gl.flush();
+      if (rewrite) gl.bufferSubData(gl.ELEMENT_ARRAY_BUFFER, offs[i], new Uint16Array([0, 1, 2, 2, 1, 3].map(k => i * 4 + k)));
+      gl.drawElements(gl.TRIANGLES, 6, gl.UNSIGNED_SHORT, offs[i]);
+    }
+    gl.bindVertexArray(null); const r = compare(read(), gridExp); r.info += ` (IB ${idx.byteLength} B, first offset ${offs[0]})`; return r;
+  };
+}
+T('index_unaligned_after_aligned_draw', unalignedIndexDraw({ mixAligned: true }));
+T('index_unaligned_after_aligned_draw_flush', unalignedIndexDraw({ mixAligned: true, flushFirst: true }));
+T('index_unaligned_after_aligned_draw_1MB_dynamic', unalignedIndexDraw({ bytes: 1 << 20, usage: gl.DYNAMIC_DRAW, mixAligned: true, flushFirst: true }));
+T('index_unaligned_big_8MB_static', unalignedIndexDraw({ bytes: 8 << 20 }));
+T('index_unaligned_dynamic_rewrite', unalignedIndexDraw({ bytes: 1 << 20, usage: gl.DYNAMIC_DRAW, rewrite: true }));
+T('index_unaligned_gpu_copied', unalignedIndexDraw({ gpuCopy: true }));
+T('index_unaligned_gpu_copied_8MB_dynamic', unalignedIndexDraw({ bytes: 8 << 20, usage: gl.DYNAMIC_DRAW, gpuCopy: true }));
+
+// --- 39-40. Google Maps' pattern exactly (cap7 IB #314): one 492-byte STATIC_DRAW index buffer written once, drawn every
+// frame twice with drawElementsInstanced: at byte 0 and at byte 414 (2 mod 4). ANGLE re-packs the 414 draw from its
+// CPU copy for the first frames, later on the GPU (fixIndexBuffer kernel, index buffer bound at byte 414). On the 890M
+// that kernel read zeros until plugin fix/maps-ssbo-offset: in Maps the 4th repetition (frame 41) lost its strokes.
+function mapsIndexPattern(frames, busy) {
+  return async () => {
+    const p = prog(`layout(location=0) in vec2 pos; layout(location=1) in vec4 col; out vec4 c; void main(){ gl_Position=vec4(pos,0,1); c=col; }`, `in vec4 c; out vec4 o; void main(){ o=c; }`);
+    const verts = [], cols = []; for (let i = 0; i < 16; i++) { const r = cellRect(i), c = cellCol(i);
+      for (const [qx, qy] of [[0, 0], [1, 0], [0, 1], [1, 1]]) { verts.push(r[0] + qx * r[2], r[1] + qy * r[3]); cols.push(c[0] / 255, c[1] / 255, c[2] / 255, 1); } }
+    const va = gl.createVertexArray(); gl.bindVertexArray(va);
+    const vb = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, vb); gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(verts), gl.STATIC_DRAW); gl.enableVertexAttribArray(0); gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0);
+    const cb = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, cb); gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(cols), gl.STATIC_DRAW); gl.enableVertexAttribArray(1); gl.vertexAttribPointer(1, 4, gl.FLOAT, false, 0, 0);
+    // 246 ushorts = 492 bytes. Elements 0..59: cells 0-9 (aligned draw). Element 207 = byte 414: cells 10-15 (36 indices).
+    const idx = new Uint16Array(246); const quad = i => [0, 1, 2, 2, 1, 3].map(k => i * 4 + k);
+    for (let i = 0; i < 10; i++) idx.set(quad(i), i * 6);
+    for (let i = 10; i < 16; i++) idx.set(quad(i), 207 + (i - 10) * 6);
+    const ib = gl.createBuffer(); gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, ib); gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, 492, gl.STATIC_DRAW); gl.bufferSubData(gl.ELEMENT_ARRAY_BUFFER, 0, idx);
+    const f = fbo(); gl.useProgram(p); let bad = 0, first = '';
+    for (let fr = 0; fr < frames; fr++) {
+      gl.bindFramebuffer(gl.FRAMEBUFFER, f); gl.viewport(0, 0, W, H); gl.clear(gl.COLOR_BUFFER_BIT); gl.bindVertexArray(va); gl.useProgram(p);
+      gl.drawElementsInstanced(gl.TRIANGLES, 60, gl.UNSIGNED_SHORT, 0, 1);
+      for (let k = 0; k < busy; k++) gl.drawElementsInstanced(gl.TRIANGLES, 60, gl.UNSIGNED_SHORT, 0, 1);   // keep the IB GPU-busy
+      gl.drawElementsInstanced(gl.TRIANGLES, 36, gl.UNSIGNED_SHORT, 414, 1);
+      gl.flush();
+      if (fr % 4 === 3 || fr === frames - 1) { const r = compare(read(), gridExp); if (!r.pass) { bad++; if (!first) first = `frame ${fr}: ${r.info}`; } }
+      await new Promise(res => requestAnimationFrame(() => res()));
+    }
+    gl.bindVertexArray(null);
+    return { pass: !bad, info: bad ? `${bad} checked frames wrong, first ${first}` : `ok (${frames} frames, offsets 0 and 414)` };
+  };
+}
+T('maps_index_pattern_492B_0_and_414_60frames', mapsIndexPattern(60, 0));
+T('maps_index_pattern_492B_busy_60frames', mapsIndexPattern(60, 40));
+
 (async () => {
   if (!gl) { say('no webgl2'); window.__done = true; return; }
   const e = gl.getExtension('WEBGL_debug_renderer_info');
