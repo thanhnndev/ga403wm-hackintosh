@@ -478,3 +478,41 @@ signals the hardware fences, so the scheduler fence the commit worker waits on e
 on this port: MODE2 resets have taken the machine down before (the 17:33 hard reset), so a real hang is more likely to
 end the session than to leave the worker waiting.
 What the CS cannot tell: whether a job writes a BO it lists, so a reader's job also counts (it can only delay a flip).
+
+### 9.7 Review round 2 (`2b25e54` on `fix/out31`) and the post-install check
+
+Round 2 of the review of `478a117` found seven issues (N1-N7). All are fixed in `2b25e54`, compile-checked only; they are not in out-32.
+
+**N1 / N2 / N5: fenced flip past the 150 ms cap (NMXAccel)**
+- Such a flip is no longer assumed to be on screen. It is now "stuck".
+- Kept from import LRU eviction and `nmxFlipDropIdle`: its import, plus the last frame dropped as BUSY behind it (the "redo" frame).
+- `nmxFlipWatch` is a thread call that runs every 4 ms. Once the bridge reports nothing pending, or a new generation:
+  - it takes `front` from the bridge's current handle;
+  - it resubmits the redo frame, either fence-only or after `nmxFenceWait`, so a static screen gets its last frame.
+- After 2 s stuck it trips flips off (N2) and keeps watching every 100 ms.
+- Any accepted submit clears the stuck and redo state, because a newer frame wins.
+- The "same surface" shortcut is skipped while a flip is stuck.
+- New counters: `debug.nmxaccel_flip_stuck_landed` and `debug.nmxaccel_flip_redo`.
+- Residual: the step-1 drop ("previous flip still pending after 20 ms") has no redo yet. It can only happen inside the 150 ms cap, while the poll is still running.
+
+**N3: fence lookup around a re-import (bridge)**
+- Each import stores `import_ns`.
+- A fence lookup for a frame committed before its surface's latest import is refused, and the frame takes the old wait.
+
+**N4: sticky `overflow` (bridge)**
+- Contexts 5 to 8 with unsignaled fences go to an overflow list, which is waited for like the others.
+- Only a 9th context sets the sticky refusal. Its fence had to be dropped, so its end cannot be known.
+
+**N6 (NMXAMDFB):** `unregisterInterrupt` stores `proc` and `fVblLast`, and reads `fDelivering`, all SEQ_CST.
+
+**N7 (NMXAccel):** a caps call answered `kIOReturnNotReady` (it lost the init race) leaves caps unknown (-1). The next frame asks again.
+
+**Doc correction to 9.3:** NMXAMDFB has no "vblank ref held/dropped" log line. The held state is `vbl_held` in the trace's `out31` line.
+
+**Post-install check:** `tools/890m/out31-verify.sh [seconds=30] [dir]`
+- Read-only and needs no root. Run it under the normal load with a video playing.
+- It samples every out-31 counter at the start and end of the interval, snapshots both rings and runs the aggregate.
+- It prints PASS / FAIL / INFO for each 9.1-9.3 verify item, then the runtime A/B `sysctl` commands for main.
+- Two items cannot be scripted:
+  - the WindowServer pipe-thread CPU, which needs a root spindump (command printed);
+  - the on-screen check, which the owner does.
