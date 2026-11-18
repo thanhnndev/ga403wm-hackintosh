@@ -133,7 +133,7 @@ print("-- 9.3 row 2: IOFramebuffer VBL from the CRTC vblank")
 row(val("nmx_vbl_irq") == 1, "switch on (nmx_vbl_irq)", f"{val('nmx_vbl_irq')}")
 vd = dl("nmx_vbl_delivered")
 hz = (vd or 0) / secs
-row(None if not active else (vd or 0) > 0, "VBL delivered from the CRTC vblank", f"nmx_vbl_delivered +{vd} = {hz:.1f} /s (refresh 120; 0 only while nothing wants VBL)")
+row(None, "VBL delivered from the CRTC vblank", f"nmx_vbl_delivered +{vd} = {hz:.1f} /s (out-34+: only while a registration is on; up to out-33 it counted every CRTC vblank)")
 tf_a, tf_b = hnum(ha, "vbl_timer", "fires"), hnum(hb, "vbl_timer", "fires")
 st_a, st_b = hnum(ha, "vbl_timer", "stale"), hnum(hb, "vbl_timer", "stale")
 if tf_a is not None and tf_b is not None:
@@ -141,8 +141,12 @@ if tf_a is not None and tf_b is not None:
     row(th <= 15, "VBL timer only the watchdog (<= ~10 /s)", f"vbl_timer fires +{tf_b - tf_a} = {th:.1f} /s, stale +{(st_b or 0) - (st_a or 0)} (was ~120 /s)")
 else:
     row(False, "VBL timer only the watchdog", "vbl_timer line missing from debug.nmx_frametrace")
-vh = hnum(hb, "out31", "vbl_held")
-row(None if not active else vh == 1, "vblank reference held while VBL is on", f"out31 vbl_held {vh}")
+vh, vw = hnum(hb, "out31", "vbl_held"), hnum(hb, "out31", "vbl_wanted")
+vs = (hnum(hb, "out31", "vbl_sink") or 0) - (hnum(ha, "out31", "vbl_sink") or 0) if hnum(hb, "out31", "vbl_sink") is not None else None
+if vw is None:   # out-33 and older: no vbl_wanted; vbl_delivered counted every CRTC vblank, wanted or not
+    row(None, "vblank reference vs registrations", f"out31 vbl_held {vh} (build before out-34: cannot tell whether a 'vbl ' registration is on)")
+else:
+    row(vh == vw, "vblank reference held iff a 'vbl ' registration is on", f"vbl_held {vh} vbl_wanted {vw}; CRTC vblanks seen by the sink +{vs} = {(vs or 0)/secs:.1f} /s")
 ps = hb.get("psr")
 row(None, "psr / active_vblank_irq_count", " ".join(ps[1:]) if ps else "psr line missing")
 ia, ib = ha.get("ips"), hb.get("ips")
