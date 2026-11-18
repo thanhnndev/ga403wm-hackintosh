@@ -98,9 +98,60 @@ Effect columns: pacing (P), latency (L), memory (M), power (W).
 | **7** | interrupt context (L6/L9 vs P10/P14) | IH ring processed in hard IRQ | IH processed on an IOWorkLoop thread (kernel priority) | fence signal, pflip and vblank wait for a thread wake; one thread for all vectors' work on ring 0 | L | source (high); size: small at kernel priority, **not measured** | measure first (IRQ -> handler latency in the ring); an `IOFilterInterruptEventSource` whose filter only timestamps is cheap and safe | low (timestamp only) |
 | **8** | timers (L9/V4 vs P15) | per-CPU timer softirqs, hrtimers in hard IRQ | one softclock thread runs every callout in order; a callout that sleeps on its lock delays all the others | jitter in vblank-off timers, fence fallback, VCN idle gating, sched timeouts | P (indirect), W | source (high); impact unknown | per-callout lateness counter (deadline vs run start) in `softclock_thread`; if late, a small pool of softclock threads or `thread_call` per callout class | low |
 | **9** | memory policy (L2 vs Steps 141-142) | TTM pool shrinker + eviction under pressure, MMU notifiers | 2 MB chunk pool and IOSurface park/unpark on timers (5 s / 60 s / 10 min); xnu never fires `vm_lowmem` | re-wire of a parked surface on first use after 60 s idle (tab switch, Mission Control) costs a burst; pool timers wake periodically | M, occasional L | Step142 probes clean (handoff 5.2); 1828 parks / 644 unparks in 23 min | keep; replace timers by xnu memory pressure later (out of scope for stutter) | - |
+| **10** (first for gaps > 100 ms, see 3.1) | memory work on the submit thread (L2 vs Step92/142, Step141 pool) | compositor surfaces are TTM BOs (GTT/VRAM) moved only by the shrinker when idle; userptr pages are faulted by `amdgpu_ttm_tt_get_user_pages` in `amdgpu_cs_parser_bos` **before** `drm_exec_until_all_locked` | every IOSurface is a userptr BO of pageable user memory; Step142 unwires it after 60 s idle, the compressor/swap may take the pages, and the next CS re-wires it in `amdgpu_ttm_tt_populate` -> `nmx_upin_restore` -> `IOMemoryDescriptor::prepare()` **inside `ttm_bo_validate`, holding the process's VM PD lock and the BO reservations**, on the submitting thread (WindowServer or Chrome's GPU process). New imports wire with `prepare()` on the same thread (`nmx_xnu_user_wire`, `surf_wire`). When the chunk pool is empty, `single_alloc` makes a 2 MB wired chunk (`IOBufferMemoryDescriptor` + `prepare()`) inline on the allocating thread | a swap-in or a wait for 512 free pages lands directly in a frame: hundreds of ms to seconds under pressure, nothing else in the path can make gaps that long | **P** (the 402 ms / 4.1 s gaps), L | video-suite (correlation, high): every drop second under memory pressure had swap-ins, chunk fills 2/6 drop seconds vs 2/245 clean; park/unpark **counts** do not discriminate, which is expected: one slow re-wire costs a second, many fast ones cost nothing; only latency tells -> stall ring (section 7, `468a78d`). Source (high): `amdgpu_cs.c` lines 906-910 (`if (0)` around the pre-lock fetch, Step92), `amdgpu-userptr-park.patch` populate hunk, `nmx_page.c` `single_alloc`/`chunk_new` | (a) `amdgpu_cs_parser_bos`: re-enable the pre-lock userptr loop for **parked** entries only and call `nmx_upin_restore` there, so the slow part runs before any lock (as Linux does) and the populate finds the pages wired; (b) `amdgpu_ttm_tt_nmx_touch` / surface-hint lookup: when a parked BO is looked up for a new CS, kick the re-wire on a thread call ahead of the submit (WindowServer composites the same surfaces frame after frame, so the first frame pays at most once); (c) never park a BO that was flip-imported or used by WindowServer in the last N frames (keep the pages of on-screen surfaces wired; park only background ones); (d) `single_alloc`: when the pool is empty, allocate just the one page (or a 64 KB run) inline and leave the 2 MB chunk to `fill_worker`; (e) the pressure itself: see 3.1 (RyzenHV wires 12.3 GB of guest RAM) | medium (a, c: ordering with Step142's park state machine and the BO list mutex); low (b, d) |
+| **11** | Chrome H.264 decode (V1/V2 vs PV1) | VA-API on VCN for H.264/HEVC/VP9/AV1 | `VCNDec` (`tools/890m/vcndec/Info.plist`) registers only `vp09` and `av01`; Chrome asks VideoToolbox for a **hardware** H.264 decoder, gets none, and uses FFmpeg on the CPU | each H.264 stream adds one to two cores of user-priority decode plus CPU copies into IOSurfaces; this is part of the 731 % CPU in drop seconds and it competes with every user-space hop in rows 1 and 5 | P (video), W | main (H.264 falls back to FFmpeg, high); `Info.plist` and `vcndec.c` line 152 (`codec not handled` for anything but vp09/av01) (high); Step106: VCN H.264 decode bit-exact with the test RADV build (high) | `VCNDec`: add `avc1` (and `hvc1`) decoder entries in `Info.plist`; in `vcndec.c` map them to `AV_CODEC_ID_H264` / `AV_CODEC_ID_HEVC` and pass the `avcC`/`hvcC` atom from the format description as extradata (VideoToolbox hands length-prefixed NAL units, which libavcodec takes with that extradata); check with `vt_test` and Chrome `chrome://media-internals` -> `VideoToolboxVideoDecoder`. Owner: video-suite session | low-medium (VT's H.264 format-description edge cases: interlaced, 4:2:2 profiles must be refused cleanly) |
 
 Not a divergence any more (killed with today's counters): flip-import churn (11 imports in 23 min, 0 failures), CPU
 copy to the panel (fallback 0, K6/beam counters 0), pipe drops (0), flip timeouts (0).
+
+### 3.1 Under CPU contention and memory pressure (video-suite evidence, 2026-11-18)
+
+Main's correlation: seconds with dropped frames had ~731 % total CPU vs ~277 % clean; under memory pressure every drop
+second had swap-ins (worst frame gap avg 402 ms, up to 4.1 s); IOSurface parks/unparks did not discriminate; chunk fills
+were over-represented. What that means for the ranking:
+
+**Gap size separates the causes.** Rows 1-4 cost 0.1-10 ms per frame (a 100 µs poll, a 200 µs poll, a 31T thread
+waiting for a core while 24 logical CPUs are 30 % busy). They explain jitter and a dropped frame here and there, not a
+400 ms or 4 s hole. A hole that long needs a thread that **blocks**: a page-in from swap, decompressing from the
+compressor, or waiting for free pages to wire. Row 10 lists every place where our frame path does that synchronously.
+So: for gaps > 100 ms row 10 comes first; rows 1-3 stay first for ms-level pacing.
+
+**Where each frame-path thread runs (priority) vs Linux:**
+
+| work | here | priority | Linux |
+|---|---|---|---|
+| IH ring (fence signal, pflip, vblank) | `IOInterruptEventSource` on an `IOWorkLoop` thread (`xnu/nmx_pci.cpp`) | kernel thread, 81 | hard IRQ |
+| `nmxFlipPoll`, VBL timer `vblFire`, pool `fill_worker`/`release_worker` | `thread_call_allocate` (default group) | thread-call high group, above all user threads | hrtimer / kworker |
+| LinuxKPI callouts (fence fallback, vblank-off, VCN idle, `delayed_work` timers) | one `nmx softclock` thread (`nmx_task.c`, `kernel_thread_start`) | 81 | per-CPU timer softirq |
+| LinuxKPI workqueues (DM commit worker, `vblank_control_workqueue`, drm sched) | taskqueue threads (`kernel_thread_start`) | 81 | kworkers at nice 0 (normal!) |
+| display pipe `performTransaction`, fence poll | NMXAccel on the pipe's work-loop thread | kernel | (in the commit worker) |
+| GPU-done -> `NMXFenceDone` | plugin `nvmtl.execution`, no QoS | **31T** | (in the kernel) |
+| app/Chrome GPU-process submit, CPU surface copies, H.264 FFmpeg decode | user threads | 31-47 | same (user space) |
+
+Every kernel-side stage already outranks every user thread (WindowServer's own render threads are 79R), and the Linux
+equivalents of the commit worker and drm scheduler are plain nice-0 kworkers. So **CPU contention cannot starve the
+kernel side of our path**; it reaches the path only through the user-space hops: row 1 (`nvmtl.execution` at 31T) and
+the clients themselves (Chrome's GPU process and its software H.264 decode, row 11). The fix for row 1 removes the one
+hop that Linux does not have; row 11 removes most of the extra CPU load.
+
+Two cautions on the 731 % figure:
+- Swap-ins and compressor work **cost CPU**: decompressing pages, the swapper, `kernel_task` page-out. High CPU and
+  swap-ins in the same seconds may be one event, not two causes. The stall ring (pid + duration) and a `vm_stat 1` next
+  to the capture separate them.
+- The Docker VM is not a normal user process: `RyzenHV` runs guest code from the host kernel. If a vCPU entry does not
+  exit promptly on host interrupts or does not check for preemption between entries, it can hold a core against
+  priority-81/95 kernel threads too, and then the "kernel side outranks user space" argument above does not hold for
+  that core. Question for the RyzenHV owner (no change here): are physical interrupts intercepted (SVM `INTR`/`NMI`)
+  and does the run loop return to the scheduler on `ast_pending`/preemption? The trace answers it indirectly: a late
+  frame whose `notify` or `worker` (kernel-only stages) is long while no memory stall overlaps it.
+
+**Memory pressure has a source we own.** RyzenHV wires the Docker VM's RAM (12.3 GB wired, the largest consumer under
+daily load, see memory note `ryzenhv-wires-guest`). Linux KVM keeps guest RAM as ordinary anonymous memory that the
+host can reclaim (and free-page reporting/balloon returns it). With 12 GB unpageable, every other process, including
+WindowServer's heap and the IOSurfaces Step142 has parked, is squeezed into the rest, and row 10's synchronous
+re-wires start to hit swap. The frame-path fixes (row 10 a-d) keep the swap-in off the frame; making guest RAM pageable
+(or capped/ballooned) removes most of the pressure. That is RyzenHV's scope; listed here because it decides how often
+row 10 fires.
 
 ## 4. Questioning the handoff's assumptions
 
@@ -183,7 +234,7 @@ Branches, pushed to `fork` only, compile-checked, **not built into a kext by me,
 
 | branch | commit | files |
 |---|---|---|
-| `frame-path/kernel-trace` (repo `nvidia-macos-driver-ws`, off `nmx-source-port` 4f6825b) | 64c11a5 | `gpu-port/xkpi/patches/amdgpu-dm-frametrace.patch` (+ `series`), `override/src/nmx_fb_bridge.c`, `xnu/nmx_fb.cpp`, `xnu/nmx_kext.cpp`, `kexts/NVRM/accel/nvrm-accel.cpp` |
+| `frame-path/kernel-trace` (repo `nvidia-macos-driver-ws`, off `nmx-source-port` 4f6825b) | 64c11a5, 468a78d | `gpu-port/xkpi/patches/amdgpu-dm-frametrace.patch` (+ `series`), `override/src/nmx_fb_bridge.c`, `xnu/nmx_fb.cpp`, `xnu/nmx_kext.cpp`, `kexts/NVRM/accel/nvrm-accel.cpp`; 468a78d adds `bsdcompat/src/nmx_page.c`, `xnu/nmx_mm.cpp` |
 | `frame-path/plugin-trace` (off `ci/amd-plugin-890m` 899c64f) | aa72666 | `plugin/NVMTLEventSync.m` |
 | this repo, `claude/hungry-mclean-f82082` | | `tools/890m/frame-path-report.py`, `tools/890m/frame-path-capture.sh` |
 
@@ -202,18 +253,25 @@ What each piece records (all `mach_absolute_time` ns, which on x86 equals the pl
   status seen; counts of vblank and pageflip IRQs on the panel CRTC; a 16-bin histogram of where in the real frame the
   IOFramebuffer VBL timer fires (and how often the vblank IRQ was off then); DMUB IPS rcg/ips1/ips2 entry/exit counters.
   The amdgpu hooks only take a timestamp and `drm_crtc_vblank_count`.
+- **NMXGPU memory stalls** (468a78d, row 10), in the same sysctl: per kind (`restore` = Step142 re-wire in TTM populate,
+  `inline` = 2 MB chunk made on the allocating thread, `fill` = chunk made by the fill thread call, `wire` = new
+  userptr/surface wire at import) count, total, max and a histogram (<0.1, <1, <10, <100, <1000, >=1000 ms), plus the
+  last 128 stalls >= 1 ms with start time, duration, pages and pid. The report lists, for every late WindowServer frame,
+  the stalls that overlap it; a stall with Chrome's pid that overlaps nothing delayed Chrome's own frame (client side).
+  Run `vm_stat 1 > vmstat.txt` beside the capture (no root) to see swap-ins per second.
 
 Checks done: the patch series replays on the vendor HEAD with `--fuzz=0` and yields exactly the patched
 `amdgpu_dm.c`; `amdgpu_dm.c`, `nmx_fb_bridge.c`, `nmx_fb.cpp`, `nmx_kext.cpp` compile with the tree's own scripts
-(`cc.sh`, `cclk.sh`, `ccxx.sh`); new undefined symbols are only internal ones (`nmx_ft_*`, `nmx_dm_ips_counts`,
-`drm_crtc_vblank_count`) plus `mach_absolute_time`/`IOMalloc`/`IOFree`, already imported by out-29, so the 581 rule
+(`cc.sh`, `cclk.sh`, `ccxx.sh`; `nmx_page.c` with `ccsrc.sh`); new undefined symbols are only internal ones (`nmx_ft_*`, `nmx_dm_ips_counts`,
+`drm_crtc_vblank_count`, `nmx_ft_stall`) plus `mach_absolute_time`/`IOMalloc`/`IOFree`/`current_proc`/`proc_pid`,
+all already imported by the installed out-29 (`nm -u` = 581), so the 581 rule
 should hold (main's `nm -u` check decides). NMXAccel builds with `OGKM=~/ogkm615 NM_TAHOE=1
 build/nmxaccel_build.sh kexts/NVRM <out>`; its undefined symbols are identical to the installed NMXAccel (883 = 883,
 empty diff). The plugin passes `clang -fsyntax-only` with the tree's flags. Not run on the machine.
 
 How main builds it:
 1. NMXGPU: in `~/develop/projects/nmx-build-xkpi/src` (branch `nmx-source-port` @ 4f6825b) `git merge --ff-only
-   frame-path/kernel-trace` (or cherry-pick 64c11a5), then `~/develop/projects/nmx-build-xkpi/build.sh out-30` in the
+   frame-path/kernel-trace` (or cherry-pick 64c11a5 and 468a78d), then `~/develop/projects/nmx-build-xkpi/build.sh out-30` in the
    background; usual checks (581 undefined, 0 weak, `NMXOwnsDisplay`).
 2. NMXAccel from the same commit: `OGKM=~/ogkm615 NM_TAHOE=1 build/nmxaccel_build.sh kexts/NVRM <out>` (or the CI
    workflow `build-nmxaccel.yml`).
@@ -229,25 +287,30 @@ WindowServer restart (log out/in) is the A/B for row 1.
 
 ## 8. The short answer
 
-**Three most likely root causes of stutter under multitasking**, all structural, none about allocator policy:
+**Three most likely root causes of stutter under multitasking** (updated 2026-11-18 with video-suite's evidence):
 
-1. **"GPU work done" travels through user space at default priority** (row 1). In WindowServer the plugin's
-   `nvmtl.execution` queue (no QoS, so 31T) waits the syncobj, then does an IOSurface IPC; the display pipe polls that
-   property every 100 µs. 88 % of frames wait on it. Under load that thread competes with every app and Docker's vCPUs,
-   so each frame's present is delayed by however long the scheduler takes to run it. Linux waits for the same fence in
-   the kernel commit worker, woken from the interrupt.
-2. **WindowServer's notion of vblank and of "frame shown" is not the hardware's** (rows 2 and 3). One `'vbl '` slot fed
-   by a free-running timer (the pipe's vblank, or IOFramebuffer's, gets nothing, and the one that does runs at a phase
-   unrelated to scan-out), and presentation timestamps that are the poll's time rather than the flip IRQ's (tx+0x170
-   left 0). Frames get scheduled against an imaginary vblank whose offset differs per boot and drifts.
-3. **Client -> WindowServer ordering is also user space** (row 5): each process has its own pinned BO of the same
-   IOSurface, so apps (Chrome/Electron) cannot hand a frame over with a kernel fence; they finish or copy on the CPU
-   first, which is where "strokes break up" in old Electron apps would come from.
+1. **Memory work done synchronously on the submitting thread** (row 10, the long gaps). Every IOSurface is pageable user
+   memory wired as a userptr BO; Step142 unwires idle ones, and the next CS re-wires them with `prepare()` inside
+   `ttm_bo_validate` while holding the VM and BO locks. New imports wire the same way, and an empty pool makes a 2 MB
+   wired chunk inline. Under pressure each of these can wait for swap-in or free pages: 400 ms to 4 s holes, which is
+   what video-suite saw (every drop second under pressure had swap-ins). Linux faults userptr pages before taking any
+   lock, and its compositor surfaces are not user memory at all. The pressure itself comes mostly from RyzenHV wiring
+   12.3 GB of guest RAM (section 3.1).
+2. **"GPU work done" travels through user space at default priority** (row 1, ms-level jitter that grows with CPU
+   load). The plugin's `nvmtl.execution` queue (31T) waits the syncobj and writes an IOSurface property that the
+   display pipe polls every 100 µs; 88 % of frames wait on it. Every kernel-side stage of our path already outranks all
+   user threads, so this hop, plus Chrome's software H.264 decode (row 11) adding cores of load, is where CPU contention
+   reaches the frame path. Linux waits on the same fence in the kernel commit worker.
+3. **WindowServer's vblank and "frame shown" time are not the hardware's** (rows 2 and 3, pacing). One `'vbl '` slot fed
+   by a free-running timer whose phase vs. scan-out is arbitrary, and presentation timestamps (tx+0x170) left 0 so the
+   family stamps the poll's time. Frames are scheduled against an imaginary vblank.
 
-**The single experiment that separates them:** one boot with the trace build (section 7), under the owner's normal
-load, `tools/890m/frame-path-capture.sh 300`. For each late frame the report names the stage that took the time:
-`wake`/`handoff` large -> cause 1; `scanout` with `missed` > 0 while `gpu`/`wake` are small, together with the VBL
-timer phase histogram -> cause 2; WindowServer's commit (`cpend`) arriving late while every later stage is small ->
-the time was lost before WindowServer, in the client -> cause 3 (then trace a client the same way). Optional second
-pass in the same boot for cause 1: the `nvmtl-exec-qos-ui` file and a logout/login; if `wake` shrinks and late frames
-drop, cause 1 is confirmed and the kernel-fence fix (row 1) is the real cure.
+**The single experiment that separates them:** one boot with the trace build (section 7: kernel-trace 64c11a5 +
+468a78d, plugin-trace aa72666), under the owner's normal load (video, Docker, Claude, the apps that stutter):
+`tools/890m/frame-path-capture.sh 300` with `vm_stat 1` beside it. For each late frame the report names the stage that
+took the time and any memory stall that overlaps it:
+- a `restore`/`inline`/`wire` stall overlapping the late frame (or a long stall with Chrome's pid just before a run of
+  late frames) -> cause 1;
+- no stall, `wake`/`handoff` large -> cause 2 (confirm with the `nvmtl-exec-qos-ui` A/B in the same boot);
+- no stall, small `gpu`/`wake`, `scanout` with `missed` > 0 and a VBL-timer phase spread -> cause 3;
+- no stall, long kernel-only stages (`worker`, `notify`) while Docker is busy -> the RyzenHV question in 3.1.

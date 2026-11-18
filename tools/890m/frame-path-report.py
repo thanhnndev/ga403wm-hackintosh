@@ -14,6 +14,8 @@ Per frame (all times mach_absolute_time ns, joined by NMXGPU flip seq):
   worker    submit -> flip armed in amdgpu_dm_commit_planes (commit worker, vblank-window wait, IPS exit)
   scanout   armed -> pageflip IRQ                     (waiting for the vblank; > 1 period = missed one)
   notify    pageflip IRQ -> NMXAccel saw the latch    (200 us poll + thread call)
+Memory stalls (NMXGPU "stall"/"stallev" lines): Step142 re-wire (restore), inline 2 MB chunk (inline), fill thread
+chunk (fill), new userptr/surface wire (wire); each late frame lists the stalls >= 1 ms that overlap it.
 A frame is late when pageflip IRQ - commit > 2 refresh periods or it latched more than one vblank after it was armed.
 """
 import statistics
@@ -40,10 +42,18 @@ def read_accel(path):
 
 
 def read_gpu(path):
-    recs, head = {}, {}
+    recs, head, stalls = {}, {}, []
     for line in open(path):
         f = line.split()
         if not f:
+            continue
+        if f[0] == "stall":
+            head.setdefault("stall", []).append(line.strip())
+            continue
+        if f[0] == "stallev" and len(f) == 6:
+            t0 = int(f[2])
+            stalls.append({"kind": f[1], "t0": t0, "t1": t0 + int(f[3]) * 1000, "ms": int(f[3]) / 1000,
+                           "pages": int(f[4]), "pid": int(f[5])})
             continue
         if f[0] in ("flips", "vbl_timer", "ips"):
             head[f[0]] = line.strip()
@@ -59,7 +69,7 @@ def read_gpu(path):
         for n, v in zip(["sub1", "armed", "pflip", "seen"], rel):
             r[n] = None if v < 0 else sub0 + v * 1000
         recs[seq] = r
-    return recs, head
+    return recs, head, stalls
 
 
 def d(a, b):
@@ -75,10 +85,12 @@ def main():
     if len(sys.argv) != 3:
         sys.exit(__doc__)
     acc = read_accel(sys.argv[1])
-    gpu, head = read_gpu(sys.argv[2])
+    gpu, head, stalls = read_gpu(sys.argv[2])
     for k in ("flips", "vbl_timer", "ips"):
         if k in head:
             print(head[k])
+    for line in head.get("stall", []):
+        print(line)
     period = None
     if "vbl_timer" in head:
         for i, w in enumerate(head["vbl_timer"].split()):
@@ -102,6 +114,8 @@ def main():
             "total": d(a["cpend"], g["pflip"]),
             "missed": (g["vbl_pflip"] - g["vbl_armed"] - 1) if g["pflip"] and g["armed"] else None,
             "idle": g["idle"],
+            "t0": a["cpend"] or a["entry"],
+            "t1": g["pflip"] or g["seen"] or a["latch"],
         }
         rows.append(row)
     print(f"joined frames: {len(rows)} (accel {len(acc)}, gpu {len(gpu)}), refresh period {period:.3f} ms")
@@ -125,10 +139,17 @@ def main():
         print(f"flips armed with DC idle optimisations allowed (IPS path): {len(idle)}; their worker p50 "
               f"{pct([r['worker'] for r in idle if r['worker'] is not None], .5):.3f} ms vs "
               f"{pct([r['worker'] for r in rows if r['idle'] == 0 and r['worker'] is not None], .5):.3f} ms")
+    if stalls:
+        hit = 0
+        for r in late:
+            r["stalls"] = [x for x in stalls if r["t0"] and r["t1"] and x["t0"] < r["t1"] and x["t1"] > r["t0"]]
+            hit += bool(r["stalls"])
+        print(f"memory stalls >= 1 ms in the ring: {len(stalls)}; late frames overlapping one: {hit} of {len(late)}")
     print("worst 10:")
     for r in sorted(late, key=lambda r: -(r["total"] or 0))[:10]:
         print("  seq %d total %s missed %s | " % (r["seq"], f"{r['total']:.2f}" if r["total"] else "-", r["missed"]) +
-              " ".join(f"{s} {r[s]:.2f}" for s in stages if r[s] is not None))
+              " ".join(f"{s} {r[s]:.2f}" for s in stages if r[s] is not None) +
+              "".join(f" | {x['kind']} {x['ms']:.1f} ms pid {x['pid']}" for x in r.get("stalls", [])))
 
 
 if __name__ == "__main__":
