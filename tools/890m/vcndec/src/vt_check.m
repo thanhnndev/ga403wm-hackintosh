@@ -12,6 +12,7 @@
 #include <stdio.h>
 
 static int g_fps, g_ok, g_bad, g_unreadable, g_err, g_out;
+static OSType g_fmt;
 
 static int read_index(CVPixelBufferRef pb, int *border) {
   OSType f = CVPixelBufferGetPixelFormatType(pb);
@@ -33,6 +34,7 @@ static int read_index(CVPixelBufferRef pb, int *border) {
 static void out_cb(void *ref, void *src, OSStatus st, VTDecodeInfoFlags fl, CVImageBufferRef img, CMTime pts, CMTime dur) {
   if (st || !img) { if (g_err++ < 5) fprintf(stderr, "frame at %.3f: status %d flags %x\n", CMTimeGetSeconds(pts), (int)st, (unsigned)fl); return; }
   g_out++;
+  if (!g_fmt) g_fmt = CVPixelBufferGetPixelFormatType(img);
   int border, idx = read_index(img, &border), want = (int)lround(CMTimeGetSeconds(pts) * g_fps);
   if (border < 170) { if (g_unreadable++ < 5) fprintf(stderr, "frame at %.3f: strip unreadable (border %d)\n", CMTimeGetSeconds(pts), border); }
   else if (idx == want) g_ok++;
@@ -78,8 +80,8 @@ int main(int argc, char **argv) {
     double dt = CFAbsoluteTimeGetCurrent() - t0;
     VTDecompressionSessionInvalidate(ses);
     CFRelease(ses);
-    printf("%s: %d samples, %d pictures (hw %s), index ok %d, wrong %d, unreadable %d, errors %d, %.0f fps\n", argv[a], n, g_out,
-           hw == kCFBooleanTrue ? "yes" : "no", g_ok, g_bad, g_unreadable, g_err, n / dt);
+    printf("%s: %d samples, %d pictures (hw %s, format %c%c%c%c), index ok %d, wrong %d, unreadable %d, errors %d, %.0f fps\n", argv[a], n, g_out,
+           hw == kCFBooleanTrue ? "yes" : "no", (char)(g_fmt >> 24), (char)(g_fmt >> 16), (char)(g_fmt >> 8), (char)g_fmt, g_ok, g_bad, g_unreadable, g_err, n / dt);
     return (g_out == n && g_ok == n && hw == kCFBooleanTrue) ? 0 : 1;
   }
 }

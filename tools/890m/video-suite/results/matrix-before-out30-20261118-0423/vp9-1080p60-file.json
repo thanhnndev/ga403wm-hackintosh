@@ -1,0 +1,25 @@
+{
+ "id": "vp9-1080p60-file",
+ "clip": "vp9-1080p60.webm",
+ "codec": "VP9",
+ "depth": "profile 0 8-bit",
+ "size": "1080p60",
+ "container": "WebM",
+ "mime": "video/webm; codecs=\"vp09.00.41.08\"",
+ "fps": 60,
+ "mode": "file",
+ "started": "2026-11-18T04:23:36.475Z",
+ "decoder": "VideoToolboxVideoDecoder",
+ "platform": true,
+ "errors": [
+  "play(): The play() request was interrupted because video-only background media was paused to save power. https://goo.gl/LdLk22"
+ ],
+ "plays": "no",
+ "check": {
+  "ok": 0,
+  "near": 0,
+  "bad": 0,
+  "unreadable": 0,
+  "first": []
+ }
+}

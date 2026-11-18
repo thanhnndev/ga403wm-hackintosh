@@ -35,6 +35,9 @@ export const CLIP_SET = {
   'mx-vp9p2-1080p60.webm':    { codec: 'V_VP9', wcodec: 'vp09.02.41.10', width: 1920, height: 1080, fps: 60, bitrate: 8e6, seconds: 30, hbd: true },
   'mx-av1-1080p30.webm':      { codec: 'V_AV1', wcodec: 'av01.0.08M.08', width: 1920, height: 1080, fps: 30, bitrate: 4e6, level: 8, seconds: 30, mime: 'video/webm; codecs="av01.0.08M.08"' },
   'mx-av110-1080p60.webm':    { codec: 'V_AV1', wcodec: 'av01.0.09M.10', width: 1920, height: 1080, fps: 60, bitrate: 6e6, level: 9, seconds: 30, hbd: true },
+  // AV1 in MP4 from macOS's own (hidden) AOM software encoder: the only 10-bit AV1 encoder on this machine; bitrate = quality 0..1
+  'mx-av1-1080p30.mp4':       { swift: 'av1', width: 1920, height: 1080, fps: 30, bitrate: 0.35, seconds: 20 },
+  'mx-av110-1080p30.mp4':     { swift: 'av110', width: 1920, height: 1080, fps: 30, bitrate: 0.35, seconds: 20 },
   'mx-av1-2160p60.webm':      { codec: 'V_AV1', wcodec: 'av01.0.13M.08', width: 3840, height: 2160, fps: 60, bitrate: 20e6, level: 13, seconds: 30 },
 };
 export const MATRIX = Object.keys(CLIP_SET).filter((n) => n.startsWith('mx-'));
@@ -67,7 +70,8 @@ if (import.meta.url === `file://${process.argv[1]}`) {
       const c = CLIP_SET[n]; const t0 = Date.now(); const secs = c.seconds || SECONDS;
       execFileSync(bin, [path.join(CLIPS, n), c.swift, c.width, c.height, c.fps, secs, c.bitrate, ...(c.frag ? ['frag'] : [])].map(String), { stdio: 'inherit' });
       for (const f of fs.readdirSync(CLIPS)) if (f.startsWith(n + '.sb-')) fs.unlinkSync(path.join(CLIPS, f));
-      record(n, { codec: c.swift, width: c.width, height: c.height, fps: c.fps, seconds: secs, targetBitrate: c.bitrate, frames: c.fps * secs, frag: !!c.frag, encodeSeconds: (Date.now() - t0) / 1000, encoder: 'AVAssetWriter (VideoToolbox, software)' });
+      record(n, { codec: c.swift, width: c.width, height: c.height, fps: c.fps, seconds: secs, targetBitrate: c.bitrate, frames: c.fps * secs, frag: !!c.frag, encodeSeconds: (Date.now() - t0) / 1000, sizeBytes: fs.statSync(path.join(CLIPS, n)).size,
+        encoder: c.swift.startsWith('av1') ? 'VTCompressionSession AV1EncoderSW (AOM, quality ' + c.bitrate + '), MP4 by AVAssetWriter passthrough' : 'AVAssetWriter (VideoToolbox, software)' });
     }
   }
   if (webTodo.length) {

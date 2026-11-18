@@ -1,0 +1,29 @@
+{
+ "id": "mx-h264-1080p60-frag-mse",
+ "clip": "mx-h264-1080p60-frag.mp4",
+ "codec": "H.264",
+ "depth": "High 8-bit",
+ "size": "1080p60",
+ "container": "fMP4",
+ "mime": "video/mp4; codecs=\"avc1.64002a\"",
+ "fps": 60,
+ "mode": "mse",
+ "started": "2026-11-18T04:32:12.124Z",
+ "decoder": null,
+ "platform": false,
+ "errors": [
+  "PipelineStatus::CHUNK_DEMUXER_ERROR_APPEND_FAILED: Failure parsing MP4: Detected unfragmented MP4. Media Source Extensions require ISO BMFF moov to contain mvex to indicate that Movie Fragments are to be expected.",
+  "play(): Failed to load because no supported source was found.",
+  "Failure parsing MP4: Detected unfragmented MP4. Media Source Extensions require ISO BMFF moov to contain mvex to indicate that Movie Fragments are to be expecte",
+  "RunSegmentParserLoop: stream parsing failed. append_window_start=0 append_window_end=inf",
+  "PipelineStatus::CHUNK_DEMUXER_ERROR_APPEND_FAILED:16"
+ ],
+ "plays": "no",
+ "check": {
+  "ok": 0,
+  "near": 0,
+  "bad": 0,
+  "unreadable": 0,
+  "first": []
+ }
+}

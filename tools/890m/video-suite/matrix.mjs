@@ -53,14 +53,13 @@ async function runCell(cell) {
   onReport = (o) => { if (o.case !== cell.id) return; if (o.type === 'row') rows.push(o); else if (o.type === 'check') checks.push(o); else if (o.type === 'start') startWall = o.wall; else if (o.type === 'done') done = true; else if (o.type === 'error') errors.push(o.msg || JSON.stringify(o)); };
   const media = {}; const mediaErr = []; let b;
   try {
-    b = await launch(profile, 9342, { extra: ['--window-size=800,480', '--window-position=40,40'] });
+    b = await launch(profile, 9342, { extra: ['--window-size=800,480', '--window-position=40,40', '--disable-backgrounding-occluded-windows', '--disable-renderer-backgrounding', '--disable-background-media-suspend', '--disable-background-timer-throttling'] });
     b.on((m) => {
       if (m.method === 'Media.playerPropertiesChanged') for (const p of m.params.properties) media[p.name] = p.value;
       if (m.method === 'Media.playerErrorsRaised') mediaErr.push(...m.params.errors.map((e) => `${e.errorType}:${e.code}`));
       if (m.method === 'Media.playerMessagesLogged') for (const x of m.params.messages) if (x.level === 'error') mediaErr.push(x.message.slice(0, 160));
     });
     await b.ps('Media.enable'); await b.ps('Page.enable');
-    await b.ps('Page.bringToFront');
     const q = new URLSearchParams({ clip: cell.clip, fps: cell.d.fps, case: cell.id, run: path.basename(out), warm: WARM, measure: MEASURE, ...(cell.mode === 'mse' ? { mse: cell.d.mime } : {}) });
     await b.ps('Page.navigate', { url: `http://127.0.0.1:${port}/pages/matrix.html?${q}` });
     for (let i = 0; i < 60 && !startWall && !errors.length; i++) await wait(250);
