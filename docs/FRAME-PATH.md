@@ -1008,3 +1008,141 @@ If the counters stay 0 on a static screen with `idle_allowed 1`, compare the IPS
 - **(3)** fault printer: read `tbo.resource` and `tbo.ttm` only under `dma_resv_trylock(bo->tbo.base.resv)`, else print "bo busy".
 - **(4)** freed-range scan: collect at most 4 hits under the spinlock, print after unlocking.
 - **(5)** flips off after 600 NotReady answers: make sure that one line is logged once per boot.
+
+## 12. The out-33 hang at 17:46 (2026-11-18), and the out-35 set
+
+Read-only. Sources:
+- kernel log 17:20-17:48 on the out-33 boot (15:54);
+- `/Library/Logs/DiagnosticReports/WindowServer-2026-11-18-174622.ips` (stackshot) and `...174642...userspace_watchdog_timeout.spin`;
+- `nmx_drm_uc.cpp`, `ttm_bo.c`, the plugin `nvmtl_vk.c`, and VCNDec `vcndec.c`.
+
+### 12.1 Which stage returned -ENOMEM
+
+There were 11 `Not enough memory for command submission!` lines: 17:28:59 (x3), 17:32:15-16 (x5) and 17:44:15 (x3). The out-33 stage lines name two stages:
+- **`ttm_bo_validate` -> -12 in `amdgpu_cs_parser_bos` (the BO list validate)**: 17:28:59, 17:29:00 (x2), 17:32:15.734, 17:32:16.115, 17:44:15.366/.382/.387;
+- **`amdgpu_vm_validate` -> -12** (the VM's evicted page-table and per-VM BOs): 17:32:15.740, .921, 17:32:16.016.
+
+Submitters:
+- most were thread 0x3d5, which is **WindowServer's main thread**;
+- 0x63ebc was VTDecoderXPCService[7309];
+- one thread is unidentified.
+
+At `ttm_bo.c:875`, TTM folds `-ENOSPC` (no room in any allowed placement, i.e. the GTT manager is full after eviction) into `-ENOMEM`. A real `-ENOMEM` comes from `ttm_tt_populate` (page allocation, or the `ttm_pages_limit` swapout failing). The log cannot tell the two apart, and there was no NMXGPU pool or GTT message.
+
+### 12.2 Was GTT full, and who held it
+
+There was no counter snapshot after 16:16. At 16:16:
+- GTT used was 10.1 of 16 GB;
+- WindowServer held 5.17 GB (3.2 GB at 14 min, growing about 100 MB a minute under Docker);
+- Safari's GPU process held 1.83 GB.
+
+The stackshot at 17:46 gives a bound:
+- wired memory was **6,600,386 pages = 25.2 of 32 GB**;
+- free pages: 117,715;
+- the compressor held 23.7 GB of data in 5.3 GB;
+- swap-ins were about 65 M, against 68.7 M swap-outs.
+
+Docker's guest (RyzenHV) alone wires about 12.3 GB. GTT is wired: TTM pages, plus Step92/142 userptr imports. So 25.2 GB wired leaves room for roughly 10-11 GB of GTT, not 16. **GTT was most likely not at its 16 GB limit.** The failure was the system running out of memory it could wire: either page allocation inside `ttm_tt_populate`, or the GTT manager after its eviction targets ran dry. Resident outliers in the stackshot:
+
+| process | resident |
+|---|---|
+| VTDecoderXPCService 7309 | 7.5 GB |
+| java | 8.1 GB |
+| kernel_task | 1.9 GB |
+| hyperkit | 1.5 GB |
+| WebKit.GPU | 1.37 GB |
+| WindowServer | 1.1 GB |
+
+### 12.3 Leak or idle: does out-34's park remove the cause?
+
+**WindowServer: idle, not leaked.**
+- On out-34 at 17 min, WindowServer's GTT fell from 1778 MB / 640 BOs (20:16:55) to 1619 MB / 533 BOs (20:18:26). The BO count drops, so BOs are released.
+- Out-33 had 3.23 GB at 14 min.
+- The out-33 growth was row 13: imports touched every frame by the whole surface list, so none of them could park.
+- (e) removes that cause. What stays wired is what WindowServer really uses, plus imports it has not used for less than 60 s.
+- Whether that holds under Docker for an hour has not been measured yet: watch `debug.nmx_gtt`, WindowServer row, under the daily load.
+
+**DRM files: closed.**
+- VTDecoderXPCService opened renderD128 520 times on out-33, and 120 times in 24 min on out-34. That is about 17-20 per decode session; sessions balanced, 31 StartSession and 31 close on out-33.
+- On out-34 at 24 min, `debug.nmx_gtt` lists 65 DRM files, 43 of them with pid 0 (never submitted, about 2.7 MB each, 118 MB in all). So the files are closed; the 43 are small.
+
+**VTDecoderXPCService's 7.5 GB is the open lead.**
+- On out-34, `footprint 5628` shows 902 MB "Owned physical footprint (unmapped)" in 38 regions. That is 38 4K 10-bit HEVC frames (P010 3840x2160 = 24.9 MB each).
+- It was stable between 20:25 and 20:27.
+- VCNDec's import cache retains up to 32 surfaces per session and releases them at close, which is balanced.
+- 7.5 GB on out-33 is about 300 such frames.
+- If it grows across closed sessions, something keeps decoded frames alive (VT's pixel buffer pool, a client, or our cache).
+- Measure under video load:
+
+```bash
+while :; do date +%T; footprint $(pgrep -f VTDecoderXPCService | head -1) | grep -E "Footprint|unmapped|IOSurface"; perl -e 'select(undef,undef,undef,300)'; done
+```
+
+**Docker** wires 12.3 GB regardless (`ryzenhv-wires-guest`).
+
+**Answer:** out-34's park removes WindowServer's share of the growth, which is the cause of row 13. It does not make the system safe against wired-memory exhaustion by itself:
+- GTT has no pressure-driven give-back (rows 9 and 13: no shrinker, and native BOs never swap);
+- Docker's wiring and the VTDecoder footprint are outside the park.
+
+### 12.4 Why a failed CS did not cause the 44 s stall, and what should happen
+
+**The plugin's retry is bounded and was not the stall.**
+- `nvmtl_vk.c` retries an OOM `vkQueueSubmit` with 1..64 ms back-off for up to 2 s.
+- a46e451, the WindowServer plugin on that boot, has this retry (97725ba is its ancestor).
+- The kernel logs every failed CS, and there were only 3 at 17:44:15. So the retries at 17:44 succeeded within milliseconds.
+- Nothing failed between 17:44:15 and the watchdog at 17:46:20.
+
+**The stall is memory starvation.**
+- In the stackshot, WindowServer's main thread and HIDEvents queue are in uninterruptible waits.
+- A WindowServer thread, and many system daemons, sit in page faults through APFS and the zlib decompressor: code and data paging back in, from a compressor holding 23.7 GB, on a machine with 25.2 GB wired.
+- Our driver is not on those stacks.
+- The -ENOMEM and the stall are two symptoms of one cause: wired memory left too little pageable memory.
+
+**What should happen:**
+- (i) **GPU memory must be reclaimable under pressure**, as on Linux, where the TTM shrinker swaps idle BOs and HMM does not pin userptr pages. Here that means:
+  - the row 13 / 11.3 swap-out of idle native TT BOs;
+  - an xnu memory-pressure hook (`vm_pressure`/`kern.memorystatus_level` polled by the park sweep) that shortens `park_ms` from 60 s to about 1 s while memory is critical;
+  - TTM's page-limit swapout working in xkpi (`shmem_file_setup` not verified).
+- (ii) **The OOM retry should not hold `nvmtl_submit_mutex` while it sleeps.** It blocks every other submitting thread of the process for up to 2 s. Releasing it changes the submit order between threads, so it needs the wseq ordering looked at first. Not changed here.
+- (iii) **Name the -ENOMEM.** A one-line ratelimited print in `ttm_bo_validate` before the `-ENOSPC` -> `-ENOMEM` fold, with GTT used and size, and `nmx_page_alloc_fails` in the CS stage line. The next occurrence then says "GTT full" or "no pages". Not written yet: it is a new vendor-file patch, proposed for out-35 if main wants it.
+
+### 12.5 out-34 verify items
+
+**flip_rearm 1.21 of latched (FAIL < 0.10): the notify is not early.**
+- `nmxFlipPoll` takes one look per wake.
+- In the accel trace, a commit latches at the next vblank 5.9 ms after submit on average, and later than 4 ms on 99 % of flips (`accel-201901.txt`: 513 rows; > 6 ms 34 %, > 8 ms 14 %).
+- The fixed 4 ms safety net therefore fired before the pageflip IRQ on nearly every flip, and re-armed in 2 ms steps until the IRQ moved the call up. 0.99 + 0.34 + 0.14 + ... is about 1.2-1.5.
+- `notify p50 0` (pflip to latch seen) confirms that the IRQ path itself is immediate.
+- Fix (c1cf14d): the net is the largest recent latch delay + 2 ms, decaying slowly, clamped to 4..20 ms. The threshold stays at 0.10.
+
+**`debug.nmx_pin_by_proc` and `nmx_userwire_by_kind`: not a bug.**
+- Both are multi-line string sysctls.
+- `sysctl -a | grep NAME` matches only their first line, because the following lines do not contain the name.
+- `sysctl debug.nmx_pin_by_proc` prints all rows. Use `grep -A12`, or read them by name.
+
+### 12.6 The out-35 set (frame-path-kernel `fix/out31`, remote `fork`)
+
+| commit | what | checked |
+|---|---|---|
+| c1cf14d | NMXAccel: flip safety net from the latch delay (12.5); review 1, hold `rs` across the unlocked `nmxFenceWait`; review 5, "not ready" logged once per boot | `nmxaccel_build.sh` (OGKM=~/ogkm615, NM_TAHOE=1) links |
+| f63e16b | NMXGPU fault printer: review 3, BO placement read under the BO's own reservation (trylock, "-2 BO busy"); review 4, freed-range hits copied under the spinlock and printed after it | patch applies, `amdgpu_vm.c` compiles |
+| 30cecaa | NMXGPU park ordering 11.9: three sweep stages; counters `debug.nmx_park_skip_vm`, `nmx_park_abort`, `nmx_park_pt_update` | 42-patch series replay on vendor HEAD clean; `amdgpu_ttm.c`, `amdgpu_vm.c`, `nmx_kext.cpp`, `nmx_page.c` compile |
+
+The 11.9 stages run on the 1 s sweep, and none of them waits:
+- **move**: validate the BO to SYSTEM, then take an unlocked `dma_resv_get_singleton` of the VM root's BOOKKEEP fences;
+- **clear**: once that snapshot has signaled, run `amdgpu_vm_bo_update(clear = true)` under a root-reservation trylock. The fence goes to `vm->last_update`;
+- **unwire**: once that fence has signaled, unpopulate and `nmx_upin_park`.
+
+A CS that touches the BO, or validates it out of SYSTEM, drops the park. Only BOs mapped in exactly one VM are parked. Lock order is the BO reservation first, then a trylock of the root reservation. The CS takes root then BOs under `drm_exec`, so the trylock cannot deadlock.
+
+**Checks after install:**
+- `nmx_park_pt_update` grows with `nmx_userwire_parks`;
+- `nmx_park_abort` stays small;
+- `nmx_park_skip_vm` should be about 0 (an import maps in one VM);
+- `flip_rearm` < 0.10 of latched;
+- row 12 faults: the (f) print now reads placement under the BO lock.
+
+**Risks:**
+- The clear-stage update is one extra page-table job on the VM's delayed entity per park.
+- A BO in stage 1 or 2 sits in SYSTEM still wired for 2-3 s longer than before.
+- If a VM's next CS lists the BO in that time, it validates back to GTT and the park is dropped. No restore is needed, because nothing was unwired.
