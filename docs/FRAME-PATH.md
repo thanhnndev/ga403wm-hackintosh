@@ -183,6 +183,46 @@ window (wire 308, fill 299, restore 18); 12 late frames overlapped one, and thos
 restore max 9.8 ms, fill (background) max 54.8 ms. No WindowServer-blocking stall in this run: row 10 needs the run
 **with Docker up** (pressure) to be judged; that run is still to do.
 
+### 3.3 out-33 run (2026-11-18 15:58, 316 s) against 3.2
+
+**Capture:** `~/ga403-logs/frame-path-out33-1558`.
+- Conditions: uptime 4-9 min, the owner's normal use, Docker not running, no gfx fault on this boot.
+- Build: out-33 = `2b25e54`, rows 1-3 on.
+- 3592 frames were joined; **3524 (98 %) took the kernel fence** (waited = 2).
+
+| stage | out-30 p50 / p90 / p99 / max | out-33 p50 / p90 / p99 / max |
+|---|---|---|
+| gpu | 1.64 / 4.60 / 10.47 / 11.89 | 0.04 / 1.49 / 2.33 / 2.56 |
+| wake (plugin) | 0.60 / 1.66 / 1.99 / 3.17 | 0.24 / 0.32 / 0.40 / 0.40 (only the 68 non-kfence frames) |
+| handoff (plugin -> pipe) | 0.10 / 2.54 / 5.79 / 10.59 | 0.10 / 0.13 / 0.15 / 0.15 (68 frames); **> 4 ms: 138 -> 0** |
+| pipe | 0.01 / 0.02 / 0.03 / 0.08 | 0.01 / 0.03 / 0.04 / 0.08 |
+| worker (submit -> armed, now includes the render wait) | 0.14 / 0.23 / 0.36 / 8.34 | 0.24 / 2.58 / 5.84 / 12.12 |
+| scanout (armed -> pageflip) | 5.32 / 8.11 / 10.67 / 15.29 | 5.46 / 8.12 / 8.46 / 12.74 |
+| notify (pageflip -> NMXAccel saw it) | 0.15 / 0.24 / 0.27 / 13.44 | **0.00 / 0.00 / 0.00 / 0.00** |
+| **total (commit -> pageflip)** | 9.27 / 12.29 / 18.06 / 20.69 | **6.05** / 12.74 / **14.60** / 26.67 |
+
+- **Late frames:** more than 2 periods or a missed vblank: 246 (6 %) -> **46 (1.3 %)**; more than 3 periods: 0 -> 1.
+- **Blame in the late frames:** scanout 42, worker 4.
+
+**Rows 1-3 are confirmed fixed on this run.**
+- **Row 1:** the GPU wait moved from user space into the commit worker, where Linux has it. That is why `worker` grew
+  (p99 5.84 ms is WindowServer's render job), and the handoff stage is gone for 98 % of frames.
+- **Row 3:** notify is 0.
+- **Row 2:** the IOFramebuffer VBL timer fired 9 times in 316 s (was about 120/s, with its phase spread over 10 of 16
+  bins), and `vbl_held` was 1 at the end of the run.
+
+**Largest remaining stage: scanout (p50 5.5 ms).**
+- This is the wait from "armed" to the next vblank. Linux's flip has the same wait, so it is not a divergence. At 120 Hz
+  it averages half a period, and it is what makes up most late frames: a frame that is ready just after a vblank waits
+  one full period.
+- Two things outside our pipe come after it.
+  - **WindowServer arrives late:** commit (`NMXFencePendingT`) -> `performTransaction` entry has p50 0.25, p90 3.69,
+    p99 6.29 and max 21.6 ms. The single very late frame (26.7 ms) spent 19 ms here, before any stage of ours.
+  - **Memory stalls in WindowServer itself (row 10):** 51 surface-wire stalls of at least 1 ms in pid 210 (p50 3.0,
+    p90 5.4, max 6.5 ms); 6 late frames overlapped a stall.
+- Memory got tight without Docker. vm_stat free went from 233k to 4k pages, and compression started in the last
+  minute. Row 10 still needs the Docker run.
+
 **Pages held by the port grow.** `debug.nmx_pages_live` (wired pages the port's TTM pool hands out for GTT/system BOs)
 went from 619 194 (2.4 GB) at 10:48 to 1 111 779 (4.3 GB) at ~11:00, while userptr wirings stayed ~0.6 GB. All of it
 is wired. Linux's TTM pool pages are also unswappable, but its shrinker gives back idle BOs (`ttm_global_swapout`); our
