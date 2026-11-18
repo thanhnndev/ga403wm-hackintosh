@@ -21,5 +21,7 @@ int vcn_receive(vcn_dec *d, CVPixelBufferPoolRef pool, CVPixelBufferRef *out, in
 void vcn_close(vcn_dec *d);
 
 // Stats for logging: frames out, GPU-copy frames, CPU-fallback frames, imported surfaces.
+// copies that waited > 100 ms on their fence (busy or power-gated VCN), and the longest wait in ms
+void vcn_copy_waits(vcn_dec *d, uint64_t *slow, uint64_t *max_ms);
 void vcn_stats(vcn_dec *d, uint64_t *frames, uint64_t *gpu_copies, uint64_t *cpu_copies, uint64_t *imports);
 const char *vcn_last_error(vcn_dec *d);

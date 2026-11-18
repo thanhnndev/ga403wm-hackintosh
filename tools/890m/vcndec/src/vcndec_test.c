@@ -144,6 +144,8 @@ int main(int argc, char **argv) {
   fprintf(stderr, "%s %dx%d: %d frames in %.3f s (%.0f fps), CPU %.3f s (%.2f ms/frame), open %.3f s; gpu-copy %llu, cpu-copy %llu, imports %llu\n",
           codec == 'av01' ? "av1" : "vp9", w, h, n, wall, n / wall, cp, cp * 1000 / (n ? n : 1), topen,
           (unsigned long long)g, (unsigned long long)c, (unsigned long long)im);
+  uint64_t slow, maxw; vcn_copy_waits(d, &slow, &maxw);
+  fprintf(stderr, "copy waits: %llu over 100 ms, longest %llu ms\n", (unsigned long long)slow, (unsigned long long)maxw);
   vcn_close(d);
   if (chk) { fprintf(stderr, "index check: %d ok, %d wrong, %d unreadable\n", ok, bad, unreadable); if (bad || unreadable || !ok) return 3; }
   return 0;

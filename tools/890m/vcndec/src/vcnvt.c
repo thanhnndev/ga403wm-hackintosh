@@ -86,10 +86,11 @@ static const char *cc(FourCharCode c, char b[5]) { b[0] = c >> 24; b[1] = c >> 1
 
 static void teardown(Storage *s) {
   if (s->dec) {
-    uint64_t f, g, c, i;
+    uint64_t f, g, c, i, slow, maxw;
     vcn_stats(s->dec, &f, &g, &c, &i);
-    os_log(L(), "VCNDEC close: in %llu out %llu dropped %llu errors %llu (gpu-copy %llu cpu-copy %llu imports %llu)",
-           s->in, s->out, s->dropped, s->errors, g, c, i);
+    vcn_copy_waits(s->dec, &slow, &maxw);
+    os_log(L(), "VCNDEC close: in %llu out %llu dropped %llu errors %llu (gpu-copy %llu cpu-copy %llu imports %llu; slow copies %llu, longest %llu ms)",
+           s->in, s->out, s->dropped, s->errors, g, c, i, slow, maxw);
     vcn_close(s->dec);
     s->dec = NULL;
   }

@@ -24,7 +24,7 @@ const sh = promisify(execFile);
 const label = process.argv[2] || 'build', which = process.argv[3] || 'all', filter = process.argv[4] || '';
 const manifest = JSON.parse(fs.readFileSync(path.join(CLIPS, 'manifest.json')));
 const WARM = 3, MEASURE = 12, port = 8793;
-const osa = (s) => sh('osascript', ['-e', s]).then((r) => r.stdout.trim());
+const osa = (s) => sh('osascript', ['-e', s], { timeout: 20000 }).then((r) => r.stdout.trim());
 
 // cputime (s) per pid for the processes that can decode: VT XPC services, Safari's GPU + WebContent, QuickTime
 async function procs() {
@@ -115,23 +115,42 @@ async function safariCell(cell) {
 async function qtCell(cell) {
   const r = { app: 'QuickTime', id: cell.id, clip: cell.clip, ...cell.d, mode: 'file', errors: [] };
   const file = path.join(CLIPS, cell.clip);
+  // QuickTime documents have no "path" (only "file"), and the reply to "open" can hang: send open without waiting for
+  // the reply, then find our document by its file. Only documents whose file is this clip are ever touched.
+  const mine = (body) => `tell application "QuickTime Player"
+      repeat with i from (count of documents) to 1 by -1
+        try
+          if POSIX path of (file of document i as alias) is "${file}" then
+            set d to document i
+            ${body}
+          end if
+        end try
+      end repeat
+    end tell`;
   let opened = false;
   try {
     const a = await procs(); const ta = Date.now();
-    const t0 = await osa(`tell application "QuickTime Player"
-      set d to open POSIX file "${file}"
-      set bounds of front window to {760, 440, 1400, 820}
-      play d
-      return current time of d
+    await osa(`tell application "QuickTime Player"
+      ignoring application responses
+        open POSIX file "${file}"
+      end ignoring
     end tell`);
     opened = true;
+    let t0 = '';
+    for (let k = 0; k < 20 && t0 === ''; k++) {
+      await wait(500);
+      t0 = (await osa(mine(`set bounds of (first window whose name is (name of d)) to {760, 440, 1400, 820}
+            play d
+            return current time of d`))).trim();
+    }
+    if (t0 === '') throw new Error('document did not open');
     await wait(MEASURE * 1000);
-    const t1 = await osa(`tell application "QuickTime Player" to return current time of (first document whose path is "${file}")`);
+    const t1 = (await osa(mine('return current time of d'))).trim();
     Object.assign(r, await cpuDelta(a, await procs(), (Date.now() - ta) / 1000));
     r.advanced = +(+t1 - +t0).toFixed(2);
     r.plays = r.advanced > MEASURE * 0.5 ? 'yes' : 'no';
   } catch (e) { r.plays = 'no'; r.errors.push('osascript: ' + e.message.split('\n').slice(0, 2).join(' ')); }
-  finally { if (opened) await osa(`tell application "QuickTime Player" to close (every document whose path is "${file}") saving no`).catch((e) => r.errors.push('close: ' + e.message)); }
+  finally { if (opened) await osa(mine('close d saving no')).catch((e) => r.errors.push('close: ' + e.message)); }
   return r;
 }
 

@@ -49,6 +49,7 @@ struct vcn_dec {
   import_ent cache[NCACHE];
   uint64_t tick;
   uint64_t n_frames, n_gpu, n_cpu, n_imports;
+  uint64_t n_slow, max_wait_ms; // copies whose fence took longer than 100 ms, longest wait
   char err[256];
   // device functions
   PFN_vkGetDeviceProcAddr gdpa;
@@ -385,7 +386,12 @@ static int copy_out(vcn_dec *d, AVFrame *f, CVPixelBufferRef pb) {
   // for seconds. Keep waiting: resetting a fence whose submission is still pending (what a 2 s timeout used to do) is
   // invalid, and the next frame's submit on it failed too, turning one slow frame into a run of decode errors.
   int waited = 0;
+  struct timespec w0, w1; clock_gettime(CLOCK_MONOTONIC, &w0);
   do vr = d->WaitForFences(d->vd, 1, &d->fence, VK_TRUE, 1000000000ull); while (vr == VK_TIMEOUT && ++waited < 10);
+  clock_gettime(CLOCK_MONOTONIC, &w1);
+  uint64_t wms = (uint64_t)((w1.tv_sec - w0.tv_sec) * 1000 + (w1.tv_nsec - w0.tv_nsec) / 1000000);
+  if (wms > 100) d->n_slow++;
+  if (wms > d->max_wait_ms) d->max_wait_ms = wms;
   if (vr != VK_SUCCESS) { d->fence_lost = 1; seterr(d, "copy fence%s %d", waited >= 10 ? " (10 s)" : "", vr); return -1; }
   d->ResetFences(d->vd, 1, &d->fence);
 
@@ -427,6 +433,7 @@ int vcn_receive(vcn_dec *d, CVPixelBufferPoolRef pool, CVPixelBufferRef *out, in
   return 1;
 }
 
+void vcn_copy_waits(vcn_dec *d, uint64_t *slow, uint64_t *max_ms) { *slow = d->n_slow; *max_ms = d->max_wait_ms; }
 void vcn_stats(vcn_dec *d, uint64_t *f, uint64_t *g, uint64_t *c, uint64_t *i) {
   *f = d->n_frames; *g = d->n_gpu; *c = d->n_cpu; *i = d->n_imports;
 }
