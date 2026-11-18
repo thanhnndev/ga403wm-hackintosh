@@ -224,6 +224,43 @@ restore max 9.8 ms, fill (background) max 54.8 ms. No WindowServer-blocking stal
 - Memory got tight without Docker. vm_stat free went from 233k to 4k pages, and compression started in the last
   minute. Row 10 still needs the Docker run.
 
+### 3.4 Under Docker load (2026-11-18 16:11, 312 s) against 3.3
+
+**Capture:** `~/ga403-logs/frame-path-out33-docker-1611`.
+- Load: Docker with 8 vCPUs (guest wired lazily, 3.0 GB by the end), plus the video suite's codec matrix in Chrome, Safari and QuickTime.
+- Memory at the end: free 5k pages, wired 17.8 GB, compressor 6.6 GB.
+- GTT used went from 6.7 GB to 10.1 GB. WindowServer held 5.17 GB and Safari's GPU process 1.83 GB.
+- 9243 frames were joined (2.6x the 3.3 run); 9178 took the kernel fence.
+
+| stage (ms) | 3.3 p50 / p90 / p99 / max | Docker p50 / p90 / p99 / max |
+|---|---|---|
+| gpu | 0.04 / 1.49 / 2.33 / 2.56 | 0.09 / 1.00 / 2.69 / 4.03 |
+| wake (non-kfence frames) | 0.24 / 0.32 / 0.40 / 0.40 | 0.28 / 0.55 / 1.19 / 1.19 |
+| handoff (non-kfence frames) | 0.10 / 0.13 / 0.15 / 0.15 | 0.09 / 0.14 / 0.20 / 0.20 |
+| pipe | 0.01 / 0.03 / 0.04 / 0.08 | 0.02 / 0.03 / 0.04 / 0.08 |
+| worker | 0.24 / 2.58 / 5.84 / 12.12 | 0.28 / 1.52 / 4.86 / 18.06 |
+| scanout | 5.46 / 8.12 / 8.46 / 12.74 | 4.96 / 6.61 / 8.24 / 14.01 |
+| notify | 0 | 0 |
+| **total** | 6.05 / 12.74 / 14.60 / 26.67 | **5.73 / 9.33 / 14.31 / 24.96** |
+
+**Late frames:** 76 of 9243 (0.8 %), none later than 3 periods. Blame: scanout 69, worker 7. Worker above 4 ms: 139.
+
+**Row 10 under pressure: memory stalls on the submit path.** Deltas over the run, counted in every process:
+
+| kind | n | total ms | ≥ 1 ms | ≥ 10 ms | max |
+|---|---|---|---|---|---|
+| surf (surface wire) | 1676 | 2130 | 273 | **59** | 93.7 ms |
+| wire (user wire) | 993 | 1258 | 201 | 22 | 39.6 ms |
+| fill (pool page fill) | 1268 | 1704 | 449 | 15 | 16.8 ms |
+| restore (Step142 unpark) | 479 | 147 | 11 | 6 | 14.5 ms |
+
+- The 3.3 run had one stall of 10 ms or more. This run had **102**.
+- They fall on the **clients'** submits: Claude Helper (surf ×127), Safari's WebKit GPU process (wire ×99, surf ×52), Docker Desktop Helper (surf ×34), VTDecoder (wire ×31) and the pool fill (×336). WindowServer has only 21.
+- Only 7 late composited frames overlapped a stall. The worst were wire 9.2 ms, and restore 14.5 / 13.2 ms on frame 32161.
+- So under pressure, row 10 costs the **apps' frame production** (video players, browser GPU processes), not WindowServer's composition. This WindowServer-side trace cannot see those as late. A dropped video frame shows up in the player's own counters.
+- `nmx_page_alloc_waits` stayed 0: the pool never ran dry. The time goes into wiring user and surface pages while the VM is compressing.
+- What reduces it: rows 9-10 and row 13. Fewer wired pages mean less compressor churn, and parked imports are re-wired only when used.
+
 **Pages held by the port grow.** `debug.nmx_pages_live` (wired pages the port's TTM pool hands out for GTT/system BOs)
 went from 619 194 (2.4 GB) at 10:48 to 1 111 779 (4.3 GB) at ~11:00, while userptr wirings stayed ~0.6 GB. All of it
 is wired. Linux's TTM pool pages are also unswappable, but its shrinker gives back idle BOs (`ttm_global_swapout`); our
@@ -854,3 +891,67 @@ These are plugin-only changes, with no NMXGPU build.
 
 - After (a) is installed: `debug.nmx_pin_by_proc` shows WindowServer `parked` above 0 within a few minutes of a static desktop, and `nmx_userwire_by_kind` old60 pages fall.
 - Native vs imported per process: extend `nmx_gtt` with a userptr-bytes column (sum of `ttm->num_pages` for BOs with `gtt->userptr`) and the real pid. Both are read-only additions.
+
+### 11.6 The other ~1.5 GB: shadow copies and private copies (analysis and proposal; no code)
+
+Both are **caches**. Their source of truth is an MTLBuffer or an IOSurface, which the client keeps. A cache can be dropped when idle and rebuilt on next use, and that is the correct design. Today both live as long as their texture.
+
+**Buffer-texture shadows.**
+- Created by `newTextureWithDescriptor:offset:bytesPerRow:` on an MTLBuffer whose bytesPerRow is not 256-aligned, e.g. "46x44 pitch 192 shadowed at pitch 256", logged 12288 times in WindowServer.
+- AMD linear images need a 256 B pitch, so the plugin keeps a second image and copies the buffer's rows into it before every submit that uses it.
+- WindowServer copied 30 GB of shadow uploads in 20480 submits, about 1.5 MB per submit.
+- The copy on every use is required: CPU writes to a Shared buffer cannot be seen, and Metal guarantees they are visible to the next command buffer.
+- The memory is not required. Proposal:
+  - (i) free a shadow whose texture has not been used by any command buffer for N s, using the res2 LRU tick, and recreate it on next use (the copy happens then anyway);
+  - (ii) for a buffer texture that is only read with `read()` and never sampled, check whether a `VkBufferView` texel buffer can replace the image. That needs no pitch rule, no shadow and no copy. It needs a shader-side check (`nvconv`/SPIR-V reflection); to be investigated, not assumed.
+
+**Multi-plane private copies ("item 7").**
+- A two-plane surface whose plane pitch the GPU cannot use (e.g. 3840x2160 with row 11524 B) gets a private image, copied in and out.
+- Proposal:
+  - copy **out** only when a command buffer wrote the image (usage includes render target or shader write and it was bound for writing);
+  - free the private image after N s without use, as with the shadows;
+  - planes whose pitch is already 256-aligned stay host imports. They already are: "420v 1920 pitch 1920 -> its own pages".
+
+Both changes are plugin-only and use the existing res2 idle tick. Risk: the first use after idle pays the copy-in, which the current code pays on every upload anyway.
+
+### 11.7 IPS/PSR question (g): `vbl_held` does not explain it
+
+Across the 75 snapshots of the Docker run:
+- `idle_allowed 1` and PSR `allow_active 1` in 38 (whenever `active_vblank_irq_count` was 0);
+- `vbl_held 1` in only 11.
+
+Yet the DMUB IPS counters (`rcg`, `ips1`, `ips2` entry/exit, read from the firmware's shared state) stayed **0/0 since boot** in both runs.
+
+So the vblank reference is not what keeps IPS off. Two causes remain, and one 30 s static-screen read separates them (no video, no Docker; read `debug.nmx_frametrace` before and after):
+- (1) neither capture ever had a static screen long enough: both had video playing;
+- (2) the firmware never enters IPS, or never fills those counters, on this DCN 3.5.1 with our DMUB/IPS init.
+
+If the counters stay 0 on a static screen with `idle_allowed 1`, compare the IPS mode DM chose (`init_data.flags.disable_ips`, `dc->debug` IPS fields) with what Linux picks for IP 3.5.1. No code until then.
+
+### 11.8 out-34 fix set (compile-checked; main builds)
+
+| item | repo / branch | commit | what |
+|---|---|---|---|
+| (a) NMXAccel sysctls, (b) `vbl_held` semantics, (c) five review follow-ups | frame-path-kernel `fix/out31` | `f01c1ad` (one commit, as asked at the time) | 9.x |
+| (d) real process in the VM task info (`nmx_gtt`, fault print) | frame-path-kernel `fix/out31` | `873b17f` | patch `amdgpu-vm-task-tgid.patch` |
+| (e) transfer-only one-shot submits exact | frame-path-plugin `fix/out31-plugin` | `c334220` | 11.2, 11.4 a; A/B `NVMTL_SL_EXACT_XFER=0` |
+| (f) fault print names the BO / freed range | frame-path-kernel `fix/out31` | `c6555b4` | patch `amdgpu-vm-fault-name.patch` |
+| (g) IPS | (none) | (none) | 11.7: one static-screen read first |
+
+**Proof that (e) is complete**, i.e. that a surface used by one of those submits is listed:
+- the marked submits record only barriers, `vkCmdCopy*` and `vkCmdFillBuffer` (each call chain read down to the `pvkCmd*` calls);
+- RADV lists every source and destination BO of those commands itself (`radv_meta_copy.c` :73/:347/:354/:423/:561/:568/:613/:864/:865, `radv_meta_buffer.c` :246/:259/:344/:345);
+- mipmap blits and timestamps are not marked.
+
+**If it were ever incomplete,** the import still has its VM mapping while it is wired, so the data is correct. Once parked, its PTEs are V = 0 and the GPU faults, and (d) and (f) name the process and the parked BO ("placement 0, userptr 1"). The failure is loud, never a silent stale read.
+
+**What (e) changes in behaviour:**
+- WindowServer's idle imports start parking after 60 s.
+- The next use of a parked import pays a Step142 restore on WindowServer's submit (3.4: restore p99 about 1 ms, max 14.5 ms). A window that was hidden for a minute can cost one frame when it comes back.
+- That is the same contract other processes already run under.
+
+**Checks after install (read-only):**
+- `debug.nmx_pin_by_proc` shows WindowServer `parked` above 0 after a few minutes of a static desktop;
+- old60 pages in `nmx_userwire_by_kind` fall;
+- WindowServer's log shows "transfer-only one-shot submits exact" and "carried the surface list" barely growing;
+- `debug.nmx_gtt` shows real pids and names.
