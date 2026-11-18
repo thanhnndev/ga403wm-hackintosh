@@ -1,29 +1,34 @@
 // H.264 / HEVC test clips with AVAssetWriter (VideoToolbox; on this machine the encoders are software). Draws the same
 // layout as gen/content.js with CoreGraphics: moving gradient, shapes, scrolling text, two-layer grain, a large frame
 // counter (top left) and a 16-bit frame index strip (bottom left). moov at the front (network-friendly).
-// usage: genmp4 out.mp4 h264|hevc width height fps seconds bitrate
+// usage: genmp4 out.mp4 h264|hevc|hevc10 width height fps seconds bitrate [frag]
+//   hevc10 = HEVC Main10 (10-bit stream); frag = fragmented MP4 (moov + moof every 2 s) for Media Source Extensions
 import AVFoundation
 import CoreGraphics
 import CoreText
 import Foundation
 
 let a = CommandLine.arguments
-guard a.count == 8, let W = Int(a[3]), let H = Int(a[4]), let fps = Int(a[5]), let secs = Int(a[6]), let br = Int(a[7]) else {
-  print("usage: genmp4 out.mp4 h264|hevc width height fps seconds bitrate"); exit(2)
+guard a.count == 8 || a.count == 9, let W = Int(a[3]), let H = Int(a[4]), let fps = Int(a[5]), let secs = Int(a[6]), let br = Int(a[7]) else {
+  print("usage: genmp4 out.mp4 h264|hevc|hevc10 width height fps seconds bitrate [frag]"); exit(2)
 }
 let url = URL(fileURLWithPath: a[1]); try? FileManager.default.removeItem(at: url)
 let label = url.lastPathComponent
 let s = CGFloat(H) / 1080
 let w = try! AVAssetWriter(outputURL: url, fileType: .mp4)
-w.shouldOptimizeForNetworkUse = true
+let frag = a.count == 9 && a[8] == "frag"
+if frag { w.movieFragmentInterval = CMTime(seconds: 2, preferredTimescale: 600) } else { w.shouldOptimizeForNetworkUse = true }
+let hevc = a[2].hasPrefix("hevc")
 var comp: [String: Any] = [AVVideoAverageBitRateKey: br, AVVideoMaxKeyFrameIntervalKey: fps * 2,
   AVVideoExpectedSourceFrameRateKey: fps, AVVideoAllowFrameReorderingKey: true]
 if a[2] == "h264" { comp[AVVideoProfileLevelKey] = AVVideoProfileLevelH264HighAutoLevel }
-let inp = AVAssetWriterInput(mediaType: .video, outputSettings: [AVVideoCodecKey: a[2] == "hevc" ? AVVideoCodecType.hevc : AVVideoCodecType.h264,
+if a[2] == "hevc10" { comp[AVVideoProfileLevelKey] = "HEVC_Main10_AutoLevel" }
+let inp = AVAssetWriterInput(mediaType: .video, outputSettings: [AVVideoCodecKey: hevc ? AVVideoCodecType.hevc : AVVideoCodecType.h264,
   AVVideoWidthKey: W, AVVideoHeightKey: H, AVVideoCompressionPropertiesKey: comp])
 inp.expectsMediaDataInRealTime = false
 let ad = AVAssetWriterInputPixelBufferAdaptor(assetWriterInput: inp, sourcePixelBufferAttributes: [
-  kCVPixelBufferPixelFormatTypeKey as String: kCVPixelFormatType_32BGRA, kCVPixelBufferWidthKey as String: W, kCVPixelBufferHeightKey as String: H])
+  kCVPixelBufferPixelFormatTypeKey as String: kCVPixelFormatType_32BGRA,
+  kCVPixelBufferCGBitmapContextCompatibilityKey as String: true, kCVPixelBufferWidthKey as String: W, kCVPixelBufferHeightKey as String: H])
 w.add(inp); w.startWriting(); w.startSession(atSourceTime: .zero)
 
 var seed: UInt32 = 0x9e3779b9

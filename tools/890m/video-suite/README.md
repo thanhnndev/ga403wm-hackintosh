@@ -58,6 +58,26 @@ Plain cases: 10 s warm-up, then a 60 s measured window. TODO stubs (listed by `r
 owner's answers on Safari history and the AppleScript Automation prompt), and "under Docker" (the suite never starts
 or stops Docker; every run records whether it was running and how much CPU it used).
 
+## Codec matrix
+
+```bash
+node tools/890m/video-suite/gen.mjs matrix          # once: 30 s clips for every cell (H.264, HEVC Main/Main10, VP9 p0/p2, AV1 8/10-bit)
+node tools/890m/video-suite/matrix.mjs out-29        # every cell, ~35 s each -> results/matrix-out-29-<date>/matrix.md
+node tools/890m/video-suite/matrix.mjs out-29 hevc   # only cells whose clip name contains "hevc"
+```
+
+One row per codec / profile / size / container (MP4, WebM, and MSE with 1 MB appends: WebM, fragmented MP4).
+Per cell: plays or not (with the first media error), decoder (`HW (VideoToolbox)` = VCNDec or Apple's decoder,
+`SW (...)` = Chrome's software fallback), dropped/decoded, late frames, the **frame check** (`pages/check.js`: on every
+6th presented frame the 16-bit frame index strip is read back from the video and compared with `mediaTime * fps`;
+wrong = a wrong or repeated frame, unreadable = a corrupt picture), CPU, and watts over an 8 s idle taken right before
+the cell. Safari and QuickTime columns read "waiting for owner permission". A clip the machine cannot make (WebCodecs
+has no 10-bit VP9/AV1 encoder) is listed as `no clip`.
+
+`tools/890m/vcndec/build/vt_check` checks the same frame index outside the browser: it decodes an MP4 through a
+`VTDecompressionSession` that requires a hardware decoder (with `-b` the freshly built VCNDec bundle is registered
+in-process, so nothing has to be installed) and reads the strip from every output picture.
+
 ## Metrics (table.md columns)
 
 Page side (one row per second, from the page itself):

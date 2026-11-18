@@ -1,0 +1,10 @@
+drop {"secs":6,"ivmax_avg":47.9,"ws_avg":21,"gpu_avg":13.2,"total_avg":731.4,"kt_avg":35.7,"input_avg":0,"input_secs>0":"0/6","swapin_avg":0,"swapin_secs>0":"0/6","userwire_parks_avg":4.5,"userwire_parks_secs>0":"1/6","userwire_unparks_avg":1.5,"userwire_unparks_secs>0":"1/6","page_chunks_filled_avg":25,"page_chunks_filled_secs>0":"2/6","page_chunks_freed_avg":0,"page_chunks_freed_secs>0":"0/6","page_chunks_inline_avg":0,"page_chunks_inline_secs>0":"0/6"}
+clean {"secs":245,"ivmax_avg":18.9,"ws_avg":22,"gpu_avg":13.2,"total_avg":276.7,"kt_avg":20.5,"input_avg":0.1,"input_secs>0":"26/245","swapin_avg":0,"swapin_secs>0":"0/245","userwire_parks_avg":2.6,"userwire_parks_secs>0":"35/245","userwire_unparks_avg":0.6,"userwire_unparks_secs>0":"9/245","page_chunks_filled_avg":0.5,"page_chunks_filled_secs>0":"2/245","page_chunks_freed_avg":0,"page_chunks_freed_secs>0":"0/245","page_chunks_inline_avg":0,"page_chunks_inline_secs>0":"0/245"}
+
+drop seconds:
+r1/av1-1080p60-max 09:07:26 drop 8 skip 7 ivmax 108.4 in 0 swapin 0 parks 0 unparks 0 fill 0 freed 0 WS 23 all 770
+r1/av1-1080p60-max 09:07:28 drop 0 skip 1 ivmax 32.5 in 0 swapin 0 parks 0 unparks 0 fill 78 freed 0 WS 20 all 906
+r1/av1-1080p60-max 09:07:33 drop 2 skip 2 ivmax 18.6 in 0 swapin 0 parks 0 unparks 0 fill 72 freed 0 WS 26 all 1677
+r1/vp9-1080p60-fs 09:05:16 drop 2 skip 2 ivmax 50.8 in 0 swapin 0 parks 0 unparks 0 fill 0 freed 0 WS 18 all 436.6
+r1/vp9-1080p60-fs 09:05:22 drop 2 skip 2 ivmax 17.6 in 0 swapin 0 parks 27 unparks 0 fill 0 freed 0 WS 19 all 115
+r1/vp9-1080p60-win 09:02:08 drop 4 skip 3 ivmax 59.3 in 0 swapin 0 parks 0 unparks 9 fill 0 freed 0 WS 20 all 484
