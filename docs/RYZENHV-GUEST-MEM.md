@@ -388,3 +388,18 @@ I did not do it: the change touches protect, unmap, reclaim and the debug read p
 - Should reclaim follow host pressure (`kern.memorystatus_vm_pressure_level`), instead of only age? Decide after test 4.2.
 - Does Virtualization.framework start a VM on this machine at all? It would make option 2.3-4 worthwhile.
 - Which host process runs the p0 DDL loop (it belongs to the owner's project)?
+
+## 7. Pre-install review of 50275d0..f1df9fb (2026-11-18), fixes in the next commit on `research/guest-mem-lazy`
+
+Line numbers are `kext/Source/Vm.cpp` at f1df9fb.
+
+| # | Finding | Verdict |
+|---|---|---|
+| 1 | `protect` is lost on eviction: the range stays lazy with its original `perm`, reclaim unmaps the chunk, and `faultIn` re-enters it with `lr.perm` | **Fixed.** After a successful protect, `forgetLazyLocked(gpa, size)` takes the protected pages out of the lazy ranges. They are an ordinary eager mapping from then on: never evicted, never re-faulted. (The emulator's on-demand loader would make all of its RAM eager, as section 6.2 already says.) |
+| 2 | An eager `map` (< 64 MiB) inside an untouched lazy range succeeds (0.7.22 returned Busy); reclaim would evict those pages, and the re-fault would back them with the lazy range's memory | **Fixed.** The eager path returns `kIOReturnBusy` when its range intersects any lazy range, which matches 0.7.22. |
+| 3 | The lazy NPF path re-injects `exitIntInfo` verbatim; soft events need `nextRip`, which an NPF exit does not provide | **Fixed.** A software interrupt (type 4) and INT3/INTO (type 3, vectors 3 and 4) are not re-injected. RIP still points at the instruction, so the guest executes it again (KVM does the same for INT3/INTO). Hardware interrupts, NMIs and other exceptions are re-injected as before. The client path (`VmcsState.hpp:345`) is correct: it sets `nextRip = rip + instruction length` for soft events. **Pre-existing, not changed:** the `EXIT_INTR` path (`continue` after a host interrupt) copies `exitIntInfo` verbatim in the same way, and has since before 0.7.22. The same 4-line rule would fix it. It is left out of this install to keep the delta small: follow-up. |
+| 4 | `sVmUnmap` / `sVmProtect` lack the `current_task() != fTask` check that `sVmMap` has, and now reach `materializeLocked`, which builds a descriptor on the stored task | **Fixed.** Both now have the check. `materializeLocked` also refuses (`kIOReturnNotPermitted`) unless `current_task()` is the range's task. With that, the stored task is only ever used from inside itself, so no task reference is needed. On the front-end path, protect and unmap traps run in the VM's own task. |
+| 5 | ABA in the `faultIn` re-check (gpa/size/uva only) | **Fixed.** Each range carries a `gen` from a per-VM counter, renewed when the range is created, trimmed or split. `faultIn` compares `gen`. |
+| 6 | `arm()` reads `gCall` twice while `stop()` can clear and free it | **Fixed.** It reads it once into a local. `stop()` sets `gStopping` and waits for a running tick (`thread_call_cancel_wait`) before freeing. |
+| note | `faultIn` takes the write lock without a kick | **Kept.** It waits for every vCPU's next exit. At ~13k exits/s per vCPU that is ~75 µs, and a halted vCPU sits in the client without the lock. Kicking would send all vCPUs to the client on each of up to 4096 first touches. |
+| note | A scan holds the registry lock for the whole round | **Kept.** It blocks only VM create, destroy and lookup, for a few ms per period, and only with step 2 on. It is what keeps a VM from being freed mid-scan. |
