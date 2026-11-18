@@ -100,6 +100,7 @@ Effect columns: pacing (P), latency (L), memory (M), power (W).
 | **9** | memory policy (L2 vs Steps 141-142) | TTM pool shrinker + eviction under pressure, MMU notifiers | 2 MB chunk pool and IOSurface park/unpark on timers (5 s / 60 s / 10 min); xnu never fires `vm_lowmem` | re-wire of a parked surface on first use after 60 s idle (tab switch, Mission Control) costs a burst; pool timers wake periodically | M, occasional L | Step142 probes clean (handoff 5.2); 1828 parks / 644 unparks in 23 min | keep; replace timers by xnu memory pressure later (out of scope for stutter) | - |
 | **10** (first for gaps > 100 ms, see 3.1) | memory work on the submit thread (L2 vs Step92/142, Step141 pool) | compositor surfaces are TTM BOs (GTT/VRAM) moved only by the shrinker when idle; userptr pages are faulted by `amdgpu_ttm_tt_get_user_pages` in `amdgpu_cs_parser_bos` **before** `drm_exec_until_all_locked` | every IOSurface is a userptr BO of pageable user memory; Step142 unwires it after 60 s idle, the compressor/swap may take the pages, and the next CS re-wires it in `amdgpu_ttm_tt_populate` -> `nmx_upin_restore` -> `IOMemoryDescriptor::prepare()` **inside `ttm_bo_validate`, holding the process's VM PD lock and the BO reservations**, on the submitting thread (WindowServer or Chrome's GPU process). New imports wire with `prepare()` on the same thread (`nmx_xnu_user_wire`, `surf_wire`). When the chunk pool is empty, `single_alloc` makes a 2 MB wired chunk (`IOBufferMemoryDescriptor` + `prepare()`) inline on the allocating thread | a swap-in or a wait for 512 free pages lands directly in a frame: hundreds of ms to seconds under pressure, nothing else in the path can make gaps that long | **P** (the 402 ms / 4.1 s gaps), L | video-suite (correlation, high): every drop second under memory pressure had swap-ins, chunk fills 2/6 drop seconds vs 2/245 clean; park/unpark **counts** do not discriminate, which is expected: one slow re-wire costs a second, many fast ones cost nothing; only latency tells -> stall ring (section 7, `468a78d`). Source (high): `amdgpu_cs.c` lines 906-910 (`if (0)` around the pre-lock fetch, Step92), `amdgpu-userptr-park.patch` populate hunk, `nmx_page.c` `single_alloc`/`chunk_new` | (a) `amdgpu_cs_parser_bos`: re-enable the pre-lock userptr loop for **parked** entries only and call `nmx_upin_restore` there, so the slow part runs before any lock (as Linux does) and the populate finds the pages wired; (b) `amdgpu_ttm_tt_nmx_touch` / surface-hint lookup: when a parked BO is looked up for a new CS, kick the re-wire on a thread call ahead of the submit (WindowServer composites the same surfaces frame after frame, so the first frame pays at most once); (c) never park a BO that was flip-imported or used by WindowServer in the last N frames (keep the pages of on-screen surfaces wired; park only background ones); (d) `single_alloc`: when the pool is empty, allocate just the one page (or a 64 KB run) inline and leave the 2 MB chunk to `fill_worker`; (e) the pressure itself: see 3.1 (RyzenHV wires 12.3 GB of guest RAM) | medium (a, c: ordering with Step142's park state machine and the BO list mutex); low (b, d) |
 | **11** | Chrome H.264 decode (V1/V2 vs PV1) | VA-API on VCN for H.264/HEVC/VP9/AV1 | `VCNDec` (`tools/890m/vcndec/Info.plist`) registers only `vp09` and `av01`; Chrome asks VideoToolbox for a **hardware** H.264 decoder, gets none, and uses FFmpeg on the CPU | each H.264 stream adds one to two cores of user-priority decode plus CPU copies into IOSurfaces; this is part of the 731 % CPU in drop seconds and it competes with every user-space hop in rows 1 and 5 | P (video), W | main (H.264 falls back to FFmpeg, high); `Info.plist` and `vcndec.c` line 152 (`codec not handled` for anything but vp09/av01) (high); Step106: VCN H.264 decode bit-exact with the test RADV build (high) | `VCNDec`: add `avc1` (and `hvc1`) decoder entries in `Info.plist`; in `vcndec.c` map them to `AV_CODEC_ID_H264` / `AV_CODEC_ID_HEVC` and pass the `avcC`/`hvcC` atom from the format description as extradata (VideoToolbox hands length-prefixed NAL units, which libavcodec takes with that extradata); check with `vt_test` and Chrome `chrome://media-internals` -> `VideoToolboxVideoDecoder`. Owner: video-suite session | low-medium (VT's H.264 format-description edge cases: interlaced, 4:2:2 profiles must be refused cleanly) |
+| **12** (correctness; each one is a 3 s gfx stall) | GPU write through an invalid PTE in the VideoToolbox decoder (V2 vs PV2) | every BO a job touches is in its BO list (or VM-always-valid); the CS re-validates it, rewrites its PTEs with a TLB flush (`amdgpu_vm_bo_update`: `moved` -> `flush_tlb`), and the job waits for that update; a userptr invalidation (MMU notifier) first waits for the BO's fences | 23 gfx faults this boot (11:27-12:44): TCP write, `PERMISSION_FAULTS 0x5` + `MAPPING_ERROR 0` = the PTE exists but has V = 0, in VTDecoderXPCService pasids (32816/18/19/22/38), each followed by a 3 s "ring gfx timeout, soft recovered" and VCNDec "copy fence" -12911 | Linux writes V = 0 exactly for a BO placed in SYSTEM (`amdgpu_ttm_tt_pte_flags`) or a freed mapping; Step142 parks idle IOSurface userptr BOs to SYSTEM, and that process has 251 522 parked pages; the listed-BO path re-validates them as Linux does, so the open question is which BO the job wrote and why it was not re-validated | P (3 s), memory safety | fault decode and Linux source (high); park as the source: **medium (~50 %)**, freed mapping (VCNDec/RADV import churn) ~30 %, TTM eviction under GTT pressure ~20 %; see 10 | decide first: fault-time VA -> BO lookup (10.3), A/B `debug.nmx_userptr_park_ms=0`; then the fix in 10.4 | the lookup is read-only in the IH path (trylock) |
 
 Not a divergence any more (killed with today's counters): flip-import churn (11 imports in 23 min, 0 failures), CPU
 copy to the panel (fallback 0, K6/beam counters 0), pipe drops (0), flip timeouts (0).
@@ -516,3 +517,117 @@ Round 2 of the review of `478a117` found seven issues (N1-N7). All are fixed in 
 - Two items cannot be scripted:
   - the WindowServer pipe-thread CPU, which needs a root spindump (command printed);
   - the on-screen check, which the owner does.
+
+## 10. Row 12: gfx page faults in the VideoToolbox decoder (2026-11-18, read-only analysis, no code)
+
+The codec session reported this finding. The details are in `docs/VIDEO-CODEC-MATRIX.md` on `claude/video-suite-27beee`
+(`c7a37bf`).
+
+### 10.1 What the fault says
+
+This boot's kernel log has 23 faults between 11:27 and 12:44. All have the same signature: `[gfxhub] page fault ring:40`,
+client TCP, `GCVM_L2_PROTECTION_FAULT_STATUS` 0x00241051 / 0x00341051.
+
+Decoded:
+- `MORE_FAULTS` 1;
+- `PERMISSION_FAULTS` 0x5 (PTE not valid + write);
+- `MAPPING_ERROR` 0: the page directory walk reached a PTE, so the VA lies inside page tables that exist;
+- `RW` 1.
+
+A write to a read-only (romap) PTE would show 0x4 instead, and NMX's romap lookup agrees: no romap entry covers these VAs.
+
+So a shader in the decoder's VM wrote a page whose PTE has V = 0. VCNDec's image-to-buffer copy writes into a host import
+of the output IOSurface (`vcndec.c` `surface_buffer()`, RADV `radv_amdgpu_winsys_bo_from_ptr`), which makes it the obvious
+writer.
+
+Timing:
+- Each fault is followed by a 3 s soft recovery (`amdgpu-gfx-timeout-3s.patch`), then VCNDec's "copy fence" -12911.
+- Pairs 3 s apart hit the same or the adjacent page (12:20:36/39, 12:43:26/29, 12:44:12/15). The PTE stays invalid
+  across the next submit as well.
+
+Intervals in pasid 32816, 12:23-12:37: 180, 163, 164, 163 and 162 s.
+
+### 10.2 What writes V = 0 PTEs, and what Linux does
+
+`amdgpu_vm_bo_update` writes `amdgpu_ttm_tt_pte_flags(..., mem)`, which sets `AMDGPU_PTE_VALID` only when the BO is not in
+`TTM_PL_SYSTEM`. A freed mapping is cleared by `amdgpu_vm_clear_freed`, which writes V = 0 too.
+
+Linux stays safe through one rule: every BO a job touches is either VM-always-valid or listed in the job's BO list.
+
+For a listed BO, the CS:
+- locks it, validates SYSTEM -> GTT (for a userptr, after re-getting the pages with `amdgpu_ttm_tt_get_user_pages`);
+- updates its mapping with `flush_tlb` (`moved`);
+- makes the job wait for `last_pt_update` (`amdgpu_cs_vm_handling`).
+
+A userptr invalidation waits for the BO's fences (`amdgpu_hmm_invalidate_gfx`) before the pages may go.
+
+### 10.3 Our port against that
+
+**Step142 park** (`amdgpu-userptr-park.patch`, `nmx_userptr_park_ms` = 60000):
+- The sweep takes an IOSurface userptr BO that no CS has listed for 60 s, under a trylock of its reservation and only when
+  `dma_resv_test_signaled(BOOKKEEP)` holds.
+- It moves the BO to SYSTEM (`move_notify` -> `moved`) and unpopulates it.
+- The VM's next CS writes V = 0 for that BO. `amdgpu_vm_handle_moved` does this even when the BO is not in that CS's list.
+- A later CS that lists the BO re-validates it: `nmx_upin_restore` in populate, bind, then `amdgpu_vm_bo_update` with
+  `flush_tlb` and a sync to `last_pt_update`.
+- That is Linux's flow, with the IOSurface descriptor in place of HMM, and it held in review: the touch at `amdgpu_cs.c`
+  974 runs under the CS's reservations, and `debug.nmx_upin_restore_fail` / `unpark_fail` are 0.
+
+The decoder parks heavily: `debug.nmx_userwire_by_kind` reports **VTDecoderXPCService 251 522 parked pages** (about 980 MB)
+and 254 679 wired pages that the decoder imported but that are classed as "plain" (not an IOSurface's own memory, so never
+parked).
+
+**RADV** (radv-video tree):
+- Host imports are not on the global BO list (`use_global_list = false`). They are listed only through
+  `radv_cs_add_buffer`, which `CmdCopyImageToBuffer` calls for the destination (`radv_meta_copy.c:561`).
+- VCNDec rebuilds the command buffer for every frame and waits for each copy, so the destination is listed in every copy
+  submit, at least in this tree.
+- It is not yet checked that the RADV loaded in VTDecoderXPCService is this tree (NVMTL's bundle may differ).
+
+**Timers:**
+- The period (about 163 s) is not a multiple of any timer: park 60 s with a 1 s sweep, pool 60 s / 10 min, surface-keep
+  in WindowServer only.
+- A park-caused fault would happen on the first reuse after at least 60 s idle, so its period would follow the player's
+  surface reuse, not a timer.
+- So the timing neither proves nor rules out park.
+
+Ranking, as stated to main:
+
+| cause | confidence | why |
+|---|---|---|
+| a parked (SYSTEM, V = 0) IOSurface BO written by a job that did not re-validate it | about 50 % | the PTE state matches exactly; the decoder is a heavy parker; out-29 also had park 60 s, but these tests did not run there |
+| a freed mapping: VCNDec drops an import (LRU of 8, or session close) and frees it, or a RADV VA is reused | about 30 % | same PTE state; a synchronous fence wait per copy makes a plain use-after-free unlikely |
+| TTM eviction of the userptr BO to SYSTEM under GTT pressure (the CS -ENOMEM context) | about 20 % | same PTE state and the same re-validation contract as park |
+
+All three need one thing to have gone wrong: the BO was not re-validated by the CS that ran the faulting job. So the decisive
+data is which BO the fault address belongs to, and its state at that moment.
+
+**What decides it (no code from me yet; main's call):**
+1. A/B with park off, under the same Safari/QuickTime AV1 playback for at least 10 minutes (about 4 periods):
+   `sudo sysctl debug.nmx_userptr_park_ms=0` (restore: `=60000`). Faults stop -> park; they continue -> 2 or 3.
+2. Fault-time lookup, an addition to `amdgpu-romap-gmc11.patch` that only reads. With `amdgpu_vm_get_vm_from_pasid` and a
+   trylock of the root reservation, `amdgpu_vm_bo_lookup_mapping(vm, addr >> 12)` prints:
+   - the mapping's start and last;
+   - BO size, userptr flag and sid;
+   - `resource->mem_type`;
+   - `nmx_norec` (parked) and the age of `nmx_used`;
+   - `bo_va->base.moved` and `cleared`;
+   - or "no mapping" (freed).
+
+   One fault then names the cause.
+
+### 10.4 The fix, per cause (to be written after 10.3)
+
+- **Park:** do what Linux does on an invalidation, but also cover jobs that touch the BO without listing it, which
+  WindowServer's NVMTL paths may do as well. Leave the PTEs valid for a parked BO until the next CS lists it, i.e. park only
+  unwires the pages when no VM can still reach them. Concretely:
+  - park only BOs whose mapping was already rewritten, or make the park itself rewrite the mapping (V = 0) with a TLB
+    flush and then refuse a CS that does not list the BO;
+  - simpler and safer: `nmx_park_one` skips BOs that still have a `bo_va` mapped in any VM, i.e. park only after
+    userspace unmapped the BO. That gives back less memory.
+
+  The choice depends on what 10.3 (2) shows is writing without a list.
+- **Freed mapping:** an application or RADV bug. Fix in VCNDec (keep the import until the last copy that used it has
+  signalled; it is synchronous today, so look at session teardown and the LRU drop in `vcn_close`) or in RADV's
+  `bo_from_ptr` VA handling.
+- **Eviction:** same contract as park, re-validated by listing. Same check: which unlisted use.
