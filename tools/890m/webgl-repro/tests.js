@@ -405,6 +405,23 @@ T('vs_textureLod_sampler_object_1frame', vsPresenceTest({ useSampler: true, fram
 T('vs_textureLod_sampler_object_texSubImage_rows_12frames', vsPresenceTest({ useSampler: true, frames: 12, rowsPerUpdate: 1, lodFetch: true }));
 T('vs_texelFetch_texSubImage_12frames', vsPresenceTest({ useSampler: false, frames: 12, rowsPerUpdate: 0, lodFetch: false }));
 
+// --- 29-31. UNSIGNED_SHORT index offsets that are 2 mod 4 (Metal needs 4-byte aligned index buffer offsets, so ANGLE
+// re-packs these draws). Maps' line material draws at offsets 414, 438, 498 ... in one shared index buffer.
+for (const [tag, off0, inst] of [['unaligned_2mod4', 2, 1], ['unaligned_2mod4_instanced', 2, 3], ['aligned_control', 0, 1]]) T(`index_offset_${tag}`, () => {
+  const p = prog(`layout(location=0) in vec2 pos; layout(location=1) in vec4 col; out vec4 c; void main(){ gl_Position=vec4(pos,0,1); c=col; }`, `in vec4 c; out vec4 o; void main(){ o=c; }`);
+  const verts = [], cols = []; for (let i = 0; i < 16; i++) { const r = cellRect(i), c = cellCol(i);
+    for (const [qx, qy] of [[0, 0], [1, 0], [0, 1], [1, 1]]) { verts.push(r[0] + qx * r[2], r[1] + qy * r[3]); cols.push(c[0] / 255, c[1] / 255, c[2] / 255, 1); } }
+  const va = gl.createVertexArray(); gl.bindVertexArray(va);
+  const vb = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, vb); gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(verts), gl.STATIC_DRAW); gl.enableVertexAttribArray(0); gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0);
+  const cb = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, cb); gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(cols), gl.STATIC_DRAW); gl.enableVertexAttribArray(1); gl.vertexAttribPointer(1, 4, gl.FLOAT, false, 0, 0);
+  // cell i's 6 indices start at element 1 + 7*i (byte offset 2 + 14*i: alternates 2 and 0 mod 4) or at 8*i (aligned)
+  const idx = new Uint16Array(8 * 16 + 8); const offs = [];
+  for (let i = 0; i < 16; i++) { const e = off0 ? 1 + 7 * i + (i & 1 ? 0 : 0) : 8 * i; idx.set([0, 1, 2, 2, 1, 3].map(k => i * 4 + k), e); offs.push(e * 2); }
+  const ib = gl.createBuffer(); gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, ib); gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, idx, gl.STATIC_DRAW);
+  fbo(); gl.useProgram(p); for (let i = 0; i < 16; i++) gl.drawElementsInstanced(gl.TRIANGLES, 6, gl.UNSIGNED_SHORT, offs[i], inst);
+  gl.bindVertexArray(null); const r = compare(read(), gridExp); r.info += ` (byte offsets mod 4: ${offs.map(o => o % 4).join('')})`; return r;
+});
+
 (async () => {
   if (!gl) { say('no webgl2'); window.__done = true; return; }
   const e = gl.getExtension('WEBGL_debug_renderer_info');

@@ -10,17 +10,19 @@ const send = (method, params = {}, sessionId) => new Promise(r => { const i = ++
 ws.onmessage = async e => { const m = JSON.parse(e.data); if (m.id && pend.has(m.id)) { pend.get(m.id)(m); pend.delete(m.id); }
   if (m.method === 'Target.attachedToTarget') { const sid = m.params.sessionId; targets.push([sid, m.params.targetInfo.type]);
     await send('Runtime.evaluate', { expression: hook }, sid); await send('Runtime.runIfWaitingForDebugger', {}, sid); } };
-const evs = async (x, sid) => { const r = await send('Runtime.evaluate', { expression: x, returnByValue: true }, sid); if (r.result?.exceptionDetails || r.error) console.log('eval error', x.slice(0, 40), JSON.stringify(r.error || r.result.exceptionDetails).slice(0, 300)); return r.result?.result?.value; };
+const evs = async (x, sid, ms = 60000) => { const r = await Promise.race([send('Runtime.evaluate', { expression: x, returnByValue: true }, sid), wait(ms).then(() => ({ error: 'timeout' }))]); if (r.result?.exceptionDetails || r.error) console.log('eval error', x.slice(0, 40), JSON.stringify(r.error || r.result.exceptionDetails).slice(0, 300)); return r.result?.result?.value; };
 await send('Target.setAutoAttach', { autoAttach: true, waitForDebuggerOnStart: true, flatten: true });
 await send('Page.addScriptToEvaluateOnNewDocument', { source: hook });
 await send('Page.navigate', { url });
 await wait(+secs * 1000);
 const shot = await send('Page.captureScreenshot', { format: 'png' }); fs.writeFileSync(outf.replace(/\.bin$/, '') + '.png', Buffer.from(shot.result.data, 'base64'));
 let best = null;
-for (const [sid, type] of [[undefined, 'page'], ...targets]) { const c = await evs('self.__capCount ? JSON.stringify(self.__capCount()) : null', sid); if (!c) continue; const [n, b] = JSON.parse(c);
+for (const [sid, type] of [[undefined, 'page'], ...targets]) { if (type === 'service_worker') continue; const c = await evs('self.__capCount ? JSON.stringify(self.__capCount()) : null', sid, 3000); if (!c) continue; const [n, b] = JSON.parse(c);
   console.log(type, 'calls', n, 'bytes', b, await evs('self.__capBytesBy()', sid), await evs(`JSON.stringify(self.__capErrs||null)`, sid)); if (n > 1000 && (!best || n > best[2])) best = [sid, type, n]; }
 if (process.env.STATS_ONLY) process.exit(0);
-const total = await evs('self.__capDump()', best[0]); const parts = [];
-for (let i = 0; i * 4194304 < total; i++) parts.push(Buffer.from(await evs(`self.__capChunk(${i})`, best[0]), 'base64'));
+const T0 = Date.now(); const tlog = (...a) => console.log(((Date.now() - T0) / 1000).toFixed(1) + 's', ...a);
+await evs('self.__capStop = true', best[0]); tlog('stopped');
+const total = await evs('self.__capDump()', best[0]); tlog('dump', total); const parts = [];
+for (let i = 0; i * 4194304 < total; i++) { parts.push(Buffer.from(await evs(`self.__capChunk(${i})`, best[0]), 'base64')); tlog('chunk', i); }
 fs.writeFileSync(outf, Buffer.concat(parts)); console.log('wrote', outf, total, 'bytes from', best[1]);
 process.exit(0);
