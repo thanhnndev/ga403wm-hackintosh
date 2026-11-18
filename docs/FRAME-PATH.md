@@ -631,3 +631,58 @@ data is which BO the fault address belongs to, and its state at that moment.
   signalled; it is synchronous today, so look at session teardown and the LRU drop in `vcn_close`) or in RADV's
   `bo_from_ptr` VA handling.
 - **Eviction:** same contract as park, re-validated by listing. Same check: which unlisted use.
+
+### 10.5 Second reproducer: mediaanalysisd (2026-11-18, out-30 kernel, new RADV/plugin)
+
+**15:31:04 / 07: two faults in pasid 32830, then the crash**
+- Same signature as before: TCP write, V = 0, at 0x80010f202000 and 0x80010f206000.
+- The kernel now prints `in process pid 965791`. That number is a thread id, 0xEBC9F, and it is mediaanalysisd's thread
+  `[31696:ebc9f]`, the thread that created the VM.
+- The faulting job is therefore **mediaanalysisd's own**.
+- 2.5 s before the fault, NVMTL logged `storage twin: 800x1376 VkFormat 98 (IOSurface) is written through an
+  optimal-tiled storage copy`.
+- The 3 s soft recovery comes next. NVMTL then logs `vk: queue submit -> -4` (device lost), "disabling backend", and
+  `newCommandQueue: Vulkan/NVK is down`.
+- MPS then fails in `MPSImageUnaryKernel.mm:334` and asserts (`MTLReportFailure`), and the daemon aborts. **The crash
+  is a consequence of the fault, not its cause.**
+
+**The earlier faults were likely mediaanalysisd too**
+- mediaanalysisd crash reports exist for 12:10:28, 12:19:17, 12:40:47, 12:43:45 and 12:44:20, each 17-20 s after a
+  fault at 12:10:10, 12:19:00, 12:40:31, 12:43:26 and 12:44:12.
+- So at least those "VideoToolbox decoder" faults (10.1) were most likely mediaanalysisd's.
+- VCNDec's "copy fence" error 2 s later fits collateral damage: the gfx ring hangs until the soft recovery, and every
+  job queued behind it fails or times out.
+- The pasid -> process attribution in VIDEO-CODEC-MATRIX should be re-checked. Only builds that print `in process`
+  name the VM's creator thread.
+
+**Park is now unlikely**
+- At 12:49, `debug.nmx_userwire_by_kind` showed mediaanalysisd with 688 446 IOSurface pages wired and **0 parked**.
+- On out-33 at 16:04, VTDecoderXPCService had 16 201 parked pages and mediaanalysisd no userwire row at all.
+- Revised ranking:
+
+| cause | confidence |
+|---|---|
+| a user-space use-after-free of an IOSurface import in NVMTL: a buffer freed (GEM close -> `amdgpu_vm_clear_freed` writes V = 0 at the next CS) while a command buffer recorded with its VA is still submitted afterwards | about 60 % |
+| the NVMTL storage-twin / heap-alias paths, i.e. the same kind of fault in a different object | |
+| park | about 15 % |
+| eviction | about 10 % |
+
+- NVMTL's surface keep drops entries "released off the main thread" (25 in the 15:30:59 stats line), and `heap alias:
+  an automatic private heap ... got no memory of its own` appears right after the fault.
+- Linux would fault identically on such a job. This is not a kernel divergence; the fix belongs in the plugin, once the
+  BO is named.
+
+**Deciding instrumentation (kernel, read-only, for main to approve)**
+1. A per-VM ring of the last 64 unmapped VA ranges: start, last, BO size, sid, unmap time, written in
+   `amdgpu_vm_bo_unmap` / `amdgpu_vm_bo_del`.
+2. The fault handler prints the hit, e.g. "freed 12 ms ago, surface 0x...", or the live mapping's BO state (10.3 (2)).
+
+One fault then names the object, and the plugin fix follows.
+
+**No out-33 faults yet:** none between boot (15:54) and 16:04.
+
+**Deliberate reproducer:** `tools/890m/vision-fault-repro.swift`
+- It runs Vision text recognition and classification on a fresh IOSurface-backed CVPixelBuffer per request, 4
+  concurrently: the daemon's Espresso -> MPSImage path.
+- It builds, but it has **not been run**: every fault costs a 3 s ring stall, and repeated faults preceded the 15:52
+  freeze. Run it only with the owner's OK and with a time bound (command in the file header).
