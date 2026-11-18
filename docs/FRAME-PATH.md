@@ -461,3 +461,20 @@ pool (no periodic release while memory is plentiful, so no re-fill bursts during
 `sysctlbyname`, a new kernel import for NMXGPU (the import rule that made the trace use `current_proc`/`proc_pid`), and
 it still polls. The real equivalent (a pressure notification) would be a kernel-side `EVFILT_MEMORYSTATUS`-like hook
 that xnu does not export to kexts. Decision for main: accept the new import, or keep the timers.
+
+### 9.6 Review round 1 (`478a117` on `fix/out31`)
+
+All eight review items are fixed in `478a117`; none was rejected. Changes against 9.1-9.3:
+- **Fence choice (row 1):** fences are recorded only for surfaces NMXAccel imported for scan-out, keeping the latest
+  fence per context, and a fence-only submit never commits unfenced.
+- **Fenced flips (rows 1/3):** a fenced flip has a 150 ms cap and resyncs instead of tripping; `kIOReturnBusy` drops
+  the frame.
+- **Flip completion (row 3):** completion is claimed per seq.
+- **VBL (row 2):** the reference thread call is serialised, and the watchdog re-arms itself and has a 50 ms floor.
+
+**GPU reset:** the source path is Linux's, with `amdgpu_gpu_recovery` -1 (auto). A job timeout leads to
+`amdgpu_job_timedout`, then a ring reset or a full recover, both calling `amdgpu_fence_driver_force_completion`. That
+signals the hardware fences, so the scheduler fence the commit worker waits on ends at the lockup timeout. Not verified
+on this port: MODE2 resets have taken the machine down before (the 17:33 hard reset), so a real hang is more likely to
+end the session than to leave the worker waiting.
+What the CS cannot tell: whether a job writes a BO it lists, so a reader's job also counts (it can only delay a flip).
