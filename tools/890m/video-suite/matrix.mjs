@@ -10,7 +10,8 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { startServer, CLIPS, SUITE } from './lib/server.mjs';
 import { launch, killScratch, wait } from './lib/cdp.mjs';
-import { startSampler, windowStats, pageStats, hidIdle } from './drive.mjs';
+import { startSampler, windowStats, pageStats } from './drive.mjs';
+import { vcnSessions, vcnVerdict, FOURCC } from './lib/vcnlog.mjs';
 
 const label = process.argv[2] || 'build', filter = process.argv[3] || '';
 const manifest = JSON.parse(fs.readFileSync(path.join(CLIPS, 'manifest.json')));
@@ -51,7 +52,7 @@ async function runCell(cell) {
   if (PRE) { await wait((PRE + 1.5) * 1000); const tp = Date.now(); r.preIdle = windowStats(smp.samples, tp - PRE * 1000, tp).watts; }
   const rows = [], checks = [], errors = []; let startWall = null, done = false;
   onReport = (o) => { if (o.case !== cell.id) return; if (o.type === 'row') rows.push(o); else if (o.type === 'check') checks.push(o); else if (o.type === 'start') startWall = o.wall; else if (o.type === 'done') done = true; else if (o.type === 'error') errors.push(o.msg || JSON.stringify(o)); };
-  const media = {}; const mediaErr = []; let b;
+  const media = {}; const mediaErr = []; let b; const tStart = Date.now();
   try {
     b = await launch(profile, 9342, { extra: ['--window-size=800,480', '--window-position=40,40', '--disable-backgrounding-occluded-windows', '--disable-renderer-backgrounding', '--disable-background-media-suspend', '--disable-background-timer-throttling'] });
     b.on((m) => {
@@ -67,6 +68,7 @@ async function runCell(cell) {
     await wait(800);
   } finally { smp.stop(); try { b?.close(); } catch {} killScratch(profile); }
   r.decoder = media.kVideoDecoderName || null;
+  r.vcn = vcnVerdict(await vcnSessions(tStart, Date.now()), FOURCC[cell.d.codec.replace('.', '')] || []);
   r.platform = String(media.kIsPlatformVideoDecoder) === 'true';
   r.errors = [...errors, ...mediaErr];
   const mr = rows.filter((x) => x.phase === 'measure');
@@ -85,7 +87,7 @@ for (const c of cells) {
   const r = await runCell(c);
   fs.writeFileSync(path.join(out, c.id + '.json'), JSON.stringify(r, null, 1));
   results.push(r);
-  console.log(`${c.id}: plays ${r.plays} ${r.decoder ?? '-'}${r.platform ? ' (platform)' : ''} dropped ${r.dropped ?? '-'} check ${r.check?.ok ?? '-'}/${r.check?.bad ?? '-'}/${r.check?.unreadable ?? '-'} ${r.wattsOverPre ?? '-'} W ${r.errors?.length ? 'ERR ' + r.errors[0] : ''}`);
+  console.log(`${c.id}: plays ${r.plays} ${r.decoder ?? '-'}${r.platform ? ' (platform)' : ''} vcn ${r.vcn?.v} dropped ${r.dropped ?? '-'} check ${r.check?.ok ?? '-'}/${r.check?.bad ?? '-'}/${r.check?.unreadable ?? '-'} ${r.wattsOverPre ?? '-'} W ${r.errors?.length ? 'ERR ' + r.errors[0] : ''}`);
   await wait(2000);
 }
 srv.close();
@@ -93,8 +95,10 @@ fs.writeFileSync(path.join(out, 'matrix.md'), matrixTable(results));
 console.log('results: ' + out);
 
 export function matrixTable(rs) {
-  const pass = (r) => (r.plays === 'yes' && r.platform && r.check?.ok > 0 && !r.check.bad && !r.check.unreadable ? 'PASS' : 'FAIL');
-  const hw = (r) => (r.plays !== 'yes' ? '-' : r.platform ? (/VideoToolbox/.test(r.decoder) ? 'HW (VideoToolbox)' : 'HW') : `**SW** (${(r.decoder || '?').replace('VideoDecoder', '')})`);
+  // hardware = VCNDec decoded it (unified log); "platform" alone may be Apple's software decoder inside VideoToolbox
+  const hw = (r) => (r.plays !== 'yes' ? '-' : r.vcn?.v === 'vcn' ? `HW (VCNDec ${r.vcn.s.find((x) => x.started)?.depth ?? 8}-bit)`
+    : r.platform ? `**SW** (VideoToolbox, Apple software${r.vcn?.v === 'refused' ? '; VCNDec refused' : r.vcn?.v === 'error' ? '; VCNDec failed' : ''})` : `**SW** (Chrome ${(r.decoder || '?').replace('VideoDecoder', '')})`);
+  const pass = (r) => (r.plays === 'yes' && r.vcn?.v === 'vcn' && r.check?.ok > 0 && !r.check.bad && !r.check.unreadable ? 'PASS' : 'FAIL');
   const L = ['| codec | profile / depth | size | container | plays | decoder | dropped / decoded | late | frame check ok / near / bad / unreadable | GPU-proc % | renderer % | WS % | W over pre-idle | pass | note |',
     '|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|'];
   for (const r of rs) {

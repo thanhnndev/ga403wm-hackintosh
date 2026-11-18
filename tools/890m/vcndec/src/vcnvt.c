@@ -186,6 +186,10 @@ static OSStatus d_start(VTVideoDecoderRef d, VTVideoDecoderSession sess, CMVideo
   // av1C / avcC / hvcC go to libavcodec as extradata; vpcC carries nothing the VP9 decoder needs.
   int xd = s->codec != 'vp09' && cfg;
   s->dec = vcn_open(s->codec, dim.width, dim.height, xd ? CFDataGetBytePtr(cfg) : NULL, xd ? (size_t)CFDataGetLength(cfg) : 0, err, sizeof err);
+  if (!s->dec && !strncmp(err, "refused: ", 9)) { // the device cannot decode this codec: let VideoToolbox pick another decoder
+    os_log(L(), "VCNDEC StartSession %{public}s %dx%d: %{public}s, refused", cc(s->codec, b), dim.width, dim.height, err + 9);
+    return kErrUnsupportedFormat;
+  }
   if (!s->dec) {
     os_log_error(L(), "VCNDEC StartSession %{public}s %dx%d: %{public}s", cc(s->codec, b), dim.width, dim.height, err);
     return kErrDecoderFailed;

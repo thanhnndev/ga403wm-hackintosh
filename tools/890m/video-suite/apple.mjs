@@ -6,10 +6,10 @@
 //
 // Safari renders nothing in a window that the owner's windows cover (visibilityState hidden: no rVFC, the clock jumps),
 // and this runner never activates Safari over the owner's work, so the strip check there gets only a few reads; a
-// hidden cell passes on plays + hardware + no wrong/unreadable read, and the table says so.
-// Hardware decoder test (no CDP outside Chrome): a hardware VideoToolbox decoder runs in VTDecoderXPCService. A cell
-// is "HW (VCNDec)" when a VTDecoderXPCService that has /System/Library/Video/Plug-Ins/VCNDec.bundle mapped used CPU
-// during the cell; otherwise the decode ran in the client (Safari GPU process / QuickTime) = software.
+// hidden cell passes on plays + hardware + no unreadable (corrupt) picture; a wrong index is not judged there, because
+// drawImage of a page that is not rendered can return a stale frame. Decoder output itself is checked frame by frame by
+// vt_check and by the Chrome cells (same VCNDec).
+// Hardware verdict: VCNDec's own log lines during the cell (lib/vcnlog.mjs); CPU per process is recorded as context.
 //
 // usage: node apple.mjs [label=build] [safari|quicktime|all=all] [filter]  -> results/apple-<label>-<date>/{<cell>.json, apple.md}
 import fs from 'node:fs';
@@ -18,6 +18,7 @@ import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 import { startServer, CLIPS, SUITE } from './lib/server.mjs';
 import { wait } from './lib/cdp.mjs';
+import { vcnSessions, vcnVerdict, FOURCC } from './lib/vcnlog.mjs';
 
 const sh = promisify(execFile);
 const label = process.argv[2] || 'build', which = process.argv[3] || 'all', filter = process.argv[4] || '';
@@ -101,7 +102,9 @@ async function safariCell(cell) {
   finally { if (wid) await osa(`tell application "Safari" to close (every window whose id is ${+wid})`).catch((e) => errors.push('close: ' + e.message)); }
   const mr = rows.filter((x) => x.phase === 'measure');
   r.decoded = mr.reduce((s, x) => s + x.decoded, 0); r.dropped = mr.reduce((s, x) => s + x.dropped, 0);
-  r.plays = startWall && r.decoded > 0 ? 'yes' : 'no';
+  // a hidden Safari page reports no decoded-frame deltas: the clock advancing is the sign that it plays
+  const ct = mr.map((x) => x.ct).filter((x) => x != null); r.advanced = ct.length > 1 ? +(Math.max(...ct) - ct[0]).toFixed(2) : 0;
+  r.plays = startWall && (r.decoded > 0 || r.advanced > 2) ? 'yes' : 'no';
   r.hidden = mr.length > 0 && mr.every((x) => x.vis === 'hidden');   // window behind the owner's: Safari does not render it
   r.check = { ok: checks.reduce((s, c) => s + c.ok, 0), near: checks.reduce((s, c) => s + (c.near || 0), 0), timerReads: checks.reduce((s, c) => s + (c.timerReads || 0), 0), bad: checks.reduce((s, c) => s + c.bad, 0), unreadable: checks.reduce((s, c) => s + c.unreadable, 0), first: checks.flatMap((c) => c.mism).slice(0, 5) };
   r.errors = errors; r.rows = mr.map((x) => ({ sec: x.sec, decoded: x.decoded, dropped: x.dropped, rvfc: x.rvfc, skipped: x.skipped, vis: x.vis, focus: x.focus, ct: x.ct, paused: x.paused, rs: x.readyState, ahead: x.ahead }));
@@ -133,7 +136,9 @@ async function qtCell(cell) {
 
 const results = [];
 for (const c of cells) {
+  const t0 = Date.now();
   const r = c.app === 'Safari' ? await safariCell(c) : await qtCell(c);
+  r.vcn = vcnVerdict(await vcnSessions(t0, Date.now()), FOURCC[c.d.codec.replace('.', '')] || []);
   fs.writeFileSync(path.join(out, c.id + '.json'), JSON.stringify(r, null, 1));
   results.push(r);
   console.log(`${c.id}: plays ${r.plays} ${hw(r)} check ${r.check ? `${r.check.ok}/${r.check.near}/${r.check.bad}/${r.check.unreadable}` : '-'} cpu ${JSON.stringify(r.cpu ?? {})} ${r.errors?.[0] ?? ''}`);
@@ -145,15 +150,17 @@ console.log('results: ' + out);
 
 function hw(r) {
   if (r.plays !== 'yes') return '-';
-  const v = (r.vtActive || []).filter((x) => x.vcndec);
-  return v.length ? `HW (VCNDec, VTDecoderXPCService ${v.map((x) => x.cpu + '%').join('+')})` : `**SW** (in ${r.app === 'Safari' ? 'WebKit GPU' : 'QuickTime'})`;
+  // hardware = VCNDec decoded it (unified log); a busy VTDecoderXPCService alone may be Apple's software decoder
+  if (r.vcn?.v === 'vcn') return `HW (VCNDec ${r.vcn.s.find((x) => x.started)?.depth ?? 8}-bit)`;
+  const where = (r.cpu?.vtdecoder ?? 0) > 5 ? 'VideoToolbox, Apple software' : r.app === 'Safari' ? 'WebKit' : 'QuickTime';
+  return `**SW** (${where}${r.vcn?.v === 'refused' ? '; VCNDec refused' : r.vcn?.v === 'error' ? '; VCNDec failed' : ''})`;
 }
 export function appleTable(rs) {
   const L = ['| app | codec | profile / depth | size | container | plays | decoder | frame check ok / near / bad / unreadable | VTDec % | WebKit GPU % | WebContent % | QuickTime % | pass | note |',
     '|---|---|---|---|---|---|---|---|---|---|---|---|---|---|'];
   for (const r of rs) {
     const ck = r.check ? `${r.check.ok} / ${r.check.near} / ${r.check.bad} / ${r.check.unreadable}` : 'n/a (vt_check)';
-    const pass = r.plays === 'yes' && /^HW/.test(hw(r)) && (!r.check || ((r.check.ok > 0 || r.hidden) && !r.check.bad && !r.check.unreadable)) ? 'PASS' : 'FAIL';
+    const pass = r.plays === 'yes' && /^HW/.test(hw(r)) && (!r.check || (r.hidden ? !r.check.unreadable : r.check.ok > 0 && !r.check.bad && !r.check.unreadable)) ? 'PASS' : 'FAIL';
     L.push(`| ${r.app} | ${r.codec} | ${r.depth} | ${r.size} | ${r.mode === 'mse' ? 'MSE ' + r.container : r.container} | ${r.plays} | ${hw(r)} | ${ck} | ${r.cpu?.vtdecoder ?? '-'} | ${r.cpu?.webkit_gpu ?? '-'} | ${r.cpu?.webcontent ?? '-'} | ${r.cpu?.quicktime ?? '-'} | ${pass} | ${[r.hidden ? 'page hidden (background window): few strip reads' : '', (r.errors?.[0] || '').replace(/\|/g, '/').slice(0, 120)].filter(Boolean).join('; ')} |`);
   }
   return L.join('\n') + '\n';

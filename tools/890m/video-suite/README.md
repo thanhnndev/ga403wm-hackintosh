@@ -60,23 +60,37 @@ or stops Docker; every run records whether it was running and how much CPU it us
 
 ## Codec matrix
 
+Correctness and hardware use per codec, not frame pacing: needs no idle machine, every cell runs in a small or
+background window and takes ~20 s.
+
 ```bash
-node tools/890m/video-suite/gen.mjs matrix          # once: 30 s clips for every cell (H.264, HEVC Main/Main10, VP9 p0/p2, AV1 8/10-bit)
-node tools/890m/video-suite/matrix.mjs out-29        # every cell, ~35 s each -> results/matrix-out-29-<date>/matrix.md
-node tools/890m/video-suite/matrix.mjs out-29 hevc   # only cells whose clip name contains "hevc"
+node tools/890m/video-suite/gen.mjs matrix                # once: 20-30 s clips for every cell
+node tools/890m/video-suite/matrix.mjs <label> [filter]    # Chrome (scratch profile, 800x480 window, may be covered)
+node tools/890m/video-suite/apple.mjs <label> [safari|quicktime|all] [filter]   # Safari (new window) + QuickTime
+node tools/890m/video-suite/matrix-report.mjs <label>      # one table: results/matrix-<label>.md
 ```
 
-One row per codec / profile / size / container (MP4, WebM, and MSE with 1 MB appends: WebM, fragmented MP4).
-Per cell: plays or not (with the first media error), decoder (`HW (VideoToolbox)` = VCNDec or Apple's decoder,
-`SW (...)` = Chrome's software fallback), dropped/decoded, late frames, the **frame check** (`pages/check.js`: on every
-6th presented frame the 16-bit frame index strip is read back from the video and compared with `mediaTime * fps`;
-wrong = a wrong or repeated frame, unreadable = a corrupt picture), CPU, and watts over an 8 s idle taken right before
-the cell. Safari and QuickTime columns read "waiting for owner permission". A clip the machine cannot make (WebCodecs
-has no 10-bit VP9/AV1 encoder) is listed as `no clip`.
+Cells: H.264 High, HEVC Main / Main10, VP9 profile 0 (profile 2: no clip, nothing here encodes 10-bit VP9), AV1 main
+8/10-bit; 1080p and 4K; plain file (MP4 / WebM) and MSE (WebM, fragmented MP4, 1 MB appends). Clips: WebCodecs (VP9,
+AV1 8-bit WebM), AVAssetWriter (H.264, HEVC; `frag` = CMAF segments through the writer delegate), and AV1 8/10-bit MP4
+from macOS's own AOM software encoder (`AV1EncoderSW.bundle`; not in `VTCopyVideoEncoderList`, it opens only by its
+EncoderID `com.apple.videotoolbox.videoencoder.av1.sw`; x420 input gives a 10-bit stream).
 
-`tools/890m/vcndec/build/vt_check` checks the same frame index outside the browser: it decodes an MP4 through a
-`VTDecompressionSession` that requires a hardware decoder (with `-b` the freshly built VCNDec bundle is registered
-in-process, so nothing has to be installed) and reads the strip from every output picture.
+A cell **passes** when it plays, **VCNDec decoded it on the 890M VCN**, and the frame-index strip check finds no wrong
+or unreadable picture:
+- Hardware verdict (`lib/vcnlog.mjs`): VCNDec's own unified-log lines during the cell (`StartSession <codec> ... on the
+  890M VCN`, then `close: in N out N ... errors 0`). Chrome's "platform decoder" is not enough: VideoToolbox also has
+  Apple's software decoders (HEVC, H.264, AV1) and runs them in the same VTDecoderXPCService (HEVC 1080p60 that way:
+  ~50 % CPU in VTDecoderXPCService, against ~5 % on VCNDec).
+- Frame check (`pages/check.js`): on every 6th presented frame (rVFC) the 16-bit index strip is read back and compared
+  with `round(mediaTime * fps)`: exact / 1-6 off (a late draw) / wrong (more than 6 off) / unreadable (strip border not
+  white = corrupt picture). Chrome runs with `--disable-backgrounding-occluded-windows` and friends, so a covered window
+  still renders (without them Chrome pauses "background" video-only media).
+- Safari: the runner opens one new window (AppleScript) and closes only that window id; it never activates Safari over
+  the owner's work. A covered Safari window is `hidden` to the page: no rVFC, the clock jumps; the check falls back to a
+  timer against `currentTime` and the cell passes on plays + VCNDec + no wrong/unreadable read ("background window").
+- QuickTime: opens the MP4 as a new document, plays 12 s, closes only that document. Frames are not readable from
+  outside the app; `tools/890m/vcndec/build/vt_check` checks every frame of the same file through VideoToolbox.
 
 ## Metrics (table.md columns)
 

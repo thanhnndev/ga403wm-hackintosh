@@ -1,0 +1,142 @@
+{
+ "app": "Safari",
+ "id": "safari-h264-1080p30-file",
+ "clip": "h264-1080p30.mp4",
+ "codec": "H.264",
+ "depth": "High 8-bit",
+ "size": "1080p30",
+ "container": "MP4",
+ "mime": null,
+ "fps": 30,
+ "mode": "file",
+ "cpu": {
+  "vtdecoder": 2.9,
+  "webkit_gpu": 110.7,
+  "webcontent": 0.6,
+  "quicktime": 0
+ },
+ "vtActive": [
+  {
+   "pid": 69739,
+   "cpu": 2.9,
+   "vcndec": false
+  }
+ ],
+ "decoded": 0,
+ "dropped": 0,
+ "advanced": 0,
+ "plays": "no",
+ "hidden": true,
+ "check": {
+  "ok": 1,
+  "near": 1,
+  "timerReads": 2,
+  "bad": 1,
+  "unreadable": 0,
+  "first": [
+   {
+    "t": 18.279,
+    "want": 548,
+    "got": 284
+   }
+  ]
+ },
+ "errors": [],
+ "rows": [
+  {
+   "sec": 6,
+   "decoded": 0,
+   "dropped": 0,
+   "rvfc": 0,
+   "skipped": 0,
+   "vis": "hidden",
+   "focus": false,
+   "ct": 27.297,
+   "paused": false,
+   "rs": 4,
+   "ahead": 23.7
+  },
+  {
+   "sec": 3,
+   "decoded": 0,
+   "dropped": 0,
+   "rvfc": 0,
+   "skipped": 0,
+   "vis": "hidden",
+   "focus": false,
+   "ct": 27.293,
+   "paused": false,
+   "rs": 4,
+   "ahead": 23.7
+  },
+  {
+   "sec": 4,
+   "decoded": 0,
+   "dropped": 0,
+   "rvfc": 0,
+   "skipped": 0,
+   "vis": "hidden",
+   "focus": false,
+   "ct": 27.295,
+   "paused": false,
+   "rs": 4,
+   "ahead": 23.7
+  },
+  {
+   "sec": 5,
+   "decoded": 0,
+   "dropped": 0,
+   "rvfc": 0,
+   "skipped": 0,
+   "vis": "hidden",
+   "focus": false,
+   "ct": 27.296,
+   "paused": false,
+   "rs": 4,
+   "ahead": 23.7
+  },
+  {
+   "sec": 7,
+   "decoded": 0,
+   "dropped": 0,
+   "rvfc": 0,
+   "skipped": 0,
+   "vis": "hidden",
+   "focus": false,
+   "ct": 27.298,
+   "paused": false,
+   "rs": 4,
+   "ahead": 23.7
+  },
+  {
+   "sec": 8,
+   "decoded": 0,
+   "dropped": 0,
+   "rvfc": 0,
+   "skipped": 0,
+   "vis": "hidden",
+   "focus": false,
+   "ct": 27.298,
+   "paused": false,
+   "rs": 4,
+   "ahead": 23.7
+  },
+  {
+   "sec": 9,
+   "decoded": 0,
+   "dropped": 0,
+   "rvfc": 0,
+   "skipped": 0,
+   "vis": "hidden",
+   "focus": false,
+   "ct": 27.299,
+   "paused": false,
+   "rs": 4,
+   "ahead": 23.7
+  }
+ ],
+ "vcn": {
+  "v": "none",
+  "s": []
+ }
+}

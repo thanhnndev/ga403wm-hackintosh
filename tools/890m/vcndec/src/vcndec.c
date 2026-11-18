@@ -143,6 +143,33 @@ static int setup_copy(vcn_dec *d) {
   return 0;
 }
 
+// Does a decode queue of this device decode the codec? RADV built with -Dvideo-codecs=all_free (the live build until
+// scripts/radv/build-radv.sh) has AV1/VP9 only; without this check an H.264/HEVC session started, then every frame
+// failed ("Device does not support decoding h264") instead of VideoToolbox falling back to another decoder.
+static int device_decodes(vcn_dec *d, enum AVCodecID id) {
+  AVVulkanDeviceContext *vk = ((AVHWDeviceContext *)d->dev->data)->hwctx;
+  PFN_vkGetPhysicalDeviceQueueFamilyProperties2 qfp =
+      (PFN_vkGetPhysicalDeviceQueueFamilyProperties2)vk->get_proc_addr(vk->inst, "vkGetPhysicalDeviceQueueFamilyProperties2");
+  if (!qfp) return 1; // cannot tell: let libavcodec decide, as before
+  uint32_t n = 0;
+  qfp(vk->phys_dev, &n, NULL);
+  if (!n || n > 32) return 1;
+  VkQueueFamilyProperties2 q[32];
+  VkQueueFamilyVideoPropertiesKHR v[32];
+  for (uint32_t i = 0; i < n; i++) {
+    v[i] = (VkQueueFamilyVideoPropertiesKHR){VK_STRUCTURE_TYPE_QUEUE_FAMILY_VIDEO_PROPERTIES_KHR};
+    q[i] = (VkQueueFamilyProperties2){VK_STRUCTURE_TYPE_QUEUE_FAMILY_PROPERTIES_2, &v[i]};
+  }
+  qfp(vk->phys_dev, &n, q);
+  VkVideoCodecOperationFlagsKHR need = id == AV_CODEC_ID_H264 ? VK_VIDEO_CODEC_OPERATION_DECODE_H264_BIT_KHR
+                                     : id == AV_CODEC_ID_HEVC ? VK_VIDEO_CODEC_OPERATION_DECODE_H265_BIT_KHR
+                                     : id == AV_CODEC_ID_AV1 ? VK_VIDEO_CODEC_OPERATION_DECODE_AV1_BIT_KHR
+                                     : VK_VIDEO_CODEC_OPERATION_DECODE_VP9_BIT_KHR;
+  for (uint32_t i = 0; i < n; i++)
+    if ((q[i].queueFamilyProperties.queueFlags & VK_QUEUE_VIDEO_DECODE_BIT_KHR) && (v[i].videoCodecOperations & need)) return 1;
+  return 0;
+}
+
 vcn_dec *vcn_open(uint32_t codec, int width, int height, const uint8_t *extra, size_t extran, char *err, size_t errn) {
   static pthread_once_t once = PTHREAD_ONCE_INIT;
   pthread_once(&once, global_init);
@@ -155,6 +182,7 @@ vcn_dec *vcn_open(uint32_t codec, int width, int height, const uint8_t *extra, s
   if (!c) { seterr(d, "no libavcodec decoder%s%.0d", "", 0); goto fail; }
   if ((r = av_hwdevice_ctx_create(&d->dev, AV_HWDEVICE_TYPE_VULKAN, NULL, NULL, 0)) < 0) {
     seterr(d, "Vulkan device: %s (%d)", av_err2str(r), r); goto fail; }
+  if (!device_decodes(d, id)) { seterr(d, "refused: the Vulkan device has no video decode for this codec (RADV built without it)%s%.0d", "", 0); goto fail; }
   if (setup_copy(d) < 0) goto fail;
   d->cc = avcodec_alloc_context3(c);
   d->cc->hw_device_ctx = av_buffer_ref(d->dev);
