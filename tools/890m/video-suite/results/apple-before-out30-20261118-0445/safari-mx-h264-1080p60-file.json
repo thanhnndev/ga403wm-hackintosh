@@ -1,0 +1,39 @@
+{
+ "app": "Safari",
+ "id": "safari-mx-h264-1080p60-file",
+ "clip": "mx-h264-1080p60.mp4",
+ "codec": "H.264",
+ "depth": "High 8-bit",
+ "size": "1080p60",
+ "container": "MP4",
+ "mime": null,
+ "fps": 60,
+ "mode": "file",
+ "cpu": {
+  "vtdecoder": 0,
+  "webkit_gpu": 239.2,
+  "webcontent": 0.5,
+  "quicktime": 0
+ },
+ "vtActive": [],
+ "decoded": 0,
+ "dropped": 0,
+ "advanced": 0,
+ "plays": "yes",
+ "hidden": true,
+ "check": {
+  "ok": 0,
+  "near": 0,
+  "timerReads": 0,
+  "bad": 0,
+  "unreadable": 0,
+  "first": []
+ },
+ "errors": [],
+ "rows": [],
+ "vcn": {
+  "v": "none",
+  "s": []
+ },
+ "playsBy": "decoding in software: WebKit GPU 239.2 % + VTDecoderXPCService 0 % CPU (page hidden)"
+}

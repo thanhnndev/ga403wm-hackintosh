@@ -1,0 +1,108 @@
+{
+ "id": "vp9-2160p60-mse",
+ "clip": "vp9-2160p60.webm",
+ "codec": "VP9",
+ "depth": "profile 0 8-bit",
+ "size": "2160p60",
+ "container": "WebM",
+ "mime": "video/webm; codecs=\"vp09.00.51.08\"",
+ "fps": 60,
+ "mode": "mse",
+ "started": "2026-11-18T04:59:27.233Z",
+ "decoder": "VideoToolboxVideoDecoder",
+ "vcn": {
+  "v": "vcn",
+  "s": [
+   {
+    "pid": 43608,
+    "proc": "VTDecoderXPCService",
+    "codec": "vp09",
+    "started": true,
+    "refused": null,
+    "errors": [],
+    "close": {
+     "in": 910,
+     "out": 910,
+     "dropped": 0,
+     "errors": 0
+    },
+    "size": "3840x2160",
+    "depth": null
+   }
+  ]
+ },
+ "platform": true,
+ "errors": [
+  "MSE appendBuffer: Failed to execute 'appendBuffer' on 'SourceBuffer': The SourceBuffer is full, and cannot free space to append additional buffers."
+ ],
+ "plays": "yes",
+ "secs": 12,
+ "decoded": 719,
+ "dropped": 0,
+ "skipped": 42,
+ "presented": 678,
+ "back": 0,
+ "missedCb": 42,
+ "waiting": 0,
+ "stalled": 0,
+ "ivP50": 16.7,
+ "ivP95": 32.5,
+ "ivP99": 33.8,
+ "ivMax": 35.1,
+ "late": 42,
+ "hiddenSecs": 0,
+ "unfocusedSecs": 12,
+ "fsSecs": 0,
+ "viewport": "800x337@2",
+ "mem": {
+  "swapouts": 0,
+  "swapins": 0,
+  "pageouts": 197,
+  "decompressions": 12594,
+  "wiredGB": 16,
+  "freeMinMB": 33.9
+ },
+ "n": 12,
+ "inputSecs": 0,
+ "watts": 41.4,
+ "tctl": 85.1,
+ "tctlMax": 86.1,
+ "cpu": {
+  "gpu": 16.8,
+  "renderer": 25.7,
+  "browser": 0.5,
+  "chrome_other": 0.2,
+  "windowserver": 1.9,
+  "vtdecoder": 5.6,
+  "docker": 0,
+  "claude": 4.5,
+  "owner_apps": 254.6,
+  "total": 309.7,
+  "kernel_task": 8.8
+ },
+ "nmx": {
+  "chunks_filled": 0,
+  "chunks_inline": 0,
+  "chunks_freed": 0,
+  "parks": 8,
+  "unparks": 0,
+  "unpark_fail": 0,
+  "park_fail": 0,
+  "restore_fail": 0,
+  "timeouts": 0,
+  "fence_timeouts": 0,
+  "frames_per_s": 0,
+  "page_free_min": 60428,
+  "pages_live_max": 1864516,
+  "userwire_max": 1243908,
+  "parked_pages_end": 1200378
+ },
+ "wattsOverPre": null,
+ "check": {
+  "ok": 119,
+  "near": 0,
+  "bad": 0,
+  "unreadable": 0,
+  "first": []
+ }
+}

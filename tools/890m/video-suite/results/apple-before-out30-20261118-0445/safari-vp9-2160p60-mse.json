@@ -1,0 +1,51 @@
+{
+ "app": "Safari",
+ "id": "safari-vp9-2160p60-mse",
+ "clip": "vp9-2160p60.webm",
+ "codec": "VP9",
+ "depth": "profile 0 8-bit",
+ "size": "2160p60",
+ "container": "WebM",
+ "mime": "video/webm; codecs=\"vp09.00.51.08\"",
+ "fps": 60,
+ "mode": "mse",
+ "cpu": {
+  "vtdecoder": 0,
+  "webkit_gpu": 515.8,
+  "webcontent": 21.5,
+  "quicktime": 0
+ },
+ "vtActive": [],
+ "decoded": 0,
+ "dropped": 0,
+ "advanced": 0,
+ "plays": "yes",
+ "hidden": true,
+ "check": {
+  "ok": 0,
+  "near": 0,
+  "timerReads": 0,
+  "bad": 0,
+  "unreadable": 0,
+  "first": []
+ },
+ "errors": [],
+ "rows": [],
+ "vcn": {
+  "v": "error",
+  "s": [
+   {
+    "pid": 11615,
+    "proc": "com.apple.WebKit.GPU",
+    "codec": "vp09",
+    "started": false,
+    "refused": null,
+    "errors": [
+     "StartSession vp09 3840x2160: Vulkan device: Generic error in an external library (-542398533)"
+    ],
+    "close": null
+   }
+  ]
+ },
+ "playsBy": "decoding in software: WebKit GPU 515.8 % + VTDecoderXPCService 0 % CPU (page hidden)"
+}

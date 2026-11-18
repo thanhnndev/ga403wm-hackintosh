@@ -1,0 +1,32 @@
+{
+ "app": "QuickTime",
+ "id": "qt-h264-1080p30-mp4",
+ "clip": "h264-1080p30.mp4",
+ "codec": "H.264",
+ "depth": "High 8-bit",
+ "size": "1080p30",
+ "container": "MP4",
+ "mime": null,
+ "fps": 30,
+ "mode": "file",
+ "errors": [],
+ "cpu": {
+  "vtdecoder": 35,
+  "webkit_gpu": 0.1,
+  "webcontent": 0,
+  "quicktime": 4
+ },
+ "vtActive": [
+  {
+   "pid": 1350,
+   "cpu": 35,
+   "vcndec": true
+  }
+ ],
+ "advanced": 12.5,
+ "plays": "yes",
+ "vcn": {
+  "v": "none",
+  "s": []
+ }
+}

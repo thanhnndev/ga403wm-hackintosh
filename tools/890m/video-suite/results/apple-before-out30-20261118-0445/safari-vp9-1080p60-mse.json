@@ -1,0 +1,174 @@
+{
+ "app": "Safari",
+ "id": "safari-vp9-1080p60-mse",
+ "clip": "vp9-1080p60.webm",
+ "codec": "VP9",
+ "depth": "profile 0 8-bit",
+ "size": "1080p60",
+ "container": "WebM",
+ "mime": "video/webm; codecs=\"vp09.00.41.08\"",
+ "fps": 60,
+ "mode": "mse",
+ "cpu": {
+  "vtdecoder": 14.4,
+  "webkit_gpu": 122.2,
+  "webcontent": 8.6,
+  "quicktime": 0
+ },
+ "vtActive": [
+  {
+   "pid": 69739,
+   "cpu": 14.4,
+   "vcndec": false
+  }
+ ],
+ "decoded": 561,
+ "dropped": 6,
+ "advanced": 8.12,
+ "plays": "yes",
+ "hidden": true,
+ "check": {
+  "ok": 6,
+  "near": 1,
+  "timerReads": 0,
+  "bad": 0,
+  "unreadable": 0,
+  "first": []
+ },
+ "errors": [],
+ "rows": [
+  {
+   "sec": 0,
+   "decoded": 73,
+   "dropped": 0,
+   "rvfc": 18,
+   "skipped": 33,
+   "vis": "hidden",
+   "focus": false,
+   "ct": 1.084,
+   "paused": false,
+   "rs": 4,
+   "ahead": 33.3
+  },
+  {
+   "sec": 1,
+   "decoded": 68,
+   "dropped": 0,
+   "rvfc": 17,
+   "skipped": 51,
+   "vis": "hidden",
+   "focus": false,
+   "ct": 2.209,
+   "paused": false,
+   "rs": 4,
+   "ahead": 58.6
+  },
+  {
+   "sec": 2,
+   "decoded": 49,
+   "dropped": 0,
+   "rvfc": 9,
+   "skipped": 47,
+   "vis": "hidden",
+   "focus": false,
+   "ct": 3.024,
+   "paused": false,
+   "rs": 4,
+   "ahead": 72
+  },
+  {
+   "sec": 3,
+   "decoded": 70,
+   "dropped": 0,
+   "rvfc": 0,
+   "skipped": 0,
+   "vis": "hidden",
+   "focus": false,
+   "ct": 4.208,
+   "paused": false,
+   "rs": 4,
+   "ahead": 85.8
+  },
+  {
+   "sec": 4,
+   "decoded": 51,
+   "dropped": 0,
+   "rvfc": 0,
+   "skipped": 0,
+   "vis": "hidden",
+   "focus": false,
+   "ct": 5.047,
+   "paused": false,
+   "rs": 4,
+   "ahead": 85
+  },
+  {
+   "sec": 5,
+   "decoded": 39,
+   "dropped": 6,
+   "rvfc": 0,
+   "skipped": 0,
+   "vis": "hidden",
+   "focus": false,
+   "ct": 6.121,
+   "paused": false,
+   "rs": 4,
+   "ahead": 83.9
+  },
+  {
+   "sec": 6,
+   "decoded": 90,
+   "dropped": 0,
+   "rvfc": 0,
+   "skipped": 0,
+   "vis": "hidden",
+   "focus": false,
+   "ct": 7.206,
+   "paused": false,
+   "rs": 4,
+   "ahead": 82.8
+  },
+  {
+   "sec": 7,
+   "decoded": 51,
+   "dropped": 0,
+   "rvfc": 0,
+   "skipped": 0,
+   "vis": "hidden",
+   "focus": false,
+   "ct": 8.102,
+   "paused": false,
+   "rs": 4,
+   "ahead": 81.9
+  },
+  {
+   "sec": 8,
+   "decoded": 70,
+   "dropped": 0,
+   "rvfc": 0,
+   "skipped": 0,
+   "vis": "hidden",
+   "focus": false,
+   "ct": 9.207,
+   "paused": false,
+   "rs": 4,
+   "ahead": 80.8
+  }
+ ],
+ "vcn": {
+  "v": "error",
+  "s": [
+   {
+    "pid": 10104,
+    "proc": "com.apple.WebKit.GPU",
+    "codec": "vp09",
+    "started": false,
+    "refused": null,
+    "errors": [
+     "StartSession vp09 1920x1080: Vulkan device: Generic error in an external library (-542398533)"
+    ],
+    "close": null
+   }
+  ]
+ }
+}

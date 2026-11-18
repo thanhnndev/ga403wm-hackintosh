@@ -1,0 +1,58 @@
+{
+ "app": "Safari",
+ "id": "safari-mx-h264-1080p60-frag-mp4-mse",
+ "clip": "mx-h264-1080p60-frag.mp4",
+ "codec": "H.264",
+ "depth": "High 8-bit",
+ "size": "1080p60",
+ "container": "fMP4",
+ "mime": "video/mp4; codecs=\"avc1.64002a\"",
+ "fps": 60,
+ "mode": "mse",
+ "cpu": {
+  "vtdecoder": 4.1,
+  "webkit_gpu": 145.8,
+  "webcontent": 4.1,
+  "quicktime": 0
+ },
+ "vtActive": [
+  {
+   "pid": 34826,
+   "cpu": 4.1,
+   "vcndec": false
+  }
+ ],
+ "decoded": 853,
+ "dropped": 0,
+ "advanced": 0,
+ "plays": "yes",
+ "hidden": true,
+ "check": {
+  "ok": 1,
+  "near": 1,
+  "timerReads": 1,
+  "bad": 0,
+  "unreadable": 0,
+  "first": []
+ },
+ "errors": [],
+ "rows": [
+  {
+   "sec": 0,
+   "decoded": 853,
+   "dropped": 0,
+   "rvfc": 6,
+   "skipped": 4,
+   "vis": "hidden",
+   "focus": false,
+   "ct": 14.084,
+   "paused": false,
+   "rs": 4,
+   "ahead": 5.5
+  }
+ ],
+ "vcn": {
+  "v": "none",
+  "s": []
+ }
+}

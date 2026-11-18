@@ -1,0 +1,75 @@
+{
+ "app": "Safari",
+ "id": "safari-mx-av1-2160p60-file",
+ "clip": "mx-av1-2160p60.webm",
+ "codec": "AV1",
+ "depth": "main 8-bit",
+ "size": "2160p60",
+ "container": "WebM",
+ "mime": "video/webm; codecs=\"av01.0.13M.08\"",
+ "fps": 60,
+ "mode": "file",
+ "cpu": {
+  "vtdecoder": 13.1,
+  "webkit_gpu": 140.7,
+  "webcontent": 5.5,
+  "quicktime": 0
+ },
+ "vtActive": [
+  {
+   "pid": 13293,
+   "cpu": 7.1,
+   "vcndec": true
+  },
+  {
+   "pid": 34826,
+   "cpu": 6,
+   "vcndec": false
+  }
+ ],
+ "decoded": 838,
+ "dropped": 254,
+ "advanced": 0,
+ "plays": "yes",
+ "hidden": true,
+ "check": {
+  "ok": 0,
+  "near": 2,
+  "timerReads": 2,
+  "bad": 0,
+  "unreadable": 0,
+  "first": []
+ },
+ "errors": [],
+ "rows": [
+  {
+   "sec": 0,
+   "decoded": 838,
+   "dropped": 254,
+   "rvfc": 0,
+   "skipped": 0,
+   "vis": "hidden",
+   "focus": false,
+   "ct": 13.867,
+   "paused": false,
+   "rs": 4,
+   "ahead": 16.1
+  }
+ ],
+ "vcn": {
+  "v": "vcn",
+  "s": [
+   {
+    "pid": 13293,
+    "proc": "VTDecoderXPCService",
+    "codec": "av01",
+    "started": true,
+    "refused": null,
+    "errors": [],
+    "close": null,
+    "size": "3840x2160",
+    "depth": null
+   }
+  ]
+ }
+}

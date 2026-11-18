@@ -1,0 +1,20 @@
+{
+ "app": "QuickTime",
+ "id": "qt-mx-hevc-1080p60-frag-mp4",
+ "clip": "mx-hevc-1080p60-frag.mp4",
+ "codec": "HEVC",
+ "depth": "Main 8-bit",
+ "size": "1080p60",
+ "container": "fMP4",
+ "mime": "video/mp4; codecs=\"hvc1.1.6.L123.90\"",
+ "fps": 60,
+ "mode": "file",
+ "errors": [
+  "osascript: Command failed: osascript -e tell application \"QuickTime Player\"       set d to open POSIX file \"/Users/thanhnndev/Library/Caches/ga403wm-video-suite/clips/mx-hevc-1080p60-frag.mp4\""
+ ],
+ "plays": "no",
+ "vcn": {
+  "v": "none",
+  "s": []
+ }
+}

@@ -1,0 +1,32 @@
+{
+ "app": "QuickTime",
+ "id": "qt-mx-hevc10-1080p60-mp4",
+ "clip": "mx-hevc10-1080p60.mp4",
+ "codec": "HEVC",
+ "depth": "Main10 10-bit",
+ "size": "1080p60",
+ "container": "MP4",
+ "mime": null,
+ "fps": 60,
+ "mode": "file",
+ "errors": [],
+ "cpu": {
+  "vtdecoder": 45.4,
+  "webkit_gpu": 0.2,
+  "webcontent": 0,
+  "quicktime": 4.9
+ },
+ "vtActive": [
+  {
+   "pid": 1350,
+   "cpu": 45.4,
+   "vcndec": true
+  }
+ ],
+ "advanced": 12.47,
+ "plays": "yes",
+ "vcn": {
+  "v": "none",
+  "s": []
+ }
+}
