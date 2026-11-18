@@ -8,7 +8,7 @@ set -euo pipefail
 PATH=/usr/bin:/bin:/usr/sbin:/sbin
 L=/Library/Extensions; E=$L/NMXAccel.kext; KC=/Library/KernelCollections/AuxiliaryKernelExtensions.kc
 G=/Library/StrixGraphicsFix; TS=$(date -u +%Y%m%dT%H%M%SZ)
-KX="$L/NMXGPU.kext $L/NMXAccel.kext $L/NMXAGDC.kext $L/NMXBacklight.kext $L/NVRM.kext $L/NVAccel.kext $L/NVRMFB.kext $L/NVRMAGDC.kext $L/StrixS0ix.kext"
+KX="$L/NMXGPU.kext $L/NMXAccel.kext $L/NMXAGDC.kext $L/NVRM.kext $L/NVAccel.kext $L/NVRMFB.kext $L/NVRMAGDC.kext $L/StrixS0ix.kext"
 relink() {
     rm -f "$KC.relink"
     kmutil create -n aux --volume-root / --allow-missing-kdk --kernel /System/Library/Kernels/kernel \
