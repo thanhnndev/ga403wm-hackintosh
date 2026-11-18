@@ -101,6 +101,7 @@ Effect columns: pacing (P), latency (L), memory (M), power (W).
 | **10** (first for gaps > 100 ms, see 3.1) | memory work on the submit thread (L2 vs Step92/142, Step141 pool) | compositor surfaces are TTM BOs (GTT/VRAM) moved only by the shrinker when idle; userptr pages are faulted by `amdgpu_ttm_tt_get_user_pages` in `amdgpu_cs_parser_bos` **before** `drm_exec_until_all_locked` | every IOSurface is a userptr BO of pageable user memory; Step142 unwires it after 60 s idle, the compressor/swap may take the pages, and the next CS re-wires it in `amdgpu_ttm_tt_populate` -> `nmx_upin_restore` -> `IOMemoryDescriptor::prepare()` **inside `ttm_bo_validate`, holding the process's VM PD lock and the BO reservations**, on the submitting thread (WindowServer or Chrome's GPU process). New imports wire with `prepare()` on the same thread (`nmx_xnu_user_wire`, `surf_wire`). When the chunk pool is empty, `single_alloc` makes a 2 MB wired chunk (`IOBufferMemoryDescriptor` + `prepare()`) inline on the allocating thread | a swap-in or a wait for 512 free pages lands directly in a frame: hundreds of ms to seconds under pressure, nothing else in the path can make gaps that long | **P** (the 402 ms / 4.1 s gaps), L | video-suite (correlation, high): every drop second under memory pressure had swap-ins, chunk fills 2/6 drop seconds vs 2/245 clean; park/unpark **counts** do not discriminate, which is expected: one slow re-wire costs a second, many fast ones cost nothing; only latency tells -> stall ring (section 7, `468a78d`). Source (high): `amdgpu_cs.c` lines 906-910 (`if (0)` around the pre-lock fetch, Step92), `amdgpu-userptr-park.patch` populate hunk, `nmx_page.c` `single_alloc`/`chunk_new` | (a) `amdgpu_cs_parser_bos`: re-enable the pre-lock userptr loop for **parked** entries only and call `nmx_upin_restore` there, so the slow part runs before any lock (as Linux does) and the populate finds the pages wired; (b) `amdgpu_ttm_tt_nmx_touch` / surface-hint lookup: when a parked BO is looked up for a new CS, kick the re-wire on a thread call ahead of the submit (WindowServer composites the same surfaces frame after frame, so the first frame pays at most once); (c) never park a BO that was flip-imported or used by WindowServer in the last N frames (keep the pages of on-screen surfaces wired; park only background ones); (d) `single_alloc`: when the pool is empty, allocate just the one page (or a 64 KB run) inline and leave the 2 MB chunk to `fill_worker`; (e) the pressure itself: see 3.1 (RyzenHV wires 12.3 GB of guest RAM) | medium (a, c: ordering with Step142's park state machine and the BO list mutex); low (b, d) |
 | **11** | Chrome H.264 decode (V1/V2 vs PV1) | VA-API on VCN for H.264/HEVC/VP9/AV1 | `VCNDec` (`tools/890m/vcndec/Info.plist`) registers only `vp09` and `av01`; Chrome asks VideoToolbox for a **hardware** H.264 decoder, gets none, and uses FFmpeg on the CPU | each H.264 stream adds one to two cores of user-priority decode plus CPU copies into IOSurfaces; this is part of the 731 % CPU in drop seconds and it competes with every user-space hop in rows 1 and 5 | P (video), W | main (H.264 falls back to FFmpeg, high); `Info.plist` and `vcndec.c` line 152 (`codec not handled` for anything but vp09/av01) (high); Step106: VCN H.264 decode bit-exact with the test RADV build (high) | `VCNDec`: add `avc1` (and `hvc1`) decoder entries in `Info.plist`; in `vcndec.c` map them to `AV_CODEC_ID_H264` / `AV_CODEC_ID_HEVC` and pass the `avcC`/`hvcC` atom from the format description as extradata (VideoToolbox hands length-prefixed NAL units, which libavcodec takes with that extradata); check with `vt_test` and Chrome `chrome://media-internals` -> `VideoToolboxVideoDecoder`. Owner: video-suite session | low-medium (VT's H.264 format-description edge cases: interlaced, 4:2:2 profiles must be refused cleanly) |
 | **12** (correctness; each one is a 3 s gfx stall) | GPU write through an invalid PTE in the VideoToolbox decoder (V2 vs PV2) | every BO a job touches is in its BO list (or VM-always-valid); the CS re-validates it, rewrites its PTEs with a TLB flush (`amdgpu_vm_bo_update`: `moved` -> `flush_tlb`), and the job waits for that update; a userptr invalidation (MMU notifier) first waits for the BO's fences | 23 gfx faults this boot (11:27-12:44): TCP write, `PERMISSION_FAULTS 0x5` + `MAPPING_ERROR 0` = the PTE exists but has V = 0, in VTDecoderXPCService pasids (32816/18/19/22/38), each followed by a 3 s "ring gfx timeout, soft recovered" and VCNDec "copy fence" -12911 | Linux writes V = 0 exactly for a BO placed in SYSTEM (`amdgpu_ttm_tt_pte_flags`) or a freed mapping; Step142 parks idle IOSurface userptr BOs to SYSTEM, and that process has 251 522 parked pages; the listed-BO path re-validates them as Linux does, so the open question is which BO the job wrote and why it was not re-validated | P (3 s), memory safety | fault decode and Linux source (high); park as the source: **medium (~50 %)**, freed mapping (VCNDec/RADV import churn) ~30 %, TTM eviction under GTT pressure ~20 %; see 10 | decide first: fault-time VA -> BO lookup (10.3), A/B `debug.nmx_userptr_park_ms=0`; then the fix in 10.4 | the lookup is read-only in the IH path (trylock) |
+| **13** (memory; feeds rows 9-10 and the CS -ENOMEM) | how GPU memory that is idle goes back to the OS (V4 vs Step142) | GTT BOs are TTM pages: on the LRU, swapped to shmem when idle under pressure (`ttm_bo_swapout`, shrinker); userptr pages are not pinned (HMM) | every native BO is a wired TTM page for its whole life (`nmx_pages_live` 4.15 GB at 16:10). In **WindowServer**, Step142 park never fires: 439k surface pages wired, 0 parked, because every "surface upload" submit is not marked exact and carries the whole surface list, so each import is touched every frame. `setPurgeableState:` on buffers is recorded and nothing else happens | M (several GB wired minutes after boot), then P via row 10 | section 11; counters read 2026-11-18 16:08-16:12; the plugin cause is read in the source, confidence high; the WS split between imports and own BOs is approximate | plugin: mark internal submits exact (11.4 a); honour Volatile/Empty on buffers and heaps (11.4 b). NMXGPU: swap out idle native TT BOs to pageable memory (11.3) | a too-narrow exact list = a GPU page fault (row 12 class); swap-out = latency on the first use after idle |
 
 Not a divergence any more (killed with today's counters): flip-import churn (11 imports in 23 min, 0 failures), CPU
 copy to the panel (fallback 0, K6/beam counters 0), pipe drops (0), flip timeouts (0).
@@ -726,3 +727,130 @@ One fault then names the object, and the plugin fix follows.
   concurrently: the daemon's Espresso -> MPSImage path.
 - It builds, but it has **not been run**: every fault costs a 3 s ring stall, and repeated faults preceded the 15:52
   freeze. Run it only with the owner's OK and with a time bound (command in the file header).
+
+## 11. Row 13: GPU memory that is never given back (2026-11-18, read-only analysis, no code)
+
+**Main's premise was wrong.** "pid 981 = WardaSynthesizer holds 2.6 GB of GTT" is a misattribution.
+
+`debug.nmx_gtt` prints `task_info->tgid`. On this port that value is a **thread id**:
+- `linux_current.c:97-99` sets `ts->pid = td->td_tid` and `ts->group_leader = ts`;
+- `amdgpu_vm_set_task_info` copies `current->group_leader->pid` into it.
+
+It is also the last thread that submitted on that VM. This is the same thread-id finding as 10.5. The process name column is empty for the same reason: it comes from `td_name`.
+
+Mapped through `log show --predicate 'threadIdentifier == N'`:
+
+| "pid" | thread | process | GTT resident (16:10) |
+|---|---|---|---|
+| 981 | 0x3d5 | **WindowServer[210]** | 3.23 GB, 1335 BOs |
+| 9687 | 0x25d7 | Cloudflare WARP[1151] | 252 MB |
+| 5770 | 0x168a | Claude Helper[779] | 250 MB |
+| 56063 | 0xdaff | SimMetalHost[1072] | 176 MB |
+| 7187 | 0x1c13 | Edge Helper (Aperitif)[910] | 135 MB |
+| 41293 / 93395 | 0xa14d / 0x16cd3 | VTDecoderXPCService[7309] / [37997] | 105 / 150 MB |
+| 54532 | 0xd504 | SimRenderServer[995] | 55 MB |
+
+WardaSynthesizer (pid 981) has used 0.09 s of CPU since 15:55 and has no Metal log line. Its BO count could not move, yet the "981" row went 1124 -> 1158 -> 1350 -> 1335 between reads.
+
+**Fix for the counter.** In `nmx_gtt_format`, print the process: `proc_pid(td_proc)` of the record's thread, or record the pid at `amdgpu_vm_init`. Do not change `amdgpu_vm_set_task_info`, because the fault printer shares it.
+
+### 11.1 What WindowServer's 3.2 GB is
+
+Read-only counters at 16:10:
+- `debug.nmx_pin_by_proc`: `WindowServer surf 439073 plain 701 parked 0` pages. That is **1.67 GB of IOSurface pages wired, none parked.**
+- Other processes park: Claude Helper 40k pages parked, Edge Helper 31k, VTDecoder 16k.
+- System-wide `nmx_userwire_by_kind`: surface 734 records / 482k pages wired, of which **527 records / 354k pages are older than 60 s** and still wired.
+- `debug.nmx_park_skip_busy 0`, `nmx_park_fail 0`. The sweep never reaches these BOs: they never look idle.
+
+The remaining ~1.5 GB is WindowServer's own BOs. WindowServer's `/tmp/nvmtl.log` gives a partial split:
+- plugin allocations live: 817 MB, then 1.43 GB (buffer census, which counts host imports too);
+- images 107-134 MB;
+- one MTLHeap of 2 MB.
+
+Two copies that double memory, both by design:
+- **buffer-texture shadows** ("shadowed at pitch 256", logged 12288 times; 30 GB of shadow uploads in 20480 submits);
+- **multi-plane surfaces copied into a private image** ("item 7", 3840x2160 two-plane surfaces copied in and out).
+
+Managed buffers are one CPU-visible allocation on the 890M (`NVMTL_MANAGED_SYSMEM` default), so they are **not** doubled.
+
+### 11.2 Why WindowServer's imports never park (plugin cause, read in the source)
+
+The plugin has a surface list (`nvmtl_vk.c:1508`):
+1. An IOSurface import leaves RADV's global list.
+2. A command buffer that names its own surfaces is marked exact (`radv_nvmtl_cmd_exact`).
+3. A submit that contains any command buffer that is not exact carries the whole list (`radv_amdgpu_nvmtl_needs_surfaces`).
+
+The kernel then calls `amdgpu_ttm_tt_nmx_touch` on every BO in the list (`amdgpu_cs.c`, Step142). Linux semantics are right here: a listed BO is a used BO.
+
+`nvmtl_vk_image_write`, the "surface upload" submit (`nvmtl_vk.c:6830`), never calls `nvmtl_vk_cmd_exact`. Only the prologue and counter-reset command buffers do (`:6268`, `:6276`).
+
+In WindowServer's log:
+- submits 28672 -> 32768: 2048 of 4096 carried the whole surface list;
+- the census over the same window: `surface upload` 1480 -> 3528, plus 131 `image_write_region`.
+
+So every video frame that WindowServer uploads touches every one of its 174-518 imports. No import is ever idle for `nmx_userptr_park_ms` (60 s), and the park sweep never sees a candidate. This also costs CS time: about 1.4 µs per handle (row 10).
+
+### 11.3 What a real driver does, and the correct design here
+
+**Apple** (AGX, and the AMD/Intel Mac drivers):
+- A resource is wired while a command buffer that lists it is in flight (the residency set or `useResource` list). Otherwise it is ordinary pageable or compressible VM memory, and IOSurface memory is pageable when no one is using it.
+- `setPurgeableState:Volatile` lets the VM discard the pages under pressure. `Empty` discards them now.
+- Nothing stays wired for a process's whole life just because it allocated it.
+
+**Linux amdgpu:**
+- GTT BOs are TTM `ttm_tt` pages on an LRU.
+- Under pressure, `ttm_bo_swapout` (through `ttm_global_swapout` or the shrinker) copies idle, unpinned, unbusy BOs into a shmem file and unpopulates them. The next validate swaps them in (`ttm_tt_swapin`).
+- Userptr pages are never pinned. HMM and the MMU notifier re-fetch them before use.
+- amdgpu exposes no purgeable state for GEM BOs. Mesa frees memory on the user side.
+
+**This port:**
+- Every native BO's pages are wired from populate until destroy. `nmx_pages_live` was 1.09M pages (4.15 GB).
+- `ttm_pages_limit` is half of RAM (16 GB), so `ttm_global_swapout` in `ttm_tt_populate` never runs.
+- xnu never fires `vm_lowmem`, so the shrinker never runs either (Step141 note in `ttm_device.c`).
+- Whether xkpi's `shmem_file_setup` gives pageable storage has not been checked.
+
+**Correct design**, in the order Linux has it. The last two items are the real fix:
+1. **Plugin: exact lists everywhere** (11.4 a). Then Step142 parks WindowServer's idle imports. This is the existing design working as intended, not a new mechanism.
+2. **Plugin: honour purgeable state** (11.4 b).
+3. **NMXGPU: swap out idle native GTT BOs.**
+   - Back `ttm_tt_swapout` / `ttm_tt_swapin` with pageable xnu memory: an anonymous `IOBufferMemoryDescriptor` that is never wired, or a VM object. This is the shmem equivalent.
+   - Drive it from a pressure signal xnu does give: the `kern.memorystatus_vm_pressure_level` notification, or the same 1 s sweep Step142 uses with an idle age.
+   - Do not wait for the 16 GB `ttm_pages_limit`.
+   - Candidates are BOs that are on the LRU, idle for N s, not pinned, not exported and with a signalled resv. The next CS validates them back in. That is TTM's own path, so the VM update and GART rebind are upstream code.
+   - This is the general form of what Step142 does for IOSurface imports.
+4. **NMXGPU: make Volatile/Empty reachable from user space.**
+   - Add an NMX GEM op, e.g. a `DRM_AMDGPU_GEM_OP` extension: `MADVISE DONTNEED` / `WILLNEED`, like i915/msm/panfrost `madvise`.
+   - For a DONTNEED BO the shrinker path **purges**: it drops the pages without copying them.
+   - WILLNEED returns "retained" or "purged", which is exactly what `setPurgeableState:` returns.
+
+### 11.4 The short path that is still correct
+
+These are plugin-only changes, with no NMXGPU build.
+
+**(a) Mark every internal one-shot command buffer exact, with `g_sl_use` for any import it touches.**
+- Covers `nvmtl_vk_image_write` ("surface upload"), `image_write_region_level_layer`, `nvmtl_vk_copy_buffer`, and any other `nvmtl_vk_submit_wait_at` caller.
+- These command buffers name only their staging buffer and a private image. A destination that lies on an IOSurface's own pages needs `g_sl_use(cb, mem)` first.
+- Risk: an import that is used but not listed means a V=0 PTE GPU fault (the row 12 class). So add a debug-build check that every import in a command buffer's resource set was `g_sl_use`d.
+- Expected effect: WindowServer's 354k "old60" pages park within about 60 s of idle (about 1.4 GB pageable), and the CS handle count drops.
+
+**(b) Honour `setPurgeableState:` on buffers and heaps.**
+- Today `NVMTLBuffer` records the state (`NVMTLObjects.m:857`) and returns NonVolatile for heap, sub-heap and host-pointer buffers.
+- `NVMTLHeap` only records the state (`:3675`).
+- The res1 reclaimer handles **textures only, and only for VRAM pressure**: it moves them to system memory, which is still GTT and still wired.
+- For buffers, the correct short version is:
+  - on `Empty`, or on `Volatile` when the process's GTT use is high, free the `VkDeviceMemory` now. Keep the `VkBuffer` and its GPU VA reserved;
+  - on `NonVolatile`, allocate and bind again. Return `Empty` so the client knows the contents are gone;
+  - heaps are handled the same way, as a whole.
+- Metal allows this: Volatile contents may vanish at any time, and a client must set NonVolatile before use.
+- Without the NMXGPU madvise (11.3 item 4), "Volatile" can only be implemented as "purge when the process is over a budget". That is a policy, but every byte it frees is genuinely freed, not hidden.
+- What is not proven: whether the ML daemons (mediaanalysisd, Espresso/MPS) mark their weight buffers Volatile at all. `nvmtl_purge_report` already counts that, but it only runs at a spill. A per-process `asks ever` line would answer it.
+
+**Should these daemons be on the 890M?** Yes. They are Metal clients on the only Metal device, as they would be on any Intel Mac with an AMD GPU. Moving them off is not a fix, and the owner does not accept that.
+- WindowServer is not optional, and the memory it holds is the problem in this row.
+- The ML daemons (mediaanalysisd, row 12) are the same class of client and also benefit from 11.3.
+- Freeing the memory is the contract; the device the daemon runs on is not the problem.
+
+### 11.5 To confirm (read-only, no root)
+
+- After (a) is installed: `debug.nmx_pin_by_proc` shows WindowServer `parked` above 0 within a few minutes of a static desktop, and `nmx_userwire_by_kind` old60 pages fall.
+- Native vs imported per process: extend `nmx_gtt` with a userptr-bytes column (sum of `ttm->num_pages` for BOs with `gtt->userptr`) and the real pid. Both are read-only additions.
