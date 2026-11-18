@@ -153,6 +153,89 @@ re-wires start to hit swap. The frame-path fixes (row 10 a-d) keep the swap-in o
 (or capped/ballooned) removes most of the pressure. That is RyzenHV's scope; listed here because it decides how often
 row 10 fires.
 
+### 3.2 First trace run (out-30, 2026-11-18 10:48, 340 s) and the CS -ENOMEM crash
+
+**Capture** (`tools/890m/frame-path-capture.sh 300`, joined over all snapshots with
+`tools/890m/frame-path-aggregate.py`): uptime 8 min, Claude + Chrome + Edge helpers + the owner's apps, **Docker not
+started**, RTX gated, Balanced. 44 MB free, 7.6 GB wired at start; no swap file yet. 4106 flips (about 12/s, mostly a
+quiet desktop).
+
+| stage | p50 | p90 | p99 | max (ms) |
+|---|---|---|---|---|
+| gpu (commit -> GPU end) | 1.64 | 4.60 | 10.47 | 11.89 |
+| wake (GPU end -> plugin saw it) | 0.60 | 1.66 | 1.99 | 3.17 |
+| handoff (plugin -> pipe saw it) | 0.10 | 2.54 | 5.79 | 10.59 |
+| pipe | 0.01 | 0.02 | 0.03 | 0.08 |
+| worker (submit -> armed) | 0.14 | 0.23 | 0.36 | 8.34 |
+| scanout (armed -> pageflip IRQ) | 5.32 | 8.11 | 10.67 | 15.29 |
+| notify | 0.15 | 0.24 | 0.27 | 13.44 |
+| **total (commit -> pageflip)** | **9.27** | 12.29 | 18.06 | 20.69 |
+
+Reading: under this load **no frame took more than 3 refresh periods**. 246 frames (6 %) took more than 2 periods;
+the largest stage in them was scanout 150 (the frame arrived just after a vblank and waited for the next one), gpu 84,
+worker 11 (a flip submitted while the previous one was still pending waits one vblank in the commit worker; this is
+Linux's own `amdgpu_dm_commit_planes` behaviour). Row 1 is visible but small: `handoff` > 4 ms in 138 frames (3.4 %),
+up to 10.6 ms. Row 2 is confirmed: the IOFramebuffer VBL timer fired at phases spread over 10 of 16 bins of the real
+frame, and in 60 % of its fires the vblank IRQ had been off for > 2 frames. Memory stalls: 625 stalls >= 1 ms in the
+window (wire 308, fill 299, restore 18); 12 late frames overlapped one, and those stalls were in other processes
+(Claude Helper 1744, Chrome helpers 4341/5826) or the fill thread, not on WindowServer's own submit. Wire max 23 ms,
+restore max 9.8 ms, fill (background) max 54.8 ms. No WindowServer-blocking stall in this run: row 10 needs the run
+**with Docker up** (pressure) to be judged; that run is still to do.
+
+**Pages held by the port grow.** `debug.nmx_pages_live` (wired pages the port's TTM pool hands out for GTT/system BOs)
+went from 619 194 (2.4 GB) at 10:48 to 1 111 779 (4.3 GB) at ~11:00, while userptr wirings stayed ~0.6 GB. All of it
+is wired. Linux's TTM pool pages are also unswappable, but its shrinker gives back idle BOs (`ttm_global_swapout`); our
+xnu port never sees a shrinker call. Watch it across the Docker run; if it keeps climbing with no matching BO count,
+it is a leak, otherwise it is the missing shrinker.
+
+**CS -ENOMEM (previous boot, 10:35:15).** `amdgpu_cs_ioctl` printed "Not enough memory for command submission!" in
+WindowServer (pid 207); the plugin logged upload/buffer-create FAILED, marked the Vulkan backend down and exited;
+WindowServer relaunched and hit a userspace watchdog. Where it can come from (all inside `amdgpu_cs_parser_bos`,
+the only caller that prints this text):
+
+| source | how it returns -ENOMEM here | Linux at the same spot |
+|---|---|---|
+| `ttm_tt_populate` -> `ttm_pool_alloc` -> `alloc_pages(GFP_USER)` -> our `linux_alloc_pages` -> `vm_page_alloc_noobj` -> `single_alloc` | the pool is empty and one 2 MB `IOBufferMemoryDescriptor` cannot be made: **NULL at once**. `linux_alloc_pages` drops `M_WAITOK` | an order-0 `GFP_USER` allocation enters direct reclaim and retries; it does not fail for small orders (OOM killer first). FreeBSD's own `linux_alloc_pages` loops on `vm_wait` |
+| `ttm_bo_validate` -> `ttm_bo_alloc_resource` -> GTT manager full (`-ENOSPC`, 16 GB: half of RAM) -> `ttm_bo.c:875` turns it into -ENOMEM | every process's userptr BO of the same IOSurface counts (row 5), and VRAM is only 512 MB, so everything else is GTT too | same rule, but eviction to SYSTEM frees GTT space first; fewer duplicate BOs |
+| Step142 `nmx_upin_restore` | malloc of the phys array (`M_WAITOK`, practically never fails) or `pin_attach`; a failed re-wire returns -EFAULT, not -ENOMEM | (no park on Linux) |
+| `ttm_tt_populate` page limit | `ttm_pages_limit` = half of RAM; `ttm_global_swapout` then has nothing to swap on xnu | shmem swap-out of idle BOs |
+
+Which one fired is not in the log: `nmx_cs_report_name` (the per-stage CS log) had spent its whole 48-line budget at
+08:55:48 on `userptr_ro_retry -> 0` info lines. Also, RADV already retried that submit for 1 s with 1 ms sleeps
+(`radv_amdgpu_cs.c`, -ENOMEM loop) before returning `VK_ERROR_OUT_OF_HOST_MEMORY`, so the shortage lasted more than a
+second: real pressure (or a full GTT), not a blip. Why it is fatal here: the plugin treats any `vkQueueSubmit` error as
+a lost device (`nvmtl_vk.c`, `g_state = -1`), although Vulkan defines an out-of-memory submit as "not submitted, device
+intact".
+
+Fixes, pushed to `fork`, compile-checked, not built or installed:
+- `fix/cs-enomem` (nvidia-macos-driver-ws, ff060ea, on top of the trace branch 8d1a8c2): `linux_alloc_pages` passes
+  `VM_ALLOC_WAITOK` for `M_WAITOK` without `__GFP_NORETRY`; `single_alloc` falls back to a one-page run when no
+  chunk can be made, and a caller that may sleep backs off 1..64 ms and retries for up to 2 s (counters
+  `debug.nmx_page_single_runs`, `_alloc_waits`, `_alloc_fails`). `nmx_cs_report_name`: info lines (r 0) and -ENOMEM
+  get budgets of their own, so the next failure names its stage. Risk: low-medium (a populate may now sleep up to 2 s
+  holding the BO reservation, as Linux's reclaim does; better than an exit).
+- `fix/cs-enomem-plugin` (97725ba, off `integ/out30-plugin` 17b4cdf): an out-of-memory `vkQueueSubmit` is retried
+  with 1..64 ms back-off for up to 2 s before the backend is given up; `NVMTL_CS_OOM_RETRY=0` turns it off. No new
+  compile errors (the same 21 header errors as the base in this checkout).
+- Not done, needs the stage name first: if it is the GTT limit, the real fix is row 5 (one BO per IOSurface) plus
+  counting GTT usage in a sysctl; if it is the page pool, the shrinker above.
+
+**`idle_allowed 0` and all-zero IPS counters (power).** `disable_ips 6` is `DMUB_IPS_RCG_IN_ACTIVE_IPS2_IN_OFF`, the
+same DCN 3.5 default Linux picks (`dm_get_default_ips_mode`). DC allows idle only when no CRTC holds a vblank IRQ
+(`amdgpu_dm_crtc_vblank_control_worker`: `active_vblank_irq_count == 0`) and the eDP has PSR or Replay
+(`dcn35_apply_idle_power_optimizations`; this panel reports "PSR support 1, DC PSR ver 0" = PSR1). Main's read at
+6 min had `idle_allowed 0`; my read at 10:52 had `idle_allowed 1`, so DC does reach the allowed state when the
+desktop is still. But the DMUB counters (rcg/ips1/ips2 entry/exit) stayed 0 in both. Either the firmware never
+entered RCG/IPS1 (it enters only while the panel is in PSR self-refresh with nothing pending) or this firmware does
+not fill those counters. For power: if IPS never enters, the display engine, its DMUB and the related clock domains
+stay powered for as long as the screen is on, even on a static screen; on DCN 3.5 that is the main display-idle
+saving (expect hundreds of mW at a static desktop; not measured here). A possible counter leak to keep in mind:
+`amdgpu_dm_crtc_set_vblank` returns before queueing the vblank-control work if `amdgpu_irq_get/put` fails, which
+would leave `active_vblank_irq_count` above 0 for good. To separate the cases: on Linux (one boot, same panel)
+`cat /sys/kernel/debug/dri/*/amdgpu_dm_ips_status` and `.../eDP-1/psr_state` on a static desktop (counters move
+there = our port does not reach IPS); on macOS, add `psr_settings.psr_allow_active`, `psr_feature_enabled` and
+`dm->active_vblank_irq_count` to `debug.nmx_frametrace` (flags only, no DMUB query, so reading it cannot wake IPS).
+
 ## 4. Questioning the handoff's assumptions
 
 - (a) "software VBL instead of the CRTC's vblank/pageflip interrupts": half right. Flips are latched by DCN at the
