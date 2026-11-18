@@ -1042,7 +1042,7 @@ The stackshot at 17:46 gives a bound:
 - the compressor held 23.7 GB of data in 5.3 GB;
 - swap-ins were about 65 M, against 68.7 M swap-outs.
 
-Docker's guest (RyzenHV) alone wires about 12.3 GB. GTT is wired: TTM pages, plus Step92/142 userptr imports. So 25.2 GB wired leaves room for roughly 10-11 GB of GTT, not 16. **GTT was most likely not at its 16 GB limit.** The failure was the system running out of memory it could wire: either page allocation inside `ttm_tt_populate`, or the GTT manager after its eviction targets ran dry. Resident outliers in the stackshot:
+Docker's guest (RyzenHV) wired about 12.3 GB on earlier builds. Correction from main: with RyzenHV 0.7.23 the guest starts at about 3 GB wired, and reclaim, switched on live at 20:42, took it from 2.86 to 1.74 GB (host wired -1.6 GB). So on out-33 at 17:46, Docker was a smaller share of the 25.2 GB than assumed here, and GPU memory and VTDecoderXPCService a larger one. GTT is wired: TTM pages, plus Step92/142 userptr imports. So 25.2 GB wired leaves room for roughly 10-11 GB of GTT, not 16. **GTT was most likely not at its 16 GB limit.** The failure was the system running out of memory it could wire: either page allocation inside `ttm_tt_populate`, or the GTT manager after its eviction targets ran dry. Resident outliers in the stackshot:
 
 | process | resident |
 |---|---|
@@ -1146,3 +1146,11 @@ A CS that touches the BO, or validates it out of SYSTEM, drops the park. Only BO
 - The clear-stage update is one extra page-table job on the VM's delayed entity per park.
 - A BO in stage 1 or 2 sits in SYSTEM still wired for 2-3 s longer than before.
 - If a VM's next CS lists the BO in that time, it validates back to GTT and the park is dropped. No restore is needed, because nothing was unwired.
+
+**Review of the out-35 set (FIX FIRST, fixed in bc13d65 and bd376bb):**
+- **1.** Stage 2 now reserves 2 fence slots on the root reservation before `amdgpu_vm_bo_update`. Without them, `dma_resv_add_fence` from `amdgpu_vm_sdma_commit` hits its `BUG_ON`.
+- **2.** A CS touch, and the userptr populate path, now drop a park in progress. Both hold the BO's reservation. Before this, a stale stage 2 could unwire a BO that TTM had evicted back to SYSTEM with valid PTEs.
+- **3.** The flip net learns only from notified flips, from the pageflip IRQ time (`latchNs - pendT0`). Before, it learned from the time the poll looked, so a lost notify ratcheted it to 20 ms.
+- **4.** A clear fence that signals with an error (a GPU reset) drops the park instead of unwiring.
+- **5.** The redo path's reference on `rs` is now released after the submit that uses it.
+- `amdgpu-nmx-surface-fence.patch`: its `amdgpu_ttm.c` context now follows the new touch body. 30cecaa applied only with fuzz; the series now replays exactly.
