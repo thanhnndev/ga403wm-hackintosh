@@ -1154,3 +1154,58 @@ A CS that touches the BO, or validates it out of SYSTEM, drops the park. Only BO
 - **4.** A clear fence that signals with an error (a GPU reset) drops the park instead of unwiring.
 - **5.** The redo path's reference on `rs` is now released after the submit that uses it.
 - `amdgpu-nmx-surface-fence.patch`: its `amdgpu_ttm.c` context now follows the new touch body. 30cecaa applied only with fuzz; the series now replays exactly.
+
+### 12.7 Row 12 named: mediaanalysisd's Espresso wrote through a parked import (out-34, 2026-11-18 20:34:29)
+
+**What the (f) print says:**
+- **Process:** mediaanalysisd, pid 1758. The VM task info names thread 104330 (0x1978a). That thread loaded `Espresso.framework/.../default.metallib` at 20:34:29.004, 650 ms before the fault, so the job came from Espresso, the CoreML GPU runtime used by TextRecognition (OCR on Photos). TextRecognition unloaded its models at 20:34:32.73.
+- **The fault:** gfxhub, ring 8 (gfx), vmid 6; TCP, RW 1 (a write), PERMISSION_FAULTS 1, MAPPING_ERROR 0.
+- **The BO:** live mapping 0x800102e00000-0x800102f01000, 1,052,672 bytes, placement 0 (SYSTEM), userptr 1. The address is in none of the last 4096 freed ranges. So it was not a freed VA: it was an import in SYSTEM, whose PTEs the VM's CS had cleared.
+- **Parked, not evicted:** only IOSurface pins park, and GTT was 4.6 of 16 GB.
+
+**Which list missed it: a surface-list import, not a no-copy buffer.**
+- The buffer list is on only in WindowServer (`nvmtl_bl_on`). In mediaanalysisd every no-copy buffer rides every submit, so the kernel touches it at each CS and it cannot park.
+- The surface list is on in every process. An IOSurface texture's import goes only to the submits whose part names it in its resource set (`nvmtl_part_list_surfaces`), and each part is marked exact.
+- So some Espresso command reached a surface's pages without the texture, or its root import, being in that part's resource set.
+
+**Paths read and found listed:**
+- compute `setTexture` / `setBuffer` (`nvmtl_retain_resource` / `_resources`);
+- blit copies and fills;
+- `useResource`;
+- the part restart, which carries the resources into the next part;
+- the surface-keep cache hit, a view whose `_parent` reaches the backing import;
+- argument-encoder textures and buffers, which escape to the global list through `gpuResourceID` / `nvmtl_buf_escape`;
+- the one-shot transfers of (e), where RADV adds both copy BOs.
+
+**Not yet ruled out:**
+- `useHeap(s)`, which is a no-op;
+- indirect command buffers (`executeCommandsInBuffer`);
+- MPS/Espresso private encoder paths;
+- storage-twin / shadow write-backs recorded outside the texture's own part.
+
+A static read cannot finish this. **The audit can:** 920832a registers surface-list imports with the existing buffer-list audit. A part whose descriptors or texture bindings name an import that its resources do not name is logged at seal, with the binding function, before any GPU sees it.
+- Turn it on with `/Library/NullMoth/nvmtl-bl-audit` (root), or `NVMTL_BL_AUDIT=1`.
+- Then read mediaanalysisd's NVMTL log for `AUDIT MISS`.
+- 76707b9 also prints the BO's IOSurface ID at the fault, to match against the process's `surface N` lines.
+
+**Making it non-fatal, the Linux way:**
+- A fault on a parked page cannot be serviced. gfx11 runs with retry faults off, and HMM-style re-fault is not available.
+- Pointing parked PTEs at a dummy page would turn a loud bug into silent wrong results.
+- The kernel cannot tell, without accessed bits, that a job used a mapping it did not list.
+
+So the feasible parts are:
+- (a) **Recover the job at once** (76707b9). The fault handler runs the scheduler's timeout handler immediately (`drm_sched_fault`, as panfrost and etnaviv do), but only when the ring's head job has the faulting pasid and vmid. `amdgpu_job_timedout` puts a kicked job of another process back untouched. The 3 s was our own `amdgpu-gfx-timeout-3s.patch` timeout, during which the faulting job held the gfx ring and every other process's work on it; WindowServer's fenced flip waited 2 s of it.
+  - After the soft recovery, mediaanalysisd's submit returned -4 and NVMTL turned its Vulkan backend off for the rest of that process's life. The process falls back; the system is fine.
+- (b) **Flips re-arm by themselves** (10513d6). A trip for a slow GPU job or a late latch now re-arms 10 s later, once nothing is stuck, at most 16 times per boot (`debug.nmxaccel_flip_auto_rearm`). Structural trips still stay off for the boot.
+- (c) **Remove the unlisted-use class outside WindowServer:** run the surface list in WindowServer only.
+  - Elsewhere every import rides every submit, so it is seen used whenever its process submits, and it parks only while that process has no GPU work at all. No job can then reach a parked page.
+  - Cost: about 1.4 µs of CS per import per submit in those processes.
+  - With 920832a: `/Library/NullMoth/nvmtl-sl-ws-only` (root).
+  - With today's plugin, for user-domain processes (mediaanalysisd, apps, Chrome), with no rebuild: `launchctl setenv NVMTL_SURFACE_LIST 0`, then restart the process. Undo with `launchctl unsetenv`.
+
+**Stop-gap answer: `debug.nmx_userptr_park_ms=0` or not.**
+- It stops new parks everywhere, so it also stops WindowServer's. On out-33 that growth reached 5.2 GB in 20 min under Docker.
+- With RyzenHV 0.7.23 plus reclaim, Docker's guest is about 1.7 GB instead of 12.3 GB, so the wired headroom is much better than at the 17:46 hang. The -ENOMEM risk comes back, though, the longer the boot runs.
+- Imports already parked stay parked until their next listed use.
+- **Better:** keep parking, and take the surface list out of the non-WindowServer processes with (c) (the `launchctl` variant works today), until the audit has named the path.
+- If the owner prefers the kernel knob, watch the WindowServer row of `debug.nmx_gtt`.
