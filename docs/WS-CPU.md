@@ -378,3 +378,23 @@ What this means for the switch:
   ignored, not loaded.
 - Separate finding, not fixed here: the `com.apple.WebKit.GPU+*` nvmtl-mesa dirs are also all empty. Those processes
   have uid == ruid, so the likely cause there is a sandbox write denial.
+
+### 8.6 out-41 x420 check: plane shadows recopied in every command buffer (fix: plugin 4b2835e)
+
+- Boot 2026-11-19 17:17 (out-41 34090E87, plugin 582F97BC). `ws-x420-clips 2 20 30`: the x420 planes take the
+  host import and the one-copy GPU shadow from b855e71 as designed ("surface 8 plane 0 3840x2160 pitch 7680 at +64 ...
+  host import, read-only"; 3297 shadows made, all one-copy, no per-row path).
+- Regression: `nvmtl_btsh_pre` copied every shadow in every command buffer that bound it. The prologue upload counter
+  went 9,959,862 KB -> 41,699,526 KB over one 20 s clip (~31.7 GB of GPU copies, 4096 submits). WindowServer GTT
+  418 -> 1374 MB after clip 1 from kept idle shadows, back to 570 MB once they expired (17:23).
+- WindowServer CPU over the 101 s run: 25.4 s. No baseline; measure again with `ws-cpu-profile.sh` after the fix.
+- Fix (frame-path-plugin `fix/out31-plugin` 4b2835e): a read-only shadow of an IOSurface plane (multi-plane
+  surfaces, `nvmtl_vk_image_btsh_watch_surface`) copies only when the surface's seed moved since its last copy, the
+  rule the private-image path already keeps (`nvmtlSurfaceIn`). The decision is made under `nvmtl_submit_mutex`, so
+  the copy that took the seed is queued before every command buffer that skips; a failed prologue clears the seeds.
+  Writers that move the seed: CPU writers (write lock), VCNDec after its GPU copy (e210759), and now the plugin's own
+  GPU writes to host-imported planes of multi-plane surfaces (`nvmtlSurfaceOut`: `IOSurfaceLock/Unlock(0)` after
+  completion). Single-plane and app-buffer shadows still copy in every command buffer. `NVMTL_BTSH_SEED=0` restores
+  the old behaviour. The `buffer texture:` census line now reports "skipped at an unchanged surface seed".
+- Verify after install: the skipped count grows during a paused x420 clip; prologue upload KB per clip falls to
+  roughly one plane copy per decoded frame; no stale or looping frames in a playing clip (the e210759 symptom).
