@@ -398,3 +398,33 @@ What this means for the switch:
   the old behaviour. The `buffer texture:` census line now reports "skipped at an unchanged surface seed".
 - Verify after install: the skipped count grows during a paused x420 clip; prologue upload KB per clip falls to
   roughly one plane copy per decoded frame; no stale or looping frames in a playing clip (the e210759 symptom).
+
+### 8.7 Submits and descriptor writes per present (out-41, boot 17:17): where they come from
+
+**Submits.** The plugin's submit census in WindowServer: 4096 submissions per ~11 s during the x420 clips (~370/s
+at ~60 presents/s, so ~6 per present), and all but 127 of 32768 come from `-[NVMTLCommandBuffer nvmtlSubmitAhead]`.
+So every submit is one MTLCommandBuffer part WindowServer committed. Each becomes its own `vkQueueSubmit` with its own
+`VkFence` (`nvmtl_vk_submit_begin`), so its own CS ioctl and its own syncobj wait plus reset on the completion thread.
+Apple's driver also submits per command buffer; the cost difference is the ~0.1 ms CS ioctl per submit on our stack
+(section 6.1: 0.24-0.29 ms per present).
+
+**Descriptor writes.** The desc-cache in WindowServer (per minute, 17:22-17:25): ~370 k hits, ~23 k misses (6 %),
+stale ~200 and page ~450 of them; epochs: ~10 k image (mostly `img by view`) and ~16 k buffer. Every miss is one set
+allocation plus `vkUpdateDescriptorSets`: ~6 per present. The epoch bumps come from `vkDestroyImageView` and
+`vkDestroyBuffer`. The writes follow from object churn (a new MTLBuffer and new texture views per frame, section 3
+row C), not from the descriptor code. The fix is reuse of those objects, and the descriptor writes go with it.
+
+**Design.**
+1. Count first (one plugin patch, WindowServer only, every 30 s): commits, parts, submits, presents (NMX fence
+   publications), commits that are waited on (`waitUntilScheduled` / `waitUntilCompleted`) and where in the frame;
+   VkBuffer and VkImageView creates and destroys per present; desc-cache misses by reason (new handle vs epoch vs page).
+2. Submit coalescing on one queue: a committed part with no CPU waiter and no event signal is held (not submitted)
+   until the next commit on the same queue, a `waitUntilScheduled`/`waitUntilCompleted`, a part that signals an
+   event, an NMX fence publication or present, or a 1 ms flush from the completion thread. A flush submits all held
+   parts as one `VkSubmitInfo` (one CS ioctl, one fence; command buffers keep their order). Scheduled handlers run at
+   the flush; completion is per batch (in-order queue, so no part completes early). Kill switch env.
+3. Object reuse: per-frame MTLBuffer allocations from a size-class pool that keeps the VkBuffer (and its desc-cache
+   epoch) alive across frames; texture views keyed by (image, format, range) and reused, so `vkDestroyImageView`
+   stops bumping the image epoch every frame.
+Step 1 decides whether 2 holds: if WindowServer waits for scheduling after each commit, the holds never batch, and
+the CS cost has to come down in the kernel instead (BO list size, VM update; needs a KDK for the breakdown).
