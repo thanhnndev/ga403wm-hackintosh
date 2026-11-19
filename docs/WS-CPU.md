@@ -224,3 +224,68 @@ Inside it:
 | - | P2 (two-plane 4K video as host imports, 12.13: df2565e logs the reason first) | plugin | 2-4 ms per 4K video frame; not exercised in this run |
 
 Not done here: 1-4 need code. 1's counter is the first patch, before any memo.
+
+## 8. Follow-ups after the ranking (2026-11-19, for main's next package)
+
+### 8.1 Fix 1: what the pipelines thread was doing
+
+WindowServer's log at the 12:36 run shows the plugin's specialization cache (AIR->SPIR-V with function constants,
+`nvmtl_translate_with_fc_cached`) is mostly working, with 135-144 memory hits. Two misses were `fixed_frag_lpf_cpf`,
+which took **3559 ms and 2650 ms** to translate and produced about 684 KB of SPIR-V each. RADV then compiles that.
+
+So the 9.9 core-seconds were a few very expensive new specializations, not a stream of repeats. The real cost is
+the size of the translated module (684 KB for one fragment shader), which is the translator's output. A later
+step should look at it; it is out of scope for this package.
+
+The package carries two changes in plugin b8a2baf:
+
+**Counters** are logged every 30 s by every process (two "pipelines:" lines):
+- pipelines made: render and compute;
+- how many repeat a key already built in this process (what a memo would save);
+- time spent and the slowest;
+- SPIR-V volume;
+- specialization cache hits and misses, with miss time.
+
+**VkPipelineCache** is a per-process cache passed to every `vkCreate*Pipelines`. It is on while
+`/Library/NullMoth/nvmtl-pipeline-cache` exists (rechecked every 5 s) or with `NVMTL_PIPELINE_CACHE=1`.
+- Default: off.
+- It is the memo for repeated keys: RADV hashes the full pipeline state.
+- The `_windowserver` Mesa disk-cache directory is fine. The log at 11:55:14 says
+  `/var/folders/zz/zyxvpxvq6csfxvn_n00000b000002r/C/WindowServer/nvmtl-mesa`, which is writable.
+- The "Permission denied" seen earlier was a root-owned directory read by a user process. It is not WindowServer's.
+
+### 8.2 Fix 2: what triggers the CoreDisplay CombineLUTs burst (read-only)
+
+The mechanism is the one found in October (890M-TRACE.md Step11). `Display::CurrentHeadroom` caches only while an EDR
+client has called `CoreDisplay_XRPresent`. Otherwise every `CombineLUTs` element takes the mutex. Our plane also
+reports no gamma or linearization ("Attempting to get capabilities from plane with no gamma"), so CoreDisplay builds
+the LUT itself instead of handing it to hardware.
+
+The trigger is a display state change, not our brightness or headroom path:
+- **12:36:14.38**: the display woke from dim (`displayDidWake`, `kLWLockFromDisplayDim` -> unlock on input).
+  WindowServer then ran `IOFBSetDisplayModeAndDepth` mode 1, and NMXAccel ran `displayModeWillChange`.
+  Every app then got an `edr` notification for about 2 s.
+- **12:36:32-37**: about 5 s of per-frame pipe rebuilds: about 170 "plane with no gamma" lines per second, the
+  framebuffer surfaces re-created and re-imported, and `edr` notifications. Safari reported
+  `potentialHeadRoom=2`.
+  - There was no mode set and no brightness line in the log.
+  - It looks like an EDR or brightness ramp after the wake. I have not confirmed what caused it.
+- In the 10 h of log before and after, there are **no other EDR storms**. The `edr` notification count is 0
+  outside 12:36. Mode sets: 11:55 (boot) and 12:36:14 only.
+
+The spindump's 23.8 core-seconds was therefore one wake/ramp event that landed inside the `none` window. It is not a
+steady cost under the owner's load:
+- It costs about 20 core-seconds per display wake from dim.
+- It belongs below fixes 1 and 3.
+
+The real fix is in our display path, not CoreDisplay: NMXAccel/NMXAMDFB answering the plane gamma/linearization
+capability (AGDC 0x711 types 0x1/0x2/0x4) with a real DCN LUT behind it. That is the full-port item from Step10/11.
+No patch was written here.
+
+### 8.3 Fix 3: per-IOSurface userptr wiring cache: not in this package
+
+The `bitmap` churn is a create-and-close of a userptr BO for each new client surface. A wiring cache that outlives
+the BO needs its own lifetime and invalidation rules: the pages can be unmapped or freed by the owner while cached.
+It belongs to FRAME-PATH row 5 (one GEM object per IOSurface), which is not a contained change.
+
+The plugin fix f2c62c4 (surface keep) now lets two-plane surfaces expire. It does not change the `bitmap` path.
