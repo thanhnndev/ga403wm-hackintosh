@@ -1312,3 +1312,43 @@ What remains is the 12.8 exercise (Preview/Photos Live Text, Photos search, Quic
   sudo spindump -i /Library/Logs/DiagnosticReports/shutdown_stall_2026-11-18-174716_Thanhs-MacBook-Pro.shutdownStall -o /tmp/stall-1747.txt
   ```
   The 17:47 one comes right after the out-33 hang at 17:46, so it may show the GPU side instead.
+
+### 12.10 Row 12: what the out-37 audit and a static read show (2026-11-19 12:30)
+
+**Logs since the 11:54 boot:**
+- 0 `AUDIT MISS` in every process.
+- No GPU page fault and no "disabling backend".
+- mediaanalysisd 1227 has had the audit on since 11:56:49, with surface-list registration (plugin BC063946).
+
+So far nothing has run the path.
+
+**Read statically, and found complete:**
+- **Lifecycle of `res`.** A seal takes the resources, and with `restart` they go back into `_resources`. Every later part therefore lists every resource retained earlier in the command buffer (`NVMTLEventSync.m:250-271`).
+- **Storage twins** (`nvmtl_storage_view_for`, `NVMTLObjects.m:913`). The texture is retained when its twin is first filled, and the copy-back runs inside the same command buffer.
+- **Buffer-texture shadows (btsh).** They are listed through `_backBuf`. The prologue copies run in a transfer-only command buffer, and RADV lists those BOs itself.
+- **Argument encoder.** `setTexture` goes through `gpuResourceID`, which unmarks the root's surface back to the global list; `setBuffer` goes through `nvmtl_buf_escape`. Residency sets and `useHeap` are no-ops, but heap resources are never IOSurface imports.
+- **RADV** (`radv-video/mesa/.../radv_amdgpu_bo.c:1303`). A surface BO has `use_global_list = false`, so `radv_cs_add_buffer` lists it for every copy, fill, indirect and vertex buffer that RADV records. The row 13 (11.2) transfer-only exact marking therefore holds.
+- **Imports are per texture.** Each `NVMTLTexture` imports its own host BO (`NVMTLDevice.m:930/964`), and every view resolves to its root's `_hostBuf`. There is no flag shared between objects.
+
+**What follows:**
+- The 20:34 fault (TCP write, BO in SYSTEM) was a shader store to an import that no CS of that job had listed. Had it been listed, its CS would have moved the BO back to GTT and its fence would have blocked the park.
+- The path is one that neither the listing nor the audit's "used" record reaches. The audit records uses only from the binding table, the address table and texture descriptors (`nvmtl_vk.c:3420-3481`).
+- So a run with 0 misses does not clear it. Only a run that exercises Espresso's path does: an MPSImage copy from an IOSurface-backed CVPixelBuffer, as in `tools/890m/vision-fault-repro.swift`.
+- That repro needs the owner's OK (header of the script; 15:52 freeze). Asked of main 2026-11-19.
+
+**Proposed bounded run** (owner present, nothing unsaved):
+- 30 s of the repro with synthetic text images, abort on the first error:
+  ```
+  swiftc -O tools/890m/vision-fault-repro.swift -o /tmp/vfr && perl -e 'alarm 60; exec @ARGV' /tmp/vfr 30
+  ```
+- Read: its own `AUDIT MISS` lines (pid of `vfr`), any `page fault` line (with `IOSurface <id>`), and `sysctl debug.nmx_park_*`.
+- Every IOSurface in the run is fresh and lives for less than the 60 s park time, so a fault is not expected. A MISS names the unlisted binding even without one.
+
+**WindowServer-only surface list as a permanent design:**
+- Yes, as the default.
+- Outside WindowServer the list buys little: tens of imports, not hundreds, so the per-submit validation it saves is small.
+- What it costs is that an unlisted use can meet a parked BO.
+- Without the list, a process's imports ride every submit. They park only after the whole process has been idle for 60 s, and its next submit lists them all, so the CS unparks them before the job runs. That is safe by construction.
+- WindowServer keeps the list: 24k+ parts with 0 misses, and hundreds of imports at about 1 ms per submit without it.
+- Make it the code default once the bounded run has named, or failed to name, the path. Until then keep the list on in mediaanalysisd, or the audit sees nothing there.
+- `NVMTL_SURFACE_LIST=1` stays as the per-process opt-in for tests.
