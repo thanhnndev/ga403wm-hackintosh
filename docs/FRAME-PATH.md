@@ -1382,3 +1382,55 @@ So far nothing has run the path.
 - out-37 now names the IOSurface on the fault's live-mapping line, so a natural recurrence gives the surface, its size and format (`IOSurfaceLookup`) and, through the 12.8 greps, the process.
 - Keep the audit file and the surface list on in mediaanalysisd until the next natural occurrence or an approved 420f variant.
 - Then make the WindowServer-only surface list the default (12.10).
+
+### 12.12 IPS/PSR static-screen read: procedure (item 3, 2026-11-19; read-only, no root)
+
+**What changed since 11.7.** On out-37 the vblank IRQ follows WindowServer's own `'vbl '` registration state
+(`nmx_fb.cpp:305-375`):
+- `vbl_wanted` = an enabled registration, set by `setInterruptState`;
+- `vbl_held` = our DRM vblank reference.
+
+At 12:31, under the owner's load, it toggled: `vbl_wanted 0/1`, `active_vblank_irq_count 1`, `idle_allowed 0`, IPS
+counters `0/0`. While WindowServer wants VBL, the vblank IRQ stays on, and DC never allows idle optimizations. That
+part is by design, and Linux behaves the same while a compositor animates.
+
+So the static read has to answer two questions, in this order:
+1. On a screen where nothing changes, does WindowServer turn its VBL off?
+2. If it does, do the DMUB IPS counters then move?
+
+**Tool:** `tools/890m/ips-static-read.sh [settle=30] [seconds=90]`.
+- It reads `debug.nmx_frametrace` once a second and logs:
+  - presents/s and vblank IRQs/s;
+  - the IPS rcg/ips1/ips2 entry/exit counters;
+  - `idle_allowed`, PSR `allow_active` and `active_vblank_irq_count`;
+  - `vbl_held` and `vbl_wanted`.
+- At the end it prints a verdict.
+- It writes no sysctl. The "before/after" is the first and last second of the log. Nothing has to be set before or
+  reset after.
+- Output: `~/ga403-logs/ips-static-<time>.txt`.
+
+**What the owner leaves untouched, from the start until 2 minutes later:**
+- No video anywhere: pause or close playing tabs. Docker may keep running, because it does not draw.
+- The animated (Aerial) wallpaper must not be visible: cover the desktop with a window. Its extension feeds
+  WindowServer 4K frames whenever the desktop shows. No setting is changed for this.
+- No blinking caret in the focused window: focus Finder or an app without a text field. A caret alone is about 2
+  presents/s.
+- Keyboard, mouse and trackpad untouched; lid open; display on. The 2 minutes are shorter than any display-sleep
+  timer.
+- Every Claude session idle. A streaming transcript redraws the window. Main starts the script in the background and
+  ends its turn at once.
+
+**Command (main, no root):**
+```bash
+/Users/thanhnndev/develop/projects/ga403wm-hackintosh/.claude/worktrees/hungry-mclean-f82082/tools/890m/ips-static-read.sh 30 90
+```
+
+**Reading the verdict:**
+
+| verdict | meaning | next |
+|---|---|---|
+| not static | something drew in most seconds | name it from the log's presents/s pattern (every frame = video/wallpaper, ~2/s = caret) and rerun |
+| IPS/RCG entries moved | the firmware enters idle on a static screen; 11.7 cause (1) | none for IPS. PSR remains: `psr feature_enabled 1, version 0` = the panel or DM did not set PSR up; a separate read |
+| static, VBL kept wanted | WindowServer keeps the `'vbl '` interrupt enabled on a static screen, so our hold keeps the IRQ on | read when Apple's own framebuffers report VBL off (IOFramebuffer `setInterruptState` callers, CoreDisplay idle), then decide whether the hold should follow the flips instead (Linux: vblank only while flipping, `disable_immediate`) |
+| static, idle allowed, counters 0/0 | 11.7 cause (2): the firmware does not enter IPS, or does not count it, on DCN 3.5.1 with our init | compare `dc->config.disable_ips`, `dc->debug.disable_ips*` and `ips_support` with what Linux 6.x picks for IP 3.5.1 (read only) |
+| static, VBL not wanted, idle not allowed | another vblank reference is held | `drm_crtc_vblank_get` callers: the flip path should have dropped its reference after the last flip |
