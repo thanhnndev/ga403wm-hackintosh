@@ -1524,3 +1524,62 @@ CPU mapping (`ttm_bo_vm_fault`). Here it cannot, so the userptr form is the clos
 
 **Decision (main's):** wait for a natural recurrence. out-37 names the IOSurface on the fault line, and main checks the
 log for `page fault` lines.
+
+### 12.15 out-39 (boot 2026-11-19 15:51:54): leak check, census, choice of S2
+
+**Leak check (plugin f2c62c4).**
+- The Aerial wallpaper was not running, so I drove the same surface shape myself with `tools/890m/ws-x420-clips.swift`.
+  - Each "clip" is a new CVPixelBufferPool of 3840x2160 `x420` (10-bit, two-plane) buffers.
+  - The buffers are shown in a 960x540 window through an AVSampleBufferDisplayLayer at 30 fps for 20 s.
+  - The layer and pool are then torn down, followed by a 40 s gap.
+  - 3 clips; synthetic pixels only; bounded by `alarm 260`; rc 0.
+- WindowServer composited them: the log shows `x420` plane 0 3840x2160 and plane 1 1920x1080 wrappers for each new
+  surface. VTDecoderXPCService took part as well.
+- Log: `~/ga403-logs/ws-x420-clips-out39-1557.txt`.
+
+WindowServer's `debug.nmx_gtt`:
+
+| point | WS gtt_resident | WS BOs | total gtt_used |
+|---|---:|---:|---:|
+| before | 850 MB | 381 | 3200 MB |
+| clip 1 end | 846 MB | 381 | 3192 MB |
+| 20 s into gap 1 | 660 MB | 381 | 2805 MB |
+| clip 2 start (60 s) | 707 MB | 857 | 2934 MB |
+| clip 2 end | 706 MB | 856 | 2933 MB |
+| clip 3 start (120 s) | 666 MB | 856 | 2783 MB |
+| after | 666 MB | 856 | 2802 MB |
+
+- Nothing accumulated across three clip changes. Before f2c62c4 the Aerial log showed +18 BOs / +334 MB per clip,
+  none released.
+- **Leak fix: verified for this shape.**
+- The BO count rose 381 -> 857 between 55 and 60 s, in the gap before clip 2, and then stayed flat. I don't know
+  what caused that step; it did not repeat.
+
+**Expired misses.** No data after 15:56:04.
+- The plugin's 30 s surface-keep report is logged through `nvlog`, which logs a format string only 8 times and then
+  every 4096th. The report fell silent after 4 minutes of uptime.
+- The 8 reports from boot to 15:56 show expired drops working (193 -> 69 entries) and 0-2 "expired came back
+  < 250 ms" per 30 s. That is no storm.
+- Fixed for the next build: plugin d850825 (`nvlog_report`, no cap; line buffer 1024, because the line was also cut
+  at 512).
+
+**Census, read once** (15:58:45, during the test; pressure level 1, memorystatus 72).
+Saved as `~/ga403-logs/tt-census-out39-1558.txt`.
+
+| class | pages | MB | where |
+|---|---:|---:|---|
+| resident (GTT, system RAM) | 728,044 | 2,844 | |
+| pinned | 307,469 | 1,201 | **about 18,600 pages (73 MB) in nearly every process** (14 processes) |
+| userptr | 121,712 | 475 | WindowServer 126 MB, VTDecoder 237 MB, Sim* |
+| idle, not pinned (S2a's target) | 169,545 | 662 | VTDecoder 304 MB (this test), the rest 2-40 MB each |
+| busy | 129,318 | 505 | all WindowServer (at that moment) |
+
+**S2 choice: S2b.**
+- The biggest class is pinned, at 1.2 GB. S2a (TTM swap of idle, unpinned BOs) cannot touch it.
+- About 73 MB per process is pinned whatever the process does. That matches xkpi pinning every BO for as long as a
+  user CPU mapping exists (`nmx_linux_cdev.c:9-14`) and the plugin's persistently mapped host-visible heaps.
+- S2b makes host-visible BOs userptr-backed: user memory, pinned only while a submit lists them. It covers those
+  heaps and reuses the park path that already works for userptr (310 parks, 0 failures at boot).
+- S2a would recover at most 662 MB, most of it the decoder's, and only under pressure.
+- First step of S2b: measure what the ~73 MB per process is, by heap and by size class, from the plugin side. Then
+  move that heap first.

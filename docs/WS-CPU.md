@@ -289,3 +289,43 @@ the BO needs its own lifetime and invalidation rules: the pages can be unmapped 
 It belongs to FRAME-PATH row 5 (one GEM object per IOSurface), which is not a contained change.
 
 The plugin fix f2c62c4 (surface keep) now lets two-plane surfaces expire. It does not change the `bitmap` path.
+
+### 8.4 out-39 data (boot 2026-11-19 15:51:54)
+
+**Pipelines (WindowServer, first minute after login).** Two 30 s reports:
+
+| window | pipelines | new keys | repeats | creating | slowest | SPIR-V in |
+|---|---:|---:|---:|---:|---:|---:|
+| 1 | 135 | 135 | 0 | 34.2 s | 4.25 s (12.9+700 KB) | 64 MB |
+| 2 | 58 | 58 | 0 | 30.1 s | 2.2 s (6.6+685 KB) | 35 MB |
+
+- Specializations in the same windows: 59 + 23 cache hits, 0 misses.
+- So about 64 s of CPU in the first minute is RADV compiling about 700 KB fragment modules. The translator cost is
+  zero: its disk cache hits.
+- Nothing was logged after that, so the steady state has no new pipelines.
+- The report is capped by nvlog after 8 lines; d850825 fixes that.
+
+What this means for the switch:
+- **The in-process VkPipelineCache cannot help:** there are 0 repeats in a process.
+- What would help is RADV's **disk** cache across boots and logins. WindowServer sets
+  `MESA_SHADER_CACHE_DIR=.../C/WindowServer/nvmtl-mesa` (log 15:52), yet every pipeline still compiles.
+- Whether RADV writes and reads that cache is the next check, and it is read-only:
+  - root `ls -la /var/folders/zz/zyxvpxvq6csfxvn_n00000b000002r/C/WindowServer/nvmtl-mesa`
+  - its size before and after a WindowServer restart.
+- The real fix is the module size: about 700 KB of SPIR-V for one specialized `fixed_frag_*`.
+  - `fc_air_specialize.rs` substitutes constant values into the AIR text (`is_function_constant_defined` becomes
+    `icmp eq i32 0, 0`, initialisers become literals).
+  - It then translates the whole function. No branch folding or dead-block removal runs before emission, so every
+    disabled path of the uber-shader is still emitted, and RADV removes it at compile time.
+  - A fold-and-prune pass after specialization (constant `br` -> unconditional, then drop unreachable blocks) should
+    shrink both the module and RADV's compile time. That is translator work (`nmx-translator-271`), next.
+
+**Plane fallback reason (df2565e).**
+- At 15:56:58 every `x420` plane in WindowServer and VTDecoderXPCService logged `no host import (linear alias or
+  shadow image ...)`, then `item 7: private image`.
+- The cause: plane 0 starts at offset 64 and plane 1 at 16,588,864; both are 64 mod 256. The DRM-linear alias is
+  refused at bind (RADV binds linear images at multiples of 256).
+- Fixed in plugin b855e71: a read-only wrapper with an unaligned start takes the existing btsh GPU shadow (one GPU
+  copy from the host-imported pages) instead of a private image with two CPU uploads per frame.
+- Writable wrappers are unchanged. `NVMTL_BTSH_OFFSET=0` gives the old behaviour.
+- This is FRAME-PATH 11.6's double copy for two-plane video.
