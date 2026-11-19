@@ -7,6 +7,29 @@ the ESP root (October, debug builds), the ESP `config.plist`, decoded shutdown-s
 REA has no decompiler provider configured on this machine (no Ghidra, Hopper or IDA), so the reverse engineering used
 `llvm-objdump` on the carved binaries. The extractors are in `tools/re/`.
 
+## 0. Final state (2026-11-19, for merge)
+
+Fixed and verified on the 11-19 15:51 Eco boot (main's checks at 3, 5 and 20 min):
+- **60 s `GPUWranglerWaitForPublish` timeout: gone.** StrixDgpuGate 0.2.1 (`rog-control-macos` `fix/eco-offbus` 83b35e0,
+  UUID 2469B941) terminates the powered-off RTX's nubs. WindowServer start -> first framebuffer 3.8 s (was 63.4 s), no
+  wrangler line, `debug-gpus` = the 890M only, `ioreg -r -n GPP9` = no PEGP/HDAU. `gsta-recheck` 0 at 90 s, 5 min and 20
+  min, `gate-offbus-passes` 1: the firmware did not re-power the card while running. `strix-gpu-eco-cleared` = `4:300:ws1`.
+- **APFS boot trim: gone.** `SetApfsTrimTimeout` = 0: `no trims`, launchd `hello` at T0+1.67 s (was 5.19 s).
+- Result: login window at **T0+14.4 s, was 77.0 s**.
+
+Ready, not installed:
+- StrixDgpuGate **0.2.3** (82fca6c; 0.2.2 d6b2779 reviewed safe, 0.2.3 adds the per-wake round window). For the next
+  reboot package.
+- `scripts/macos-oc-fastboot.sh`: `ShowPicker` false (2 s), with backup, validation and `--undo`.
+
+Untested:
+- Sleep/wake and charger plug/unplug with the nubs gone (owner starts these; watch list in section 3, item 1).
+- Picker off: whether tapping Esc at power-on reaches the picker on the built-in keyboard (section 3, item 3).
+
+Open, not mine:
+- NMXGPU: `VTDecoderXPCService` hung on exit in `amdgpu_vm_fini` -> `dma_fence_wait` (14:42 stall, section 4).
+- Owner: TAL window restore 37 s (Safari, Xcode); desktop-ready 5 s timeout, to be measured once with TAL off.
+
 ## 1. The whole boot in one table
 
 Times are seconds after the kernel's `=== system boot` record (T0), unless marked. "Eco" means the gate held the RTX and
@@ -128,7 +151,9 @@ not matter, because pubArmed is missing in both.
 **d6b2779** (0.2.2, second-review follow-ups: `ws1` counts only WindowServer's framebuffer / display-pipe user clients,
 at most 4 terminate rounds per boot then `gate-keepbus-auto`, `gate-off-bus` recounted after each pass, `stop()` quiesces
 all thread calls before freeing, claim counter only after a successful arm, race-free lazy ACPI lookups; compiled, not
-installed, binary md5 3fafe4478a3f618927ce42d78f86a533). The text below describes 0.2.1 ( review fixes on top of ad5a90c 0.2.0, from
+installed, binary md5 3fafe4478a3f618927ce42d78f86a533) and **82fca6c** (0.2.3: the terminate-round cap counts within a
+120 s window and restarts at every wake, so repeated sleep/wake cannot trip `gate-keepbus-auto`; compiled, not installed,
+binary md5 c6501a31cba2e9a4869ba3e6add2cf01). The text below describes 0.2.1 ( review fixes on top of ad5a90c 0.2.0, from
 `feat/gpu-mode` @ 2cf905e), worktree `~/develop/projects/rog-control-macos-ecooffbus`. Built at
 `~/develop/projects/rog-control-macos-ecooffbus/build/StrixDgpuGate.kext` (binary md5 f68953bf94ab0036c90f4659af77c434).
 No errors; only the three old warnings. New imports beyond 0.1.x are `IOService::terminate`, the `IOPCIBridge` and
