@@ -1434,3 +1434,62 @@ So the static read has to answer two questions, in this order:
 | static, VBL kept wanted | WindowServer keeps the `'vbl '` interrupt enabled on a static screen, so our hold keeps the IRQ on | read when Apple's own framebuffers report VBL off (IOFramebuffer `setInterruptState` callers, CoreDisplay idle), then decide whether the hold should follow the flips instead (Linux: vblank only while flipping, `disable_immediate`) |
 | static, idle allowed, counters 0/0 | 11.7 cause (2): the firmware does not enter IPS, or does not count it, on DCN 3.5.1 with our init | compare `dc->config.disable_ips`, `dc->debug.disable_ips*` and `ips_support` with what Linux 6.x picks for IP 3.5.1 (read only) |
 | static, VBL not wanted, idle not allowed | another vblank reference is held | `drm_crtc_vblank_get` callers: the flip path should have dropped its reference after the last flip |
+
+### 12.13 Memory under pressure: reclaim design and the double copies (item 4, 2026-11-19; design plus one logging commit)
+
+#### Three facts read today that change 11.3, 9.5 and 12.4 (i)
+
+**1. TTM swap-out would free nothing here.**
+- xkpi's "shmem" file, which TTM swaps to (`ttm_tt_swapout` -> `shmem_file_setup` -> `vm_pager_allocate`), is a
+  page array filled from the **same wired page pool** (`bsdcompat/src/nmx_page.c:1010-1090`: "There is no pager behind
+  it: the pages stay in memory for the object's life").
+- Even if `ttm_global_swapout` ran, it would copy wired pages into other wired pages.
+- It does not run: `ttm_pages_limit` is half of RAM, and nothing calls the shrinker.
+- This settles the "shmem not verified" item in 11.3 and 12.4.
+
+**2. Every CPU-mapped buffer is pinned.**
+- xkpi pins every TTM buffer that has a user CPU mapping, for the life of that mapping (`override/src/nmx_linux_cdev.c:9-14`).
+- The reason: the mapping is made at once with `nmx_xnu_map_user` and "cannot be re-faulted if the buffer moves".
+- TTM's swap-out walk skips pinned buffers (`ttm_bo.c:1118`).
+- RADV maps every host-visible buffer persistently. So the buffers TTM swap-out can reach are only the GTT buffers
+  that are **not** CPU-mapped.
+- Their share of the 4 GB of `nmx_pages_live` is unknown.
+
+**3. The pressure signal needs no new import.**
+- The installed NMXGPU already imports `_sysctlbyname` (583 undefined symbols).
+- So the existing 1 s park sweep can read `kern.memorystatus_vm_pressure_level` (1 normal, 2 warn, 4 critical; it
+  read 1 at 12:40) with no change to the import set.
+- The obstacle 9.5 named is gone.
+
+#### Design, in safe order
+
+| step | what | changes behaviour? | risk |
+|---|---|---|---|
+| **S1 (first safe step)** | `debug.nmx_tt_census` (RD). On read, walk each TTM manager's LRU under `lru_lock`, counting only: populated / pinned (and pinned by a CPU mapping) / EXTERNAL (userptr imports, which Step142 already parks) / swapped / resv idle (`dma_resv_test_signaled`, no wait). Report pages, plus the top 8 owners by VM task pid (`vm->task_info`). Also print the pressure level and `nmx_pages_live`. | no | a short `lru_lock` hold on read only (a few µs per thousand BOs) |
+| S2a | pageable swap storage for TTM. In `ttm_tt_swapout`/`ttm_tt_swapin` (`#ifdef __NMX__`), copy each page into and out of a pageable kernel buffer (`IOBufferMemoryDescriptor` with `kIOMemoryPageable`, never prepared) instead of the shmem page array, keeping the handle in the tt. xnu's compressor and swap then own the bytes. It runs with the BO reserved and the LRU lock dropped (`ttm_bo.c:1178`), where a page fault is allowed. Add a manual trigger `debug.nmx_tt_swapout_mb` (WR, root, for main's A/B: swap out up to N MB from the LRU head now), plus a `swapin` kind in the stall ring | only when main writes the sysctl | the next CS swaps in on the submit thread. The size is in the stall ring before S3 makes it automatic |
+| S2b | the CPU-mapped majority, Apple's way: in RADV's winsys (`radv_amdgpu_bo.c`), allocate host-visible GTT buffers as page-aligned anonymous memory of the process imported as **userptr** (`AMDGPU_GEM_USERPTR`, the path IOSurface imports already use). The CPU mapping is then the process's own pageable memory, nothing is pinned for the mapping, and Step142 parks idle ones exactly as it parks idle imports (proven on out-37: 213 unparks, 0 failures). The memory is charged to the process footprint, where jetsam and Activity Monitor see it. Opt-in per process (start with mediaanalysisd/photoanalysisd, then WindowServer) | yes, opt-in | userptr pages are snooped and cacheable, not write-combined: measure the GPU read bandwidth on a 4K composite before WindowServer opts in. Row 12 class: a parked BO used unlisted. Both checks already exist (audit, listing) |
+| S3 | automatic, from the 1 s park sweep. At warn: free the page pool's free chunks at once (9.5), `ttm_bo_swapout` at most 256 MB per sweep, `park_ms` 60 s -> 5 s. At critical: 1 GB per sweep, `park_ms` 1 s. At normal: nothing (no periodic churn while memory is plentiful) | yes | after S1/S2 numbers only |
+| S4 | purgeable: `setPurgeableState:` on buffers and heaps (11.4 b) and the GEM madvise op (11.3 item 4) | yes | as in 11.4 |
+
+S1 decides between S2a and S2b. If most of the 4 GB is CPU-mapped (likely, because RADV maps host-visible memory),
+S2a reclaims little and S2b is the real fix. On a Linux APU RADV is the same, but there TTM can unmap and re-fault a
+CPU mapping (`ttm_bo_vm_fault`). Here it cannot, so the userptr form is the closest equivalent.
+
+#### Double copies (11.6) with today's data
+
+- **Two-plane 4K 10-bit surfaces in WindowServer** (3840x2160 R16 + 1920x1080 RG16, row 11524: the Aerial wallpaper
+  and HDR video) went to **private images with two CPU uploads per frame**: 60 uploads/s at 12:06, about 12 MB per
+  frame on the compositor thread (WS-CPU candidate D).
+- The plane host import with a GPU shadow exists for exactly this case (`nvmtl_plane_host_create`), and its pitch rule
+  is met (11524 is a multiple of the 2/4 B texel). **Yet none of its refusal checks logged a reason.**
+- The silent refusals are a host-pointer import failure (its log fires once per process), a linear-alias or shadow
+  failure, and a writable wrapper over a read-only mapping.
+- **df2565e** (plugin `fix/out31-plugin`, logging only, compile-checked, warnings 337 = 337) makes each of them say
+  which one and with which numbers. After main installs it, the first Aerial or HDR frame names the cause.
+- The fix follows from that: most likely the GPU shadow path for these planes. Expected gain: the 2-4 ms per 4K video
+  frame of CPU in WS-CPU D, and the private image's memory.
+- **Buffer-texture shadows**: their per-use copies run on the GPU, in the same submission. The CPU cost is the
+  recording only, so this is a memory item. 287 shadows are live in WindowServer. 11.6 (i) applies: free idle shadows
+  on the res2 tick and rebuild them on next use. (ii), the texel-buffer view, stays an investigation.
+- **Correction:** the prologue census text "each WAS its own submit" is stale. The prologue command buffer rides in
+  the same `vkQueueSubmit` (`nvmtl_vk.c:6309-6330`), so it is one CS.
