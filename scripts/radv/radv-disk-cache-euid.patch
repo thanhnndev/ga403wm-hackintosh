@@ -1,8 +1,8 @@
 diff --git a/src/util/disk_cache_os.c b/src/util/disk_cache_os.c
-index 66a3f5b..01d2515 100644
+index 66a3f5b..b2392bd 100644
 --- a/src/util/disk_cache_os.c
 +++ b/src/util/disk_cache_os.c
-@@ -999,12 +999,34 @@ disk_cache_generate_cache_dir(void *mem_ctx, const char *gpu_name,
+@@ -999,12 +999,41 @@ disk_cache_generate_cache_dir(void *mem_ctx, const char *gpu_name,
     return path;
  }
  
@@ -10,13 +10,20 @@ index 66a3f5b..01d2515 100644
 +/* macOS: WindowServer runs with effective uid/gid _windowserver (88) and real uid/gid root (0), so __normal_user() is
 + * false and the cache was always off there: every login recompiled all of WindowServer's pipelines (~64 s of CPU).
 + * The check exists so a setuid/setgid program never writes into the real user's cache. Allow the cache when the
-+ * process names its cache explicitly with MESA_SHADER_CACHE_DIR and that directory already exists, is owned by the
-+ * effective uid and is writable by nobody else: the cache then belongs to the effective user only. */
++ * real uid is root, the effective uid is not, the process names its cache explicitly with MESA_SHADER_CACHE_DIR, and
++ * that directory already exists, is owned by the effective uid and is writable by nobody else: the cache then belongs
++ * to the effective user only. Only the last path component is checked; the parents are root-owned on macOS
++ * (/var/folders/<x>/<y>/C). */
 +static bool
 +disk_cache_euid_dir_ok(void)
 +{
 +   const char *dir = getenv("MESA_SHADER_CACHE_DIR");
 +   struct stat st;
++   /* Only a process that root started and that then dropped to its own euid (WindowServer: ruid 0, euid 88). A
++    * setuid/setgid program run by a user has a non-root ruid and keeps the cache off, so whoever launched it cannot
++    * point it at a cache they forged. */
++   if (getuid() != 0 || geteuid() == 0)
++      return false;
 +   if (!dir || dir[0] != '/' || lstat(dir, &st) != 0)
 +      return false;
 +   return S_ISDIR(st.st_mode) && st.st_uid == geteuid() && !(st.st_mode & (S_IWGRP | S_IWOTH));

@@ -365,5 +365,16 @@ What this means for the switch:
     by the euid and not group/other writable;
   - the WindowServer dir is `drwx------ _windowserver`, so it qualifies;
   - other OSes are unchanged.
+- Hardening after review (Mesa 7c74449): the exception also requires real uid 0 and a non-root euid, so a
+  setuid/setgid program a user starts (non-root ruid) keeps the cache off and cannot be pointed at a forged cache.
+  Only the last path component is checked; its parents (`/var/folders/<x>/<y>/C`) are root-owned.
+  `scripts/radv/radv-disk-cache-euid.patch` is the whole change from bffd919;
+  `radv-disk-cache-euid-ruid0.incr.patch` goes on top of a tree that already has 085fc00.
+- Recovery: WindowServer now loads pipelines from this cache at every login. If a corrupt or wrong cache is ever
+  suspected (wrong rendering or a crash in RADV right after login), delete it as root and log in again:
+  `rm -rf /var/folders/zz/zyxvpxvq6csfxvn_n00000b000002r/C/WindowServer/nvmtl-mesa/mesa_shader_cache*`
+  (the folder itself is recreated by the plugin; `MESA_SHADER_CACHE_DISABLE=1` in WindowServer's environment is the
+  other way out). Mesa checks every entry's CRC and the driver's build-id, so a stale cache after a RADV update is
+  ignored, not loaded.
 - Separate finding, not fixed here: the `com.apple.WebKit.GPU+*` nvmtl-mesa dirs are also all empty. Those processes
   have uid == ruid, so the likely cause there is a sandbox write denial.
