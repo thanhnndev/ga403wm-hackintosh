@@ -137,3 +137,90 @@ Each bucket is converted to ms per present. That table replaces section 3's "exp
 | P3 | after the samples: whichever of A/B/C dominates (descriptor push/caching, per-command-buffer state reuse, buffer/view recycling) | - | sized by section 4 |
 
 Not a fix (the owner's rule): reducing the present rate, hiding windows, or moving WindowServer off the GPU.
+
+## 6. Results: main's root run, 2026-11-19 12:36 on out-37 (`~/ga403-logs/ws-cpu-20261119-123622/`)
+
+How the numbers were read:
+- Reader: `tools/890m/ws-spin-buckets.py <mode>.spin.txt <presents>`.
+- It counts **on-CPU samples only** (1 ms each). A kernel sample counts as kernel time only when the user stack ends
+  in a syscall stub. Otherwise it is the stackshot's own interrupt of a thread that was running that user frame.
+- Kernel frames are unsymbolicated (no KDK), so kernel time is split by syscall and caller only.
+- No gfx fault lines, and `flip_tripped` 0.
+
+Presents in 10 s: none 658, ca 1076, color 721, bitmap 754.
+
+### 6.1 ms of CPU per present, by thread and layer
+
+| thread | layer | none (owner's load) | ca | color | bitmap |
+|---|---|---:|---:|---:|---:|
+| main (`ws_main_thread`) | plugin (NVMTL, incl. its objc/malloc) | 0.49 | 0.50 | 0.54 | 0.58 |
+| | RADV + libdrm (user) | 0.17 | 0.19 | 0.16 | 0.34 |
+| | kernel under the driver (CS ioctl, IOConnect, BO create) | 0.37 | 0.47 | 0.34 | **1.06** |
+| | kernel, other (mach IPC, mutex waits) | **2.98** | 1.07 | 1.56 | 1.02 |
+| | WindowServer/CA own (SkyLight, QuartzCore, CoreDisplay, libobjc, malloc) | 1.88 | 1.59 | 1.52 | 1.60 |
+| | **main total** | **5.88** | **3.82** | **4.12** | **4.60** |
+| `coreanimation.pipelines` | shader translation + RADV compile | **15.00** | **1.98** | - | - |
+| `nvmtl.execution` | completion (syncobj wait/reset ioctls, objc) | 0.41 | 0.37 | 0.43 | 0.50 |
+| `root.user-interactive-qos` | CoreDisplay LUT burst | **34.85** | - | - | - |
+| `windowserver.root_queue` | BO free (`drmCloseBufferHandle`) | 0.21 | 0.10 | - | 0.63 |
+| **all threads** | | **57.4** | **6.4** | **4.8** | **6.0** |
+
+The driver's own share of a frame is the plugin, RADV and the kernel time under the driver, on the main thread plus
+the completion thread:
+- 1.53 ms/present in `ca`; 1.29 in `color`; 2.31 in `bitmap`, with the per-frame import, BO create and BO free.
+- On Linux the same work is about 0.1-0.3 ms.
+
+Inside it:
+- **Plugin self time is mostly the Objective-C runtime and malloc** (`objc_msgSend`, `objc_retain/release`,
+  `nanov2_*`), not Vulkan work.
+- **The CS ioctl costs 0.24-0.29 ms per present** (3-6 submits).
+- **Completion costs about 0.1 ms**: `drmSyncobjWait` plus `drmSyncobjReset`.
+- The IOSurface fence properties are within `IOConnectCallMethod`, 0.04-0.08 ms.
+
+### 6.2 What the samples found that section 3 did not expect
+
+**(1) Continuous pipeline creation.**
+- In `com.apple.coreanimation.pipelines`, `CA::OGL::MetalContext::dispatch_async_pipeline` ->
+  `create_pipeline_state` calls `-[NVMTLDevice newRenderPipelineStateWithDescriptor:]` -> `vkCreateGraphicsPipelines`
+  (full RADV NIR compiles), and `newFunctionWithDescriptor:` calls the translator (`libnvmtl_translate`).
+- It used **9.9 s of CPU in the 10 s `none` window** and 2.1 s in `ca`.
+- A steady desktop should not be compiling. Either CoreAnimation keeps asking for new specializations (the "Uber"
+  composite shaders take 18 function constants; the log shows `UberCompositeFragment specialized with 18
+  constant(s)`), or it re-asks for the same ones.
+- The plugin keeps no pipeline memo and passes no `VkPipelineCache`.
+- RADV's disk cache directory is created per user (`nvmtl_vk.c:757`). Whether it works for `_windowserver` is
+  unchecked.
+
+**(2) A CoreDisplay LUT burst.**
+- In the last 1.6 s of the `none` window, about 25 dispatch threads ran
+  `CoreDisplay::DisplayPipe::RunFullDisplayPipe` -> `CombineLUTs` -> `Display::CurrentHeadroom` and spun on
+  **one `std::mutex`**: 23.8 s of CPU.
+- The main thread lost 1.56 ms/present to the same mutex.
+- `RunFullDisplayPipe` recomputes the colour/EDR pipeline when headroom, brightness or the colour state changes. The
+  owner had HDR video playing. Our HDR panel twins (StrixGOP `--hdr`) and the brightness path feed exactly those
+  inputs.
+- How often it fires is unknown; one burst every few seconds would be a large share of WindowServer's average CPU.
+
+**(3) Per-frame client-surface import.**
+- In `bitmap` (a new CPU-drawn image each frame), the main thread spends 0.36 ms/present in
+  `amdgpu_create_bo_from_user_mem` (a userptr import, which wires the pages).
+- The root queue spends 0.39 ms in `drmCloseBufferHandle` plus 0.08 in `bo_va_op` freeing them.
+- On Linux the compositor imports a dma-buf: a handle lookup, nothing wired.
+
+**(4) WindowServer's own work is 2.6-2.7 ms/present** (Apple code plus its mach IPC, in `ca`/`color`/`bitmap`).
+- This part is not ours.
+- It scales with CPU clock. FRAME-PATH and CPU-THERMALS measured busy Zen 5 cores at about 2.0 GHz with CPPC off,
+  which inflates it relative to an M3 at 4 GHz.
+
+## 7. Ranked fixes (expected saving per present unless noted)
+
+| rank | fix | where | expected |
+|---|---|---|---|
+| **1** | **Stop the pipeline churn.** First count it: in WindowServer, per 30 s, `newRenderPipelineState` and `newFunctionWithDescriptor` calls, distinct keys (SPIR-V hash + state; name + constant values), time spent, logged through `nvlog` (P0b, plugin, small). If keys repeat, memoize both levels by key in the plugin (pipeline state objects are immutable; Apple's driver caches the same way) and give RADV a real cache (`VkPipelineCache` held by the device, plus a disk-cache directory `_windowserver` can write). If keys are new, find which CoreAnimation input changes the specialization (likely tied to item 2's headroom) | plugin `NVMTLDevice.m` pipeline paths, `nvmtl_vk.c:757` | 2 ms/present in `ca`; **about one core** under the owner's load (`none`: 9.9 s per 10 s) |
+| **2** | **Find what triggers `RunFullDisplayPipe`.** Read-only: count CoreDisplay pipe rebuilds against our brightness and headroom updates (NMXBacklight in NMXGPU, StrixGOP HDR twins, the EDR headroom we report). A frequent trigger from our side (a brightness or headroom value that keeps changing by tiny steps, or a re-sent display attribute) is ours to fix; a real HDR start/stop is not | NMXGPU backlight, StrixGOP, NMXAMDFB attributes | bursts of about 20 core-seconds each; average depends on the frequency, unknown |
+| 3 | **Cheap client-surface imports.** Cache the user-page wiring per IOSurface in the kernel (the surface hint already maps id <-> range), so a recycled surface re-imports without a new wire. The real form is FRAME-PATH row 5: one GEM object per IOSurface, shared by all importers | NMXGPU userptr import, `amdgpu-nmx-surface-hint.patch` | 0.5-0.8 ms/present for CPU-drawn content |
+| 4 | **Leaner frame path.** Drop `@synchronized` and ObjC retain/release from the per-draw encoder path (C structs for bindings); one syncobj per command buffer reused instead of wait plus reset ioctls; then, with a KDK, break the CS ioctl's 0.1 ms per submit down by function (BO list, VM update, scheduler) | plugin encoder, `nvmtl_vk.c` submit and finish, NMXGPU CS | 0.5-0.8 ms/present |
+| 5 | **CPU clock under load** (CPPC off, about 2 GHz): WindowServer's own 2.6 ms/present is Apple code and scales with it | CPU-THERMALS session's scope | not ours to patch here; noted so it is not counted as driver cost |
+| - | P2 (two-plane 4K video as host imports, 12.13: df2565e logs the reason first) | plugin | 2-4 ms per 4K video frame; not exercised in this run |
+
+Not done here: 1-4 need code. 1's counter is the first patch, before any memo.

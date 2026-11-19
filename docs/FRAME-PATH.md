@@ -1498,3 +1498,29 @@ CPU mapping (`ttm_bo_vm_fault`). Here it cannot, so the userptr form is the clos
   on the res2 tick and rebuild them on next use. (ii), the texel-buffer view, stays an investigation.
 - **Correction:** the prologue census text "each WAS its own submit" is stale. The prologue command buffer rides in
   the same `vkQueueSubmit` (`nvmtl_vk.c:6309-6330`), so it is one CS.
+
+### 12.14 Row 12: aged, pool-recycled 420f variant (2026-11-19 12:41-12:43, approved by main)
+
+**Tool:** `tools/890m/vfr-420f.swift` (alarm 200, 110 s used, rc 0), synthetic text only.
+
+**What it does:**
+- Four 1920x1080 `420f` buffers come from one `CVPixelBufferPool`, the mediaanalysisd shape.
+- MPS: through `CVMetalTextureCache`, each buffer's Y plane is an `MPSImage`, and an `MPSCNNPoolingMax` kernel writes
+  into the **next pool surface's Y plane**. The chroma plane is wrapped as well.
+- Vision: text recognition plus classification on each buffer.
+- The buffers go back to the pool and sit idle for 75 s.
+- The pool hands out **the same IOSurfaces (113/380/381/383)** again, and they are used the same way.
+
+**Result:**
+- Both batches complete; MPS 4/4 each time.
+- 0 `AUDIT MISS`. No page fault, ring timeout or soft recovery in the kernel log.
+- `flip_tripped` 0, `nmx_fault_kick` 0.
+- `userwire_unparks` 368 -> 376, `unpark_fail` 0, `parks` 1292 -> 1351.
+
+**Row 12 now has three synthetic shapes passing on out-37:**
+- BGRA OCR;
+- aged reuse;
+- aged pool-recycled 420f through MPS writes and Vision.
+
+**Decision (main's):** wait for a natural recurrence. out-37 names the IOSurface on the fault line, and main checks the
+log for `page fault` lines.
