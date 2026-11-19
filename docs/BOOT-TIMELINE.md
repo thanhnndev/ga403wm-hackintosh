@@ -41,7 +41,7 @@ earlier again. That is roughly **60-66 s saved** before the password prompt.
 
 | # | Wait | Cost | Cause | Confidence | Fix | Risk |
 |---|---|---|---|---|---|---|
-| 1 | `GPUWranglerWaitForPublish: timed out; status=0xe00002d6` | 60 s, every Eco boot | The held, powered-off RTX is still a display-class `IOPCIDevice`, so AppleGPUWrangler keeps a GPU record for it that is never published (2.1) | High (disassembly plus live `debug-gpus`, 4/4 slow boots Eco, 2/2 fast boots RTX on) | StrixDgpuGate 0.2.0 takes the powered-off card off the bus (2.2) | Medium: new teardown path, see 4 |
+| 1 | `GPUWranglerWaitForPublish: timed out; status=0xe00002d6` | 60 s, every Eco boot | The held, powered-off RTX is still a display-class `IOPCIDevice`, so AppleGPUWrangler keeps a GPU record for it that is never published (2.1) | High (disassembly plus live `debug-gpus`, 4/4 slow boots Eco, 2/2 fast boots RTX on) | StrixDgpuGate 0.2.1 takes the powered-off card off the bus (2.2) | Medium: new teardown path, see 4 |
 | 2 | TAL (reopen windows) relaunch | 43.5 s on 11-19 (2.6-3.6 s on the other boots) | loginwindow waits for every restored app to check in: Xcode, Simulator, Chrome, Edge, Claude, Safari, Notes, Activity Monitor (9 apps) | High (loginwindow TAL log) | Owner's choice: untick "Reopen windows when logging back in" at shutdown, or quit Xcode and Simulator first. Note: macOS itself relaunched **Microsoft Edge** here (TAL), nothing of ours did | None |
 | 3 | APFS boot-time trim | 3.5-4.4 s, critical path | apfs.kext trims all free space of disk1 at mount (about 150-170 k extents at 23 us each); launchd's `hello` comes 0.16-0.25 s after the trim ends on all four boots | High | OpenCore `Kernel/Quirks/SetApfsTrimTimeout` = `0`. On macOS 12+ only 0 has an effect; it disables the boot-time trim only. The OpenCore docs say normal running is not affected | Low-medium: the SSD gets no boot-time deallocation; undo = `-1` |
 | 4 | OpenCore picker | 2.0 s per boot | `ShowPicker` true, `Timeout` 2 | High | `Misc/Boot/ShowPicker` = false. The picker is still reachable by holding Option/Esc at power-on (`PollAppleHotKeys` true). Check that the hotkey works on the built-in keyboard before relying on it; otherwise `Timeout` = 1 | Low |
@@ -102,47 +102,72 @@ not matter, because pubArmed is missing in both.
 
 ### 2.2 The fix (patch on a branch, compile-checked, not installed)
 
-`rog-control-macos`, branch **`fix/eco-offbus`** @ **ad5a90c** (from `feat/gpu-mode` @ 2cf905e), worktree
-`~/develop/projects/rog-control-macos-ecooffbus`. StrixDgpuGate **0.2.0**, built at
-`~/develop/projects/rog-control-macos-ecooffbus/build/StrixDgpuGate.kext` (binary md5 6175f28ae405473362e85b9da90ddd72).
-It compiles with no errors; the only new imports are `IOService::terminate` and the `IOPCIBridge` metaclass, which Apple's
-wrangler imports too.
+`rog-control-macos`, branch **`fix/eco-offbus`** @ **83b35e0** (0.2.1, review fixes on top of ad5a90c 0.2.0, from
+`feat/gpu-mode` @ 2cf905e), worktree `~/develop/projects/rog-control-macos-ecooffbus`. Built at
+`~/develop/projects/rog-control-macos-ecooffbus/build/StrixDgpuGate.kext` (binary md5 f68953bf94ab0036c90f4659af77c434).
+No errors; only the three old warnings. New imports beyond 0.1.x are `IOService::terminate`, the `IOPCIBridge` and
+`IOUserClient` metaclasses, `IORegistryIterator::iterateOver`, `IOLock*` and `thread_call_cancel(_wait)/free`, all covered by
+the kpi.iokit / kpi.mach / IOPCIFamily libraries already declared.
 
-- `takeOffBus()`: once `powerOff()` has the card off (GPP9.GSTA 0), terminate the RTX audio and display nubs
-  (`terminate(kIOServiceRequired)`). The wrangler marks the record terminated and wakes WindowServer. If the gate gets
-  there before the wrangler starts (power-off is at Claim start + 3 s), no record is made at all.
-- Terminating the nub stops `StrixDgpuClaim`, so everything that must outlive it is now file-level state with
-  parameterless thread calls: the loop-guard clears (90 s, 5 min, WillRestart/WillPowerOff), the re-off after resume, and
-  the power-source heartbeat (ACAD notifier, battery poll, sampler).
-- Config space (PMCSR writes, vendor and PMCSR reads in the heartbeat) goes through the parent bridge
-  (`IOPCIBridge::configRead16/configWrite16`) with the `IOPCIAddressSpace` saved at claim. PM capability offsets are found
-  while the nubs are still alive.
-- New property `gate-off-bus` on the `StrixDgpuGate` IOResources service.
-- Boot-arg `strixgate_keepbus=1` restores the 0.1.x behaviour (card off, nubs kept; 60 s at login). The name was checked
+- **Power-off pass** (`powerOff()`, serialised by a lock): walks GPP9's IOService-plane `IOPCIDevice` children (the bridge
+  attaches every nub before it registers any, so the audio function is seen even while it is still matching). Refuses if
+  any RTX function has a foreign driver. With the card powered it relearns each function's address and PM capability,
+  runs NVOP `_DSM` 0 and 0x1A, PMCSR -> D3hot (skipped when PMCSR reads 0xffff), then `_PS3`.
+- **Off the bus** (`takeOffBus()`): when GPP9.GSTA is 0 **and** the display function reads vendor 0xffff, every RTX
+  function still registered is terminated (`terminate(kIOServiceRequired)`). The wrangler marks the record terminated and
+  wakes WindowServer, or never makes one when the gate gets there first. This is not one-shot: it runs on every pass,
+  including the "already off" branch (one fresh vendor read there, only when nubs exist).
+- **When a pass runs:** Claim start + 3 s; wake + 3 s (`kIOMessageSystemHasPoweredOn`); a second Claim start in the same
+  boot + 3 s (a hot-plug re-scan after GPP9 returns to D0 re-created the nubs; GPP9 has `IOPCIHotPlug`, `_PR0 = {PG00}`);
+  and the 90 s / 5 min re-check + 1 s when GSTA reads 1 again or RTX nubs are back.
+- Terminating the nub stops `StrixDgpuClaim`, so everything that outlives it is file-level state with parameterless thread
+  calls (loop-guard clears, power-off passes, heartbeat). `StrixDgpuGate::stop` (unload) removes the notifiers, cancels,
+  waits for and frees the thread calls, and releases what it retained.
+- Config space goes through the parent bridge (`IOPCIBridge::configRead16/configWrite16`) with the saved
+  `IOPCIAddressSpace`, which stays valid after the nub is gone.
+- New properties on the `StrixDgpuGate` IOResources service: `gate-off-bus` (no RTX nub left after the last pass),
+  `gate-offbus-terminations`, `gate-offbus-passes`, `gsta-recheck`, `gate-keepbus`, `gate-ws-seen`.
+- Way back without a reinstall: boot-arg `strixgate_keepbus=1` or NVRAM `strix-gpu-keepbus=1` (`sudo nvram
+  strix-gpu-keepbus=1`; `sudo nvram -d strix-gpu-keepbus` to undo): card off, nubs kept, 60 s at login. Both names checked
   against the AuxKC, BootKC, SystemKC, ESP kexts and /Library/Extensions: no other match.
+- Loop-guard evidence (review point 4): the guard still only covers the first 90 s of kernel life. Cheap extension done:
+  `strix-gpu-eco-cleared` is now `<counter>:<awake s>:ws0|ws1`, where ws1 means a user client created by WindowServer existed
+  at the clear (one registry walk at 90 s and 5 min), so the next boot can tell "kernel lived 90 s" from "the desktop came
+  up". Not done: arming the guard across sleep (try=1 on WillSleep, cleared after wake) would also catch a hang at wake, but
+  it changes when the guard trips, so it is the owner's call.
+
+AsusWmi and RogControl (review point 7, checked in source): with the nubs gone, AsusWmi's `rtxForeignDriver()` finds no
+RTX, so `ASUS_GPF_LIVE_OK` stays clear and `ASUS_GPU_SET_DGPU` (live WMI eject) answers NotPermitted. RogControl never calls
+it. Its GPU-mode page reads `supported` (WMI DGPU DSTS), `gate` / `held` / `poweredOff` / `tripped` (gate properties) and
+`boot` (`gate-effective`), and stores the next-boot mode with `ASUS_GPU_SET_MODE`, which is always allowed. So Eco still
+shows correctly and Standard can still be requested for the next boot.
 
 Open risks for main to weigh:
 
-- Resume: IOPCIFamily no longer restores the RTX's config space (it has no nub). The gate's re-off after resume uses ACPI
-  (`_DSM`, `_PS3`) plus PMCSR writes through the bridge. Check `gate-state` after the next owner-started sleep test.
-- Termination runs about 3 s after Claim start. If the wrangler already made a record, the waiter is woken at once, so the
-  cost is at most a few seconds.
-- RogControl and AsusWmi read only the `StrixDgpuGate` service, which is unchanged. System Information will no longer list
-  the RTX in Eco.
+- Resume: IOPCIFamily no longer restores the RTX's config space (it has no nub). If the platform powers PG00 on at wake,
+  the hot-plug re-scan re-creates the nubs, the second Claim holds them away from NVRM, and the wake/claim pass powers the
+  card off and terminates them again. Watch list below.
+- Termination runs about 3 s after Claim start. If the wrangler already made a record, the waiter is woken at once.
+- System Information no longer lists the RTX in Eco.
 
 ## 3. What main must install or change, and how to verify each
 
-1. **StrixDgpuGate 0.2.0** (ESP `EFI/OC/Kexts/StrixDgpuGate.kext`, replaces 3FB90B94; owner's OK and one reboot).
-   On the next Eco boot:
-   - `ioreg -r -c StrixDgpuGate -l | grep -E 'gate-off-bus|gate-state'` -> `gate-off-bus = Yes`, state `eco: dsm0 ... gsta 1->0`.
-   - `ioreg -p IOService -r -n PEGP@0` -> nothing (the nub is gone).
-   - `ioreg -l -r -c AppleGPUWrangler | grep debug-gpus` -> only id 54616 (0xd558), or 64206 with flags including
-     0x40000000.
+1. **StrixDgpuGate 0.2.1** @ 83b35e0 (ESP `EFI/OC/Kexts/StrixDgpuGate.kext`, replaces 3FB90B94; owner's OK and one
+   reboot). First Eco boot watch list:
+   - `ioreg -r -c StrixDgpuGate -l | grep -E 'gate-off-bus|gate-offbus|gate-state|gsta|gate-ws-seen'` ->
+     `gate-off-bus = Yes`, `gate-offbus-terminations` 2 (display + audio), state `eco: dsm0 ... gsta 1->0 ... vid 0xffff`.
+   - `ioreg -r -n GPP9` -> no `PEGP` and no `HDAU` under it. Note GPP9's `IOPowerManagement` `CurrentPowerState`
+     (whether IOPCIFamily idles the empty bridge).
+   - `ioreg -l -r -c AppleGPUWrangler | grep debug-gpus` -> only the 890M, or the RTX with 0x40000000 (terminated).
    - `/usr/bin/log show --last boot --predicate 'eventMessage CONTAINS "GPUWranglerWaitForPublish" OR eventMessage CONTAINS "Server is starting up" OR eventMessage CONTAINS "Creating FB"'`
      -> no timeout line; "Server is starting up" -> "Creating FB" about 4 s (was 63-65 s).
-   - Unplug and plug the charger once: `hb-events` grows and `hb-ring` fills, so the heartbeat still works after the nub is
-     gone.
-   - Undo: boot-arg `strixgate_keepbus=1` (no reinstall), or put 3FB90B94 back.
+   - After 5 min: `gsta-recheck = 0`, `gate-ws-seen = Yes`, `nvram strix-gpu-eco-cleared` ends in `:ws1`.
+   - After 5 min, unplug and plug the charger once: `hb-events` grows and every `hb-ring` entry keeps `g0` (GSTA stays 0).
+   First sleep/wake (owner starts it; no sleep test from a side session):
+   - Right after wake: does `ioreg -r -n GPP9` show PEGP/HDAU again? Does `gate-claim-starts` go to 2?
+   - 30 s after wake: `gsta-recheck` / `gsta-after` 0, `gate-off-bus = Yes`, `gate-offbus-passes` +1 (or +2 with a re-claim).
+   - Log out and back in: WindowServer start -> "Creating FB" stays about 4 s (no new wrangler wait).
+   - Undo: `sudo nvram strix-gpu-keepbus=1` or boot-arg `strixgate_keepbus=1` (no reinstall), or put 3FB90B94 back.
 2. **`Kernel/Quirks/SetApfsTrimTimeout` = 0** (ESP config.plist). Verify: no `spaceman_scan_free_blocks: ... trims took`
    line, and launchd `hello` at about T0+1.0 s instead of T0+4.5-5.2 s. Undo: `-1`.
 3. **`Misc/Boot/ShowPicker` = false** (or `Timeout` = 1). First check that holding Option/Esc at power-on still brings up
