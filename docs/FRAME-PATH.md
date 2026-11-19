@@ -1352,3 +1352,33 @@ So far nothing has run the path.
 - WindowServer keeps the list: 24k+ parts with 0 misses, and hundreds of imports at about 1 ms per submit without it.
 - Make it the code default once the bounded run has named, or failed to name, the path. Until then keep the list on in mediaanalysisd, or the audit sees nothing there.
 - `NVMTL_SURFACE_LIST=1` stays as the per-process opt-in for tests.
+
+### 12.11 Row 12 repro runs on out-37 (2026-11-19 12:18-12:22, approved by main)
+
+**Run 1:** `tools/890m/vision-fault-repro.swift`, 30 s, alarm 60, synthetic images.
+- It ran into the alarm (rc 142). First-use pipeline builds (cnnConvArray, MPS pooling, ...) took about 15 s, and the script only checks its time limit between batches.
+- 4 text recognitions ran.
+- 0 `AUDIT MISS`. No gfx page fault, timeout or soft recovery. `debug.nmxaccel_flip_tripped` 0.
+
+**Run 2:** `tools/890m/vfr-aged.swift`, the aged variant allowed by main, alarm 170, 91 s used.
+- The same 4 IOSurface-backed BGRA pixel buffers (surfaces 302/304/306/307) were recognized, left idle for 75 s, then recognized again.
+- Both batches returned 4/4 results, with 0 Vision errors and 0 `AUDIT MISS`. No fault, `flip_tripped` 0, `nmx_fault_kick` 0.
+- In batch 2 the plugin's surface keep cache handed back the **same imports** (hits #1-#4 on 306/304/302/307), and the kernel had unparked them (`nmx_userwire_unparks` 213 since boot, `unpark_fail` 0, `parks` 1025).
+- So the listed path (park, then a later listed use, a CS unpark and a correct result) works under Espresso.
+- Vision also builds 2-plane `420f` surfaces (350/348/351/353). They are plane host imports shadowed on the GPU and written back after each command buffer. They are new on each request and were not aged.
+
+**Also read** after the runs:
+- A keep hit returns a view whose parent is the cached root, so it is listed through the root's `_hostSL`.
+- The compute descriptor-set reuse paths (`nvmtl_snapshot_set_c`: same-part `last` reuse, the desc-cache hit, the `from` copy) return a set only when the current binding table matches it. That table is filled by this encoder's `set*` calls, so the resources are retained and listed.
+- Their only effect is on the audit: a reused set records no "used" entries. That is an audit visibility gap, not a listing gap.
+
+**Where row 12 stands:**
+- The 20:34 fault happened on out-34, before the 11.9 ordering. Two synthetic runs on out-37 did not reproduce it. The aged one exercised exactly the park-then-reuse condition, and the reuse was listed and unparked correctly.
+- The unlisted writer is not in the BGRA OCR path. What remains unexercised:
+  - aged 2-plane `420f` reuse (mediaanalysisd keeps video-frame pixel buffer pools)
+  - scene classification at the daemon's own sizes
+  - the daemon's other models (faces, embeddings)
+- Without the owner's data or more runs, nothing is left to try cheaply.
+- out-37 now names the IOSurface on the fault's live-mapping line, so a natural recurrence gives the surface, its size and format (`IOSurfaceLookup`) and, through the 12.8 greps, the process.
+- Keep the audit file and the surface list on in mediaanalysisd until the next natural occurrence or an approved 420f variant.
+- Then make the WindowServer-only surface list the default (12.10).
