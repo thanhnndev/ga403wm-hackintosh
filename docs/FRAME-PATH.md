@@ -1583,3 +1583,54 @@ Saved as `~/ga403-logs/tt-census-out39-1558.txt`.
 - S2a would recover at most 662 MB, most of it the decoder's, and only under pressure.
 - First step of S2b: measure what the ~73 MB per process is, by heap and by size class, from the plugin side. Then
   move that heap first.
+
+### 12.16 S2b step 1: what the ~73 MB pinned per process is (2026-11-19, out-39)
+
+Method: `tools/890m/pinstep.swift`, a fresh Metal process that prints its own `debug.nmx_gtt` line after each step
+(no census read).
+
+| step | GTT | BOs |
+|---|---:|---:|
+| first submit (one blit) | 36.8 MB | 11 |
+| clear render pass, second queue, library compile | 36.8 MB | 12 |
+| **first render pipeline** | **78.9 MB** | 17 |
+| compute pipeline, draw + dispatch, 64 cbs x 200 draws | 79.2 MB | 23 |
+| 4 MB texture replace | 83.4 MB | 24 |
+
+Where it goes (plugin source, RADV `radv_descriptor_pool.c`):
+- **36.1 MiB: the first descriptor pool.** `nvmtl_desc_pool_open` sizes it for 4096 sets of the 321-binding layout:
+  - 33 storage buffers x 16 B;
+  - 128 mutable textures x 32 B;
+  - 32 samplers x 16 B;
+  - 128 mutable storage images x 32 B;
+  - that is 9.2 KB per set, plus the 64 KB reserve.
+
+  RADV makes it one CPU-mapped BO, which xkpi pins. It is created at the first pipeline (`ensure_descriptors_locked`).
+  It lands in GTT or, while the 512 MB carveout has room, in VRAM. That is why some processes in the census show
+  ~9,300 pinned pages plus ~10,000 VRAM pages instead of ~18,600 pinned: Dock, NotificationCenter, iconservicesagent,
+  Edge helper.
+- **4 MiB: the bindless heap** (131,072 sampled images x 32 B).
+- **32 MiB: the first system-RAM buffer-pool block** (`NVMTL_POOL_BLOCK`). In the test it holds one 4 KB buffer.
+- About 3 MiB of RADV device internals.
+- Sum: ~75 MiB, against ~72.6 MiB pinned plus a few hundred VRAM pages in the census.
+
+Use: the busiest process, WindowServer, logged a high-water of 36 descriptor sets in one command buffer and never
+opened a second pool. All the other processes' logs are the same (1 pool, at most 36 sets).
+
+**Fix: plugin a11328b (a sizing fix, no userptr needed for this part).**
+- Descriptor pool k holds 256 << k sets, capped at 4096. The first pool is 2.3 MiB.
+  - `NVMTL_DESC_FIRST_SETS=4096` gives the old size.
+  - 68 pools keep the old 64 x 4096 ceiling.
+- System-RAM pool blocks start at 4 MiB and double to 32 MiB.
+- Expected effect:
+  - A light process falls from ~73 MB to ~10 MB pinned (2.3 + 4 + 4 + ~3 MiB).
+  - Across the 14 processes in the census, that is roughly 0.8-0.9 GB of the 1.2 GB pinned class.
+- Verify after the build (no root needed):
+  1. `perl -e 'alarm 90; exec @ARGV' ./pinstep`
+  2. Expect ~8.8 MB at the first submit and ~15 MB after the first render pipeline.
+  3. Then read the census once and check the per-process pinned column.
+
+What is left for S2b proper:
+- WindowServer, VTDecoder and the simulators. Their pinned pages beyond these fixed ones are real host-visible
+  working sets.
+- The 4 MiB bindless heap could be created on the first `gpuResourceID` instead of at the first pipeline.
