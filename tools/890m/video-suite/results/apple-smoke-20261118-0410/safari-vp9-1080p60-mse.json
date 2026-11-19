@@ -1,0 +1,35 @@
+{
+ "app": "Safari",
+ "id": "safari-vp9-1080p60-mse",
+ "clip": "vp9-1080p60.webm",
+ "codec": "VP9",
+ "depth": "profile 0 8-bit",
+ "size": "1080p60",
+ "container": "WebM",
+ "mime": "video/webm; codecs=\"vp09.00.41.08\"",
+ "fps": 60,
+ "mode": "mse",
+ "cpu": {
+  "vtdecoder": 0,
+  "webkit_gpu": 50.8,
+  "webcontent": 2.6,
+  "quicktime": 0
+ },
+ "vtActive": [],
+ "decoded": 1323,
+ "dropped": 885,
+ "plays": "yes",
+ "check": {
+  "ok": 5,
+  "bad": 1,
+  "unreadable": 0,
+  "first": [
+   {
+    "t": 2.333,
+    "want": 140,
+    "got": 145
+   }
+  ]
+ },
+ "errors": []
+}

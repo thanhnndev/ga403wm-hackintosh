@@ -1,0 +1,101 @@
+{
+ "id": "mx-vp9p2-1080p60-mse",
+ "clip": "mx-vp9p2-1080p60.webm",
+ "codec": "VP9",
+ "depth": "profile 2 10-bit",
+ "size": "1080p60",
+ "container": "WebM",
+ "mime": "video/webm; codecs=\"vp09.02.41.10\"",
+ "fps": 60,
+ "mode": "mse",
+ "started": "2026-11-18T05:03:30.708Z",
+ "decoder": "VpxVideoDecoder",
+ "vcn": {
+  "v": "refused",
+  "s": [
+   {
+    "pid": 74029,
+    "proc": "VTDecoderXPCService",
+    "codec": "vp09",
+    "started": false,
+    "refused": "StartSession vp09 1920x1080: not 8-bit 4:2:0 profile 0, refused",
+    "errors": [],
+    "close": null
+   }
+  ]
+ },
+ "platform": false,
+ "errors": [
+  "Error Domain=NSOSStatusErrorDomain Code=-12910 \"(null)\" (-12910): VTDecompressionSessionCreate()"
+ ],
+ "plays": "yes",
+ "secs": 12,
+ "decoded": 720,
+ "dropped": 0,
+ "skipped": 0,
+ "presented": 720,
+ "back": 0,
+ "missedCb": 0,
+ "waiting": 0,
+ "stalled": 0,
+ "ivP50": 16.7,
+ "ivP95": 18.1,
+ "ivP99": 18.4,
+ "ivMax": 18.6,
+ "late": 0,
+ "hiddenSecs": 0,
+ "unfocusedSecs": 12,
+ "fsSecs": 0,
+ "viewport": "800x337@2",
+ "mem": {
+  "swapouts": 0,
+  "swapins": 0,
+  "pageouts": 0,
+  "decompressions": 1712,
+  "wiredGB": 11.3,
+  "freeMinMB": 3950.4
+ },
+ "n": 13,
+ "inputSecs": 0,
+ "watts": 20.88,
+ "tctl": 60.9,
+ "tctlMax": 62.3,
+ "cpu": {
+  "gpu": 16.2,
+  "renderer": 121.6,
+  "browser": 1,
+  "chrome_other": 0.3,
+  "windowserver": 2.2,
+  "vtdecoder": 0,
+  "docker": 0,
+  "claude": 13.8,
+  "owner_apps": 61.8,
+  "total": 216.9,
+  "kernel_task": 8.5
+ },
+ "nmx": {
+  "chunks_filled": 0,
+  "chunks_inline": 0,
+  "chunks_freed": 9,
+  "parks": 14,
+  "unparks": 0,
+  "unpark_fail": 0,
+  "park_fail": 0,
+  "restore_fail": 0,
+  "timeouts": 0,
+  "fence_timeouts": 0,
+  "frames_per_s": 0,
+  "page_free_min": 254029,
+  "pages_live_max": 1066833,
+  "userwire_max": 68300,
+  "parked_pages_end": 1235697
+ },
+ "wattsOverPre": null,
+ "check": {
+  "ok": 126,
+  "near": 0,
+  "bad": 0,
+  "unreadable": 0,
+  "first": []
+ }
+}

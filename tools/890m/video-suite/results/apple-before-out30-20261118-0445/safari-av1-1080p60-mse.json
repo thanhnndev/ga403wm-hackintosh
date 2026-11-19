@@ -1,0 +1,208 @@
+{
+ "app": "Safari",
+ "id": "safari-av1-1080p60-mse",
+ "clip": "av1-1080p60.webm",
+ "codec": "AV1",
+ "depth": "main 8-bit",
+ "size": "1080p60",
+ "container": "WebM",
+ "mime": "video/webm; codecs=\"av01.0.08M.08\"",
+ "fps": 60,
+ "mode": "mse",
+ "cpu": {
+  "vtdecoder": 0,
+  "webkit_gpu": 0,
+  "webcontent": 2.5,
+  "quicktime": 0
+ },
+ "vtActive": [],
+ "decoded": 491,
+ "dropped": 271,
+ "advanced": 0.15,
+ "plays": "yes",
+ "hidden": true,
+ "check": {
+  "ok": 0,
+  "near": 0,
+  "timerReads": 1,
+  "bad": 0,
+  "unreadable": 2,
+  "first": [
+   {
+    "t": 0.217,
+    "border": 0
+   },
+   {
+    "err": "The object is in an invalid state."
+   }
+  ]
+ },
+ "errors": [
+  "Media failed to decode",
+  "MSE appendBuffer: The object is in an invalid state."
+ ],
+ "rows": [
+  {
+   "sec": 0,
+   "decoded": 491,
+   "dropped": 271,
+   "rvfc": 6,
+   "skipped": 6,
+   "vis": "hidden",
+   "focus": false,
+   "ct": 12.348,
+   "paused": false,
+   "rs": 4,
+   "ahead": 0
+  },
+  {
+   "sec": 1,
+   "decoded": 0,
+   "dropped": 0,
+   "rvfc": 0,
+   "skipped": 0,
+   "vis": "hidden",
+   "focus": false,
+   "ct": 12.489,
+   "paused": false,
+   "rs": 4,
+   "ahead": 0
+  },
+  {
+   "sec": 2,
+   "decoded": 0,
+   "dropped": 0,
+   "rvfc": 0,
+   "skipped": 0,
+   "vis": "hidden",
+   "focus": false,
+   "ct": 12.491,
+   "paused": false,
+   "rs": 4,
+   "ahead": 0
+  },
+  {
+   "sec": 3,
+   "decoded": 0,
+   "dropped": 0,
+   "rvfc": 0,
+   "skipped": 0,
+   "vis": "hidden",
+   "focus": false,
+   "ct": 12.492,
+   "paused": false,
+   "rs": 4,
+   "ahead": 0
+  },
+  {
+   "sec": 4,
+   "decoded": 0,
+   "dropped": 0,
+   "rvfc": 0,
+   "skipped": 0,
+   "vis": "hidden",
+   "focus": false,
+   "ct": 12.492,
+   "paused": false,
+   "rs": 4,
+   "ahead": 0
+  },
+  {
+   "sec": 5,
+   "decoded": 0,
+   "dropped": 0,
+   "rvfc": 0,
+   "skipped": 0,
+   "vis": "hidden",
+   "focus": false,
+   "ct": 12.492,
+   "paused": false,
+   "rs": 4,
+   "ahead": 0
+  },
+  {
+   "sec": 6,
+   "decoded": 0,
+   "dropped": 0,
+   "rvfc": 0,
+   "skipped": 0,
+   "vis": "hidden",
+   "focus": false,
+   "ct": 12.493,
+   "paused": false,
+   "rs": 4,
+   "ahead": 0
+  },
+  {
+   "sec": 7,
+   "decoded": 0,
+   "dropped": 0,
+   "rvfc": 0,
+   "skipped": 0,
+   "vis": "hidden",
+   "focus": false,
+   "ct": 12.493,
+   "paused": false,
+   "rs": 4,
+   "ahead": 0
+  },
+  {
+   "sec": 8,
+   "decoded": 0,
+   "dropped": 0,
+   "rvfc": 0,
+   "skipped": 0,
+   "vis": "hidden",
+   "focus": false,
+   "ct": 12.494,
+   "paused": false,
+   "rs": 4,
+   "ahead": 0
+  },
+  {
+   "sec": 9,
+   "decoded": 0,
+   "dropped": 0,
+   "rvfc": 0,
+   "skipped": 0,
+   "vis": "hidden",
+   "focus": false,
+   "ct": 12.494,
+   "paused": false,
+   "rs": 4,
+   "ahead": 0
+  }
+ ],
+ "vcn": {
+  "v": "vcn",
+  "s": [
+   {
+    "pid": 11170,
+    "proc": "VTDecoderXPCService",
+    "codec": "av01",
+    "started": true,
+    "refused": null,
+    "errors": [],
+    "close": {
+     "in": 537,
+     "out": 537,
+     "dropped": 0,
+     "errors": 0
+    },
+    "size": "1920x1080",
+    "depth": null
+   },
+   {
+    "pid": 11624,
+    "proc": "VTDecoderXPCService",
+    "codec": "av01",
+    "started": true,
+    "refused": null,
+    "errors": [],
+    "close": null,
+    "size": "1920x1080",
+    "depth": null
+   }
+  ]
+ }
+}

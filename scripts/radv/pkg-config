@@ -1,0 +1,57 @@
+#!/usr/bin/env python3
+# SPDX-License-Identifier: MIT
+# Minimal pkg-config for the RADV build (scripts/radv/build-radv.sh): MacPorts' pkg-config is gone on Tahoe and the
+# build needs only libdrm / libdrm_amdgpu from $PKG_CONFIG_LIBDIR. Supports what meson asks: --version, --modversion,
+# --exists, --cflags, --libs, --variable=NAME, --print-errors / --static (ignored). Unknown packages exit 1.
+import os, re, sys
+
+dirs = [d for d in os.environ.get('PKG_CONFIG_LIBDIR', '').split(':') if d]
+
+def load(name, seen=None):
+    for d in dirs:
+        p = os.path.join(d, name + '.pc')
+        if os.path.exists(p):
+            v, f = {}, {}
+            for line in open(p):
+                line = line.strip()
+                if not line or line.startswith('#'): continue
+                m = re.match(r'^([A-Za-z0-9_.]+)\s*=\s*(.*)$', line)
+                if m: v[m.group(1)] = sub(m.group(2), v); continue
+                m = re.match(r'^([A-Za-z.]+)\s*:\s*(.*)$', line)
+                if m: f[m.group(1)] = sub(m.group(2), v)
+            return v, f
+    return None
+
+def sub(s, v): return re.sub(r'\$\{(\w+)\}', lambda m: v.get(m.group(1), ''), s)
+
+def reqs(f):
+    return [r.split()[0] for r in re.split(r'[,\s]+(?=[A-Za-z])', f.get('Requires', '')) if r.strip()]
+
+def collect(name, key, out, seen):
+    if name in seen: return True
+    seen.add(name)
+    pc = load(name)
+    if not pc: return False
+    for r in reqs(pc[1]):
+        if not collect(r, key, out, seen): return False
+    for t in pc[1].get(key, '').split():
+        if t not in out: out.append(t)
+    return True
+
+args = sys.argv[1:]
+if '--version' in args: print('0.29.2'); sys.exit(0)
+var = next((a.split('=', 1)[1] for a in args if a.startswith('--variable=')), None)
+pkgs = [a for a in args if not a.startswith('-') and not re.match(r'^[<>=]', a) and not re.match(r'^[\d.]+$', a)]
+if not pkgs: sys.exit(1)
+res = []
+for p in pkgs:
+    pc = load(p)
+    if not pc: sys.stderr.write(f"Package {p} was not found\n"); sys.exit(1)
+    if '--modversion' in args: res.append(pc[1].get('Version', ''))
+    elif var: res.append(pc[0].get(var, ''))
+    elif '--cflags' in args or '--libs' in args:
+        out = []
+        if '--cflags' in args and not collect(p, 'Cflags', out, set()): sys.exit(1)
+        if '--libs' in args and not collect(p, 'Libs', out, set()): sys.exit(1)
+        res.append(' '.join(out))
+print('\n'.join(res) if '--modversion' in args or var else ' '.join(res))

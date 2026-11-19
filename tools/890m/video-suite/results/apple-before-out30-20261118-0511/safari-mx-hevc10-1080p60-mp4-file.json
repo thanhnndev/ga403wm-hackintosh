@@ -1,0 +1,69 @@
+{
+ "app": "Safari",
+ "id": "safari-mx-hevc10-1080p60-mp4-file",
+ "clip": "mx-hevc10-1080p60.mp4",
+ "codec": "HEVC",
+ "depth": "Main10 10-bit",
+ "size": "1080p60",
+ "container": "MP4",
+ "mime": null,
+ "fps": 60,
+ "mode": "file",
+ "cpu": {
+  "vtdecoder": 57.2,
+  "webkit_gpu": 166.9,
+  "webcontent": 0.3,
+  "quicktime": 0
+ },
+ "vtActive": [
+  {
+   "pid": 13293,
+   "cpu": 55.1,
+   "vcndec": false
+  },
+  {
+   "pid": 34826,
+   "cpu": 2.1,
+   "vcndec": false
+  }
+ ],
+ "decoded": 842,
+ "dropped": 227,
+ "advanced": 0,
+ "plays": "yes",
+ "hidden": true,
+ "check": {
+  "ok": 1,
+  "near": 0,
+  "timerReads": 1,
+  "bad": 1,
+  "unreadable": 0,
+  "first": [
+   {
+    "t": 7.279,
+    "want": 437,
+    "got": 9
+   }
+  ]
+ },
+ "errors": [],
+ "rows": [
+  {
+   "sec": 0,
+   "decoded": 842,
+   "dropped": 227,
+   "rvfc": 6,
+   "skipped": 4,
+   "vis": "hidden",
+   "focus": false,
+   "ct": 14.102,
+   "paused": false,
+   "rs": 4,
+   "ahead": 15.9
+  }
+ ],
+ "vcn": {
+  "v": "none",
+  "s": []
+ }
+}

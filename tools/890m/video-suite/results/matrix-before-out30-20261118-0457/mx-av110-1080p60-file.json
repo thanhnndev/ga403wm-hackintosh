@@ -1,0 +1,13 @@
+{
+ "id": "mx-av110-1080p60-file",
+ "clip": "mx-av110-1080p60.webm",
+ "codec": "AV1",
+ "depth": "main 10-bit",
+ "size": "?p?",
+ "container": "WebM",
+ "mime": "video/webm; codecs=\"av01.0.09M.10\"",
+ "fps": "?",
+ "started": "2026-11-18T05:04:36.136Z",
+ "plays": "no clip",
+ "error": "could not make the clip on this machine: Error: encoder config not supported: {\"codec\":\"av01.0.09M.10\",\"width\":1920,\"height\":1080,\"framerate\":60,\"bitrate\":6000000,\"bitrateMode\":\"variable\",\"latencyMode\":\"realtime\"}\n    at genClip (http://127.0.0.1:8790/gen/gen.html:42:29)"
+}

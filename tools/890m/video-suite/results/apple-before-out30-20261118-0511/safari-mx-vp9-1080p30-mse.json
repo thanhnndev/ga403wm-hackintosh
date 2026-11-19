@@ -1,0 +1,70 @@
+{
+ "app": "Safari",
+ "id": "safari-mx-vp9-1080p30-mse",
+ "clip": "mx-vp9-1080p30.webm",
+ "codec": "VP9",
+ "depth": "profile 0 8-bit",
+ "size": "1080p30",
+ "container": "WebM",
+ "mime": "video/webm; codecs=\"vp09.00.40.08\"",
+ "fps": 30,
+ "mode": "mse",
+ "cpu": {
+  "vtdecoder": 1.9,
+  "webkit_gpu": 243.5,
+  "webcontent": 3.6,
+  "quicktime": 0
+ },
+ "vtActive": [
+  {
+   "pid": 34826,
+   "cpu": 1.9,
+   "vcndec": false
+  }
+ ],
+ "decoded": 427,
+ "dropped": 0,
+ "advanced": 0,
+ "plays": "yes",
+ "hidden": true,
+ "check": {
+  "ok": 2,
+  "near": 0,
+  "timerReads": 1,
+  "bad": 0,
+  "unreadable": 0,
+  "first": []
+ },
+ "errors": [],
+ "rows": [
+  {
+   "sec": 0,
+   "decoded": 427,
+   "dropped": 0,
+   "rvfc": 6,
+   "skipped": 0,
+   "vis": "hidden",
+   "focus": false,
+   "ct": 14.166,
+   "paused": false,
+   "rs": 4,
+   "ahead": 15.8
+  }
+ ],
+ "vcn": {
+  "v": "error",
+  "s": [
+   {
+    "pid": 13271,
+    "proc": "com.apple.WebKit.GPU",
+    "codec": "vp09",
+    "started": false,
+    "refused": null,
+    "errors": [
+     "StartSession vp09 1920x1080: Vulkan device: Generic error in an external library (-542398533)"
+    ],
+    "close": null
+   }
+  ]
+ }
+}

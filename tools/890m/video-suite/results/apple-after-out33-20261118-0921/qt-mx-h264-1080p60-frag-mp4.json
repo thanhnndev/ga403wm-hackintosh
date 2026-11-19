@@ -1,0 +1,49 @@
+{
+ "app": "QuickTime",
+ "id": "qt-mx-h264-1080p60-frag-mp4",
+ "clip": "mx-h264-1080p60-frag.mp4",
+ "codec": "H.264",
+ "depth": "High 8-bit",
+ "size": "1080p60",
+ "container": "fMP4",
+ "mime": "video/mp4; codecs=\"avc1.64002a\"",
+ "fps": 60,
+ "mode": "file",
+ "errors": [],
+ "cpu": {
+  "vtdecoder": 5.5,
+  "webkit_gpu": 0.3,
+  "webcontent": 0,
+  "quicktime": 5.1
+ },
+ "vtActive": [
+  {
+   "pid": 84797,
+   "cpu": 5.5,
+   "vcndec": true
+  }
+ ],
+ "advanced": 12.51,
+ "plays": "yes",
+ "vcn": {
+  "v": "vcn",
+  "s": [
+   {
+    "pid": 84797,
+    "proc": "VTDecoderXPCService",
+    "codec": "avc1",
+    "started": true,
+    "refused": null,
+    "errors": [],
+    "close": {
+     "in": 820,
+     "out": 820,
+     "dropped": 0,
+     "errors": 0
+    },
+    "size": "1920x1080",
+    "depth": 8
+   }
+  ]
+ }
+}

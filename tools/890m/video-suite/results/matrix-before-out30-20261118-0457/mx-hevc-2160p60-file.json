@@ -1,0 +1,122 @@
+{
+ "id": "mx-hevc-2160p60-file",
+ "clip": "mx-hevc-2160p60.mp4",
+ "codec": "HEVC",
+ "depth": "Main 8-bit",
+ "size": "2160p60",
+ "container": "MP4",
+ "mime": null,
+ "fps": 60,
+ "mode": "file",
+ "started": "2026-11-18T05:01:41.401Z",
+ "decoder": "VideoToolboxVideoDecoder",
+ "vcn": {
+  "v": "vcn",
+  "s": [
+   {
+    "pid": 61880,
+    "proc": "vt_check",
+    "codec": "hvc1",
+    "started": true,
+    "refused": null,
+    "errors": [],
+    "close": {
+     "in": 1800,
+     "out": 1800,
+     "dropped": 0,
+     "errors": 0
+    },
+    "size": "1920x1080",
+    "depth": 8
+   },
+   {
+    "pid": 62275,
+    "proc": "vt_check",
+    "codec": "hvc1",
+    "started": true,
+    "refused": null,
+    "errors": [],
+    "close": {
+     "in": 1800,
+     "out": 1800,
+     "dropped": 0,
+     "errors": 0
+    },
+    "size": "1920x1080",
+    "depth": 8
+   }
+  ]
+ },
+ "platform": true,
+ "errors": [],
+ "plays": "yes",
+ "secs": 12,
+ "decoded": 722,
+ "dropped": 0,
+ "skipped": 83,
+ "presented": 638,
+ "back": 0,
+ "missedCb": 83,
+ "waiting": 0,
+ "stalled": 0,
+ "ivP50": 16.8,
+ "ivP95": 33.4,
+ "ivP99": 34.5,
+ "ivMax": 51.3,
+ "late": 79,
+ "hiddenSecs": 0,
+ "unfocusedSecs": 12,
+ "fsSecs": 0,
+ "viewport": "800x337@2",
+ "mem": {
+  "swapouts": 0,
+  "swapins": 0,
+  "pageouts": 0,
+  "decompressions": 11004,
+  "wiredGB": 11.8,
+  "freeMinMB": 4166
+ },
+ "n": 12,
+ "inputSecs": 0,
+ "watts": 42.76,
+ "tctl": 76.9,
+ "tctlMax": 79.8,
+ "cpu": {
+  "gpu": 21,
+  "renderer": 31.2,
+  "browser": 0.4,
+  "chrome_other": 0.4,
+  "windowserver": 2.3,
+  "vtdecoder": 139,
+  "docker": 0,
+  "claude": 5.8,
+  "owner_apps": 200,
+  "total": 400,
+  "kernel_task": 16
+ },
+ "nmx": {
+  "chunks_filled": 0,
+  "chunks_inline": 0,
+  "chunks_freed": 0,
+  "parks": 8,
+  "unparks": 1,
+  "unpark_fail": 0,
+  "park_fail": 0,
+  "restore_fail": 0,
+  "timeouts": 0,
+  "fence_timeouts": 0,
+  "frames_per_s": 0,
+  "page_free_min": 52622,
+  "pages_live_max": 1307074,
+  "userwire_max": 112437,
+  "parked_pages_end": 1166214
+ },
+ "wattsOverPre": null,
+ "check": {
+  "ok": 108,
+  "near": 0,
+  "bad": 0,
+  "unreadable": 0,
+  "first": []
+ }
+}

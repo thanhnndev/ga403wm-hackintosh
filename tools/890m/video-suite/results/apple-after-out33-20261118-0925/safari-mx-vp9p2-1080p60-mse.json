@@ -1,0 +1,168 @@
+{
+ "app": "Safari",
+ "id": "safari-mx-vp9p2-1080p60-mse",
+ "clip": "mx-vp9p2-1080p60.webm",
+ "codec": "VP9",
+ "depth": "profile 2 10-bit",
+ "size": "1080p60",
+ "container": "WebM",
+ "mime": "video/webm; codecs=\"vp09.02.41.10\"",
+ "fps": 60,
+ "mode": "mse",
+ "cpu": {
+  "vtdecoder": 0.1,
+  "webkit_gpu": 11.3,
+  "webcontent": 8.8,
+  "quicktime": 0
+ },
+ "vtActive": [],
+ "decoded": 582,
+ "dropped": 277,
+ "advanced": 8.46,
+ "plays": "yes",
+ "hidden": true,
+ "check": {
+  "ok": 1,
+  "near": 4,
+  "timerReads": 0,
+  "bad": 0,
+  "unreadable": 0,
+  "first": []
+ },
+ "errors": [],
+ "rows": [
+  {
+   "sec": 0,
+   "decoded": 74,
+   "dropped": 0,
+   "rvfc": 18,
+   "skipped": 35,
+   "vis": "hidden",
+   "focus": false,
+   "ct": 1.122,
+   "paused": false,
+   "rs": 4,
+   "ahead": 28.9
+  },
+  {
+   "sec": 1,
+   "decoded": 57,
+   "dropped": 25,
+   "rvfc": 7,
+   "skipped": 57,
+   "vis": "hidden",
+   "focus": false,
+   "ct": 2.119,
+   "paused": false,
+   "rs": 4,
+   "ahead": 27.9
+  },
+  {
+   "sec": 2,
+   "decoded": 219,
+   "dropped": 118,
+   "rvfc": 5,
+   "skipped": 12,
+   "vis": "hidden",
+   "focus": false,
+   "ct": 5.684,
+   "paused": false,
+   "rs": 4,
+   "ahead": 24.3
+  },
+  {
+   "sec": 3,
+   "decoded": 25,
+   "dropped": 8,
+   "rvfc": 0,
+   "skipped": 0,
+   "vis": "hidden",
+   "focus": false,
+   "ct": 6.118,
+   "paused": false,
+   "rs": 4,
+   "ahead": 23.9
+  },
+  {
+   "sec": 4,
+   "decoded": 2,
+   "dropped": 0,
+   "rvfc": 0,
+   "skipped": 0,
+   "vis": "hidden",
+   "focus": false,
+   "ct": 6.124,
+   "paused": false,
+   "rs": 4,
+   "ahead": 23.9
+  },
+  {
+   "sec": 5,
+   "decoded": 0,
+   "dropped": 0,
+   "rvfc": 0,
+   "skipped": 0,
+   "vis": "hidden",
+   "focus": false,
+   "ct": 6.124,
+   "paused": false,
+   "rs": 4,
+   "ahead": 23.9
+  },
+  {
+   "sec": 6,
+   "decoded": 205,
+   "dropped": 126,
+   "rvfc": 0,
+   "skipped": 0,
+   "vis": "hidden",
+   "focus": false,
+   "ct": 9.572,
+   "paused": false,
+   "rs": 4,
+   "ahead": 20.4
+  },
+  {
+   "sec": 7,
+   "decoded": 0,
+   "dropped": 0,
+   "rvfc": 0,
+   "skipped": 0,
+   "vis": "hidden",
+   "focus": false,
+   "ct": 9.583,
+   "paused": false,
+   "rs": 4,
+   "ahead": 20.4
+  },
+  {
+   "sec": 8,
+   "decoded": 0,
+   "dropped": 0,
+   "rvfc": 0,
+   "skipped": 0,
+   "vis": "hidden",
+   "focus": false,
+   "ct": 9.584,
+   "paused": false,
+   "rs": 4,
+   "ahead": 20.4
+  }
+ ],
+ "vcn": {
+  "v": "vcn",
+  "s": [
+   {
+    "pid": 77334,
+    "proc": "com.apple.WebKit.GPU",
+    "codec": "vp09",
+    "started": true,
+    "refused": null,
+    "errors": [],
+    "close": null,
+    "size": "1920x1080",
+    "depth": 10
+   }
+  ]
+ }
+}

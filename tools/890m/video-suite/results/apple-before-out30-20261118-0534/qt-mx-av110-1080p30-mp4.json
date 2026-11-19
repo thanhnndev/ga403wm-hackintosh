@@ -1,0 +1,43 @@
+{
+ "app": "QuickTime",
+ "id": "qt-mx-av110-1080p30-mp4",
+ "clip": "mx-av110-1080p30.mp4",
+ "codec": "AV1",
+ "depth": "main 10-bit",
+ "size": "1080p30",
+ "container": "MP4",
+ "mime": null,
+ "fps": 30,
+ "mode": "file",
+ "errors": [],
+ "cpu": {
+  "vtdecoder": 0.1,
+  "webkit_gpu": 0.2,
+  "webcontent": 0,
+  "quicktime": 2.1
+ },
+ "vtActive": [],
+ "advanced": 0,
+ "plays": "no",
+ "vcn": {
+  "v": "refused",
+  "s": [
+   {
+    "pid": 1350,
+    "proc": "VTDecoderXPCService",
+    "codec": "av01",
+    "started": false,
+    "refused": "StartSession av01 1920x1080: not 8-bit 4:2:0 profile 0, refused",
+    "errors": [
+     "decode #387 (59301 bytes): copy fence 2"
+    ],
+    "close": {
+     "in": 387,
+     "out": 385,
+     "dropped": 0,
+     "errors": 2
+    }
+   }
+  ]
+ }
+}

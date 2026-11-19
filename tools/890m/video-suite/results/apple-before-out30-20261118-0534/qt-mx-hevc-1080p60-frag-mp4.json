@@ -1,0 +1,32 @@
+{
+ "app": "QuickTime",
+ "id": "qt-mx-hevc-1080p60-frag-mp4",
+ "clip": "mx-hevc-1080p60-frag.mp4",
+ "codec": "HEVC",
+ "depth": "Main 8-bit",
+ "size": "1080p60",
+ "container": "fMP4",
+ "mime": "video/mp4; codecs=\"hvc1.1.6.L123.90\"",
+ "fps": 60,
+ "mode": "file",
+ "errors": [],
+ "cpu": {
+  "vtdecoder": 37.4,
+  "webkit_gpu": 0.2,
+  "webcontent": 0,
+  "quicktime": 4.4
+ },
+ "vtActive": [
+  {
+   "pid": 1350,
+   "cpu": 37.4,
+   "vcndec": true
+  }
+ ],
+ "advanced": 12.39,
+ "plays": "yes",
+ "vcn": {
+  "v": "none",
+  "s": []
+ }
+}

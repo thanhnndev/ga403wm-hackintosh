@@ -1,0 +1,192 @@
+{
+ "app": "Safari",
+ "id": "safari-mx-av1-2160p60-mse",
+ "clip": "mx-av1-2160p60.webm",
+ "codec": "AV1",
+ "depth": "main 8-bit",
+ "size": "2160p60",
+ "container": "WebM",
+ "mime": "video/webm; codecs=\"av01.0.13M.08\"",
+ "fps": 60,
+ "mode": "mse",
+ "cpu": {
+  "vtdecoder": 15.4,
+  "webkit_gpu": 78,
+  "webcontent": 8.1,
+  "quicktime": 0
+ },
+ "vtActive": [
+  {
+   "pid": 13293,
+   "cpu": 9.4,
+   "vcndec": true
+  },
+  {
+   "pid": 34826,
+   "cpu": 6,
+   "vcndec": false
+  }
+ ],
+ "decoded": 762,
+ "dropped": 186,
+ "advanced": 5.85,
+ "plays": "yes",
+ "hidden": true,
+ "check": {
+  "ok": 0,
+  "near": 1,
+  "timerReads": 1,
+  "bad": 0,
+  "unreadable": 0,
+  "first": []
+ },
+ "errors": [],
+ "rows": [
+  {
+   "sec": 0,
+   "decoded": 412,
+   "dropped": 26,
+   "rvfc": 1,
+   "skipped": 0,
+   "vis": "hidden",
+   "focus": false,
+   "ct": 6.899,
+   "paused": false,
+   "rs": 2,
+   "ahead": 0
+  },
+  {
+   "sec": 2,
+   "decoded": 0,
+   "dropped": 0,
+   "rvfc": 0,
+   "skipped": 0,
+   "vis": "hidden",
+   "focus": false,
+   "ct": 6.899,
+   "paused": false,
+   "rs": 2,
+   "ahead": 0
+  },
+  {
+   "sec": 1,
+   "decoded": 0,
+   "dropped": 0,
+   "rvfc": 0,
+   "skipped": 0,
+   "vis": "hidden",
+   "focus": false,
+   "ct": 6.899,
+   "paused": false,
+   "rs": 2,
+   "ahead": 0
+  },
+  {
+   "sec": 6,
+   "decoded": 0,
+   "dropped": 0,
+   "rvfc": 0,
+   "skipped": 0,
+   "vis": "hidden",
+   "focus": false,
+   "ct": 6.899,
+   "paused": false,
+   "rs": 2,
+   "ahead": 0
+  },
+  {
+   "sec": 3,
+   "decoded": 0,
+   "dropped": 0,
+   "rvfc": 0,
+   "skipped": 0,
+   "vis": "hidden",
+   "focus": false,
+   "ct": 6.899,
+   "paused": false,
+   "rs": 2,
+   "ahead": 0
+  },
+  {
+   "sec": 4,
+   "decoded": 0,
+   "dropped": 0,
+   "rvfc": 0,
+   "skipped": 0,
+   "vis": "hidden",
+   "focus": false,
+   "ct": 6.899,
+   "paused": false,
+   "rs": 2,
+   "ahead": 0
+  },
+  {
+   "sec": 5,
+   "decoded": 0,
+   "dropped": 0,
+   "rvfc": 0,
+   "skipped": 0,
+   "vis": "hidden",
+   "focus": false,
+   "ct": 6.899,
+   "paused": false,
+   "rs": 2,
+   "ahead": 0
+  },
+  {
+   "sec": 7,
+   "decoded": 56,
+   "dropped": 2,
+   "rvfc": 0,
+   "skipped": 0,
+   "vis": "hidden",
+   "focus": false,
+   "ct": 7.709,
+   "paused": false,
+   "rs": 4,
+   "ahead": 22.3
+  },
+  {
+   "sec": 8,
+   "decoded": 68,
+   "dropped": 29,
+   "rvfc": 0,
+   "skipped": 0,
+   "vis": "hidden",
+   "focus": false,
+   "ct": 8.862,
+   "paused": false,
+   "rs": 4,
+   "ahead": 21.1
+  },
+  {
+   "sec": 9,
+   "decoded": 226,
+   "dropped": 129,
+   "rvfc": 0,
+   "skipped": 0,
+   "vis": "hidden",
+   "focus": false,
+   "ct": 12.752,
+   "paused": false,
+   "rs": 4,
+   "ahead": 17.2
+  }
+ ],
+ "vcn": {
+  "v": "vcn",
+  "s": [
+   {
+    "pid": 13293,
+    "proc": "VTDecoderXPCService",
+    "codec": "av01",
+    "started": true,
+    "refused": null,
+    "errors": [],
+    "close": null,
+    "size": "3840x2160",
+    "depth": null
+   }
+  ]
+ }
+}

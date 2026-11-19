@@ -1,0 +1,50 @@
+{
+ "app": "Safari",
+ "id": "safari-mx-hevc10-1080p60-file",
+ "clip": "mx-hevc10-1080p60.mp4",
+ "codec": "HEVC",
+ "depth": "Main10 10-bit",
+ "size": "1080p60",
+ "container": "MP4",
+ "mime": null,
+ "fps": 60,
+ "mode": "file",
+ "cpu": {
+  "vtdecoder": 164.6,
+  "webkit_gpu": 200.5,
+  "webcontent": 0.7,
+  "quicktime": 0.1
+ },
+ "vtActive": [
+  {
+   "pid": 5481,
+   "cpu": 54.5,
+   "vcndec": false
+  },
+  {
+   "pid": 11624,
+   "cpu": 110.1,
+   "vcndec": true
+  }
+ ],
+ "decoded": 0,
+ "dropped": 0,
+ "advanced": 0,
+ "plays": "yes",
+ "hidden": true,
+ "check": {
+  "ok": 0,
+  "near": 0,
+  "timerReads": 0,
+  "bad": 0,
+  "unreadable": 0,
+  "first": []
+ },
+ "errors": [],
+ "rows": [],
+ "vcn": {
+  "v": "none",
+  "s": []
+ },
+ "playsBy": "decoding in software: WebKit GPU 200.5 % + VTDecoderXPCService 164.6 % CPU (page hidden)"
+}

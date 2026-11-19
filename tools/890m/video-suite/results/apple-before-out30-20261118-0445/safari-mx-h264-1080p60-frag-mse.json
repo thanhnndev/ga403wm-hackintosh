@@ -1,0 +1,35 @@
+{
+ "app": "Safari",
+ "id": "safari-mx-h264-1080p60-frag-mse",
+ "clip": "mx-h264-1080p60-frag.mp4",
+ "codec": "H.264",
+ "depth": "High 8-bit",
+ "size": "1080p60",
+ "container": "fMP4",
+ "mime": "video/mp4; codecs=\"avc1.64002a\"",
+ "fps": 60,
+ "mode": "mse",
+ "decoded": 0,
+ "dropped": 0,
+ "advanced": 0,
+ "plays": "no",
+ "hidden": true,
+ "check": {
+  "ok": 0,
+  "near": 0,
+  "timerReads": 0,
+  "bad": 0,
+  "unreadable": 0,
+  "first": []
+ },
+ "errors": [
+  "play(): The operation is not supported.",
+  "{\"case\":\"safari-mx-h264-1080p60-frag-mse\",\"run\":\"apple-before-out30-20261118-0445\",\"type\":\"error\",\"msg\":\"\",\"code\":4}",
+  "MSE appendBuffer: The object is in an invalid state."
+ ],
+ "rows": [],
+ "vcn": {
+  "v": "none",
+  "s": []
+ }
+}
