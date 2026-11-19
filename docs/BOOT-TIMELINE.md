@@ -12,23 +12,45 @@ REA has no decompiler provider configured on this machine (no Ghidra, Hopper or 
 Times are seconds after the kernel's `=== system boot` record (T0), unless marked. "Eco" means the gate held the RTX and
 powered it off; "RTX on" means NVRM drove it.
 
-| Stage | 11-19 11:54 (Eco, slow) | 11-18 20:01 (Eco, slow) | 11-18 10:41 (Eco, slow) | 11-18 15:54 (RTX on, fast) | 11-16 18:39 (RTX on, fast) |
-|---|---|---|---|---|---|
-| CPU reset -> kernel (firmware + OpenCore + boot.efi) | **8.0 s** (tsc_base) | n/a | n/a | n/a | n/a |
-| T0 -> BSD root (`disk1s4`) | 0.50 | 0.48 | 0.50 | 0.48 | - |
-| APFS boot trim on disk1 (spaceman scan) | **4.36 s** (171 835 extents) | 3.84 s | 3.56 s | 3.70 s | - |
-| T0 -> launchd `hello` | 5.19 | 4.55 | 4.38 | 4.50 | - |
-| launchd -> WindowServer "Server is starting up" | 2.65 | 3.86 | 4.78 | 8.11 | - |
-| T0 -> WindowServer start | 7.84 | 8.42 | 9.16 | 12.61 | 8.26 |
-| AuxKC activation (kernelmanagerd) | 8.66 | - | - | - | - |
-| NMXGPU first log -> NMXAMDFB published (890M framebuffer) | 10.10 -> 11.49 | -> 12.94 | -> 12.47 | -> 15.86 | - |
-| WindowServer start -> "Creating FB 1 of 1" | **63.4 s** (timeout) | **65.3 s** (timeout) | **63.5 s** (timeout) | 7.6 s (waits for the RTX to publish) | 7.9 s |
-| T0 -> login window shown (`LoginwindowUIShown`) | 77.0 | 79.1 | 77.5 | 25.4 | 21.6 |
-| password typed (user) | 12.6 s | 14.4 s | 170.7 s | 16.6 s | 23.3 s |
-| login -> Finder/Dock launched | 0.86 | - | - | - | 0.96 |
-| Finder/Dock -> `ContinueAfterDesktopReady` | 5.0 s (timeout) | - | - | - | 5.0 s (timeout) |
-| -> `ContinueAfterTALCheckin` (apps reopened) | **43.5 s** | - | - | - | 3.6 s |
-| -> `LoginComplete` | 0.18 | - | - | - | 0.13 |
+| Stage | **11-19 15:51 (Eco, AFTER: gate 0.2.1, trim 0)** | 11-19 11:54 (Eco, slow) | 11-18 20:01 (Eco, slow) | 11-18 10:41 (Eco, slow) | 11-18 15:54 (RTX on, fast) | 11-16 18:39 (RTX on, fast) |
+|---|---|---|---|---|---|---|
+| CPU reset -> kernel (firmware + OpenCore + boot.efi) | 8.9 s (tsc_base; cold boot, picker kept) | **8.0 s** (tsc_base) | n/a | n/a | n/a | n/a |
+| T0 -> BSD root (`disk1s4`) | 0.50 | 0.50 | 0.48 | 0.50 | 0.48 | - |
+| APFS boot trim on disk1 (spaceman scan) | **0** (`no trims`) | **4.36 s** (171 835 extents) | 3.84 s | 3.56 s | 3.70 s | - |
+| T0 -> launchd `hello` | **1.67** | 5.19 | 4.55 | 4.38 | 4.50 | - |
+| launchd -> WindowServer "Server is starting up" | 3.57 | 2.65 | 3.86 | 4.78 | 8.11 | - |
+| T0 -> WindowServer start | 5.24 | 7.84 | 8.42 | 9.16 | 12.61 | 8.26 |
+| AuxKC activation (kernelmanagerd) | - | 8.66 | - | - | - | - |
+| NMXGPU first log -> NMXAMDFB published (890M framebuffer) | -> 8.66 (hold 1389 ms) | 10.10 -> 11.49 | -> 12.94 | -> 12.47 | -> 15.86 | - |
+| WindowServer start -> "Creating FB 1 of 1" | **3.76 s** (no wrangler line) | **63.4 s** (timeout) | **65.3 s** (timeout) | **63.5 s** (timeout) | 7.6 s (waits for the RTX to publish) | 7.9 s |
+| T0 -> login window shown (`LoginwindowUIShown`) | **14.40** | 77.0 | 79.1 | 77.5 | 25.4 | 21.6 |
+| password typed (user) | 15.7 s | 12.6 s | 14.4 s | 170.7 s | 16.6 s | 23.3 s |
+| login -> Finder/Dock launched | 0.88 | 0.86 | - | - | - | 0.96 |
+| Finder/Dock -> `ContinueAfterDesktopReady` | 5.02 s (timeout) | 5.0 s (timeout) | - | - | - | 5.0 s (timeout) |
+| -> `ContinueAfterTALCheckin` (apps reopened) | **37.3 s** (Safari, Xcode) | **43.5 s** | - | - | - | 3.6 s |
+| -> `LoginComplete` | 0.11 | 0.18 | - | - | - | 0.13 |
+
+Measured after the fixes (11-19 15:51, cold Eco boot, StrixDgpuGate 0.2.1 + `SetApfsTrimTimeout` 0, picker still on):
+login window at **T0+14.4 s, was 77.0 s** (62.6 s earlier). WindowServer start -> first framebuffer 3.8 s (was 63.4 s),
+no `GPUWranglerWaitForPublish` line, `debug-gpus` lists only the 890M, GPP9 has no children. launchd `hello` at T0+1.67 s
+(was 5.19 s). The 90 s and 5 min re-checks read GPP9.GSTA 0 (`gsta-recheck` 0, one power-off pass, 2 nubs terminated,
+`strix-gpu-eco-cleared` = `4:300:ws1`). Framebuffer -> login window is 5.4 s on this boot and on the RTX-on boots alike
+(loginwindow up at +1.3 s, SecurityAgent spawned at +2.0 s, its login UI drawn at +5.4 s): Apple's login UI start-up,
+not a wait. Pre-kernel 8.9 s on this cold boot vs 8.0 s on the warm 11:54 boot: firmware POST differs, the picker
+(2 s) is still in it.
+
+Still worth doing after this boot (each above 1 s):
+
+| What | Cost now | Who | Action |
+|---|---|---|---|
+| OpenCore picker | 2.0 s | main (ESP) + owner test | `scripts/macos-oc-fastboot.sh` (ShowPicker false; backup and `--undo`). Owner taps Esc from power-on once to confirm the picker still comes up (section 3, item 3) |
+| TAL window restore | 37.3 s | owner | Untick "Reopen windows when logging back in", or quit Safari and Xcode before shutdown. Safari (42.4 s to TAL-ready) and Xcode (30 s) set the time; everything else was ready within 15 s |
+| loginwindow desktop-ready timeout | 5.0 s | check first | Fires on every boot measured. Measure once with TAL off before calling it ours: Finder's desktop registration competes with the TAL relaunch |
+| Framebuffer -> login UI | 5.4 s | none | Same on RTX-on boots; Apple's SecurityAgent login UI start-up |
+| NMXGPU boot hold | 1.4 s | none now | Would need NMXGPU in the boot KC; large change for little gain |
+| VCN decoder exit hang (shutdown) | blocks shutdown | main (NMXGPU) | Section 4: `amdgpu_vm_fini` waits on a fence that never signals |
+
+Not tested yet with the nubs gone: sleep/wake and charger plug/unplug (the owner starts those; watch list in section 3).
 
 The 11-18 08:54 boot also took 61.3 s from WindowServer start to the framebuffer (08:54:43.661 -> 08:55:44.918). The kernel
 log of that boot is gone, so it cannot be confirmed as Eco, but nothing else in this report explains a 61 s gap there.
@@ -40,10 +62,10 @@ earlier again. That is roughly **60-66 s saved** before the password prompt.
 ## 2. Ranked avoidable waits
 
 | # | Wait | Cost | Cause | Confidence | Fix | Risk |
-|---|---|---|---|---|---|---|
-| 1 | `GPUWranglerWaitForPublish: timed out; status=0xe00002d6` | 60 s, every Eco boot | The held, powered-off RTX is still a display-class `IOPCIDevice`, so AppleGPUWrangler keeps a GPU record for it that is never published (2.1) | High (disassembly plus live `debug-gpus`, 4/4 slow boots Eco, 2/2 fast boots RTX on) | StrixDgpuGate 0.2.1 takes the powered-off card off the bus (2.2) | Medium: new teardown path, see 4 |
-| 2 | TAL (reopen windows) relaunch | 43.5 s on 11-19 (2.6-3.6 s on the other boots) | loginwindow waits for every restored app to check in: Xcode, Simulator, Chrome, Edge, Claude, Safari, Notes, Activity Monitor (9 apps) | High (loginwindow TAL log) | Owner's choice: untick "Reopen windows when logging back in" at shutdown, or quit Xcode and Simulator first. Note: macOS itself relaunched **Microsoft Edge** here (TAL), nothing of ours did | None |
-| 3 | APFS boot-time trim | 3.5-4.4 s, critical path | apfs.kext trims all free space of disk1 at mount (about 150-170 k extents at 23 us each); launchd's `hello` comes 0.16-0.25 s after the trim ends on all four boots | High | OpenCore `Kernel/Quirks/SetApfsTrimTimeout` = `0`. On macOS 12+ only 0 has an effect; it disables the boot-time trim only. The OpenCore docs say normal running is not affected | Low-medium: the SSD gets no boot-time deallocation; undo = `-1` |
+|---|---|---|---|---|---|---|---|
+| 1 | `GPUWranglerWaitForPublish: timed out; status=0xe00002d6` | 60 s, every Eco boot | The held, powered-off RTX is still a display-class `IOPCIDevice`, so AppleGPUWrangler keeps a GPU record for it that is never published (2.1) | High (disassembly plus live `debug-gpus`, 4/4 slow boots Eco, 2/2 fast boots RTX on) | **DONE, verified 11-19 15:51**: StrixDgpuGate 0.2.1 takes the powered-off card off the bus (2.2); 3.8 s instead of 63.4 s | Medium: new teardown path, see 4 |
+| 2 | TAL (reopen windows) relaunch | 43.5 s on 11-19 11:54, 37.3 s on 11-19 15:51 (Safari registered TAL-ready 42.4 s after launch, Xcode 30 s; its WebContent process took 8.5 s to start) (2.6-3.6 s on the other boots) | loginwindow waits for every restored app to check in: Xcode, Simulator, Chrome, Edge, Claude, Safari, Notes, Activity Monitor (9 apps) | High (loginwindow TAL log) | Owner's choice: untick "Reopen windows when logging back in" at shutdown, or quit Xcode and Simulator first. Note: macOS itself relaunched **Microsoft Edge** here (TAL), nothing of ours did | None |
+| 3 | APFS boot-time trim (**DONE, verified 11-19 15:51**: `no trims`, `hello` at T0+1.67 s) | 3.5-4.4 s, critical path | apfs.kext trims all free space of disk1 at mount (about 150-170 k extents at 23 us each); launchd's `hello` comes 0.16-0.25 s after the trim ends on all four boots | High | OpenCore `Kernel/Quirks/SetApfsTrimTimeout` = `0`. On macOS 12+ only 0 has an effect; it disables the boot-time trim only. The OpenCore docs say normal running is not affected | Low-medium: the SSD gets no boot-time deallocation; undo = `-1` |
 | 4 | OpenCore picker | 2.0 s per boot | `ShowPicker` true, `Timeout` 2 | High | `Misc/Boot/ShowPicker` = false. The picker is still reachable by holding Option/Esc at power-on (`PollAppleHotKeys` true). Check that the hotkey works on the built-in keyboard before relying on it; otherwise `Timeout` = 1 | Low |
 | 5 | loginwindow desktop-ready timeout | 5.0 s, every boot | loginwindow waits for the desktop-ready registration; Dock is ready 1.7 s after login, but Finder registers its desktop only 9.3 s after login (11:55:42.76) | Medium | Gone with #2 (Finder competes with the TAL relaunch). Part of Finder's delay is our Metal stack: 0.9 s between "GPU wait budget" and "driver opened directly: libvulkan_radeon.dylib" in Finder | Follow-up, not done |
 | 6 | 890M framebuffer publication | about 3.7 s after WindowServer start | The AuxKC is activated only after launchd starts kernelmanagerd (T0+8.7 s); NMXGPU then needs 1.4 s ("boot hold released: NMXAMDFB published after 1393 ms") | High | None proposed. Moving NMXGPU into the boot KC is a large change for about 4 s | - |
@@ -102,7 +124,11 @@ not matter, because pubArmed is missing in both.
 
 ### 2.2 The fix (patch on a branch, compile-checked, not installed)
 
-`rog-control-macos`, branch **`fix/eco-offbus`** @ **83b35e0** (0.2.1, review fixes on top of ad5a90c 0.2.0, from
+`rog-control-macos`, branch **`fix/eco-offbus`**: **83b35e0** (0.2.1, installed 11-19 as UUID 2469B941 and verified) and
+**d6b2779** (0.2.2, second-review follow-ups: `ws1` counts only WindowServer's framebuffer / display-pipe user clients,
+at most 4 terminate rounds per boot then `gate-keepbus-auto`, `gate-off-bus` recounted after each pass, `stop()` quiesces
+all thread calls before freeing, claim counter only after a successful arm, race-free lazy ACPI lookups; compiled, not
+installed, binary md5 3fafe4478a3f618927ce42d78f86a533). The text below describes 0.2.1 ( review fixes on top of ad5a90c 0.2.0, from
 `feat/gpu-mode` @ 2cf905e), worktree `~/develop/projects/rog-control-macos-ecooffbus`. Built at
 `~/develop/projects/rog-control-macos-ecooffbus/build/StrixDgpuGate.kext` (binary md5 f68953bf94ab0036c90f4659af77c434).
 No errors; only the three old warnings. New imports beyond 0.1.x are `IOService::terminate`, the `IOPCIBridge` and
@@ -204,8 +230,27 @@ Decoded with `spindump -i`: `shutdown_stall_2026-11-16-204205`, `2026-11-18-1747
 - How long it holds: 21:35 -> confirmation 21:35:14.4, `shutdownNoReturn` 21:35:22.3, log ends 21:35:27.2 (about 5 s of
   teardown). 20:41 -> `shutdownNoReturn` 20:41:53.5, last line 20:41:54.5. 17:46 -> logout 17:46:27, log ends 17:47:05.6:
   38 s, almost all of it apps quitting in the user session, before the teardown.
-- Verdict: not ours. The stall reports mean only that user processes, mostly Docker's VM, outlived SIGTERM for 2 s or more.
-  Quitting Docker Desktop before shutdown removes the biggest one. There is no system-side fix to make.
+- Verdict for 11-16 20:42 and 11-18 21:35: user processes, mostly Docker's VM, outlived SIGTERM. The NMXGPU frames in
+  those reports are only `kernel_task` (NMXGPU's own idle worker threads), which is normal. Quitting Docker Desktop
+  before shutdown removes the biggest one.
+- **Correction for 11-18 17:46** (re-checked 11-19 with symbols from out-33, the NMXGPU live then): two exiting processes,
+  `com.apple.WebKit.GPU` [77334] and `VTDecoderXPCService` [78252], were zombies on CPU for the whole sample in our
+  teardown: `NMXDrmClient::clientClose` -> `nmx_close` -> `drm_release` -> `drm_file_free` -> `drm_gem_release` ->
+  `ttm_bo_put` -> `ttm_tt_unpopulate` -> `ttm_pool_free` -> `ttm_pool_shrink` -> `nmx_mtx_lock`. Slow buffer teardown with
+  both contending for the pool lock, not a hang. Earlier text here said no kext of ours was involved; that was wrong for
+  this report.
+- **11-19 14:42 (`shutdown_stall_2026-11-19-144243`): a real hang in NMXGPU.** `VTDecoderXPCService` [19187] (Chrome's
+  decoder using our VCNDec plugin, opened `renderD128` at 12:27:54) closed cleanly at 12:28:10 ("VCNDEC close: in 912 out
+  912 dropped 0 errors 0"), then hung in exit and never ran again (last ran 8062 s before the report). Symbolicated with
+  out-37 (UUID 5159A44F, the NMXGPU live then): `NMXDrmClient::clientClose` + 95 -> `nmx_close` -> `nmx_cdev_close` ->
+  `linux_file_close` -> `drm_release` -> `drm_file_free` -> `amdgpu_driver_postclose_kms` -> **`amdgpu_vm_fini`** ->
+  **`dma_fence_wait`** -> `dma_fence_default_wait` -> `linux_schedule_timeout` -> `sleepq_block`. The VM teardown waits
+  without a timeout on a fence that never signalled, for 2 h 14 min. launchd was `blocked by wait4 on
+  VTDecoderXPCService [19187]` at shutdown. No NMXGPU error line was logged at 12:28. The system log ends at 14:42:36.9;
+  whether the machine then powered off by itself is not in the log (the next boot, 15:51, was a cold boot). No stuck
+  decoder on the 15:51 boot so far. Owner of the fix: the video / NMXGPU side (main): find which fence `amdgpu_vm_fini`
+  waits on (the VM's last page-table update or a VCN job fence after the close) and why it is never signalled. A bounded
+  wait would only hide it.
 
 ## 5. Notes
 
