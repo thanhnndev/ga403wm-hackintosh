@@ -49,7 +49,7 @@ CPU (mutter/kwin with RADV and amdgpu), with a CS ioctl of 20-50 µs. On the M3 
 | new `MTLBuffer` (plugin buffer objects) | about 1 per submission, 8M-1.3G B allocated live | 3-6 | `buffer census` |
 | descriptor-cache misses (a set is written: `vkUpdateDescriptorSets`) | ~290-380/s | ~10 | `desc-cache stats` (hits ~1300-4400/s) |
 | `MTLTexture` objects released | 94 489 in 16 min, so ~100/s | ~3 | `image census` |
-| buffer-texture shadow uploads (an unaligned-pitch texture over a buffer gets a shadow image, uploaded through a **separate prologue submission**) | 4096 more uploads per 4096 submits after the start (1.6 GB uploaded in the first minute) | ~1 extra CS | `pre-submit prologue census: ... each WAS its own submit` |
+| buffer-texture shadow uploads (an unaligned-pitch texture over a buffer gets a shadow image; its upload is a prologue command buffer) | 4096 more uploads per 4096 submits after the start (1.6 GB uploaded in the first minute) | ~1 copy; **not** an extra CS: the prologue rides in the same `vkQueueSubmit` (`nvmtl_vk.c:6309-6330`, `cbs[]`), the census text "each WAS its own submit" is stale | `pre-submit prologue census` |
 | surface-in CPU copies (`nvmtlSurfaceIn` -> `nvmtl_vk_image_write`: memcpy into staging plus a transfer submit and **a wait**) | 2000 per 33 s while 2-plane 3840x2160 surfaces (Aerial wallpaper / video) were on screen, about 0 otherwise | 2 copies, ~12 MB, per video frame | `G13 surface-in #` lines, 12:06-12:07 |
 | IOSurface fence properties (`NMXFencePending`, `NMXFenceSubmitted`, `NMXFenceDone`) | 3 calls per written surface | measured **5.6-8.8 µs per call**, so <0.1 ms | `tools`-free microbenchmark (`IOSurfaceSetValue(s)` on an own surface) |
 | `debug.nmxaccel_fence_wait` sysctl read | cached 1 s (it was ~1 % before) | 0 | `NVMTLEventSync.m:104-117` |
@@ -65,7 +65,7 @@ For each command buffer that CoreAnimation commits in WindowServer:
   desc-cache hash lookup, or a new set written with `vkUpdateDescriptorSets`), the pipeline is bound, and `vkCmdDraw*`
   is called.
 - Commit, `nvmtl_vk_submit_begin_at` (`nvmtl_vk.c:6273`):
-  - a prologue submit for shadow uploads (its own CS);
+  - a prologue command buffer for shadow uploads, in the same `VkSubmitInfo` (one CS);
   - the BO list (surface list plus exact list);
   - `vkQueueSubmit` (RADV: winsys BO list, `amdgpu_cs_submit_raw2`, the CS ioctl);
   - a syncobj for the completion thread;
@@ -82,7 +82,7 @@ as built**. Section 5 (P0) makes it usable there.
 |---|---|---|
 | compositor's own scene work (layer tree, damage, shaders chosen) | mutter/kwin: 0.1-0.5 ms | CoreAnimation in WindowServer: the same order on the M3 (0.5 % at idle); to be read from the samples |
 | API recording | GL/Vulkan driver: per draw ~0.5-2 µs; descriptor sets from a pool, often push descriptors | Metal -> plugin -> Vulkan -> RADV: two translation layers, per draw unknown -> samples |
-| submissions per frame | 1 (`DRM_IOCTL_AMDGPU_CS`), 20-50 µs incl. BO list | 3-6, plus a prologue per shadow upload |
+| submissions per frame | 1 (`DRM_IOCTL_AMDGPU_CS`), 20-50 µs incl. BO list | 3-6 (one per CoreAnimation command buffer) |
 | CPU pixel copies | none (dma-buf, the GPU samples the client's BO) | surface-in for multi-plane surfaces and some shadows (11.6); none for single-plane host imports |
 | completion | the kernel; the compositor reads one fd event | a user thread per command buffer: syncobj wait plus IOSurface properties (~0.5 ms/present measured) |
 
@@ -91,7 +91,7 @@ as built**. Section 5 (P0) makes it usable there.
 | # | candidate | expected | confirm in the spindump |
 |---|---|---|---|
 | A | Metal -> Vulkan translation per draw in WindowServer (binding snapshot, desc-cache hash, `vkUpdateDescriptorSets` on miss, pipeline variant lookup, `@synchronized` per call, ObjC retain/release of every bound object) | the largest unknown: CoreAnimation issues hundreds of small draws per frame for a busy desktop; 5-10 µs each would be 1-3 ms | main-thread time under `-[NVMTLRenderCommandEncoder ...]`, `nvmtl_snapshot_set*`, `nvmtl_dc_lookup`, `radv_UpdateDescriptorSets`, `objc_msgSend`/`objc_retain` |
-| B | per-command-buffer fixed cost times 3-6 per present: pool pop, query pool, render-pass variants, BO list building, prologue submit, `vkQueueSubmit` -> RADV `radv_amdgpu_winsys_cs_submit` -> CS ioctl, syncobj create/export | 0.3-1 ms user + the 1.06 ms sys | `nvmtl_vk_submit_begin_at`, `radv_queue_submit`, kernel frames under `amdgpu_cs_ioctl` (`amdgpu_cs_parser_bos`, `amdgpu_vm_bo_update`, `ttm_bo_validate`, userptr checks) in the spindump's kernel stacks |
+| B | per-command-buffer fixed cost times 3-6 per present: pool pop, query pool, render-pass variants, BO list building, `vkQueueSubmit` -> RADV `radv_amdgpu_winsys_cs_submit` -> CS ioctl, syncobj create/export | 0.3-1 ms user + the 1.06 ms sys | `nvmtl_vk_submit_begin_at`, `radv_queue_submit`, kernel frames under `amdgpu_cs_ioctl` (`amdgpu_cs_parser_bos`, `amdgpu_vm_bo_update`, `ttm_bo_validate`, userptr checks) in the spindump's kernel stacks |
 | C | object churn: a new `MTLBuffer` per submission and ~3 texture objects per present (VkBuffer/VkImageView create and destroy, heap placement, keep-cache sweeps every 100 ms) | 0.2-1 ms | `newBufferWithLength`, `nvmtl_vk_buffer_create`, `vkCreateImageView`, `nvmtl_keep_sweep` |
 | D | CPU pixel copies: surface-in of multi-plane surfaces (video, Aerial wallpaper: ~12 MB per frame) and buffer-texture shadows plus writebacks | 0 on a plain desktop, **2-4 ms per video frame** when a 2-plane 4K surface is composited | `nvmtlSurfaceIn` -> `nvmtl_vk_image_write` -> `_platform_memmove`; `shadow`/`writeback` frames |
 | E | kernel time on the main thread (1.06 ms/present): CS ioctls, IOSurface IPC (measured small), `IOSurfaceLock`, `mach_msg` to the accelerator | 1 ms | kernel frames in the spindump (it records kernel stacks) |
@@ -132,8 +132,7 @@ Each bucket is converted to ms per present. That table replaces section 3's "exp
 
 | # | fix | where | expected saving |
 |---|---|---|---|
-| P0 | make the plugin's existing stage timers usable in WindowServer: switch on by the file `/Library/GPUBundles/nvmtl-perf` (like `nvmtl-exec-qos-ui`); per 10 s, log thread-CPU (`CLOCK_THREAD_CPUTIME_ID`) per stage per present through `nvlog` instead of stderr per submit | `nvmtl_vk.c:3222-3262` | instrumentation; makes every later fix measurable without root |
-| P1 | one CS per present: fold the shadow-upload prologue into the main submission (the copies go at the start of the same command buffer, behind a barrier) instead of "each WAS its own submit" | `nvmtl_vk_submit_begin_at` prologue | one CS ioctl + syncobj per affected frame (~50-100 µs) |
+| P0 (held) | the plugin's stage timers in WindowServer (file switch, thread CPU, `nvlog` per 10 s). They time only the submit stages (hook/end/fence/submit/retire), not encoding, which is candidate A, and encoding is interleaved with CoreAnimation's own work on the same thread. The spindump answers both, so P0 is written only if the samples leave a stage unresolved | `nvmtl_vk.c:3222-3262` | instrumentation |
 | P2 | multi-plane surfaces as host imports per plane (11.6: today "private image, copied in and out, more than one plane"): the GPU samples the planes in place | `NVMTLDevice.m` item 7 / plane-host path | 2-4 ms per 4K video frame composited |
 | P3 | after the samples: whichever of A/B/C dominates (descriptor push/caching, per-command-buffer state reuse, buffer/view recycling) | - | sized by section 4 |
 
