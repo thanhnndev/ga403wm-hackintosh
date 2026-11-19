@@ -1,5 +1,6 @@
 // pinstep.swift: what a fresh Metal process puts in GTT, step by step (FRAME-PATH 12.16, S2b step 1). Prints this
 // process's line of debug.nmx_gtt (cpu gtt vram evicted evicted bos) after each step. Run bounded: perl -e 'alarm 90; exec @ARGV' ./pinstep
+import Foundation
 import Metal
 let me = getpid()
 func line() -> String {
