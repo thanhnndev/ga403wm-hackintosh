@@ -168,10 +168,23 @@ Open risks for main to weigh:
    - 30 s after wake: `gsta-recheck` / `gsta-after` 0, `gate-off-bus = Yes`, `gate-offbus-passes` +1 (or +2 with a re-claim).
    - Log out and back in: WindowServer start -> "Creating FB" stays about 4 s (no new wrangler wait).
    - Undo: `sudo nvram strix-gpu-keepbus=1` or boot-arg `strixgate_keepbus=1` (no reinstall), or put 3FB90B94 back.
-2. **`Kernel/Quirks/SetApfsTrimTimeout` = 0** (ESP config.plist). Verify: no `spaceman_scan_free_blocks: ... trims took`
-   line, and launchd `hello` at about T0+1.0 s instead of T0+4.5-5.2 s. Undo: `-1`.
-3. **`Misc/Boot/ShowPicker` = false** (or `Timeout` = 1). First check that holding Option/Esc at power-on still brings up
-   the picker. Verify: `machdep.tsc.nanotime.tsc_base` / `machdep.tsc.frequency` drops from 8.0 s to about 6 s.
+2. **`Kernel/Quirks/SetApfsTrimTimeout` = 0** and 3. **`Misc/Boot/ShowPicker` = false**, both with
+   `scripts/macos-oc-fastboot.sh` (as the user, no sudo; backs up `config.plist` to `config.plist.pre-fastboot-<ts>`,
+   records the old values, sets the two keys, runs `plutil -lint` and `ocvalidate` when built, restores the backup if
+   validation fails). `--trim-only` keeps the picker; `--status`; `--undo` puts back only these two keys; `--dry`.
+   Tested on a copy of the live config: apply then undo gives a plist identical to the original.
+   - Trim verify: no `spaceman_scan_free_blocks: ... trims took` line, and launchd `hello` at about T0+1.0 s instead of
+     T0+4.5-5.2 s.
+   - Picker verify: `machdep.tsc.nanotime.tsc_base` / `machdep.tsc.frequency` drops from 8.0 s to about 6 s.
+   - **Does the built-in keyboard reach the picker with ShowPicker false?** Very likely, not proven. Config:
+     `KeySupport` true (AppleInputKit on the firmware ConIn, log `AIK: Using 5 (50ms)`), `PollAppleHotKeys` true,
+     `PickerMode` Builtin, `TakeoffDelay` 0, `KeyForgetThreshold` 5, no OpenUsbKbDxe. All 19 OpenCore logs on the ESP
+     (DEBUG build, 10-10 to 10-14; `Misc/Debug/Target` is 0 now, so no newer logs) show `OCHK: InitHotKeys`, and 4 of
+     them booted Limine or Windows chosen from the picker, so keys do reach OpenCore. No log covers a boot with the picker
+     off, so a HELD key at power-on is untested. OpenCore accepts Esc, Option (Alt) and 0. Its docs name Esc as the key for
+     keyboards that do not report a held Option, and suggest repeated taps if holding fails. Owner test right after
+     applying: power on while tapping Esc. If it fails: `--undo`, or `--trim-only`, or raise `Misc/Boot/TakeoffDelay`
+     to 5000. The picker is the only way to Limine/Windows that does not need a firmware boot entry (docs/DUAL-BOOT.md).
 4. Owner, no install: turn off "Reopen windows when logging back in", or quit Xcode and Simulator before shutting down
    (43.5 s on 11-19).
 
