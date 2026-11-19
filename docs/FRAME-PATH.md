@@ -1471,6 +1471,11 @@ So the static read has to answer two questions, in this order:
 | S3 | automatic, from the 1 s park sweep. At warn: free the page pool's free chunks at once (9.5), `ttm_bo_swapout` at most 256 MB per sweep, `park_ms` 60 s -> 5 s. At critical: 1 GB per sweep, `park_ms` 1 s. At normal: nothing (no periodic churn while memory is plentiful) | yes | after S1/S2 numbers only |
 | S4 | purgeable: `setPurgeableState:` on buffers and heaps (11.4 b) and the GEM madvise op (11.3 item 4) | yes | as in 11.4 |
 
+**S1 is written:** `frame-path-kernel` `fix/out31` **c001bc7** (on top of be1cf95), compile-checked with `cclk.sh` and
+`ccxx.sh`. It is `nmx_tt_census_format` in `nmx_fb_bridge.c` plus the sysctl in `nmx_kext.cpp`. Its only new import is
+`_sysctlbyname`, which the installed NMXGPU already has. After install, read it with
+`sysctl -n debug.nmx_tt_census`: as a single read, and under the owner's daily load.
+
 S1 decides between S2a and S2b. If most of the 4 GB is CPU-mapped (likely, because RADV maps host-visible memory),
 S2a reclaims little and S2b is the real fix. On a Linux APU RADV is the same, but there TTM can unmap and re-fault a
 CPU mapping (`ttm_bo_vm_fault`). Here it cannot, so the userptr form is the closest equivalent.
