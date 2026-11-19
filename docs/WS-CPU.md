@@ -344,3 +344,26 @@ What this means for the switch:
   copy from the host-imported pages) instead of a private image with two CPU uploads per frame.
 - Writable wrappers are unchanged. `NVMTL_BTSH_OFFSET=0` gives the old behaviour.
 - This is FRAME-PATH 11.6's double copy for two-plane video.
+
+### 8.5 RADV disk cache was off in WindowServer (fix: scripts/radv/radv-disk-cache-euid.patch)
+
+- Symptom: the WindowServer cache dir `/var/folders/zz/zyxvpxvq6csfxvn_n00000b000002r/C/WindowServer/nvmtl-mesa`
+  exists (the plugin sets `MESA_SHADER_CACHE_DIR` to it) but holds 0 files. So every login recompiles all ~190
+  pipelines: about 64 s of CPU in the first minute.
+- Cause: WindowServer has uid 88 and ruid 0 (`ps -o pid,uid,ruid,svuid,gid,rgid,svgid` gives `88 0 0 88 0 0`).
+  Mesa `disk_cache_enabled()` (src/util/disk_cache_os.c) returns false when `!__normal_user()`, which is
+  `geteuid()==getuid() && getegid()==getgid()`. That check is meant for setuid programs.
+- Ruled out:
+  - the build option: `-DENABLE_SHADER_CACHE` is set in build-res;
+  - `MESA_SHADER_CACHE_DISABLE`;
+  - secure_getenv: there is no `HAVE_SECURE_GETENV` on macOS, so the dir comes from plain getenv;
+  - the cache UUID: other processes use the same dylib and fill their caches (`~/.cache/mesa_shader_cache` 15 MB,
+    iconservicesagent 1233 files).
+- Fix (Mesa commit 085fc00, branch `fix/disk-cache-euid` in `~/develop/projects/radv-video/mesa-wt-diskcache`):
+  - applies on Apple only;
+  - a process with euid != ruid gets the cache when `MESA_SHADER_CACHE_DIR` is an absolute existing directory, owned
+    by the euid and not group/other writable;
+  - the WindowServer dir is `drwx------ _windowserver`, so it qualifies;
+  - other OSes are unchanged.
+- Separate finding, not fixed here: the `com.apple.WebKit.GPU+*` nvmtl-mesa dirs are also all empty. Those processes
+  have uid == ruid, so the likely cause there is a sandbox write denial.
