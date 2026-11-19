@@ -1278,3 +1278,37 @@ The only writes outside the lock are the `debug.nmxaccel_flip_tripped` handler's
 | no MISS | fault at a parked IOSurface import again | the listing is complete; the write came through PTEs the park still had | kernel: the 11.9 ordering or N2, with the fault time against `nmx_park_*` |
 | no MISS | no fault | inconclusive (exposure too short) | repeat; then consider the owner-approved repro |
 | MISS in WindowServer | — | the buffer list (no-copy) gap of part 12 is back | same fix site; WindowServer only |
+
+### 12.9 out-37 live (2026-11-19 11:54): audit already on, N1-N3 fixed, the 21:35 shutdown stall
+
+**Audit.** Nothing for main to switch on:
+- `/Library/NullMoth/nvmtl-bl-audit` is present.
+- The installed plugin (BC063946, a non-release build) has the 920832a surface-list audit.
+- mediaanalysisd 1227 logged "AUDIT ON (buffer list off)" at 11:56:49.
+- WindowServer: 24576 parts and 0 not named at 11:58.
+
+What remains is the 12.8 exercise (Preview/Photos Live Text, Photos search, Quick Look) under daily load, then the 12.8 greps.
+
+**be1cf95** (`fix/out31`):
+- **N2:** stage 1 always sets `cleared = false` before the clear update.
+- **N1:** a run younger than the ring timeout since the token is treated as the kick's.
+- **N3:** a 16-entry per-pasid rate table, stamped only on an issued kick.
+- The kick stays default OFF.
+
+**Shutdown stall 2026-11-18 21:35** (decoded report, 101 samples over 1 s, taken ~10 s after the 21:35:14 Shut Down confirmation):
+- It is not ours. No user thread sits in NMXGPU, NMXAccel, RyzenHV or StrixS0ix:
+  - Kernel threads in NMXGPU (linuxkpi/nmx workqueues, softclock) are idle in their waits.
+  - StrixS0ix frames are the idle loop.
+  - `IOServiceTerminateThread` and `IOPMrootDomain` are idle.
+- launchd's "system shutdown has begun" thread waits on a process exit. The process holding it is **CoreSimulatorService [1065]**:
+  - While shutting a simulator device down (`-[SimDevice _onBootstrapQueue_shutdownIOAndNotifyWithError:]` -> `notifyDeviceDidShutdown`), it hit an `NSAssertionHandler` failure and threw.
+  - It is now a zombie, "suspended, blocked by turnstile waiting for ReportCrash [1139]".
+  - ReportCrash is symbolicating it: CoreSymbolication `extract_stabs_data_from_header`, paging in through apfs.
+  - SimRenderServer, SimStreamProcessorService and SimAudioProcessorService are still alive too. One of them is stuck in an XPC look-up of a service that is already gone.
+- Also still running: `com.docker.hyperkit` (VM vcpus active, 862 MB) and docker-agent. Docker had not stopped its VM yet.
+- Remedy: quit the Simulator (and Docker Desktop) before Shut Down. A Simulator assertion at device shutdown is an Xcode/CoreSimulator issue; the sims run on the 890M, but the stack is pure CoreSimulator bookkeeping.
+- The 17:47 and 11-16 reports are binary spindump files, readable by root only. Decode them the same way, e.g.:
+  ```
+  sudo spindump -i /Library/Logs/DiagnosticReports/shutdown_stall_2026-11-18-174716_Thanhs-MacBook-Pro.shutdownStall -o /tmp/stall-1747.txt
+  ```
+  The 17:47 one comes right after the out-33 hang at 17:46, so it may show the GPU side instead.
