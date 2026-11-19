@@ -312,13 +312,28 @@ What this means for the switch:
 - Whether RADV writes and reads that cache is the next check, and it is read-only:
   - root `ls -la /var/folders/zz/zyxvpxvq6csfxvn_n00000b000002r/C/WindowServer/nvmtl-mesa`
   - its size before and after a WindowServer restart.
-- The real fix is the module size: about 700 KB of SPIR-V for one specialized `fixed_frag_*`.
-  - `fc_air_specialize.rs` substitutes constant values into the AIR text (`is_function_constant_defined` becomes
-    `icmp eq i32 0, 0`, initialisers become literals).
-  - It then translates the whole function. No branch folding or dead-block removal runs before emission, so every
-    disabled path of the uber-shader is still emitted, and RADV removes it at compile time.
-  - A fold-and-prune pass after specialization (constant `br` -> unconditional, then drop unreachable blocks) should
-    shrink both the module and RADV's compile time. That is translator work (`nmx-translator-271`), next.
+- About 700 KB of SPIR-V for one specialized `fixed_frag_*` module. **Measured, which corrects my first guess.**
+  - `ffspec.swift` (scratch) loads QuartzCore's `default.metallib` through our plugin and specializes
+    `fixed_frag_lpf_cpf` (60 function constants).
+  - The output was parsed by opcode with `spvstat.py` / `spvvars.py` (scratch; no SPIR-V tools on the machine).
+
+  | specialization | SPIR-V | translate | blocks | cond. branches | on a constant |
+  |---|---:|---:|---:|---:|---:|
+  | all 60 constants 0 / false | 684,848 B | 2.6 s | 4,099 | 865 | 0 |
+  | every bool true, ints 0 | 699,260 B | 3.2 s | 4,092 | 868 | 0 |
+  | unspecialized | 690,264 B | - | 4,099 | 865 | - |
+
+  - The function constants **are** folded. All 149 `__metal_implicit_fc_pred_*` Private variables are left with
+    0 loads, and no branch is left on a constant.
+  - The remaining 865 branches depend on runtime data (uniforms, textures).
+  - With these constant values the uber-shader is about 690 KB whatever the bools say, so my "no fold-and-prune"
+    guess was wrong.
+  - What is still unknown: the constant values WindowServer passes, especially the integer opcode and function
+    selectors, which were 0 here. The cache file name is a hash of them.
+  - Plugin 1d25988 (on top of d850825) logs the constants of any specialization miss over 500 ms, so the next build
+    can translate WindowServer's real ones offline.
+  - The 64 s at login is RADV compiling these modules (0 translator misses). The cheaper lever there is the RADV
+    disk cache across logins: is `.../C/WindowServer/nvmtl-mesa` being written? Main is checking.
 
 **Plane fallback reason (df2565e).**
 - At 15:56:58 every `x420` plane in WindowServer and VTDecoderXPCService logged `no host import (linear alias or
