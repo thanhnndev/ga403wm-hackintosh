@@ -30,6 +30,27 @@ Open, not mine:
 - NMXGPU: `VTDecoderXPCService` hung on exit in `amdgpu_vm_fini` -> `dma_fence_wait` (14:42 stall, section 4).
 - Owner: TAL window restore 37 s (Safari, Xcode); desktop-ready 5 s timeout, to be measured once with TAL off.
 
+### 0.1 Loop-guard false trip, 2026-11-22 (fixed in 0.2.4, not installed)
+
+The 11-22 09:12 boot came up in Standard with `gate-tripped`: the previous Eco boot (11-20 11:07, boot 6) was shut down
+cleanly by the user at T+35 s, before the 90 s clear, and the flag was never cleared. Two causes, both in the gate:
+the shutdown clear ran only after the 90 s clear (`&& gCleared`), and the root-domain notifier was general interest, which
+does not receive `WillPowerOff` / `WillRestart` at all. Proof that the shutdown path never ran: boot 5 (11-19 17:17) lived
+50 min and shut down cleanly at 18:07, yet `strix-gpu-eco-cleared` kept the 5 min value `5:300:ws1`. NVRAM is native
+(`WriteFlash` true, no `nvram.plist`), and the 90 s writes do persist, so storage is not the problem. The gate's
+`IOLog` lines do not reach the unified log on this machine, so the source and the NVRAM record are the evidence.
+
+StrixDgpuGate **0.2.4** (`fix/eco-offbus` 651137c, md5 87673fdc4f753b89b2aa174725b5c5cf): priority sleep/wake interest;
+clear on every clean shutdown or restart; clear as soon as the RTX is off and WindowServer's display client is up
+(polled from 10 s, 90 s at the latest). Side effect to watch: the wake re-off (`scheduleOff` on `HasPoweredOn`) was
+dead code until now for the same reason and runs for the first time with 0.2.4. Verify on the first 0.2.4 boot:
+`gate-clear-stage` >= 1 and `gate-eco-cleared` with an uptime of about 10-20 s; then shut down within 60 s of the next
+Eco boot and check that the boot after it is still Eco with `gate-try-at-probe` "0".
+
+Loop guard count: keep it at one unfinished boot. The false trips came from a missing clear, not from the threshold.
+After 0.2.4 only a forced power-off, panic or power loss before the boot finished trips it, and those cannot be told
+apart from an Eco hang. A count of 2 would cost a second hung boot whenever the Eco path really hangs.
+
 ## 1. The whole boot in one table
 
 Times are seconds after the kernel's `=== system boot` record (T0), unless marked. "Eco" means the gate held the RTX and
