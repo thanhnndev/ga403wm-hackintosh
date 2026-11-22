@@ -30,22 +30,36 @@ Open, not mine:
 - NMXGPU: `VTDecoderXPCService` hung on exit in `amdgpu_vm_fini` -> `dma_fence_wait` (14:42 stall, section 4).
 - Owner: TAL window restore 37 s (Safari, Xcode); desktop-ready 5 s timeout, to be measured once with TAL off.
 
-### 0.1 Loop-guard false trip, 2026-11-22 (fixed in 0.2.4, not installed)
+### 0.1 Loop-guard false trip, 2026-11-22 (fixed in 0.2.5, not installed)
 
 The 11-22 09:12 boot came up in Standard with `gate-tripped`: the previous Eco boot (11-20 11:07, boot 6) was shut down
 cleanly by the user at T+35 s, before the 90 s clear, and the flag was never cleared. Two causes, both in the gate:
-the shutdown clear ran only after the 90 s clear (`&& gCleared`), and the root-domain notifier was general interest, which
-does not receive `WillPowerOff` / `WillRestart` at all. Proof that the shutdown path never ran: boot 5 (11-19 17:17) lived
-50 min and shut down cleanly at 18:07, yet `strix-gpu-eco-cleared` kept the 5 min value `5:300:ws1`. NVRAM is native
-(`WriteFlash` true, no `nvram.plist`), and the 90 s writes do persist, so storage is not the problem. The gate's
-`IOLog` lines do not reach the unified log on this machine, so the source and the NVRAM record are the evidence.
+the shutdown clear ran only after the 90 s clear (`&& gCleared`), and the root-domain notifier was general interest.
+Checked in the 25G332 kernel binary (`/System/Library/Kernels/kernel`, symbols): `registerSleepWakeInterest` is
+`registerInterest(gIOGeneralInterest)`; `IOPMrootDomain::handlePlatformHaltRestart` sends WillPowerOff / WillRestart only to
+`gIOPriorityPowerStateInterest`; `IOService::tellClients` (sleep/wake messages) goes to priority, app and general interest.
+So the gate never saw a shutdown, but did get HasPoweredOn (0.2.4's comment said otherwise; corrected in 0.2.5).
+Proof that the shutdown path never ran: boot 5 (11-19 17:17) lived 50 min and shut down cleanly at 18:07, yet
+`strix-gpu-eco-cleared` kept the 5 min value `5:300:ws1`. NVRAM is native (`WriteFlash` true, no `nvram.plist`), and the
+90 s writes do persist. The gate's `IOLog` lines do not reach the unified log on this machine, so the source, the kernel
+binary and the NVRAM record are the evidence.
 
-StrixDgpuGate **0.2.4** (`fix/eco-offbus` 651137c, md5 87673fdc4f753b89b2aa174725b5c5cf): priority sleep/wake interest;
-clear on every clean shutdown or restart; clear as soon as the RTX is off and WindowServer's display client is up
-(polled from 10 s, 90 s at the latest). Side effect to watch: the wake re-off (`scheduleOff` on `HasPoweredOn`) was
-dead code until now for the same reason and runs for the first time with 0.2.4. Verify on the first 0.2.4 boot:
-`gate-clear-stage` >= 1 and `gate-eco-cleared` with an uptime of about 10-20 s; then shut down within 60 s of the next
-Eco boot and check that the boot after it is still Eco with `gate-try-at-probe` "0".
+StrixDgpuGate **0.2.5** (`fix/eco-offbus` 96a7a20, md5 fef972c1e34f02be6d495a82a2466c08; 0.2.4 = 651137c):
+- priority sleep/wake interest; clear on every clean shutdown or restart, at any uptime, if WindowServer's display was
+  ever seen (a boot shut down over ssh from a desktop that never came up keeps try=1);
+- clear once the boot has finished: RTX off and off the bus (or keepbus / dry run) and WindowServer's display, on two 5 s
+  polls in a row, not before 30 s; 90 s at the latest;
+- the wake re-off (pass 3 s after HasPoweredOn) is off by default (`strixgate_wakereoff=1` / `strix-gpu-wake-reoff=1`):
+  never observed running here; no pass runs between WillSleep and HasPoweredOn; a pass that finds GSTA 1 but the card not
+  answering config reads runs nothing (no `_PS3` on a D0 card). The 90 s / 5 min re-checks remain the catch.
+
+First 0.2.5 boot watch list:
+- `gate-clear-stage` >= 1 and `gate-eco-cleared` with an uptime of about 30-40 s.
+- Shut down normally (any time after the login window). On the next boot: `gate-prev-cleared` shows the **shutdown**
+  uptime (proof that the NVRAM write at WillPowerOff persists), and `gate-try-at-probe` is "0".
+- Shut down within 60 s of an Eco boot: the boot after it is still Eco, `gate-tripped` No.
+- First owner-started sleep test: `gate-sleep-msgs` and `gate-wake-msgs` grow (messages delivered), `gsta-recheck` after
+  the next re-check, PEGP/HDAU absent under GPP9.
 
 Loop guard count: keep it at one unfinished boot. The false trips came from a missing clear, not from the threshold.
 After 0.2.4 only a forced power-off, panic or power loss before the boot finished trips it, and those cannot be told
