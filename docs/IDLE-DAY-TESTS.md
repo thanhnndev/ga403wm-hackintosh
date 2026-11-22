@@ -22,3 +22,18 @@ owner leaves, while the display is still on.
 
 Order: run 1-3 at the start (display on), start 4 and leave 5-8 passive, and run 9 last or skip it. Reports go to
 docs/WS-CPU.md (9.x) and docs/FRAME-PATH.md.
+
+## Post-reboot checks (first minutes of the out-44 + 27611e6 boot, before the idle-day list)
+
+All are read-only and need no root. Run them with the owner's normal load; none wakes or changes anything.
+
+| # | Check | Command | Pass |
+|---|---|---|---|
+| P1 | Frame path counters | `tools/890m/out31-verify.sh 30` | its PASS rows as on out-43 (no new FAIL); `flip_timeouts`/`flip_tripped` do not move |
+| P2 | Package loaded | `/usr/bin/log show --last boot --predicate 'process == "WindowServer" AND eventMessage CONTAINS "NVMTL"' \| grep -m3 -E "translate: opened\|vk: driver opened"` and `sysctl kern.osversion` | the translator / ICD lines are present (the plugin's own UUID, 6CF3E097, shows in `vmmap` only as root; main can add `sudo vmmap WindowServer \| grep -m1 NVMTLDriver` to its root batch) |
+| P3 | Keep entries with the display asleep | test 4 of the list (`sysctl -n debug.nmx_gtt \| awk '$2=="WindowServer"'` every 60 s) | WindowServer `gtt_resident` drops within NVMTL_KEEP_MS + 5 s of the last present, instead of staying ~810 MB |
+| P4 | Mesa cache dir leak gone | `ps -axeww -o pid,comm \| grep -c MESA_SHADER_CACHE_DIR` (the owner's processes; apps reopened at login) and `/usr/bin/log show --last boot --predicate 'eventMessage CONTAINS "for shader cache"'` | 0 processes carry the variable; no "Failed to create ... for shader cache (Permission denied)" lines |
+| P5 | Pipe timing at WindowServer start | `/usr/bin/log show --last boot --predicate 'process == "WindowServer" AND eventMessage CONTAINS "pipe timing"' \| head -40` | lines exist (the knob reached WindowServer); count and ms per lowering for the cold start (baseline for the 9.2 disk cache in the next package) |
+| P6 | Census classes and churn sites | test 7 of the list, the first two "frame census" lines | `classify` counters present; churn sites listed |
+
+If P1 or P4 fails, report before the idle-day list starts.

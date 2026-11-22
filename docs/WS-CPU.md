@@ -572,3 +572,43 @@ ws_main_thread alone is 7.34 ms per present (rest 3.51, k-other 1.86, plugin 0.9
 No other client showed frame work. Our own VBL/damage path does not create presents by itself: the presents follow
 client commits. The test that settles this is idle-day test 1 (all-process spindump with the Claude app idle or
 closed). The expected answer is that presents fall to the 5 s Aerial bursts and the clock.
+
+### 9.2 Address lowering: disk cache of the lowered modules (plugin 0f2a94a, own process; next package)
+
+WindowServer lowers every Core Animation specialization at every start (`nvmtl_address_shader_g`: translator
+`nvmtl_lower_buffer_addresses_ex` plus our physical-bounds, helper and read-only passes). This happens after the fc
+cache has already served the translated SPIR-V from disk. Each lowering is 50-200 ms. An align-guarded module is lowered twice: flags 0 reports the
+promise, then flags 1 makes the SAFE module. The result was cached only in memory.
+
+0f2a94a stores the lowered module next to the fc entries: `spvcache/<sha256>.low1.<translator tag>.c3.spv`, with the
+same owner and the same trimmer. The key is SHA-256 over:
+- the input SPIR-V and the effective flags;
+- the table mode (UBO/SSBO) and the align guard;
+- the plugin's own image UUID;
+- the code-changing `NVMTL_*` knobs (the translator's getenv list: `NVMTL_NO_*`, `MATRIX8*`, `WG_*`, `I64*`, `ARGBUF*`,
+  `XLATE*`, `B78*`; ours: `TABLE_*`).
+
+Log paths and census switches are left out. A first version keyed every `NVMTL_*` variable, and its per-process
+`NVMTL_LOG_PATH` split the cache. The file is `"NVLW" | version | status | info[4] | SPIR-V`, and the align-guard info
+comes back with a hit, so the flags-0 decision is the same. A refused module (status 0) is cached too. A torn or
+foreign file is a miss. `NVMTL_LOWER_DISKCACHE=0` turns the cache off.
+
+Own process (`carender_test 40 0 6`, 6 windows with shadows and text, AIR and fc caches warm):
+
+| run | lowerings | lowering ms | 40 frames wall |
+|---|---|---|---|
+| disk cache off | 18 | 1127-1285 | 0.86-0.93 s |
+| cache on, cold | 18 (stored) | 1191-1284 | 0.86-0.91 s |
+| cache on, warm | 0 (16 disk hits) | 0 | 0.25-0.28 s |
+
+**Correctness:**
+- Two independent cold runs wrote byte-identical files for the 12 modules both reached.
+- The last-frame checksum of this test depends on timing even with the cache off: three values appeared across
+  identical cache-off and cache-miss runs. With an 80 ms delay added to each disk hit, the hit run gives the cache-off
+  checksum exactly (7bc2d707...), so a hit renders what a fresh lowering does.
+
+**Lower once:** the cold start still lowers an align-guarded module twice. Removing the flags-0 pass needs the
+translator to return the SAFE module, or the promise info, from one call (a translator change). With the disk cache
+that cost is paid once per machine per plugin/translator version, not at every WindowServer start.
+In WindowServer the expected gain at login is the sum of the post-reboot P5 lines (16 lowerings, about 1.2 s in
+our process).
