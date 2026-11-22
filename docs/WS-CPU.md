@@ -490,3 +490,43 @@ out-43 (NMXGPU E3D447C5) with plugin DECFEDEE (fa238db), Standard mode (RTX powe
    - So the keys are mostly stable. Time the stages of one warm create (translator, vkCreateShaderModule,
      vkCreateGraphicsPipelines) in a test process before proposing a fix.
 3. Aerial shadow copies (accepted).
+
+### 8.9 Desc-cache misses and object churn per present (plugin 921113d, own-process test)
+
+Method: `plugin/tests/carender_test.m` drives Core Animation's own renderer (CARenderer, the CA render code
+WindowServer composites with) on a scratch NVMTLDevice in a test process (`NM_TEST_PLUGIN`): 6 IOSurface windows
+with corner radius and shadow, a text layer, a moving cursor layer, a 4:2:0 video layer. Each frame counts as one
+present in the plugin's census. Optional: video 2 (8 frames handed over as mach ports, the way WindowServer gets
+them), video 3 (CVPixelBufferPool), churn N (N x [2 MTLBuffers + 1 texture view] made and dropped per frame).
+
+| per present | WindowServer out-43 | own process, before | own process, 921113d |
+|---|---|---|---|
+| desc-cache misses (sets allocated + written) | 5-7.5 (7.5-17 %) | 5.00 (12.8 %) | 0.11 |
+| of them: written by an earlier command buffer, still valid | (not measured) | 5.00 | 0.11 |
+| device-level cache hits | - | - | 4.89 |
+| with 1 VkBuffer + 1 view churned per present | - | 3.00 of 5 past a global epoch | 4.74 hits, 0.26 stale |
+| set snapshot path (NVMTL_SNAP_TIMING=1) | - | ~38 us | ~31 us |
+| VkBuffers / views made per present, idle | 1.2-1.5 / 0.02-1.8 | 0.00 / 0.00 | same |
+| VkBuffers / views made per present, video (1, 2, 3) | 5-10 / 4-6 | 0.00-0.03 / 0.00-0.03 | same |
+
+The cause of the miss class: the desc-cache lived in one command buffer, so each command buffer started cold and
+re-wrote the 5 descriptor combinations Core Animation uses per frame. Every miss was a key that was "written before and
+still valid". The fix keeps sets across command buffers (the way a Linux compositor on RADV does: wlroots' Vulkan
+renderer writes one set per texture when the texture is made and only binds it per frame):
+- entries own their set and are pinned by every command buffer that uses them until it retires;
+- binding 640 is written at base offset 0, so the dynamic offset reaches any slot of the address page (the page is in
+  the key);
+- validity uses per-handle bucket epochs instead of the global epochs.
+The last-frame checksum is identical with the cache on, off, and with the desc-cache off.
+
+Size of the win: ~7 us per present on the set path, i.e. small next to WindowServer's ~2 ms per present. Own-process
+CPU per frame (unthrottled, ~530 fps) is ~850 us, 227 us of it system. Most samples are Core Animation, RADV
+recording and fence waits (sleeping, not spinning). The desc-cache was not where WindowServer's CPU goes.
+
+Churn: my process does not reproduce WindowServer's VkBuffer/view churn. Surface keep holds the video wraps in all
+three video modes. What makes WindowServer's 1.2-1.5 idle and 5-10 clip VkBuffers per present can only be read in
+WindowServer. Knobs (nvrm610.conf, no env needed):
+- `NVMTL_CHURN_SITES=1` prints the busiest creating call sites with the census (release syslog, 30 s);
+- `NVMTL_SNAP_TIMING=1` adds the set path time per present.
+The census line "misses per present" now also says how many of WindowServer's misses the device-level cache served
+and how many the old global epochs would have thrown away.
