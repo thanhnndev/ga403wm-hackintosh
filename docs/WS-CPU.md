@@ -530,3 +530,45 @@ WindowServer. Knobs (nvrm610.conf, no env needed):
 - `NVMTL_SNAP_TIMING=1` adds the set path time per present.
 The census line "misses per present" now also says how many of WindowServer's misses the device-level cache served
 and how many the old global epochs would have thrown away.
+
+## 9. Idle-day series (out-44 + plugin 27611e6 package)
+
+### 9.1 Top-down WindowServer CPU and who dirties a "static" desktop (out-43 data, 2026-11-22 10:05)
+
+Inputs: `~/ga403-logs/ws-cpu-20261122-100512/none.*` (WindowServer-only spindump at 1 ms, 554 presents in 10 s,
+`tools/890m/ws-spin-buckets.py none.spin.txt 554`) and `~/ga403-logs/ws-dirty-1005.spin.txt` (all processes, 10 ms, 10 s).
+
+**WindowServer, all threads: 9.31 ms CPU per present** (proc utime 3.71 s + stime 1.74 s over the 10 s).
+
+| bucket | ms/present | biggest frames |
+|---|---|---|
+| Apple user code (rest) | 4.36 | QuartzCore 1.11, SkyLight 0.69, libsystem_platform (memmove/memset) 0.63, malloc 0.25, objc 0.20 (ws_main_thread) |
+| kernel, not our driver | 2.23 | mach_msg2_trap under CGXRunOneServicesPass 0.75, bsdthread_ctl 0.30, CGXPostReplyMessage 0.27 |
+| plugin (NVMTL) | 1.26 | commitAndWaitUntilSubmitted 0.48, drawIndexed 0.31, nvmtlSubmitWithEvents 0.23, setRenderPipelineState 0.14, newTiledTextureWithDescriptor 0.14 |
+| kernel, our driver | 1.00 | CS submit ioctl 0.33, syncobj wait/reset (nvmtl.execution 0.61 in all), bo free / VA ioctls (root_queue, NVMTLTexture dealloc 0.15) |
+| RADV | 0.46 | command recording, descriptor writes |
+
+ws_main_thread alone is 7.34 ms per present (rest 3.51, k-other 1.86, plugin 0.94, k-drv 0.65, radv 0.37).
+
+**The top two costs:**
+1. The present rate itself. Apple's per-present compositor work (QuartzCore, SkyLight, client IPC: about
+   6.6 ms/present of user and kernel time that is not ours) scales with how many frames clients commit. The desktop
+   is not static: something commits about 55 frames per second.
+2. Our stack: about 2.7 ms/present (plugin 1.26 + RADV 0.46 + driver ioctls 1.00). The largest single item is the
+   synchronous submit path (commitAndWaitUntilSubmitted + CS ioctl + syncobj wait, about 1.4 ms together). Draw
+   recording is next (drawIndexed + pipeline state + texture creation, about 0.6 ms). Texture create and free per
+   frame (newTiledTexture 0.14 + dealloc 0.15 + BO/VA ioctls) is the churn that 8.9 counts.
+
+**Who dirties the screen (ws-dirty-1005, CPU over 10 s):** WindowServer 3.54 s. The clients that produce frames:
+- **The Claude desktop app** (2.9 s in all). Renderer [906] 1.46 s: the `Compositor` thread (0.39 s) and
+  CrRendererMain run in all 1001 samples, plus five raster workers at ~0.12 s each. GPU process [781] 1.42 s:
+  CrGpuMain 0.75 s, VizCompositorThread 0.39 s, and a `CVDisplayLink` thread live in all 1001 samples, with short
+  display-link threads started and stopped about every 100 ms. This is a running BeginFrame loop: a CSS
+  animation or a streaming view in the app (a session that is "working" keeps a spinner/shimmer going). Each frame
+  is a CA commit to WindowServer.
+- **Activity Monitor** [2454] 1.03 s on its main thread (graph updates; CA commits in 65 samples).
+- spindump 3.59 s and osascript 1.09 s are the measurement itself.
+
+No other client showed frame work. Our own VBL/damage path does not create presents by itself: the presents follow
+client commits. The test that settles this is idle-day test 1 (all-process spindump with the Claude app idle or
+closed). The expected answer is that presents fall to the 5 s Aerial bursts and the clock.
