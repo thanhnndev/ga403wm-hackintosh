@@ -1634,3 +1634,27 @@ What is left for S2b proper:
 - WindowServer, VTDecoder and the simulators. Their pinned pages beyond these fixed ones are real host-visible
   working sets.
 - The 4 MiB bindless heap could be created on the first `gpuResourceID` instead of at the first pipeline.
+
+### 12.17 Reading the pin counters on out-43 (2026-11-22)
+
+- **`debug.nmx_pin_by_proc` is cumulative since boot.**
+  - On out-43 it prints `name calls pages`.
+  - `pin_account` (xkpi `nmx_mm.cpp`) adds the calls and pages of every `nmx_xnu_user_wire` call and never subtracts.
+  - "WindowServer 9019 678842" means 678842 pages wired over the boot, NOT 2.6 GB wired now.
+  - (The 11.1 reading above used an older format with surf/plain/parked columns.)
+- **What is wired now:** `debug.nmx_userwire_by_kind`.
+  - On 2026-11-22 at 09:30, with the display asleep:
+    - surface: 54 records / 23532 pages wired (21 / 19376 older than 60 s);
+    - plain: 375 / 1961;
+    - parked: 196 / 508542.
+  - **Parked pages are not wired.** Step142 unpopulates idle IOSurface userptr BOs: page records and wiring are dropped,
+    and the memory is pageable until the next CS re-wires it.
+  - WindowServer's "parked 418717" is therefore not a leak.
+- **The Step142 park sweep has its own timer:** a delayed work every 1 s while anything can be parked. It runs while the
+  display sleeps.
+  - Linux does not keep userptr pages pinned either (HMM/MMU notifiers re-fetch them on use), so the park matches the
+    upstream behaviour.
+- **`debug.nmx_gtt` columns:** `pid name cpu_resident gtt_resident vram_resident gtt_evicted vram_evicted bos`.
+  - Parked BOs sit in SYSTEM placement, so they are counted under cpu_resident and gtt_evicted, not gtt_resident.
+  - `ws-x420-clips` prints the 4th field (gtt_resident).
+- **What did not expire:** the plugin's surface keep (WS-CPU 8.8, fixed in plugin 7ceff16).

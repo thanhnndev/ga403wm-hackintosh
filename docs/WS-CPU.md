@@ -428,3 +428,65 @@ row C), not from the descriptor code. The fix is reuse of those objects, and the
    stops bumping the image epoch every frame.
 Step 1 decides whether 2 holds: if WindowServer waits for scheduling after each commit, the holds never batch, and
 the CS cost has to come down in the kernel instead (BO list size, VM update; needs a KDK for the breakdown).
+
+### 8.8 out-43 checks (boot 2026-11-22 09:12:45): the x420 verdict, corrected
+
+out-43 (NMXGPU E3D447C5) with plugin DECFEDEE (fa238db), Standard mode (RTX powered).
+
+**The seed gate works. The 84.6 GB was the Aerial wallpaper, not a gate failure.**
+- First reading (wrong): `ws-x420-clips 2 20 30` at 09:17:20-09:19:01. WindowServer's prologue census went from 4096
+  to 8192 submits with 29458 shadow uploads (84.6 GB, 2.9 MB average). That was read as "both 4K planes copied on every
+  composite". The window mixed the clip with the Aerial wallpaper, which started in the clip gap.
+- Own-process test, no install: `seedgate_test.m` loads a scratch build of plugin 5f302db through `NM_TEST_PLUGIN`. It
+  wraps both planes of a 3840x2160 x420 CVPixelBuffer read-only, in the same layout WindowServer gets (plane 0 at +64,
+  plane 1 at +16588864, row 7680), and reads them in N command buffers:
+  - 1100 command buffers: 2 uploads, 2046 skipped, 2 shadows watched, 0 not found;
+  - a new MTLTexture wrapper for every command buffer (WindowServer's pattern): the same result;
+  - 3000 command buffers in 0.89 s: 4 uploads (the 250 ms net fired once), 4092 skipped.
+- The seed never moved at commit or at completion. The commit-time and completion-time bumps only touch textures in
+  `_surfDirty` with `_hostOn && !_hostRO`, and read-only planes never are, so there is no feedback loop.
+- Producer side: `ws-x420-clips` with a seed probe showed 0 seed moves between a pool buffer's uses over 360 frames.
+- What WindowServer really copied (syslog timestamps, after the clip had ended):
+  - census windows 09:19:56 -> 09:22:12 and 09:22:12 -> 09:24:29 carried 99.5 GB each;
+  - that is ~730 MB/s, ~90 uploads/s, 8.1 MB average;
+  - WallpaperAerialsExtension and its VTDecoderXPCService started at 09:18:00, the moment WindowServer GTT jumped
+    282 -> 1240 MB;
+  - Aerial is 4K 10-bit HEVC (x420), decoded by Apple's decoder (VCNDec takes 8-bit only). Each decoded frame moves the
+    seed and needs one copy of each plane: 30 fps x (16.6 + 8.3 MB) ≈ 746 MB/s.
+- That copy is forced by the layout. CoreVideo puts plane 0 at +64, and a linear image's base must be 256-aligned, so
+  these planes cannot alias the surface's pages and need a GPU shadow. The copy is GPU-side, only while the wallpaper
+  is visible and animating.
+- Options:
+  - accept it (chosen for now);
+  - ask CoreVideo for `kCVPixelBufferPlaneAlignmentKey` >= 256. That only works where we create the buffers (VCNDec's
+    8-bit output; check whether VT honours it the next time VCNDec is touched);
+  - a texel offset in the translated shader: not scoped.
+- Lesson: before blaming the gate, split census windows by syslog timestamp and check which decoders are running.
+
+**Surface keep never expired while nothing new was wrapped (fix: plugin 7ceff16).**
+- The keep sweep ran only from `nvmtl_surface_keep`, i.e. on a miss that inserts a new wrapper.
+- With the display asleep, WindowServer kept 79 entries for 10+ minutes past `NVMTL_KEEP_MS`, with 810 MB
+  `gtt_resident` (the kept backings' shadows and images) and the released surfaces still allocated.
+- 7ceff16 adds a dispatch timer: every `NVMTL_KEEP_TIMER_MS` (5000 ms, 0 = off), under the same
+  `@synchronized(device)`, while the table has entries.
+- Own-process A/B: a surface wrapped once and released is freed by 8 s with the timer and still alive at 8 s
+  without it.
+- The kernel's Step142 park is NOT affected: it is a delayed work of its own (every 1 s while anything can be parked).
+
+**Frame census (this boot).**
+- About 1.5 commits and 1.5 submits per present.
+- Every commit is waited on: `waitUntilScheduled` count = commit count.
+- Per present:
+  - views: 0.02-1.8 idle, 4-6 during a video clip;
+  - VkBuffers: 1.2-1.5 idle, 5-10 during a clip;
+  - desc-cache misses: 5-7.5 (7.5-17 %).
+- So submit coalescing (8.7 step 2) has little to give. It is dropped.
+
+**Ranking after this boot.**
+1. Descriptor misses and VkBuffer/view churn per present.
+2. Warm-start pipelines: ~108 ms each with a warm Mesa cache.
+   - Root count of the cache dir: 714 files, 41 written this boot, 281 written between 11-19 17:30 and this boot,
+     5084 KB.
+   - So the keys are mostly stable. Time the stages of one warm create (translator, vkCreateShaderModule,
+     vkCreateGraphicsPipelines) in a test process before proposing a fix.
+3. Aerial shadow copies (accepted).
