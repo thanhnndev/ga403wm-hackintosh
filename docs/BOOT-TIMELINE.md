@@ -80,7 +80,13 @@ StrixDgpuGate **0.2.6** (`fix/eco-offbus` 7017363, md5 c55bfbcb633a0df3ca1b3704e
 - `publish()` copies `gate-eco-cleared` under the clear lock; the shutdown path already reads WindowServer's display
   itself (a shutdown within 5 s of the first display, before a poll latched it, still clears).
 
-First 0.2.6 boot watch list (the 0.2.5 items stay):
+0.2.6 passed main's final review and goes into the 11-22 package (main's build, UUID DCFC8BC3).
+Later **0.2.7** (`fix/eco-offbus` 94e3de2, md5 0c89fa626f79f82714e95b237dad5549, not in the package): a pass that leaves the
+card on (deferred retries used up, or `_PS3` left GSTA 1) gets a slow pass every 5 min until it is off; self-heal 180 s;
+one pass per wake (pending / wake re-off pass or the re-check, not both); a sleep bail that lands after HasPoweredOn is
+rescheduled at once (CAS on the pending latch); the second-claim trigger resets the retry budget; log counts deferred passes.
+
+First 0.2.6 boot watch list (the 0.2.5 items stay; also valid for 0.2.7, where `gate-sleep-heals` needs 180 s):
 - Boot: `gate-defer-retries` 0, `gate-pending-runs` 0, `gate-sleep-heals` 0.
 - Owner-started sleep test: `gate-sleep-msgs` and `gate-wake-msgs` grow by one each; `gsta-recheck` is set about 3 s after
   the wake (wake re-check); `gate-powered-off` true and `gate-off-bus` true afterwards; PEGP/HDAU absent under GPP9.
