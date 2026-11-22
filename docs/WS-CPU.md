@@ -612,3 +612,71 @@ translator to return the SAFE module, or the promise info, from one call (a tran
 that cost is paid once per machine per plugin/translator version, not at every WindowServer start.
 In WindowServer the expected gain at login is the sum of the post-reboot P5 lines (16 lowerings, about 1.2 s in
 our process).
+
+### 9.3 The submit path against the Linux flow: counts, causes, two changes (plugin a1d784e, kernel 822dd89)
+
+**Method.** An own-process census: `tools/890m/submit-census/run.sh <plugin> [frames] [env]`. The CARenderer test
+runs with a DYLD interposer (`ioccount.c`) that counts `ioctl` by request, `IOConnectCall*` by selector and
+`IOSurfaceSetValue(s)`. For each it records wall time and thread CPU per call, the CS BO-list size, and optional call
+stacks (`IOC_BT`). The counts cover the steady 3/4 of the frames. WindowServer's own kernel frames come from the
+10:05 spindump, symbolicated offline against `nmx-build-xkpi/out-43/NMXGPU` (UUID E3D447C5, the running kernel)
+with `kspin.py`. No root was needed and no system process was touched.
+
+**What a Linux Vulkan compositor on RADV does per frame:** one `vkQueueSubmit` (one CS ioctl), no CPU wait for
+submission, and the out-fence handed to KMS as the plane's in-fence.
+
+**What we do (own process, steady state, 2000 frames):**
+
+| per present | count | CPU per call | source |
+|---|---|---|---|
+| CS ioctl | 1.02 | 85-98 us back to back, 153-172 us at a 12 ms frame gap | `nvmtlSubmitAhead` on the committing thread (0.70), the part path (0.31) |
+| syncobj wait | 1.03 | 27 us (the rest of its ~2.4 ms is sleep) | `nvmtl.execution`: `vkWaitForFences` per submitted part, for completed handlers and `NMXFenceDone` |
+| syncobj reset | 1.03 | 22 us | `nvmtl_fence_put`: pooled fences are reset before reuse |
+| BO create / mmap / VA / close | 0.02 | | warm-up only (0.2-0.4 in the first 400 frames, until command and query pools are recycled) |
+| IOSurface property writes | 3.0 | 45-58 us (12 ms gap) | `NMXFencePending` (commit), `NMXFenceSubmitted` (after the CS), `NMXFenceDone` (completion), per written surface |
+| IOConnect selector 61 | 12 | | Core Animation's own `IOSurfaceQueryTransactionList` (shared-event discovery), not ours |
+
+The CS BO list is ~21 BOs. Holding 1500 extra buffers does not change it or the CS cost. The CS cost is per submit,
+not per BO.
+
+**WindowServer (10:05 spindump, out-43):** 1.5 submits per present (8.8 census).
+- `commitAndWaitUntilSubmitted` is 0.48 ms per present, and 261 of its 265 samples are the submit itself. The wait
+  already ends at submission: submit-ahead runs `vkQueueSubmit` on the committing thread, so `waitUntilScheduled`
+  returns at once. Ending it at enqueue would only move the CS ioctl to the worker thread, not save CPU.
+- `nvmtlSubmitAhead` is 0.34 ms, and the CS ioctl is ~0.2 ms of it.
+- `IOSurfaceClientSetValue` (the fence marks) is 0.07 ms.
+- Inside the kernel CS, `amdgpu_cs_ioctl` is 119 of 187 samples; the BSD/xkpi ioctl dispatch is the rest. Its
+  largest parts:
+  - `amdgpu_cs_p1_bo_handles` 28 (`amdgpu_bo_list_create` 22, of which `lkpi_kvmalloc` → `malloc` 16);
+  - `amdgpu_cs_parser_bos` 18;
+  - `drm_exec_init` + `drm_exec_fini` 18;
+  - `amdgpu_cs_vm_handling` 12;
+  - `amdgpu_cs_submit` 12;
+  - `amdgpu_cs_parser_fini` 10.
+- The completion thread's syncobj wait is `sleepq_block` (asleep), so it is not CPU.
+
+**Where we do more than Linux, and why:**
+1. **Three IOSurface property calls per written surface per frame.** Linux passes one in-fence to KMS. Here
+   Pending and Submitted tell NMXAccel whether the kernel fence (out-31) can be used. Done is the fallback for the
+   ~2 % of flips without it (`nmxaccel_kfence_not_submitted` 1375 of 67994).
+   **Change (plugin a1d784e):** Pending goes out with Submitted in one `IOSurfaceSetValues` when the last
+   surface-writing part was submitted on the committing thread. It still goes out before commit returns, so before
+   the swap. Own process, IOSurface targets, 12 ms gap: 3.0 → 2.0 calls and 172-176 → 140-142 us CPU per present,
+   with all marks merged. Back to back (no gap) most parts are not yet submitted at commit and nothing changes.
+   That is not WindowServer's cadence. Next step, not done: drop Done when the kernel fence was used, which needs
+   NMXAccel to report per flip which path it took.
+2. **A page-sized allocation per CS.** `drm_exec_init`'s object array is exactly `PAGE_SIZE / sizeof(void *)`.
+   Our `malloc` serves anything of a page or more with `IOMalloc` (record) + `IOMallocAligned`, and frees with
+   `IOFreeAligned` + `IOFree`. Linux takes it from the kmalloc-4k slab.
+   **Change (kernel 822dd89):** keep up to 64 freed single-page blocks with their records. Expected: most of the
+   18/119. Not measured yet: compile-checked only, and it needs an install. The check is the CS CPU per call with
+   `run.sh ... FRAME_GAP_US=12000` before and after.
+3. **One syncobj reset per submit (22 us).** Create/destroy is already pooled (`nvmtl_fence_get/put`). Mesa's
+   `vkResetFences` makes one ioctl per fence, so batching does not help. A timeline semaphore (signal value N, wait
+   for N, never reset) would remove it: ~33 us per present in WindowServer. Not done: small gain for a change to
+   every submit.
+4. **The CS cost itself, ~90 us per call, ~160 us at a 12 ms frame gap.** It is fixed per submit, and higher when the
+   CPU idles between frames. The rest of `amdgpu_cs_ioctl` (bo list, parser_bos, vm_handling) is the Linux code
+   path. Breaking it down further needs kernel profiling of a test process (root: `spindump <pid> 10 1`, or
+   `dtrace -n 'profile-4999 /pid == $target/ { @[stack()] = count(); }'`), symbolicated against the installed
+   NMXGPU.
