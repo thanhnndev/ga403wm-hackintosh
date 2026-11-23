@@ -193,7 +193,16 @@ The 11-08 warm-reboot loop was a different failure: a dead firmware made bluetoo
 - **USB-transport wait**: the USB transport has its own wait (`[bm3_usb] Waiting for bluetooth devices...` / `Timed out
   waiting for bluetooth devices`). Only a USB transport (by board-id or `BT_HCI_TRANSPORT`) reaches it.
 
-### 2.4 Fix plan (ours, MtkBtFw + a bluetoothd-side choice; not written yet)
+### 2.4 Fix: MtkBtFw 0.3.0 (mt7925-macos `fix/bt-waitquiet` 4e4f938, not installed)
+
+A cheaper fix than the plan below was found. bluetoothd calls `IOKitWaitQuiet()` (240 s timeout) before it picks the
+transport, and scans for USB dongles only once. On the faulting boots the registry went quiet 1.4-2.4 s into MtkBtFw's
+5.2 s load; on the clean boot (11-22 09:12) it went quiet only 5.5 s after the interface was published. MtkBtFw 0.3.0 holds
+one busy count from `start()` until the interface is closed (30 s cap, boot-arg `mtkbtbusy=0` turns it off), so the
+wait covers the load. Neither the device-level rework nor a bluetoothd patch is needed. First-boot checks and undo:
+mt7925-macos docs/BLUETOOTH.md, section "bluetoothd faults 15 s into every boot".
+
+The earlier plan (kept for reference):
 
 The download cannot finish in the 1.5 s bluetoothd leaves. Hiding the device alone does not help either: with no USB
 dongle at that moment, bluetoothd goes straight to the 15 s UART wait. A fix needs both halves:
