@@ -69,6 +69,22 @@ int main(int argc, char **argv) { @autoreleasepool {
         sh.shadowPath = CGPathCreateWithRect(CGRectMake(0, 0, 900, 600), NULL); sh.backgroundColor = CGColorCreateGenericRGB(0, 0, 0, 0);
         [root addSublayer:sh]; [root addSublayer:l];
     }
+    // OFFSCREEN=<kinds> (comma list): layers that make Core Animation render offscreen passes, to see whether they
+    // add command buffers (commits) per present: blur = backgroundFilters gaussianBlur (Tahoe glass / vibrancy),
+    // mask = layer.mask, raster = shouldRasterize, group = group opacity, nopath = shadow without a shadowPath
+    { const char *e = getenv("OFFSCREEN");
+      if (e && strstr(e, "blur")) for (int i = 0; i < 2; i++) {
+          CALayer *b = [CALayer layer]; b.frame = CGRectMake(200 + i * 700, 300, 520, 360); b.cornerRadius = 24; b.masksToBounds = YES;
+          id f = [NSClassFromString(@"CAFilter") performSelector:NSSelectorFromString(@"filterWithType:") withObject:@"gaussianBlur"];
+          [f setValue:@30 forKey:@"inputRadius"]; b.backgroundFilters = @[f]; b.backgroundColor = CGColorCreateGenericRGB(1, 1, 1, 0.15);
+          [root addSublayer:b]; }
+      if (e && strstr(e, "mask")) { CALayer *m = [CALayer layer]; m.frame = CGRectMake(0, 0, 900, 600); m.cornerRadius = 80; m.backgroundColor = CGColorCreateGenericRGB(0, 0, 0, 1);
+          ((CALayer *)root.sublayers.lastObject).mask = m; }
+      if (e && strstr(e, "raster")) { CALayer *l = root.sublayers[1]; l.shouldRasterize = YES; }
+      if (e && strstr(e, "group")) { CALayer *g = [CALayer layer]; g.frame = CGRectMake(300, 500, 600, 300); g.opacity = 0.6; g.allowsGroupOpacity = YES;
+          for (int k = 0; k < 3; k++) { CALayer *c = [CALayer layer]; c.frame = CGRectMake(k * 120, k * 40, 300, 200); c.backgroundColor = CGColorCreateGenericRGB(0.9, 0.2 * k, 0.3, 1); [g addSublayer:c]; }
+          [root addSublayer:g]; }
+      if (e && strstr(e, "nopath")) for (CALayer *l in root.sublayers) if (l.shadowPath) { l.shadowPath = NULL; l.backgroundColor = CGColorCreateGenericRGB(0, 0, 0, 1); } }
     CATextLayer *tl = [CATextLayer layer]; tl.frame = CGRectMake(20, H - 40, 600, 30); tl.string = @"menu bar 12:00"; tl.fontSize = 14;
     tl.foregroundColor = CGColorCreateGenericRGB(1, 1, 1, 1); [root addSublayer:tl];
     CALayer *cursor = [CALayer layer]; cursor.frame = CGRectMake(0, 0, 24, 24); cursor.backgroundColor = CGColorCreateGenericRGB(1, 1, 1, 1);
