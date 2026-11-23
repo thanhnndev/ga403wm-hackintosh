@@ -256,12 +256,21 @@ static OSStatus d_start(VTVideoDecoderRef d, VTVideoDecoderSession sess, CMVideo
   CFNumberRef nf = CFNumberCreate(NULL, kCFNumberSInt32Type, &fmt), nw = CFNumberCreate(NULL, kCFNumberSInt32Type, &w),
               nh = CFNumberCreate(NULL, kCFNumberSInt32Type, &h);
   CFDictionaryRef io = CFDictionaryCreate(NULL, NULL, NULL, 0, &kCFTypeDictionaryKeyCallBacks, &kCFTypeDictionaryValueCallBacks);
+  // Plane alignment: CoreVideo's default IOSurface layout starts plane 0 at +32 and plane 1 at +32 + Y size (4K: +8294432
+  // NV12, +16588832 P010), both off 256 B. The GPU samples a plane through a texel buffer / linear image whose base must
+  // be 256 B aligned, so the NVMTL plugin had to copy every such plane into a GPU shadow (12 MB per 4K 8-bit frame, 25 MB
+  // at 10-bit) in every process that draws the frame (WindowServer). With 256 the planes start at +256 and +256 + Y size,
+  // same allocation size, and are aliased in place. VCN_PLANE_ALIGN=0 restores the default layout (the copy below reads
+  // the plane offsets from the surface either way).
+  static int32_t pa = -1;
+  if (pa < 0) { const char *e = getenv("VCN_PLANE_ALIGN"); pa = e ? atoi(e) : 256; if (pa < 0) pa = 0; }
+  CFNumberRef npa = CFNumberCreate(NULL, kCFNumberSInt32Type, &pa);
   const void *k[] = {kCVPixelBufferPixelFormatTypeKey, kCVPixelBufferWidthKey, kCVPixelBufferHeightKey,
-                     kCVPixelBufferIOSurfacePropertiesKey, kCVPixelBufferMetalCompatibilityKey};
-  const void *v[] = {nf, nw, nh, io, kCFBooleanTrue};
-  CFDictionaryRef attrs = CFDictionaryCreate(NULL, k, v, 5, &kCFTypeDictionaryKeyCallBacks, &kCFTypeDictionaryValueCallBacks);
+                     kCVPixelBufferIOSurfacePropertiesKey, kCVPixelBufferMetalCompatibilityKey, kCVPixelBufferPlaneAlignmentKey};
+  const void *v[] = {nf, nw, nh, io, kCFBooleanTrue, npa};
+  CFDictionaryRef attrs = CFDictionaryCreate(NULL, k, v, pa ? 6 : 5, &kCFTypeDictionaryKeyCallBacks, &kCFTypeDictionaryValueCallBacks);
   OSStatus e = VTDecoderSessionSetPixelBufferAttributes(sess, attrs);
-  CFRelease(attrs); CFRelease(io); CFRelease(nf); CFRelease(nw); CFRelease(nh);
+  CFRelease(attrs); CFRelease(io); CFRelease(nf); CFRelease(nw); CFRelease(nh); CFRelease(npa);
 
   // colour tags from the format description go onto every output buffer
   CFMutableDictionaryRef col = CFDictionaryCreateMutable(NULL, 0, &kCFTypeDictionaryKeyCallBacks, &kCFTypeDictionaryValueCallBacks);
@@ -272,8 +281,8 @@ static OSStatus d_start(VTVideoDecoderRef d, VTVideoDecoderSession sess, CMVideo
     if (x) CFDictionarySetValue(col, keys[i], x);
   }
   s->color = col;
-  os_log(L(), "VCNDEC StartSession %{public}s %dx%d %d-bit full-range %d on the 890M VCN (pixel buffer attrs %d)",
-         cc(s->codec, b), dim.width, dim.height, depth, full, (int)e);
+  os_log(L(), "VCNDEC StartSession %{public}s %dx%d %d-bit full-range %d on the 890M VCN (pixel buffer attrs %d, plane align %d)",
+         cc(s->codec, b), dim.width, dim.height, depth, full, (int)e, (int)pa);
   return 0;
 }
 

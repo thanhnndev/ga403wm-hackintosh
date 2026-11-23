@@ -59,7 +59,19 @@ static void keep_release(void) { for (int i = 0; i < 512; i++) if (g_keep[i]) { 
 static void out_cb(void *ref, void *src, OSStatus st, VTDecodeInfoFlags fl, CVImageBufferRef img, CMTime pts, CMTime dur) {
   if (st || !img) { if (g_err++ < 5) fprintf(stderr, "frame at %.3f: status %d flags %x\n", CMTimeGetSeconds(pts), (int)st, (unsigned)fl); return; }
   g_out++;
-  if (!g_fmt) g_fmt = CVPixelBufferGetPixelFormatType(img);
+  if (!g_fmt) {
+    g_fmt = CVPixelBufferGetPixelFormatType(img);
+    // plane layout of the first frame: the NVMTL plugin aliases a plane in place only at a 256 B aligned offset
+    IOSurfaceRef s = CVPixelBufferGetIOSurface(img);
+    if (s) {
+      IOSurfaceLock(s, kIOSurfaceLockReadOnly, NULL);
+      const uintptr_t b = (uintptr_t)IOSurfaceGetBaseAddress(s);
+      const unsigned long o0 = (uintptr_t)IOSurfaceGetBaseAddressOfPlane(s, 0) - b, o1 = (uintptr_t)IOSurfaceGetBaseAddressOfPlane(s, 1) - b;
+      printf("PLANES plane0 +%lu plane1 +%lu bpr %zu/%zu alloc %zu: %s\n", o0, o1, IOSurfaceGetBytesPerRowOfPlane(s, 0),
+             IOSurfaceGetBytesPerRowOfPlane(s, 1), IOSurfaceGetAllocSize(s), (o0 % 256 || o1 % 256) ? "OFF 256 (plugin shadows)" : "256-aligned (aliased)");
+      IOSurfaceUnlock(s, kIOSurfaceLockReadOnly, NULL);
+    }
+  }
   if (g_nkeep) { int i = g_kpos++ % g_nkeep; if (g_keep[i]) CVBufferRelease(g_keep[i]); g_keep[i] = CVBufferRetain(img); }
   int border, idx = read_index(img, &border), want = (int)lround(CMTimeGetSeconds(pts) * g_fps);
   if (border < 170) { if (g_unreadable++ < 5) fprintf(stderr, "frame at %.3f: strip unreadable (border %d)\n", CMTimeGetSeconds(pts), border); }

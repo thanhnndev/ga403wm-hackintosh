@@ -182,3 +182,30 @@ Not tested: a real memory-pressure event (simulating one needs root); it calls t
 through a host-pointer import, which pins the pages. Wiring is now bounded (256 MB per session) and dropped on idle,
 pressure, retirement and close. The zero-wire alternative is the staging copy for every frame (5.2 vs 2.0 ms CPU per
 4K10 frame); `VCN_CACHE_MB=0` selects it without a rebuild.
+
+## VCNDec 0.2.1: planes at 256 B aligned offsets (2026-11-23)
+
+The working-load census (13:31) showed 1.74 GB of GPU plane shadows in WindowServer. The 4K 10-bit frames came from
+the Aerial wallpaper (HEVC Main10, decoded by VCNDec 0.2.0 on the VCN). The owner's Edge playback on 14:42 was VP9 8-bit
+up to 3840x2160, also on the VCN. The shadows come from the layout, not the decoder: CoreVideo's default IOSurface
+layout puts plane 0 at +32/+64 and plane 1 at +32/+64 + Y size, both off 256 B, so the NVMTL plugin copies every
+read-only plane into a GPU shadow (12 MB per 4K 8-bit frame, 25 MB at 10-bit) in every process that draws the frame.
+
+Fix (`src/vcnvt.c`): the session's pixel buffer attributes add `kCVPixelBufferPlaneAlignmentKey = 256`
+(`VCN_PLANE_ALIGN=0` restores the default). Same allocation size; the copy already reads the plane offsets from the
+surface. `vt_check` prints the first frame's plane layout (`PLANES ...`).
+
+| clip (vt_check -b, in-process) | align 256 | align 0 (0.2.0) |
+|---|---|---|
+| mx-h264-1080p60 (420v) | +256 / +2073856, 1800/1800 index ok | +64 / +2073664, 1800/1800 |
+| mx-hevc-2160p60 (420v) | +256 / +8294656, 1800/1800 | +64 / +8294464, 1800/1800 |
+| mx-hevc10-1080p60 (x420) | +256 / +4147456, 1800/1800 | +64 / +4147264, 1800/1800 |
+| mx-av110-1080p30 (x420) | +256 / +4147456, 600/600 | +64 / +4147264, 600/600 |
+| mx-av1-1080p30 (420v) | +256 / +2073856, 600/600 | +64 / +2073664, 600/600 |
+
+Plugin side (frame-path-plugin `carender_test` video 4 with `CARENDER_PLANE_ALIGN`, 4K x420 pool of 12, 4000 frames,
+plugin 01d069e): plane shadows 856 MB in 73 -> 2 MB in 1 (watched planes 854 -> 0 MB); CPU 907 -> 681 us per frame,
+wall 1.77 -> 0.84 ms per frame; last-frame checksum identical (92c836e4da78001d).
+
+Install: `tools/890m/vcndec/build.sh`, then `sudo tools/890m/vcndec/install.sh --system` (system volume + bless, next
+boot). Only VCNDec changes; RADV and libavcodec stay as installed.
