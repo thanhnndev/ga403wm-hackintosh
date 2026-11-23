@@ -209,3 +209,33 @@ wall 1.77 -> 0.84 ms per frame; last-frame checksum identical (92c836e4da78001d)
 
 Install: `tools/890m/vcndec/build.sh`, then `sudo tools/890m/vcndec/install.sh --system` (system volume + bless, next
 boot). Only VCNDec changes; RADV and libavcodec stay as installed.
+
+**On-screen frames and buffer reuse.** Aliasing samples the decoder's output surface itself, so a frame on screen must
+never be written again while it is shown. What protects it is the IOSurface use count: the display path (Core Animation
+/ WindowServer) holds a use count on the surfaces it shows, and the pixel-buffer pool hands a buffer out again only when
+its surface is no longer in use. `vt_check` `VT_USEHOLD=n` does what the display does: each output surface gets
+`IOSurfaceIncrementUseCount`, the CVPixelBuffer is released at once, the last n are held, and a hash of both planes is
+checked when each is released. `VT_USEHOLD_NOUSE=1` is the negative control (retained, no use count).
+
+| clip, VCNDec 0.2.1 in-process | VT_USEHOLD=8 | negative control (no use count) |
+|---|---|---|
+| mx-hevc-2160p60 (420v) | 1800 checked, 0 reused while held, 0 changed | 1799 changed while held |
+| mx-hevc10-1080p60 (x420) | 1800 checked, 0 / 0 | 1799 changed while held |
+| Aerial wallpaper clip (4K HEVC 10-bit, x420, first 600) | 600 checked, 0 / 0 | - |
+
+The Aerial clip (`~/Library/Application Support/com.apple.wallpaper/aerials/videos/*.mov`): hw yes, planes
++256 / +16589056 with 0.2.1 (+64 / +16588864 with `VCN_PLANE_ALIGN=0`, the layout WindowServer shadowed at 13:31).
+
+**Cost of one decoded frame today** (all on the GPU: VCN decode into RADV's image, then one `vkCmdCopyImageToBuffer`
+into the output IOSurface through a cached host-pointer import; the CPU only submits and waits. The live sessions'
+close lines show `cpu-copy 0`, `staged 0`). Whole `vt_check` process CPU, AVAssetReader demux included:
+
+| clip | client keeps 0 | client keeps 40 |
+|---|---|---|
+| 4K HEVC 8-bit | 1.03 ms / frame | 1.82 ms |
+| 1080p HEVC 10-bit | 0.78 ms | 1.07 ms |
+| Aerial 4K HEVC 10-bit | 1.90 ms | 4.17 ms |
+
+The one copy per frame is a GPU write of the whole picture (12 MB at 4K 8-bit, 25 MB at 4K 10-bit) into system
+memory. Linux plays the decoder's own image (DMA-BUF) with no copy; doing that here would mean the VCN writing its
+output straight into the IOSurface's pages.

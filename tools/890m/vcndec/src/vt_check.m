@@ -56,6 +56,35 @@ static int read_index(CVPixelBufferRef pb, int *border) {
 static CVImageBufferRef g_keep[512]; static int g_nkeep, g_kpos;
 static void keep_release(void) { for (int i = 0; i < 512; i++) if (g_keep[i]) { CVBufferRelease(g_keep[i]); g_keep[i] = NULL; } g_kpos = 0; }
 
+// VT_USEHOLD=n: the display path's hold. WindowServer keeps a frame on screen by the IOSurface use count, not by
+// retaining the CVPixelBuffer. Each output surface gets IOSurfaceIncrementUseCount and only the IOSurface is retained;
+// the pixel buffer goes back to the pool at once. The last n are held. A held surface must never come out of the decoder
+// again (the pool recycled a buffer in use) and its pixels must not change while held (the decoder wrote into a frame
+// on screen): a hash of both planes is taken at the hold and checked at the release.
+static int g_uh_nouse;   // VT_USEHOLD_NOUSE=1: negative control, the surface retained without a use count
+static IOSurfaceRef g_uh[512]; static uint64_t g_uhash[512]; static int g_nuh, g_uhpos, g_uh_reuse, g_uh_changed, g_uh_checked;
+static uint64_t surf_hash(IOSurfaceRef s) {
+  IOSurfaceLock(s, kIOSurfaceLockReadOnly, NULL);
+  uint64_t h = 1469598103934665603ull;
+  for (size_t pl = 0; pl < IOSurfaceGetPlaneCount(s); pl++) {
+    const uint8_t *b = IOSurfaceGetBaseAddressOfPlane(s, pl); size_t n = IOSurfaceGetBytesPerRowOfPlane(s, pl) * IOSurfaceGetHeightOfPlane(s, pl);
+    for (size_t o = 0; o + 8 <= n; o += 4096 + 8) { uint64_t v; memcpy(&v, b + o, 8); h = (h ^ v) * 1099511628211ull; }
+  }
+  IOSurfaceUnlock(s, kIOSurfaceLockReadOnly, NULL);
+  return h;
+}
+static void usehold(CVImageBufferRef img) {
+  IOSurfaceRef s = CVPixelBufferGetIOSurface(img);
+  if (!s) return;
+  for (int i = 0; i < g_nuh; i++) if (g_uh[i] && IOSurfaceGetID(g_uh[i]) == IOSurfaceGetID(s)) { if (g_uh_reuse++ < 5) fprintf(stderr, "USEHOLD: surface %u came out of the decoder while held\n", IOSurfaceGetID(s)); }
+  int i = g_uhpos++ % g_nuh;
+  if (g_uh[i]) {
+    if (surf_hash(g_uh[i]) != g_uhash[i] && g_uh_changed++ < 5) fprintf(stderr, "USEHOLD: surface %u changed while held\n", IOSurfaceGetID(g_uh[i]));
+    g_uh_checked++;
+    if (!g_uh_nouse) IOSurfaceDecrementUseCount(g_uh[i]); CFRelease(g_uh[i]);
+  }
+  CFRetain(s); if (!g_uh_nouse) IOSurfaceIncrementUseCount(s); g_uh[i] = s; g_uhash[i] = surf_hash(s);
+}
 static void out_cb(void *ref, void *src, OSStatus st, VTDecodeInfoFlags fl, CVImageBufferRef img, CMTime pts, CMTime dur) {
   if (st || !img) { if (g_err++ < 5) fprintf(stderr, "frame at %.3f: status %d flags %x\n", CMTimeGetSeconds(pts), (int)st, (unsigned)fl); return; }
   g_out++;
@@ -72,6 +101,7 @@ static void out_cb(void *ref, void *src, OSStatus st, VTDecodeInfoFlags fl, CVIm
       IOSurfaceUnlock(s, kIOSurfaceLockReadOnly, NULL);
     }
   }
+  if (g_nuh) usehold(img);
   if (g_nkeep) { int i = g_kpos++ % g_nkeep; if (g_keep[i]) CVBufferRelease(g_keep[i]); g_keep[i] = CVBufferRetain(img); }
   int border, idx = read_index(img, &border), want = (int)lround(CMTimeGetSeconds(pts) * g_fps);
   if (border < 170) { if (g_unreadable++ < 5) fprintf(stderr, "frame at %.3f: strip unreadable (border %d)\n", CMTimeGetSeconds(pts), border); }
@@ -93,6 +123,7 @@ int main(int argc, char **argv) {
     int reps = getenv("VT_REPEAT") ? atoi(getenv("VT_REPEAT")) : 1, hold = getenv("VT_HOLD") ? atoi(getenv("VT_HOLD")) : 0;
     int rc = 0;
     g_nkeep = getenv("VT_KEEP") ? atoi(getenv("VT_KEEP")) : 0; if (g_nkeep > 512) g_nkeep = 512;
+    g_nuh = getenv("VT_USEHOLD") ? atoi(getenv("VT_USEHOLD")) : 0; if (g_nuh > 512) g_nuh = 512; g_uh_nouse = getenv("VT_USEHOLD_NOUSE") != NULL;
     for (int k = 1; k <= reps; k++) @autoreleasepool {
     g_out = g_ok = g_bad = g_unreadable = g_err = 0;
     AVURLAsset *as = [AVURLAsset URLAssetWithURL:[NSURL fileURLWithPath:@(argv[a])] options:nil];
@@ -114,7 +145,8 @@ int main(int argc, char **argv) {
     int n = 0;
     CFAbsoluteTime t0 = CFAbsoluteTimeGetCurrent();
     CMSampleBufferRef sb;
-    while ((sb = [o copyNextSampleBuffer])) {
+    const int maxn = getenv("VT_MAXFRAMES") ? atoi(getenv("VT_MAXFRAMES")) : 0;   // first N samples only (long clips)
+    while ((!maxn || n < maxn) && (sb = [o copyNextSampleBuffer])) {
       if (CMSampleBufferGetNumSamples(sb)) { VTDecompressionSessionDecodeFrame(ses, sb, kVTDecodeFrame_EnableAsynchronousDecompression, NULL, NULL); n++; }
       CFRelease(sb);
     }
@@ -128,6 +160,14 @@ int main(int argc, char **argv) {
     keep_release();
     printf("%s: %d samples, %d pictures (hw %s, format %c%c%c%c), index ok %d, wrong %d, unreadable %d, errors %d, %.0f fps\n", argv[a], n, g_out,
            hw == kCFBooleanTrue ? "yes" : "no", (char)(g_fmt >> 24), (char)(g_fmt >> 16), (char)(g_fmt >> 8), (char)g_fmt, g_ok, g_bad, g_unreadable, g_err, n / dt);
+    if (g_nuh) {   // release the held surfaces, checking the last ones too
+      for (int i = 0; i < g_nuh; i++) if (g_uh[i]) {
+        if (surf_hash(g_uh[i]) != g_uhash[i]) g_uh_changed++;
+        g_uh_checked++; if (!g_uh_nouse) IOSurfaceDecrementUseCount(g_uh[i]); CFRelease(g_uh[i]); g_uh[i] = NULL; }
+      printf("USEHOLD %d: %d held surfaces checked, %d came out of the decoder while held, %d changed while held\n", g_nuh, g_uh_checked, g_uh_reuse, g_uh_changed);
+      if (g_uh_reuse || g_uh_changed) rc = 1;
+      g_uh_checked = g_uh_reuse = g_uh_changed = 0; g_uhpos = 0;
+    }
     if (!(g_out == n && g_ok == n && hw == kCFBooleanTrue)) rc = 1;
     if (getenv("VT_REPEAT") || hold) { foot("closed", k); if (hold) { sleep(hold); foot("after hold", k); } }
     }
