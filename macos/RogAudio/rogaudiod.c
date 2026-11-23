@@ -9,7 +9,7 @@
 // stay on). The speaker path runs for as long as the daemon does. The sound profile is read from
 // /Library/Application Support/RogAudio/profile (one word: off | balanced | movie | music | voice), re-read when it changes.
 //
-//   rogaudiod [-v] [--list] [--profile NAME] [--no-mic] [--no-speakers] [--mic-uid UID] [--out-uid UID] [--strength 0..1]
+//   rogaudiod [-v] [--list] [--profile NAME] [--no-mic] [--no-speakers] [--keep-mic-gain] [--mic-uid UID] [--out-uid UID] [--strength 0..1]
 //
 // RNNoise (BSD-3-Clause, Xiph.Org / Jean-Marc Valin): https://github.com/xiph/rnnoise, fetched by scripts/build-rogaudio.sh.
 #include <AudioToolbox/AudioToolbox.h>
@@ -29,6 +29,8 @@
 #include <fcntl.h>
 #include <sys/mman.h>
 #include <errno.h>
+#include <libproc.h>
+#include <pthread.h>
 
 #define RATE 48000.0
 #define UID_MIC "com.itlmt7925.rogaudio.mic"
@@ -223,6 +225,8 @@ static void mic_gain_set(AudioObjectID d, float db)
         AudioObjectSetPropertyData(d, &a, 0, NULL, sizeof(v), &v);
     }
 }
+// Restore mode (--keep-mic-gain): put the last gain back when it sits at the minimum. Off by default while the trace
+// below looks for whatever lowers the gain (2026-11-23: coreaudiod does persist it, so something set the minimum).
 static void mic_gain_keep(AudioObjectID d, const char *file)
 {
     static float saved = NAN;
@@ -244,6 +248,105 @@ static void mic_gain_keep(AudioObjectID d, const char *file)
         if (f) { fprintf(f, "%.2f\n", db); fclose(f); }
         fprintf(stderr, "mic gain: %.2f dB saved\n", db);
     }
+}
+
+// ---- mic gain trace -------------------------------------------------------------------------------------------------
+// Appends to <settings dir>/micgain-trace.log: every Built-in Input gain change (old -> new, per element), with the
+// processes that have input running at that moment (an app's auto gain control runs while it records), plus the gain
+// rogaudiod finds at startup. A property listener gives the timing; the 250 ms poll catches changes without a notice.
+static pthread_mutex_t g_trace_lock = PTHREAD_MUTEX_INITIALIZER;
+static char g_trace_path[1024];
+static float g_trace_last[5] = { NAN, NAN, NAN, NAN, NAN };
+static AudioObjectID g_trace_dev = kAudioObjectUnknown;
+
+static void trace_inputs(char *out, size_t cap)
+{
+    out[0] = 0;
+    AudioObjectPropertyAddress a = { kAudioHardwarePropertyProcessObjectList, kAudioObjectPropertyScopeGlobal, kAudioObjectPropertyElementMain };
+    UInt32 size = 0;
+    if (AudioObjectGetPropertyDataSize(kAudioObjectSystemObject, &a, 0, NULL, &size) || size == 0) { snprintf(out, cap, "?"); return; }
+    AudioObjectID *ids = malloc(size);
+    if (AudioObjectGetPropertyData(kAudioObjectSystemObject, &a, 0, NULL, &size, ids)) { free(ids); return; }
+    size_t used = 0;
+    for (UInt32 i = 0; i < size / sizeof(AudioObjectID); i++) {
+        UInt32 in = 0, sz = sizeof(in);
+        AudioObjectPropertyAddress ia = { kAudioProcessPropertyIsRunningInput, kAudioObjectPropertyScopeGlobal, kAudioObjectPropertyElementMain };
+        if (AudioObjectGetPropertyData(ids[i], &ia, 0, NULL, &sz, &in) || !in) continue;
+        pid_t pid = -1; sz = sizeof(pid);
+        AudioObjectPropertyAddress pa = { kAudioProcessPropertyPID, kAudioObjectPropertyScopeGlobal, kAudioObjectPropertyElementMain };
+        AudioObjectGetPropertyData(ids[i], &pa, 0, NULL, &sz, &pid);
+        char name[256] = "?";
+        CFStringRef bid = NULL; sz = sizeof(bid);
+        AudioObjectPropertyAddress ba = { kAudioProcessPropertyBundleID, kAudioObjectPropertyScopeGlobal, kAudioObjectPropertyElementMain };
+        if (!AudioObjectGetPropertyData(ids[i], &ba, 0, NULL, &sz, &bid) && bid) {
+            CFStringGetCString(bid, name, sizeof(name), kCFStringEncodingUTF8); CFRelease(bid);
+        }
+        if (!name[0] || !strcmp(name, "?")) {
+            char path[PROC_PIDPATHINFO_MAXSIZE];
+            if (proc_pidpath(pid, path, sizeof(path)) > 0) { const char *b = strrchr(path, '/'); snprintf(name, sizeof(name), "%s", b ? b + 1 : path); }
+        }
+        int n = snprintf(out + used, cap - used, "%s%s(%d)", used ? ", " : "", name, (int)pid);
+        if (n < 0 || (size_t)n >= cap - used) break;
+        used += (size_t)n;
+    }
+    if (!used) snprintf(out, cap, "none");
+    free(ids);
+}
+
+static void trace_check(const char *why)
+{
+    pthread_mutex_lock(&g_trace_lock);
+    AudioObjectID d = g_trace_dev;
+    if (d == kAudioObjectUnknown || !g_trace_path[0]) { pthread_mutex_unlock(&g_trace_lock); return; }
+    float now[5] = { NAN, NAN, NAN, NAN, NAN };
+    int changed = 0, first = isnan(g_trace_last[1]);
+    for (UInt32 el = 1; el <= 4; el++) {
+        AudioObjectPropertyAddress a = { kAudioDevicePropertyVolumeDecibels, kAudioDevicePropertyScopeInput, el };
+        Float32 v; UInt32 sz = sizeof(v);
+        if (!AudioObjectGetPropertyData(d, &a, 0, NULL, &sz, &v)) now[el] = v;
+        if (!(isnan(now[el]) && isnan(g_trace_last[el])) && !(fabsf(now[el] - g_trace_last[el]) < 0.01f)) changed = 1;
+    }
+    if (changed) {
+        char procs[1024], ts[32], vals[160] = "";
+        trace_inputs(procs, sizeof(procs));
+        time_t t = time(NULL); strftime(ts, sizeof(ts), "%Y-%m-%d %H:%M:%S", localtime(&t));
+        size_t u = 0;
+        for (int el = 1; el <= 4; el++) {
+            if (isnan(now[el]) && isnan(g_trace_last[el])) continue;
+            u += (size_t)snprintf(vals + u, sizeof(vals) - u, " el%d %.2f->%.2f", el, g_trace_last[el], now[el]);
+            if (u >= sizeof(vals)) break;
+        }
+        FILE *f = fopen(g_trace_path, "a");
+        if (f) { fprintf(f, "%s %s%s dB | input running: %s\n", ts, first ? "start" : why, vals, procs); fclose(f); }
+        fprintf(stderr, "mic gain trace: %s%s | %s\n", first ? "start" : why, vals, procs);
+        memcpy(g_trace_last, now, sizeof(now));
+    }
+    pthread_mutex_unlock(&g_trace_lock);
+}
+
+static OSStatus trace_cb(AudioObjectID o, UInt32 n, const AudioObjectPropertyAddress *a, void *c)
+{
+    (void)o; (void)n; (void)a; (void)c;
+    trace_check("notice");
+    return 0;
+}
+
+static void trace_watch(AudioObjectID d, const char *dir)
+{
+    if (d == kAudioObjectUnknown) return;
+    pthread_mutex_lock(&g_trace_lock);
+    if (!g_trace_path[0] && dir) snprintf(g_trace_path, sizeof(g_trace_path), "%s/micgain-trace.log", dir);
+    int fresh = d != g_trace_dev;
+    if (fresh) {
+        for (UInt32 el = 1; el <= 4; el++) {
+            AudioObjectPropertyAddress a = { kAudioDevicePropertyVolumeScalar, kAudioDevicePropertyScopeInput, el };
+            if (g_trace_dev != kAudioObjectUnknown) AudioObjectRemovePropertyListener(g_trace_dev, &a, trace_cb, NULL);
+            AudioObjectAddPropertyListener(d, &a, trace_cb, NULL);
+        }
+        g_trace_dev = d;
+    }
+    pthread_mutex_unlock(&g_trace_lock);
+    trace_check("poll");
 }
 
 static void handoff_volume(AudioObjectID builtin, AudioObjectID rog)
@@ -786,7 +889,7 @@ static void on_sig(int s) { (void)s; g_quit = 1; }
 
 int main(int argc, char **argv)
 {
-    int profile = 1, doMic = 1, doSpk = 1, list = 0;
+    int profile = 1, doMic = 1, doSpk = 1, list = 0, keepMicGain = 0;
     const char *micUid = NULL, *outUid = NULL;
     float strength = 1.0f;
     const char *settingsPath = NULL;
@@ -795,12 +898,13 @@ int main(int argc, char **argv)
         else if (!strcmp(argv[i], "--list")) list = 1;
         else if (!strcmp(argv[i], "--no-mic")) doMic = 0;
         else if (!strcmp(argv[i], "--no-speakers")) doSpk = 0;
+        else if (!strcmp(argv[i], "--keep-mic-gain")) keepMicGain = 1;
         else if (!strcmp(argv[i], "--profile") && i + 1 < argc) { profile = profile_index(argv[++i]); if (profile < 0) { fprintf(stderr, "unknown profile\n"); return 2; } }
         else if (!strcmp(argv[i], "--mic-uid") && i + 1 < argc) micUid = argv[++i];
         else if (!strcmp(argv[i], "--out-uid") && i + 1 < argc) outUid = argv[++i];
         else if (!strcmp(argv[i], "--strength") && i + 1 < argc) strength = (float)atof(argv[++i]);
         else if (!strcmp(argv[i], "--settings") && i + 1 < argc) settingsPath = argv[++i];
-        else { fprintf(stderr, "usage: rogaudiod [-v] [--list] [--profile off|balanced|movie|music|voice] [--no-mic] [--no-speakers] [--mic-uid UID] [--out-uid UID] [--strength 0..1]\n"); return 2; }
+        else { fprintf(stderr, "usage: rogaudiod [-v] [--list] [--profile off|balanced|movie|music|voice] [--no-mic] [--no-speakers] [--keep-mic-gain] [--mic-uid UID] [--out-uid UID] [--strength 0..1]\n"); return 2; }
     }
     if (list) {
         DevInfo v[64];
@@ -882,7 +986,11 @@ int main(int argc, char **argv)
             const char *slash = settingsPath ? strrchr(settingsPath, '/') : NULL;
             if (!gainFile[0] && slash && slash - settingsPath < 1000)
                 snprintf(gainFile, sizeof(gainFile), "%.*s/micgain", (int)(slash - settingsPath), settingsPath);
-            mic_gain_keep(pick_builtin(1, micUid), gainFile[0] ? gainFile : NULL);
+            AudioObjectID bi = pick_builtin(1, micUid);
+            if (keepMicGain) mic_gain_keep(bi, gainFile[0] ? gainFile : NULL);
+            char dir[1024] = "";
+            if (slash && slash - settingsPath < 1000) snprintf(dir, sizeof(dir), "%.*s", (int)(slash - settingsPath), settingsPath);
+            trace_watch(bi, dir[0] ? dir : NULL);
         }
         if (settings.autoDefault) {
             if (spkOn) {

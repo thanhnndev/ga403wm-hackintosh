@@ -7,6 +7,7 @@ Small CoreAudio probes used for the mic and speaker checks in docs/AUDIO-ROG.md 
 
 * `rec UID seconds [channels]`: per-channel peak / RMS every 0.5 s; `CORR=1` adds channel-pair correlation.
   Built-in Input UID `AppleHDAEngineInput:0,6,0,1,0:1`, ROG Clear Mic `com.itlmt7925.rogaudio.mic`.
+* `setgain dB [UID]`: sets the input gain on elements 1-4 (default Built-in Input).
 * `inctl [UID [source]]`: input gain elements, mute, data sources (and optionally selects one).
 
 Speech source for tests: `say -a "Built-in Output" -v Samantha "Testing the microphone, one two three"`.

@@ -609,3 +609,29 @@ M2 v2 is live: `alc-verb 0x13 0xF1C 0` reads `0x90a60171`. **The third mic is st
 * M2 v2 stays installed: the extra path is inert (muted), and the pin config is the correct one.
 * The headset-mic switch on plug-in was not checked in this boot.
 * Undo if wanted: `EFI/OC/Kexts-backup/AppleALC-m2v1-20261123/` (one kext copy).
+
+## 19. Mic gain: correction and trace (2026-11-23)
+
+**Correction to section 16.** coreaudiod *does* persist the Built-in Input gain. After the 20:36 boot, `com.apple.audio.DeviceSettings.plist` holds `0.746` (+18 dB) for `AppleHDAEngineInput:0,6,0,1,0:1`, and the gain came back from it without any rogaudiod action. The empty `controls` list seen earlier was read before coreaudiod wrote the file. So the minimum gain was a value that something set and macOS then kept. Section 16's keeper only hid it.
+
+**Suspects, not yet proven.**
+1. An app's automatic gain control lowering the system input volume. Discord/Vesktop and browser WebRTC calls can do this on macOS, and both have mic access here.
+2. The device default on first appearance after SimpleHDA/AppleALC changes.
+3. A manual slider change.
+
+**Trace (installed).** rogaudiod appends every Built-in Input gain change to `~/Library/Application Support/RogAudio/micgain-trace.log`. Each line has:
+* the time, old and new dB per element;
+* the processes with input running at that moment (bundle id or name, and pid).
+
+It also logs the gain found at startup. It uses a property listener plus the 250 ms poll.
+
+```
+2026-11-23 21:43:43 start el1 nan->18.00 el2 nan->18.00 dB | input running: none
+2026-11-23 21:43:50 notice el1 18.00->6.00 el2 18.00->18.00 dB | input running: rec(42843)
+2026-11-23 21:43:53 notice el1 6.00->18.00 el2 6.00->6.00 dB | input running: none
+```
+
+* The restore keeper is off by default now. `--keep-mic-gain` turns it back on.
+* **Next.** When the mic goes quiet again, read the log. The line where the gain dropped names the app that was recording.
+  * If it is an app's auto gain, turn that off in the app (Discord: Voice & Video → Automatic Gain Control) and drop the keeper code.
+  * If the drop appears at `start` after a boot, the default is the cause.
