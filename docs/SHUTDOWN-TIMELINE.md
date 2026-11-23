@@ -113,6 +113,12 @@ Candidates, in order:
 
 If B is missing, the NVRAM sync at that point did not reach flash. That is itself the answer for the stall's position.
 
+**0.2.10** (`fix/eco-offbus` 1f4db9d, md5 993f27c43e563278065532bbf05eede0, not installed) carries the same trace and adds
+main's 0.2.8 review fixes: from WillPowerOff / WillRestart no power-off, slow or re-check pass runs (queued ones cancelled,
+a running one waited out, then stamp A), a 200 s heal timer at WillSleep, no action on an unreadable GSTA. Cost at shutdown:
+two forced NVRAM syncs of an 80-byte variable (A, B), in addition to the two `clearNow` already does at A. Install it, not
+0.2.9, for the instrumentation boot.
+
 ### 1.4 What the owner can change (third-party, one line each)
 
 - **Claude.app**: quit it (Cmd-Q) before Shut Down. It took 4.8-18.4 s to exit on 3 of 5 shutdowns.
