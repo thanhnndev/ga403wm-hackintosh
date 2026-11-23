@@ -125,6 +125,12 @@ two forced NVRAM syncs of an 80-byte variable (A, B), in addition to the two `cl
 - A comes from the gate's own priority notifier in every mode, not only Eco.
 - Off with `-strixgate_off` (0.2.6 behaviour), boot-arg `strixgate_sdtrace=0` or NVRAM `strix-gpu-sdtrace=0`.
 - A missing B is not proof of a hang between A and B: the NVRAM store may have been flushed before B ran.
+- Every stamp is a forced NVRAM sync: an Eco shutdown forces four (A, B and the two of `clearNow`).
+
+**0.2.12** (`fix/eco-offbus`): the NVRAM work of the trace (opt-out read, previous record, S) waits for IODTNVRAM to
+publish, because the gate starts before AppleEFINVRAM. Property `gate-sd-trace` = `waiting for NVRAM` / `on` /
+`off (reason)`. First boot: `nvram strix-gpu-sd` shows `S...`. Second boot: `gate-prev-shutdown` holds the first boot's
+record with A and B.
 
 ### 1.4 What the owner can change (third-party, one line each)
 
