@@ -24,6 +24,11 @@ sysctl -n debug.nmx_userwire_by_kind > "$out/userwire.txt" 2>&1
 for d in /private/var/folders/zz/zyxvpxvq6csfxvn_n00000b000002r/[CT]/nvmtl/spvcache; do
     [ -d "$d" ] && echo "$d: low2 $(ls "$d" | grep -c '\.low2\.') fc2 $(ls "$d" | grep -c '\.fc2\.') all $(ls "$d" | wc -l)"
 done > "$out/ws-spvcache.txt" 2>&1
+# login cost: does RADV's disk cache (Mesa euid patch, WS-CPU 8.5) fill and get used in WindowServer? files, size, newest
+m=/private/var/folders/zz/zyxvpxvq6csfxvn_n00000b000002r/C/WindowServer/nvmtl-mesa
+{ ls -ld "$m" "$m"/* 2>&1; echo "files $(find "$m" -type f 2>/dev/null | wc -l) bytes $(du -sk "$m" 2>/dev/null | cut -f1) KB";
+  echo "newest:"; find "$m" -type f -exec stat -f '%Sm %z %N' -t '%F %T' {} + 2>/dev/null | sort | tail -5;
+  echo "oldest:"; find "$m" -type f -exec stat -f '%Sm %z %N' -t '%F %T' {} + 2>/dev/null | sort | head -3; } > "$out/ws-mesa-cache.txt" 2>&1
 echo "$(date +%T) end; flips $(sysctl -n debug.nmxaccel_flip_submitted)" | tee -a "$out/log.txt"
 chown -R "$cu" "$out"
 echo "done: $out"
