@@ -712,3 +712,35 @@ its presents itself), the test's own 120-frame flush 0.01.
      at enqueue time if the part's order on the queue is kept);
    - client-driven (screen capture, ScreenCaptureKit): leave it.
 Expected saving if they all merge into the present's submit: ~28 CS ioctls/s, ~3-5 ms CPU/s in WindowServer.
+
+### 9.5 WindowServer memory: what the plugin holds (2026-11-23, plugin 23af58c, own process)
+
+**"our allocations" is GPU memory, and counts the caller's pages too.** `g_alloc_bytes` adds every
+`vkAllocateMemory`: images, standalone buffers, placement heaps (the buffer pool's blocks and MTLHeaps), and
+`nvmtl_vk_buffer_import_host`: IOSurface pages and `newBufferWithBytesNoCopy` pages (Core Animation's
+`MetalTiledBacking`). Imports are the client's memory, wired for the GPU, not an allocation of ours. The non-image
+550-600 MB in WindowServer is not split anywhere today; 23af58c adds the split ("frame census memory by kind").
+
+**Holder 1: Core Animation's metallib copied into malloc, 153 MB (fixed).** `-[NVMTLDevice newLibraryWithURL:]` read
+QuartzCore's `default.metallib` whole (`dataWithContentsOfURL`, malloc_history: `CA::OGL::new_metal_context` ->
+`newLibraryWithURL:` -> `_readBytes`) and kept it in `_raw` for the library's life: one 156 MB `NSConcreteData` in the
+test process, WindowServer's MALLOC_LARGE (170 MB in the 13:31 vmmap). Files under `/System` are on the sealed
+read-only volume, so they are now mapped (`NSDataReadingMappedAlways`): clean file-backed pages, not footprint. Own
+process, 1100 frames, video 3, window churn: footprint 259 -> 102 MB, same last-frame checksum. `NVMTL_LIB_NOMAP=1`
+restores the read.
+
+**Holder 2: the lowering memo, never trimmed (fixed).** `nvmtl_address_shader_g_body` kept, per distinct input, the
+flags + a full copy of the input SPIR-V as the key and the lowered module as the value: ~1.4 MB per Core Animation
+fragment specialization (688 KB in), up to 4096 entries, reset only at 4096. WindowServer has seen 307 pipeline keys
+since the 20:36 boot (pipelines line), so up to ~400 MB of MALLOC_MEDIUM. Now: key = flags + length + SHA-256, and a
+byte cap (`NVMTL_LOWER_MEMO_MB`, default 32) on top of the count. A miss past the cap is a low2 disk hit. Own process:
+22 entries 16 -> 8 MB; cap 1 MB gives the same checksum. The SHA-256 adds ~1 ms per lowering, against ~108 ms per
+warm pipeline.
+
+**Holder 3 (to read in WindowServer with 23af58c): imports and pool blocks.** Own process, 4000 frames with window
+churn every 10 frames: flat (footprint 93-97 MB from frame 1000 to 3000; imports 28-32 MB in 11-12; one 4 MB pool
+block with 1 MB live; nothing parked). So no monotonic part reproduces here. In WindowServer the census by kind
+says which of imported caller pages (video and window surfaces, plus the surface keep's idle 134-139 MB), pool
+blocks kept by one live buffer, or MTLHeaps make the non-image half, and whether any of it climbs with uptime.
+
+Also bounded already: the SPIR-V NSCache memo (96 MB cost limit, 256 entries, evicts under pressure).
