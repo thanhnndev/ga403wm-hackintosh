@@ -119,6 +119,13 @@ a running one waited out, then stamp A), a 200 s heal timer at WillSleep, no act
 two forced NVRAM syncs of an 80-byte variable (A, B), in addition to the two `clearNow` already does at A. Install it, not
 0.2.9, for the instrumentation boot.
 
+**0.2.11** (`fix/eco-offbus`, supersedes 0.2.10 for the package): record format `S<wall s>:<awake s>|A...|B...`.
+- S is stamped when the gate starts (one forced sync), so the record identifies its boot in every mode. S with no A/B
+  means that boot did not shut down cleanly.
+- A comes from the gate's own priority notifier in every mode, not only Eco.
+- Off with `-strixgate_off` (0.2.6 behaviour), boot-arg `strixgate_sdtrace=0` or NVRAM `strix-gpu-sdtrace=0`.
+- A missing B is not proof of a hang between A and B: the NVRAM store may have been flushed before B ran.
+
 ### 1.4 What the owner can change (third-party, one line each)
 
 - **Claude.app**: quit it (Cmd-Q) before Shut Down. It took 4.8-18.4 s to exit on 3 of 5 shutdowns.
