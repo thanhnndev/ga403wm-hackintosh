@@ -9,7 +9,7 @@ Follows up on docs/POWER-UNDER-LOAD.md (branch power/under-load), sections 2-3. 
 
 Nothing here was installed or turned on.
 
-## 1. Readout (frame-path-kernel fix/out31: bb730aa, eb14cc4, e6938f9)
+## 1. Readout (frame-path-kernel fix/out31: bb730aa, eb14cc4, e6938f9, 4194a26)
 
 | sysctl | what |
 |---|---|
@@ -27,7 +27,20 @@ read through the bridge. Every `amdgpu_pm` show handler first calls `pm_runtime_
 LinuxKPI that is a TODO stub that returns `-EINVAL` (`linux/pm_runtime.h`). The readout calls `amdgpu_dpm_*`
 directly instead.
 
+**Safety (4194a26, after review).** The readout makes no SMU query in four situations:
+
+- during a GPU reset or suspend: `amdgpu_in_reset`, `in_suspend` or `in_s0ix`, checked first and again under
+  `pm.mutex` right before the transfer;
+- across the port's own power change: `NMXGPU::setPowerState` holds a lock that the sysctl only try-locks;
+- while the GPU is powered down;
+- while it holds no lock: the shared metrics table is copied under `pm.mutex`.
+
 To read it, no root is needed: `tools/890m/power-readout.sh [samples] [interval]`.
+
+**Does the read itself wake GFX?** Run `power-readout.sh wake [quiet_s]` at a static screen. It does two
+back-to-back reads (the driver counters must not move), then compares one read after a quiet minute with the last
+read of a minute of 1 Hz polling, then takes a quiet read again. If the polled read shows higher GFX power, gfxclk or
+GFX activity at the same flips/s, the PMFW wakes GFX to serve the table: use single reads only.
 
 ### Lines in `debug.nmx_gpu_metrics`
 
