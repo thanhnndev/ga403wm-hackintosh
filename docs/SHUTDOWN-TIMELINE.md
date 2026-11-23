@@ -242,3 +242,53 @@ Owner of the code: `mt7925-macos` (`kexts/MtkBtFw`, `kexts/BtLeDlFix`). Needs a 
 **Does `mach_absolute_time` stop in sleep?** For the gate's 180 s self-heal: `machdep.tsc.deep_idle_rebase` reads **1** on
 this machine. So `acpi_idle_kernel` re-bases the clock after `pmCPUHalt` (kernel 0xffffff80003fc585), as found in
 BOOT-TIMELINE 0.1. The measuring tool for the owner's sleep test is still `tools/sleep-clock`.
+
+## 4. Package boot 2026-11-23 14:33 (gate 0.2.12, MtkBtFw 0.3.1): the busy hold is on the login path
+
+**What happened.** The Bluetooth fault is gone (first bluetoothd PID chose USB, no ExcUserFault). But the login window
+came at 14:33:53.085, 21.1 s after the log's `=== system boot` (14:33:32.000), against 14.4 s on 11-19 15:51.
+
+**Who waited.** WindowServer waits for IOKit quiet, the same registry-root quiet as bluetoothd:
+
+| Boot | WindowServer "Server is starting up" | next WindowServer line | registry quiet (InterfaceNamer `*QUIET*` / bluetoothd "Done waiting") |
+|---|---|---|---|
+| 11-23 14:33 (MtkBtFw 0.3.1) | 35.686 | 47.558 (Session 257) | 47.548 |
+| 11-23 13:15 (MtkBtFw 0.2.0) | 23.400 | 27.078 | 27.070 |
+
+MtkBtFw published 14:33:37.826; its load took 9722 ms (warm restart: `wmt op 1 flag 0: no event`, subsystem reset and
+full reload), ending at 47.548, the quiet instant. On a cold boot the hold costs about 3.7 s (5.2 s load minus the 1.4-2.4
+s the registry used to take to go quiet), on a warm restart with a reload about 8-9 s.
+
+**Fix options.**
+- (a) Hold busy on something only bluetoothd waits for: not possible. Both wait for the registry root (bluetoothd calls
+  `IOKitWaitQuiet` on the main port; WindowServer resumes 8-10 ms after the root goes quiet on both boots).
+- (b) **Recommended.** Device-level load plus USB transport.
+  - MtkBtFw matches the IOUSBHostDevice, sets the configuration without matching the interfaces, loads, then registers them.
+  - BtLeDlFix makes `FindTransportType` return USB.
+  - In USB mode bluetoothd scans its device list and then waits on a condition variable (`pthread_cond_timedwait_relative_np`,
+    15 s, logs "[bm3_usb] Waiting for bluetooth devices...") until a device arrives. So an interface published after the
+    load is picked up and no busy hold is needed. In UART mode (board-id) it scans only once.
+  - The "read from plist" message is followed directly by `FindTransportType` (board-id), so there is no plist route.
+- (c) Shorten the warm-restart load: probe HCI Reset first and skip the download when the running firmware answers. This
+  helps warm restarts only; cold boots still need 5.2 s, so it does not replace (b).
+
+**Kernel phases did not move** (log T0 = `=== system boot`):
+
+| Phase | 11-19 15:51 | 11-23 14:33 |
+|---|---|---|
+| CPU reset -> kernel (tsc_base) | 8.9 s (cold) | 9.87 s (warm restart) |
+| BSD root | 0.50 | 0.49 |
+| launchd hello | 1.67 | 1.33 |
+| WindowServer start | 5.24 | 3.69 |
+| login window | 14.40 | 21.09 |
+
+Main's "T0+15.3 to WindowServer" counts from the CPU reset: 9.87 s pre-kernel + about 1.5 s from kern.boottime (14:33:30.5) to
+the log's first kernel second + 3.69 s.
+
+**Gate trace "S0:0".** IODTNVRAM publishes within the first second, before the calendar clock is set, so 0.2.12 stamped wall
+0, awake 0. Fixed in gate 0.2.13 (a1e7c39): S waits for the clock (1 s retries, at most 120). No `gate-prev-shutdown` on
+this boot is expected: the shutdown before it ran gate 0.2.6, which had no trace.
+
+**Stall report 14:33:17** (sample 14:33:11.8-12.8, the restart before this boot): third-party only. launchd was blocked on
+`wait4` of spindump. Survivors: Claude Code + `disclaimer` (3), Claude and Edge crashpad handlers, `com.apple.amp.devicesui`,
+`duetexpertd`, securityd, diskarbitrationd. None of our kexts is in a process stack.
