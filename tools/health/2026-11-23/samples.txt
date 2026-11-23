@@ -1,0 +1,12 @@
+14:55:20 tctl=60125 pkg_mw=20162 rapl=a1000/42a24570 | cpu_fan=22 gpu_fan=25  | perf=57008 flips=57009
+14:55:25 tctl=59000 pkg_mw=17334 rapl=a1000/4307d458 | cpu_fan=22 gpu_fan=24  | perf=57274 flips=57274
+14:55:31 tctl=58500 pkg_mw=16147 rapl=a1000/4365d115 | cpu_fan=23 gpu_fan=24  | perf=57571 flips=57571
+14:55:36 tctl=57250 pkg_mw=13422 rapl=a1000/43af6a19 | cpu_fan=22 gpu_fan=24  | perf=57721 flips=57721
+14:55:42 tctl=57375 pkg_mw=14104 rapl=a1000/43fe6dad | cpu_fan=24 gpu_fan=25  | perf=57891 flips=57891
+14:55:47 tctl=56875 pkg_mw=13851 rapl=a1000/444a25f2 | cpu_fan=22 gpu_fan=24  | perf=58066 flips=58066
+14:55:52 tctl=56625 pkg_mw=12977 rapl=a1000/44913a71 | cpu_fan=22 gpu_fan=24  | perf=58163 flips=58163
+14:55:58 tctl=56625 pkg_mw=13335 rapl=a1000/44da3b5c | cpu_fan=22 gpu_fan=25  | perf=58274 flips=58274
+14:56:03 tctl=56375 pkg_mw=12917 rapl=a1000/452110de | cpu_fan=22 gpu_fan=24  | perf=58376 flips=58376
+14:56:09 tctl=58000 pkg_mw=15482 rapl=a1000/4575fae4 | cpu_fan=23 gpu_fan=24  | perf=58549 flips=58550
+14:56:14 tctl=58500 pkg_mw=18938 rapl=a1000/45dd6451 | cpu_fan=22 gpu_fan=25  | perf=58915 flips=58916
+14:56:20 tctl=59125 pkg_mw=18638 rapl=a1000/464388e9 | cpu_fan=22 gpu_fan=25  | perf=59284 flips=59285
