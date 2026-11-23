@@ -86,6 +86,29 @@ card on (deferred retries used up, or `_PS3` left GSTA 1) gets a slow pass every
 one pass per wake (pending / wake re-off pass or the re-check, not both); a sleep bail that lands after HasPoweredOn is
 rescheduled at once (CAS on the pending latch); the second-claim trigger resets the retry budget; log counts deferred passes.
 
+0.2.6 live, verified on the 2026-11-23 12:22:59 boot (main): Eco, `gate-powered-off` and `gate-off-bus` Yes,
+`gate-tripped` No, `gate-clear-stage` 2, `strix-gpu-eco-cleared` "8:30:ws1", try 0. Not yet seen: a shutdown clear, a wake.
+**0.2.8** (`fix/eco-offbus` f4504a4, md5 112a095e54cb0021dad90397c7c31ecd, not installed; 0.2.7 skipped): the slow pass
+is capped at 6 per wake (reset at HasPoweredOn), never armed when GSTA could not be read, cancelled at WillSleep and
+re-armed at the wake / WillNotSleep / sleep-flag self-heal; `gate-slow-passes` counts it.
+
+Does `mach_absolute_time` run during this machine's sleep? (The 180 s self-heal and every thread-call deadline depend
+on it.)
+- From logs: no evidence. No system sleep is in the retained unified log (20 days: only "System sleep prevented by
+  kPMSystemRestartBootingInProgress" at boot) or in `pmset -g log`, and the current boot has continuous - absolute = 0.0 s.
+- From the kernel binary (25G332): both x86 sleep entries re-base the clock after the halt. `acpi_sleep_kernel`
+  (0xffffff80003fbbd0) reads `rtc_nanotime` around `acpi_sleep_cpu` and calls `rtc_nanotime_init`. `acpi_idle_kernel`
+  (0xffffff80003fc350) calls `pmCPUHalt` then, if `deep_idle_rebase` (xnu default TRUE), `rtc_sleep_wakeup`
+  (0xffffff80003fc585-0xffffff80003fc595). So `mach_absolute_time` stops while the kernel is in either path, and the
+  slept time goes to `mach_continuous_time`.
+- Not covered: an s0ix "sleep" in which WillSleep is sent but the CPU never enters either path (the platform idles in S0
+  with the kernel running its idle loop). Then `mach_absolute_time` advances, timers fire, and the gate's self-heal clears
+  the flag 180 s in; 0.2.8's slow pass is cancelled at WillSleep, so only the self-heal's re-arm could start one.
+- How to measure in the owner-started sleep test: `cc -O -o /tmp/sleep-clock tools/sleep-clock/sleep-clock.c`, run
+  `/tmp/sleep-clock` right before sleep and right after wake. If "slept (cont-abs)" grew by about the wall-clock time
+  asleep, `mach_absolute_time` stopped (normal). If it did not grow while the wall clock moved, it ran through the sleep:
+  then the self-heal must use `mach_continuous_time`. Also note `gate-sleep-heals` (0 expected).
+
 First 0.2.6 boot watch list (the 0.2.5 items stay; also valid for 0.2.7, where `gate-sleep-heals` needs 180 s):
 - Boot: `gate-defer-retries` 0, `gate-pending-runs` 0, `gate-sleep-heals` 0.
 - Owner-started sleep test: `gate-sleep-msgs` and `gate-wake-msgs` grow by one each; `gsta-recheck` is set about 3 s after
