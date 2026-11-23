@@ -475,3 +475,58 @@ RogControl was rewritten from scratch, not patched. Build: `scripts/build-rogcon
 * The ring peak was 0.00025. That is the 0.1 tone at the current ROG Speakers volume of -52 dB, so the data in the ring is correct.
 * No process on the system had an input open afterwards.
 * Not checked by ear yet: the default output during the test was a Bluetooth headset.
+
+## 16. Microphone silent, and is every speaker playing? (2026-11-23)
+
+### Microphone: input gain at the minimum **[measured]**
+
+**Symptom.** The owner reported the mic not working. Both Built-in Input and ROG Clear Mic recorded near silence:
+* Built-in Input: -92 dBFS RMS after a start-up pop.
+* ROG Clear Mic: -104 dBFS RMS.
+
+**Cause.** The Built-in Input gain (ALC285 ADC amp, elements 1 and 2, range -17.25 to +30 dB) sat at its minimum, -17.25 dB.
+* coreaudiod never saves controls for this AppleHDA input. Its `com.apple.audio.DeviceSettings.plist` entry has an empty `controls` list.
+* So the gain falls back to the codec default after every boot.
+* A coreaudiod restart alone keeps it, because the codec state lives in the kernel.
+
+**Hardware works.** At +18 dB:
+* Room noise is about -46 dBFS RMS.
+* A 1 kHz beep on the laptop speakers reaches the mic at -27 dB against a -85 dB floor.
+* Synthetic speech (`say`) records at about -37 dBFS RMS on Built-in Input and -38 to -22 dBFS on ROG Clear Mic.
+* RNNoise removes a steady beep entirely, as expected, so use speech to test Clear Mic.
+
+**Fix (rogaudiod).** Every 250 ms:
+* If the gain is at the minimum, rogaudiod restores the last gain, or +18 dB the first time.
+* Any other value is treated as the owner's choice and saved to `~/Library/Application Support/RogAudio/micgain`.
+* Verified: forcing the minimum was restored within a second, and a slider change to +11.25 dB was saved and used for the next restore.
+* Limit: deliberately setting the slider to its very minimum is undone. Use mute instead.
+
+**One-off.** The first Clear Mic recording right after this reinstall returned exact zeros. The same binary then worked in all of the following:
+* a run under a `launchctl submit` job in verbose mode, with input levels of 0.02-0.03;
+* 2 speech runs under the normal agent;
+* 6 open/close cycles.
+
+It did not recur. The TCC microphone grant pins the binary's cdhash, and the row was rewritten at the install time. If Clear Mic is silent right after a reinstall, record once more before digging.
+
+**Third mic.** ASUS lists a "Built-in 3-microphone array". macOS exposes 2 channels, the DMIC on pin 0x12. The upstream AppleALC layout disables pin 0x13. Enabling it needs a layout change and a reboot.
+
+### Speakers: all four groups sound **[measured]**
+
+ASUS spec for the GA403 (2025): "4-speaker (dual force woofer) system with Smart Amplifier Technology, 2 Tweeters".
+
+**Test.** Tones at 80 Hz to 12 kHz, left then right, at -26 dBFS on Built-in Output, recorded by the built-in mic. The table gives SNR in dB against the pre-roll noise at the same frequency.
+
+| | 150 Hz | 300 | 600 | 1.2 k | 2.5 k | 5 k | 8 k | 12 k |
+|---|---|---|---|---|---|---|---|---|
+| L, amps on | 50 | 71 | 82 | 91 | 93 | 100 | 110 | 116 |
+| R, amps on | 44 | 71 | 80 | 96 | 89 | 100 | 111 | 112 |
+| L, CS35L56 muted | 7 | -20 | 0 | 14 | 49 | 66 | 68 | 79 |
+| R, CS35L56 muted | 18 | -2 | 6 | 12 | 38 | 66 | 70 | 76 |
+
+**Reading.**
+* Muting both CS35L56 amps (`strixampctl mute 1`, restored afterwards) removes everything below about 1.2 kHz on both sides. The amps drive the dual-force woofers: 0x30 takes ASP RX1, 0x31 takes ASP RX2.
+* 2.5 to 12 kHz stays with the amps muted, so the codec drives the two tweeters directly.
+* So left and right tweeters and left and right woofers all play.
+* 80 Hz is barely reproduced, as expected for drivers this small.
+* The two drivers inside each dual-force woofer share one amp channel and cannot be told apart this way.
+* The `strixamp.log` count of 269 firmware reloads covers several days of boots. There were none during a 60 s idle with Built-in Output running.

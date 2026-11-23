@@ -198,6 +198,54 @@ static int vol_db(AudioObjectID d, UInt32 el, Float32 *db)
     return AudioObjectGetPropertyData(d, &a, 0, NULL, &sz, db) == 0;
 }
 
+// Built-in Input gain. coreaudiod does not save it for the AppleHDA input (its "controls" list stays empty), so after a
+// boot, a coreaudiod restart or a codec reset the ALC285 ADC sits at its minimum (-17.25 dB) and the microphone records
+// near silence (-92 dBFS RMS in a room; +18 dB gives about -46 dBFS of room noise and clear speech). rogaudiod keeps the
+// gain: at the minimum it restores the last gain (MIC_GAIN_DEFAULT the first time); any other value is a user choice
+// and is saved to <settings dir>/micgain.
+#define MIC_GAIN_DEFAULT 18.0f
+static int mic_gain_get(AudioObjectID d, float *db, float *minDb)
+{
+    AudioObjectPropertyAddress a = { kAudioDevicePropertyVolumeRangeDecibels, kAudioDevicePropertyScopeInput, 1 };
+    AudioValueRange r; UInt32 size = sizeof(r);
+    if (AudioObjectGetPropertyData(d, &a, 0, NULL, &size, &r)) return -1;
+    a.mSelector = kAudioDevicePropertyVolumeDecibels;
+    Float32 v = 0; size = sizeof(v);
+    if (AudioObjectGetPropertyData(d, &a, 0, NULL, &size, &v)) return -1;
+    *db = v; *minDb = (float)r.mMinimum;
+    return 0;
+}
+static void mic_gain_set(AudioObjectID d, float db)
+{
+    for (UInt32 el = 1; el <= 2; el++) {
+        AudioObjectPropertyAddress a = { kAudioDevicePropertyVolumeDecibels, kAudioDevicePropertyScopeInput, el };
+        Float32 v = db;
+        AudioObjectSetPropertyData(d, &a, 0, NULL, sizeof(v), &v);
+    }
+}
+static void mic_gain_keep(AudioObjectID d, const char *file)
+{
+    static float saved = NAN;
+    if (d == kAudioObjectUnknown) return;
+    if (isnan(saved)) {
+        saved = MIC_GAIN_DEFAULT;
+        FILE *f = file ? fopen(file, "r") : NULL;
+        if (f) { float v; if (fscanf(f, "%f", &v) == 1) saved = v; fclose(f); }
+    }
+    float db, minDb;
+    if (mic_gain_get(d, &db, &minDb)) return;
+    if (db <= minDb + 0.01f) {
+        if (saved <= minDb + 0.01f) saved = MIC_GAIN_DEFAULT;
+        mic_gain_set(d, saved);
+        fprintf(stderr, "mic gain: was %.2f dB (minimum), restored %.2f dB\n", db, saved);
+    } else if (fabsf(db - saved) > 0.01f) {
+        saved = db;
+        FILE *f = file ? fopen(file, "w") : NULL;
+        if (f) { fprintf(f, "%.2f\n", db); fclose(f); }
+        fprintf(stderr, "mic gain: %.2f dB saved\n", db);
+    }
+}
+
 static void handoff_volume(AudioObjectID builtin, AudioObjectID rog)
 {
     if (builtin == kAudioObjectUnknown || rog == kAudioObjectUnknown) return;
@@ -808,6 +856,13 @@ int main(int argc, char **argv)
             else if (want && !g_mic_on) { if (mic_start(micUid) == 0) g_mic_on = 1; else mic_stop(); micIdle = 0; }
             else if (!want && g_mic_on) { if (++micIdle >= 6) { mic_stop(); g_mic_on = 0; micIdle = 0; } }
             else if (want) micIdle = 0;
+        }
+        if (doMic) {
+            static char gainFile[1024];
+            const char *slash = settingsPath ? strrchr(settingsPath, '/') : NULL;
+            if (!gainFile[0] && slash && slash - settingsPath < 1000)
+                snprintf(gainFile, sizeof(gainFile), "%.*s/micgain", (int)(slash - settingsPath), settingsPath);
+            mic_gain_keep(pick_builtin(1, micUid), gainFile[0] ? gainFile : NULL);
         }
         if (settings.autoDefault) {
             if (spkOn) {
