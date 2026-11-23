@@ -60,6 +60,10 @@ struct vcn_dec {
   uint64_t n_hits, n_staged;
   uint64_t n_frames, n_gpu, n_cpu, n_imports;
   uint64_t n_slow, max_wait_ms; // copies whose fence took longer than 100 ms, longest wait
+  // VCN_COPY_TS (test only): GPU timestamps around the image->IOSurface copy, and the wall time of copy_out
+  VkQueryPool tsq; double ts_period; int ts_on;
+  uint64_t ts_n, ts_gpu_sum, ts_gpu_max, ts_wall_sum, ts_wall_max, ts_bytes;
+  uint64_t ts_hist[8]; // GPU copy time: <0.25, <0.5, <1, <2, <4, <8, <16, >=16 ms
   char err[256];
   // device functions
   PFN_vkGetDeviceProcAddr gdpa;
@@ -87,6 +91,11 @@ struct vcn_dec {
   PFN_vkResetFences ResetFences;
   PFN_vkQueueSubmit QueueSubmit;
   PFN_vkGetDeviceQueue GetDeviceQueue;
+  PFN_vkCreateQueryPool CreateQueryPool;
+  PFN_vkDestroyQueryPool DestroyQueryPool;
+  PFN_vkCmdResetQueryPool CmdResetQueryPool;
+  PFN_vkCmdWriteTimestamp CmdWriteTimestamp;
+  PFN_vkGetQueryPoolResults GetQueryPoolResults;
 };
 
 static void seterr(vcn_dec *d, const char *fmt, const char *a, int b) {
@@ -124,6 +133,14 @@ static int setup_copy(vcn_dec *d) {
   LOADD(EndCommandBuffer); LOADD(ResetCommandBuffer); LOADD(CmdPipelineBarrier); LOADD(CmdCopyImageToBuffer);
   LOADD(CreateFence); LOADD(DestroyFence); LOADD(WaitForFences); LOADD(ResetFences); LOADD(QueueSubmit);
   LOADD(GetDeviceQueue);
+  if (getenv("VCN_COPY_TS")) {
+    PFN_vkGetPhysicalDeviceProperties gpp = (PFN_vkGetPhysicalDeviceProperties)vk->get_proc_addr(vk->inst, "vkGetPhysicalDeviceProperties");
+    LOADD(CreateQueryPool); LOADD(DestroyQueryPool); LOADD(CmdResetQueryPool); LOADD(CmdWriteTimestamp); LOADD(GetQueryPoolResults);
+    VkPhysicalDeviceProperties pp; gpp(d->pd, &pp);
+    VkQueryPoolCreateInfo qi = {VK_STRUCTURE_TYPE_QUERY_POOL_CREATE_INFO, NULL, 0, VK_QUERY_TYPE_TIMESTAMP, 2, 0};
+    if (pp.limits.timestampComputeAndGraphics && d->CreateQueryPool(d->vd, &qi, NULL, &d->tsq) == VK_SUCCESS) {
+      d->ts_period = pp.limits.timestampPeriod; d->ts_on = 1; }
+  }
 
   for (int i = 0; i < vk->nb_enabled_dev_extensions; i++)
     if (!strcmp(vk->enabled_dev_extensions[i], VK_EXT_EXTERNAL_MEMORY_HOST_EXTENSION_NAME)) d->have_host_import = 1;
@@ -358,6 +375,7 @@ static int copy_out(vcn_dec *d, AVFrame *f, CVPixelBufferRef pb) {
   if ((bps == 2) != (spf == kCVPixelFormatType_420YpCbCr10BiPlanarVideoRange || spf == kCVPixelFormatType_420YpCbCr10BiPlanarFullRange)) {
     seterr(d, "surface format does not match the %s-bit frame%.0d", bps == 2 ? "10" : "8", 0); return -1; }
 
+  struct timespec c0; clock_gettime(CLOCK_MONOTONIC, &c0);
   int w = f->width, h = f->height, cw = (w + 1) / 2, ch = (h + 1) / 2;
   size_t ybpr = IOSurfaceGetBytesPerRowOfPlane(s, 0), cbpr = IOSurfaceGetBytesPerRowOfPlane(s, 1);
   uint8_t *sbase = IOSurfaceGetBaseAddress(s);
@@ -395,8 +413,10 @@ static int copy_out(vcn_dec *d, AVFrame *f, CVPixelBufferRef pb) {
        {0, 0, 0}, {(uint32_t)w, (uint32_t)h, 1}},
       {direct ? coff : sc, (uint32_t)(cbpr / (2 * bps)), 0, {nimg == 1 ? VK_IMAGE_ASPECT_PLANE_1_BIT : VK_IMAGE_ASPECT_COLOR_BIT, 0, 0, 1},
        {0, 0, 0}, {(uint32_t)cw, (uint32_t)ch, 1}}};
+  if (d->ts_on) { d->CmdResetQueryPool(d->cmd, d->tsq, 0, 2); d->CmdWriteTimestamp(d->cmd, VK_PIPELINE_STAGE_TRANSFER_BIT, d->tsq, 0); }
   d->CmdCopyImageToBuffer(d->cmd, vf->img[0], VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, dst, 1, &rg[0]);
   d->CmdCopyImageToBuffer(d->cmd, vf->img[nimg - 1], VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, dst, 1, &rg[1]);
+  if (d->ts_on) d->CmdWriteTimestamp(d->cmd, VK_PIPELINE_STAGE_TRANSFER_BIT, d->tsq, 1);
   VkBufferMemoryBarrier bb = {VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER, NULL, VK_ACCESS_TRANSFER_WRITE_BIT,
                               VK_ACCESS_HOST_READ_BIT, VK_QUEUE_FAMILY_IGNORED, VK_QUEUE_FAMILY_IGNORED, dst, 0,
                               VK_WHOLE_SIZE};
@@ -430,6 +450,17 @@ static int copy_out(vcn_dec *d, AVFrame *f, CVPixelBufferRef pb) {
   if (wms > 100) d->n_slow++;
   if (wms > d->max_wait_ms) d->max_wait_ms = wms;
   if (vr != VK_SUCCESS) { d->fence_lost = 1; seterr(d, "copy fence%s %d", waited >= 10 ? " (10 s)" : "", vr); return -1; }
+  if (d->ts_on) {
+    uint64_t t[2];
+    if (d->GetQueryPoolResults(d->vd, d->tsq, 0, 2, sizeof t, t, 8, VK_QUERY_RESULT_64_BIT) == VK_SUCCESS && t[1] >= t[0]) {
+      uint64_t g = (uint64_t)((double)(t[1] - t[0]) * d->ts_period);
+      uint64_t wall = (uint64_t)((w1.tv_sec - c0.tv_sec) * 1000000000ll + (w1.tv_nsec - c0.tv_nsec));
+      int b = 0; for (uint64_t lim = 250000; b < 7 && g >= lim; lim <<= 1) b++;
+      d->ts_hist[b]++; d->ts_n++; d->ts_gpu_sum += g; if (g > d->ts_gpu_max) d->ts_gpu_max = g;
+      d->ts_wall_sum += wall; if (wall > d->ts_wall_max) d->ts_wall_max = wall;
+      d->ts_bytes += (uint64_t)ybpr * h + (uint64_t)cbpr * ch;
+    }
+  }
   d->ResetFences(d->vd, 1, &d->fence);
 
   if (direct) {
@@ -470,6 +501,11 @@ int vcn_receive(vcn_dec *d, CVPixelBufferPoolRef pool, CVPixelBufferRef *out, in
   return 1;
 }
 
+void vcn_copy_timing(vcn_dec *d, uint64_t *n, uint64_t *gpu_sum, uint64_t *gpu_max, uint64_t *wall_sum, uint64_t *wall_max,
+                     uint64_t *bytes, uint64_t hist[8]) {
+  *n = d->ts_n; *gpu_sum = d->ts_gpu_sum; *gpu_max = d->ts_gpu_max; *wall_sum = d->ts_wall_sum; *wall_max = d->ts_wall_max;
+  *bytes = d->ts_bytes; for (int i = 0; i < 8; i++) hist[i] = d->ts_hist[i];
+}
 void vcn_copy_waits(vcn_dec *d, uint64_t *slow, uint64_t *max_ms) { *slow = d->n_slow; *max_ms = d->max_wait_ms; }
 void vcn_stats(vcn_dec *d, uint64_t *f, uint64_t *g, uint64_t *c, uint64_t *i) {
   *f = d->n_frames; *g = d->n_gpu; *c = d->n_cpu; *i = d->n_imports;
@@ -482,6 +518,7 @@ void vcn_close(vcn_dec *d) {
     for (int i = 0; i < NCACHE; i++) if (d->cache[i].surf) drop_import(d, &d->cache[i]);
     if (d->stage) { d->DestroyBuffer(d->vd, d->stage, NULL); d->FreeMemory(d->vd, d->stage_mem, NULL); }
     if (d->fence) d->DestroyFence(d->vd, d->fence, NULL);
+    if (d->tsq) d->DestroyQueryPool(d->vd, d->tsq, NULL);
     if (d->pool) d->DestroyCommandPool(d->vd, d->pool, NULL);
   }
   av_packet_free(&d->pkt);
