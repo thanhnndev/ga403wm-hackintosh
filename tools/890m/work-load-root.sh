@@ -21,8 +21,10 @@ vmmap -summary "$ws" > "$out/ws-vmmap-summary.txt" 2>&1
 vm_stat > "$out/vm_stat.txt"
 sysctl -n debug.nmx_gtt > "$out/nmx_gtt.txt" 2>&1
 sysctl -n debug.nmx_userwire_by_kind > "$out/userwire.txt" 2>&1
-for d in /private/var/folders/zz/zyxvpxvq6csfxvn_n00000b000002r/[CT]/nvmtl/spvcache; do
-    [ -d "$d" ] && echo "$d: low2 $(ls "$d" | grep -c '\.low2\.') fc2 $(ls "$d" | grep -c '\.fc2\.') all $(ls "$d" | wc -l)"
+# WindowServer is sandboxed: confstr(_CS_DARWIN_USER_CACHE_DIR) gives .../C/WindowServer/ (its Mesa line names
+# .../C/WindowServer/nvmtl-mesa), so the plugin's aircache/spvcache land under .../C/WindowServer/nvmtl (or T/WindowServer)
+for d in /private/var/folders/zz/zyxvpxvq6csfxvn_n00000b000002r/[CT]/WindowServer/nvmtl/spvcache /private/var/folders/zz/zyxvpxvq6csfxvn_n00000b000002r/[CT]/nvmtl/spvcache; do
+    [ -d "$d" ] && echo "$d: low2 $(ls "$d" | grep -c '\.low2\.') fc2 $(ls "$d" | grep -c '\.fc2\.') all $(ls "$d" | wc -l)" || echo "$d: missing"
 done > "$out/ws-spvcache.txt" 2>&1
 # login cost: does RADV's disk cache (Mesa euid patch, WS-CPU 8.5) fill and get used in WindowServer? files, size, newest
 m=/private/var/folders/zz/zyxvpxvq6csfxvn_n00000b000002r/C/WindowServer/nvmtl-mesa
