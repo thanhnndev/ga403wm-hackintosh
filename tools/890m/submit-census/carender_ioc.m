@@ -14,6 +14,19 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/resource.h>
+#include <malloc/malloc.h>
+#include <mach/mach.h>
+// MEMSTAT=<frames>: every <frames> frames print the footprint and each malloc zone's in-use / allocated bytes
+static void memstat(int f) {
+    task_vm_info_data_t vi; mach_msg_type_number_t n = TASK_VM_INFO_COUNT;
+    task_info(mach_task_self(), TASK_VM_INFO, (task_info_t)&vi, &n);
+    vm_address_t *z = NULL; unsigned nz = 0; malloc_get_all_zones(mach_task_self(), NULL, &z, &nz);
+    char b[1024]; int o = snprintf(b, sizeof b, "memstat frame %d: footprint %llu MB, internal %llu MB, compressed %llu MB; zones (MB in use/allocated):", f,
+                                   vi.phys_footprint >> 20, vi.internal >> 20, vi.compressed >> 20);
+    for (unsigned i = 0; i < nz && o < (int)sizeof b - 64; i++) { malloc_zone_t *mz = (malloc_zone_t *)z[i]; malloc_statistics_t st = {0};
+        malloc_zone_statistics(mz, &st); o += snprintf(b + o, sizeof b - o, " %s %.1f/%.1f", mz->zone_name ? mz->zone_name : "?", st.size_in_use / 1048576.0, st.size_allocated / 1048576.0); }
+    printf("%s\n", b); fflush(stdout);
+}
 static double sys_s(void) { struct rusage u; getrusage(RUSAGE_SELF, &u); return u.ru_stime.tv_sec + u.ru_stime.tv_usec / 1e6; }
 static double cpu_s(void) { struct rusage u; getrusage(RUSAGE_SELF, &u); return u.ru_utime.tv_sec + u.ru_utime.tv_usec / 1e6 + u.ru_stime.tv_sec + u.ru_stime.tv_usec / 1e6; }
 
@@ -116,6 +129,20 @@ int main(int argc, char **argv) { @autoreleasepool {
         if (vl && video == 2) { IOSurfaceRef sr = IOSurfaceLookupFromMachPort(vport[f & 7]); vl.contents = (__bridge id)sr; if (sr) CFRelease(sr); }
         if (vl && video == 3) { CVPixelBufferRef pb = NULL; CVPixelBufferPoolCreatePixelBuffer(NULL, pool, &pb);
             if (pb) { vl.contents = (__bridge id)CVPixelBufferGetIOSurface(pb); CVPixelBufferRelease(pb); } }
+        // WINCHURN=<frames>: every <frames> frames one window layer is removed and a new one with a fresh IOSurface of
+        // another size takes its place (window open/close, resize: new surfaces, new textures, new imports)
+        { static int wc = -1; if (wc < 0) { const char *e = getenv("WINCHURN"); wc = e ? atoi(e) : 0; }
+          if (wc > 0 && f % wc == wc - 1) { int k = (f / wc) % nwin; CALayer *l = root.sublayers[1 + 2 * k];
+            int w = 600 + (f * 37) % 900, h = 400 + (f * 53) % 500;
+            IOSurfaceRef ns = mksurf(w, h, 'BGRA', (uint8_t)(f * 7)); l.contents = (__bridge id)ns;
+            if (k < (int)keep.count) keep[k] = (__bridge id)ns; CFRelease(ns);
+            l.bounds = CGRectMake(0, 0, w, h); } }
+        // HEAP_AT=<frame>: at that frame run heap(1) and vmmap --summary on this process into $HEAP_OUT (default /tmp)
+        { static int ha = -2; if (ha == -2) { const char *e = getenv("HEAP_AT"); ha = e ? atoi(e) : -1; }
+          if (f == ha) { const char *o = getenv("HEAP_OUT"); char c[1024];
+            snprintf(c, sizeof c, "/usr/bin/heap -s %d > %s/heap-%d.txt 2>&1; /usr/bin/vmmap --summary %d > %s/vmmap-%d.txt 2>&1; [ -n \"$MallocStackLogging\" ] && /usr/bin/malloc_history %d -allBySize > %s/mh-%d.txt 2>&1", getpid(), o ? o : "/tmp", f, getpid(), o ? o : "/tmp", f, getpid(), o ? o : "/tmp", f);
+            system(c); } }
+        { static int ms = -1; if (ms < 0) { const char *e = getenv("MEMSTAT"); ms = e ? atoi(e) : 0; } if (ms > 0 && f % ms == 0) memstat(f); }
         if (f % 60 == 0) tl.string = [NSString stringWithFormat:@"menu bar 12:%02d", (f / 60) % 60];
         [CATransaction commit]; [CATransaction flush];
         // churn: per frame, 2 MTLBuffers and 1 texture view made and dropped elsewhere in the process (WindowServer's
