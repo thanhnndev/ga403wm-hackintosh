@@ -126,6 +126,11 @@ two forced NVRAM syncs of an 80-byte variable (A, B), in addition to the two `cl
 - **Simulator**: quit Simulator / Xcode first. Its services were alive in 6 reports.
 - **Notes**: 2.4-8.3 s to quit on every shutdown, which is likely iCloud sync. Nothing to change unless it grows.
 - **Crashpad handlers** (Chrome, Edge, Electron): always survive SIGTERM briefly. Harmless (under 1 s).
+- **Edge**: 3.0-10.9 s to quit (last app on 11-19 14:42 and 11-22 16:15); quit it first like Claude.app.
+- Apps quit in parallel, so the "apps quit" phase lasts as long as the slowest app: with Claude.app, Edge, Docker and
+  Simulator closed beforehand that phase should drop from 5-18 s to the 2-3 s of the rest (estimate, not measured).
+
+NMXGPU stacks for findings 5 and 6 (ours): [docs/shutdown-stalls/](shutdown-stalls/README.md).
 
 ## 2. bluetoothd ExcUserFault at every boot (finding 2)
 

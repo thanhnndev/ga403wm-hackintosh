@@ -1,0 +1,60 @@
+Process:          VTDecoderXPCService [19187] (suspended) (zombie)
+UUID:             B9D55463-993B-3D73-BFF6-77EC03EBCF84
+Path:             /System/Library/Frameworks/VideoToolbox.framework/Versions/A/XPCServices/VTDecoderXPCService.xpc/Contents/MacOS/VTDecoderXPCService
+Identifier:       com.apple.coremedia.videodecoder
+Version:          1.0 (1)
+Build Version:    2
+Project Name:     CoreMedia_VideoToolbox
+Source Version:   3330013105004000
+Shared Cache:     21FB8708-FC8E-3765-BE8C-65D612CDF049 slid base address 0x7ff811df7000, slide 0x11df7000 (System Primary)
+Architecture:     x86_64
+Parent:           launchd [1]
+UID:              501
+Sudden Term:      Tracked (allows idle exit)
+Memory Limit:     1000MB
+Jetsam Priority:  0
+Footprint:        10.28 MB
+Time Since Fork:  8084s
+Num samples:      100 (1-100)
+Note:             Suspended for 100 samples
+Note:             Terminated (zombie) for 100 samples
+Num threads:      1
+
+  Thread 0x17d50    100 samples (1-100)    priority 46 (base 31)    last ran 8062.143s ago
+  100  <truncated backtrace>
+   *100  ??? (kernel + 14653) [0xffffff80002eb93d]
+     *100  ??? (kernel + 418893) [0xffffff800034e44d]
+       *100  ??? (kernel + 6157159) [0xffffff80008c7367]
+         *100  ??? (kernel + 6156042) [0xffffff80008c6f0a]
+           *100  ??? (kernel + 6008626) [0xffffff80008a2f32]
+             *100  ??? (kernel + 764102) [0xffffff80003a28c6]
+               *100  ??? (kernel + 364514) [0xffffff8000340fe2]
+                 *100  ??? (kernel + 354618) [0xffffff800033e93a]
+                   *100  ??? (kernel + 8508762) [0xffffff8000b0555a]
+                     *100  ??? (NMXAccel + 80431) [0xffffff7f96dd9a2f]
+                       *100  ??? (kernel + 2626373) [0xffffff8000569345]
+                         *100  ??? (kernel + 2789047) [0xffffff8000590eb7]
+                           *100  ??? (kernel + 2900174) [0xffffff80005ac0ce]
+                             *100  ??? (NMXGPU + 7263823) [0xffffff7f974e564f]
+                               *100  ??? (NMXGPU + 7174583) [0xffffff7f974cf9b7]
+                                 *100  ??? (NMXGPU + 7058888) [0xffffff7f974b35c8]
+                                   *100  ??? (NMXGPU + 4320082) [0xffffff7f97216b52]
+                                     *100  ??? (NMXGPU + 4319187) [0xffffff7f972167d3]
+                                       *100  ??? (NMXGPU + 451579) [0xffffff7f96e663fb]
+                                         *100  ??? (NMXGPU + 711269) [0xffffff7f96ea5a65]
+                                           *100  ??? (NMXGPU + 3702051) [0xffffff7f9717fd23]
+                                             *100  ??? (NMXGPU + 3699038) [0xffffff7f9717f15e]
+                                               *100  ??? (NMXGPU + 7123520) [0xffffff7f974c3240]
+                                                 *100  ??? (NMXGPU + 7122468) [0xffffff7f974c2e24]
+                                                   *100  ??? (NMXGPU + 7250738) [0xffffff7f974e2332]
+                                                     *100  ??? (kernel + 678144) [0xffffff800038d900]
+                                                       *100  ??? (kernel + 685037) [0xffffff800038f3ed]
+                                                         *100  ??? (kernel + 1996103) [0xffffff80004cf547] (suspended)
+
+  Binary Images:
+           0x10e9fc000 -                ???  com.apple.coremedia.videodecoder 1.0 (1) <B9D55463-993B-3D73-BFF6-77EC03EBCF84>             /System/Library/Frameworks/VideoToolbox.framework/Versions/A/XPCServices/VTDecoderXPCService.xpc/Contents/MacOS/VTDecoderXPCService
+   *0xffffff7f96dc6000 - 0xffffff7f96de0fff  com.nullmoth.NMXAccel (0.1)              <D454C218-7067-3B18-AC96-A8FF83F16C4D>__TEXT_EXEC  /Library/Extensions/NMXAccel.kext/Contents/MacOS/NMXAccel
+   *0xffffff7f96df8000 - 0xffffff7f976a5fff  com.nullmoth.NMXGPU (1.0.0)              <5159A44F-ABE8-3DA8-BDFB-A98097D97E60>__TEXT_EXEC  /Library/Extensions/NMXGPU.kext/Contents/MacOS/NMXGPU
+   *0xffffff80002e8000 - 0xffffff8000ce7fff  kernel (25.6.0)                          <28267FD5-3E1E-3686-8A1C-E73E2466FCFB>__TEXT_EXEC  /System/Library/Kernels/kernel
+
+
