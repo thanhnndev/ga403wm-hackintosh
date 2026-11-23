@@ -583,3 +583,29 @@ Live codec map (`alc-verb`, F00/F02):
 * A coreaudiod restart alone does not reproduce it.
 * Most likely cause: TCC hashing the unsigned (by necessity) and large rogaudiod binary on the first mic access after it changes.
 * The watchdog (reopen after 1 s of exact zeros or render errors, at most 3 times) stays for real dropouts.
+
+## 18. Third microphone: result after the reboot (2026-11-23, boot 20:36)
+
+M2 v2 is live: `alc-verb 0x13 0xF1C 0` reads `0x90a60171`. **The third mic is still not available, and it cannot be with AppleHDA.** **[measured]**
+
+**What AppleHDA does with it.**
+* Built-in Input stays at 2 channels, with `num-internal-mics = 1` and a single data source, `imic` "Internal Microphone".
+* During a recording, ADC 0x07 runs, with input amp `0x2f` (+18 dB, unmuted) and pin 0x12 control `0x20`.
+* AppleHDA configured the new path but left it off:
+  * ADC 0x09 amp is `0xaf`: same gain, but **muted**.
+  * Mixer 0x22 inputs are muted (`0x80`).
+  * Pin 0x13 control is 0, not enabled.
+
+**Why no layout can fix it.**
+* AppleHDA's model is one analog input engine with mutually exclusive data sources.
+* Every one of the ~690 AppleALC layouts uses its `Inputs` names (`Mic`, `ExtMic`, `LineIn`, `SPDIFIn`) as switchable sources of Built-in Input. Even real Macs with internal mic, external mic and line in record one of them at a time.
+* Inside the codec, no mixer or selector takes 0x12 and 0x13 together (see the table in section 17).
+* So recording all three mics at once needs a capture path that does not go through AppleHDA's input engine. That is a separate driver project, and the gain would be beamforming only. RNNoise on the two-mic pair already handles noise.
+
+**No regression.**
+* Built-in Input records speech on both channels (-29 to -34 dBFS RMS). The channel correlation is 0.94, so these are two distinct mics.
+* ROG Clear Mic outputs speech (up to -18 dBFS RMS).
+* The gain was +18 dB after the boot.
+* M2 v2 stays installed: the extra path is inert (muted), and the pin config is the correct one.
+* The headset-mic switch on plug-in was not checked in this boot.
+* Undo if wanted: `EFI/OC/Kexts-backup/AppleALC-m2v1-20261123/` (one kext copy).
