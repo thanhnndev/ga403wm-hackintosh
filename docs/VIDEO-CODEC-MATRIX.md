@@ -188,12 +188,43 @@ pressure, retirement and close. The zero-wire alternative is the staging copy fo
 The working-load census (13:31) showed 1.74 GB of GPU plane shadows in WindowServer. The 4K 10-bit frames came from
 the Aerial wallpaper (HEVC Main10, decoded by VCNDec 0.2.0 on the VCN). The owner's Edge playback on 14:42 was VP9 8-bit
 up to 3840x2160, also on the VCN. The shadows come from the layout, not the decoder: CoreVideo's default IOSurface
-layout puts plane 0 at +32/+64 and plane 1 at +32/+64 + Y size, both off 256 B, so the NVMTL plugin copies every
+layout puts plane 0 at +64 and plane 1 at +64 + Y size (measured), both off 256 B, so the NVMTL plugin copies every
 read-only plane into a GPU shadow (12 MB per 4K 8-bit frame, 25 MB at 10-bit) in every process that draws the frame.
 
 Fix (`src/vcnvt.c`): the session's pixel buffer attributes add `kCVPixelBufferPlaneAlignmentKey = 256`
-(`VCN_PLANE_ALIGN=0` restores the default). Same allocation size; the copy already reads the plane offsets from the
-surface. `vt_check` prints the first frame's plane layout (`PLANES ...`).
+Same allocation size; the copy already reads the plane offsets from the surface. `vt_check` prints the first frame's
+plane layout (`PLANES ...`).
+
+Rollback, in order of reach:
+
+- `touch /Library/NullMoth/vcndec-noalign` puts back the 0.2.0 layout at the next session, without a rebuild. It is
+  the switch that works for VTDecoderXPCService and WebKit's GPU process, which never see a user's environment.
+- `VCN_PLANE_ALIGN=N` (env, tests only) sets the alignment. It is rounded down to a power of two (100 → 64, 300 → 256,
+  capped at 4096); 0 means the CoreVideo default. The file switch wins over the env.
+- The StartSession log line says which one decided: `plane align N by default | env VCN_PLANE_ALIGN |
+  /Library/NullMoth/vcndec-noalign`.
+- `sudo ./install.sh --undo [--system]` puts back the bundle the install replaced. Every install copies the replaced
+  bundle to `/Library/NullMoth/vcndec-backup/<date>-<mode>/` first, skipped when it is the same build. `--undo`
+  restores the newest backup and marks it `.restored-<date>`, so a second `--undo` goes one version further back.
+  `--undo --purge` removes the bundle only. Tested in library mode on scratch paths: install → reinstall → undo gives
+  0.2.0; purge leaves the backups.
+
+Format changes mid-session (`d_accept`, the decoder's canAcceptFormatDescription). The decoder now says yes only when
+codec, coded size and config atom are unchanged; anything else needs a new session. In practice VideoToolbox does
+not ask the decoder. `vt_check VT_CANACCEPT=<clip>` was run with both the old accept-everything decoder and the new
+one, on an HEVC 1080p60 session:
+
+| format given to the running session | VideoToolbox answer |
+|---|---|
+| the session's own format description | yes |
+| an equal one from another file (`mx-hevc-1080p60-frag`) | yes |
+| 1080p to 2160p (HEVC, and H.264 2160p30) | no |
+| 8-bit to 10-bit | no |
+| the same description with one extension renamed | no |
+
+The answers were the same for both decoders, and the `VCNDEC CanAccept` log line never appeared. So VideoToolbox
+answers this itself from description equality, and a size change always gets a new session and decoder. The stricter
+`d_accept` only guards a future VideoToolbox that does ask.
 
 | clip (vt_check -b, in-process) | align 256 | align 0 (0.2.0) |
 |---|---|---|
@@ -224,7 +255,7 @@ checked when each is released. `VT_USEHOLD_NOUSE=1` is the negative control (ret
 | Aerial wallpaper clip (4K HEVC 10-bit, x420, first 600) | 600 checked, 0 / 0 | - |
 
 The Aerial clip (`~/Library/Application Support/com.apple.wallpaper/aerials/videos/*.mov`): hw yes, planes
-+256 / +16589056 with 0.2.1 (+64 / +16588864 with `VCN_PLANE_ALIGN=0`, the layout WindowServer shadowed at 13:31).
++256 / +16589056 with 0.2.1 (+64 / +16588864 with `VCN_PLANE_ALIGN=0` or `vcndec-noalign`, the layout WindowServer shadowed at 13:31).
 
 **Cost of one decoded frame today** (all on the GPU: VCN decode into RADV's image, then one `vkCmdCopyImageToBuffer`
 into the output IOSurface through a cached host-pointer import; the CPU only submits and waits. The live sessions'

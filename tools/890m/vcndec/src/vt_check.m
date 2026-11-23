@@ -140,6 +140,22 @@ int main(int argc, char **argv) {
     VTDecompressionSessionRef ses = NULL;
     OSStatus st = VTDecompressionSessionCreate(NULL, fd, (__bridge CFDictionaryRef)spec, NULL, &cb, &ses);
     if (st) { fprintf(stderr, "no hardware decoder for this format: %d\n", (int)st); return 3; }
+    if (getenv("VT_CANACCEPT")) {   // VT_CANACCEPT=<other clip>: does VideoToolbox ask the decoder, and what does it say
+      AVURLAsset *as2 = [AVURLAsset URLAssetWithURL:[NSURL fileURLWithPath:@(getenv("VT_CANACCEPT"))] options:nil];
+      AVAssetTrack *t2 = [as2 tracksWithMediaType:AVMediaTypeVideo].firstObject;
+      CMFormatDescriptionRef f2 = t2 ? (__bridge CMFormatDescriptionRef)t2.formatDescriptions.firstObject : NULL;
+      CMVideoDimensions d1 = CMVideoFormatDescriptionGetDimensions(fd), d2 = f2 ? CMVideoFormatDescriptionGetDimensions(f2) : (CMVideoDimensions){0, 0};
+      // same stream, one extension changed (a different but compatible description): does VT ask the decoder?
+      NSMutableDictionary *ext = [(__bridge NSDictionary *)CMFormatDescriptionGetExtensions(fd) mutableCopy];
+      ext[(id)kCMFormatDescriptionExtension_FormatName] = @"vt_check-canaccept";
+      CMVideoFormatDescriptionRef f3 = NULL;
+      CMVideoDimensions d0 = CMVideoFormatDescriptionGetDimensions(fd);
+      CMVideoFormatDescriptionCreate(NULL, CMFormatDescriptionGetMediaSubType(fd), d0.width, d0.height, (__bridge CFDictionaryRef)ext, &f3);
+      printf("CANACCEPT renamed %d\n", f3 ? (int)VTDecompressionSessionCanAcceptFormatDescription(ses, f3) : -1);
+      if (f3) CFRelease(f3);
+      printf("CANACCEPT same %d  other %dx%d->%dx%d %d\n", (int)VTDecompressionSessionCanAcceptFormatDescription(ses, fd),
+             d1.width, d1.height, d2.width, d2.height, f2 ? (int)VTDecompressionSessionCanAcceptFormatDescription(ses, f2) : -1);
+    }
     CFBooleanRef hw = NULL;
     VTSessionCopyProperty(ses, kVTDecompressionPropertyKey_UsingHardwareAcceleratedVideoDecoder, NULL, &hw);
     int n = 0;
