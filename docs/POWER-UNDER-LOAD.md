@@ -56,14 +56,14 @@ thread at 2-2.7 GHz, and 4-5 W per thread at boost (EPP 0, 11-08 A/B: 37 → 22 
 
 | # | Where | Load | Estimate | Ours? |
 |---|---|---|---|---|
-| 1 | **Docker VM under RyzenHV.** hyperkit + backend 5.2 cores (11-16), 0.7-1.2 cores with idle containers (11-09). A 24-vCPU guest makes 9-15k IPI/s. An idle Linux guest exits tens of thousands of times per second to user space (APIC MMIO, HLT; `ryzen-hypervisor.framework/tools/hvf-exit-bench`). RyzenHV wires the whole guest (12.3 GB), which made kernel_task compress at 108 %. | Docker | **10-20 W** of the 45 W step (overhead part; the containers' real work is the owner's) | **yes**: RyzenHV (ryzenhv session); vCPU/RAM limits are the owner's Docker setting |
+| 1 | **Docker VM under RyzenHV.** hyperkit + backend 5.2 cores (11-16), 0.7-1.2 cores with idle containers (11-09). The 9-15k IPI/s figure is from 11-16 with a 24-vCPU guest; Docker Desktop is at 8 vCPUs / 8 GB since then (to be re-measured, `docs/RYZENHV-EXITS.md`). An idle Linux guest exits tens of thousands of times per second to user space (APIC MMIO, HLT; `ryzen-hypervisor.framework/tools/hvf-exit-bench`). RyzenHV wires the whole guest (12.3 GB), which made kernel_task compress at 108 %. | Docker | **10-20 W** of the 45 W step (overhead part; the containers' real work is the owner's) | **yes**: RyzenHV (ryzenhv session); vCPU/RAM limits are the owner's Docker setting |
 | 2 | **Owner's own work** in that step: Python backend 3.1 cores, emulator 1 core, Claude CLI, Edge renderer. | Docker | 15-25 W | no |
 | 3 | **SoC / GFX / memory, not split.** The light state is 17 W while the cores do ~1.8 threads (≈ 4-6 W). True idle is 5.5 W (11-08). That leaves ≈ 6-8 W for the 890M, VCN, display and fabric with one video. Whether GFX power-gates between frames (GFXOFF) and whether the fabric drops clocks is **unknown**: no sysctl exposes SMU `gpu_metrics`. Boot log: `PSR support 1`, `Runtime PM not available`. Typical Linux on Strix Point plays 1080p video at about 8-10 W package. | every load | 3-6 W possibly recoverable (estimate, unverified) | **yes**: NMXGPU (main) |
 | 4 | **WindowServer per-frame cost.** 26 % of a core at ~35 frames/s ≈ 7 ms of CPU per frame (11-08: ~5 ms; a real Mac ~1 ms). Video at 60 fps takes it to ~40-45 % of a core. | video, any animation | 1-2 W | **yes**: plugin / NMX (main) |
 | 5 | **kernel_task 20 % with no compression.** Our polling threads: Wi-Fi RX/TX pump (1k wakeups/s, `IODelay` windows under traffic), ItlXhciKick (1 kHz), VoodooI2C touchpad polling (~10k IRQ/s on CPU 0). They also cap how deep idle cores can sleep. | always | 0.7-1.5 W (and they cap #6) | **yes**: Wi-Fi session, main |
 | 6 | **No CC6 at runtime** (idle mode 0, HLT). Cores are ~92 % idle at this load; on Linux `acpi_idle` C2 power-gates them. The 11-08 A/B at 80 frames/s showed no difference (9.9-10.1 W in every mode), which points again at #3 (SoC-bound), not at the cores. | light | 0.5-2 W, measured 0 at 80 fps | yes: StrixS0ix (main), runtime switch exists |
 | 7 | **Platform policy.** EPP 191 with CPPC autonomous is exactly what Linux `amd-pstate-epp` (active mode, `balance_power`) requests; the hardware then picks the same clocks (2.66 GHz Zen 5 / 2.07 GHz Zen 5c here). Boost, core parking and the fan curve are firmware defaults in both OSes. **No gap here except C-states (#6).** EPP 0 was the large lever and has been fixed since 11-16. | all | 0 vs Linux | n/a (no change proposed) |
-| 8 | **10-bit 4K video in Apple's software decoder** (VCNDec takes 8-bit only). Not in today's load: VTDecoderXPCService is at 2 %. | 4K HDR video | 1-3 cores ≈ 5-10 W while it plays | yes: F (video session) owns it |
+| ~~8~~ | ~~10-bit 4K video in a software decoder~~: **struck** (main/F, 11-23). VCNDec 0.2.0 decodes 10-bit on the VCN since 11-18. Today's Edge video was VP9/AV1 8-bit on the VCN, and the 4K 10-bit frames at 13:31 were the Aerial wallpaper, also on the VCN. | | 0 | n/a |
 
 ## 3. The two changes that would lower heat and fan noise most during work
 
@@ -80,7 +80,7 @@ thread at 2-2.7 GHz, and 4-5 W per thread at boost (EPP 0, 11-08 A/B: 37 → 22 
    - in total ≈ **−8 to −15 W**. That is about −10 °C at the 95 °C point, and the fans drop from 59/60 toward ~40.
 
    This is the only lever that matches the size of the heat the owner feels.
-2. **A GPU/SoC power readout, then the SoC fix it points to (#3).** Ours, main: NMXGPU.
+2. **A GPU/SoC power readout, then the SoC fix it points to (#3).** Ours, NMXGPU; **taken by F (video session) on 11-23**.
    - Step 1, read-only: a sysctl `debug.nmx_gpu_metrics` that returns amdgpu's `gpu_metrics_v3_0` (SMU 14.0.x). It
      carries `average_socket_power`, `average_gfx_power`, `average_soc_power`, `average_core_power[]`, `average_gfxclk`,
      `average_fclk/uclk`, `average_gfx_activity`, `average_vcn_activity` and the core temperatures, from
