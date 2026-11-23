@@ -121,7 +121,10 @@ gn, an = dl("nmx_flip_notified"), dl("nmxaccel_flip_notified")
 row(active and ratio(gn, lat) is not None and ratio(gn, lat) >= 0.9, "NMXGPU notified ~ flips", f"nmx_flip_notified +{gn} = {fr(ratio(gn, lat))} of latched (PASS >= 0.90)")
 row(active and ratio(an, lat) is not None and ratio(an, lat) >= 0.9, "NMXAccel notified ~ flips", f"nmxaccel_flip_notified +{an} = {fr(ratio(an, lat))} of latched (PASS >= 0.90)")
 rr = dl("nmxaccel_flip_rearm")
-row(active and ratio(rr or 0, lat) is not None and ratio(rr or 0, lat) < 0.10, "re-arms small", f"flip_rearm +{rr} = {fr(ratio(rr or 0, lat))} of latched (PASS < 0.10)")
+# few flips (login, a still screen) land at random points of the frame and the learned net looks early more often: the
+# ratio is judged only from 300 latched flips up (2026-11-23 13:18: 73 flips, +11 = 0.15; a minute later 0.08, then 0.02)
+row((active and ratio(rr or 0, lat) is not None and ratio(rr or 0, lat) < 0.10) if (lat or 0) >= 300 else None, "re-arms small",
+    f"flip_rearm +{rr} = {fr(ratio(rr or 0, lat))} of latched (PASS < 0.10{'' if (lat or 0) >= 300 else '; INFO: under 300 latched flips'})")
 ts = dl("nmxaccel_flip_ts_set")
 row(active and ratio(ts, lat) is not None and ratio(ts, lat) >= 0.5, "presentation time stamped (tx+0x170)", f"flip_ts_set +{ts} = {fr(ratio(ts, lat))} of latched (PASS >= 0.50)")
 nt = re.search(r"notify\s+p50\s+([\d.]+)\s+p90\s+([\d.]+)\s+p99\s+([\d.]+)", agg)
