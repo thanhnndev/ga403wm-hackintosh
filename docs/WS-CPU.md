@@ -680,3 +680,35 @@ not per BO.
    path. Breaking it down further needs kernel profiling of a test process (root: `spindump <pid> 10 1`, or
    `dtrace -n 'profile-4999 /pid == $target/ { @[stack()] = count(); }'`), symbolicated against the installed
    NMXGPU.
+
+### 9.4 Commits beyond one per present in WindowServer (2026-11-23)
+
+**The count (live census, 21:09:47, 30 s).** 2752 commits, 1912 `commitAndWaitUntilSubmitted` (presents, ~64/s),
+2752 `vkQueueSubmit`, 2752 `waitUntilScheduled`: 1.44 commits and 1.44 submits per present (1.5-1.67 on other
+windows). One submit per commit, so the extra submits are extra command buffers WindowServer commits with a plain
+`-commit`, ~28/s here, each followed by a `waitUntilScheduled`. Each costs one CS ioctl (~0.1-0.16 ms CPU, 9.3) plus
+its syncobj wait and reset: ~3-5 ms CPU per second at 28/s.
+
+**Not Core Animation's offscreen passes (own process).** `submit-census/run.sh` with `OFFSCREEN=blur` (two
+`backgroundFilters` gaussian-blur layers, the Tahoe glass shape), `mask,group,raster` and `nopath` (shadows without
+a path) all stay at 1.02 CS per present. CARenderer keeps offscreen passes inside the present's command buffer.
+
+**Who commits them: plugin 499d2ae (branch claude/commit-sites, frame-path-plugin).** With `NVMTL_CHURN_SITES=1`
+(live in WindowServer this boot) the census also prints `churn site plain commit: N per present: image`symbol+off <-
+... ` for every plain `-commit` outside `commitAndWaitUntilSubmitted`, recorded from the caller of `-commit`.
+Own process: `QuartzCore -[CARenderer endFrame]+48` 1.00 per present (CARenderer commits plainly; the test counts
+its presents itself), the test's own 120-frame flush 0.01.
+
+**Proposal.**
+1. Next install: plugin with 499d2ae, keep `NVMTL_CHURN_SITES=1` one more boot. Read two 30 s census windows under the
+   working load (idle desktop, and video playing): the plain-commit sites by caller.
+2. Then, by what the sites are:
+   - a WindowServer-side pass per frame (cursor, CoreDisplay colour/LUT or EDR pass, capture/mirroring): ask why that
+     pass runs on our stack and not Apple's (a capability we report, like the LUT/AGDC caps), and fix the report;
+   - surface preparation (uploads, mip/blit of client contents): fold the copy into the present's command buffer is
+     not ours to do, so cut the cost per submit instead (coalescing with the present: a plain commit with no CPU
+     waiter other than `waitUntilScheduled` and no event signal is held and goes out with the next present's
+     submit; 8.7 step 2, dropped when every commit seemed waited on, but `waitUntilScheduled` alone can be answered
+     at enqueue time if the part's order on the queue is kept);
+   - client-driven (screen capture, ScreenCaptureKit): leave it.
+Expected saving if they all merge into the present's submit: ~28 CS ioctls/s, ~3-5 ms CPU/s in WindowServer.
