@@ -530,3 +530,56 @@ ASUS spec for the GA403 (2025): "4-speaker (dual force woofer) system with Smart
 * 80 Hz is barely reproduced, as expected for drivers this small.
 * The two drivers inside each dual-force woofer share one amp channel and cannot be told apart this way.
 * The `strixamp.log` count of 269 firmware reloads covers several days of boots. There were none during a 60 s idle with Built-in Output running.
+
+## 17. Third microphone (pin 0x13), staged for the next reboot (2026-11-23)
+
+### What is on pin 0x13 **[measured]**
+
+The ASUS spec lists a "Built-in 3-microphone array".
+* The October AppleALC port (M2, commit 0e07aa4) is live. Pin 0x13 reads `0x90a60160` through `alc-verb`.
+* Even so, AppleHDA still reported `num-internal-mics = 1` and a 2-channel input.
+
+Live codec map (`alc-verb`, F00/F02):
+
+| Node | Kind | Inputs | Feeds |
+|---|---|---|---|
+| 0x24 (36) | selector | 0x12, 0x13, 0x18 | ADC 0x07 |
+| 0x23 (35) | mixer | 0x19, 0x1a, 0x1b, 0x1d, **0x12** | ADC 0x08 |
+| 0x22 (34) | mixer | 0x19, 0x1a, 0x1b, 0x1d, **0x13** | ADC 0x09 |
+
+**The October patch could not work.** M2 v1 added the path `[8,35,19]`, but 0x13 is not an input of 0x23.
+
+**What 0x13 carries.** I switched selector 0x24 to index 1 (0x13) live and recorded speech:
+* Both channels were identical in every window (e.g. -38.8/-38.8 dB). 0x13 carries **one** mic, sent as mono on both channels.
+* 0x12 carries two different mics.
+* So the array is 2 + 1. The selector was restored to 0x12.
+
+### M2 v2 (built, staged in the ESP, not booted yet)
+
+* **Platforms33.** The internal-mic device becomes `[[7,36,18], [9,34,19]]`: ADC 9 ← mixer 0x22 ← pin 0x13, as a second path. This is the same way output device 0 pairs the two speaker pins. Amp settings are copied from the existing ADC and mixer nodes. The `[8,35,19]` device is gone.
+* **PinConfigs.** 0x13 `0x400000f0` → `0x90a60171`: association 7, sequence 1, paired with 0x12 `0x90a60170`, the same pattern as speakers 0x14/0x17 = `0x90170140`/`41`.
+* **Experiment.** No upstream AppleALC input device pairs two ADCs for a simultaneous capture. Input pairs there are mic plus jack alternatives. After the reboot, AppleHDA either:
+  * shows a 4-channel Built-in Input (the goal), or
+  * treats 0x13 as a second, selectable source of the same device. That would be harmless: the default stays 0x12.
+* **rogaudiod (installed).**
+  * With 4 input channels it weights each physical mic once: `(c1 + c2 + (c3 + c4)/2) / 3`.
+  * The gain keeper covers elements 1-4.
+* **Staging.** The ESP `EFI/OC/Kexts/AppleALC.kext` is the new build (binary sha1 `25c763da…`). The previous build (`db150310…`, M2 v1) is in `EFI/OC/Kexts-backup/AppleALC-m2v1-20261123/`. config.plist is unchanged, and the schema check reports 0 issues.
+* **Undo.** Copy the backup kext back. No config change is needed.
+
+**Verify after the reboot.**
+* `kextstat | grep AppleALC`.
+* `alc-verb 0x13 0xF1C 0` → `0x90a60171`.
+* `ioreg -r -c AppleHDAEngineInput -l | grep -E 'num-internal-mics|NumChannels'`.
+* `rogaudiod --list` shows Built-in Input `in 4`.
+* A speech recording per channel: channels 3 and 4 should match each other and differ from 1 and 2.
+* Then ROG Clear Mic with speech.
+* Also check that the headset mic (`[8,35,25]`) still switches on plug-in.
+
+### Clear Mic: about 2 s late on the first use after a rogaudiod update **[measured]**
+
+* After each new rogaudiod binary, the first ROG Clear Mic session stayed silent for about 2-3 s, then worked. Later sessions start within about 0.5 s.
+* rogaudiod's mic callback does not run at all during that gap. It reports no zeros and no errors, so the new reopen watchdog does not fire.
+* A coreaudiod restart alone does not reproduce it.
+* Most likely cause: TCC hashing the unsigned (by necessity) and large rogaudiod binary on the first mic access after it changes.
+* The watchdog (reopen after 1 s of exact zeros or render errors, at most 3 times) stays for real dropouts.

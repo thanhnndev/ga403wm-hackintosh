@@ -9,10 +9,11 @@
 #   ch 5/6); the amps' DSP does the tweeter/woofer crossover, so both speaker
 #   pins share DAC 0x02 ch 1/2, exactly like Linux (both speakers on 0x02).
 #
-# M2 mirrors ALC236 Platforms69 ([8,35,19] second-DMIC path, bare NodeIDs):
-#   adds input path ADC 8 <- mixer 35 <- pin 19 (0x13). Pin default for 0x13 is
-#   enabled separately in the PinConfigs entry (0x90a60160, same assoc 1 as
-#   0x12's 0x90a60170, forming the array pair; cf. ALC256_FIXUP_ASUS_MIC).
+# M2 (v2, 2026-11-23): pin 19 (0x13) joins the internal-mic device as a second
+#   path ADC 9 <- mixer 34 <- pin 19; see the M2 block below. Pin default for
+#   0x13 is set in the PinConfigs entry to 0x90a60171 (assoc 7 seq 1, pairing
+#   with 0x12's 0x90a60170 = assoc 7 seq 0).
+import copy
 import plistlib
 import sys
 from pathlib import Path
@@ -78,16 +79,24 @@ def main() -> int:
             dac["NodeID"] = 2
             # keep mute/volume flags as-is (all false on the DAC side here)
 
-    # --- M2: append bare [8,35,19] input path (ALC236/Platforms69 pattern) ---
-    # as its own subgroup: [[nodes...]].
-    assert all(node_ids(p) != [8, 35, 19] for p in in_paths), "already patched?"
-    in_group.append([[{"NodeID": 8}, {"NodeID": 35}, {"NodeID": 19}]])
+    # --- M2: pin 19 (0x13, the array's third mic, mono) as a second path of the internal-mic device ---
+    # Measured on the live codec (alc-verb): 0x13 is input 4 of mixer 0x22 (34), which feeds ADC 0x09 (9); it is NOT an
+    # input of mixer 0x23 (35), so the earlier [8,35,19] device could never carry sound. Selector 0x24 (36, ADC 7) offers
+    # 0x12/0x13 but picks one. To record all three mics at once AppleHDA must run ADC 7 and ADC 9 together, so the new
+    # path joins device [0] next to [7,36,18], the way device [0] of the outputs pairs two speaker paths. Amp settings
+    # copy the existing ADC/mixer nodes. No upstream AppleALC input device pairs two ADCs this way: experiment.
+    assert all(node_ids(p) not in ([8, 35, 19], [9, 34, 19]) for p in in_paths), "already patched?"
+    mic_dev = [d for d in in_group if any(node_ids(p) == [7, 36, 18] for p in d)]
+    assert len(mic_dev) == 1, mic_dev
+    mic_path = [p for p in mic_dev[0] if node_ids(p) == [7, 36, 18]][0]
+    adc_amp, sel_amp = copy.deepcopy(mic_path[0]["Amp"]), copy.deepcopy(mic_path[1]["Amp"])
+    mic_dev[0].append([{"Amp": adc_amp, "NodeID": 9}, {"Amp": sel_amp, "NodeID": 34}, {"NodeID": 19}])
 
     # sanity: no other group touched
     assert sorted(node_ids(p) for p in paths(out_group)) == [[20, 2], [23, 2], [33, 3]]
 
     OUT.write_bytes(plistlib.dumps(doc, fmt=plistlib.FMT_XML, sort_keys=False))
-    print(f"wrote {OUT} (S4: [23,3]->[23,2] ch1/2; M2: +[8,35,19])")
+    print(f"wrote {OUT} (S4: [23,3]->[23,2] ch1/2; M2: mic device + [9,34,19])")
     return 0
 
 

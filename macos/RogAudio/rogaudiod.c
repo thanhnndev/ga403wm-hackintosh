@@ -217,7 +217,7 @@ static int mic_gain_get(AudioObjectID d, float *db, float *minDb)
 }
 static void mic_gain_set(AudioObjectID d, float db)
 {
-    for (UInt32 el = 1; el <= 2; el++) {
+    for (UInt32 el = 1; el <= 4; el++) {           // 2 channels, or 4 with the third mic (missing elements just fail)
         AudioObjectPropertyAddress a = { kAudioDevicePropertyVolumeDecibels, kAudioDevicePropertyScopeInput, el };
         Float32 v = db;
         AudioObjectSetPropertyData(d, &a, 0, NULL, sizeof(v), &v);
@@ -332,6 +332,7 @@ typedef struct {
     AudioBufferList *abl;
     _Atomic unsigned long frames, underruns, cbs;
     _Atomic int lastErr;
+    _Atomic unsigned long zeroRun;              // frames of exact digital silence in a row (a live mic always has noise)
     _Atomic float inLevel, outLevel;
 } Mic;
 static Mic g_mic;
@@ -349,12 +350,19 @@ static OSStatus mic_in_cb(void *ref, AudioUnitRenderActionFlags *flags, const Au
     atomic_fetch_add(&m->cbs, 1);
     OSStatus rc = AudioUnitRender(m->in, flags, ts, bus, frames, m->abl);
     atomic_store(&m->lastErr, (int)rc);
-    if (rc) return rc;
+    if (rc) { atomic_fetch_add(&m->zeroRun, frames); return rc; }   // counts as silence for the reopen watchdog
     float peakIn = 0, peakOut = 0;
     for (UInt32 i = 0; i < frames; i++) {
         float s = 0;
-        for (UInt32 c = 0; c < m->inCh; c++) s += m->scratch[0][i * m->inCh + c];
-        s /= (float)m->inCh;
+        const float *x = &m->scratch[0][i * m->inCh];
+        if (m->inCh == 4) {
+            // 3-mic array (AppleALC M2): ch 1/2 = the 0x12 pair, ch 3/4 = the 0x13 mic, which the codec sends as the same
+            // mono signal on both channels. Weight each physical mic once.
+            s = (x[0] + x[1] + 0.5f * (x[2] + x[3])) * (1.0f / 3.0f);
+        } else {
+            for (UInt32 c = 0; c < m->inCh; c++) s += x[c];
+            s /= (float)m->inCh;
+        }
         if (fabsf(s) > peakIn) peakIn = fabsf(s);
         m->acc[m->accN++] = s * 32768.0f;
         if (m->accN == 480) {
@@ -371,6 +379,7 @@ static OSStatus mic_in_cb(void *ref, AudioUnitRenderActionFlags *flags, const Au
             m->accN = 0;
         }
     }
+    if (peakIn == 0.0f) atomic_fetch_add(&m->zeroRun, frames); else atomic_store(&m->zeroRun, 0);
     atomic_store(&m->inLevel, peakIn);
     atomic_store(&m->outLevel, peakOut);
     atomic_fetch_add(&m->frames, frames);
@@ -856,6 +865,17 @@ int main(int argc, char **argv)
             else if (want && !g_mic_on) { if (mic_start(micUid) == 0) g_mic_on = 1; else mic_stop(); micIdle = 0; }
             else if (!want && g_mic_on) { if (++micIdle >= 6) { mic_stop(); g_mic_on = 0; micIdle = 0; } }
             else if (want) micIdle = 0;
+            // The first mic session after rogaudiod's binary changes gets exact zeros while TCC re-checks the new
+            // cdhash (reproduced after two reinstalls); a reopen reads the mic. Reopen after 1 s of exact zeros or render errors, 3x max.
+            static int reopens;
+            if (!g_mic_on) reopens = 0;
+            else if (atomic_load(&g_mic.zeroRun) >= 48000 && reopens < 3) {
+                reopens++;
+                fprintf(stderr, "mic: no signal for 1 s (exact zeros or render error %d), reopening (%d/3)\n", atomic_load(&g_mic.lastErr), reopens);
+                mic_stop();
+                atomic_store(&g_mic.zeroRun, 0);
+                if (mic_start(micUid) != 0) { mic_stop(); g_mic_on = 0; }
+            }
         }
         if (doMic) {
             static char gainFile[1024];

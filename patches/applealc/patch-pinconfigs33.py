@@ -5,10 +5,11 @@
 # Upstream entry (Resources/PinConfigs.kext/Contents/Info.plist, CodecID
 # 283902597, LayoutID 33) disables 0x13:
 #   (01 37 1c f0)(01 37 1d 00)(01 37 1e 00)(01 37 1f 40)  -> 0x400000f0
-# Patched to an internal-mic pin in the same association as 0x12, forming the
-# array pair (cf. Linux ALC256_FIXUP_ASUS_MIC {0x13, 0x90a60160}):
-#   (01 37 1c 60)(01 37 1d 01)(01 37 1e a6)(01 37 1f 90)  -> 0x90a60160
-# 0x12 stays 0x90a60170 (assoc 1, seq 7); 0x13 becomes assoc 1, seq 6.
+# Patched to an internal mic in the same association as 0x12, sequence 1, so
+# AppleHDA groups the two pins into one device (as 0x14/0x17 = 0x90170140/41):
+#   (01 37 1c 71)(01 37 1d 01)(01 37 1e a6)(01 37 1f 90)  -> 0x90a60171
+# 0x12 stays 0x90a60170 (assoc 7, seq 0); 0x13 becomes assoc 7, seq 1.
+# (v1 used 0x90a60160 = assoc 6, a separate association.)
 #
 # Usage: patch-pinconfigs33.py <PinConfigs-Info.plist>  (edits in place)
 import plistlib
@@ -19,7 +20,7 @@ CODEC = 283902597
 LAYOUT = 33
 # (verb-nid byte, payload byte) rows for NID 0x13, before -> after
 PATCH = {
-    (0x37, 0x1C): (0xF0, 0x60),
+    (0x37, 0x1C): (0xF0, 0x71),
     (0x37, 0x1D): (0x00, 0x01),
     (0x37, 0x1E): (0x00, 0xA6),
     (0x37, 0x1F): (0x40, 0x90),
@@ -49,7 +50,7 @@ def main() -> int:
     entry["ConfigData"] = bytes(cd)
     if changed:
         path.write_bytes(plistlib.dumps(doc, fmt=plistlib.FMT_XML, sort_keys=False))
-    print(f"{path.name}: layout-33 0x13 -> 0x90a60160 ({'patched' if changed else 'already ok'})")
+    print(f"{path.name}: layout-33 0x13 -> 0x90a60171 ({'patched' if changed else 'already ok'})")
     return 0
 
 
