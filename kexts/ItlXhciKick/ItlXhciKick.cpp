@@ -334,13 +334,15 @@ static void worker(void *arg)
             // Every kick wakes the controller's work loop thread (one IPI each); an empty controller has no ring-1 traffic to drain.
             bool forced = (tick % idleDiv) == 0;
             uint64_t dp[2] = { 0, 0 };
-            int p = (pendOn && t.bar) ? pending(t, dp) : -1;
+            // Only controllers with USB devices are read: an empty one may be powered down (runtime D3), and its BAR is not
+            // touched at all; it keeps the 0.1.x behaviour (a kick every itlkickidle periods).
+            int p = (pendOn && t.bar && t.devs) ? pending(t, dp) : -1;
             if (t.fchk && p >= 0) {                                       // the last forced kick drained events we had not seen (upper bound:
                 t.fchk = false;                                           // an event that arrived after that check counts too)
                 if (dp[0] != t.fdp[0] || dp[1] != t.fdp[1]) { t.missed++; lastPend = now; }
             }
             if (p == 1) lastPend = now;
-            if (p < 0 && t.bar) t.unknown++;
+            if (p < 0 && t.bar && t.devs) t.unknown++;
             if (p == 0 && !forced) { t.skips++; continue; }              // nothing queued on ring 1/2: no work loop wakeup
             if (p < 0 && !t.devs && !forced) continue;                    // old behaviour for an empty controller
             KickCtx c = { t.wl, t.prov, 0 };
