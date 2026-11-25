@@ -1,119 +1,162 @@
 # GA403WM Hackintosh
 
-## Vibe-coded project — read before installing
+> **This release (v2) targets macOS 26 Tahoe with the internal display on the Radeon 890M.**
+> macOS 15 Sequoia is the previous release: [v1](https://github.com/thanhnndev/ga403wm-hackintosh/releases/tag/v1) and
+> [kext-v1.1](https://github.com/thanhnndev/ga403wm-hackintosh/releases/tag/kext-v1.1). That is a different setup
+> (display on the RTX 5060, 890M hidden); its guide is [docs/INSTALL.md](docs/INSTALL.md). The two do not mix.
 
-This is a vibe-coded, experimental project. **Almost all code and documentation was AI-written (Claude)**, directed and tested by one person, with no independent audit.
+## Vibe-coded project: read before installing
 
-- Kexts run in the kernel; bugs can cause panics, hangs or data loss. `AsusWmi` and `AmdCppc` write to the EC, BIOS through SMI, and CPU registers.
-- EFI settings are adapted from other projects: SIP is mostly disabled, AMFI is relaxed and Secure Boot is off.
-- Injected Wi-Fi passwords are stored **in plain text inside the kext**. Never share a credential-injected kext. Logs also contain MAC addresses and nearby SSIDs/BSSIDs; redact them before posting.
-- Back up your disk and keep Windows/Linux recovery media. Use a machine you can reinstall, and avoid work you cannot afford to lose. No warranty; see [LICENSE](LICENSE).
+This is a vibe-coded, experimental project. **Almost all code and documentation was AI-written (Claude)**, directed and tested by one person on **one laptop**, with no independent audit. "Works" below means "worked on that machine on the date given in [docs/STATE-AND-ROADMAP.md](docs/STATE-AND-ROADMAP.md)".
 
-The repo ships empty `itl_ssid*/itl_psk*` fields and `CHANGE_ME_*` SMBIOS placeholders. CI checks for real credentials and identifiers.
+- Kexts run in the kernel; bugs can cause panics, hangs or data loss. `NMXGPU` drives the display: a fault there can mean a black screen and a forced restart. `AsusWmi` and `AmdCppc` write to the EC, the BIOS and CPU registers; `RyzenHV` runs virtual machines in the kernel; `StrixSbxMap` adds an exception inside the macOS Sandbox; `VCNDec` and one sandbox rule are installed on the system volume.
+- SIP is mostly disabled, AMFI is relaxed and Secure Boot is off.
+- Logs, `ioreg` dumps and panic reports contain serial numbers, MAC addresses and nearby SSIDs/BSSIDs; redact them before posting.
+- Back up your disk and keep Windows or Linux bootable: it was needed more than once during development to undo a GPU change. No warranty; see [LICENSE](LICENSE).
+
+The repository ships `CHANGE_ME_*` SMBIOS placeholders. CI checks `efi/OC/config.plist` for real identifiers.
 
 ## Overview
 
-macOS Sequoia on the **ASUS ROG Zephyrus G14 (2025)** — Ryzen AI 9 HX 370 + RTX 5060 Laptop.
-OpenCore EFI, custom drivers and utilities for this machine.
+macOS 26 Tahoe on the **ASUS ROG Zephyrus G14 (2025), GA403WM**: Ryzen AI 9 HX 370, Radeon 890M, RTX 5060 Laptop.
+OpenCore EFI reference, documents and traces, 890M tooling and a few small kexts for this machine.
 
-[Tiếng Việt](README.vi.md) · [Installation](docs/INSTALL.md) · [**MT7925 Wi-Fi driver**](https://github.com/thanhnndev/mt7925-macos) · [Releases](https://github.com/thanhnndev/ga403wm-hackintosh/releases) · [Roadmap](docs/ROADMAP.md)
+[Tiếng Việt](README.vi.md) · [**State and roadmap**](docs/STATE-AND-ROADMAP.md) · [v2 release notes](.github/release-notes/v2.md) · [Releases](https://github.com/thanhnndev/ga403wm-hackintosh/releases) · [macOS 15 install guide (v1)](docs/INSTALL.md)
 
 <p align="center">
-  <img src="docs/images/hero.jpg" alt="RogControl and About This Mac on the GA403WM" width="720">
+  <img src="docs/images/hero.jpg" alt="RogControl and About This Mac on the GA403WM (screenshot of the macOS 15 setup, October 2026)" width="720">
 </p>
 
-## Repositories
+The screenshot is from the macOS 15 setup of October 2026; there is no Tahoe screenshot in the repository yet.
 
-This repository holds the OpenCore EFI, the install guides and a few small fixes. The larger parts live in their own repositories:
+## Machine
+
+| | |
+|---|---|
+| Laptop | ASUS ROG Zephyrus G14 2025, model GA403WM |
+| macOS | 26 Tahoe, 26.7.2 (25G332, Darwin 25.6), installed on the internal disk |
+| Bootloader | OpenCore 1.0.9 with the Zen 5 timer patch ([patches/opencore](patches/opencore)) |
+| CPU | AMD Ryzen AI 9 HX 370 ("Strix Point": 4 Zen 5 + 8 Zen 5c cores, 24 threads) |
+| iGPU | Radeon 890M. **Drives the internal display, WindowServer and all apps** through `NMXGPU` (Linux amdgpu source port) and a Metal-on-Vulkan plugin on RADV, from the [nvidia-macos-driver fork](https://github.com/thanhnndev/nvidia-macos-driver) |
+| dGPU | NVIDIA GeForce RTX 5060 Laptop. Powered off at boot in Eco mode (`StrixDgpuGate`), or driven by [NullMoth's NVIDIA driver](https://github.com/nullmoth/nvidia-macos-driver) 2.7.1 in Standard mode. The HDMI port is wired to it |
+| Display | 2880x1800 OLED, 120 Hz |
+| Memory | 32 GB |
+| Wi-Fi / Bluetooth | MediaTek MT7925: PCI `14c3:7925` (Wi-Fi), USB `0489:e11e` (Bluetooth) |
+| Audio | Realtek ALC285 codec + two Cirrus CS35L56 amplifiers on I2C |
+| USB | four AMD xHCI controllers `1022:151e`, `151f`, `151a`, `151b` |
+| Input | I2C-HID touchpad `093a:3011`, USB keyboard `0b05:19b6` |
+| Storage | NVMe SSD, Realtek SD-card reader |
+| Sleep states | S0 idle, S4, S5 (the firmware has no S3) |
+
+## What works
+
+| Area | State | Notes | Where |
+|---|---|---|---|
+| Boot macOS 26.7.2 from the internal disk | works | Eco boot reaches the login window 14-33 s after kernel start | [docs/BOOT-TIMELINE.md](docs/BOOT-TIMELINE.md) |
+| Zen 5 timer / FSB calculation | works | fixed by the OpenCore patch | [patches/opencore](patches/opencore) |
+| Internal display on the 890M | works | 2880x1800 at 120 Hz, zero-copy page flips | [docs/FRAME-PATH.md](docs/FRAME-PATH.md) |
+| Brightness (slider and keys) | works | handled inside NMXGPU | [docs/890M-ROADMAP.md](docs/890M-ROADMAP.md) |
+| HiDPI | partly | "looks like 1440x900" and native only; no other scaled sizes | [docs/890M-TRACE.md](docs/890M-TRACE.md) |
+| HDR | **not verified** | | |
+| WindowServer and app Metal on the 890M | works | about 7 ms of CPU per frame in WindowServer (a real Mac: about 1 ms) | [docs/WS-CPU.md](docs/WS-CPU.md) |
+| WebGL: Chrome, Edge, Safari | works | Safari needs `StrixSbxMap`, a pinned Sandbox exception | [docs/MAPS-WEBGL.md](docs/MAPS-WEBGL.md), [docs/890M-ROADMAP.md](docs/890M-ROADMAP.md) |
+| Hardware video decode (H.264, HEVC, VP9, AV1; 8 and 10 bit) | works | `VCNDec` on the 890M VCN; 58 of 59 matrix cells in Chrome, Safari and QuickTime (measured on 0.2.0; 0.2.1 is live and was tested in-process only). Hardware encode: not verified | [docs/VIDEO-CODEC-MATRIX.md](docs/VIDEO-CODEC-MATRIX.md) |
+| RTX 5060, Eco mode | works | card off and off the PCI bus; no HDMI in this mode; untested with sleep and charger events | [docs/BOOT-TIMELINE.md](docs/BOOT-TIMELINE.md) |
+| RTX 5060, Standard mode | partly | the NVIDIA kernel stack boots; apps get no Metal device from the RTX; HDMI not re-tested; switching needs a reboot | [docs/890M-ROADMAP.md](docs/890M-ROADMAP.md) |
+| Wi-Fi | works | native Wi-Fi menu, WPA2-PSK on 2.4/5 GHz, HE 160 MHz. No WPA3, open networks, 6 GHz, AirDrop | [mt7925-macos](https://github.com/thanhnndev/mt7925-macos) |
+| Bluetooth | works | BLE mouse in daily use; keyboard pairing not recorded | [mt7925-macos](https://github.com/thanhnndev/mt7925-macos/blob/main/docs/BLUETOOTH.md) |
+| Speakers | works | all four drivers; needs `StrixAmp` and the RogAudio driver | [docs/AUDIO-TAHOE.md](docs/AUDIO-TAHOE.md) |
+| Microphones | partly | internal pair and noise reduction work; third microphone unreachable; gain sometimes resets to minimum | docs/AUDIO-ROG.md (branch `research/audio-rog-dolby`) |
+| Headphone jack | **not verified** on Tahoe | | |
+| Keyboard, USB devices | works | `ItlXhciKick` fixes the 2 s key-release lag | [docs/USB-XHCI-LAG.md](docs/USB-XHCI-LAG.md) |
+| Fn keys | partly | mute and volume native; the rest through `rogkeyd`; Fn+F6 and Fn+F10 not mapped | [rog-control-macos](https://github.com/thanhnndev/rog-control-macos) |
+| Touchpad | works | VoodooI2C in forced polling mode | [efi/KEXTS.md](efi/KEXTS.md) |
+| Webcam | works | UVC | |
+| SD card reader | **not verified** | driver loaded | |
+| ASUS profiles, fan curves, power limits, charge limit, keyboard light | works | `AsusWmi` + RogControl | [docs/PLATFORM-LIMITS.md](docs/PLATFORM-LIMITS.md), [rog-control-macos](https://github.com/thanhnndev/rog-control-macos) |
+| Sleep / wake | partly | S0 idle sleep with lid and power-button wake passed on 2026-11-07; **not re-tested on the current stack**; S0i3 not reached | [docs/890M-TRACE.md](docs/890M-TRACE.md) |
+| Shut Down | works | stays off | [docs/SHUTDOWN-TIMELINE.md](docs/SHUTDOWN-TIMELINE.md) |
+| Power and heat | partly | light work 17 W / 57 C (2026-11-23); Docker + emulator load 62 W / 95 C (2026-11-16, not re-measured); GPU power follows the compositing rate (static screen 0.09 W on the GFX rail, 81-91 flips/s 12-19 W); idle floor and battery life in Eco not measured | [docs/POWER-UNDER-LOAD.md](docs/POWER-UNDER-LOAD.md), [docs/POWER-FEATURES.md](docs/POWER-FEATURES.md), [docs/POWER-FLOOR.md](docs/POWER-FLOOR.md) |
+| Docker Desktop | works | on `RyzenHV` (AMD SVM hypervisor kext) | [docs/RYZENHV-GUEST-MEM.md](docs/RYZENHV-GUEST-MEM.md) |
+| Android emulator | **broken** (fix staged, not verified) | the guest stalls during boot under RyzenHV 0.7.23. Root cause found: RyzenHV showed the guest CPUID PKU/OSPKE while macOS never enables PKRU state in XCR0, so a Linux 6.12 guest cannot build signal frames. The fix is RyzenHV 0.7.24 (fork commit 11ec930), staged, not yet run on the machine as of 2026-11-25 | [docs/STATE-AND-ROADMAP.md](docs/STATE-AND-ROADMAP.md) |
+| iOS Simulator | works | renders on the 890M, 60 fps in the bench | [docs/SIMULATOR-PERF.md](docs/SIMULATOR-PERF.md) |
+| Reference EFI in `efi/` | **out of date** | `config.plist` is the macOS 15 configuration of 2026-10-13 (it carries the reference machine's USB map). It has none of the Tahoe kexts or boot-args and does not reference the sleep and shutdown SSDTs that sit next to it. The live Tahoe ESP has not been exported | [efi/README.md](efi/README.md) |
+| Fresh install on a blank disk | partly | done once by hand; no tested guide or installer yet | [docs/FRESH-INSTALL.md](docs/FRESH-INSTALL.md) |
+
+Dates, evidence, exact versions and known issues: [docs/STATE-AND-ROADMAP.md](docs/STATE-AND-ROADMAP.md).
+
+## What is in this repository
+
+This repository holds the EFI reference, the documents and traces, the 890M tooling and a few small kexts. The larger
+drivers live in their own repositories; their sources were removed from this one (the history stays here):
 
 | Repository | What |
 |---|---|
-| **[mt7925-macos](https://github.com/thanhnndev/mt7925-macos)** | MediaTek MT7925 Wi-Fi (native Wi-Fi menu, legacy Ethernet mode, AWDL work) and Bluetooth (`MtkBtFw`, `BtLeDlFix`) |
-| **[rog-control-macos](https://github.com/thanhnndev/rog-control-macos)** | ROG Control Center: `AsusWmi` and `AmdCppc` kexts, the RogControl menu bar app, the CPU policy daemon |
-| **[strix-890m-macos](https://github.com/thanhnndev/strix-890m-macos)** | Radeon 890M research: boot-display kexts, tooling and traces. Not a finished driver |
-| this repository | `efi/` (OpenCore), install and recovery docs, `ItlXhciKick` (USB lag), `TapGuard`, `ItlDiag` |
+| this repository | everything listed below |
+| [nvidia-macos-driver](https://github.com/thanhnndev/nvidia-macos-driver) (fork of NullMoth's, PolyForm Noncommercial) | `NMXGPU`, `NMXAccel`, `NMXAGDC`, the Metal plugin and shader translator for the 890M |
+| [mt7925-macos](https://github.com/thanhnndev/mt7925-macos) | MT7925 Wi-Fi (`itlmt7925`, `itlmt7925Native`) and Bluetooth (`MtkBtFw`, `BtLeDlFix`) |
+| [rog-control-macos](https://github.com/thanhnndev/rog-control-macos) | `AsusWmi`, `AmdCppc`, `StrixDgpuGate`, the RogControl app, `rogkeyd`, the CPU policy daemon |
+| [ryzen-hypervisor.framework](https://github.com/thanhnndev/ryzen-hypervisor.framework) (fork of OverlordDev's) | `RyzenHV` |
+| [strix-890m-macos](https://github.com/thanhnndev/strix-890m-macos) | a copy of the earlier boot-display kexts and traces (last push 2026-11-02). The same files are still here; which repository is their home is not decided |
 
-Their sources were removed from this repository; history stays here, and development continues in the new repositories.
+```
+efi/                 OpenCore config.plist + SSDTs (serial/MLB/UUID/ROM are placeholders) and the third-party kext list.
+                     Out of date: config.plist describes the macOS 15 setup
+kexts/ItlXhciKick    keeps the second xHCI event ring serviced on single-vector AMD controllers (fixes the USB lag)
+kexts/StrixS0ix      S0 idle sleep: PMC hints, CPU parking, lid and power-button wake
+kexts/StrixSbxMap    Lilu plugin: lets the WebKit GPU process map the pinned 890M Metal plugin files (Safari WebGL)
+kexts/ItlDiag        boot diagnostics that log to NVRAM; a debugging aid
+kexts/StrixGOP, StrixAccel, StrixMetalGate, StrixHeadroom, StrixProbe
+                     the earlier boot-display research; superseded by NMXGPU and switched off on the reference machine
+macos/TapGuard       ignores touchpad taps while typing
+tools/890m/vcndec    VCNDec: VideoToolbox decoder on the 890M VCN (H.264, HEVC, VP9, AV1)
+tools/890m/video-suite  local, ad-free video test suite and the codec matrix results
+tools/890m/          Metal, Vulkan and DRM probes, WebGL repro, frame-path and power read-out scripts
+tools/               OpenCore config editor, kernel-collection readers, health and idle probes, simulator bench
+scripts/             kext build, install and undo scripts for each piece, RADV build, EFI export and privacy check,
+                     recovery from Linux and Windows. Many install-step scripts are tied to the reference machine's
+                     history and are kept as a record, not as an installer
+patches/opencore/    OpenCorePkg patch for Zen 5
+patches/nmx, patches/power-floor  patches against the NMXGPU source tree (the fork is the source of truth)
+abi/, include/, acpi/  ACPI dumps, ABI notes and headers used by the research
+test/                host tests for the config and Strix tools
+docs/                state and roadmap, the 890M trace, frame path, video, power, boot and shutdown, install design
+```
 
-## Compatibility
-
-Tested on **one GA403WM**, BIOS **GA403WM.310**, OLED **2880 × 1800 @ 120 Hz**. Other BIOS versions, panels and GA403 variants are untested. Status below: **2026-10-12**; dated test notes are in [HANDOFF](docs/HANDOFF.md).
-
-| Requirement | Details |
-|---|---|
-| macOS | **15 Sequoia only**. Developed on 15.6.1; daily use on **15.8.1 (24H32)** |
-| GPU mode | **Ultimate / dGPU-only MUX**. Radeon 890M has no driver and is hidden from macOS (research: [strix-890m-macos](https://github.com/thanhnndev/strix-890m-macos)) |
-| Graphics driver | NullMoth **1.14.2** with two local patches; use the [GA403WM fork](https://github.com/thanhnndev/nvidia-macos-driver/tree/ga403wm) for OLED brightness |
-| Bootloader | OpenCore **1.0.9** with the Zen 5 timer patch |
-
-**macOS 26 Tahoe is unsupported and untested. Do not upgrade:** the NVIDIA driver supports macOS 15 only. Current daily use is plugged in with an external HDMI display; battery life has not been tested.
-
-## Hardware status
-
-Checked items are verified on the reference machine. Unchecked items are unreliable, unverified or unsupported.
-
-- [x] **Boot / dual boot:** Internal ESP; Windows and Linux available in the OpenCore picker. [EFI](efi/README.md) · [Dual boot / UEFI recovery](docs/DUAL-BOOT.md)
-- [x] **CPU:** 12 cores / 24 threads; CPPC and boost to ~4.9 GHz with `AmdCppc` + `AmdCppcPolicy`. [CPU power](docs/CPU-POWER.md)
-- [x] **RTX 5060 / displays:** Internal OLED at 120 Hz and external display. [NVIDIA](docs/NULLMOTH.md)
-- [x] **OLED brightness / HiDPI:** System slider and brightness keys control the panel through `NVRMEdpBL`. HiDPI **2×**, “looks like 1440 × 900”; fractional scales unsupported. [Brightness](docs/OLED-BRIGHTNESS-DPCD.md) · [HiDPI setup](docs/SCRIPTS.md#4-hidpi-looks-like-1440-x-900-step-by-step)
-- [x] **USB keyboard, mouse, webcam:** `ItlXhciKick` fixes the 2-second key-release lag. Tested USB map pending in the standard EFI. [USB](docs/USB-XHCI-LAG.md)
-- [x] **Touchpad:** I2C `093a:3011`; fixed 2026-10-12. [Test notes](docs/HANDOFF.md)
-- [x] **MT7925 Wi-Fi:** moved to its own repository, **[mt7925-macos](https://github.com/thanhnndev/mt7925-macos)**: native Wi-Fi (Wi-Fi menu, join from System Settings) on macOS 15 and 26, legacy Ethernet mode, guide, roadmap and releases. [Install guide](https://github.com/thanhnndev/mt7925-macos/blob/main/docs/GUIDE.md)
-- [x] **MT7925 Bluetooth:** Classic headphones and BLE mice via `MtkBtFw` + `BtLeDlFix`, now in **[mt7925-macos](https://github.com/thanhnndev/mt7925-macos/blob/main/docs/BLUETOOTH.md)** ([release bt-v1.0](https://github.com/thanhnndev/mt7925-macos/releases/tag/bt-v1.0)).
-- [x] **ROG controls / lighting:** Profiles, fans, charge limit, keyboard backlight and Slash lighting via `AsusWmi` + RogControl, now in **[rog-control-macos](https://github.com/thanhnndev/rog-control-macos)**.
-- [ ] **Sleep / wake:** No reliable deep sleep; wake is slow and unreliable. Completed cycles restore CPU policy. Do not rely on lid close or sleep.
-- [ ] **Other Fn keys:** Brightness and keyboard lighting work; most other keys are not mapped.
-- [ ] **Audio / SD reader / battery %:** EFI includes AppleALC layout 33, Sinetek-rtsx and SMCBatteryManager; functionality is unverified.
-- [ ] **AirDrop / AWDL / Continuity:** not working yet; in progress in [mt7925-macos](https://github.com/thanhnndev/mt7925-macos/blob/main/docs/ROADMAP-AWDL.md) (branch `dev/awdl`)
-
+`scripts/build.sh` builds `ItlXhciKick` and `ItlDiag` by default and the `Strix*` kexts when named. Not buildable from
+this branch: `StrixAmp` and the RogAudio driver (branch `research/audio-rog-dolby`), and everything in the repositories
+above. Bundle ids of the older kexts start with `com.itlmt7925.` (the Wi-Fi driver started the project); newer ones use
+`com.ga403wm.`.
 
 ## Installation
 
-> **The complete tested EFI is not available yet.** `efi/` and the release's `EFI-reference.zip` are sanitized references with placeholder SMBIOS, placeholder USB map and debug boot-args. The working EFI, including the tested USB map, is planned as a later release asset.
+**There is no tested step-by-step guide for a fresh Tahoe install.** The stack was installed once from scratch, by hand,
+on 2026-11-07. What exists:
 
-Follow **[INSTALL.md](docs/INSTALL.md)**. The main steps:
+- the install order that worked, undo and recovery: [v2 release notes](.github/release-notes/v2.md);
+- the design that came out of that install and its lessons: [docs/FRESH-INSTALL.md](docs/FRESH-INSTALL.md),
+  [docs/FRESH-INSTALL-LESSONS-2026-11-07.md](docs/FRESH-INSTALL-LESSONS-2026-11-07.md);
+- the notes of the move from macOS 15: [docs/TAHOE-MIGRATION.md](docs/TAHOE-MIGRATION.md).
 
-1. Back up the disk. Set BIOS MUX to **Ultimate**, Above 4G Decoding **ON**, CSM **OFF**, Secure Boot **OFF**.
-2. Download the [v1 release](https://github.com/thanhnndev/ga403wm-hackintosh/releases): `ItlXhciKick`, `ItlDiag`, TapGuard, patched OpenCore, reference EFI and checksums. Or build on a Mac with `bash scripts/build.sh`. Add the [third-party kexts](efi/KEXTS.md).
-3. Assemble the [EFI](efi/README.md), generate **your own SMBIOS**, and use the patched OpenCore (`fix-zen5-fsb.diff` fixes timers firing ~10× early).
-4. Wi-Fi: install `itlmt7925.kext` (+ `itlmt7925Native.kext` for the Wi-Fi menu) from **[mt7925-macos](https://github.com/thanhnndev/mt7925-macos/releases)** following its [guide](https://github.com/thanhnndev/mt7925-macos/blob/main/docs/GUIDE.md), or use USB tethering.
-5. Install macOS 15, then the [NVIDIA driver from the fork](docs/INSTALL.md#7-nvidia-driver-rtx-5060--the-oled), then `AsusWmi` / RogControl / the CPU daemon from [rog-control-macos](https://github.com/thanhnndev/rog-control-macos/releases) and Bluetooth from [mt7925-macos](https://github.com/thanhnndev/mt7925-macos/releases/tag/bt-v1.0). An offline installer is recommended; the 16 GB online installer is not suited to the current Wi-Fi path.
+Many step scripts under `scripts/` accept only the exact binaries of the reference machine's history. Read a script
+before running it.
 
-Release usage, install scripts, diagnostics and HiDPI setup: **[SCRIPTS.md](docs/SCRIPTS.md)**.
-
-## Utilities and source
-
-- **RogControl** (now developed in [rog-control-macos](https://github.com/thanhnndev/rog-control-macos)): menu bar and window for Silent / Performance / Turbo / Manual profiles, SPL/SPPT/FPPT limits, CPU temperature/power, fan RPM and firmware curves, 60/80/100% charge limits, keyboard and Slash lighting. Separate AC/battery settings apply at login and source changes; lighting reapplies after wake. Turbo is disabled on battery. MUX is read-only; no per-key Aura or panel overdrive. Includes `--bench`.
-- **ItlWiFi** (menu bar app for the Ethernet-style Wi-Fi mode) moved to [mt7925-macos](https://github.com/thanhnndev/mt7925-macos).
-- **TapGuard:** suppresses touchpad taps while typing.
-
-Driver and app details, including `ItlDiag` boot diagnostics: **[COMPONENTS.md](docs/COMPONENTS.md)**.
-
-Screenshots of the ROG Control app: [rog-control-macos](https://github.com/thanhnndev/rog-control-macos#screenshots).
-
-[About This Mac](docs/images/about-this-mac.png) · [Screenshot notes](docs/images/README.md)
-
-```text
-efi/                OpenCore reference config, SSDTs, third-party kext list
-kexts/              ItlXhciKick (USB lag), ItlDiag (diagnostics)
-macos/              TapGuard
-patches/opencore/   Zen 5 patch
-scripts/            Build, install, credential injection, logs, EFI export/privacy check
-tools/              Kernel-collection reader and display/CPU probes
-test/               Host tests (WPA2, capabilities, Block Ack, etc.), run in CI
-docs/               Guides, component reference, research and test notes
-```
+For **macOS 15** follow [docs/INSTALL.md](docs/INSTALL.md) with the [v1](https://github.com/thanhnndev/ga403wm-hackintosh/releases/tag/v1)
+assets. [docs/SCRIPTS.md](docs/SCRIPTS.md) and [docs/COMPONENTS.md](docs/COMPONENTS.md) also describe that setup.
 
 ## Next steps
 
-[ROADMAP.md](docs/ROADMAP.md) tracks branches and next actions: sleep/wake, Fn keys, battery testing, audio/SD/battery verification, WindowServer performance and upstreaming the NVIDIA VRAM-clear/brightness patches. Also pending: a second owner's installation report, the first tagged release with CI-built kexts (CI app builds currently fail), and component-by-component cleanup after stability is established. macOS 26 waits until macOS 15 is stable.
+[docs/STATE-AND-ROADMAP.md](docs/STATE-AND-ROADMAP.md), section 5, is the roadmap for this release: the Android emulator
+fix, power under a VM load, GPU power per composited frame (per-client flip census, damage-sized composition, hardware
+cursor plane), sleep on the current stack, a clean Tahoe reference EFI. [docs/ROADMAP.md](docs/ROADMAP.md) is the older
+macOS 15 work tracker.
 
 ## Contributing and license
 
 Maintained by [thanhnndev](https://github.com/thanhnndev). GA403WM owners: use the **Hardware report** issue template and read [CONTRIBUTING.md](CONTRIBUTING.md).
 
-Thanks to [NullMoth](https://github.com/nullmoth/1401) for the EFI base and NVIDIA driver, Acidanthera for OpenCore/Lilu/VirtualSMC/AppleALC, and Linux `mt76`, `btmtk`, `asus-wmi` and `asusctl` for design references. Full credits and licenses: [NOTICE.md](NOTICE.md).
+Thanks to [NullMoth](https://github.com/nullmoth/1401) for the EFI base and the NVIDIA driver, [OverlordDev](https://github.com/OverlordDev/ryzen-hypervisor.framework) for the hypervisor, Acidanthera for OpenCore/Lilu/VirtualSMC/AppleALC, Mesa (RADV) and Linux `amdgpu`, `mt76`, `btmtk`, `asus-wmi` and `asusctl` for code and design references. Full credits and licenses: [NOTICE.md](NOTICE.md).
 
-Code uses the [Clear BSD License](LICENSE), including reimplementations of MediaTek's Linux `mt76` (BSD-3-Clause-Clear).  **The EFI derives from `nullmoth/1401` and uses PolyForm Noncommercial 1.0.0: noncommercial use only.** The OLED brightness patches are in the `ga403wm` fork and have not been upstreamed.
+Code in this repository uses the [Clear BSD License](LICENSE). **The EFI derives from `nullmoth/1401`, and everything from the nvidia-macos-driver fork (NMXGPU, NMXAccel, the Metal plugin, the translator) is PolyForm Noncommercial 1.0.0: noncommercial use only**; none of the fork's code is in this repository's release assets.
 
 Not affiliated with ASUS, Apple, NVIDIA, MediaTek, AMD or NullMoth. Trademarks belong to their owners; users are responsible for complying with Apple's macOS license terms.

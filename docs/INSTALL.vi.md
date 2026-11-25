@@ -1,5 +1,10 @@
 # Cài macOS 15 lên ASUS ROG Zephyrus G14 (GA403WM)
 
+> **Tài liệu này mô tả cấu hình macOS 15 Sequoia (release v1 / kext-v1.1, tháng 10/2026).** Bản release hiện tại dành
+> cho macOS 26 Tahoe với màn hình chạy trên Radeon 890M và là một cấu hình khác: xem
+> [STATE-AND-ROADMAP.md](STATE-AND-ROADMAP.md) và [ghi chú release v2](../.github/release-notes/v2.md) (tiếng Anh).
+> Chưa có hướng dẫn từng bước đã test cho Tahoe.
+
 English: [INSTALL.md](INSTALL.md).
 
 > ⚠️ **Dự án vibe-code, chỉ test trên một máy.** Đọc cảnh báo trong [README.vi.md](../README.vi.md). Hướng dẫn này là đường đi đã

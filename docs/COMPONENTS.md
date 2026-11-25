@@ -1,5 +1,12 @@
 # Components: kexts, apps and tools
 
+> **This document describes the macOS 15 Sequoia setup (release v1 / kext-v1.1, October 2026).** The current release
+> targets macOS 26 Tahoe with the display on the Radeon 890M and is a different configuration: see
+> [STATE-AND-ROADMAP.md](STATE-AND-ROADMAP.md) and the [v2 release notes](../.github/release-notes/v2.md). There is no
+> tested step-by-step guide for Tahoe yet. Sources named below that are no longer in this repository (`itlmt7925`,
+> `MtkBtFw`, `BtLeDlFix`, `AsusWmi`, `AmdCppc`, RogControl, ItlWiFi) are in
+> [mt7925-macos](https://github.com/thanhnndev/mt7925-macos) and [rog-control-macos](https://github.com/thanhnndev/rog-control-macos).
+
 Every piece this repository builds (plus the pieces it depends on but does not own), what it does today, and how far along it
 is. States: ✅ verified on the reference unit · 🟡 implemented, needs more testing · 🔧 in progress · ❌ not working ·
 ⚪ not started. "Reference unit" = the single GA403WM everything was developed on, macOS 15.8.1.
