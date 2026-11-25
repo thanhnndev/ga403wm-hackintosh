@@ -1,5 +1,5 @@
 {
-  "note": "Third-party kexts used on the reference machine (SHA-256 of the executable); they are not redistributed. ItlXhciKick and ItlDiag are built from this repository; itlmt7925 comes from https://github.com/thanhnndev/mt7925-macos.",
+  "note": "Third-party kexts used on the reference machine (SHA-256 of the executable); they are not redistributed. itlmt7925, ItlXhciKick and ItlDiag are built from this repository.",
   "kexts": [
     {
       "path": "Kexts/AMFIPass.kext",
@@ -11,7 +11,7 @@
       "path": "Kexts/AppleALC.kext",
       "bundle_id": "as.vit9696.AppleALC",
       "version": "1.9.9",
-      "executable_sha256": "21d5ffbf515aba5f9cacf48c0d4bd0b11189cb844133f696f027fd5d7998e9dd"
+      "executable_sha256": "8de583d9620367eed3d7ea51ec77ec2bce472e52f66c8e5013ec35992a3d4787"
     },
     {
       "path": "Kexts/AppleMCEReporterDisabler.kext",
@@ -50,10 +50,40 @@
       "executable_sha256": "e3f00df5aca98c70363489292514f088ae3b667417c9c5afdd33799ff09390bd"
     },
     {
+      "path": "Kexts/NVAccel.kext",
+      "bundle_id": "com.nullmoth.NVAccel",
+      "version": "0.1",
+      "executable_sha256": "63eba4a8f3ff069d1819b84b9bdd5fb7c53b9f7ce772470a73a8f6a13e07b651"
+    },
+    {
       "path": "Kexts/NVMeFix.kext",
       "bundle_id": "org.acidanthera.NVMeFix",
       "version": "1.1.4",
       "executable_sha256": "d32c743220011f162ac104cdf73b1bce71cca77459a54553e461b89b9837a4d6"
+    },
+    {
+      "path": "Kexts/NVRM.kext",
+      "bundle_id": "com.nullmoth.NVRM",
+      "version": "0.1",
+      "executable_sha256": "e15a281a0795955711dd89d77f0267365af68483834401a832a91c54898646ff"
+    },
+    {
+      "path": "Kexts/NVRMAGDC.kext",
+      "bundle_id": "com.nullmoth.NVRMAGDC",
+      "version": "0.1",
+      "executable_sha256": "270f9ef9ac9d2482689ed4d63d422e705e439509d0e3b62fc6bc96fdc9e693ed"
+    },
+    {
+      "path": "Kexts/NVRMEdpBL.kext",
+      "bundle_id": "com.nullmoth.NVRMEdpBL",
+      "version": "0.1",
+      "executable_sha256": "433dfcbfc71b90d9d7623aa586b4b7bd95daddd3a45366f1904dbf65886f216a"
+    },
+    {
+      "path": "Kexts/NVRMFB.kext",
+      "bundle_id": "com.nullmoth.NVRMFB",
+      "version": "0.1",
+      "executable_sha256": "b90401044c286775859f1f4ca231053c0461c5e3e86f98d615b69e03a17d172f"
     },
     {
       "path": "Kexts/NullEthernet.kext",
@@ -68,6 +98,12 @@
       "executable_sha256": "8a244c696234c4ae1dec7c318664c57b685f9d2501e8bb6649ec805b21e9fa3a"
     },
     {
+      "path": "Kexts/RyzenHV.kext",
+      "bundle_id": "com.overlorddev.RyzenHV",
+      "version": "0.7.24",
+      "executable_sha256": "0af5b09648170bb7c78c5b99a47dd451f09ec5ff55084d881d2eb3eaece06992"
+    },
+    {
       "path": "Kexts/SMCBatteryManager.kext",
       "bundle_id": "ru.usrsse2.SMCBatteryManager",
       "version": "1.3.9",
@@ -80,10 +116,22 @@
       "executable_sha256": "b3aca78cd5aca2fb4229bb7fb1258bb04f54af391605d29dac92438193346606"
     },
     {
+      "path": "Kexts/SimpleHDA.kext",
+      "bundle_id": "cn.laobamac.SimpleHDA",
+      "version": "1.0.1",
+      "executable_sha256": "5a1beec91f121a018072ac085c51543d5eaea85347e6417cd2e37d254d9383c1"
+    },
+    {
       "path": "Kexts/Sinetek-rtsx.kext",
       "bundle_id": "com.sinet3k.Sinetek-rtsx",
       "version": "9.0.0",
       "executable_sha256": "909d7f7bcb504781c2a85abdcd01cc53bfa1770d9295e6d8addd487a21461bb4"
+    },
+    {
+      "path": "Kexts/StrixVFCT.kext",
+      "bundle_id": "com.ga403wm.StrixVFCT",
+      "version": "0.1.0",
+      "executable_sha256": null
     },
     {
       "path": "Kexts/USBToolBox.kext",

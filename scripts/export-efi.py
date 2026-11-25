@@ -75,7 +75,40 @@ def scrub_text(xml, cfg):
     block, n = re.subn(r"(<key>ROM</key>\s*<data>)[^<]*(</data>)", lambda mm: mm.group(1) + b64 + mm.group(2), block)
     if n != 1:
         raise SystemExit("key ROM: expected 1 match, got %d" % n)
-    return scrub_entries(xml[:start] + block + xml[i:])
+    return scrub_extra(scrub_entries(xml[:start] + block + xml[i:]))
+
+
+def scrub_extra(xml):
+    """Two more machine-specific values outside PlatformInfo:
+      * NVRAM bluetoothInternalControllerInfo carries the Bluetooth controller address: zeroed, same length;
+      * DeviceProperties vbios is the GPU's VBIOS image (vendor firmware, not ours to redistribute): emptied.
+        A user puts their own card's image back (see efi/README.md)."""
+    def zero(mm):
+        n = len(base64.b64decode(mm.group(2)))
+        return mm.group(1) + base64.b64encode(bytes(n)).decode() + mm.group(3)
+    xml = re.sub(r"(<key>bluetoothInternalControllerInfo</key>\s*<data>)([^<]*)(</data>)", zero, xml)
+    xml = re.sub(r"(<key>vbios</key>\s*<data>)[^<]*(</data>)", lambda mm: mm.group(1) + mm.group(2), xml)
+    return xml
+
+
+RMNE_DEFAULT_MAC = bytes.fromhex("112233445566")
+
+
+def scrub_rmne(data):
+    """SSDT-RMNE (NullEthernet): Name (MAC, Buffer (6) {...}) holds the address the fake en0 reports. Replace it by
+    NullEthernet's documented default and fix the table checksum. Returns (new table, original address or None)."""
+    m = re.search(rb"MAC_\x11.\x0a\x06", data, re.S)
+    if not m:
+        return data, None
+    o = m.end()
+    old = data[o:o + 6]
+    if old == RMNE_DEFAULT_MAC:
+        return data, None
+    b = bytearray(data)
+    b[o:o + 6] = RMNE_DEFAULT_MAC
+    b[9] = 0
+    b[9] = (-sum(b)) & 0xFF
+    return bytes(b), bytes(old)
 
 
 DEVICE_PATH_ID = re.compile(r"NVMe\(0x[0-9A-Fa-f]+,[0-9A-Fa-f-]+\)|GPT,[0-9A-Fa-f]{8}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{12}")
@@ -164,6 +197,10 @@ def main():
     for i in ids:
         needles |= variants(i)
 
+    bt = cfg.get("NVRAM", {}).get("Add", {}).get("7C436110-AB2A-4BBB-A880-FE41995C9F82", {}).get("bluetoothInternalControllerInfo")
+    if isinstance(bt, (bytes, bytearray)) and any(bt[-6:]):
+        needles |= variants(bytes(bt[-6:]))      # the controller address is the last six bytes
+
     xml = raw.decode("utf-8")
     scrubbed = scrub_text(xml, cfg)
 
@@ -178,8 +215,17 @@ def main():
     acpi = os.path.join(src, "ACPI")
     for n in sorted(os.listdir(acpi)):
         if n.lower().endswith((".aml", ".dsl")):
-            shutil.copy2(os.path.join(acpi, n), os.path.join(dst, "ACPI", n))
-            written.append(os.path.join(dst, "ACPI", n))
+            out = os.path.join(dst, "ACPI", n)
+            if n.lower() == "ssdt-rmne.aml":
+                with open(os.path.join(acpi, n), "rb") as f:
+                    tbl, old_mac = scrub_rmne(f.read())
+                with open(out, "wb") as f:
+                    f.write(tbl)
+                if old_mac:
+                    needles |= variants(old_mac)
+            else:
+                shutil.copy2(os.path.join(acpi, n), out)
+            written.append(out)
 
     mp = os.path.normpath(os.path.join(dst, "..", "kexts.json"))
     with open(mp, "w", encoding="utf-8", newline="\n") as f:
