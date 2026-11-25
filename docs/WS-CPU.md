@@ -781,3 +781,50 @@ present": passes, attachment Mpx, >= 4 Mpx passes by load/repaint, scissored Mpx
 
 The two 79x79 passes are the software cursor (NMXAMDFB reports no hardware cursor). They cost 17 µs; what the cursor
 costs is that every cursor move is a full 1.1 ms present plus a flip.
+
+### 9.7 Flip census (plugin 9d322f98) and the static side: swap chain, colour stage, hardware cursor (2026-11-25)
+
+**Census** (`NVMTL_FLIP_CENSUS=1` in nvrm610.conf, default off; reported with the 30 s frame census): per present,
+whether a fragment shader sampled a client IOSurface whose seed changed, by surface (id, IOSurface name, size class);
+presents with no changed client surface; per full-screen pass the target surface, its Metal load action and the
+fragment shaders with the variant's non-zero function constants by name (all CA fragment shaders are one function,
+`fixed_frag_lpf_cpf`; the constants say what a variant does: `has_image_0A texture_function=01` = one textured layer,
+no image = solid fill, `has_gamma_luts` / `has_color_trc0` / `has_color_cube0` = colour conversion). Surface ids map to
+processes with `tools/890m/flip-census/resolve.sh` (IOSDebug, unprivileged): there is no in-process owner query
+without a private IOSurfaceRoot selector. The pass timer's trigger moved from `/tmp` (polled by every process) to
+`<per-user temp>/nvmtl-passtime-request.<process name>`, behind `NVMTL_PASSTIME=1`, compiled out of release builds.
+
+**Swap chain (static + IOSDebug, read-only).** NMXAccel advertises exactly what Apple's Intel drivers do
+(`IOAccelDisplayPipeCapabilities` = DisplayPipeSupported + TransactionsSupported; nvrm-accel.cpp:335-339); there is no
+buffer-age, retained-backing or partial-update flag at this level, and none is denied. The swap chain belongs to
+CoreDisplay: WindowServer holds five 2880x1800 `CoreDisplay Scanout` surfaces and one 2880x1800 `flattened-surface`;
+performTransaction flips whichever scanout surface it is given (nmxFlipPresent, zero copy) or copies it. Whether a
+present redraws the whole scanout surface is CoreDisplay's choice; the census's per-target load action (Load on the
+flattened surface vs DontCare/Clear on a Scanout surface) shows which pass is full-screen by design.
+
+**Colour stage.** NMXAMDFB publishes no `IOFBGammaWidth` / `IOFBGammaCount` / header keys and `setGammaTable` /
+`setCLUTWithEntries` return success and discard (nmx_fb.cpp:704-706; live ioreg has no IOFBGamma keys). With no
+hardware gamma advertised, CoreDisplay applies gamma (ColorSync vcgt, Night Shift, True Tone) on the GPU. If the
+census shows f1c2052c with `has_gamma_luts` / colour constants, cb B (245 µs, a full-screen read + write of 20 MB, every
+present) is that stage. Moving it to DCN: publish the gamma keys (width 16, count 1024 or 256, header 0); implement
+setGammaTable by converting to `drm_color_lut` and committing the CRTC `GAMMA_LUT` blob through the bridge's existing
+atomic path (nmx_fb_bridge.c, the flip commit at ~730: `drm_atomic_get_crtc_state`, replace `gamma_lut`,
+`color_mgmt_changed = 1`), synced to vblank. About 150 lines in NMXGPU (nmx_fb.cpp + nmx_fb_bridge.c), one boot to test.
+The 3x3 CSC (display profile) is already folded into CA's per-layer colour matching, so a gamma LUT alone should be
+what CoreDisplay needs; if the census shows colour cube / trc constants on f1c2052c instead, DCN's degamma + CTM +
+regamma (amdgpu_dm colour management) is the fuller target.
+
+**Hardware cursor (scope, not started).** Today: `IOFBCursorInfo = ()`, so WindowServer draws the cursor (the two
+79x79 passes) and every cursor move is a full present (~1.1 ms GPU) plus a flip. What it takes:
+1. nmx_fb.cpp: `getAttribute(kIOHardwareCursorAttribute)` = 1; `setCursorImage` with `convertCursorImage` into an
+   `IOHardwareCursorDescriptor` (32 bpp ARGB, up to 256x256: DCN's cursor limit covers the 2x cursor with shadow);
+   `setCursorState(x, y, visible)` (hotspot-adjusted by IOFramebuffer).
+2. nmx_fb_bridge.c: a 256x256x4 VRAM cursor BO and drm_framebuffer; image updates and moves as nonblocking atomic
+   commits on the CRTC's DRM cursor plane with `legacy_cursor_update = true` (amdgpu_dm's fast cursor path: no flip,
+   no vblank wait), coalesced so a burst of moves costs one commit per vblank. The flip path already tolerates other
+   commits on the CRTC (nmx_fb_bridge.c ~1167).
+3. Keep it re-armed over display sleep/wake and modeset; a boot-arg-free knob to fall back to the software cursor
+   (`IOFBCursorInfo` empty) if WindowServer misbehaves.
+Proof after one boot: `IOFBCursorInfo` non-empty, the 79x79 passes gone from the census, flips/s with the mouse moving
+down to the no-input rate. About 300-400 lines in NMXGPU. Saving: the cursor-only presents while the mouse moves (the
+gap between the 81 flips/s no-input row and the 91 flips/s input row, 12.4 -> 19.3 W); it does nothing for the 81/s.
