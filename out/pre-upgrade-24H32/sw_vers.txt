@@ -1,0 +1,4 @@
+ProductName:		macOS
+ProductVersion:		15.8.1
+BuildVersion:		24H32
+Darwin Thanhs-MacBook-Pro.local 24.6.0 Darwin Kernel Version 24.6.0: Sun Aug 23 20:30:56 PDT 2026; root:xnu-11417.140.69.712.69~1/RELEASE_X86_64 x86_64

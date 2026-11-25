@@ -1,0 +1,21 @@
+System-wide power settings:
+Currently in use:
+ standby              1
+ womp                 1
+ halfdim              1
+ hibernatefile        /var/vm/sleepimage
+ proximitywake        1
+ powernap             1
+ networkoversleep     0
+ disksleep            10
+ standbydelayhigh     86400
+ sleep                1 (sleep prevented by Claude, coreaudiod, coreaudiod, SoftwareUpdateNotificationManag, softwareupdated, softwareupdated)
+ hibernatemode        3
+ ttyskeepawake        1
+ displaysleep         10
+ tcpkeepalive         1
+ highstandbythreshold 50
+ lowpowermode         0
+ standbydelaylow      10800
+Now drawing from 'AC Power'
+ -InternalBattery-0 (id=7012451)	73%; AC attached; not charging present: true

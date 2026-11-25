@@ -1,94 +1,119 @@
-# ga403wm-hackintosh
+# GA403WM Hackintosh
 
-**OpenCore EFI, kernel extensions and notes for running macOS on the ASUS ROG Zephyrus G14 (GA403WM) with a Ryzen AI 9 HX 370
-("Strix Point", Zen 5).** It includes a from-scratch Wi-Fi driver for the MediaTek MT7925 card and a fix for the USB
-keyboard/mouse lag that AMD Strix Point controllers cause on macOS.
+## Vibe-coded project — read before installing
 
-> **Experimental, one laptop.** Everything was developed on a single GA403WM and verified by booting the macOS 15.6.1
-> Recovery image from a USB stick with OpenCore 1.0.9. A full installation on the internal disk has not been done yet.
-> Keep a backup, boot from a USB stick first, and read [docs/DUAL-BOOT.md](docs/DUAL-BOOT.md) if you also run Windows/Linux.
+This is a vibe-coded, experimental project. **Almost all code and documentation was AI-written (Claude)**, directed and tested by one person, with no independent audit.
 
-## Machine
+- Kexts run in the kernel; bugs can cause panics, hangs or data loss. `AsusWmi` and `AmdCppc` write to the EC, BIOS through SMI, and CPU registers.
+- EFI settings are adapted from other projects: SIP is mostly disabled, AMFI is relaxed and Secure Boot is off.
+- Injected Wi-Fi passwords are stored **in plain text inside the kext**. Never share a credential-injected kext. Logs also contain MAC addresses and nearby SSIDs/BSSIDs; redact them before posting.
+- Back up your disk and keep Windows/Linux recovery media. Use a machine you can reinstall, and avoid work you cannot afford to lose. No warranty; see [LICENSE](LICENSE).
 
-| | |
+The repo ships empty `itl_ssid*/itl_psk*` fields and `CHANGE_ME_*` SMBIOS placeholders. CI checks for real credentials and identifiers.
+
+## Overview
+
+macOS Sequoia on the **ASUS ROG Zephyrus G14 (2025)** — Ryzen AI 9 HX 370 + RTX 5060 Laptop.
+OpenCore EFI, custom drivers and utilities for this machine.
+
+[Tiếng Việt](README.vi.md) · [Installation](docs/INSTALL.md) · [**MT7925 Wi-Fi driver**](https://github.com/thanhnndev/mt7925-macos) · [Releases](https://github.com/thanhnndev/ga403wm-hackintosh/releases) · [Roadmap](docs/ROADMAP.md)
+
+<p align="center">
+  <img src="docs/images/hero.jpg" alt="RogControl and About This Mac on the GA403WM" width="720">
+</p>
+
+## Repositories
+
+This repository holds the OpenCore EFI, the install guides and a few small fixes. The larger parts live in their own repositories:
+
+| Repository | What |
 |---|---|
-| Laptop | ASUS ROG Zephyrus G14 2025, model GA403WM |
-| CPU / iGPU | AMD Ryzen AI 9 HX 370 (12 cores, Zen 5), Radeon 890M (disabled for macOS in `DeviceProperties`) |
-| dGPU | NVIDIA GeForce RTX 5060 Laptop (Blackwell), used through [NullMoth's NVIDIA driver](https://github.com/nullmoth/nvidia-macos-driver) |
-| Wi-Fi | MediaTek MT7925, PCI `14c3:7925` |
-| USB | four AMD xHCI controllers `1022:151e`, `151f`, `151a`, `151b` |
-| Input | I2C-HID touchpad `093a:3011`, USB keyboard `0b05:19b6` |
-| Storage | NVMe SSD, Realtek SD-card reader |
+| **[mt7925-macos](https://github.com/thanhnndev/mt7925-macos)** | MediaTek MT7925 Wi-Fi (native Wi-Fi menu, legacy Ethernet mode, AWDL work) and Bluetooth (`MtkBtFw`, `BtLeDlFix`) |
+| **[rog-control-macos](https://github.com/thanhnndev/rog-control-macos)** | ROG Control Center: `AsusWmi` and `AmdCppc` kexts, the RogControl menu bar app, the CPU policy daemon |
+| **[strix-890m-macos](https://github.com/thanhnndev/strix-890m-macos)** | Radeon 890M research: boot-display kexts, tooling and traces. Not a finished driver |
+| this repository | `efi/` (OpenCore), install and recovery docs, `ItlXhciKick` (USB lag), `TapGuard`, `ItlDiag` |
 
-## What works
+Their sources were removed from this repository; history stays here, and development continues in the new repositories.
 
-| Area | State | Where |
-|---|---|---|
-| Boot macOS 15.6.1 Recovery with OpenCore 1.0.9 | works | [efi/](efi/README.md) |
-| Zen 5 timer / FSB calculation (timers firing ~10x early) | fixed by an OpenCore patch | [patches/opencore](patches/opencore), [efi/README.md](efi/README.md#the-opencore-patch-patchesopencorefix-zen5-fsbdiff) |
-| USB keyboards and mice (2 s key-release latency) | fixed by `ItlXhciKick.kext` | [docs/USB-XHCI-LAG.md](docs/USB-XHCI-LAG.md) |
-| Touchpad (I2C) | works in Recovery (VoodooI2C) | [efi/KEXTS.md](efi/KEXTS.md) |
-| Wi-Fi MT7925 | works: WPA2-PSK on 2.4/5 GHz, DHCP/DNS; minimal (fixed 6 Mb/s TX, no UI, no reconnect) | [docs/WIFI.md](docs/WIFI.md) |
-| USB port map | **not done** (placeholder) | [docs/ROADMAP.md](docs/ROADMAP.md) |
-| Full install, sleep/wake, audio, battery, display brightness, Bluetooth, webcam | **not verified** | |
-| NVIDIA dGPU | third-party driver by NullMoth (macOS 15, installed inside macOS, not part of the EFI). The reference `config.plist` already carries its boot-args and SIP value; not verified by this project | [efi/README.md](efi/README.md#nvidia-dgpu-nullmoth-driver) |
+## Compatibility
 
-## What is in this repository
+Tested on **one GA403WM**, BIOS **GA403WM.310**, OLED **2880 × 1800 @ 120 Hz**. Other BIOS versions, panels and GA403 variants are untested. Status below: **2026-10-12**; dated test notes are in [HANDOFF](docs/HANDOFF.md).
 
-```
-efi/                 OpenCore config.plist + SSDTs (serial/MLB/UUID/ROM replaced by placeholders), list of third-party kexts
-kexts/itlmt7925      Wi-Fi driver for the MT7925: firmware load, scan, WPA2-PSK, Ethernet interface
-kexts/ItlXhciKick    keeps the second xHCI event ring serviced on single-vector AMD controllers (fixes the USB lag)
-kexts/ItlDiag        boot diagnostics that log to NVRAM (clocks, xHCI, HID); a debugging aid
-fw/                  MediaTek MT7925 firmware from linux-firmware, with its license
-patches/opencore/    OpenCorePkg patch for Zen 5
-scripts/             build, Wi-Fi credential injection, NVRAM read/clear, EFI export + privacy check, dual-boot repair
-test/                host test of the WPA2 primitives (also run in CI)
-tools/               helper to read Apple kexts out of a Recovery image
-docs/                documentation
-```
-
-The kexts are called `itlmt7925`, `ItlXhciKick` and `ItlDiag` (bundle ids `com.itlmt7925.*`). The name comes from the Wi-Fi
-driver, which started the project; the repository covers the whole machine.
-
-## Quick start
-
-1. **Get the kexts**: a [release](../../releases) (once published), the `kexts` artifact of the `build-kexts` workflow, or
-   `bash scripts/build.sh` on a Mac.
-2. **Assemble an EFI** from [efi/](efi/README.md): `config.plist`, the SSDTs, the third-party kexts listed in
-   [efi/KEXTS.md](efi/KEXTS.md), and OpenCore (build the patched one with the `opencore` workflow).
-   **Generate your own SMBIOS** (serial, MLB, UUID, ROM) first.
-3. **Add your Wi-Fi network** to the driver (Windows, elevated shell):
-   `.\scripts\inject-creds.ps1 -Kext <EFI>\OC\Kexts\itlmt7925.kext -Ssid 'MyWifi'`
-4. **Boot-args**: `itlmt_m1=0 itlmt_m2=1 itlmt_m3=1` for Wi-Fi, plus the experimental `itlmt_fast=6` for HT/VHT/HE, Block Ack, A-MSDU and 160 MHz with automatic fall-back ([docs/WIFI.md](docs/WIFI.md)). `ItlXhciKick` needs none.
-5. **Boot from the USB stick**, wait two or three minutes, and check the result in NVRAM
-   ([docs/DEBUGGING.md](docs/DEBUGGING.md)).
-
-## Documentation
-
-| | |
+| Requirement | Details |
 |---|---|
-| [efi/README.md](efi/README.md) | the reference EFI, boot-args, what to change for another machine |
-| [efi/KEXTS.md](efi/KEXTS.md) | every kext, its upstream and role |
-| [docs/WIFI.md](docs/WIFI.md) | the MT7925 driver: design, configuration, limits |
-| [docs/USB-XHCI-LAG.md](docs/USB-XHCI-LAG.md) | the USB latency investigation, cause and fix |
-| [docs/DUAL-BOOT.md](docs/DUAL-BOOT.md) | sharing the machine with Windows / Linux, repairing lost UEFI boot entries |
-| [docs/DEBUGGING.md](docs/DEBUGGING.md) | the NVRAM log channel, variable table, helper scripts |
-| [docs/ROADMAP.md](docs/ROADMAP.md) | what is missing |
-| [NOTICE.md](NOTICE.md) | third-party code, firmware and license notes |
+| macOS | **15 Sequoia only**. Developed on 15.6.1; daily use on **15.8.1 (24H32)** |
+| GPU mode | **Ultimate / dGPU-only MUX**. Radeon 890M has no driver and is hidden from macOS (research: [strix-890m-macos](https://github.com/thanhnndev/strix-890m-macos)) |
+| Graphics driver | NullMoth **1.14.2** with two local patches; use the [GA403WM fork](https://github.com/thanhnndev/nvidia-macos-driver/tree/ga403wm) for OLED brightness |
+| Bootloader | OpenCore **1.0.9** with the Zen 5 timer patch |
 
-Tiếng Việt: [README.vi.md](README.vi.md).
+**macOS 26 Tahoe is unsupported and untested. Do not upgrade:** the NVIDIA driver supports macOS 15 only. Current daily use is plugged in with an external HDMI display; battery life has not been tested.
 
-## Privacy
+## Hardware status
 
-* The repository never contains Wi-Fi passphrases or SMBIOS identifiers: `Info.plist` ships with empty `itl_ssid*/itl_psk*`
-  keys, `efi/OC/config.plist` carries `CHANGE_ME_*` placeholders, and CI fails if real values appear. A kext you inject
-  credentials into holds them in **plain text**.
-* NVRAM logs contain the card's MAC address and nearby SSIDs/BSSIDs. Redact them before posting.
+Checked items are verified on the reference machine. Unchecked items are unreliable, unverified or unsupported.
 
-## License
+- [x] **Boot / dual boot:** Internal ESP; Windows and Linux available in the OpenCore picker. [EFI](efi/README.md) · [Dual boot / UEFI recovery](docs/DUAL-BOOT.md)
+- [x] **CPU:** 12 cores / 24 threads; CPPC and boost to ~4.9 GHz with `AmdCppc` + `AmdCppcPolicy`. [CPU power](docs/CPU-POWER.md)
+- [x] **RTX 5060 / displays:** Internal OLED at 120 Hz and external display. [NVIDIA](docs/NULLMOTH.md)
+- [x] **OLED brightness / HiDPI:** System slider and brightness keys control the panel through `NVRMEdpBL`. HiDPI **2×**, “looks like 1440 × 900”; fractional scales unsupported. [Brightness](docs/OLED-BRIGHTNESS-DPCD.md) · [HiDPI setup](docs/SCRIPTS.md#4-hidpi-looks-like-1440-x-900-step-by-step)
+- [x] **USB keyboard, mouse, webcam:** `ItlXhciKick` fixes the 2-second key-release lag. Tested USB map pending in the standard EFI. [USB](docs/USB-XHCI-LAG.md)
+- [x] **Touchpad:** I2C `093a:3011`; fixed 2026-10-12. [Test notes](docs/HANDOFF.md)
+- [x] **MT7925 Wi-Fi:** moved to its own repository, **[mt7925-macos](https://github.com/thanhnndev/mt7925-macos)**: native Wi-Fi (Wi-Fi menu, join from System Settings) on macOS 15 and 26, legacy Ethernet mode, guide, roadmap and releases. [Install guide](https://github.com/thanhnndev/mt7925-macos/blob/main/docs/GUIDE.md)
+- [x] **MT7925 Bluetooth:** Classic headphones and BLE mice via `MtkBtFw` + `BtLeDlFix`, now in **[mt7925-macos](https://github.com/thanhnndev/mt7925-macos/blob/main/docs/BLUETOOTH.md)** ([release bt-v1.0](https://github.com/thanhnndev/mt7925-macos/releases/tag/bt-v1.0)).
+- [x] **ROG controls / lighting:** Profiles, fans, charge limit, keyboard backlight and Slash lighting via `AsusWmi` + RogControl, now in **[rog-control-macos](https://github.com/thanhnndev/rog-control-macos)**.
+- [ ] **Sleep / wake:** No reliable deep sleep; wake is slow and unreliable. Completed cycles restore CPU policy. Do not rely on lid close or sleep.
+- [ ] **Other Fn keys:** Brightness and keyboard lighting work; most other keys are not mapped.
+- [ ] **Audio / SD reader / battery %:** EFI includes AppleALC layout 33, Sinetek-rtsx and SMCBatteryManager; functionality is unverified.
+- [ ] **AirDrop / AWDL / Continuity:** not working yet; in progress in [mt7925-macos](https://github.com/thanhnndev/mt7925-macos/blob/main/docs/ROADMAP-AWDL.md) (branch `dev/awdl`)
 
-[Clear BSD License](LICENSE) for the code in this repository, which re-implements parts of the Linux `mt76` driver
-(BSD-3-Clause-Clear, © MediaTek). The firmware in `fw/` is MediaTek's and keeps [its own license](fw/LICENCE.mediatek). The
-OpenCore configuration in `efi/` derives from <https://github.com/nullmoth/1401> (PolyForm Noncommercial 1.0.0) and is **not**
-covered by the Clear BSD License, see [NOTICE.md](NOTICE.md).
+
+## Installation
+
+> **The complete tested EFI is not available yet.** `efi/` and the release's `EFI-reference.zip` are sanitized references with placeholder SMBIOS, placeholder USB map and debug boot-args. The working EFI, including the tested USB map, is planned as a later release asset.
+
+Follow **[INSTALL.md](docs/INSTALL.md)**. The main steps:
+
+1. Back up the disk. Set BIOS MUX to **Ultimate**, Above 4G Decoding **ON**, CSM **OFF**, Secure Boot **OFF**.
+2. Download the [v1 release](https://github.com/thanhnndev/ga403wm-hackintosh/releases): `ItlXhciKick`, `ItlDiag`, TapGuard, patched OpenCore, reference EFI and checksums. Or build on a Mac with `bash scripts/build.sh`. Add the [third-party kexts](efi/KEXTS.md).
+3. Assemble the [EFI](efi/README.md), generate **your own SMBIOS**, and use the patched OpenCore (`fix-zen5-fsb.diff` fixes timers firing ~10× early).
+4. Wi-Fi: install `itlmt7925.kext` (+ `itlmt7925Native.kext` for the Wi-Fi menu) from **[mt7925-macos](https://github.com/thanhnndev/mt7925-macos/releases)** following its [guide](https://github.com/thanhnndev/mt7925-macos/blob/main/docs/GUIDE.md), or use USB tethering.
+5. Install macOS 15, then the [NVIDIA driver from the fork](docs/INSTALL.md#7-nvidia-driver-rtx-5060--the-oled), then `AsusWmi` / RogControl / the CPU daemon from [rog-control-macos](https://github.com/thanhnndev/rog-control-macos/releases) and Bluetooth from [mt7925-macos](https://github.com/thanhnndev/mt7925-macos/releases/tag/bt-v1.0). An offline installer is recommended; the 16 GB online installer is not suited to the current Wi-Fi path.
+
+Release usage, install scripts, diagnostics and HiDPI setup: **[SCRIPTS.md](docs/SCRIPTS.md)**.
+
+## Utilities and source
+
+- **RogControl** (now developed in [rog-control-macos](https://github.com/thanhnndev/rog-control-macos)): menu bar and window for Silent / Performance / Turbo / Manual profiles, SPL/SPPT/FPPT limits, CPU temperature/power, fan RPM and firmware curves, 60/80/100% charge limits, keyboard and Slash lighting. Separate AC/battery settings apply at login and source changes; lighting reapplies after wake. Turbo is disabled on battery. MUX is read-only; no per-key Aura or panel overdrive. Includes `--bench`.
+- **ItlWiFi** (menu bar app for the Ethernet-style Wi-Fi mode) moved to [mt7925-macos](https://github.com/thanhnndev/mt7925-macos).
+- **TapGuard:** suppresses touchpad taps while typing.
+
+Driver and app details, including `ItlDiag` boot diagnostics: **[COMPONENTS.md](docs/COMPONENTS.md)**.
+
+Screenshots of the ROG Control app: [rog-control-macos](https://github.com/thanhnndev/rog-control-macos#screenshots).
+
+[About This Mac](docs/images/about-this-mac.png) · [Screenshot notes](docs/images/README.md)
+
+```text
+efi/                OpenCore reference config, SSDTs, third-party kext list
+kexts/              ItlXhciKick (USB lag), ItlDiag (diagnostics)
+macos/              TapGuard
+patches/opencore/   Zen 5 patch
+scripts/            Build, install, credential injection, logs, EFI export/privacy check
+tools/              Kernel-collection reader and display/CPU probes
+test/               Host tests (WPA2, capabilities, Block Ack, etc.), run in CI
+docs/               Guides, component reference, research and test notes
+```
+
+## Next steps
+
+[ROADMAP.md](docs/ROADMAP.md) tracks branches and next actions: sleep/wake, Fn keys, battery testing, audio/SD/battery verification, WindowServer performance and upstreaming the NVIDIA VRAM-clear/brightness patches. Also pending: a second owner's installation report, the first tagged release with CI-built kexts (CI app builds currently fail), and component-by-component cleanup after stability is established. macOS 26 waits until macOS 15 is stable.
+
+## Contributing and license
+
+Maintained by [thanhnndev](https://github.com/thanhnndev). GA403WM owners: use the **Hardware report** issue template and read [CONTRIBUTING.md](CONTRIBUTING.md).
+
+Thanks to [NullMoth](https://github.com/nullmoth/1401) for the EFI base and NVIDIA driver, Acidanthera for OpenCore/Lilu/VirtualSMC/AppleALC, and Linux `mt76`, `btmtk`, `asus-wmi` and `asusctl` for design references. Full credits and licenses: [NOTICE.md](NOTICE.md).
+
+Code uses the [Clear BSD License](LICENSE), including reimplementations of MediaTek's Linux `mt76` (BSD-3-Clause-Clear).  **The EFI derives from `nullmoth/1401` and uses PolyForm Noncommercial 1.0.0: noncommercial use only.** The OLED brightness patches are in the `ga403wm` fork and have not been upstreamed.
+
+Not affiliated with ASUS, Apple, NVIDIA, MediaTek, AMD or NullMoth. Trademarks belong to their owners; users are responsible for complying with Apple's macOS license terms.

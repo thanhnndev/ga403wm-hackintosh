@@ -5,7 +5,10 @@
 
     python scripts/check-efi-privacy.py [path/to/config.plist ...]
 """
-import plistlib, sys
+import plistlib, re, sys
+
+# NVMe EUI-64 and GPT partition GUID inside OpenCore device paths identify the machine's disk
+DEVICE_PATH_ID = re.compile(rb"NVMe\(0x[0-9A-Fa-f]+,[0-9A-Fa-f-]+\)|GPT,[0-9A-Fa-f]{8}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{12}")
 
 EXPECT = {
     "SystemSerialNumber": "CHANGE_ME_SN",
@@ -19,7 +22,11 @@ def main(paths):
     bad = 0
     for path in paths:
         with open(path, "rb") as f:
-            cfg = plistlib.load(f)
+            raw = f.read()
+        cfg = plistlib.loads(raw)
+        if DEVICE_PATH_ID.search(raw):
+            print("%s: carries a disk identifier (NVMe EUI-64 / GPT partition GUID in a device path, e.g. Misc.Entries)" % path)
+            bad += 1
         g = cfg.get("PlatformInfo", {}).get("Generic", {})
         for k, want in EXPECT.items():
             if g.get(k) != want:

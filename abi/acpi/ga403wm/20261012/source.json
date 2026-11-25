@@ -1,0 +1,153 @@
+{
+  "source": "/Volumes/ESP/SysReport/ACPI",
+  "iasl_version": "20260930",
+  "acpica_commit": "e85aa3bebaae81ed1e6d163511ac7e1eafe732cf",
+  "method": "per-table iasl -d; combined namespace resolution failed on duplicate objects",
+  "tables": [
+    {
+      "table": "DSDT.aml",
+      "sha256": "4a576d6e8623189a18831183631b7bb30ac596b50c094f2fe73b00f395b7eaa1",
+      "disassembly": "DSDT.dsl"
+    },
+    {
+      "table": "SSDT-1.aml",
+      "sha256": "442dbc7d6af9167e72b422b5b96de32c76cecda0bd90628d789b5551d88901c4",
+      "disassembly": "SSDT-1.dsl"
+    },
+    {
+      "table": "SSDT-10.aml",
+      "sha256": "e4de809d55ced2c14f135bc8f2f4fb463dc707624e74dd4621ab6c8406784b7c",
+      "disassembly": "SSDT-10.dsl"
+    },
+    {
+      "table": "SSDT-11.aml",
+      "sha256": "6bfff6cef6c2a3486304f185f6c42b0d48ed030dd5eeb43e9eb7ef11a04a7dba",
+      "disassembly": "SSDT-11.dsl"
+    },
+    {
+      "table": "SSDT-12.aml",
+      "sha256": "a68dffe6ee16bb351a4d010b9f9faff83b18e051b0450e190903689087fb6f96",
+      "disassembly": "SSDT-12.dsl"
+    },
+    {
+      "table": "SSDT-13.aml",
+      "sha256": "4cf9252dda9e62dc58f6eb698e9cef0a676598b9ab9918c9a33e5827692db366",
+      "disassembly": "SSDT-13.dsl"
+    },
+    {
+      "table": "SSDT-14.aml",
+      "sha256": "0ff13791c199af178ae2b449cab9239f74220677e660ee967c7f8da3b2148bdf",
+      "disassembly": "SSDT-14.dsl"
+    },
+    {
+      "table": "SSDT-15.aml",
+      "sha256": "4d1b8e5961d9e7b7f4e7fa784378e3e2395857bdb6cf47248d863718faae6c6b",
+      "disassembly": "SSDT-15.dsl"
+    },
+    {
+      "table": "SSDT-16.aml",
+      "sha256": "5f71d9c08243ba41edb2b1bf77104fba4e6f11c59f34945a83b8ddc4d554fb3f",
+      "disassembly": "SSDT-16.dsl"
+    },
+    {
+      "table": "SSDT-17.aml",
+      "sha256": "2c1188da8a10a51889d1414dcb9ede124038dcad67bb66835f96591c6b6c511d",
+      "disassembly": "SSDT-17.dsl"
+    },
+    {
+      "table": "SSDT-18.aml",
+      "sha256": "30eafa0686268e54758ba000a71b06deb3bcd703b0c3049e3d269a66feee1f11",
+      "disassembly": "SSDT-18.dsl"
+    },
+    {
+      "table": "SSDT-19.aml",
+      "sha256": "5a15a3efc9114ef0dc4ef20bf4ee08ca8601d9c393faddb40b0f3c0d94877fe1",
+      "disassembly": "SSDT-19.dsl"
+    },
+    {
+      "table": "SSDT-2.aml",
+      "sha256": "5bb11359b39229938114f4319e4189e1657f835dbba5382d92dbfb60c99479b7",
+      "disassembly": "SSDT-2.dsl"
+    },
+    {
+      "table": "SSDT-20.aml",
+      "sha256": "49cae0b4db52ec7f670beeabd127dda9509d84a40cd7cef76ec6f237cc439b57",
+      "disassembly": "SSDT-20.dsl"
+    },
+    {
+      "table": "SSDT-21.aml",
+      "sha256": "3b1f5daa66c4d792e845aff3432e59892247e179a31c7baad5e1f80479177d85",
+      "disassembly": "SSDT-21.dsl"
+    },
+    {
+      "table": "SSDT-22.aml",
+      "sha256": "837468d32445128801d16ab32dc44d97e29acf5dcee1a29a9f4c94d722b3cf0c",
+      "disassembly": "SSDT-22.dsl"
+    },
+    {
+      "table": "SSDT-23.aml",
+      "sha256": "0cc5bdc76815421f5a2a0f9ea28be2ede0e9e35bf5f63fd209afdba21f9e53dc",
+      "disassembly": "SSDT-23.dsl"
+    },
+    {
+      "table": "SSDT-24.aml",
+      "sha256": "0d62a553ba0649b2548bca971c327d6f73ce5a4fe22d4956863454139e1b6827",
+      "disassembly": "SSDT-24.dsl"
+    },
+    {
+      "table": "SSDT-25.aml",
+      "sha256": "9da35e5b37f50a1924412474888d33daf0325795c07120c4a8c458b3ee9e2de4",
+      "disassembly": "SSDT-25.dsl"
+    },
+    {
+      "table": "SSDT-26.aml",
+      "sha256": "7b31fcfec565339295b3338a2d88315e2e059d80c613c948f6835c18ad263db2",
+      "disassembly": "SSDT-26.dsl"
+    },
+    {
+      "table": "SSDT-27.aml",
+      "sha256": "ccb324ba85b433a56f312ea43fd4d0ca45148684f69948783f5fbf3e920d7c94",
+      "disassembly": "SSDT-27.dsl"
+    },
+    {
+      "table": "SSDT-28.aml",
+      "sha256": "deadce36f956bcd39e61d1e52cbb658ee39a046dc47138f92f686053ae722076",
+      "disassembly": "SSDT-28.dsl"
+    },
+    {
+      "table": "SSDT-3.aml",
+      "sha256": "570961f501767bbbee5358445eee39ee209640a4e62d52e58cced82109d0a211",
+      "disassembly": "SSDT-3.dsl"
+    },
+    {
+      "table": "SSDT-4.aml",
+      "sha256": "f29504b8ff3d77905fdf51c658f8feb6d988257c06be8f6adde060a79848f870",
+      "disassembly": "SSDT-4.dsl"
+    },
+    {
+      "table": "SSDT-5.aml",
+      "sha256": "203f6c4a7f71d6a8779d0be0c0316540dee9b0462fea5a2d90665df7ad93c925",
+      "disassembly": "SSDT-5.dsl"
+    },
+    {
+      "table": "SSDT-6.aml",
+      "sha256": "4e5bc8eba75a27346ec1c4a8575027a44ae8d5ef9682584c1e793414b86b586a",
+      "disassembly": "SSDT-6.dsl"
+    },
+    {
+      "table": "SSDT-7.aml",
+      "sha256": "c9c2dd3dbed0dc9d38ead286439db15caffc8271f9c73271621e41467c2b4219",
+      "disassembly": "SSDT-7.dsl"
+    },
+    {
+      "table": "SSDT-8.aml",
+      "sha256": "596ea215c4d0168fb7b90cce35610a13c845073d378b268a138e985bc110ac07",
+      "disassembly": "SSDT-8.dsl"
+    },
+    {
+      "table": "SSDT-9.aml",
+      "sha256": "64cf7349e40effa4b44c1969baa9c4807c669589f78f8ea5d701f099b46eeed0",
+      "disassembly": "SSDT-9.dsl"
+    }
+  ]
+}

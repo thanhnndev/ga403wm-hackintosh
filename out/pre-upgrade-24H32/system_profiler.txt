@@ -1,0 +1,330 @@
+nvrm: b81 PERF_BOOST flags 0x12 INFINITE rc 0x0
+nvrm: b72 host-pointer import ON (probe NV_STATUS 0)
+nvrm: b80 LOCAL+mapped memory -> system RAM (b79 placement) (BAR1 8192 MB, VRAM 8151 MB, default)
+Graphics/Displays:
+
+    NVIDIA GeForce RTX 5060 Laptop GPU:
+
+      Chipset Model: NVIDIA GeForce RTX 5060 Laptop GPU
+      Type: GPU
+      Bus: PCIe
+      PCIe Lane Width: x8
+      VRAM (Total): 8 GB
+      Vendor: NVIDIA (0x10de)
+      Device ID: 0x2d59
+      Revision ID: 0x00a1
+      Metal Support: Metal 3
+
+    AMD Radeon 890M:
+
+      Chipset Model: AMD Radeon 890M
+      Type: GPU
+      Bus: PCIe
+      PCIe Lane Width: x16
+      VRAM (Total): 512 MB
+      Vendor: AMD (0x1002)
+      Device ID: 0x150e
+      Revision ID: 0x00c1
+      Displays:
+        Built-in OLED:
+          Resolution: 2880 x 1800
+          UI Looks like: 1440 x 900 @ 120.00Hz
+          Framebuffer Depth: 24-Bit Color (ARGB8888)
+          Main Display: Yes
+          Mirror: Off
+          Online: Yes
+          Automatically Adjust Brightness: No
+          Connection Type: Internal
+
+Hardware:
+
+    Hardware Overview:
+
+      Model Name: MacBook Pro
+      Model Identifier: MacBookPro16,2
+      Processor Name: AMD Ryzen AI 9 HX 370 w/ Radeon 890M
+      Processor Speed: 2 GHz
+      Number of Processors: 1
+      Total Number of Cores: 12
+      L2 Cache (per Core): 1 MB
+      L3 Cache: 48 MB
+      Hyper-Threading Technology: Enabled
+      Memory: 32 GB
+      System Firmware Version: 2094.80.5.0.0
+      OS Loader Version: 583~5915
+      Serial Number (system): <redacted>
+      Hardware UUID: <redacted>
+      Provisioning UDID: <redacted>
+
+Audio:
+
+    Devices:
+
+        Built-in Input:
+
+          Default Input Device: Yes
+          Input Channels: 2
+          Manufacturer: Apple Inc.
+          Current SampleRate: 48000
+          Transport: Built-in
+          Input Source: Internal Microphone
+
+        Built-in Output:
+
+          Default Output Device: Yes
+          Default System Output Device: Yes
+          Manufacturer: Apple Inc.
+          Output Channels: 2
+          Current SampleRate: 48000
+          Transport: Built-in
+          Output Source: Internal Speakers
+
+        ROG Clear Mic:
+
+          Input Channels: 1
+          Manufacturer: itlmt7925
+          Current SampleRate: 48000
+          Transport: Virtual
+          Input Source: Default
+
+        ROG Speakers:
+
+          Manufacturer: itlmt7925
+          Output Channels: 2
+          Current SampleRate: 48000
+          Transport: Virtual
+          Output Source: Default
+
+Network:
+
+    Wi-Fi:
+
+      Type: AirPort
+      Hardware: AirPort
+      BSD Device Name: en5
+      IPv4 Addresses: 10.0.0.14
+      IPv4:
+          Additional Routes:
+              Destination Address: <redacted>
+              Subnet Mask: 255.255.255.255
+              Destination Address: <redacted>
+              Subnet Mask: 255.255.0.0
+          Addresses: 10.0.0.14
+          ARP Resolved Hardware Address: <redacted>
+          ARP Resolved IP Address: <redacted>
+          Configuration Method: DHCP
+          Confirmed Interface Name: en5
+          Interface Name: en5
+          Network Signature: IPv4.Router=10.0.0.1;IPv4.RouterHardwareAddress=xx:xx:xx:xx:xx:xx
+          Router: 10.0.0.1
+          Subnet Masks: 255.255.255.0
+      IPv6:
+          Configuration Method: Automatic
+      DNS:
+          Server Addresses: 10.0.0.1
+      DHCP Server Responses:
+          Domain Name Servers: 10.0.0.1
+          Lease Duration (seconds): 0
+          DHCP Message Type: 0x05
+          Routers: 10.0.0.1
+          Server Identifier: 10.0.0.1
+          Subnet Mask: 255.255.255.0
+      Ethernet:
+          MAC Address: <redacted>
+          Media Options: 
+          Media Subtype: Auto Select
+      Proxies:
+          Exceptions List: *.local, 169.254/16
+          FTP Passive Mode: Yes
+      Service Order: 0
+
+    一加 13:
+
+      Type: Ethernet
+      Hardware: Ethernet
+      BSD Device Name: en1
+      IPv4:
+          Configuration Method: DHCP
+      IPv6:
+          Configuration Method: Automatic
+      Proxies:
+          Exceptions List: *.local, 169.254/16
+          FTP Passive Mode: Yes
+      Service Order: 1
+
+Bluetooth:
+
+      Bluetooth Controller:
+          Address: <redacted>
+          State: On
+          Chipset: THIRD_PARTY_DONGLE
+          Discoverable: Off
+          Firmware Version: v9736 c4881
+          Supported services: 0x392039 < HFP AVRCP A2DP HID Braille LEA AACP GATT SerialPort >
+          Transport: UART
+          Vendor ID: 0x004C (Apple)
+      Not Connected:
+          Baseus Bowie MA10:
+              Address: <redacted>
+              Minor Type: Headset
+          Baseus Inspire XH1:
+              Address: <redacted>
+              Minor Type: Headset
+          UGREEN BLE Mouse:
+              Address: <redacted>
+              Minor Type: Mouse
+
+USB:
+
+    USB 3.1 Bus:
+
+      Host Controller Driver: AppleUSBXHCIPCI
+      PCI Device ID: 0x151f 
+      PCI Revision ID: 0x0000 
+      PCI Vendor ID: 0x1022 
+
+        ITE Device(8910):
+
+          Product ID: 0x19b6
+          Vendor ID: 0x0b05  (ASUSTek Computer Inc.)
+          Version: 0.0b
+          Speed: Up to 12 Mb/s
+          Manufacturer: ITE Tech. Inc.
+          Location ID: 0x00400000 / 1
+          Current Available (mA): 500
+          Current Required (mA): 100
+          Extra Operating Current (mA): 0
+          Built-In: Yes
+
+        Wireless_Device:
+
+          Product ID: 0xe11e
+          Vendor ID: 0x0489  (Foxconn / Hon Hai)
+          Version: 1.00
+          Serial Number: <redacted>
+          Speed: Up to 480 Mb/s
+          Manufacturer: MediaTek Inc.
+          Location ID: 0x00300000 / 2
+          Current Available (mA): 500
+          Current Required (mA): 100
+          Extra Operating Current (mA): 0
+          Built-In: Yes
+
+        UGREEN Mouse:
+
+          Product ID: 0x0043
+          Vendor ID: 0x2b89
+          Version: 2.00
+          Serial Number: <redacted>
+          Speed: Up to 12 Mb/s
+          Location ID: 0x00200000 / 3
+          Current Available (mA): 500
+          Current Required (mA): 100
+          Extra Operating Current (mA): 0
+
+        Gaming Keyboard:
+
+          Product ID: 0x010c
+          Vendor ID: 0x258a
+          Version: 9.02
+          Speed: Up to 12 Mb/s
+          Manufacturer: BY Tech
+          Location ID: 0x00100000 / 4
+          Current Available (mA): 500
+          Current Required (mA): 500
+          Extra Operating Current (mA): 0
+
+    USB 3.1 Bus:
+
+      Host Controller Driver: AppleUSBXHCIPCI
+      PCI Device ID: 0x151a 
+      PCI Revision ID: 0x0000 
+      PCI Vendor ID: 0x1022 
+
+    USB 3.1 Bus:
+
+      Host Controller Driver: AppleUSBXHCIPCI
+      PCI Device ID: 0x151b 
+      PCI Revision ID: 0x0000 
+      PCI Vendor ID: 0x1022 
+
+    USB 3.1 Bus:
+
+      Host Controller Driver: AppleUSBXHCIPCI
+      PCI Device ID: 0x151e 
+      PCI Revision ID: 0x0000 
+      PCI Vendor ID: 0x1022 
+
+        ASUS FHD webcam:
+
+          Product ID: 0x52ba
+          Vendor ID: 0x13d3  (AzureWave Technologies, Inc.)
+          Version: 24.53
+          Serial Number: <redacted>
+          Speed: Up to 480 Mb/s
+          Manufacturer: Azurewave
+          Location ID: 0x81100000 / 1
+          Current Available (mA): 500
+          Current Required (mA): 500
+          Extra Operating Current (mA): 0
+
+Power:
+
+    Battery Information:
+
+      Model Information:
+          Serial Number: <redacted>
+          Manufacturer: ASUS 
+          Device Name: A32-K55
+          Pack Lot Code: 0
+          PCB Lot Code: 0
+          Firmware Version: 0
+          Hardware Revision: 0
+          Cell Revision: 0
+      Charge Information:
+          The battery’s charge is below the warning level: No
+          Fully Charged: No
+          Charging: No
+          Full Charge Capacity (mAh): 4164
+          State of Charge (%): 73
+      Health Information:
+          Cycle Count: 90
+          Condition: Normal
+
+    System Power Settings:
+
+      AC Power:
+          System Sleep Timer (Minutes): 1
+          Disk Sleep Timer (Minutes): 10
+          Display Sleep Timer (Minutes): 10
+          Wake on LAN: Yes
+          Current Power Source: Yes
+          Display Sleep Uses Dim: Yes
+          Hibernate Mode: 3
+          Low Power Mode: No
+          Prioritize Network Reachability Over Sleep: No
+      Battery Power:
+          System Sleep Timer (Minutes): 1
+          Disk Sleep Timer (Minutes): 10
+          Display Sleep Timer (Minutes): 2
+          Wake on LAN: No
+          Display Sleep Uses Dim: Yes
+          Hibernate Mode: 3
+          Low Power Mode: Yes
+          Prioritize Network Reachability Over Sleep: No
+          Reduce Brightness: Yes
+
+    Hardware Configuration:
+
+      UPS Installed: No
+
+    AC Charger Information:
+
+      Connected: Yes
+      ID: 0x0100
+      Wattage (W): 60
+      Revision: 0x0000
+      Family: 0x00ba
+      Serial Number: <redacted>
+      Charging: No
+

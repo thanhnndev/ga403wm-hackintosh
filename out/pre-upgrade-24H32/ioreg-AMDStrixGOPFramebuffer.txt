@@ -1,0 +1,170 @@
++-o AMDStrixGOPFramebuffer  <class AMDStrixGOPFramebuffer, id 0x100000475, registered, matched, active, busy 0 (32 ms), retain 23>
+  | {
+  |   "Backlight,Failures" = 0
+  |   "IOFBCurrentPixelClock" = 652264000
+  |   "PanelEDID" = <00ffffffffffff004c839c410000000001210104a51e137802ee91a3544c99260f505400000001010101010101010101010101010101cbfe4064b0083877302035002ebd1000001e000000fc0041544e413430435530352d300a0000001000000000000000000000000000000000001000000000000000000000000000000025>
+  |   "AdoptBootGOP" = Yes
+  |   "IOPersonalityPublisher" = "com.itlmt7925.strixgop"
+  |   "Aux,Channel" = 0
+  |   "startup-timing" = <2a000000000000800000000000000000000000000000000000000000000000000000000000000000000000000000000040c2e0260000000040c2e0260000000040c2e02600000000400b00006400000030000000200000000807000018000000030000000500000000000000000000000000000000000000010000000000000001000000000000000100000000000000010008000000010000000000000000000000000000000000>
+  |   "built-in" = <>
+  |   "IOFBTransform" = 0
+  |   "IOMatchCategory" = "StrixGOP"
+  |   "TraceStep" = "890M-03"
+  |   "Aux,Status" = "panel-aux-brightness"
+  |   "StrixGOPVersion" = "0.1.11"
+  |   "Sample,Count" = 1024
+  |   "Backlight,Writes" = 139
+  |   "IOFBUIScale" = <00000000>
+  |   "Aux,Dpcd330" = "00010000000000000000000000000000"
+  |   "IOProbeScore" = 0
+  |   "Acceleration" = No
+  |   "IOFBTimingRange" = <000000000000000002000000000000000000000000000000000000000000000040c2e02600000000b0d9e02600000000e8030000ffffffffffffffffffffffff180000009000000030750000801a0600001000006009000000000000000000000101010101010101010101010101000080020000400b000001000000c004000000000000000200000100000000020000e001000008070000010000005802000000000000800000000100000080000000000000000000000000000000000000000000000000000000000000000000000001000000e8f30900eef309000000000000000000010006008303030000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000>
+  |   "Backlight,SleepCount" = 0
+  |   "IOClass" = "AMDStrixGOPFramebuffer"
+  |   "Backlight,Readback" = "000207ff"
+  |   "IOGeneralInterest" = "IOCommand is not serializable"
+  |   "Backlight,Max" = 2047
+  |   "PanelEDIDSource" = "synthesized+cta-hdr"
+  |   "Backlight,Bytes" = 2
+  |   "Backlight,Handler" = Yes
+  |   "CFBundleIdentifier" = "com.itlmt7925.strixgop"
+  |   "BootGOPProfile" = {"BAR0Length"=268435456,"Height"=1800,"Offset"=0,"Stride"=11520,"Depth"=32,"PixelFormat"="XRGB8888","Rotation"=0,"Width"=2880,"BAR0Base"=36507222016}
+  |   "Aux,Ch0" = "pass0 ctl=01040101 arb=00000000 rc=0/0 sw=05000001 dpcd=14 edp=059b8614"
+  |   "Aux,Dpcd310" = "000000001e0000170000000000000000"
+  |   "Backlight,WakeCount" = 0
+  |   "IOPMStrictTreeOrder" = Yes
+  |   "IOCFPlugInTypes" = {"ACCF0000-0000-0000-0000-000a2789904e"="IOAccelerator2D.plugin"}
+  |   "IOAccelTypes" = "IOService:/AppleACPIPlatformExpert/PCI0@0/AppleACPIPCI/GPPA@8,1/IOPP/VGA@0/StrixAccelerator"
+  |   "Sample,Hash" = 753040668
+  |   "Sample,ChangedSinceEnable" = 1024
+  |   "IOFBWaitCursorPeriod" = 33333333
+  |   "IOFBConfig" = {"IOFBmHz"=Yes,"IOFBModes"=({"ID"=1,"AID"=42,"DM"=<400b0000080700002d003c00000000000304900200000000000000000000000000000000>,"DF"=41944067,"TM"=<01000000000000000000000000000000000000000000000000000000000000000000000000000000b0d9e02600000000b0d9e02600000000b0d9e02600000000400b00006400000030000000200000000807000038070000030000000500000000000000000000000000000000000000010000000000000001000000000000000100000000000000010008000000010000000000000000000000000000000000>},{"ID"=2,"AID"=42,"DM"=<400b00000807000013007800000000000304900200000000000000000000000000000000>,"DF"=41944067,"TM"=<0200000000000000000000000000000000000000000000000000000000000000000000000000000040c2e0260000000040c2e0260000000040c2e02600000000400b00006400000030000000200000000807000018000000030000000500000000000000000000000000000000000000010000000000000001000000000000000100000000000000010008000000010000000000000000000000000000000000>},{"ID"=3,"AID"=42,"DM"=<400b0000080700002d003c00000000000304900200000000000000000000000000000000>,"DF"=41944067,"TM"=<03000000000000000000000000000000000000000000000000000000000000000000000000000000b0d9e02600000000b0d9e02600000000b0d9e02600000000400b00006400000030000000200000000807000038070000030000000500000000000000000000000000000000000000010000000000000001000000000000000100000000000000010008000000020000000000000000000000000000000000>},{"ID"=4,"AID"=42,"DM"=<400b00000807000013007800000000000304900200000000000000000000000000000000>,"DF"=41944067,"TM"=<0400000000000000000000000000000000000000000000000000000000000000000000000000000040c2e0260000000040c2e0260000000040c2e02600000000400b00006400000030000000200000000807000018000000030000000500000000000000000000000000000000000000010000000000000001000000000000000100000000000000010008000000020000000000000000000000000000000000>}),"dims"=<400b0000080700000002000007000000>,"IOFBtv"=Yes}
+  |   "IOFBMemorySize" = 20738048
+  |   "IODisplayParameters" = "IOFramebufferParameterHandler is not serializable"
+  |   "HdrModes" = Yes
+  |   "EDID,Blocks" = 2
+  |   "CFBundleIdentifierKernel" = "com.itlmt7925.strixgop"
+  |   "IOFBCurrentPixelCountReal" = 5435520
+  |   "IOPCIPrimaryMatch" = "0x150e1002"
+  |   "Aux,Dpcd340" = "01770100000000000000000000000000"
+  |   "Aux,Dpcd720" = "000100000b0b0b00000002a300ffff03"
+  |   "IOAccelIndex" = 0
+  |   "Controller,Enabled" = Yes
+  |   "IOFBWaitCursorFrames" = 29
+  |   "IOProviderClass" = "IOPCIDevice"
+  |   "PixelFormat,Status" = "XRGB8888-selected-needs-color-validation"
+  |   "IOFBCurrentPixelCount" = 5435520
+  |   "Aux,Dpcd320" = "00000000000000000000000000000000"
+  |   "IOFramebufferOpenGLIndex" = 0
+  |   "Aux,Dpcd700" = "059b8614000000000000000000000000"
+  |   "Aperture,Base" = 36507222016
+  |   "HardwareModesetting" = No
+  |   "IOPowerManagement" = {"CapabilityFlags"=0,"ChildProxyPowerState"=18446744073709551615,"CurrentPowerState"=0}
+  |   "IOAccelRevision" = 2
+  |   "Hdr,Modes" = 1
+  |   "Aperture,RasterBytes" = 20736000
+  |   "Hdr,TimingRangeBytes" = 312
+  |   "Backlight,Percent" = 100
+  |   "Backlight,LastRc" = 0
+  |   "Backlight,Level" = 2047
+  |   "Aux,Dpcd300" = "00000000000000000000000000000000"
+  |   "Aux,Dpcd350" = "00000000000000000000000000000000"
+  |   "Sample,NonBlack" = 1024
+  |   "Aux,EdpCaps" = 367494
+  | }
+  | 
+  +-o backlight  <class StrixBacklightHandler, id 0x1000004a4, registered, matched, active, busy 0 (19 ms), retain 7>
+  |   {
+  |   }
+  |   
+  +-o AppleMCCSControlModule  <class AppleMCCSControlModule, id 0x1000004cc, registered, matched, active, busy 0 (4 ms), retain 7>
+  | | {
+  | |   "IOProbeScore" = 0
+  | |   "CFBundleIdentifier" = "com.apple.driver.AppleMCCSControl"
+  | |   "IOMatchCategory" = "AppleMCCSControlFamily"
+  | |   "IOClass" = "AppleMCCSControlModule"
+  | |   "IOPersonalityPublisher" = "com.apple.driver.AppleMCCSControl"
+  | |   "IOKitDebug" = 0
+  | |   "IOProviderClass" = "IOFramebuffer"
+  | |   "CFBundleIdentifierKernel" = "com.apple.driver.AppleMCCSControl"
+  | |   "IOUserClientClass" = "AppleMCCSUserClient"
+  | |   "IOResourceMatch" = "IOKit"
+  | | }
+  | | 
+  | +-o AppleMCCSParameterHandler  <class AppleMCCSParameterHandler, id 0x1000004d8, registered, matched, active, busy 0 (1 ms), retain 5>
+  |     {
+  |       "IOProbeScore" = 0
+  |       "CFBundleIdentifier" = "com.apple.driver.AppleMCCSControl"
+  |       "IOMatchCategory" = "IODisplayParameters"
+  |       "IOClass" = "AppleMCCSParameterHandler"
+  |       "IOPersonalityPublisher" = "com.apple.driver.AppleMCCSControl"
+  |       "IOKitDebug" = 0
+  |       "AppleMCCSFeatures" = 1
+  |       "IOProviderClass" = "AppleMCCSControlFamily"
+  |       "CFBundleIdentifierKernel" = "com.apple.driver.AppleMCCSControl"
+  |       "IOResourceMatch" = "IOKit"
+  |     }
+  |     
+  +-o AppleUpstreamUserClientDriver  <class AppleUpstreamUserClientDriver, id 0x1000004cd, registered, matched, active, busy 0 (1 ms), retain 5>
+  |   {
+  |     "IOProbeScore" = 0
+  |     "CFBundleIdentifier" = "com.apple.driver.AppleUpstreamUserClient"
+  |     "IOMatchCategory" = "AppleUpstreamUserClientDriver"
+  |     "IOClass" = "AppleUpstreamUserClientDriver"
+  |     "IOPersonalityPublisher" = "com.apple.driver.AppleUpstreamUserClient"
+  |     "IOProviderClass" = "IOFramebuffer"
+  |     "CFBundleIdentifierKernel" = "com.apple.driver.AppleUpstreamUserClient"
+  |     "IOUserClientClass" = "AppleUpstreamUserClient"
+  |     "IOResourceMatch" = "IOKit"
+  |   }
+  |   
+  +-o AGPM  <class AGPM, id 0x10000054e, registered, matched, active, busy 0 (0 ms), retain 8>
+  |   {
+  |     "IOReportLegend" = ({"IOReportChannels"=((5795122739160566084,6442450945,"PlimitNS"),(6008203707511294276,6442450945,"PlimitSampleTimeNS")),"IOReportGroupName"="AGPMStatistics","IOReportChannelInfo"={"IOReportChannelUnit"=0}})
+  |     "max-value" = 15
+  |     "min-value" = 0
+  |     "IOReportLegendPublic" = Yes
+  |     "IOPowerManagement" = {"CapabilityFlags"=0,"CurrentPowerState"=0}
+  |     "Heuristic-ID" = <ffffffff>
+  |   }
+  |   
+  +-o display0  <class IODisplayConnect, id 0x100000668, registered, matched, active, busy 0 (0 ms), retain 6>
+  | | {
+  | | }
+  | | 
+  | +-o AppleBacklightDisplay  <class AppleBacklightDisplay, id 0x100000669, registered, matched, active, busy 0 (0 ms), retain 8>
+  |     {
+  |       "IOClass" = "AppleBacklightDisplay"
+  |       "CFBundleIdentifier" = "com.apple.iokit.IOGraphicsFamily"
+  |       "IOProviderClass" = "IODisplayConnect"
+  |       "DisplayProductID" = 16796
+  |       "IODisplayEDID" = <00ffffffffffff004c839c410000000001210104a51e137802ee91a3544c99260f505400000001010101010101010101010101010101cbfe4064b0083877302035002ebd1000001e000000fc0041544e413430435530352d300a000000100000000000000000000000000000000000100000000000000000000000000000012402030f00e305c000e60605016a60030000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000085>
+  |       "IODisplayPrefsKeyOld" = "IOService:/AppleACPIPlatformExpert/PCI0@0/AppleACPIPCI/GPPA@8,1/IOPP/VGA@0/AMDStrixGOPFramebuffer/display0/AppleBacklightDisplay-4c83-419c"
+  |       "IODisplayPrefsKey" = "IOService:/AppleACPIPlatformExpert/PCI0@0/AppleACPIPCI/GPPA@8,1/IOPP/VGA@0-4c83-419c-4d02992d8f1dec8a"
+  |       "IOProbeScore" = 3000
+  |       "IODisplayParameters" = {"bgsc"={"min"=0,"max"=65536,"value"=65536},"rgsc"={"min"=0,"max"=65536,"value"=65536},"fade-time3"={"min"=0,"max"=10000,"value"=500},"brightness"={"min"=0,"max"=100,"value"=100},"fade-time2"={"min"=0,"max"=10000,"value"=4000},"fade-style"={"min"=0,"max"=10,"value"=0},"ownr"=4294968437,"fade-time1"={"min"=0,"max"=10000,"value"=500},"ggsc"={"min"=0,"max"=65536,"value"=65536},"vblm"={"min"=0,"max"=196608,"value"=65536},"linear-brightness"={"min"=0,"max"=100,"value"=100}}
+  |       "IOPowerManagement" = {"CapabilityFlags"=0,"MaxPowerState"=3,"CurrentPowerState"=0}
+  |       "IOMatchCategory" = "IODefaultMatchCategory"
+  |       "IOPersonalityPublisher" = "com.apple.iokit.IOGraphicsFamily"
+  |       "IODisplayConnectFlags" = <00080000>
+  |       "CFBundleIdentifierKernel" = "com.apple.iokit.IOGraphicsFamily"
+  |       "IODisplayAttributes" = {"IODisplayAttributes"=<676174760000000073676c6604000000726c6f63010000006364670080808000676c666401000000>}
+  |       "DisplayVendorID" = 19587
+  |       "DisplaySerialNumber" = 0
+  |     }
+  |     
+  +-o IOFramebufferUserClient  <class IOFramebufferUserClient, id 0x10000066d, !registered, !matched, active, busy 0, retain 5>
+  |   {
+  |     "IOUserClientCreator" = "pid 1086, WindowServer"
+  |     "IOUserClientDefaultLocking" = Yes
+  |   }
+  |   
+  +-o IOFramebufferSharedUserClient  <class IOFramebufferSharedUserClient, id 0x100000771, !registered, !matched, active, busy 0, retain 5>
+      {
+        "IOUserClientDefaultLocking" = Yes
+        "IOUserClientSharedInstance" = Yes
+        "IOUserClientCreator" = "pid 2697, XKey"
+      }
+      
+

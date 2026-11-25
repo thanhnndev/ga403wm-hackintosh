@@ -1,0 +1,22 @@
+/System/Library/Frameworks/CoreDisplay.framework/Versions/A/CoreDisplay
+	          __TEXT 0x7FF80404C000 -> 0x7FF8041768E4
+	    __DATA_CONST 0x7FF8404F7BB0 -> 0x7FF840507D00
+/System/Library/PrivateFrameworks/SkyLight.framework/Versions/A/SkyLight
+	          __TEXT 0x7FF807B42000 -> 0x7FF808010F30
+	    __DATA_CONST 0x7FF840A402C0 -> 0x7FF840A8C128
+/System/Library/Frameworks/IOSurface.framework/Versions/A/IOSurface
+	          __TEXT 0x7FF80D323000 -> 0x7FF80D33A037
+	    __DATA_CONST 0x7FF8410C1E70 -> 0x7FF8410C61D8
+/System/Library/Frameworks/IOKit.framework/Versions/A/IOKit
+	          __TEXT 0x7FF8058B2000 -> 0x7FF80597714F
+	    __DATA_CONST 0x7FF840680FB0 -> 0x7FF84068D910
+/System/Library/Frameworks/Metal.framework/Versions/A/Metal
+	          __TEXT 0x7FF80D344000 -> 0x7FF80D5C6C3D
+	    __DATA_CONST 0x7FF8410C6D70 -> 0x7FF841120C20
+/System/Library/Frameworks/QuartzCore.framework/Versions/A/QuartzCore
+	          __TEXT 0x7FF80B1CA000 -> 0x7FF80B57711E
+	    __DATA_CONST 0x7FF840C74F10 -> 0x7FF840CB6898
+/System/Library/PrivateFrameworks/IO80211.framework/Versions/A/IO80211
+	          __TEXT 0x7FFC08298000 -> 0x7FFC082F8BC0
+	    __DATA_CONST 0x7FFC406A8380 -> 0x7FFC406B8970
+a7bc082a43f0a99228a1006f03c124f2f5bbc7eb2d4ac0d05fe68b7c3bd0ffe5  /System/Volumes/Preboot/Cryptexes/OS/System/Library/dyld/dyld_shared_cache_x86_64h.map

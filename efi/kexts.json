@@ -1,5 +1,5 @@
 {
-  "note": "Third-party kexts used on the reference machine (SHA-256 of the executable); they are not redistributed. itlmt7925, ItlXhciKick and ItlDiag are built from this repository.",
+  "note": "Third-party kexts used on the reference machine (SHA-256 of the executable); they are not redistributed. ItlXhciKick and ItlDiag are built from this repository; itlmt7925 comes from https://github.com/thanhnndev/mt7925-macos.",
   "kexts": [
     {
       "path": "Kexts/AMFIPass.kext",
@@ -18,6 +18,12 @@
       "bundle_id": "org.xlnc.disabler.MCEReporter",
       "version": "1.2",
       "executable_sha256": null
+    },
+    {
+      "path": "Kexts/BlueToolFixup.kext",
+      "bundle_id": "as.acidanthera.BlueToolFixup",
+      "version": "2.7.2",
+      "executable_sha256": "f3244382a43866138ff449b14f1e54fb069ad3e4b14cbc753858650efdbbce52"
     },
     {
       "path": "Kexts/BrightnessKeys.kext",
@@ -88,6 +94,12 @@
     {
       "path": "Kexts/UTBDefault.kext",
       "bundle_id": "com.dhinakg.USBToolBox.injector",
+      "version": "1.0",
+      "executable_sha256": null
+    },
+    {
+      "path": "Kexts/UTBMap.kext",
+      "bundle_id": "com.nullmoth.UTBMap",
       "version": "1.0",
       "executable_sha256": null
     },

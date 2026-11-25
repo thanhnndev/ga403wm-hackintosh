@@ -1,0 +1,18 @@
+name: Idea or work item
+description: Propose a feature or tell us you want to take a roadmap item.
+labels: ["roadmap"]
+body:
+  - type: input
+    id: track
+    attributes:
+      label: Roadmap workstream (number from docs/ROADMAP.md), or "new"
+  - type: textarea
+    id: what
+    attributes:
+      label: What and why
+    validations:
+      required: true
+  - type: textarea
+    id: plan
+    attributes:
+      label: How you would do it / what you already tried

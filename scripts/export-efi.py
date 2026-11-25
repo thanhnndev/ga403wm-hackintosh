@@ -12,6 +12,8 @@ What it does
   * Kexts are NOT copied. efi/kexts.json is written with bundle id, version and SHA-256 of every third-party kext (and
     nested plug-in) found in <src>/Kexts, so a user can verify the binaries they download from upstream. The kexts of
     this repository (bundle id com.itlmt7925.*) are left out: they are built from source.
+  * Misc.Entries is emptied: its device paths carry the SSD's NVMe EUI-64 and the GPT partition GUID, which identify the
+    machine (and are useless on another one). Add your own entries after installing.
   * Backups (config.plist.bak-*, orig-backup/) and OpenCore binaries are not copied.
   * Finally every written file is searched for the original identifiers (plain, upper/lower case, hex, base64 and the
     UTF-16 form); the script fails and removes the output if any is still there.
@@ -73,7 +75,32 @@ def scrub_text(xml, cfg):
     block, n = re.subn(r"(<key>ROM</key>\s*<data>)[^<]*(</data>)", lambda mm: mm.group(1) + b64 + mm.group(2), block)
     if n != 1:
         raise SystemExit("key ROM: expected 1 match, got %d" % n)
-    return xml[:start] + block + xml[i:]
+    return scrub_entries(xml[:start] + block + xml[i:])
+
+
+DEVICE_PATH_ID = re.compile(r"NVMe\(0x[0-9A-Fa-f]+,[0-9A-Fa-f-]+\)|GPT,[0-9A-Fa-f]{8}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{12}")
+
+
+def scrub_entries(xml):
+    """Empty Misc.Entries (device paths with the disk's NVMe EUI-64 / partition GUID); the rest stays byte for byte."""
+    m = re.search(r"(<key>Misc</key>.*?<key>Entries</key>\s*)<array>", xml, re.S)
+    if m:
+        start = m.end()
+        depth = 1
+        for t in re.finditer(r"<array>|</array>|<array/>", xml[start:]):
+            if t.group() == "<array>":
+                depth += 1
+            elif t.group() == "</array>":
+                depth -= 1
+            if depth == 0:
+                xml = xml[:m.end(1)] + "<array/>" + xml[start + t.end():]
+                break
+        else:
+            raise SystemExit("Misc.Entries: unbalanced <array>")
+    leak = DEVICE_PATH_ID.search(xml)
+    if leak:
+        raise SystemExit("a disk identifier is still in config.plist (outside Misc.Entries); remove it by hand: %s..." % leak.group()[:8])
+    return xml
 
 
 def sha256(path):

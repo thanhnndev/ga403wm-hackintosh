@@ -1,0 +1,7 @@
+2495	0	com.apple.progressd
+-	0	com.apple.coreservices.UASharedPasteboardProgressUI
+2677	0	com.itlmt7925.TapGuard
+-	0	com.itlmt7925.espmount
+2678	0	com.itlmt7925.rogaudiod
+2680	0	com.itlmt7925.RogControl
+2673	0	com.thanhnndev.strix.headroomhold

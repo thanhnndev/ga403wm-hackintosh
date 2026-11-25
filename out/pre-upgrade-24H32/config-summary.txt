@@ -1,0 +1,87 @@
+NVRAM boot-args: debug=0x100 keepsyms=1 -vi2c-force-polling nvfb=1 nvaccel=1 nvfbheads=4 -nvkmsnosmooth amfi_get_out_of_my_way=0x1 amfi=0x80 msgbuf=1048576 ipc_control_port_options=0 itlmt_m1=0 -nvrmnobootscreen nvrmacpibl=1 itlmt_native=1 itlmt_native_if=1 itlmt_native_dp=1 itlmt_native_nvtrace=1 strix-probe=1 itlmt_fast=6 itlmt_stat=1 itlmt_nopwr=1 alcverbs=1 strixamp_trace=1 strixhdr=1 -nvoff
+Kernel/Add on  Lilu.kext  
+Kernel/Add on  VirtualSMC.kext  
+Kernel/Add on  SMCBatteryManager.kext  
+Kernel/Add off SMCLightSensor.kext  
+Kernel/Add on  AppleALC.kext  
+Kernel/Add on  AppleMCEReporterDisabler.kext  
+Kernel/Add on  BrightnessKeys.kext  
+Kernel/Add on  ForgedInvariant.kext  
+Kernel/Add on  HoRNDIS.kext  
+Kernel/Add off ItlDiag.kext  
+Kernel/Add on  ItlXhciKick.kext  
+Kernel/Add on  itlmt7925.kext  
+Kernel/Add on  itlmt7925Native.kext  
+Kernel/Add on  NullEthernet.kext  
+Kernel/Add on  NVMeFix.kext 18.0.0 
+Kernel/Add on  RestrictEvents.kext  
+Kernel/Add on  Sinetek-rtsx.kext  
+Kernel/Add on  USBToolBox.kext  
+Kernel/Add off UTBDefault.kext  
+Kernel/Add on  VoodooI2C.kext/Contents/PlugIns/VoodooInput.kext  
+Kernel/Add on  VoodooI2C.kext/Contents/PlugIns/VoodooGPIO.kext  
+Kernel/Add on  VoodooI2C.kext/Contents/PlugIns/VoodooI2CServices.kext  
+Kernel/Add on  VoodooI2C.kext  
+Kernel/Add on  VoodooI2CHID.kext  
+Kernel/Add off WhateverGreen.kext  
+Kernel/Add on  UTBMap.kext  
+Kernel/Add on  AMFIPass.kext  
+Kernel/Add on  AmdCppc.kext  
+Kernel/Add on  BlueToolFixup.kext 21.0.0 
+Kernel/Add on  MtkBtFw.kext  
+Kernel/Add on  AsusWmi.kext  
+Kernel/Add on  BtLeDlFix.kext 21.0.0 
+Kernel/Add on  StrixProbe.kext 24.0.0 
+Kernel/Add on  StrixAmp.kext 24.0.0 
+Kernel/Add off NVRM.kext 24.0.0 
+Kernel/Add off NVRMEdpBL.kext 24.0.0 
+Kernel/Add off NVRMFB.kext 24.0.0 
+Kernel/Add off NVRMAGDC.kext 24.0.0 
+Kernel/Add off NVAccel.kext 24.0.0 
+Kernel/Add off StrixAccel.kext 24.0.0 
+Kernel/Add off StrixGOP.kext 24.0.0 
+Kernel/Add on  StrixMetalGate.kext 24.0.0 
+Kernel/Add on  StrixHeadroom.kext 24.0.0 
+Kernel/Patch on  kernel algrey | Force cpuid_cores_per_package to constant (user-specified) | 10.13-10.14 17.0.0 18.99.99
+Kernel/Patch on  kernel algrey | Force cpuid_cores_per_package to constant (user-specified) | 10.15-11.0 19.0.0 20.99.99
+Kernel/Patch on  kernel algrey | Force cpuid_cores_per_package to constant (user-specified) | 12.0-13.2 21.0.0 22.3.99
+Kernel/Patch on  kernel algrey | Force cpuid_cores_per_package to constant (user-specified) | 13.3+ 22.4.0 25.99.99
+Kernel/Patch on  kernel algrey | _commpage_populate | Remove rdmsr | 10.13+ 17.0.0 25.99.99
+Kernel/Patch on  kernel algrey | _cpuid_set_cache_info | Set CPUID proper instead of 4 | 10.13+ 17.0.0 25.99.99
+Kernel/Patch on  kernel algrey | _cpuid_set_generic_info | Remove wrmsr(0x8B) | 10.13+ 17.0.0 25.99.99
+Kernel/Patch on  kernel algrey | _cpuid_set_generic_info | Replace rdmsr(0x8B) with constant 186 | 10.13+ 17.0.0 25.99.99
+Kernel/Patch on  kernel algrey | _cpuid_set_generic_info | Set flag=1 | 10.13+ 17.0.0 25.99.99
+Kernel/Patch on  kernel algrey | _cpuid_set_generic_info | Disable check to allow leaf7 | 10.13+ 17.0.0 23.99.99
+Kernel/Patch on  kernel algrey | _cpuid_set_generic_info | Disable check to allow leaf7 | 15.0+ 24.0.0 25.99.99
+Kernel/Patch on  kernel algrey | _cpuid_set_info | GenuineIntel to AuthenticAMD | 10.13-11.0 17.0.0 20.99.99
+Kernel/Patch on  kernel Goldfish64, algrey | Bypass GenuineIntel check panic | 12.0+ 21.0.0 25.99.99
+Kernel/Patch on  kernel algrey | _cpuid_set_cpufamily | Force CPUFAMILY_INTEL_PENRYN | 10.13-11.2 17.0.0 20.3.0
+Kernel/Patch on  kernel algrey | _cpuid_set_cpufamily | Force CPUFAMILY_INTEL_PENRYN | 11.3+ 20.4.0 25.99.99
+Kernel/Patch on  kernel algrey | _i386_init | Remove 3 rdmsr calls | 10.13+ 17.0.0 25.99.99
+Kernel/Patch on  kernel algrey, XLNC | Remove version check and panic | 10.13+ 17.0.0 25.99.99
+Kernel/Patch on  com.apple.iokit.IOPCIFamily CaseySJ | probeBusGated | Disable 10 bit tags | 12.0-15.x 21.0.0 24.99.99
+Kernel/Patch on  com.apple.iokit.IOPCIFamily CaseySJ | probeBusGated | Disable 10 bit tags | 26.0+ 25.0.0 25.99.99
+Kernel/Patch off com.apple.iokit.IOPCIFamily CaseySJ | IOPCIIsHotplugPort | Fix PCI bus enumeration on AM5 | 13.0+ 22.0.0 25.99.99
+Kernel/Patch on  kernel Visual | thread_quantum_expire, thread_unblock, thread_invoke | Remove non-monotonic time panic | 12.0+ 21.0.0 25.99.99
+Kernel/Patch on  kernel Visual | thread_invoke, thread_dispatch | Remove non-monotonic time panic | 12.0-26.3 21.0.0 25.3.99
+Kernel/Patch on  kernel laobamac | thread_invoke, thread_dispatch | Remove non-monotonic time panic | 26.4+ 25.4.0 25.99.99
+Kernel/Patch on  kernel algrey | _mtrr_update_action | fix PAT | 10.13+ 17.0.0 23.99.99
+Kernel/Patch off kernel Shaneee | _mtrr_update_action | Fix PAT | 10.13+ 17.0.0 23.99.99
+Kernel/Patch on  kernel Algrey / Zormeister | _mtrr_update_action | Fix PAT | 15.0+ 24.0.0 25.99.99
+Kernel/Patch off kernel Shaneee / Zormeister | _mtrr_update_action | Fix PAT | 15.0+ 24.0.0 25.99.99
+ACPI/Add off SSDT-Disable_Network_GPP5.aml
+ACPI/Add on  SSDT-EC.aml
+ACPI/Add on  SSDT-PLUG-ALT.aml
+ACPI/Add on  SSDT-RMNE.aml
+ACPI/Add on  SSDT-USB-Reset.aml
+ACPI/Add on  SSDT-USBX.aml
+ACPI/Add on  SSDT-XOSI.aml
+ACPI/Add on  SSDT-ECRAM.aml
+DevProps PciRoot(0x0)/Pci(0x8,0x1)/Pci(0x0,0x0) ['IOName', 'class-code', 'disable-gpu', 'name']
+DevProps PciRoot(0x0)/Pci(0x8,0x1)/Pci(0x0,0x4) ['IOPCIMSIMode']
+DevProps PciRoot(0x0)/Pci(0x8,0x1)/Pci(0x0,0x6) ['layout-id']
+DevProps PciRoot(0x0)/Pci(0x8,0x3)/Pci(0x0,0x0) ['IOPCIMSIMode']
+DevProps PciRoot(0x0)/Pci(0x8,0x3)/Pci(0x0,0x3) ['IOPCIMSIMode']
+DevProps PciRoot(0x0)/Pci(0x8,0x3)/Pci(0x0,0x4) ['IOPCIMSIMode']
+SecureBootModel: Disabled
+csr-active-config: b'C\n\x00\x00'

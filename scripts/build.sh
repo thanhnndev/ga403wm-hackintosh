@@ -4,11 +4,13 @@
 # Builds every kext of this repo on macOS without an Xcode project. Needs the Xcode command line tools.
 # Kernel headers/libs come from acidanthera/MacKernelSDK (cloned into build/ on first use, or set MACKERNELSDK).
 #
-#   scripts/build.sh            build itlmt7925, ItlXhciKick, ItlDiag into build/*.kext
-#   scripts/build.sh itlmt7925  build only the named kext(s)
+#   scripts/build.sh              build ItlXhciKick and ItlDiag into build/*.kext
+#   scripts/build.sh ItlDiag      build only the named kext(s)
+#   scripts/build.sh StrixS0ix    named-only targets: StrixS0ix, StrixSbxMap (clones Lilu), StrixProbe, StrixMetalGate,
+#                                 StrixGOP, StrixAccel, StrixHeadroom (clones Lilu)
 #
-# The MediaTek firmware in fw/ is embedded into itlmt7925 with .incbin (kexts/itlmt7925/fw_blob.c), so this script must
-# run with the repo root as working directory (it does: it cd's there).
+# Moved out: the MT7925 Wi-Fi and Bluetooth kexts to https://github.com/thanhnndev/mt7925-macos, AsusWmi and AmdCppc to
+# https://github.com/thanhnndev/rog-control-macos.
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
@@ -19,7 +21,7 @@ if [ ! -d "$SDK_DIR" ]; then
 fi
 
 # -nostdlibinc: only MacKernelSDK and clang's own headers (IOHIDDescriptorParser.h pulls <MacTypes.h> if the host SDK has one)
-COMMON="-arch x86_64 -mmacosx-version-min=12.0 -O2 -g -mkernel -fno-builtin -fno-stack-protector -nostdlib -nostdlibinc -ffreestanding -DKERNEL -DKERNEL_PRIVATE -DDRIVER_PRIVATE -DAPPLE -DNeXT -I$SDK_DIR/Headers"
+COMMON="-arch x86_64 -mmacosx-version-min=12.0 -O2 -g -fno-omit-frame-pointer -mkernel -fno-builtin -fno-stack-protector -nostdlib -nostdlibinc -ffreestanding -DKERNEL -DKERNEL_PRIVATE -DDRIVER_PRIVATE -DAPPLE -DNeXT -I$SDK_DIR/Headers"
 CXXFLAGS="-std=c++17 -fapple-kext -fno-exceptions -fno-rtti"     # -fapple-kext is C++ only
 # libkmodc++/libcc_kext come from the installed SDK (MacKernelSDK has only libkmod) and are built for that SDK's macOS.
 # Linking with a lower deployment target makes ld warn "built for newer macOS version"; link with the library's own
@@ -59,14 +61,10 @@ build_kext() {
 want() { local n="$1"; shift; [ $# -eq 0 ] && return 0; for a in "$@"; do [ "$a" = "$n" ] && return 0; done; return 1; }
 TARGETS=("$@")
 
-want itlmt7925 "${TARGETS[@]+"${TARGETS[@]}"}" && build_kext itlmt7925 kexts/itlmt7925 \
-  kmod_info.c itlmt7925.cpp itlmt7925_m1.cpp itlmt7925_m2.cpp itlmt7925_m3.cpp itlmt7925_pwr.cpp itlmt7925_eth.cpp itlmt7925_ba.cpp itlmt7925_uc.cpp itl_wpa.cpp itl_caps.cpp itl_ba.cpp fw_blob.c
 want ItlXhciKick "${TARGETS[@]+"${TARGETS[@]}"}" && build_kext ItlXhciKick kexts/ItlXhciKick kmod_info.c ItlXhciKick.cpp
 want ItlDiag "${TARGETS[@]+"${TARGETS[@]}"}" && build_kext ItlDiag kexts/ItlDiag kmod_info.c ItlDiag.cpp
-want AmdCppc "${TARGETS[@]+"${TARGETS[@]}"}" && build_kext AmdCppc kexts/AmdCppc kmod_info.c AmdCppc.cpp
-want MtkBtFw "${TARGETS[@]+"${TARGETS[@]}"}" && build_kext MtkBtFw kexts/MtkBtFw kmod_info.c MtkBtFw.cpp fw_blob.c
-want AsusWmi "${TARGETS[@]+"${TARGETS[@]}"}" && build_kext AsusWmi kexts/AsusWmi kmod_info.c AsusWmi.cpp
-# Research probe is explicit-only, excluded from the default production build.
+# The Strix* kexts are built only when named. StrixS0ix and StrixSbxMap are part of the Tahoe (890M) setup; StrixProbe,
+# StrixMetalGate, StrixGOP, StrixAccel and StrixHeadroom are the earlier boot-display research (superseded by NMXGPU).
 if [ ${#TARGETS[@]} -gt 0 ] && want StrixProbe "${TARGETS[@]}"; then
   build_kext StrixProbe kexts/StrixProbe kmod_info.c StrixProbe.cpp
 fi

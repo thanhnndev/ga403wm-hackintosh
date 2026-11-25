@@ -1,0 +1,96 @@
+debug.asuswmi.status: ac fan_custom=0 set_profile=0 set_charge=60 backlight=70/200 kbd=0 slash=7 last_key=00 ppt_spl=0 ppt_sppt=0 ppt_fppt=0 profile=3(00010003) charge_limit=0(01890000) cpu_fan=22(00010016) gpu_fan=24(00010018) nv_dynamic_boost=0(00010000) nv_temp_target=0(00010000) nv_base_tgp=55(00010037) gpu_mux=1(00010001) dgpu_disable=0(00010000) panel_overdrive=1(00010001)
+debug.asuswmi.hotkey: 0 0
+debug.asuswmi.profile: 0
+debug.asuswmi.fan_custom: 0
+debug.asuswmi.ppt_spl: 0
+debug.asuswmi.ppt_sppt: 0
+debug.asuswmi.ppt_fppt: 0
+debug.asuswmi.charge_limit: 60
+debug.asuswmi.dumpacpi: -1
+debug.asuswmi.probe: dev 00000000: call failed 00000000
+debug.asuswmi.backlight: 70
+debug.asuswmi.battery: ECOK=1 OKEC=1 _BIF unit=1 design=4580 full=4164 tech=1 volt=15939 _BST state=0 rate=0 remain=2888 volt=16251
+debug.asuswmi.ec_reg: 1
+debug.asuswmi.kbd: 0
+debug.asuswmi.slash: 7
+debug.asuswmi.key: 0
+debug.amdcppc.cache: cpu0 PAT=0001010600070106 PA6=1 MTRRdef=c00 valid=1 | cpu1 PAT=0001010600070106 PA6=1 MTRRdef=c00 valid=1 | cpu2 PAT=0001010600070106 PA6=1 MTRRdef=c00 valid=1 | cpu3 PAT=0001010600070106 PA6=1 MTRRdef=c00 valid=1 | cpu4 PAT=0001010600070106 PA6=1 MTRRdef=c00 valid=1 | cpu5 PAT=0001010600070106 PA6=1 MTRRdef=c00 valid=1 | cpu6 PAT=0001010600070106 PA6=1 MTRRdef=c00 valid=1 | cpu7 PAT=0001010600070106 PA6=1 MTRRdef=c00 valid=1 | cpu8 PAT=0001010600070106 PA6=1 MTRRdef=c00 valid=1 | cpu9 PAT=0001010600070106 PA6=1 MTRRdef=c00 valid=1 | cpu10 PAT=0001010600070106 PA6=1 MTRRdef=c00 valid=1 | cpu11 PAT=0001010600070106 PA6=1 MTRRdef=c00 valid=1 | cpu12 PAT=0001010600070106 PA6=1 MTRRdef=c00 valid=1 | cpu13 PAT=0001010600070106 PA6=1 MTRRdef=c00 valid=1 | cpu14 PAT=0001010600070106 PA6=1 MTRRdef=c00 valid=1 | cpu15 PAT=0001010600070106 PA6=1 MTRRdef=c00 valid=1 | cpu16 PAT=0001010600070106 PA6=1 MTRRdef=c00 valid=1 | cpu17 PAT=0001010600070106 PA6=1 MTRRdef=c00 valid=1 | cpu18 PAT=0001010600070106 PA6=1 MTRRdef=c00 valid=1 | cpu19 PAT=0001010600070106 PA6=1 MTRRdef=c00 valid=1 | cpu20 PAT=0001010600070106 PA6=1 MTRRdef=c00 valid=1 | cpu21 PAT=0001010600070106 PA6=1 MTRRdef=c00 valid=1 | cpu22 PAT=0001010600070106 PA6=1 MTRRdef=c00 valid=1 | cpu23 PAT=0001010600070106 PA6=1 MTRRdef=c00 valid=1
+debug.amdcppc.report: cpu0(x1): CpbDis=0 PStateCtl=0 PStateStat=0 P0=2000MHz(def on) CPPC_EN=1 CAP1=high 196 nom 76 lownl 23 low 23 REQ=max 196 min 23 des 0 epp 128 | cpu1(x1): CpbDis=0 PStateCtl=0 PStateStat=0 P0=2000MHz(def on) CPPC_EN=1 CAP1=high 196 nom 76 lownl 23 low 23 REQ=max 196 min 23 des 0 epp 128 | cpu2(x1): CpbDis=0 PStateCtl=0 PStateStat=0 P0=2000MHz(def on) CPPC_EN=1 CAP1=high 202 nom 76 lownl 23 low 23 REQ=max 202 min 23 des 0 epp 128 | cpu3(x1): CpbDis=0 PStateCtl=0 PStateStat=0 P0=2000MHz(def on) CPPC_EN=1 CAP1=high 202 nom 76 lownl 23 low 23 REQ=max 202 min 23 des 0 epp 128 | cpu4(x2): CpbDis=0 PStateCtl=0 PStateStat=2 P0=2000MHz(def on) CPPC_EN=1 CAP1=high 208 nom 76 lownl 23 low 23 REQ=max 208 min 23 des 0 epp 128 | cpu5(x2): CpbDis=0 PStateCtl=0 PStateStat=2 P0=2000MHz(def on) CPPC_EN=1 CAP1=high 208 nom 76 lownl 23 low 23 REQ=max 208 min 23 des 0 epp 128 | cpu8(x3): CpbDis=0 PStateCtl=0 PStateStat=2 P0=2000MHz(def on) CPPC_EN=1 CAP1=high 125 nom 76 lownl 23 low 23 REQ=max 125 min 23 des 0 epp 128 | cpu9(x3): CpbDis=0 PStateCtl=0 PStateStat=2 P0=2000MHz(def on) CPPC_EN=1 CAP1=high 125 nom 76 lownl 23 low 23 REQ=max 125 min 23 des 0 epp 128 | cpu10(x5): CpbDis=0 PStateCtl=0 PStateStat=0 P0=2000MHz(def on) CPPC_EN=1 CAP1=high 125 nom 76 lownl 23 low 23 REQ=max 125 min 23 des 0 epp 128 | cpu11(x5): CpbDis=0 PStateCtl=0 PStateStat=0 P0=2000MHz(def on) CPPC_EN=1 CAP1=high 125 nom 76 lownl 23 low 23 REQ=max 125 min 23 des 0 epp 128
+debug.amdcppc.freq: P0 2000 MHz; cpu: MHz while busy / busy % / hwstat | 0 4679/31%/268345 | 1 4758/2%/268345 | 2 4017/20%/268345 | 3 4031/2%/268345 | 4 3278/15%/a68345 | 5 3211/2%/a68345 | 6 3859/15%/a68345 | 7 2327/2%/a68345 | 8 3229/16%/268290 | 9 3312/2%/268290 | 10 3066/26%/a68290 | 11 2885/2%/a68290 | 12 2709/9%/268290 | 13 2749/2%/268290 | 14 2002/7%/a68290 | 15 1685/2%/a68290 | 16 2591/18%/268290 | 17 2147/2%/268290 | 18 2980/19%/a68290 | 19 2497/2%/a68290 | 20 2823/19%/a68290 | 21 1682/2%/a68290 | 22 2106/8%/a68290 | 23 2047/2%/a68290
+debug.amdcppc.temp: Tctl 68.6 C (smn 75ab0000); PStateCurLim ok cur 0 max 2
+debug.amdcppc.sensors: tctl=68625 pkg_mw=14123 rapl=a1000/9b8236d7
+debug.amdcppc.pstate: -1
+debug.amdcppc.boost: -1
+debug.amdcppc.cppc: -1
+debug.amdcppc.epp: -1
+debug.nvrm_isr_count: 156874
+debug.nvrm_isr_handled: 156422
+debug.nvrm_evt_posts: 3888700
+debug.nvrm_evt_waits: 635270
+debug.nvrm_pm_waited: 0
+debug.nvaccelfb: 0
+debug.nvaccel_headless: 0
+debug.nvaccel_vm_alloc: 0
+debug.nvaccel_vm_alloc_bytes: 0
+debug.nvaccel_vm_dealloc: 0
+debug.nvaccel_vm_dealloc_bytes: 0
+debug.nvaccel_vm_refused: 0
+debug.nvaccel_vm_sticky: 1
+debug.nvaccel_vm_parked: 0
+debug.nvaccel_vm_unparked: 0
+debug.nvaccel_vm_park_released: 0
+debug.nvaccel_res_new: 0
+debug.nvaccel_res_free: 0
+debug.nvaccel_map_commit: 0
+debug.nvaccel_map_release: 0
+debug.nvaccel_map_free: 0
+debug.nvaccel_iop: 0
+debug.nvaccel_iop_ok: 0
+debug.nvaccel_iop_fail: 0
+debug.nvaccel_iop_empty: 0
+debug.nvaccel_iop_src_res: 0
+debug.nvaccel_iop_src_surf: 0
+debug.nvaccel_iop_blank: 0
+debug.nvaccel_iop_copy_skip: 0
+debug.nvaccel_iop_flip: 0
+debug.nvaccel_iop_flips: 0
+debug.nvaccel_iop_flip_home: 0
+debug.nvaccel_iop_flip_lock: 0
+debug.nvaccel_iop_flip_novram: 0
+debug.nvaccel_iop_flip_stale: 0
+debug.nvaccel_iop_flip_refused: 0
+debug.nvaccel_crc_head: 0
+debug.nvaccel_crc: 0
+debug.nvaccel_iop_flip_hit: 0
+debug.nvaccel_iop_flip_miss: 0
+debug.nvaccel_iop_async: 1
+debug.nvaccel_iop_async_flips: 0
+debug.nvaccel_iop_async_refused: 0
+debug.nvaccel_iop_async_drop: 0
+debug.nvaccel_iop_ok_h0: 0
+debug.nvaccel_iop_ok_h1: 0
+debug.nvaccel_iop_ok_h2: 0
+debug.nvaccel_iop_ok_h3: 0
+debug.nvaccel_iop_ok_h4: 0
+debug.nvaccel_igpu: 0
+debug.nvaccel_heads_published: 0
+debug.nvaccel_heads_registered: 0
+debug.nvaccel_heads_piped: 0
+debug.nvrmfb_agdc: 0
+debug.nvrmfb_agdc_cmds: 0
+debug.nvrmfb_agdc_refused: 0
+debug.nvrmfb_agdc_last_refused: 0
+debug.nvrmfb_agdc_k5: 0
+debug.nvrmfb_agdc_k5_link: 0
+debug.nvrmfb_agdc_k5_caps: 0
+debug.nvrmfb_agdc_k5_why: 0
+debug.nvrmfb_agdc_fbmap: never scanned
+debug.nvrmfb_agdc_maxfb: 0
+debug.nvrmfb_agdc_rescans: 0
+debug.nvrmfb_agdc_k5_asked: 0
+debug.nvrmfb_agdc_k5_link_mask: 0
+debug.nvrmfb_agdc_k5_caps_mask: 0
+debug.nvrmfb_agdc_k5_last_refused_idx: -1
+debug.nvrm_kms_timer_depth: 0
+debug.nvrm_kms_timer_max_depth: 9
+debug.nvrm_kms_timer_executed: 156420

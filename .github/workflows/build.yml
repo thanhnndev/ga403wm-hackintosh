@@ -1,11 +1,22 @@
 name: build-kexts
 
-# Builds itlmt7925, ItlXhciKick and ItlDiag with empty Wi-Fi credentials (credentials are injected locally, never in CI).
-# A tag "v*" additionally publishes the zipped kexts as a GitHub release.
+# Build only. This workflow never creates a GitHub release and never uploads release assets: on every trigger, tags
+# included, the results are artifacts of the workflow run. The maintainer downloads them, checks them and creates the
+# release by hand (text: .github/release-notes/v2.md for the macOS 26 Tahoe bundle; .github/release-body.md is the
+# macOS 15 text of v1 / kext-v1.1).
+#
+# Built here: the kexts ItlXhciKick, ItlDiag, StrixS0ix, StrixSbxMap and the TapGuard app, ad-hoc signed; the earlier
+# boot-display research kexts (StrixMetalGate, StrixGOP, StrixAccel, StrixHeadroom) are compiled as a check and are
+# not packaged. StrixSbxMap is compiled as a check too: a usable one carries the code hashes of the installer's own
+# plugin files (scripts/macos-install-strixsbxmap.sh builds and pins it on the target).
+# Not built here, they have their own CI and releases: Wi-Fi and Bluetooth (https://github.com/thanhnndev/mt7925-macos)
+# and ROG Control, AsusWmi, AmdCppc (https://github.com/thanhnndev/rog-control-macos).
+# The reference EFI (efi/) is not packaged: it still describes the macOS 15 configuration.
+# A tag "v*" additionally builds OpenCore with the Zen 5 patch (opencore.yml), also as a run artifact.
 on:
   push:
-    branches: [main]
-    tags: ["v*"]
+    branches: [main, "release/**"]
+    tags: ["v*", "kext-v*"]
   pull_request:
   workflow_dispatch:
 
@@ -21,74 +32,52 @@ jobs:
         run: python3 scripts/check-efi-privacy.py efi/OC/config.plist
 
   build:
-    runs-on: macos-14
+    runs-on: macos-15
     steps:
       - uses: actions/checkout@v4
-
-      - name: Host crypto test (WPA2 PMK / PTK / MIC / key unwrap)
-        run: |
-          cd test
-          clang++ -std=c++17 -I../kexts/itlmt7925 wpa_test.cpp ../kexts/itlmt7925/itl_wpa.cpp -o wpa_test
-          ./wpa_test
-
-      - name: Host capability test (HT / VHT parsing, channel width, advertised elements)
-        run: |
-          cd test
-          clang++ -std=c++17 -Wall -I../kexts/itlmt7925 caps_test.cpp ../kexts/itlmt7925/itl_caps.cpp -o caps_test
-          ./caps_test
-
-      - name: Host Block Ack test (reorder buffer, ADDBA / DELBA / BAR frames)
-        run: |
-          cd test
-          clang++ -std=c++17 -Wall -I../kexts/itlmt7925 ba_test.cpp ../kexts/itlmt7925/itl_ba.cpp -o ba_test
-          ./ba_test
 
       - name: Build kexts
         run: bash scripts/build.sh
 
-      - name: Build StrixMetalGate (ESP-injected, explicit target)
+      - name: Build StrixS0ix (Tahoe setup, explicit target)
+        run: bash scripts/build.sh StrixS0ix
+
+      - name: Build StrixSbxMap (Tahoe setup, Lilu plugin, explicit target; compile check, not packaged)
+        run: bash scripts/build.sh StrixSbxMap
+
+      - name: Build StrixMetalGate (superseded research kext, compile check)
         run: bash scripts/build.sh StrixMetalGate
 
-      - name: Build StrixGOP (ESP-injected, explicit target)
+      - name: Build StrixGOP (superseded research kext, compile check)
         run: bash scripts/build.sh StrixGOP
 
-      - name: Build StrixAccel (ESP-injected, explicit target)
+      - name: Build StrixAccel (superseded research kext, compile check)
         run: bash scripts/build.sh StrixAccel
 
-      - name: Build StrixHeadroom (ESP-injected Lilu plugin, explicit target)
+      - name: Build StrixHeadroom (superseded research kext, Lilu plugin, compile check)
         run: bash scripts/build.sh StrixHeadroom
+
+      - name: Build the app
+        run: |
+          bash scripts/build-tapguard.sh
+          file build/TapGuard.app/Contents/MacOS/TapGuard
 
       - name: Package
         run: |
           mkdir -p dist
-          for k in itlmt7925 ItlXhciKick ItlDiag; do
+          for k in ItlXhciKick ItlDiag StrixS0ix; do
             ditto -c -k --keepParent "build/$k.kext" "dist/$k.kext.zip"
           done
-          cp fw/LICENCE.mediatek dist/LICENCE.mediatek
+          ditto -c -k --keepParent build/TapGuard.app dist/TapGuard.app.zip
           cp LICENSE dist/LICENSE
           (cd dist && shasum -a 256 * > SHA256SUMS.txt && cat SHA256SUMS.txt)
 
       - uses: actions/upload-artifact@v4
         with:
           name: kexts
-          path: |
-            build/*.kext
-            dist/*
+          path: dist/*
 
-  release:
+  # Build only: the patched OpenCore stays an artifact of this run. No job in this file has contents: write.
+  opencore:
     if: startsWith(github.ref, 'refs/tags/v')
-    needs: build
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-    steps:
-      - uses: actions/download-artifact@v4
-        with:
-          name: kexts
-          path: artifact
-      - name: Publish release
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          gh release create "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" --generate-notes \
-            --title "$GITHUB_REF_NAME" artifact/dist/*
+    uses: ./.github/workflows/opencore.yml
