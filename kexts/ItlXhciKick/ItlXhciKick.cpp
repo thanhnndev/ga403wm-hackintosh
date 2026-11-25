@@ -19,14 +19,26 @@
 // boot-arg itlkick=0 disables it, itlkick=<us> sets the period (default 1000), itlkickall=1 also kicks non-AMD controllers,
 // itlkickidle=<n> kicks a controller with no USB devices only every n periods (default 16, 1 = every period).
 //
-// Pending check (itlkickpend, default 1): before kicking, the worker reads interrupter 1 and 2's ERDP register (BAR0,
-// read only) and the cycle bit of the event TRB it points at (the event ring in host memory, mapped read only). The
-// TRB belongs to the consumer when its cycle bit equals the consumer cycle state, which is the cycle bit of the TRB just
-// before it (inverted across the ring's wrap). Only then is the work loop signalled. A forced kick still runs every
-// itlkickidle periods, so a wrong "nothing pending" can delay an event by at most that long; the forced kick counts
+// Pending check (itlkickpend, default 1; AMD controllers only, and off when the system has an IOMMU / IOMapper, since
+// the ring addresses it reads are bus addresses): before kicking, the worker reads, for interrupters 0, 1 and 2, the
+// ERSTSZ, ERSTBA and ERDP registers (BAR0 mapped read only; HCSPARAMS1 and RTSOFF once at setup; nothing else, no
+// IMAN or USBSTS) and the cycle bit of the event TRB the ERDP points at (the event ring in host memory, mapped read
+// only). The TRB belongs to the consumer when its cycle bit equals the consumer cycle state, which is the cycle bit of
+// the TRB just before it (inverted across the ring's wrap). Only then is the work loop signalled. Anything it can not
+// decide (BAR reads all-ones, ring not mappable, ERDP outside the ring) counts as pending: the 0.1.x kick every period.
+// A forced kick still runs every itlkickidle periods of wall time (not worker ticks, so the backoff does not stretch
+// it), so a wrong "nothing pending" can delay an event by at most that long (16 ms by default); the forced kick counts
 // such misses (ERDP moved although nothing looked pending), shown as m<n> in itlz0. itlkickpend=0 = old behaviour.
+// Known gap: a ring re-initialised at the same address without being zeroed can look empty for one lap; the forced
+// kick drains it (one event 16 ms late, then it heals itself).
 // Backoff (itlkickslow=<ms>, default 4): after 1 s with nothing pending on any controller the worker sleeps <ms>
 // instead of one period, and returns to one period on the first pending event. itlkickslow=1 = always one period.
+//
+// Reading itlz0 after a boot: c<i>:<kicks>/<hits>/<miss>/d<devs>/s<skips>/u<unknown>/m<missed>. Working as intended:
+// on a controller with devices, s grows by most of a thousand per second at rest, u stays 0, m stays near 0. If s
+// stays near 0 while kicks grow ~1000/s at rest, the check always reads "pending" (for example Apple writes ERDP as
+// the last processed TRB rather than the next one): safe, it is then the 0.1.x behaviour with no saving. u growing
+// means the check could not decide (BAR all-ones, ring not mappable), also the 0.1.x behaviour.
 // Linux has no equivalent: its xhci driver puts every event on interrupter 0, whose MSI fires.
 #include <IOKit/IOService.h>
 #include <IOKit/IOLib.h>
@@ -77,7 +89,7 @@ struct Ring {
     uint64_t erstba;          // ERSTBA the maps were made for (0 = none)
     uint32_t nseg;
     IOMemoryMap *seg[4];
-    uint64_t base[4];         // bus address of each segment (= physical: no IOMMU on this platform)
+    uint64_t base[4];         // bus address of each segment (= physical: the check is off when an IOMapper exists)
     uint32_t ntrb[4];
 };
 
@@ -88,10 +100,11 @@ struct Target {
     uint64_t seenNs;
     uint32_t kicks, hits, miss;
     uint32_t devs;            // USB devices under this controller (IOUSB plane), refreshed with each scan
+    uint64_t forcedNs;        // time of the last forced kick (the forced interval is wall time)
     bool active;
     IOMemoryMap *bar;         // BAR0, read only use (nullptr: pending check off for this controller)
     uint32_t rt;              // runtime register offset (RTSOFF)
-    Ring ring[2];             // interrupters 1 and 2
+    Ring ring[3];             // interrupters 0, 1 and 2
     uint32_t skips, unknown, missed;   // kicks skipped (nothing pending), checks that could not decide, events a forced kick found
     uint64_t fdp[2];          // ERDPs at the last forced kick that followed "nothing pending"
     bool fchk;                // compare fdp on the next pass (the work loop drains after the kick, not during it)
@@ -136,7 +149,7 @@ static void ringFree(Ring &r)
 
 static void targetFree(Target &t)
 {
-    for (int i = 0; i < 2; i++) ringFree(t.ring[i]);
+    for (int i = 0; i < 3; i++) ringFree(t.ring[i]);
     if (t.bar) t.bar->release();
     t.bar = nullptr;
 }
@@ -169,15 +182,17 @@ static inline uint32_t trbCycle(const Ring &r, uint32_t s, uint32_t i)
     return rd32((volatile const uint8_t *)r.seg[s]->getVirtualAddress() + 16u * i + 12) & 1u;
 }
 
-// 1 = an event waits on interrupter n (1 or 2), 0 = none, -1 = can not tell.
+// 1 = an event waits on interrupter n (0, 1 or 2), 0 = none, -1 = can not tell (the caller kicks).
 static int ringPending(Target &t, int n)
 {
     volatile const uint8_t *ir = (volatile const uint8_t *)t.bar->getVirtualAddress() + t.rt + 0x20 + 32 * n;
-    uint32_t sz = rd32(ir + 8) & 0xffffu;
+    uint32_t szr = rd32(ir + 8);
+    if (szr == 0xffffffffu) return -1;              // the controller does not answer (D3, surprise removal)
+    uint32_t sz = szr & 0xffffu;
     uint64_t ba = rd64(ir + 0x10) & ~0x3full;
     uint64_t dp = rd64(ir + 0x18) & ~0xfull;
-    if (!sz || !ba) return 0;                       // interrupter not set up: nothing can be queued on it
-    Ring &r = t.ring[n - 1];
+    if (!sz || !ba) return -1;                      // not set up (yet, or being reset): can not tell, kick as before
+    Ring &r = t.ring[n];
     if ((r.erstba != ba || r.nseg != sz) && !ringMap(r, ba, sz)) return -1;
     for (uint32_t s = 0; s < r.nseg; s++) {
         if (dp < r.base[s] || dp >= r.base[s] + 16ull * r.ntrb[s]) continue;
@@ -190,34 +205,38 @@ static int ringPending(Target &t, int n)
     return -1;                                      // ERDP outside the mapped ring (ring was reallocated): remap next time
 }
 
-// Pending on interrupter 1 or 2: 1 yes, 0 no, -1 unknown. Also returns both ERDPs (to spot what a forced kick drained).
+// Pending on interrupter 0, 1 or 2: 1 yes, 0 no, -1 unknown. Also returns the ERDPs of 1 and 2 (to spot what a forced
+// kick drained). Ring 0 has a working MSI; it is checked only as cheap insurance (an event there is normally drained by
+// the interrupt before we look).
 static int pending(Target &t, uint64_t *dp)
 {
     if (!t.bar) return -1;
     volatile const uint8_t *rt = (volatile const uint8_t *)t.bar->getVirtualAddress() + t.rt;
     dp[0] = rd64(rt + 0x20 + 32 + 0x18) & ~0xfull;
     dp[1] = rd64(rt + 0x20 + 64 + 0x18) & ~0xfull;
-    int a = ringPending(t, 1);
-    if (a == 1) return 1;
-    int b = ringPending(t, 2);
-    if (b == 1) return 1;
-    if (a < 0 || b < 0) {
-        if (a < 0) t.ring[0].erstba = 0;
-        if (b < 0) t.ring[1].erstba = 0;
-        return -1;
+    int unknown = 0;
+    for (int n = 1; n <= 3; n++) {
+        const int i = n % 3;                        // 1, 2, then 0
+        const int r = ringPending(t, i);
+        if (r == 1) return 1;
+        if (r < 0) { t.ring[i].erstba = 0; unknown = 1; }
     }
-    return 0;
+    return unknown ? -1 : 0;
 }
 
 // BAR0 of the controller for the pending check. Read only: nothing in the controller is ever written.
 static void barSetup(Target &t)
 {
     if (!t.prov) return;
-    IOMemoryMap *m = t.prov->mapDeviceMemoryWithIndex(0);         // the IOPCIDevice's BAR0 (IOService API, no IOPCIFamily link)
+    IOMemoryMap *m = t.prov->mapDeviceMemoryWithIndex(0, kIOMapReadOnly);   // the IOPCIDevice's BAR0 (IOService API, no IOPCIFamily link)
     if (!m) return;
     volatile const uint8_t *b = (volatile const uint8_t *)m->getVirtualAddress();
-    uint32_t maxIntrs = (rd32(b + 4) >> 8) & 0x7ffu, rtsoff = rd32(b + 0x18) & ~0x1fu;
-    if (maxIntrs < 3 || !rtsoff || rtsoff + 0x20 + 3 * 32 > m->getLength()) { m->release(); return; }
+    const uint32_t cap = rd32(b), hcs1 = rd32(b + 4), rts = rd32(b + 0x18);
+    // A controller already in D3 reads all-ones: RTSOFF would be 0xffffffe0, past the BAR. Reject it, and check the bound
+    // in 64 bits so no register value can wrap it.
+    if (cap == 0xffffffffu || hcs1 == 0xffffffffu || rts == 0xffffffffu) { m->release(); return; }
+    uint32_t maxIntrs = (hcs1 >> 8) & 0x7ffu, rtsoff = rts & ~0x1fu;
+    if (maxIntrs < 3 || !rtsoff || (uint64_t)rtsoff + 0x20 + 3 * 32 > m->getLength()) { m->release(); return; }
     t.bar = m; t.rt = rtsoff;
 }
 
@@ -260,6 +279,19 @@ static uint32_t usbDevices(IOService *ctrl)
 
 static uint32_t pendOn = 1;
 
+// The pending check reads event rings at the bus addresses the controller holds, which are physical addresses only
+// without an IOMMU. AMD has no macOS IOMMU driver, but if any IOMapper is registered, stay with the plain kick.
+static bool iommuPresent()
+{
+    OSDictionary *m = IOService::serviceMatching("IOMapper");
+    if (!m) return true;
+    IOService *s = IOService::copyMatchingService(m);
+    m->release();
+    if (!s) return false;
+    s->release();
+    return true;
+}
+
 static void scan(bool all)
 {
     OSDictionary *m = IOService::serviceMatching("AppleUSBXHCIPCI");
@@ -282,10 +314,10 @@ static void scan(bool all)
         tg[ntg].ctrl = c; tg[ntg].prov = prov; tg[ntg].wl = wl;
         tg[ntg].seenNs = nowNs(); tg[ntg].active = false;
         tg[ntg].kicks = tg[ntg].hits = tg[ntg].miss = 0;
-        tg[ntg].devs = 1;
+        tg[ntg].devs = 1; tg[ntg].forcedNs = 0;
         tg[ntg].bar = nullptr; tg[ntg].skips = tg[ntg].unknown = tg[ntg].missed = 0; tg[ntg].fchk = false;
         memset(tg[ntg].ring, 0, sizeof(tg[ntg].ring));
-        if (pendOn) barSetup(tg[ntg]);
+        if (pendOn && wantController(prov, false) && !iommuPresent()) barSetup(tg[ntg]);
         ntg++;
     }
     it->release();
@@ -305,10 +337,10 @@ static void worker(void *arg)
     PE_parse_boot_argn("itlkickpend", &pendOn, sizeof(pendOn));
     PE_parse_boot_argn("itlkickslow", &slowMs, sizeof(slowMs));
     if (!slowMs) slowMs = 1;
-    uint32_t tick = 0;
     uint64_t lastPend = 0;
     if (!period) { IOLog("ItlXhciKick: itlkick=0, off\n"); return; }
     if (period < 200) period = 200;
+    const uint64_t forcedNs = (uint64_t)idleDiv * period * 1000ull;
 
     uint64_t t0 = nowNs(), lastScan = 0, lastLog = 0;
     char lastHealth[160] = "";
@@ -332,7 +364,9 @@ static void worker(void *arg)
                 t.active = true;
             }
             // Every kick wakes the controller's work loop thread (one IPI each); an empty controller has no ring-1 traffic to drain.
-            bool forced = (tick % idleDiv) == 0;
+            // Forced kick: idleDiv periods of wall time since the last kick, so the backoff does not stretch it (a device
+            // plugged into an empty controller enumerates through ring 1 at that pace).
+            bool forced = now - t.forcedNs >= forcedNs;
             uint64_t dp[2] = { 0, 0 };
             // Only controllers with USB devices are read: an empty one may be powered down (runtime D3), and its BAR is not
             // touched at all; it keeps the 0.1.x behaviour (a kick every itlkickidle periods).
@@ -343,10 +377,12 @@ static void worker(void *arg)
             }
             if (p == 1) lastPend = now;
             if (p < 0 && t.bar && t.devs) t.unknown++;
-            if (p == 0 && !forced) { t.skips++; continue; }              // nothing queued on ring 1/2: no work loop wakeup
+            if (p < 0 && t.devs) lastPend = now;                          // can not tell: no backoff, the 0.1.x kick every period
+            if (p == 0 && !forced) { t.skips++; continue; }              // nothing queued on ring 0/1/2: no work loop wakeup
             if (p < 0 && !t.devs && !forced) continue;                    // old behaviour for an empty controller
             KickCtx c = { t.wl, t.prov, 0 };
             t.wl->runAction(kickAction, nullptr, &c);
+            t.forcedNs = now;                                             // any kick drains everything: restart the forced interval
             if (p == 0) { t.fdp[0] = dp[0]; t.fdp[1] = dp[1]; t.fchk = true; }   // forced kick after "nothing pending": check next pass
             t.kicks++;
             if (c.hit) t.hits += c.hit; else t.miss++;
@@ -382,7 +418,6 @@ static void worker(void *arg)
             }
         }
         (void)total;
-        tick++;
         if (pendOn && slowMs > 1 && now - lastPend > 1000000000ull) IOSleep(slowMs);   // quiet for 1 s: back off
         else if (period >= 1000) IOSleep(period / 1000);
         else IODelay(period);
