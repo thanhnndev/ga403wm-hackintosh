@@ -1,5 +1,11 @@
 # GA403WM Hackintosh
 
+<p align="center">
+  <img src="https://raw.githubusercontent.com/thanhnndev/rog-control-macos/rogcontrol-v0.6.0/docs/images/rogcontrol-window.png" alt="RogControl 0.6.0 on macOS 26: live readings, performance mode, battery, custom limits, lighting, sound, GPU mode Eco and diagnostics" width="640">
+  <img src="https://raw.githubusercontent.com/thanhnndev/rog-control-macos/rogcontrol-v0.6.0/docs/images/rogcontrol-popover.png" alt="RogControl 0.6.0 menu bar panel with the GPU row" width="200">
+</p>
+<p align="center"><em>RogControl 0.6.0, the window and the menu bar panel (<a href="https://github.com/thanhnndev/rog-control-macos">rog-control-macos</a>). Offscreen renders with sample values.</em></p>
+
 > **This release (v2) targets macOS 26 Tahoe with the internal display on the Radeon 890M.**
 > macOS 15 Sequoia is the previous release: [v1](https://github.com/thanhnndev/ga403wm-hackintosh/releases/tag/v1) and
 > [kext-v1.1](https://github.com/thanhnndev/ga403wm-hackintosh/releases/tag/kext-v1.1). That is a different setup
@@ -23,11 +29,21 @@ OpenCore EFI reference, documents and traces, 890M tooling and a few small kexts
 
 [Tiếng Việt](README.vi.md) · [**State and roadmap**](docs/STATE-AND-ROADMAP.md) · [v2 release notes](.github/release-notes/v2.md) · [Releases](https://github.com/thanhnndev/ga403wm-hackintosh/releases) · [macOS 15 install guide (v1)](docs/INSTALL.md)
 
-<p align="center">
-  <img src="docs/images/hero.jpg" alt="RogControl and About This Mac on the GA403WM (screenshot of the macOS 15 setup, October 2026)" width="720">
-</p>
+There is no Tahoe "About This Mac" screenshot in the repository yet; [docs/images/hero.jpg](docs/images/hero.jpg) and
+[docs/images/about-this-mac.png](docs/images/about-this-mac.png) show the macOS 15 setup of October 2026 (v1).
 
-The screenshot is from the macOS 15 setup of October 2026; there is no Tahoe screenshot in the repository yet.
+## Related repositories
+
+All of these belong to one project: macOS on one ASUS ROG Zephyrus G14 **GA403WM**.
+
+| Repository | What it is | Latest release |
+|---|---|---|
+| [ga403wm-hackintosh](https://github.com/thanhnndev/ga403wm-hackintosh) | The hub: OpenCore EFI, ACPI, install notes, state and roadmap, the small helper kexts | [v2 (macOS 26 Tahoe)](https://github.com/thanhnndev/ga403wm-hackintosh/releases/tag/v2) |
+| [mt7925-macos](https://github.com/thanhnndev/mt7925-macos) | MediaTek MT7925 Wi-Fi (`itlmt7925`, `itlmt7925Native`) and Bluetooth (`MtkBtFw`, `BtLeDlFix`) | Wi-Fi [v2.0-beta.1](https://github.com/thanhnndev/mt7925-macos/releases/tag/v2.0-beta.1), Bluetooth [bt-v1.1](https://github.com/thanhnndev/mt7925-macos/releases/tag/bt-v1.1) |
+| [rog-control-macos](https://github.com/thanhnndev/rog-control-macos) | RogControl app, `AsusWmi`, `AmdCppc`, `rogkeyd`, `StrixDgpuGate` (performance modes, fans, charge limit, GPU mode, Slash, Fn keys) | [rogcontrol-v0.6.0](https://github.com/thanhnndev/rog-control-macos/releases/tag/rogcontrol-v0.6.0) |
+| [nvidia-macos-driver](https://github.com/thanhnndev/nvidia-macos-driver) (fork of [nullmoth/nvidia-macos-driver](https://github.com/nullmoth/nvidia-macos-driver)) | The Radeon 890M display and Metal driver for this laptop (`NMXGPU` and its Metal plugin), PolyForm Noncommercial | source tags [ga403wm-890m-out50](https://github.com/thanhnndev/nvidia-macos-driver/releases/tag/ga403wm-890m-out50), [ga403wm-890m-plugin-a6cec1b](https://github.com/thanhnndev/nvidia-macos-driver/releases/tag/ga403wm-890m-plugin-a6cec1b) |
+| [ryzen-hypervisor.framework](https://github.com/thanhnndev/ryzen-hypervisor.framework) (fork of [OverlordDev/ryzen-hypervisor.framework](https://github.com/OverlordDev/ryzen-hypervisor.framework)) | AMD-V hypervisor for Docker and the Android emulator on Ryzen, with this machine's fixes | source tag [v0.7.24-ga403wm](https://github.com/thanhnndev/ryzen-hypervisor.framework/releases/tag/v0.7.24-ga403wm) |
+| [strix-890m-macos](https://github.com/thanhnndev/strix-890m-macos) | Earlier Radeon 890M research: notes, boot-display kexts, traces. Superseded by the driver above | none |
 
 ## Machine
 
@@ -63,8 +79,8 @@ The screenshot is from the macOS 15 setup of October 2026; there is no Tahoe scr
 | Hardware video decode (H.264, HEVC, VP9, AV1; 8 and 10 bit) | works | `VCNDec` on the 890M VCN; 58 of 59 matrix cells in Chrome, Safari and QuickTime (measured on 0.2.0; 0.2.1 is live and was tested in-process only). Hardware encode: not verified | [docs/VIDEO-CODEC-MATRIX.md](docs/VIDEO-CODEC-MATRIX.md) |
 | RTX 5060, Eco mode | works | card off and off the PCI bus; no HDMI in this mode; untested with sleep and charger events | [docs/BOOT-TIMELINE.md](docs/BOOT-TIMELINE.md) |
 | RTX 5060, Standard mode | partly | the NVIDIA kernel stack boots; apps get no Metal device from the RTX; HDMI not re-tested; switching needs a reboot | [docs/890M-ROADMAP.md](docs/890M-ROADMAP.md) |
-| Wi-Fi | works | native Wi-Fi menu, WPA2-PSK on 2.4/5 GHz, HE 160 MHz. No WPA3, open networks, 6 GHz, AirDrop | [mt7925-macos](https://github.com/thanhnndev/mt7925-macos) |
-| Bluetooth | works | BLE mouse in daily use; keyboard pairing not recorded | [mt7925-macos](https://github.com/thanhnndev/mt7925-macos/blob/main/docs/BLUETOOTH.md) |
+| Wi-Fi | works | native Wi-Fi menu, WPA2-PSK on 2.4/5 GHz, HE 160 MHz; an open network was used on 2026-11-11. No WPA3, 802.1X, 6 GHz; AirDrop not verified. Release [v2.0-beta.1](https://github.com/thanhnndev/mt7925-macos/releases/tag/v2.0-beta.1) | [mt7925-macos](https://github.com/thanhnndev/mt7925-macos) |
+| Bluetooth | works | `MtkBtFw` 0.3.1 + `BtLeDlFix` 1.4.0 (release [bt-v1.1](https://github.com/thanhnndev/mt7925-macos/releases/tag/bt-v1.1)); BLE mouse in daily use; keyboard pairing not recorded | [mt7925-macos](https://github.com/thanhnndev/mt7925-macos/blob/main/docs/BLUETOOTH.md) |
 | Speakers | works | all four drivers; needs `StrixAmp` and the RogAudio driver | [docs/AUDIO-TAHOE.md](docs/AUDIO-TAHOE.md) |
 | Microphones | partly | internal pair and noise reduction work; third microphone unreachable; gain sometimes resets to minimum | docs/AUDIO-ROG.md (branch `research/audio-rog-dolby`) |
 | Headphone jack | **not verified** on Tahoe | | |
@@ -88,16 +104,9 @@ Dates, evidence, exact versions and known issues: [docs/STATE-AND-ROADMAP.md](do
 ## What is in this repository
 
 This repository holds the EFI reference, the documents and traces, the 890M tooling and a few small kexts. The larger
-drivers live in their own repositories; their sources were removed from this one (the history stays here):
-
-| Repository | What |
-|---|---|
-| this repository | everything listed below |
-| [nvidia-macos-driver](https://github.com/thanhnndev/nvidia-macos-driver) (fork of NullMoth's, PolyForm Noncommercial) | `NMXGPU`, `NMXAccel`, `NMXAGDC`, the Metal plugin and shader translator for the 890M |
-| [mt7925-macos](https://github.com/thanhnndev/mt7925-macos) | MT7925 Wi-Fi (`itlmt7925`, `itlmt7925Native`) and Bluetooth (`MtkBtFw`, `BtLeDlFix`) |
-| [rog-control-macos](https://github.com/thanhnndev/rog-control-macos) | `AsusWmi`, `AmdCppc`, `StrixDgpuGate`, the RogControl app, `rogkeyd`, the CPU policy daemon |
-| [ryzen-hypervisor.framework](https://github.com/thanhnndev/ryzen-hypervisor.framework) (fork of OverlordDev's) | `RyzenHV` |
-| [strix-890m-macos](https://github.com/thanhnndev/strix-890m-macos) | a copy of the earlier boot-display kexts and traces (last push 2026-11-02). The same files are still here; which repository is their home is not decided |
+drivers live in their own repositories (see [Related repositories](#related-repositories)); their sources were removed
+from this one (the history stays here). `strix-890m-macos` holds a copy of the earlier boot-display kexts and traces (last
+push 2026-11-02); the same files are still here and which repository is their home is not decided.
 
 ```
 efi/                 OpenCore config.plist + SSDTs exported from the live Tahoe ESP on 2026-11-25 (serial/MLB/UUID/ROM
@@ -208,7 +217,7 @@ Third-party binaries are not redistributed here; licences are in [NOTICE.md](NOT
 |---|---|
 | The Linux kernel's `mt76` / `mt7925` and `btmtk` drivers, and MediaTek's MT7925 firmware | hardware layer, reference and firmware of [mt7925-macos](https://github.com/thanhnndev/mt7925-macos) |
 | [asusctl](https://gitlab.com/asus-linux/asusctl) / [asus-linux.org](https://asus-linux.org/) and the Linux `asus-wmi` / `asus-armoury` drivers | reference for the ASUS WMI and EC interface in [rog-control-macos](https://github.com/thanhnndev/rog-control-macos) |
-| G-Helper, itlwm, k10temp | further design references, listed in the `NOTICE.md` of the two sibling repositories |
+| [G-Helper](https://github.com/seerge/g-helper), Linux `k10temp` | the keyboard-light and Slash HID sequences and the Tctl register address used in rog-control-macos (see its `NOTICE.md`). No `itlwm` code is used anywhere |
 
 **Authoring**
 
