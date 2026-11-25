@@ -102,32 +102,32 @@ Network:
       Type: AirPort
       Hardware: AirPort
       BSD Device Name: en5
-      IPv4 Addresses: 10.0.0.14
+      IPv4 Addresses: <lan-ip>
       IPv4:
           Additional Routes:
               Destination Address: <redacted>
               Subnet Mask: 255.255.255.255
               Destination Address: <redacted>
               Subnet Mask: 255.255.0.0
-          Addresses: 10.0.0.14
+          Addresses: <lan-ip>
           ARP Resolved Hardware Address: <redacted>
           ARP Resolved IP Address: <redacted>
           Configuration Method: DHCP
           Confirmed Interface Name: en5
           Interface Name: en5
-          Network Signature: IPv4.Router=10.0.0.1;IPv4.RouterHardwareAddress=xx:xx:xx:xx:xx:xx
-          Router: 10.0.0.1
+          Network Signature: IPv4.Router=<lan-ip>;IPv4.RouterHardwareAddress=xx:xx:xx:xx:xx:xx
+          Router: <lan-ip>
           Subnet Masks: 255.255.255.0
       IPv6:
           Configuration Method: Automatic
       DNS:
-          Server Addresses: 10.0.0.1
+          Server Addresses: <lan-ip>
       DHCP Server Responses:
-          Domain Name Servers: 10.0.0.1
+          Domain Name Servers: <lan-ip>
           Lease Duration (seconds): 0
           DHCP Message Type: 0x05
-          Routers: 10.0.0.1
-          Server Identifier: 10.0.0.1
+          Routers: <lan-ip>
+          Server Identifier: <lan-ip>
           Subnet Mask: 255.255.255.0
       Ethernet:
           MAC Address: <redacted>
@@ -138,7 +138,7 @@ Network:
           FTP Passive Mode: Yes
       Service Order: 0
 
-    一加 13:
+    <usb-tethering service>:
 
       Type: Ethernet
       Hardware: Ethernet

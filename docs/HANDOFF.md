@@ -3,6 +3,20 @@
 Where the work stands, what is proven, what is open, and how to get data. Written to continue on the macOS side.
 No SMBIOS values, passphrases, MACs or neighbour SSIDs belong in this file.
 
+## Where the current state is (2026-11-25)
+
+This file is the macOS 15 hand-off of October 2026 and is kept as history. The machine now runs macOS 26 Tahoe on the
+Radeon 890M: read [STATE-AND-ROADMAP.md](STATE-AND-ROADMAP.md) first, then [HANDOFF-2026-11-16.md](HANDOFF-2026-11-16.md).
+The Wi-Fi, Bluetooth and ROG Control documents named below moved with their sources to
+[mt7925-macos](https://github.com/thanhnndev/mt7925-macos) and [rog-control-macos](https://github.com/thanhnndev/rog-control-macos).
+
+## Radeon 890M research continuation (2026-10-13)
+
+For the Cobalt64/890M work on branch `research/890m-cobalt64`, read
+[890M macOS handoff](890M-MACOS-HANDOFF.md) and [step trace](890M-TRACE.md).
+Step01 passed against real VFCT/VBIOS/EDID. Next: macOS build of StrixProbe and
+symbol review; no probe installation or GPU initialization has been performed.
+
 ## Status update 2026-10-12 (confirmed by the owner)
 
 The numbered "Open issues" below are the 2026-10-11 investigation log. As of 2026-10-12 the owner reports these as **fixed**:
@@ -12,7 +26,7 @@ The numbered "Open issues" below are the 2026-10-11 investigation log. As of 202
 | 1. Trackpad (I2C `ASUP1208`) | **works** | cause (owner-reported 2026-10-12): it is dead after a **warm reboot from Windows into macOS**; a **full shutdown and cold power on** fixes it. Boot macOS from cold, or shut down after Windows |
 | 7. HiDPI | **works, 2x** ("looks like 1440 x 900", like Windows 200 % scaling) | [SCRIPTS.md §4](SCRIPTS.md#4-hidpi-looks-like-1440-x-900-step-by-step); fractional scales are not supported |
 | 10. Wi-Fi throughput (`itlmt7925`) | **full link speed** (HE, 160 MHz) | the owner measured it at the maximum speed; the numbers (`iperf3`, AP model, band, distance) will be supplied by the owner later for comparison: [WIFI.md](https://github.com/thanhnndev/mt7925-macos/blob/main/docs/WIFI.md). Not measured by the agent |
-| 13. Bluetooth, BLE mouse | **works** (`MtkBtFw` + `BtLeDlFix`) | [BLUETOOTH.md](BLUETOOTH.md) |
+| 13. Bluetooth, BLE mouse | **works** (`MtkBtFw` + `BtLeDlFix`) | [BLUETOOTH.md](https://github.com/thanhnndev/mt7925-macos/blob/main/docs/BLUETOOTH.md) |
 | ROG controls | **all working**: profiles, power limits, fan curves/speeds, charge limit, keyboard light, Slash, RogControl | section "ASUS controls" below |
 | OLED brightness | **works** (`NVRMEdpBL`, DPCD AUX) | [OLED-BRIGHTNESS-DPCD.md](OLED-BRIGHTNESS-DPCD.md) (checklist results recorded 2026-10-12); the software dimmer was removed from RogControl (2026-10-12) |
 | 4. Wi-Fi shows as Ethernet | **native port in progress** | [WIFI-AS-WIFI.md](https://github.com/thanhnndev/mt7925-macos/blob/main/docs/WIFI-AS-WIFI.md); `itlmt7925` stays as the fallback |
@@ -28,7 +42,7 @@ reads a gap as a pass.
 | Item | Status | Why / what is needed |
 |---|---|---|
 | Wi-Fi throughput numbers (`iperf3`, latency, loss) | **skipped by the owner** | the link is at full speed (HE, 160 MHz) per the owner; the figures are supplied later and go into [WIFI.md](https://github.com/thanhnndev/mt7925-macos/blob/main/docs/WIFI.md) with AP model, band and distance |
-| Battery drain / battery life | **skipped by the owner** | no promise is made ([ROADMAP.md](ROADMAP.md) row 24); the short on-battery bench (40 %, Silent / Performance) is in [ASUSCTL-MACOS.md](ASUSCTL-MACOS.md) and is not a drain test |
+| Battery drain / battery life | **skipped by the owner** | no promise is made ([ROADMAP.md](ROADMAP.md) row 24); the short on-battery bench (40 %, Silent / Performance) is in [ASUSCTL-MACOS.md](https://github.com/thanhnndev/rog-control-macos/blob/main/docs/ASUSCTL-MACOS.md) and is not a drain test |
 | Sleep / wake, 5 cycles | **skipped by the owner** | sleep/wake is a known ❌ and roadmap row 22; the machine is used plugged in, without deep sleep |
 | Clean-up of the **live** ESP boot-args | **skipped by the owner** | the live config keeps its debug and `itlmt_native*` experiment arguments. Only the **exported release EFI** (made by `scripts/export-efi.py`, outside the repo) is cleaned: there `debug=0x100 keepsyms=1 msgbuf=1048576` and `itlmt_native=1 itlmt_native_if=1` are removed, `itlmt_m2=1 itlmt_m3=1 itlmt_fast=6` added (`itlmt_m1=0` kept), `itlmt7925Native.kext` disabled; `ocvalidate` clean, privacy check clean. The cleaned config has **not been booted** |
 | ItlWiFi screenshot | **skipped on purpose** | the owner is porting the native Wi-Fi stack; the menu app is not representative until that lands, so no shot was taken. Add `itlwifi.png` afterwards |
@@ -41,8 +55,8 @@ reads a gap as a pass.
 
 ## ASUS controls, RogControl and Bluetooth LE (was missing from this file)
 
-Details live in [ASUSCTL-MACOS.md](ASUSCTL-MACOS.md), [CPU-POWER.md](CPU-POWER.md), [BLUETOOTH.md](BLUETOOTH.md) and
-[rog-control-design.md](rog-control-design.md); this is the summary a new session needs.
+Details live in [ASUSCTL-MACOS.md](https://github.com/thanhnndev/rog-control-macos/blob/main/docs/ASUSCTL-MACOS.md), [CPU-POWER.md](https://github.com/thanhnndev/rog-control-macos/blob/main/docs/CPU-POWER.md), [BLUETOOTH.md](https://github.com/thanhnndev/mt7925-macos/blob/main/docs/BLUETOOTH.md) and
+[rog-control-design.md](https://github.com/thanhnndev/rog-control-macos/blob/main/docs/rog-control-design.md); this is the summary a new session needs.
 
 * **`AsusWmi.kext`** (ABI 1-3) calls the ASUS ATKD/WMI device from the kernel (`ATKD.WMNB`, 20-byte argument buffer, `DSTS`/`DEVS`) the way
   Linux `asus-wmi` does: performance profile (0 balanced = "Performance", 1 turbo, 2 silent; DSTS always returns 3 on this BIOS, so the
@@ -320,7 +334,7 @@ Details live in [ASUSCTL-MACOS.md](ASUSCTL-MACOS.md), [CPU-POWER.md](CPU-POWER.m
 13. **[RESOLVED 2026-10-12] Bluetooth** (MT7925 BT, USB 0489:e11e): no macOS driver; bluetoothd idles out and is respawned every ~32 s.
     2026-10-11: `kexts/MtkBtFw` loads the firmware (Linux btmtk procedure) and BlueToolFixup 2.7.2 + the two NVRAM
     variables are on the ESP. Controller comes up (State On, real address, firmware v9736); pairing not tested yet. See
-    [BLUETOOTH.md](BLUETOOTH.md).
+    [BLUETOOTH.md](https://github.com/thanhnndev/mt7925-macos/blob/main/docs/BLUETOOTH.md).
 14. **[RESOLVED, see the CPU sections at the end] CPU clock** (AmdCppc, `sysctl debug.amdcppc.freq`, 2026-10-11, AC, CPPC off): the 4 Zen 5 cores (cpu0-7) sit at exactly
     2000 MHz (P0, hardware P-state status FID 0x190) and never boost; the 8 Zen 5c cores (cpu8-23) run up to 3300 MHz, their
     CPPC highest perf (125 vs 196-208 for Zen 5). A single thread therefore gets 2.0 or 3.3 GHz depending on where the

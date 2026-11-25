@@ -1,5 +1,12 @@
 # Scripts and tools: what to run, where, and how to undo it
 
+> **This document describes the macOS 15 Sequoia setup (release v1 / kext-v1.1, October 2026).** The current release
+> targets macOS 26 Tahoe with the display on the Radeon 890M and is a different configuration: see
+> [STATE-AND-ROADMAP.md](STATE-AND-ROADMAP.md) and the [v2 release notes](../.github/release-notes/v2.md). There is no
+> tested step-by-step guide for Tahoe yet. Sources named below that are no longer in this repository (`itlmt7925`,
+> `MtkBtFw`, `BtLeDlFix`, `AsusWmi`, `AmdCppc`, RogControl, ItlWiFi) are in
+> [mt7925-macos](https://github.com/thanhnndev/mt7925-macos) and [rog-control-macos](https://github.com/thanhnndev/rog-control-macos).
+
 Tiếng Việt: [SCRIPTS.vi.md](SCRIPTS.vi.md).
 
 > ⚠️ Vibe-coded, one-laptop project (see the [README](../README.md)). Many scripts changed files as **root** on the author's

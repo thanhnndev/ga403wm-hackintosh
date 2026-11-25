@@ -1,0 +1,27 @@
+label: out-29   cases: idle vp9-1080p60-win vp9-1080p60-max vp9-1080p60-fs av1-1080p60-max h264-1080p30-win vp9-seekpause vp9-2160p60-max   rounds: 3
+date: 2026-11-18 09:00:05   uptime: 6 mins   boot: Wed Nov 18 08:54:28 2026
+macOS 26.7.2 (25G332); Google Chrome 157.0.8103.78 
+NMXGPU: (1.0.0) 3DF88CD9-ECB7-30AB-A93E-FAE454810F27   NMXAccel: (0.1) C18FD8B4-0354-3D4C-9A4E-EDA2AB2463F6   StrixAccel: (0.1.21) AF1F2E29-231C-3964-A2D4-573CE0524E10
+park_ms: 60000   plugin sha1: 3a64990eec9a NVMTLDriver 03a03cef7f55 libvulkan_radeon.dylib 
+power: AC Power   64%; 
+asus:  set_profile=0 profile=3 cpu_fan=23 gpu_fan=24 gpu_mux=1 dgpu_disable=0 panel_overdrive=1
+dGPU gate: eco: dsm0 0 dsm1A 0 ps3 0 gsta 1->0 psc 3 vid 0xffff
+EPP: 191 x10 
+iOS Simulator running: yes   diagnosticd CPU: 7.8%   RTX (asus dgpu_disable): 0
+Docker running: no   owner Chrome running: no
+memory: wired 7.4 GB, compressor 0.0 GB, swap 0.00M
+display: 1440 x 900 @ 120.00Hz   Tctl now: 62 C
+top by CPU (1 s):
+  PID   COMMAND          %CPU MEM   
+  1202  duetexpertd      20.5 8108K+
+  3881  top              19.3 4796K+
+  141   opendirectoryd   16.2 5312K-
+  0     kernel_task      15.3 36M+  
+  211   tccd             12.0 3592K-
+  1332  diagnosticd      7.7  95M   
+  128   mds              7.4  21M+  
+  1860  Claude Helper (R 6.9  514M+ 
+  969   tccd             5.9  3112K+
+  1343  apsd             4.9  14M+  
+  231   trustd           4.4  3684K-
+  259   syspolicyd       4.0  26M+  

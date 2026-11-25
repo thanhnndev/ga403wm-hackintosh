@@ -1,0 +1,162 @@
+{
+ "app": "Safari",
+ "id": "safari-mx-av1-1080p30-mp4-file",
+ "clip": "mx-av1-1080p30.mp4",
+ "codec": "AV1",
+ "depth": "main 8-bit",
+ "size": "1080p30",
+ "container": "MP4",
+ "mime": null,
+ "fps": 30,
+ "mode": "file",
+ "cpu": {
+  "vtdecoder": 3.8,
+  "webkit_gpu": 5.8,
+  "webcontent": 1.8,
+  "quicktime": 0
+ },
+ "vtActive": [
+  {
+   "pid": 78252,
+   "cpu": 3.8,
+   "vcndec": true
+  }
+ ],
+ "decoded": 253,
+ "dropped": 39,
+ "advanced": 8.06,
+ "plays": "yes",
+ "hidden": true,
+ "check": {
+  "ok": 6,
+  "near": 1,
+  "timerReads": 2,
+  "bad": 0,
+  "unreadable": 0,
+  "first": []
+ },
+ "errors": [],
+ "rows": [
+  {
+   "sec": 0,
+   "decoded": 0,
+   "dropped": 0,
+   "rvfc": 7,
+   "skipped": 8,
+   "vis": "hidden",
+   "focus": false,
+   "ct": 0.499,
+   "paused": false,
+   "rs": 4,
+   "ahead": 17.2
+  },
+  {
+   "sec": 1,
+   "decoded": 0,
+   "dropped": 0,
+   "rvfc": 15,
+   "skipped": 13,
+   "vis": "hidden",
+   "focus": false,
+   "ct": 1.502,
+   "paused": false,
+   "rs": 4,
+   "ahead": 16.2
+  },
+  {
+   "sec": 2,
+   "decoded": 50,
+   "dropped": 6,
+   "rvfc": 9,
+   "skipped": 19,
+   "vis": "hidden",
+   "focus": false,
+   "ct": 2.517,
+   "paused": false,
+   "rs": 4,
+   "ahead": 14.5
+  },
+  {
+   "sec": 3,
+   "decoded": 0,
+   "dropped": 0,
+   "rvfc": 0,
+   "skipped": 0,
+   "vis": "hidden",
+   "focus": false,
+   "ct": 3.525,
+   "paused": false,
+   "rs": 4,
+   "ahead": 13.5
+  },
+  {
+   "sec": 4,
+   "decoded": 58,
+   "dropped": 8,
+   "rvfc": 0,
+   "skipped": 0,
+   "vis": "hidden",
+   "focus": false,
+   "ct": 4.533,
+   "paused": false,
+   "rs": 4,
+   "ahead": 15.5
+  },
+  {
+   "sec": 5,
+   "decoded": 120,
+   "dropped": 20,
+   "rvfc": 0,
+   "skipped": 0,
+   "vis": "hidden",
+   "focus": false,
+   "ct": 8.462,
+   "paused": false,
+   "rs": 4,
+   "ahead": 11.5
+  },
+  {
+   "sec": 6,
+   "decoded": 25,
+   "dropped": 5,
+   "rvfc": 0,
+   "skipped": 0,
+   "vis": "hidden",
+   "focus": false,
+   "ct": 8.466,
+   "paused": false,
+   "rs": 4,
+   "ahead": 11.5
+  },
+  {
+   "sec": 7,
+   "decoded": 0,
+   "dropped": 0,
+   "rvfc": 0,
+   "skipped": 0,
+   "vis": "hidden",
+   "focus": false,
+   "ct": 8.467,
+   "paused": false,
+   "rs": 4,
+   "ahead": 11.5
+  },
+  {
+   "sec": 8,
+   "decoded": 0,
+   "dropped": 0,
+   "rvfc": 0,
+   "skipped": 0,
+   "vis": "hidden",
+   "focus": false,
+   "ct": 8.561,
+   "paused": false,
+   "rs": 4,
+   "ahead": 11.4
+  }
+ ],
+ "vcn": {
+  "v": "none",
+  "s": []
+ }
+}

@@ -1,0 +1,94 @@
+{
+ "app": "Safari",
+ "id": "safari-av1-1080p60-mse",
+ "clip": "av1-1080p60.webm",
+ "codec": "AV1",
+ "depth": "main 8-bit",
+ "size": "1080p60",
+ "container": "WebM",
+ "mime": "video/webm; codecs=\"av01.0.08M.08\"",
+ "fps": 60,
+ "mode": "mse",
+ "cpu": {
+  "vtdecoder": 4.7,
+  "webkit_gpu": 5.1,
+  "webcontent": 2.1,
+  "quicktime": 0
+ },
+ "vtActive": [
+  {
+   "pid": 29873,
+   "cpu": 4.7,
+   "vcndec": true
+  }
+ ],
+ "decoded": 1316,
+ "dropped": 916,
+ "plays": "yes",
+ "check": {
+  "ok": 3,
+  "near": 4,
+  "bad": 0,
+  "unreadable": 0,
+  "first": []
+ },
+ "errors": [],
+ "rows": [
+  {
+   "sec": 3,
+   "decoded": 73,
+   "dropped": 48,
+   "rvfc": 0,
+   "skipped": 0,
+   "focus": false
+  },
+  {
+   "sec": 4,
+   "decoded": 1243,
+   "dropped": 868,
+   "rvfc": 0,
+   "skipped": 0,
+   "focus": false
+  },
+  {
+   "sec": 5,
+   "decoded": 0,
+   "dropped": 0,
+   "rvfc": 0,
+   "skipped": 0,
+   "focus": false
+  },
+  {
+   "sec": 6,
+   "decoded": 0,
+   "dropped": 0,
+   "rvfc": 0,
+   "skipped": 0,
+   "focus": false
+  },
+  {
+   "sec": 7,
+   "decoded": 0,
+   "dropped": 0,
+   "rvfc": 0,
+   "skipped": 0,
+   "focus": false
+  },
+  {
+   "sec": 8,
+   "decoded": 0,
+   "dropped": 0,
+   "rvfc": 0,
+   "skipped": 0,
+   "focus": false
+  },
+  {
+   "sec": 9,
+   "decoded": 0,
+   "dropped": 0,
+   "rvfc": 0,
+   "skipped": 0,
+   "focus": false
+  }
+ ]
+}

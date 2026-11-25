@@ -1,0 +1,62 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>video-suite clip generator</title>
+<!-- ds-allow-hardcode: internal measurement harness, not product UI; colours are test content -->
+<body style="background:#222;color:#ccc;font:14px monospace">
+<pre id="log">generator ready</pre>
+<script src="content.js"></script>
+<script>
+// Renders the deterministic test content (content.js) frame by frame and encodes it with WebCodecs VideoEncoder.
+// Encoded chunks go to the server (POST /gen/chunk), which muxes WebM. Driven by gen.mjs: await genClip({...}).
+const logEl = document.getElementById('log');
+const log = (s) => { logEl.textContent = s; fetch('/log', { method: 'POST', body: s }); };
+
+async function genClip({ name, codec, wcodec, width, height, fps, seconds, bitrate, cp }) {
+  const total = fps * seconds;
+  await fetch(`/gen/start?name=${name}&codec=${codec}&w=${width}&h=${height}&fps=${fps}${cp ? '&cp=' + cp : ''}`, { method: 'POST' });
+  const canvas = new OffscreenCanvas(width, height);
+  const ctx = canvas.getContext('2d', { alpha: false });
+  const content = makeContent(width, height, fps, name);
+  let batch = [], batchBytes = 0, posting = Promise.resolve(), failed = null, done = 0, keyframes = 0;
+  const flush = () => {
+    if (!batch.length) return posting;
+    const parts = batch; batch = []; batchBytes = 0;
+    const size = parts.reduce((a, p) => a + 9 + p.data.byteLength, 0);
+    const buf = new Uint8Array(size); const dv = new DataView(buf.buffer); let o = 0;
+    for (const p of parts) { dv.setUint32(o, p.i, true); buf[o + 4] = p.key; dv.setUint32(o + 5, p.data.byteLength, true); buf.set(p.data, o + 9); o += 9 + p.data.byteLength; }
+    posting = posting.then(() => fetch(`/gen/chunk?name=${name}`, { method: 'POST', body: buf }));
+    return posting;
+  };
+  const enc = new VideoEncoder({
+    output: (chunk) => {
+      const data = new Uint8Array(chunk.byteLength); chunk.copyTo(data);
+      const i = Math.round(chunk.timestamp * fps / 1e6);
+      if (chunk.type === 'key') keyframes++;
+      batch.push({ i, key: chunk.type === 'key' ? 1 : 0, data }); batchBytes += data.byteLength; done++;
+      if (batchBytes > (4 << 20) || batch.length >= 60) flush();
+    },
+    error: (e) => { failed = e; },
+  });
+  const cfg = { codec: wcodec, width, height, framerate: fps, bitrate, bitrateMode: 'variable', latencyMode: 'realtime' };
+  const sup = await VideoEncoder.isConfigSupported(cfg);
+  if (!sup.supported) throw new Error('encoder config not supported: ' + JSON.stringify(cfg));
+  enc.configure(cfg);
+  const t0 = performance.now();
+  for (let i = 0; i < total; i++) {
+    if (failed) throw failed;
+    content.draw(ctx, i);
+    const f = new VideoFrame(canvas, { timestamp: Math.round(i * 1e6 / fps), duration: Math.round(1e6 / fps) });
+    enc.encode(f, { keyFrame: i % (fps * 2) === 0 });
+    f.close();
+    while (enc.encodeQueueSize > 3) await new Promise((r) => enc.addEventListener('dequeue', r, { once: true }));
+    if (i % fps === 0) log(`${name}: ${i}/${total} frames, ${(i / ((performance.now() - t0) / 1000)).toFixed(1)} fps`);
+  }
+  await enc.flush(); enc.close();
+  if (failed) throw failed;
+  await flush();
+  const r = await (await fetch(`/gen/finish?name=${name}`, { method: 'POST',
+    body: JSON.stringify({ codec: wcodec, width, height, fps, seconds, targetBitrate: bitrate, keyframes, encodeSeconds: (performance.now() - t0) / 1000 }) })).json();
+  log(`${name}: done ${r.frames} frames ${(r.bytes / 1e6).toFixed(1)} MB`);
+  return r;
+}
+</script>

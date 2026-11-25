@@ -8,7 +8,7 @@ on:
       commit:
         description: OpenCorePkg commit to build
         default: 963025f1382eca619412d527ad82b6d19bee70d9
-  workflow_call:        # called by build.yml on a release tag, which attaches the result to the release
+  workflow_call:        # called by build.yml on a "v*" tag; the result stays an artifact of the run
     inputs:
       commit:
         type: string

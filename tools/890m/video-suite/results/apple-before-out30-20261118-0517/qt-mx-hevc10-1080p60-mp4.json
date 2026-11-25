@@ -1,0 +1,21 @@
+{
+ "app": "QuickTime",
+ "id": "qt-mx-hevc10-1080p60-mp4",
+ "clip": "mx-hevc10-1080p60.mp4",
+ "codec": "HEVC",
+ "depth": "Main10 10-bit",
+ "size": "1080p60",
+ "container": "MP4",
+ "mime": null,
+ "fps": 60,
+ "mode": "file",
+ "errors": [
+  "osascript: Command failed: osascript -e tell application \"QuickTime Player\" to return current time of (first document whose path is \"~/Library/Caches/ga403wm-video-suite/clips/mx-hevc10-1080p60.mp4\") 46:58: execution error: QuickTime Player got an error: Can’t get path of document. (-1728)",
+  "close: Command failed: osascript -e tell application \"QuickTime Player\" to close (every document whose path is \"~/Library/Caches/ga403wm-video-suite/clips/mx-hevc10-1080p60.mp4\") saving no\n39:168: execution error: QuickTime Player got an error: Can’t get path of document. (-1728)\n"
+ ],
+ "plays": "no",
+ "vcn": {
+  "v": "none",
+  "s": []
+ }
+}

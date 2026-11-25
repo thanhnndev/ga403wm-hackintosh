@@ -29,11 +29,31 @@ fi
 cur=$(ioreg -l -w0 2>/dev/null | grep -E '"DisplayVendorID" = |"DisplayProductID" = ' | sort -u | tr -d ' "|' | tr '\n' ' ')
 case "$cur" in *DisplayProductID=16796*DisplayVendorID=19587*) ;; *) echo "built-in panel is not 4c83:419c ($cur): not installing"; exit 1;; esac
 T=$(mktemp -d); trap 'rm -rf "$T"' EXIT
+# The override carries the live panel EDID (like Apple's own overrides): without IODisplayEDID in the
+# override path, Settings derives no physical size and falls back to 72 DPI (built-in shows "47 inch").
+# The EDID comes from the running driver, so this stays in sync with PanelEDID.
 /usr/bin/python3 -I - "$T/o.plist" <<'PY'
-import plistlib, struct, sys
+import plistlib, struct, subprocess, sys
+out = subprocess.run(['ioreg', '-rc', 'AppleBacklightDisplay', '-l', '-w0', '-a'],
+                     capture_output=True, check=True).stdout
+regs = plistlib.loads(out)
+edid = None
+def walk(o):
+    global edid
+    if isinstance(o, dict):
+        if isinstance(o.get('IODisplayEDID'), bytes) and len(o['IODisplayEDID']) in (128, 256):
+            edid = o['IODisplayEDID']
+        for v in o.values(): walk(v)
+    elif isinstance(o, list):
+        for v in o: walk(v)
+walk(regs)
+if edid is None:
+    sys.exit('live IODisplayEDID not found on AppleBacklightDisplay')
 def ent(w, h): return struct.pack(">IIII", w, h, 1, 0x00800000)   # always; valid for HiRes, not mirror-only
 plistlib.dump({"DisplayVendorID": 0x4c83, "DisplayProductID": 0x419c, "DisplayProductName": "Built-in OLED",
+               "IODisplayEDID": edid,
                "scale-resolutions": [ent(2880, 1800)]}, open(sys.argv[1], "wb"))
+print('embedded EDID bytes: %d' % len(edid))
 PY
 plutil -lint "$T/o.plist" >/dev/null
 sudo mkdir -p "$DIR"

@@ -1,0 +1,20 @@
+{
+ "app": "QuickTime",
+ "id": "qt-mx-h264-1080p60-mp4",
+ "clip": "mx-h264-1080p60.mp4",
+ "codec": "H.264",
+ "depth": "High 8-bit",
+ "size": "1080p60",
+ "container": "MP4",
+ "mime": null,
+ "fps": 60,
+ "mode": "file",
+ "errors": [
+  "osascript: Command failed: osascript -e tell application \"QuickTime Player\"       set d to open POSIX file \"~/Library/Caches/ga403wm-video-suite/clips/mx-h264-1080p60.mp4\""
+ ],
+ "plays": "no",
+ "vcn": {
+  "v": "none",
+  "s": []
+ }
+}

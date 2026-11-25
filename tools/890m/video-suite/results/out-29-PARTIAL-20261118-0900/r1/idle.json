@@ -1,0 +1,63 @@
+{
+ "case": "idle",
+ "kind": "idle",
+ "secs": 30,
+ "note": "desktop reference: no scratch Chrome",
+ "started": "2026-11-18T02:00:37.431Z",
+ "ctx": {
+  "profile": "3",
+  "set_profile": "0",
+  "dgpu_disable": "0",
+  "epp": {
+   "191": 10
+  },
+  "ac": true,
+  "docker": false
+ },
+ "waitedForIdleSecs": 0,
+ "window": {
+  "mem": {
+   "swapouts": 0,
+   "swapins": 0,
+   "pageouts": 659,
+   "decompressions": 11515,
+   "wiredGB": 8.2,
+   "freeMinMB": 14.6
+  },
+  "n": 30,
+  "inputSecs": 0,
+  "watts": 7.63,
+  "tctl": 51.2,
+  "tctlMax": 54.3,
+  "cpu": {
+   "gpu": 0,
+   "renderer": 0,
+   "browser": 0,
+   "chrome_other": 0,
+   "windowserver": 0.8,
+   "vtdecoder": 0,
+   "docker": 0,
+   "claude": 8.4,
+   "owner_apps": 160.4,
+   "total": 169.6,
+   "kernel_task": 14.9
+  },
+  "nmx": {
+   "chunks_filled": 0,
+   "chunks_inline": 0,
+   "chunks_freed": 0,
+   "parks": 2,
+   "unparks": 0,
+   "unpark_fail": 0,
+   "park_fail": 0,
+   "restore_fail": 0,
+   "timeouts": 0,
+   "fence_timeouts": 0,
+   "frames_per_s": 1.6,
+   "page_free_min": 152086,
+   "pages_live_max": 445754,
+   "userwire_max": 170517,
+   "parked_pages_end": 99479
+  }
+ }
+}

@@ -1,0 +1,7 @@
+# Step100 irqfix (H2) claims, on top of NMXGPU 1907d9f9:
+code  0x509100..0x50a630  kv_dpm_enable + kv_populate_{vce,samu,acp}_table (dead KV dpm), the Step97 irqwatch region,
+                          replaced in full; cave.bin uses 0x509100..0x50a622 (5410 of 5424 bytes)
+code  0x6e88a0..0x6e88b2  amdgpu_fence_process: stale-read printf set-up -> call stale_note; jmp 0x6e88c4
+                          (0x6e88b3 call _printf + its extern reloc left untouched, now unreachable)
+sites 0x652f5 0x6e898c 0x586b7 0x58791 0x6e8905 (the Step97 rel32 sites, retargeted to the new entries)
+data  0x927010..0x9270c0  ST[0..21] (ci_init_smc_table.__ratelimited.15.., CI dpm only); Step97 used ST[0..15]

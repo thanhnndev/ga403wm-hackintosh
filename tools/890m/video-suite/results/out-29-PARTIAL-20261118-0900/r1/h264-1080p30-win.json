@@ -1,0 +1,145 @@
+{
+ "case": "h264-1080p30-win",
+ "clip": "h264-1080p30.mp4",
+ "mode": "windowed",
+ "fps": 30,
+ "started": "2026-11-18T02:07:38.850Z",
+ "ctx": {
+  "profile": "3",
+  "set_profile": "0",
+  "dgpu_disable": "0",
+  "epp": {
+   "191": 8
+  },
+  "ac": true,
+  "docker": false
+ },
+ "clipSha": "3e8fc6c63a46",
+ "waitedForIdleSecs": 0,
+ "preIdle": {
+  "mem": {
+   "swapouts": 0,
+   "swapins": 0,
+   "pageouts": 0,
+   "decompressions": 2051,
+   "wiredGB": 9.1,
+   "freeMinMB": 137.5
+  },
+  "n": 15,
+  "inputSecs": 0,
+  "watts": 53.2,
+  "tctl": 89.3,
+  "tctlMax": 91.8,
+  "cpu": {
+   "gpu": 0,
+   "renderer": 0,
+   "browser": 0,
+   "chrome_other": 0,
+   "windowserver": 1.3,
+   "vtdecoder": 0,
+   "docker": 0,
+   "claude": 16.1,
+   "owner_apps": 1230.5,
+   "total": 1247.9,
+   "kernel_task": 15.2
+  },
+  "nmx": {
+   "chunks_filled": 0,
+   "chunks_inline": 0,
+   "chunks_freed": 0,
+   "parks": 0,
+   "unparks": 0,
+   "unpark_fail": 0,
+   "park_fail": 0,
+   "restore_fail": 0,
+   "timeouts": 0,
+   "fence_timeouts": 0,
+   "frames_per_s": 2.1,
+   "page_free_min": 76271,
+   "pages_live_max": 644961,
+   "userwire_max": 228646,
+   "parked_pages_end": 136920
+  }
+ },
+ "decoder": "FFmpegVideoDecoder",
+ "platformDecoder": "false",
+ "hwDecoder": false,
+ "mediaErrors": [],
+ "chromeVersion": "Chrome/157.0.8103.79",
+ "events": [
+  {
+   "case": "h264-1080p30-win",
+   "run": "r1",
+   "type": "done",
+   "sec": 70
+  }
+ ],
+ "timedOut": false,
+ "phases": {
+  "measure": {
+   "secs": 60,
+   "decoded": 266,
+   "dropped": 0,
+   "skipped": 0,
+   "presented": 258,
+   "back": 0,
+   "missedCb": 0,
+   "waiting": 0,
+   "stalled": 0,
+   "ivP50": 33.4,
+   "ivP95": 34.1,
+   "ivP99": 34.3,
+   "ivMax": 45.2,
+   "late": 0,
+   "hiddenSecs": 49,
+   "unfocusedSecs": 60,
+   "fsSecs": 0,
+   "viewport": "1280x657@2",
+   "mem": {
+    "swapouts": 0,
+    "swapins": 0,
+    "pageouts": 1561,
+    "decompressions": 104433,
+    "wiredGB": 9.5,
+    "freeMinMB": 3.6
+   },
+   "n": 59,
+   "inputSecs": 51,
+   "watts": 34.52,
+   "tctl": 80.5,
+   "tctlMax": 89.5,
+   "cpu": {
+    "gpu": 1.2,
+    "renderer": 5.4,
+    "browser": 0.3,
+    "chrome_other": 0.2,
+    "windowserver": 20.3,
+    "vtdecoder": 0,
+    "docker": 0,
+    "claude": 81.4,
+    "owner_apps": 445.6,
+    "total": 554.3,
+    "kernel_task": 26.1
+   },
+   "nmx": {
+    "chunks_filled": 0,
+    "chunks_inline": 0,
+    "chunks_freed": 0,
+    "parks": 183,
+    "unparks": 37,
+    "unpark_fail": 0,
+    "park_fail": 0,
+    "restore_fail": 0,
+    "timeouts": 0,
+    "fence_timeouts": 0,
+    "frames_per_s": 27.4,
+    "page_free_min": 73846,
+    "pages_live_max": 689370,
+    "userwire_max": 384927,
+    "parked_pages_end": 165077
+   },
+   "wattsOverPre": -18.68
+  }
+ },
+ "disturbed": "measure: hidden 49 s"
+}

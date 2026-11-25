@@ -1,5 +1,32 @@
 # NullMoth driver: what we know (2026-10-12)
 
+**Current state (2026-11-04 13:33): upstream 2.7.1 (NVIDIA driver) under the 890M stack, installed, loads at the next reboot.**
+`nullmoth-nvidia-2.7.1.tar.gz` SHA-256 `0b28f420...` (matches the release SHA256SUMS.txt; package SHA256SUMS ok). Installed
+by `scripts/macos-install-nvidia-2.7.1.sh`: upstream install.sh (NVRM/NVRMFB/NVAccel/NVRMAGDC 2.7.1, NVK userland,
+firmware; NMXGPU and `/Library/NullMoth/gpu-userland` RADV kept as they were), then NMXAudio.kext taken out again (new
+kext = Step100b kernelmanagerd risk; saved in `/Library/NullMoth/nv271-20261104T063234Z`), our 890M plugin (fbb6ca4,
+UUID 277FD7A9) and allow list (`!WindowServer` only) back, own relink with every NMXGPU probe and eight kext UUIDs
+checked again after 45 s. Upstream backup (2.5.2): `/Library/NullMoth/backup-20261104-133241.sYyjJs`. The NVRM boot
+guard and its bootguard/lastgood jobs stay as shipped (no guard patch: WindowServer is on the 890M, a parked NVIDIA
+driver no longer takes the desktop). Checked before install: 2.6.6's NVAccel "a GPU with no Metal accelerator does not
+own the desktop" finds NMXAccel's MetalPluginName one level under the 890M PCI device, so the 890M keeps the desktop;
+NVPrimarySelector is opt-in and not used; WindowServer opens libvulkan_radeon directly (no NVK in that process).
+
+Previous state (2026-10-17): **Current state (2026-10-17 12:30): upstream 2.3.1 + the fork overlay, installed on macOS 26.7.1, loads at the next reboot.**
+`nullmoth-nvidia-2.3.1.tar.gz` SHA-256 `3522e2f5...` (matches the release's SHA256SUMS.txt, package SHA256SUMS ok);
+upstream backup `/Library/NullMoth/backup-20261017-122934.HLqztf` (`uninstall.sh <backup>` goes back to 2.0.4); fork
+`ga403wm` rebased onto `v2.3.1` without conflicts (`805e77a`, old tip tagged `ga403wm-on-2.0.4`); overlay NVRMFB `ad490cf6...`
+(new: carries 2.1-2.3 NVRMFB changes), NVRMEdpBL `433dfcbf...` (unchanged); runbook `~/efi-audit/upgrade-2.3.1/run-install.sh`
+(same parking of NVRMEdpBL as 2.0.x). AuxKC verified: NVRM, NVRMFB, NVRMEdpBL, NVRMAGDC, NVAccel, NMXGPU, NMXAccel.
+Notes for 2.2+: the package carries the NVIDIA driver only (no NMXGPU/NMXAccel/NPU); install.sh keeps an installed
+`/Library/Extensions/NMXGPU.kext` and copies `/Library/NullMoth/gpu-userland` (RADV) back into `GPUBundles/nvmtl`; the
+2.0.4 NMX kexts + userland are saved in `~/efi-audit/nmxgpu-2.0.4` (used by `scripts/macos-nmxgpu-890m-test.sh`). New
+boot guard (2.3.1): NVRM counts starts in NVRAM `nullmoth-nv-starts`, NVRMFB clears it when its display is up *or the
+card has no display* (headless OLED-only boots are fine); two failed starts turn the driver off and the lastgood job
+restores the backup. The NVMTL plugin still loads RADV for NMXAccel (`AMD, RADV`, `NMXAccel` strings present).
+
+Previous state (2026-10-16 and before), the original page:
+
 **Read the vendor's source first.** The driver is published with source at
 <https://github.com/nullmoth/nvidia-macos-driver> (PolyForm Noncommercial; release notes in `docs/RELEASE-*.md`). The
 first pass of this page was derived from the installed binaries (`strings`, `llvm-objdump`) and a `sample

@@ -1,0 +1,755 @@
+# Fresh install of the whole GA403WM stack: research and design
+
+Status: research and design, 2026-11-05 (branch `research/890m-cobalt64`), updated 2026-11-07 after the first real
+fresh install (Tahoe 26.7.2, 25G332). That run was done by hand, through `Install macOS Tahoe.app` from the old macOS,
+not through Recovery from the USB, and none of the stage scripts below existed yet. Its findings are kept as written in
+[FRESH-INSTALL-LESSONS-2026-11-07.md](FRESH-INSTALL-LESSONS-2026-11-07.md) and folded into this design (section 4.9
+lists what changed). The prototype scripts in `scripts/fresh-install/` are read-only and were tested on the working
+machine only.
+
+Owner's request: "nghiên cứu cài all bộ ga403 cho fresh install đi. Có thể cài qua usb hoặc tạo 1 app. Nói chung là
+tìm đường 1 click install all ấy" (find a one-click way to install everything on a fresh machine, by USB or an app).
+
+## Summary
+
+* **Recommendation: the hybrid (option c), on a small USB.** One FAT32 stick (4 GB is enough) holds three folders:
+  the OpenCore EFI with only the kexts the install needs (Wi-Fi, keyboard/mouse/touchpad, USB map, the AMD kernel
+  patches), the macOS **Recovery** image (`macrecovery.py`, about 1 GB), and `GA403/` with the post-install app. macOS
+  itself is downloaded by Recovery over Wi-Fi; no full installer is put on the stick (owner's direction, 2026-11-05).
+* **Pre-install versus post-install.** The USB EFI carries only what Recovery, the installer and the first boot
+  need (section 2.1). Everything else is post-install, done by `GA403 Setup.app`: the full EFI on the internal disk,
+  the iGPU (NMXGPU + 890M userland), NVIDIA, power/sleep fixes, audio, ROG Control, optimisations. The app applies
+  them in order across two or three reboots, resumes on its own after each one, and verifies each stage against a
+  manifest.
+* **The step scripts cannot be replayed on a fresh machine.** The live NMXGPU (`5760efb6…`) is a source build
+  (`7efe25b8`, Step69) followed by about 22 binary patches and caves (Step74 to Step112c). Each step script only
+  accepts the exact sha256 the previous step produced, and some read their input from dated backup folders that exist
+  only on this disk (`/Library/NullMoth/step95-bk-20261103T152156Z`, `step98-bk-20261103T171105Z`). The NVIDIA 2.7.1
+  tarball the NVIDIA script expects (`~/efi-audit/upgrade-2.7.1/`) is no longer on disk either.
+* **So the installer copies final, verified artifacts, not the history.** The first version uses a "golden payload"
+  captured from this working machine (`scripts/fresh-install/capture-live.sh`, 93 components, sha256 for each). In
+  the longer term, the caves move into the fork's source, so CI can build NMXGPU and the manifest can point at CI
+  artifacts instead of a capture. A capture goes stale fast: the 2026-11-05 payload differed from the live system in
+  six components two days later. So the capture is taken right before the stick is built, `verify.sh --drift` fails
+  when payload and live differ, and the app shows the capture date.
+* **Stage scripts are bash plus prebuilt tools only.** A fresh macOS has no python3 until the Command Line Tools are
+  installed (`/usr/bin/python3` is only a stub that offers to install them).
+* **Licensing split.** Every PolyForm part (NMXGPU, NMXAccel, NMXAGDC, NVRM*, NVAccel, NVMTL plugin and translator,
+  RADV/libdrm builds, NullMoth firmware) lives only in the payload, never in this BSD repo. The repo carries the
+  manifest format, the scripts, the BSD kexts' sources, and sha256 values.
+* **Clicks that cannot be automated:** the BIOS settings, picking the USB in the boot menu, joining Wi-Fi and
+  erasing the disk in Recovery, macOS Setup Assistant
+  (account, Apple ID), one admin password per stage, and the reboots (the app can trigger them, but a person should
+  confirm each one). The setup expects no "Allow" click in Privacy & Security because `csr-active-config` 0x0A43
+  includes `CSR_ALLOW_UNAPPROVED_KEXTS`. This has to be confirmed on the first real run.
+
+## 1. Inventory: what a working machine has today
+
+Taken read-only on 2026-11-05: macOS 26.7.1 (25G241), OpenCore 1.0.9 with the Zen 5 FSB patch, SIP custom
+(`csr-active-config` 0x0A43 = untrusted kexts, unrestricted FS, unrestricted NVRAM, unapproved kexts,
+unauthenticated root), authenticated root disabled, booted from a blessed snapshot (`com.apple.bless.66C4…`).
+
+### 1.1 OpenCore EFI (internal ESP, `EFI/OC`)
+
+| Part | Live content | Notes |
+|---|---|---|
+| `OpenCore.efi` + drivers | OC 1.0.9 from `963025f` + `patches/opencore/fix-zen5-fsb.diff`; `HfsPlus`, `OpenRuntime`, `ResetNvramEntry` | built by the `opencore` workflow |
+| ACPI (enabled) | `SSDT-EC`, `-PLUG-ALT`, `-RMNE`, `-USB-Reset`, `-USBX`, `-XOSI`, `-ECRAM`, `-S0IDLE`, `-PTS5` | `SSDT-ECRAM` is on the ESP but **not** in `efi/OC/ACPI` of the repo |
+| ACPI patches | `_OSI→XOSI`, `ACAD._PSR` skip ALIB, `_PTS→ZPTS` (pairs with SSDT-PTS5) | |
+| Kernel/Add (on) | Lilu, VirtualSMC, SMCBatteryManager, AppleALC, AppleMCEReporterDisabler, BrightnessKeys, ForgedInvariant, HoRNDIS, ItlXhciKick, itlmt7925, itlmt7925Native, NullEthernet, NVMeFix, RestrictEvents, Sinetek-rtsx, USBToolBox + UTBMap, VoodooI2C (+GPIO, Services, Input) + VoodooI2CHID, AMFIPass, AmdCppc, BlueToolFixup, MtkBtFw, AsusWmi, BtLeDlFix, StrixProbe, StrixAmp, StrixMetalGate, StrixHeadroom, StrixVFCT, StrixSbxMap, RyzenHV | NVRM*/NVAccel/StrixAccel/StrixGOP entries exist but are **off** (those load from the AuxKC) |
+| Kernel patches | AMD vanilla set (algrey et al.), 10-bit tags 26.0+, non-monotonic time (26.4+ variant), PAT fix, `fq_codel_dq` clamp | |
+| Kernel/Block | `com.apple.iokit.IONDRVSupport` | IONDRVFramebuffer still appears on Tahoe (TRACE line 1587), so the installer has a GOP picture |
+| boot-args | `debug=0x100 keepsyms=1 -vi2c-force-polling nvfb=1 nvaccel=1 nvfbheads=4 -nvkmsnosmooth amfi_get_out_of_my_way=0x1 amfi=0x80 msgbuf=1048576 ipc_control_port_options=0 itlmt_* … -nvrmnobootscreen nvrmacpibl=1 alcverbs=1 strixamp_trace=1 strixhdr=1 -strixgopoff -strixaccoff -strixmetalgateoff nmxamd=1 rhv_*` | several are trace flags (`itlmt_stat`, `strixamp_trace`, `rhv_selftest`) and belong in a "debug" profile only |
+| PlatformInfo | `MacBookPro16,2`, Serial/MLB/UUID/ROM | **machine-specific**, never in the repo or the payload |
+| DeviceProperties | 6 paths under `PciRoot(0x0)/Pci(0x8,0x1)` / `(0x8,0x3)` (890M model/VRAM, audio, …) | same for every GA403WM |
+| `StrixVFCT.kext` | codeless kext carrying the firmware's VFCT table (890M VBIOS) | **built from a dump of the target's own VFCT**; vendor firmware, never committed or shared |
+| `StrixSbxMap.kext` | pins (path, cdhash) of 8 files in `/Library/GPUBundles` into its Info.plist | must be **built after** the GPU bundles are installed (`macos-install-strixsbxmap.sh --refresh`) |
+| `itlmt7925*.kext` | Wi-Fi | can carry injected Wi-Fi credentials in plain text: build fresh, never copy the live one |
+
+The repo's `efi/OC/config.plist` is from 2026-10-11 and is far behind the live one. `scripts/export-efi.py` (sanitizes
+the identifiers and fails on a leak) has to be run again before the repo copy can seed an installer.
+
+### 1.2 `/Library/Extensions` (AuxKC, linked with `kmutil create -n aux`)
+
+| Kext | Version | sha256 prefix | License / origin |
+|---|---|---|---|
+| NMXGPU | 1.0.0 | `5760efb63fc0eee9` | PolyForm; own build `7efe25b8` + cave chain, see 1.3 |
+| NMXAccel | 0.1 | `48b3f689c1fc6b23` | PolyForm; fork CI `ci/nmxaccel-drmuc` 7bd4e99 (run 41789977284) |
+| NMXAGDC | 0.1 | `37a390a5bcce8b7c` | PolyForm; fork CI + Step74 rename |
+| NVRM | 2.7.1 | `dca5eac6cfca8e7c` | PolyForm; built from `nmx-translator-271` (`-nvrmnohold` build, installed by step112b) |
+| NVRMFB, NVRMAGDC, NVAccel | 2.7.1 | `83390f17…`, `c90a08af…`, `de322206…` | PolyForm; NullMoth 2.7.1 upstream |
+| StrixS0ix | 0.1.4 | `8cbe47a450be660c` | BSD, `kexts/StrixS0ix` |
+| StrixAccel 0.1.21, StrixGOP 0.1.11 | | | BSD; still in the AuxKC but turned off with `-strixaccoff -strixgopoff` (drop them in the fresh profile) |
+
+Known trap: kernelmanagerd rebuilds the AuxKC from its own list (which never holds NMXGPU or NMXAGDC) when a new kext
+appears in `/Library/Extensions` (Step100b). Every installer here therefore relinks, checks again after 45 s, and
+checks once more after the reboot.
+
+### 1.3 How the live NMXGPU was produced
+
+Source: NullMoth v2.0.4 tree, fork branch `ga403wm-nmx` (`~/develop/projects/nmx-src-2.0.4`, HEAD `2dbf59a`),
+build env `~/develop/projects/gpu-src` (drm-kmod `c16de0f9fa`, freebsd-src `9d82546a`), `AMD_ONLY=1 kext/build.sh`.
+The last source build was `7efe25b8` (Step69). Everything after that is binary patching:
+
+| Step | Script(s) | Result sha prefix |
+|---|---|---|
+| 74 | `linux-patch-nmx-amdfb.sh` (NMXGPUFB → NMXAMDFB, also in NMXAccel/NMXAGDC) | `e75bb84b` |
+| 75 | `linux-patch-nmx-scanout.sh` | `401c4e4c` |
+| 77 | `linux-patch-nmx-rcu.sh` + `nmx-rcu/` | `02a336b4` |
+| 78 | `linux-patch-nmx-mtxguard.sh` + `nmx-mtxguard/` | `9ea37786` |
+| 79 | `linux-patch-nmx-idr.sh` | `c2979d9b` |
+| 80 | `linux-patch-nmx-etime.sh` | `1e0e1524` |
+| 84 | `linux-patch-nmx-zeroflush.sh` | `0a6c745a` |
+| 88 | `linux-patch-nmx-snoopgtt.sh` | `3dbc47cc` |
+| 89 | `macos-patch-nmx-step89.sh` + `nmx-ibprobe/step89_patch.py` | `47eec16d` |
+| 90 | `linux-patch-nmx-step90.sh` + `nmx-wcsplit/` | `c9bf8730` |
+| 91 | `macos-patch-nmx-step91.sh` | `b13ca867` |
+| 92 | `macos-patch-nmx-step92.sh` + `nmx-userptr/` | `01ecc7bc` |
+| 93 | `macos-patch-nmx-step93.sh` + `nmx-ibprep/` | `89969711` |
+| 96 | `macos-install-step96.sh` (cstrace + userptr ro retry; reads the Step95 backup) | `44c7e552` |
+| 97/97b | `macos-install-step97.sh`, `nmx-irqwatch/`, `nmx-mmfix/` | `c2326f22` |
+| 99 | `macos-install-step99.sh`, `nmx-flip/step99_patch.py` (reads the Step98 backup) | `1907d9f9` |
+| 100 | `macos-install-step100.sh`, `nmx-irqfix/`, `nmx-mmfix2/` | `d4830f51` |
+| 100c | `linux-patch-step100c.sh`, `nmx-irqfix/st_move.py` | `3e1b6619` |
+| 107 | `macos-install-step107.sh`, `nmx-s0ix/patch_s0ix.py` | `2a1bb264` |
+| 112c | `macos-install-step112c.sh`, `nmx-s0ix/patch_fadt.py` | **`5760efb6` (live)** |
+
+Steps 86, 95 and 98/98b were replaced or dropped. Every offset (for example 0x50ac10, 0x9270a0) is only valid for the
+`7efe25b8` lineage, so a rebuild from source invalidates the whole chain. `scripts/nmx-caves/check.py` (cave registry)
+and the per-cave `--check-kc` probes (`nmx-mmfix/step97b_patch.py:44`, `nmx-flip/step99_patch.py:54`,
+`nmx-irqfix/patch_irqfix.py:149`, `nmx-mmfix2/step100_mm_patch.py:67`, `nmx-s0ix/patch_s0ix.py:51`,
+`nmx-s0ix/patch_fadt.py:59`) are the verification to keep.
+
+The NVIDIA script `macos-install-nvidia-2.7.1.sh` also gates on an NMXGPU sha (`3e1b6619…`). That means it ran
+between Step100c and Step107, and on a fresh machine it cannot run after the final NMXGPU is in place without
+changing that gate.
+
+### 1.4 Userland
+
+| Where | What | License |
+|---|---|---|
+| `/Library/GPUBundles/NVMTLDriver.bundle` | NullMoth plugin, replaced by the 890M plugin from the fork (`nmx-plugin-890m` / desc-cache branches) + translator dylib (`nmx-translator-271`) | PolyForm (translator carries GPL/LGPL-3.0 texts) |
+| `/Library/GPUBundles/NVIDIAShared.bundle`, `nvmtl/` | NVK, RADV (`libvulkan_radeon`), libdrm, ICDs, caches | PolyForm + Mesa (MIT) |
+| `/Library/GPUBundles/nvmtl-allow.txt` | = `scripts/nvmtl-allow.txt` (`*`, `!WindowServer`, …); must be readable by `_windowserver` | BSD |
+| `/Library/NullMoth/` | upstream scripts, `gpu-userland/`, `firmware/` (7 MB), `nvfw/` (220 MB), `kexts/`, `licenses/`, about 190 backup folders | PolyForm + vendor firmware |
+| `/Library/NullMoth/*.sh` | the scripts the `com.nullmoth.*` daemons run (`bootguard`, `nullmoth-{displaytrace,recover,setup,wsdeath,wsreset}`, `uninstall`); missing from the 2026-11-05 capture | PolyForm |
+| `/Library/StrixGraphicsFix/` | `nmx-flip-default.sh` + `nmx-flip.mode` (1 = zero copy), `nmx-relink.probes` (cave windows for `kccheck`), `kccheck`, `auxguard.sh` (2026-11-07, source in `scripts/fresh-install/auxguard/`), `ws-sandbox-dri.sh`, relink tools, old `bootstrap.sh` | BSD |
+| `/usr/local/share/strixamp/` | StrixAmp firmware/tables (`fw/`); missing from the 2026-11-05 capture | BSD |
+| LaunchDaemons | `com.nullmoth.{bootguard,displaytrace,recover,wsdeath,wsreset}`, `com.ga403wm.{nmx-flip-default,auxguard}`, `com.itlmt7925.{AmdCppcPolicy,strixamp}`; **not** `audio-boot-trace` (removed at the owner's request) or `graphics-bootstrap` (stale, see 4.7) | mixed |
+| LaunchAgents | `com.itlmt7925.rogaudiod`; per user: `com.itlmt7925.{RogControl,TapGuard,espmount,rogkeyd}`; **not** `com.nullmoth.crashcheck` (its 1401.app is not installed) or ItlWiFi | mixed |
+| Programs behind them | `/Library/PrivilegedHelperTools/com.itlmt7925.*`, `~/Library/Application Support/RogControl/rogkeyd.app` (per user), `/Library/Application Support/RogAudio`, `/Library/Audio/Plug-Ins/HAL/RogAudio.driver`, `/Applications/{RogControl,TapGuard}.app` | BSD (sister repos) |
+
+The owner does not want `1401.app` or `ItlWiFi.app` on a fresh install (native Wi-Fi and the custom driver are used),
+so the full profile leaves both out.
+| Display override | `/Library/Displays/.../DisplayVendorID-4c83` (HiDPI, embeds the panel EDID) | BSD, from `macos-install-hidpi.sh` |
+
+### 1.5 Changes inside the sealed system (blessed snapshot)
+
+| Change | Tool | Needed in the fresh profile? |
+|---|---|---|
+| `/dev/dri` rule in `com.apple.WindowServer.sb` | `scripts/ws-sandbox/ws-sandbox-dri.sh` (mounts the system volume, patches, `bless --create-snapshot`, reboots) | **yes, required** (checked on the 2026-11-07 fresh run): without it CoreDisplay logs `Failed to create MetalDevice` and WindowServer has no Metal device. A fixed step, run once by the guard daemon (4.3) |
+| `VTStub.bundle` in `/System/Library/Video/Plug-Ins` | `tools/890m/vtstub/install.sh --system` | **no**: experiment, gated by `/tmp/vtstub.on`; leave it out |
+
+Both need authenticated root disabled (0x800 in csr) and must be redone after every macOS update.
+
+## 2. Dependency graph and stages
+
+```
+ BIOS: Secure Boot off (or enrolled, docs/SECURE-BOOT.md), CSM off, Above 4G decoding on
+   │
+ S0  build the USB (macOS, Linux or Windows: macrecovery.py is python) ─────────────────── no target needed
+   │   one FAT32 volume: EFI/ (OpenCore 1.0.9+zen5, pre-install kexts, SMBIOS generated per target),
+   │   com.apple.recovery.boot/ (Tahoe BaseSystem), GA403/ (Setup app, manifest, scripts, optional payload)
+   │
+ S1  boot the USB → OpenCore picker → macOS Recovery
+   │   join Wi-Fi (itlmt7925Native in the USB EFI) or plug a phone (HoRNDIS) / USB Ethernet
+   │   Disk Utility: erase the target (APFS) → Reinstall macOS → Recovery downloads Tahoe (~15 GB, on the target disk)
+   │   the installer reboots 2-3 times; OpenCore on the USB picks "macOS Installer"        needs: OC on USB only
+   │
+ S2  first boot (still from the USB OpenCore) → Setup Assistant (user account)           manual
+   │   open GA403/GA403 Setup.app from the USB                                               ← post-install starts
+   │
+ S3  Setup app, stage "efi"   [admin password #1]
+   │   dump VFCT → build StrixVFCT; copy the EFI to the internal ESP with the same SMBIOS; full-profile config
+   │   (csr 0x0A43, AMFI boot-args); boot entry; ocvalidate; arm the resume daemon               → REBOOT 1
+   │
+ S4  stage "le + userland", all offline   (resume daemon, then admin password #2 in the app)
+   │   post-migration cleanup: remove graphics-bootstrap, com.nullmoth.crashcheck (Migration Assistant restores them)
+   │   NullMoth 2.7.1 upstream install.sh (tarball sha-checked) with NMXAudio held back
+   │   → golden overlay: NMXGPU, NMXAccel (family gate, 74a6f5c), NMXAGDC, NVRM, StrixS0ix
+   │     → /Library/Extensions as root, root:wheel 755/644
+   │   → 890M plugin + translator, RADV/libdrm, allow list, flip-default daemon, helpers/apps/agents
+   │   → StrixSbxMap built with the pins of the files just installed → ESP
+   │   → kmutil create AuxKC (prelinked against the installed KCs), kccheck (UUIDs + cave windows)
+   │   → arm the guard daemon (auxguard + ws-sandbox-dri)                                       → REBOOT 2
+   │
+ S5  guard + stage "verify"  (resume daemon, no password)
+   │   guard: wait 45 s, kccheck the AuxKC; if kernelmanagerd replaced it, relink and reboot (at most 2);
+   │   run ws-sandbox-dri.sh once (/dev/dri rule, new blessed snapshot)                         → REBOOT 3
+   │   verify: NMX pipe armed, kexts loaded, AuxKC complete, NMXGPU modeset, WindowServer Metal on the 890M,
+   │   NVIDIA headless, Wi-Fi, audio, brightness, agents
+   │
+ done: the app shows a report; the resume daemon removes itself
+```
+
+Order rules that matter:
+
+1. SIP and AMFI come from OpenCore (`NVRAM > Add` + `Delete` of `csr-active-config` and `boot-args`), so they only
+   change when the machine boots the **full** EFI. S4 must therefore run after a boot from the internal ESP (REBOOT 1);
+   it cannot run straight after Setup Assistant.
+2. The USB EFI (S1) carries the pre-install set of 2.1 only, with SIP left at the default (csr 0) and no AMFI
+   boot-args. No Strix*, no NVRM, no AMFIPass, no Kernel/Block of IONDRVSupport (Recovery draws on the firmware GOP
+   framebuffer). If Recovery or the installer fails, this set is small enough to debug.
+3. The NullMoth upstream `install.sh` must run **before** the golden overlay: it writes NVRM/NVRMFB/NVAccel/NVRMAGDC,
+   NVK and firmware, and it would replace the 890M plugin and the allow list. The current
+   `macos-install-nvidia-2.7.1.sh` gate on NMXGPU `3e1b6619` has to become "NMXGPU = manifest sha" (or be removed:
+   the overlay rewrites NMXGPU right after).
+4. StrixSbxMap pins cdhashes of files under `/Library/GPUBundles`, so it is built **after** S4 copies them. It goes to
+   the ESP in the same stage, and both load on REBOOT 2.
+5. One AuxKC relink at the end of S4, not one per kext. A new kext added after the relink triggers kernelmanagerd
+   (Step100b).
+6. Anything that touches `/System` runs last and on its own reboot, so a failure there can be rolled back by booting
+   the previous snapshot (`bless --last-sealed-snapshot` or the OpenCore picker). The WindowServer sandbox rule needs
+   csr 0x800 (`CSR_ALLOW_UNAUTHENTICATED_ROOT`), which is one more reason S3 must come first.
+7. S4 needs no reboot in the middle: kexts, prelink, `kccheck` and arming the guard all happen in one pass, then one
+   reboot (proven on the 2026-11-07 run). The guard's two-reboot cap covers the case where kernelmanagerd replaces the
+   AuxKC on the first boot, which happened on that run.
+
+### 2.1 Pre-install (USB EFI) versus post-install (Setup app)
+
+Sorted from the live `config.plist` (section 1.1). Rule: a part goes on the USB only if Recovery, the installer or
+the first boot cannot work, or cannot be used with the built-in keyboard and touchpad, without it.
+
+| Part | Where | Why |
+|---|---|---|
+| AMD kernel patches (cpuid, PAT, non-monotonic time, 10-bit tags), Booter/Kernel quirks, `ForgedInvariant` | USB | macOS does not boot on Zen 5 without them; OpenCore must be the Zen 5 FSB-patched build |
+| `Lilu`, `VirtualSMC`, `SMCBatteryManager`, `RestrictEvents`, `AppleMCEReporterDisabler`, `NVMeFix` | USB | SMC and battery, CPU naming, MCE reporter panics on AMD, NVMe power |
+| `USBToolBox` + `UTBMap`, `SSDT-USBX`, `SSDT-USB-Reset` | USB | USB ports (the stick itself, keyboard, phone tether) |
+| `ItlXhciKick` | USB | the 2 s key-release lag on AMD xHCI makes the keyboard unusable in Recovery without it |
+| `VoodooI2C` (+ GPIO, Services, Input), `VoodooI2CHID`, `SSDT-XOSI` + `_OSI` rename, `-vi2c-force-polling` | USB | touchpad |
+| `itlmt7925Native` + `itlmt7925`, `itlmt_native=1 itlmt_native_if=1 itlmt_native_dp=1 itlmt_fast=6 itlmt_m1=0` | USB | Wi-Fi, so Recovery can download macOS |
+| `HoRNDIS`, `NullEthernet` + `SSDT-RMNE` | USB | phone tethering fallback if Wi-Fi fails in Recovery; a built-in `en0` for the App Store/iServices |
+| `SSDT-EC`, `SSDT-PLUG-ALT` | USB | the usual EC and CPU plugin SSDTs |
+| PlatformInfo `MacBookPro16,2` with a generated serial | USB | Recovery sends the board-id to Apple to pick the image; the same identity is reused in the internal EFI |
+| boot-args `keepsyms=1 debug=0x100 -v` | USB only | verbose boot while installing; dropped in the full profile |
+| full `config.plist` (csr 0x0A43, AMFI args, AMFIPass, Kernel/Block, DeviceProperties, trace flags removed) | post-install (stage efi) | SIP/AMFI must change only once macOS is installed (rule 1) |
+| `StrixVFCT`, `StrixProbe`, `StrixMetalGate`, `StrixHeadroom`, `StrixSbxMap` (built after the GPU bundles) | post-install (stage efi / le) | iGPU, only useful with NMXGPU |
+| NMXGPU, NMXAccel, NMXAGDC, NullMoth 2.7.1 (NVRM, NVRMFB, NVAccel, NVRMAGDC), 890M userland, allow list, flip daemon | post-install (stage le) | iGPU and NVIDIA; AuxKC |
+| `StrixS0ix`, `SSDT-S0IDLE`, `SSDT-PTS5` + `_PTS` rename, `SSDT-ECRAM`, `ACAD._PSR` patch | post-install (stage efi / le) | sleep, shutdown, EC access, AC detection |
+| `AmdCppc` + `AmdCppcPolicy`, `RyzenHV` | post-install | CPU power policy, hypervisor |
+| `AppleALC` (`alcverbs=1`), `StrixAmp`, RogAudio | post-install | audio |
+| `BlueToolFixup`, `MtkBtFw`, `BtLeDlFix` | post-install | Bluetooth (not needed: the built-in keyboard and touchpad are not Bluetooth) |
+| `AsusWmi`, `BrightnessKeys`, `Sinetek-rtsx`, ROG Control (+ `rogkeyd`), TapGuard, HiDPI override, ESP automount | post-install | laptop controls, card reader, apps, display scaling (no ItlWiFi, no 1401) |
+
+### Machine-specific versus shared
+
+| Machine-specific (generated or dumped on the target) | Shared by every GA403WM |
+|---|---|
+| SMBIOS Serial, MLB, SystemUUID (`macserial` for MacBookPro16,2), ROM (6 bytes; use the Wi-Fi MAC or random) | config.plist minus PlatformInfo, SSDTs, DeviceProperties paths, kernel patches |
+| `StrixVFCT.kext` (VFCT dump of this board's VBIOS) | all kexts and userland in the manifest |
+| Wi-Fi credentials if Ethernet-mode `itlmt7925` is used (`inject-creds`) | allow list, flip mode, launchd jobs |
+| the user's home-folder LaunchAgents (`espmount` path has the user name) | `/System` changes (same macOS build) |
+| HiDPI override (embeds the panel EDID; same panel model → same file, but regenerate to be safe) | |
+
+## 3. Delivery options
+
+### (a) USB image only: EFI + payload partition + first-boot script
+
+The USB holds the EFI, the Recovery image and a payload. A first-boot LaunchDaemon, copied onto the new system, does
+the rest.
+
+* Pros: no app to write; one small artifact to hand over.
+* Cons: nothing can be copied into the new system before Setup Assistant except through the installer itself, so the
+  "first-boot script" still has to be started by hand from the USB (Terminal + `sudo`). No progress UI or report;
+  errors end up in a log file. Reboot sequencing, admin prompts and verification all become text instructions.
+* Effort: low (about 1-2 days on top of the shared work in section 4).
+
+### (b) A macOS installer app or `.pkg` (no USB EFI)
+
+A `.pkg` (or app) installed on a macOS that already boots, which installs everything.
+
+* Pros: a familiar flow; `.pkg` postinstall scripts run as root with one password; it can be downloaded.
+* Cons: it does not solve the fresh-install problem: something still has to boot the macOS installer on an AMD
+  laptop, which means an OpenCore USB anyway. A `.pkg` is a poor fit for a three-reboot state machine. An unsigned,
+  quarantined `.pkg` or app needs right-click → Open (Gatekeeper); a Developer ID signature costs money and does
+  not cover the unsigned kexts anyway. Kext approval: with csr 0x0A43 there is no "Allow" prompt, but only after the
+  full EFI is booted, which a `.pkg` cannot arrange by itself.
+* Effort: medium; it ends up needing the USB of (a) as well.
+
+### (c) Hybrid: USB EFI for the install, then one post-install app that applies and verifies (recommended)
+
+The USB from (a) plus `GA403 Setup.app` in its `GA403/` folder. The app is a thin UI over the same stage scripts. A
+resume LaunchDaemon carries the state across reboots.
+
+* Pros: the user flow comes close to one click (start the app once, type the password at each stage, confirm each
+  reboot). Stages are checked against the manifest. The app can show a pass/fail report and a rollback button. The
+  same scripts work without the app (CLI), which keeps it debuggable over SSH or from Linux. Files on a volume we
+  made carry no quarantine attribute, so an ad-hoc signed app from the stick should open without a Gatekeeper prompt
+  (to confirm on the first run).
+* Cons: the most work; two reboots more than the bare minimum, a deliberate trade for safety (section 2, rule 1).
+* Effort: medium. Scripts and manifest about 3-5 days, the app about 1-2 days, plus a test install on a spare SSD.
+
+### Licensing in all three options
+
+* This BSD repo carries: the manifest schema, the stage scripts, `kccheck` (section 4.4), the sources of our kexts,
+  `efi/` (which stays under its 1401-derived terms, as today), and sha256 values of everything else.
+* PolyForm Noncommercial parts are never committed here. The installer takes them in one of three ways, in this
+  order of preference:
+  1. **Release assets of the fork** (`thanhnndev/nvidia-macos-driver`): one tarball per manifest version,
+     `ga403wm-polyform-payload-<ver>.tar.gz`, carrying its own `LICENSE` (PolyForm NC) and the NullMoth notices. The
+     manifest names the URL and the sha256. The installer downloads it only after asking.
+  2. **A local folder** given to the app ("choose payload folder"), for example the `payload/` that
+     `capture-live.sh OUT --copy` produced on this machine.
+  3. **The upstream NullMoth 2.7.1 tarball** from `github.com/nullmoth/nvidia-macos-driver` releases, checked
+     against `0b28f420…7851` (the value in `macos-install-nvidia-2.7.1.sh:23`), for the parts we do not change.
+* Third-party EFI kexts (acidanthera, VoodooI2C, USBToolBox, …) are not redistributed by the repo either:
+  `efi/kexts.json` already lists their versions and sha256. The USB builder downloads them from their releases (with
+  the owner's approval) or takes them from a local folder.
+* Vendor firmware (VFCT/VBIOS, NVIDIA GSP in `nvfw/`) is never published by us: the VFCT is dumped on the target,
+  and `nvfw/` comes with the NullMoth package.
+
+## 4. The plan (option c)
+
+### 4.1 File layout
+
+In this repo (BSD):
+
+```
+scripts/fresh-install/
+  capture-live.sh          prototype, done: hash (and with --copy, collect) the live stack into OUT/
+  verify.sh                prototype, done: compare a manifest with the live system or a payload folder;
+                           --drift fails when the payload differs from the live system (stale capture)
+  manifest.example.json    prototype, done: the schema by example
+  build-usb.sh             todo: partition + fill a USB from a manifest (S0)
+  stage-efi.sh             todo: S3 (VFCT dump, StrixVFCT, SMBIOS, ESP copy, ocvalidate)
+  stage-le.sh              todo: S4 (NullMoth upstream, overlay, StrixSbxMap, relink, kccheck)
+  stage-verify.sh          todo: S5 (runtime checks, report JSON)
+  stage-system.sh          todo: optional /System stage (wraps ws-sandbox-dri.sh)
+  auxguard/                copied 2026-11-07 from the fresh run: auxguard.sh + com.ga403wm.auxguard.plist (base of resume.sh)
+  resume.sh + com.ga403wm.fresh-install.plist   todo: resume daemon = auxguard + state.json (/Library/GA403/state.json)
+  undo.sh                  todo: roll back one stage from its backup
+  kccheck/kccheck.c        prototype, done: LC_UUID + byte-window checks of a kernel collection (no python on a fresh macOS)
+  profiles/usb.json        todo: USB-profile overrides for config.plist (pre-install set of 2.1, csr 0, no AMFI args)
+  profiles/full.json       todo: full-profile overrides (today's live config minus trace flags)
+  app/                     todo: GA403 Setup.app (SwiftUI, calls the stage scripts through one osascript admin call per stage)
+docs/FRESH-INSTALL.md      this file
+```
+
+On the USB (built by `build-usb.sh`, never committed):
+
+One FAT32 volume (GPT, one partition; a 4 GB stick is enough, 2 GB without the optional payload):
+
+```
+EFI/BOOT/BOOTx64.efi
+EFI/OC/                    OpenCore.efi, Drivers, ACPI, Kexts (pre-install set, 2.1), config.plist (USB profile)
+com.apple.recovery.boot/   BaseSystem.dmg + .chunklist from macrecovery.py (about 1 GB); OpenCore lists it as Recovery
+GA403/                     GA403 Setup.app, manifest.json, scripts/, kccheck, bsd/ (our kexts + apps, built),
+                           thirdparty/ (EFI kexts from upstream), smbios.plist (generated for THIS target),
+                           payload/ (optional, about 900 MB: PolyForm overlay + the NullMoth 2.7.1 tarball)
+```
+
+Without `GA403/payload/`, the Setup app downloads the payload after macOS is installed (Wi-Fi works by then, with
+the same Native kext), from the fork's release asset named in the manifest, sha-checked, after asking.
+
+On the target: `/Library/GA403/` holds `state.json`, the manifest copy, stage logs, and backups
+(`/Library/GA403/backup/<stage>-<UTC>/`).
+
+### 4.2 Manifest format
+
+JSON, so stock `plutil -extract` can read it on a fresh system (`verify.sh` does this today). One row per component:
+
+| Field | Meaning |
+|---|---|
+| `id` | unique name (`kext-NMXGPU`, `tree-nvmtl`, `acpi-SSDT-PTS5.aml`) |
+| `stage` | `efi`, `le`, `userland`, `launchd`, `system` |
+| `order` | install order inside the stage (gaps of 10) |
+| `license` | `BSD-3-Clause-Clear`, `PolyForm-Noncommercial-1.0.0`, `third-party`, `Apple-modified`, `generated` |
+| `source` | `repo:<path>`, `build:<target>` (from `scripts/build.sh`), `payload:<path>`, `upstream:<url>#sha256` |
+| `dest` | absolute path, or `ESP:EFI/OC/...` |
+| `kind` | `kext-exe` (sha of the executable), `kext-tree`, `tree` (sha over sorted `sha  path` lines), `file` |
+| `sha256` | expected value after install |
+| `bundle_id`, `version`, `lc_uuid` | for kexts; `lc_uuid` is what `kccheck` looks for in the AuxKC |
+| `after`, `refresh` | dependencies (`gpubundle-NVMTLDriver` refreshes `strixsbxmap-pins`) |
+| `machine_specific` | keys generated on the target (config.plist PlatformInfo) |
+| `check` | `sha256`, `aux-kc-uuid`, `loaded`, `ocvalidate`, `readable-by:_windowserver`, `kc-windows:<probe file>` |
+| `provenance` | free text: fork branch and commit, CI run, cave chain |
+
+Top level: `schema`, `profile`, `macos.build` (the stack is tied to one macOS build; the app refuses another build
+unless overridden), `opencore`, `csr_active_config`, `components[]`. `capture-live.sh` writes the same shape from the
+live system (93 components today: 45 EFI, 12 AuxKC incl. the collection itself, 18 userland, 16 launchd, 2 system).
+On this machine `verify.sh` reports `match 92, differ/missing 0, skipped 1` (the AuxKC file itself, which changes on
+every relink and is checked through the kext UUIDs instead). Results of the dry runs are in 4.8.
+
+### 4.3 What each stage does
+
+**S0 build-usb.sh** (on this Mac; the Recovery download also works from Linux or Windows): erase the stick (only after
+typing its name) as one FAT32 partition. Download the Recovery image with
+`macrecovery.py -b Mac-CFF7D910A743CAAF -m 00000000000000000 -os latest download` into `com.apple.recovery.boot/`
+(about 1 GB; the full macOS comes later from Apple, inside Recovery). Build our kexts (`scripts/build.sh`), fetch the
+pinned third-party kexts of `efi/kexts.json`. Assemble the USB config from `efi/OC/config.plist` +
+`profiles/usb.json` (the pre-install set of 2.1). Generate the SMBIOS (`macserial`) once
+per target and write it to `smbios.plist` on the payload volume, so the USB config and the later internal config use
+the same identity. Run `ocvalidate`. Copy the payload and verify it with `verify.sh --payload`.
+
+**S3 stage-efi.sh** (root, from the app): mount the internal ESP, back it up if it has an EFI already (dual boot:
+keep `EFI/Microsoft`, `EFI/limine`, see `docs/DUAL-BOOT.md`). Dump the VFCT (see 4.6) and build `StrixVFCT.kext` with
+`macos-strixvfct-install.sh`. Copy OC + drivers + SSDTs + EFI kexts. Write the full-profile config (with the SMBIOS
+from the stick), run `ocvalidate`. Install the resume daemon. Set `state.json` to `efi-done`, then ask for the reboot.
+The user picks the internal OpenCore once (or the BIOS boot order is set).
+
+**S4 stage-le.sh** (root): check that the boot really came from the internal ESP with csr 0x0A43 (`csrutil status`,
+`nvram csr-active-config`) and the AMFI boot-args, and stop with a clear message if not. Clean up what Migration
+Assistant restored from an older system: the `com.itlmt7925.graphics-bootstrap` daemon and the
+`com.nullmoth.crashcheck` agent (move them to `/Library/GA403/backup/`, do not delete). Unpack the NullMoth 2.7.1
+tarball (sha-checked) and run its `install.sh` the way `macos-install-nvidia-2.7.1.sh` does (NMXAudio held back).
+Copy the golden overlay to `/Library/Extensions` as root (`chown -R root:wheel`, folders 755, files 644) and the
+userland trees and files. The NMXAccel in the overlay must carry the family gate (74a6f5c,
+`scripts/macos-install-nmxaccel-gate.sh`): the older exact kernel-string gate does not arm the 890M pipe on any other
+build, and that gave no Metal and a frozen login on 25G332. Then `nvmtl-desccache/install.sh` equivalent: plugin +
+translator, allow list readable by `_windowserver`. Install the launchd jobs and programs, build StrixSbxMap with the
+new pins and put it on the ESP. Then one AuxKC link against the KCs of the installed system:
+
+```
+kmutil create -n aux --volume-root / --allow-missing-kdk \
+  --kernel /System/Library/Kernels/kernel \
+  -B /System/Library/KernelCollections/BootKernelExtensions.kc \
+  -S /System/Library/KernelCollections/SystemKernelExtensions.kc \
+  --repository /Library/Extensions -A /Library/KernelCollections/AuxiliaryKernelExtensions.kc.ga403 -z
+```
+
+When S4 builds for another volume (a target disk mounted at `/Volumes/X`), prefix the kernel, `-B`, `-S` and
+`--repository` paths with the target, but keep `--volume-root /`: `--volume-root /Volumes/X` fails with
+`KextExcludeList not found`. Then `kccheck` (all 9 UUIDs + the NMXGPU cave windows, see 4.4), back up the old KC,
+`mv`, and arm the guard daemon (below). Last, `verify.sh --stage le` and `--stage userland`, then ask for the reboot.
+
+**Guard daemon** (root, every boot until done; `scripts/fresh-install/auxguard/`, live since 2026-11-07): wait 45 s,
+`kccheck` the AuxKC with `nmx-relink.probes`. If kernelmanagerd replaced it (it did on the first boot of the
+2026-11-07 run), relink into `$KC.relink`, check that file, keep the old KC as `AuxKC.replaced.<UTC>`, `mv`. Run
+`ws-sandbox-dri.sh` once (`.done` marker). Reboot only if something changed, at most twice (a counter file).
+`resume.sh` grows from this script: it adds `state.json` and starts S5 when the guard has nothing left to do.
+
+**S5 stage-verify.sh** (root, no password: runs from the resume daemon, the app shows the result): run the checks of
+4.4 and write `/Library/GA403/report.json`. If every check passes, the daemon removes itself.
+
+### 4.4 Verification checks
+
+Static (before each reboot):
+
+* `verify.sh MANIFEST --stage <s>`: sha256 of every installed file.
+* `kccheck AuxKC`: the LC_UUID of NMXGPU, NMXAccel, NMXAGDC, NVRM, NVAccel, NVRMFB, NVRMAGDC (and
+  StrixS0ix) appears in the collection, and each cave probe window (`offset length` lines, as in
+  `/Library/StrixGraphicsFix/nmx-relink.probes`, Step100c) appears exactly once. This replaces the python parts of
+  `uuids_in()` (`macos-install-nvidia-2.7.1.sh:76`) and `check_kc()` (`nmx-relink/nmx-relink.sh:24`): a fresh macOS
+  has no python3 or otool until the Command Line Tools are installed. `nmx-caves/check.py` is a build-time check: the
+  golden NMXGPU passed it when it was made, and the sha match proves it is the same file.
+* `ocvalidate` on the written config.plist; `plutil -lint`.
+* `sudo -u _windowserver test -r /Library/GPUBundles/nvmtl-allow.txt`.
+
+Runtime (S5, after the guard's last reboot). The first five are the checks that proved the stack on the 2026-11-07
+run:
+
+* `sysctl debug.nmxaccel_armed` = 1, and `/usr/bin/log show --last boot` has `debug.nvaccelfb now reads 1` (the
+  NMXAccel native framebuffer watch).
+* The unified log has NVMTL `this GPU owns the display (NMX pipe armed)` for WindowServer, and no CoreDisplay
+  `Failed to create MetalDevice`.
+* `system_profiler SPDisplaysDataType`: AMD Radeon 890M, Metal 3, 2880x1800; the RTX 5060 listed without a display.
+* About 440 processes hold the DRM user client (`drm-uc`), not a handful.
+* 16 GPU-stack kexts loaded; agents RogControl, TapGuard, rogaudiod and rogkeyd running.
+* `kmutil showloaded`: every bundle id of the manifest's `le` stage plus the enabled EFI kexts, at the manifest
+  version.
+* AuxKC on disk still passes `kccheck` (kernelmanagerd did not replace it).
+* `ioreg -rc NMXAMDFB` present and online; `/usr/bin/log show --last boot --predicate 'sender == "NMXGPU"'` has the
+  modeset line; no `*.panic` newer than the stage start in `/Library/Logs/DiagnosticReports`.
+* WindowServer on the 890M: the NVMTL log line for WindowServer names RADV STRIX1 (as in Step102b); its CPU use
+  after 60 s idle is under a threshold.
+* NVIDIA: `ioreg -rc NVRM` present, headless, NVRM hold released (boot-time audit).
+* Brightness: `AppleBacklightDisplay` under NMXAMDFB (NMXGPU's own handler, Step130); Wi-Fi: `itlmt7925Native` interface up; audio: RogAudio HAL device listed;
+  `pmset -g` sane (no sleep test here: a sleep test is the owner's call).
+* `system_profiler SPDisplaysDataType` shows "AMD Radeon 890M" with 512 MB (DeviceProperties).
+
+### 4.5 Rollback, undo, idempotency
+
+* Every stage writes its backup first, to `/Library/GA403/backup/<stage>-<UTC>/`: the ESP folder, the replaced
+  files, and the old AuxKC. `undo.sh <stage>` restores the newest backup, relinks and reboots. That matches the
+  `--undo` pattern of today's step scripts.
+* If REBOOT 2 does not come up: the OpenCore picker → the USB stick's EFI (USB profile, no AuxKC kexts from us,
+  SIP default) still boots the installed macOS. From there `undo.sh le` runs, or, as a last resort, deleting
+  `/Library/KernelCollections/AuxiliaryKernelExtensions.kc` gives a boot without any third-party AuxKC kexts. Linux
+  from the USB is a further route (the repo already has `linux-*` installers and `nmx-relink`).
+* The `system` stage: the previous snapshot stays bootable; undo = `ws-sandbox-dri-undo.sh` or
+  `bless --last-sealed-snapshot` from Recovery.
+* Idempotency: `state.json` records the stage reached and the manifest sha. Each stage first runs `verify.sh` for its
+  rows and skips rows that already match, so running the app again after a crash continues instead of redoing work. A
+  different manifest version means "upgrade": back up, then apply only the rows that differ.
+* The app never deletes a backup. `/Library/NullMoth` already holds about 190 backup folders; cleaning those up is a
+  separate decision.
+
+### 4.6 Automated versus needs a person
+
+| Step | Automated | Person |
+|---|---|---|
+| BIOS (Secure Boot, CSM, Above 4G) | no | yes, once |
+| Build the USB | yes (`build-usb.sh`) | approve the downloads (installer, third-party kexts, payload), type the disk name |
+| Boot the USB, Recovery, reinstall macOS | the download and the installer reboots run by themselves | pick the USB in the boot menu, join Wi-Fi, erase the target in Disk Utility, pick it in Reinstall macOS |
+| Setup Assistant | no | yes |
+| S3 EFI to internal disk | yes | password #1, confirm the reboot, pick the internal entry once |
+| VFCT dump | see below | maybe |
+| S4 drivers and userland | yes | password #2, confirm the reboot |
+| S5 verify | yes | read the report |
+| optional `system` stage | yes | password #3, confirm the reboot |
+
+VFCT dump on a fresh machine: Tahoe no longer publishes "ACPI Tables" (that is why StrixVFCT exists). Options, best
+first:
+
+1. The OpenCore DEBUG build on the USB with `Misc > Debug > SysReport = true`. On the first USB boot it dumps every
+   ACPI table to `EFI/SysReport/ACPI/` on the stick, and S3 picks up the VFCT there. To verify: that the dump really
+   contains VFCT (it is listed in the XSDT on this board).
+2. Windows or Linux on the same machine (`/sys/firmware/acpi/tables/VFCT`), the way it was done the first time.
+3. The machine owner provides the file.
+
+### 4.7 Risks and open questions
+
+* **One fresh install has been done, by hand** (2026-11-07, 25G332, through `Install macOS Tahoe.app` onto a new
+  APFS volume, then Migration Assistant). The scripted path (USB, Recovery, stage scripts) has never run. The first
+  scripted run should target a spare SSD or an external disk, with this disk untouched.
+* **Wi-Fi inside Recovery is still untested** (the 2026-11-07 run did not use Recovery). `itlmt7925Native` hooks IO80211/Skywalk with layouts checked on the
+  installed 25G241 system; the Recovery BaseSystem is a smaller system of the same build family, and whether its Wi-Fi
+  menu drives our interface has never been tried. Test it first (boot the USB, Recovery, join Wi-Fi, open Safari in
+  Recovery) before anything is erased. Fallbacks already on the USB: phone tethering (HoRNDIS) and any USB Ethernet
+  adapter Apple supports. The Ethernet-mode `itlmt7925.kext` would need the network name and password injected into
+  the USB copy (`inject-creds`), in plain text on the stick, so it stays a last resort.
+* **Recovery installs the newest Tahoe build Apple serves, not a chosen one. This has happened:** the 2026-11-07
+  install got 25G332, while the payload was captured on 25G241. The one part that broke was the NMXAccel gate, which
+  matched the exact 25G241 kernel string; the family gate (74a6f5c) replaced it. The Setup app must read `sw_vers`
+  first: on the manifest's build it runs normally; on a newer build it lists which parts depend on the build (NMXAccel
+  gate, StrixAccel ABI profile, Wi-Fi native layouts, the `/System` sandbox change) and asks before the `le` stage,
+  instead of refusing. Every new point release still needs one pass on this machine before the manifest lists it.
+* **Stale payload.** A capture can drift from the live system within days (six components on 2026-11-07). Capture
+  right before building the stick, check with `verify.sh MANIFEST --drift PAYLOAD` (4.8), and show the capture date
+  in the app.
+* **Migration Assistant restores stale jobs.** Moving data from an older system brought back the
+  `graphics-bootstrap` daemon and `com.nullmoth.crashcheck` (whose 1401.app is gone). S4 removes them (4.3).
+* **Python in the relink path.** `scripts/nmx-relink/nmx-relink.sh` runs `nmx-caves-check.py` with
+  `/usr/bin/python3` when that check is installed. On a fresh macOS that file is only the stub that offers the Command
+  Line Tools, so the check fails and the relink stops. The guard uses `kccheck` instead; `nmx-relink.sh` should do the
+  same (or skip the check when the Command Line Tools are missing).
+* **No App Store installer to fall back on.** Without a full installer on the stick, a failed download in Recovery
+  means retrying the network. A second, offline route can be added later (a `createinstallmedia` stick made
+  separately) without changing anything in this design.
+* **kmutil approval.** Expected: no Privacy & Security prompt with `CSR_ALLOW_UNAPPROVED_KEXTS`. If one appears, the
+  app shows the user where to click and waits.
+* **kernelmanagerd** rebuilt the AuxKC without our kexts on the first boot of the 2026-11-07 run. The guard daemon
+  (4.3) fixed it with one relink and one extra reboot; the design now relies on it.
+* **`graphics-bootstrap` LaunchDaemon** (`/Library/StrixGraphicsFix/bootstrap.sh`) is stale: it lists StrixAccel
+  0.1.15 / NVRMEdpBL and its last status is `LOAD_FAILED exit=2`. Left out of the fresh profile, and removed by S4 if
+  Migration Assistant brings it back.
+* **Trace flags** in boot-args (`itlmt_stat`, `itlmt_native_nvtrace`, `strixamp_trace`, `rhv_selftest`,
+  `rhv_loglevel=4`) and `debug=0x100`: the full profile should drop them, and a "debug" profile can add them back.
+* **NVRM boot hold** costs about 36 s at boot (boot-time audit, 2026-11-05). This is not an installer problem, but
+  the S5 report should time the boot so the fix can be measured later.
+
+### 4.8 Dry runs on the working machine (2026-11-05, owner approved tests and dry runs)
+
+All of these only read the live system. Writes went to `~/ga403-payload-25G241/` (outside the repo) and the session
+scratchpad.
+
+| Run | Result |
+|---|---|
+| `capture-live.sh ~/ga403-payload-25G241 --copy` | 93 components, payload 890 MB (`le/`, `userland/`, `launchd/`); EFI and `/System` rows are hashed, not copied, by design |
+| first copy attempt with `ditto` | 14 files failed with "Operation not permitted": RADV, libdrm, ICD jsons and `amdgpu.ids` in `/Library/GPUBundles/nvmtl` and `/Library/NullMoth/gpu-userland` carry the SIP `restricted` flag, and `ditto` tries to copy that flag as a normal user. Fixed: the copy uses `cp -R` (content, mode, symlinks) |
+| `verify.sh manifest --payload payload` | `match 45, differ/missing 0, skipped 48` |
+| `verify.sh manifest` (live) | `match 92, differ/missing 0, skipped 1` |
+| `kccheck` on the live AuxKC, 9 kexts + the 3 probe windows of `nmx-relink.probes` | all `ok`, 0.3 s; the same answers as the python `uuids_in()` / `check_kc()` logic run side by side |
+| `kccheck` negative tests | StrixProbe (an EFI kext, not in the AuxKC) reports `MISSING`, exit 1; a probe window that occurs many times reports `>1x`, exit 1 |
+
+Rerun on 2026-11-07 (25G332, after the first fresh install), still read-only:
+
+| Run | Result |
+|---|---|
+| `capture-live.sh` (hashes only, new rows of 1.4, ItlWiFi and stale jobs left out) | 106 components |
+| `verify.sh` on that manifest (live) | `match 105, differ/missing 0, skipped 1` |
+| `verify.sh ~/ga403-payload-25G241/manifest.live.json --drift ~/ga403-payload-25G241/payload` | exit 1, `match 35, differ/missing 10`: DRIFT for NMXAccel (family gate), NVRM, StrixS0ix, NVMTLDriver.bundle, nvmtl, RogAudio, RogControl.app; GONE for the audio-boot-trace, graphics-bootstrap and crashcheck jobs. The same six stale parts the fresh run found by hand, plus the gate |
+
+`--drift` only checks what the payload carries. A part that is new on the live system shows up by capturing again and
+comparing the component ids of the two manifests.
+
+What the dry runs added to the design:
+
+* The target needs to know about the `restricted` flag. NullMoth's own installer sets it on those files; whether our
+  S4 copy must set it too (as root, `chflags restricted`) is open. The manifest hashes content only, so it is not
+  affected.
+* The payload still lacks the NullMoth 2.7.1 tarball itself (`~/efi-audit/upgrade-2.7.1/` is gone). Downloading it
+  again needs the owner's OK.
+
+### 4.9 The first fresh install (2026-11-07): what changed in this design
+
+Full notes: [FRESH-INSTALL-LESSONS-2026-11-07.md](FRESH-INSTALL-LESSONS-2026-11-07.md). Changes made above:
+
+| Finding | Where it changed the design |
+|---|---|
+| Apple served 25G332, not the manifest's 25G241 | 4.7: the app asks instead of refusing on a newer build |
+| The 2026-11-05 payload was stale two days later | summary, 4.7, 4.8: capture right before the stick, `verify.sh --drift` |
+| Capture missed `/Library/NullMoth/*.sh`, `/usr/local/share/strixamp`, `nmx-relink.probes` | 1.4, `capture-live.sh` rows |
+| The WindowServer `/dev/dri` rule is required | 1.5, guard daemon (4.3) |
+| NMXAccel exact kernel-string gate gave no Metal and a frozen login | 4.3: overlay carries the family gate (74a6f5c) |
+| Offline AuxKC prelink works with `--volume-root /` | 4.3 command, order rule 7 |
+| kernelmanagerd replaced the AuxKC on the first boot | guard daemon (4.3), `scripts/fresh-install/auxguard/` |
+| Migration Assistant restored `graphics-bootstrap` and `com.nullmoth.crashcheck` | S4 cleanup (4.3), 4.7 |
+| No 1401.app, no ItlWiFi.app | 1.4, 2.1, `capture-live.sh` |
+| No python3 on a fresh macOS | summary, 4.7 (`nmx-relink.sh`) |
+| Kexts must be `root:wheel` 755/644 | 4.3 |
+
+Symptoms seen on that run, for the app's error messages (what, why, how):
+
+| Symptom | Cause | What the app says to do |
+|---|---|---|
+| First boot reaches userspace, then a black screen or no login; WindowServer aborts in `CoreDisplay CGXMappedDisplayStart` | no GPU stack, or an AuxKC without our kexts | boot the USB EFI, run the guard check (`kccheck`), relink |
+| Desktop draws but is extremely slow, then freezes at the account or login step | WindowServer has no Metal device: NMXAccel gate not armed, or the sandbox rule missing | check `debug.nmxaccel_armed` and `ws-sandbox-dri.status` |
+| `kmutil` "KextExcludeList not found" | `--volume-root` pointed at the target volume | use `--volume-root /` (4.3) |
+| Installer: "not enough free space, additional N MB" after space was freed | the installer reads free space only once | relaunch it; `/Library/InstallerSandboxes/.PKInstallSandboxManager*` can hold many GB |
+
+Smaller traps for the stage scripts: quote `/Volumes` paths and build them with a slash (a missing slash created
+`/Volumes/WorkApplications` on the boot disk and filled it); call `/usr/bin/log`, since zsh has a `log` builtin; the
+owner's login shell is fish, where a glob that matches nothing is an error. Per-user data (agents with the user name
+in paths, app settings) can only be restored once the account exists: an `after-login.sh` with `rsync --update`
+worked. The OpenCore picker reads the volume name from
+`Preboot/<group UUID>/System/Library/CoreServices/.disk_label.contentDetails`, which `diskutil apfs updatePreboot`
+did not refresh after a rename; write it as root. Delete or grow containers only after checking the target's UUID and
+name and that the free space directly follows the container.
+
+## 5. Next steps
+
+1. **Capture**: done (4.8). Still to do: save the exact NullMoth 2.7.1 tarball again (download, with the owner's OK)
+   and check it against `0b28f420…7851`.
+2. **Refresh the repo's EFI**: `scripts/export-efi.py` from the live ESP into `efi/OC` (sanitized), add
+   `SSDT-ECRAM`, and split `profiles/usb.json` / `profiles/full.json`.
+3. **`kccheck`**: prototype done and tested (4.8). Still to do: a build line in `scripts/build.sh` and a probe file per
+   manifest version.
+4. **Write the stage scripts** (S3, S4, S5, resume daemon, undo) in bash on top of `verify.sh`, `kccheck`, the guard
+   daemon (`scripts/fresh-install/auxguard/`) and the existing step-script helpers (`relink()`, `checks()`); change
+   the NMXGPU gate in the NVIDIA install step, and replace the python check in `nmx-relink.sh` with `kccheck`.
+5. **Recovery smoke test with the USB EFI** (nothing erased): build the stick, boot it, check the keyboard, the
+   touchpad and Wi-Fi in Recovery, and that Reinstall macOS reaches Apple's servers. This decides whether the
+   pre-install set of 2.1 is complete.
+6. **Dry run on a spare SSD** (or an external NVMe), CLI only, without the app. Record every manual step.
+7. **The app** (SwiftUI wrapper, design in section 6) only after step 6 passes: the app wraps stage scripts that
+   have run end to end, it does not replace them. Its `--snapshot` renders can be built and reviewed before that.
+8. **Longer term: make NMXGPU buildable.** Port each cave from 1.3 into the fork branch `ga403wm-nmx` as a source
+   change, let CI build NMXGPU, and switch the manifest row from "captured" to "CI artifact". That also ends the
+   offset bookkeeping in `nmx-caves/check.py`.
+
+## 6. Setup app UI/UX, based on ROG Control
+
+The owner asked to research the UI/UX of the Mac control app in this project: ROG Control (`RogControl.app` 0.3.3,
+source `rog-control-macos/macos/RogControl/RogControl.swift`, design notes `rog-control-macos/docs/rog-control-design.md`).
+The Setup app should look like the same family, so this section first reviews ROG Control, then designs Setup on it.
+
+How it was researched: the design notes and the SwiftUI source were read, the README screenshots were looked at, and
+the installed app's own offscreen mode was run (`RogControl --snapshot DIR`, which renders the panel, the window and
+every dialog from mock data without touching the hardware). Contrast ratios below were computed with the WCAG 2.x
+relative-luminance formula from the colour values in the source (`enum T`). No user-task testing was done.
+
+### 6.1 What ROG Control does well (keep these)
+
+* **One thing leads.** The window opens on the live card; CPU temperature is the largest number (gauge, expanded
+  width type). The menu bar panel repeats that order at glance size: temperature, then the four modes, then the two
+  settings people change by hand.
+* **One visual language, small and consistent.** Always dark; one red accent, amber only for warnings; chamfered cards
+  (top-right corner cut, `Chamfer`); the lid's Slash LED segments as slanted bars (`Segments`) for fan speed, mode
+  level and battery; small tracked capitals for labels (`Caps`); numbers in the expanded system width (`T.num`). Every
+  control is built from a handful of components: `Card`, `Pills`, `RogMenu`, `RogSlider`, `RogButtonStyle`,
+  `DialogShell`.
+* **Progressive disclosure.** Daily controls sit inline in three tiles; things set up once (custom limits, fan
+  curves, Slash animations, battery details, settings) open as dialogs over a dimmed window. Esc, the close button
+  and a click on the dim area close a dialog; the dialog is marked modal for VoiceOver.
+* **Honest state.** "Not saved" in amber with an icon until Custom limits are saved; Turbo disabled on battery with
+  "Needs charger"; failures appear next to the control that failed (`ErrorLine`); without AsusWmi the header chip
+  says so and the controls are disabled.
+* **Plain words first, codes second.** "Burst / Short boost / Sustained" with FPPT/SPPT/SPL as small labels, plus a
+  picture of how the CPU uses them.
+* **Layout review without hardware.** The `--snapshot` mode renders every surface at fixed sizes. That is the model
+  for testing the Setup app without running an install.
+* **Accessibility basics are there**: labels and values on gauges and sliders, adjustable actions on sliders,
+  selected traits on pills and modes, Reduce Motion honoured in the panel.
+
+### 6.2 Findings (fix in ROG Control, avoid in Setup)
+
+| # | Finding | Evidence | Suggested fix |
+|---|---|---|---|
+| 1 | Small capital labels fail text contrast | `T.faint` (0.40, 0.42, 0.45) on `surface` 3.32:1, on `raised` 3.04:1, on `bg` 3.65:1; they are 10 pt semibold, so WCAG AA needs 4.5:1 | `faint` = (0.52, 0.54, 0.57): 4.68:1 on raised, 5.10:1 on surface, 5.61:1 on bg |
+| 2 | White text on the red fill is below 4.5:1 | white on `T.red` (1.0, 0.13, 0.24) = 3.79:1; used for selected pills ("80%", "Med"), "Save to Custom", the active mode badge (the glyph is a graphic, 3:1 is enough there) | a darker fill for filled buttons only, for example (0.86, 0.10, 0.20): white on it 4.99:1; keep `T.red` for strokes, segments and text on dark (5.16:1 on bg) |
+| 3 | Red means "selected", "accent" and "error" at once | `ErrorLine` draws red text next to red-filled selected pills | errors keep the triangle icon and get the words "Failed" or "Not applied"; for a new app, use amber or a separate error colour for failures |
+| 4 | The "offline" screenshot shows values the real app would not show | `Snapshot.mock(offline: true)` still sets charge 80, keyboard Med, Slash Flux, PPT 80/65/45 and seeds the chart history, so `docs/images/rogcontrol-offline.png` shows "80%" and "Med" selected and a 4-minute chart while the chip says "controls are off"; the real `AsusState` defaults these to nil | make the offline mock leave them nil and skip `seedHistory()`, then re-render the README images |
+| 5 | Screenshots and the design copy in this repo are out of date | README image says "LAST 4 MINUTES", the 0.3.3 render says "LAST 5 MINUTES"; `docs/rog-control-design.md` here is an older copy than `rog-control-macos/docs/rog-control-design.md` (no "Visual language", old window layout) | treat the sister repo as the source; replace this copy with a link |
+| 6 | Snapshot run is slow on this machine | the offline render took more than 2 minutes and logged `Failed to create .../nvmtl-mesa for shader cache (Permission denied)`; offscreen SwiftUI goes through the 890M Metal stack | not a UI bug; useful as a smoke test of Metal for a background process, and worth a look on the NVMTL side |
+
+Contrast fixes 1 and 2 are values computed from the formula, not a rendered gate run; check them on a fresh
+`--snapshot` render after the change.
+
+Status 2026-11-05: findings 1 to 4 are fixed in `rog-control-macos` on branch `ui-contrast-offline-mock` (new `T.faint`,
+`T.redFill` for filled buttons, amber `ErrorLine`, an offline mock with no hardware values, and the panel no longer
+shows a power source or battery state without AsusWmi), README images re-rendered from `--snapshot`. Finding 5: this
+repo's `docs/rog-control-design.md` now points to the sister repo.
+
+### 6.3 Setup app: brief
+
+```
+Domain:           system installer for one laptop model (dev-tool family)
+Audience & tone:  the owner now, other GA403WM owners later; expert enough to boot OpenCore, but each step is
+                  high-stakes (kexts, ESP, snapshots). Calm, precise, no hype.
+Mood:             trustworthy: every claim on screen is something the app checked
+Motion depth:     subtle feedback only (segments fill, a stage row eases to done); nothing spins forever
+Layout family:    one window, one stage leads; a compact stage rail; dialogs for detail (no side menu, as in ROG Control)
+Reference anchor: ROG Control's visual language (6.1), with fixes 1 to 3 applied
+```
+
+### 6.4 Setup app: screens
+
+One window, about 880 x 600 pt, always dark, in the same header style as ROG Control ("GA403 SETUP", model line,
+status chips on the right). The left third is the stage rail; the rest is the card of the current stage, which leads.
+
+```
+ GA403 SETUP   ZEPHYRUS G14 · GA403WM              [ macOS 26.7.1 25G241 ] [ Payload verified ] [ gear ]
+ ┌ STAGES ─────────────┐ ┌ STAGE 2 OF 3 ───────────────────────────────────────────────────────┐
+ │ ■ Check this Mac    │ │ Drivers and graphics                                                   │
+ │ ■ Boot files (EFI)  │ │ Installs 11 kexts, the 890M userland and 16 background jobs, then     │
+ │ ▶ Drivers, graphics │ │ links them into the kernel collection.                                 │
+ │ □ Verify            │ │                                                                        │
+ │ □ System sandbox    │ │ ▰▰▰▰▰▰▰▰▱▱▱▱▱▱▱▱▱▱▱▱   kmutil: linking the auxiliary collection       │
+ │   (optional)        │ │                                                                        │
+ │                     │ │ WHAT CHANGES      Details >   BACKUP  /Library/GA403/backup/le-0512…   │
+ │ Reboots: 1 of 2     │ │                                                                        │
+ └─────────────────────┘ │ [ Show log ]                                   [ Install stage 2 ]    │
+                         └────────────────────────────────────────────────────────────────────────┘
+```
+
+| Screen | Leads with | Primary action | Notes |
+|---|---|---|---|
+| Check this Mac | a checklist: model GA403WM, macOS build matches the manifest, booted from which EFI (USB or internal), `csr-active-config`, AMFI boot-args, payload found and `verify.sh --payload` passed, free space | "Start" (only when every required row passes) | each row is icon + text: "Matches", "Differs: 25G250, manifest wants 25G241" (what, why, how). The plan preview (a dry run of every stage) is one dialog away |
+| Stage card (Boot files, Drivers, System sandbox) | the stage title and one sentence in plain words of what changes | "Install stage N" (asks for the admin password through the system dialog, once per stage) | "What changes" opens a dialog with the manifest rows of the stage (name, version, license, destination); the backup path is always visible before the click |
+| Running | segments filling per component, the current command in one line | none; "Show log" stays available | no cancel during `kmutil` or the ESP copy (the button is disabled with the reason as help text); steps that can stop safely say so |
+| Restart | what will happen at the restart and what to pick in the OpenCore picker ("choose the entry on the internal disk once") | "Restart now" | never restarts by itself; "Later" leaves the resume job armed |
+| Verify | the report: one row per check from 4.4, pass / fail / skipped, each with the measured value | "Done" or, on a failure, "Open report" | failures name the check, the value seen, and the next step ("Run Undo for this stage" or "Boot the USB EFI") |
+| Undo (dialog) | which backup will be restored, from when | "Undo stage N" in the destructive style, here and in the trigger | requires the admin password; never deletes a backup |
+
+States every screen must cover: not started, running, done (verified), done (not verified), failed, skipped (optional
+stage), and blocked (a precondition failed). "Verified" is only shown when `verify.sh` or `kccheck` passed; a stage
+that ran but was not checked says "Installed, not verified" (ROG Control's "hardware-confirmed versus saved" rule).
+
+### 6.5 Setup app: behaviour and copy
+
+* **One password per stage**, through `osascript ... with administrator privileges` (the project's existing pattern),
+  running the stage script as root. The app itself never runs as root.
+* **Resume after reboot:** the LaunchDaemon runs the verify step as root; a LaunchAgent opens the app at the next login
+  on the stage the state file names. Closing the window keeps the state; nothing is lost.
+* **Copy:** short, plain, in English and Vietnamese (`vi.lproj`); numbers and paths in the monospaced face; codes
+  (csr, AuxKC, SPL style) as small labels next to plain words. Errors follow what, why, how: "AuxKC lost NMXGPU after
+  the relink. kernelmanagerd rebuilt it. Run the relink again." No em dashes, no emoji.
+* **Keyboard and VoiceOver:** Return triggers the primary action, Esc closes dialogs, the stage rail is a list with
+  selected and value traits, segments have an accessibility value ("7 of 20 components").
+* **Motion:** segments ease (0.25 s), stage rows ease to done; Reduce Motion removes both. No spinner without text.
+* **Snapshot mode from day one:** `GA403Setup --snapshot DIR` renders every screen and state from mock state files, as
+  ROG Control does, so the UI can be reviewed (and the contrast fixes checked) before any install exists.
+* **Shared components:** copy `T`, `Caps`, `Chamfer`, `Card`, `Segments`, `RogButtonStyle`, `Pills`, `ErrorLine` and
+  `DialogShell` from ROG Control into a small shared Swift file (both repos are BSD and the owner's), with fixes 1 to 3
+  applied, so the two apps stay one family.

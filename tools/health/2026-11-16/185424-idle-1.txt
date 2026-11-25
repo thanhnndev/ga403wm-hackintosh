@@ -1,0 +1,34 @@
+== health probe 'idle-1'  2026-11-16 18:54:24  boot Mon Nov 16 18:39:01 2026  60s
+macOS 26.7.2 (25G332); NMXGPU 3DF88CD9; Chrome running: no; video decoders: 1
+
+| metric | value |
+|---|---|
+| package power (RAPL, 60s avg) | 16.4 W |
+| Tctl min/avg/max | 60 / 64 / 67 °C |
+| fans (asuswmi raw) | cpu_fan=26 gpu_fan=27  |
+| profile / GPU |  profile=3 gpu_mux=1 dgpu_disable=0|
+| EPP (value x CPUs listed) | 0 x12 (0 = max performance, 255 = max saving) |
+| idle mode / stats | mode 0  |
+| memory | wired 7.6 GB, compressor 0.2 GB (holds 0.7 GB), swap 0.00M |
+| NMX pinned user pages | 105229 (411 MB), userrec live 90040, pages_live 489560 |
+| NMX frames / fence timeouts | 39039 / 0 |
+| battery | on AC, 2604 mAh |
+| IPIs / interrupts | (run with sudo) |
+
+top 15 by CPU (60s average):
+PID    COMMAND          %CPU MEM   
+961    Claude Helper (R 17.3 601M- 
+0      kernel_task      12.4 419M- 
+657    Claude           11.2 370M+ 
+207    WindowServer     10.3 829M- 
+34035  claude           4.4  174M+ 
+850    Claude Helper    4.1  242M- 
+1721   claude           4.0  188M- 
+231    coreaudiod       1.4  4760K-
+369    sysmond          1.4  1636K-
+17048  claude           1.2  184M- 
+165    bluetoothd       0.9  5372K-
+1376   claude           0.9  181M+ 
+944    rogaudiod        0.6  5124K-
+98     logd             0.6  8424K-
+34263  top              0.5  3560K+

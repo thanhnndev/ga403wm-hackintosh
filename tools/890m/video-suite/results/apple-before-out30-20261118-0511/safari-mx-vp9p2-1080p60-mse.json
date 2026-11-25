@@ -1,0 +1,68 @@
+{
+ "app": "Safari",
+ "id": "safari-mx-vp9p2-1080p60-mse",
+ "clip": "mx-vp9p2-1080p60.webm",
+ "codec": "VP9",
+ "depth": "profile 2 10-bit",
+ "size": "1080p60",
+ "container": "WebM",
+ "mime": "video/webm; codecs=\"vp09.02.41.10\"",
+ "fps": 60,
+ "mode": "mse",
+ "cpu": {
+  "vtdecoder": 9.9,
+  "webkit_gpu": 306.6,
+  "webcontent": 13.3,
+  "quicktime": 0
+ },
+ "vtActive": [
+  {
+   "pid": 34826,
+   "cpu": 9.9,
+   "vcndec": false
+  }
+ ],
+ "decoded": 925,
+ "dropped": 0,
+ "advanced": 0,
+ "plays": "yes",
+ "hidden": true,
+ "check": {
+  "ok": 0,
+  "near": 2,
+  "timerReads": 1,
+  "bad": 0,
+  "unreadable": 0,
+  "first": []
+ },
+ "errors": [],
+ "rows": [
+  {
+   "sec": 0,
+   "decoded": 925,
+   "dropped": 0,
+   "rvfc": 6,
+   "skipped": 4,
+   "vis": "hidden",
+   "focus": false,
+   "ct": 15.27,
+   "paused": false,
+   "rs": 4,
+   "ahead": 2.1
+  }
+ ],
+ "vcn": {
+  "v": "refused",
+  "s": [
+   {
+    "pid": 13271,
+    "proc": "com.apple.WebKit.GPU",
+    "codec": "vp09",
+    "started": false,
+    "refused": "StartSession vp09 1920x1080: not 8-bit 4:2:0 profile 0, refused",
+    "errors": [],
+    "close": null
+   }
+  ]
+ }
+}

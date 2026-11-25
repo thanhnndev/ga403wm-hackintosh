@@ -1,0 +1,3 @@
+  0x506580 fb_create_vram
+  0x5065a9 flip_import
+  0x506ca4 flip_release_import

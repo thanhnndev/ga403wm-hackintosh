@@ -1,0 +1,84 @@
+Processes: 615 total, 2 running, 1 stuck, 612 sleeping, 2960 threads 
+2026/11/23 14:55:21
+Load Avg: 2.74, 3.22, 2.90 
+CPU usage: 8.46% user, 5.69% sys, 85.83% idle 
+SharedLibs: 1010M resident, 150M data, 87M linkedit.
+MemRegions: 330963 total, 8263M resident, 447M private, 2902M shared.
+PhysMem: 28G used (7426M wired, 0B compressor), 4474M unused.
+VM: 40T vsize, 32G framework vsize, 0(0) swapins, 0(0) swapouts.
+Networks: packets: 430236/405M in, 140923/32M out.
+Disks: 325650/6675M read, 256606/3545M written.
+
+PID    COMMAND          %CPU %CPU_ME POWER #TH STATE   
+10683  zsh              0.0  0.00000 0.0   1   sleeping
+10682  top              0.0  0.00000 0.0   1/1 running 
+10670  perl             0.0  0.00000 0.0   1   sleeping
+10278  vt_check         0.0  0.00000 0.0   10  sleeping
+10277  sed              0.0  0.00000 0.0   1   sleeping
+10276  cut              0.0  0.00000 0.0   1   sleeping
+10275  claude           0.0  0.00000 0.0   1   sleeping
+10274  sed              0.0  0.00000 0.0   1   sleeping
+10273  zsh              0.0  0.00000 0.0   1   sleeping
+10272  perl             0.0  0.00000 0.0   1   sleeping
+10260  top              0.0  0.00000 0.0   1   sleeping
+10258  zsh              0.0  0.00000 0.0   1   sleeping
+10220  tee              0.0  0.00000 0.0   1   sleeping
+10218  zsh              0.0  0.00000 0.0   1   sleeping
+10212  zsh              0.0  0.00000 0.0   1   sleeping
+10117  mdworker_shared  0.0  0.00000 0.0   4   sleeping
+10115  mdworker_shared  0.0  0.00000 0.0   4   sleeping
+10113  mdworker_shared  0.0  0.00000 0.0   4   sleeping
+10000  homeenergyd      0.0  0.00000 0.0   2   sleeping
+9951   zsh              0.0  0.00000 0.0   1   sleeping
+9820   ecosystemanalyti 0.0  0.00000 0.0   2   sleeping
+9620   extensionkitserv 0.0  0.00000 0.0   2   sleeping
+9615   liquiddetectiond 0.0  0.00000 0.0   2   sleeping
+9614   ASPCarryLog      0.0  0.00000 0.0   2   sleeping
+9611   mlhostd          0.0  0.00000 0.0   2   sleeping
+9553   mdworker_shared  0.0  0.00000 0.0   4   sleeping
+9514   MessagesBlastDoo 0.0  0.00000 0.0   2   sleeping
+9493   businessservices 0.0  0.00000 0.0   2   sleeping
+9425   SetStoreUpdateSe 0.0  0.00000 0.0   2   sleeping
+9308   akd              0.0  0.00000 0.0   2   sleeping
+Processes: 612 total, 6 running, 606 sleeping, 3008 threads 
+2026/11/23 14:56:21
+Load Avg: 2.77, 3.15, 2.90 
+CPU usage: 4.65% user, 2.51% sys, 92.83% idle 
+SharedLibs: 1010M resident, 150M data, 87M linkedit.
+MemRegions: 225 total, 2540K resident, 447M private, 2903M shared.
+PhysMem: 28G used (7466M wired, 0B compressor), 4590M unused.
+VM: 40T vsize, 32G framework vsize, 0(0) swapins, 0(0) swapouts.
+Networks: packets: 439086/410M in, 145112/33M out.
+Disks: 326556/6768M read, 263012/3684M written.
+
+PID    COMMAND          %CPU %CPU_ME POWER #TH    STATE   
+210    WindowServer     26.2 2.37561 26.2  19/1   running 
+0      kernel_task      19.7 0.00000 0.0   339/27 running 
+1294   Microsoft Edge H 16.8 0.00000 16.8  31/1   running 
+738    Microsoft Edge H 16.3 2.70246 16.3  30/1   running 
+10278  vt_check         13.5 0.00000 13.5  10     sleeping
+875    Claude Helper (R 10.4 0.00000 10.4  24     sleeping
+785    Claude Helper    8.8  0.41454 8.8   25/2   running 
+353    mds_stores       7.5  0.01626 7.5   19     sleeping
+1291   app_mode_loader  4.9  0.16477 4.9   14     sleeping
+600    Claude           4.2  0.98661 4.2   90     sleeping
+233    coreaudiod       3.6  0.04671 3.6   10     sleeping
+2494   claude           3.1  0.00000 3.1   28     sleeping
+606    Microsoft Edge   3.1  0.00054 3.1   58     sleeping
+374    sysmond          2.3  0.00000 2.3   3      sleeping
+1403   VTDecoderXPCServ 2.2  0.00281 2.2   7      sleeping
+739    Microsoft Edge H 1.7  0.00000 1.7   35     sleeping
+2637   claude           1.5  0.00000 1.5   27     sleeping
+1391   Microsoft Edge H 1.1  0.00000 1.1   16     sleeping
+828    rogaudiod        1.0  0.73578 1.0   6      sleeping
+1301   Microsoft Edge H 1.0  0.00000 1.0   27     sleeping
+10682  top              0.8  0.00060 0.8   1/1    running 
+5599   claude           0.7  0.00000 0.7   24     sleeping
+276    com.apple.audio. 0.7  0.00000 0.7   5      sleeping
+215    loginwindow      0.7  0.02326 0.7   12     sleeping
+100    logd             0.6  0.00000 0.6   4      sleeping
+167    bluetoothd       0.5  0.27033 0.5   11     sleeping
+238    airportd         0.5  0.08397 0.5   17     sleeping
+334    CloudflareWARP   0.4  0.02214 0.4   46     sleeping
+389    com.apple.AppleU 0.4  0.00000 0.4   2      sleeping
+840    XKey             0.3  0.05152 0.3   8      sleeping

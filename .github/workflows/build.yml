@@ -1,15 +1,22 @@
 name: build-kexts
 
-# Builds the kexts ItlXhciKick and ItlDiag and the TapGuard app, ad-hoc signed.
-# Moved out, with their own CI and releases: Wi-Fi and Bluetooth (https://github.com/thanhnndev/mt7925-macos) and the ROG
-# Control Center, AsusWmi, AmdCppc (https://github.com/thanhnndev/rog-control-macos).
-# A tag "v*" (for example v1) additionally publishes everything as a GitHub release: kexts, apps, patched OpenCore,
-# the sanitized reference EFI, SHA256SUMS.txt. See .github/release-body.md for the release text.
-# A tag "kext-v*" (for example kext-v1.1) publishes only the kexts, apps and checksums: no OpenCore build, no reference EFI
-# (same release text, .github/release-body.md).
+# Build only. This workflow never creates a GitHub release and never uploads release assets: on every trigger, tags
+# included, the results are artifacts of the workflow run. The maintainer downloads them, checks them and creates the
+# release by hand (text: .github/release-notes/v2.md for the macOS 26 Tahoe bundle; .github/release-body.md is the
+# macOS 15 text of v1 / kext-v1.1).
+#
+# Built here: the kexts ItlXhciKick, ItlDiag, StrixS0ix, StrixSbxMap and the TapGuard app, ad-hoc signed; the earlier
+# boot-display research kexts (StrixMetalGate, StrixGOP, StrixAccel, StrixHeadroom) are compiled as a check and are
+# not packaged. StrixSbxMap is compiled as a check too: a usable one carries the code hashes of the installer's own
+# plugin files (scripts/macos-install-strixsbxmap.sh builds and pins it on the target).
+# Not built here, they have their own CI and releases: Wi-Fi and Bluetooth (https://github.com/thanhnndev/mt7925-macos)
+# and ROG Control, AsusWmi, AmdCppc (https://github.com/thanhnndev/rog-control-macos).
+# The reference EFI (efi/) is not packaged by CI: EFI-reference.zip is made by hand from efi/, which was exported from
+# the live Tahoe ESP on 2026-11-25.
+# A tag "v*" additionally builds OpenCore with the Zen 5 patch (opencore.yml), also as a run artifact.
 on:
   push:
-    branches: [main]
+    branches: [main, "release/**"]
     tags: ["v*", "kext-v*"]
   pull_request:
   workflow_dispatch:
@@ -26,12 +33,30 @@ jobs:
         run: python3 scripts/check-efi-privacy.py efi/OC/config.plist
 
   build:
-    runs-on: macos-14
+    runs-on: macos-15
     steps:
       - uses: actions/checkout@v4
 
       - name: Build kexts
         run: bash scripts/build.sh
+
+      - name: Build StrixS0ix (Tahoe setup, explicit target)
+        run: bash scripts/build.sh StrixS0ix
+
+      - name: Build StrixSbxMap (Tahoe setup, Lilu plugin, explicit target; compile check, not packaged)
+        run: bash scripts/build.sh StrixSbxMap
+
+      - name: Build StrixMetalGate (superseded research kext, compile check)
+        run: bash scripts/build.sh StrixMetalGate
+
+      - name: Build StrixGOP (superseded research kext, compile check)
+        run: bash scripts/build.sh StrixGOP
+
+      - name: Build StrixAccel (superseded research kext, compile check)
+        run: bash scripts/build.sh StrixAccel
+
+      - name: Build StrixHeadroom (superseded research kext, Lilu plugin, compile check)
+        run: bash scripts/build.sh StrixHeadroom
 
       - name: Build the app
         run: |
@@ -41,7 +66,7 @@ jobs:
       - name: Package
         run: |
           mkdir -p dist
-          for k in ItlXhciKick ItlDiag; do
+          for k in ItlXhciKick ItlDiag StrixS0ix; do
             ditto -c -k --keepParent "build/$k.kext" "dist/$k.kext.zip"
           done
           ditto -c -k --keepParent build/TapGuard.app dist/TapGuard.app.zip
@@ -51,69 +76,9 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: kexts
-          path: |
-            build/*.kext
-            dist/*
+          path: dist/*
 
+  # Build only: the patched OpenCore stays an artifact of this run. No job in this file has contents: write.
   opencore:
     if: startsWith(github.ref, 'refs/tags/v')
     uses: ./.github/workflows/opencore.yml
-
-  release:
-    # the patched OpenCore is a nice-to-have: a failed OpenCore build must not block the kexts and apps
-    if: ${{ always() && (startsWith(github.ref, 'refs/tags/v') || startsWith(github.ref, 'refs/tags/kext-v')) && needs.build.result == 'success' }}
-    needs: [build, opencore]
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/download-artifact@v4
-        with:
-          name: kexts
-          path: artifact
-
-      - uses: actions/download-artifact@v4
-        continue-on-error: true
-        with:
-          name: opencore-zen5-fsb
-          path: oc
-
-      - name: Add OpenCore (Zen 5 patch) and the reference EFI
-        if: startsWith(github.ref, 'refs/tags/v')
-        run: |
-          D=artifact/dist
-          if [ -d oc ] && [ -n "$(ls -A oc)" ]; then
-            (cd oc && zip -r -q "../$D/OpenCore-1.0.9-zen5-fsb.zip" .)
-          else
-            echo "::warning::no patched OpenCore artifact; run the opencore workflow and attach it by hand"
-          fi
-          # sanitized reference EFI: config.plist (placeholders), SSDTs, kext list. NOT under the Clear BSD License.
-          python3 scripts/check-efi-privacy.py efi/OC/config.plist
-          mkdir -p ref/EFI-reference
-          cp -R efi/OC efi/README.md efi/KEXTS.md efi/kexts.json NOTICE.md ref/EFI-reference/
-          cp -R patches ref/EFI-reference/patches
-          (cd ref && zip -r -q "../$D/EFI-reference.zip" EFI-reference)
-
-      - name: Checksums
-        working-directory: artifact/dist
-        run: |
-          rm -f SHA256SUMS.txt
-          sha256sum * > SHA256SUMS.txt
-          cat SHA256SUMS.txt
-
-      - name: Publish release
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          if [[ "$GITHUB_REF_NAME" == kext-v* ]]; then
-            TITLE="$GITHUB_REF_NAME: kexts only"
-          else
-            TITLE="$GITHUB_REF_NAME"
-          fi
-          NOTES=.github/release-body.md
-          gh release create "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" \
-            --title "$TITLE" \
-            --notes-file "$NOTES" --generate-notes \
-            artifact/dist/*
