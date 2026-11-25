@@ -1,0 +1,359 @@
+Process:          com.apple.WebKit.GPU [77334] (suspended) (zombie)
+UUID:             72C86327-F7E1-305B-BC7E-FC9296B98573
+Path:             /System/Volumes/Preboot/Cryptexes/App/System/Library/StagedFrameworks/Safari/WebKit.framework/Versions/A/XPCServices/com.apple.WebKit.GPU.xpc/Contents/MacOS/com.apple.WebKit.GPU
+Identifier:       com.apple.WebKit.GPU
+Version:          21625 (21625.2.8.18.4)
+Build Version:    3
+Product Build Version: 625B47
+Project Name:     WebKit
+Source Version:   7625002008018004
+Shared Cache:     21FB8708-FC8E-3765-BE8C-65D612CDF049 slid base address 0x7ff8178dd000, slide 0x178dd000 (System Primary)
+Architecture:     x86_64
+Parent:           launchd [1]
+RunningBoard Mgd: Yes
+UID:              501
+Sudden Term:      Tracked (allows idle exit)
+Memory Limit:     600MB
+Jetsam Priority:  100
+Footprint:        1106.43 MB -> 516.56 MB (-589.87 MB)
+Time Since Fork:  5586s
+Num samples:      101 (1-101)
+CPU Time:         1.000s
+Note:             Suspended for 101 samples
+Note:             Terminated (zombie) for 101 samples
+Num threads:      1
+
+  Thread 0x255c4    101 samples (1-101)    priority 46 (base 31)    cpu time 1.000s
+  101  <truncated backtrace>
+   *101  ??? (kernel + 14653) [0xffffff80002eb93d]
+     *101  ??? (kernel + 418893) [0xffffff800034e44d]
+       *101  ??? (kernel + 6157159) [0xffffff80008c7367]
+         *101  ??? (kernel + 6156042) [0xffffff80008c6f0a]
+           *101  ??? (kernel + 6008626) [0xffffff80008a2f32]
+             *100  ??? (kernel + 764102) [0xffffff80003a28c6]
+               *100  ??? (kernel + 364514) [0xffffff8000340fe2]
+                 *100  ??? (kernel + 354618) [0xffffff800033e93a]
+                   *100  ??? (kernel + 8508762) [0xffffff8000b0555a]
+                     *100  ??? (NMXAccel + 77855) [0xffffff7f96dd901f]
+                       *100  ??? (kernel + 2626373) [0xffffff8000569345]
+                         *100  ??? (kernel + 2789047) [0xffffff8000590eb7]
+                           *100  ??? (kernel + 2900174) [0xffffff80005ac0ce]
+                             *100  ??? (NMXGPU + 7259503) [0xffffff7f974e356f]
+                               *100  ??? (NMXGPU + 7170263) [0xffffff7f974cd8d7]
+                                 *100  ??? (NMXGPU + 7054584) [0xffffff7f974b14f8]
+                                   *100  ??? (NMXGPU + 4315826) [0xffffff7f97214ab2]
+                                     *99   ??? (NMXGPU + 4314892) [0xffffff7f9721470c]
+                                       *99   ??? (NMXGPU + 4333055) [0xffffff7f97218dff]
+                                         *99   ??? (NMXGPU + 7084537) [0xffffff7f974b89f9]
+                                           *99   ??? (NMXGPU + 7084537) [0xffffff7f974b89f9]
+                                             *99   ??? (NMXGPU + 7084590) [0xffffff7f974b8a2e]
+                                               *97   ??? (NMXGPU + 4330254) [0xffffff7f9721830e]
+                                                 *95   ??? (NMXGPU + 6286218) [0xffffff7f973f5b8a]
+                                                   *95   ??? (NMXGPU + 6312936) [0xffffff7f973fc3e8]
+                                                     *83   ??? (NMXGPU + 6301714) [0xffffff7f973f9812]
+                                                       *24   ??? (NMXGPU + 6301782) [0xffffff7f973f9856]
+                                                         *14   ??? (NMXGPU + 7213450) [0xffffff7f974d818a]
+                                                           *12   ??? (kernel + 1981064) [0xffffff80004cba88]
+                                                             *6    ??? (kernel + 12572) [0xffffff80002eb11c] (suspended, running)
+                                                             *1    ??? (kernel + 1982905) [0xffffff80004cc1b9] (suspended, running)
+                                                             *1    ??? (kernel + 1982665) [0xffffff80004cc0c9] (suspended, running)
+                                                             *1    ??? (kernel + 1982437) [0xffffff80004cbfe5] (suspended, running)
+                                                             *1    ??? (kernel + 1982359) [0xffffff80004cbf97] (suspended, running)
+                                                             *1    ??? (kernel + 1982185) [0xffffff80004cbee9] (suspended, running)
+                                                             *1    ??? (kernel + 12599) [0xffffff80002eb137] (suspended, running)
+                                                           *1    ??? (kernel + 1980664) [0xffffff80004cb8f8] (suspended, running)
+                                                           *1    ??? (kernel + 1980324) [0xffffff80004cb7a4] (suspended, running)
+                                                         *4    ??? (kernel + 1986255) [0xffffff80004ccecf] (suspended, running)
+                                                         *2    ??? (kernel + 1986235) [0xffffff80004ccebb] (suspended, running)
+                                                         *1    ??? (kernel + 1986327) [0xffffff80004ccf17] (suspended, running)
+                                                         *1    ??? (kernel + 1986272) [0xffffff80004ccee0] (suspended, running)
+                                                         *1    ??? (NMXGPU + 7213392) [0xffffff7f974d8150] (suspended, running)
+                                                         *1    ??? (NMXGPU + 7213387) [0xffffff7f974d814b] (suspended, running)
+                                                       *14   ??? (kernel + 1987083) [0xffffff80004cd20b] (suspended, running)
+                                                       *12   ??? (NMXGPU + 6301767) [0xffffff7f973f9847]
+                                                         *8    ??? (NMXGPU + 7214651) [0xffffff7f974d863b]
+                                                           *4    ??? (kernel + 560264) [0xffffff8000370c88] (suspended, running)
+                                                           *4    ??? (kernel + 560189) [0xffffff8000370c3d] (suspended, running)
+                                                         *1    ??? (NMXGPU + 7214659) [0xffffff7f974d8643] (suspended, running)
+                                                         *1    ??? (NMXGPU + 7214655) [0xffffff7f974d863f] (suspended, running)
+                                                         *1    ??? (NMXGPU + 7214646) [0xffffff7f974d8636] (suspended, running)
+                                                         *1    ??? (NMXGPU + 7214637) [0xffffff7f974d862d] (suspended, running)
+                                                       *9    ??? (NMXGPU + 6302052) [0xffffff7f973f9964]
+                                                         *9    ??? (kernel + 564206) [0xffffff8000371bee]
+                                                           *2    ??? (kernel + 563955) [0xffffff8000371af3] (suspended, running)
+                                                           *2    ??? (kernel + 564141) [0xffffff8000371bad]
+                                                             *1    ??? (kernel + 567538) [0xffffff80003728f2] (suspended, running)
+                                                             *1    ??? (kernel + 567530) [0xffffff80003728ea] (suspended, running)
+                                                           *1    ??? (kernel + 564081) [0xffffff8000371b71] (suspended, running)
+                                                           *1    ??? (kernel + 563964) [0xffffff8000371afc] (suspended, running)
+                                                           *1    ??? (kernel + 563959) [0xffffff8000371af7] (suspended, running)
+                                                           *1    ??? (kernel + 563819) [0xffffff8000371a6b] (suspended, running)
+                                                           *1    ??? (kernel + 563812) [0xffffff8000371a64] (suspended, running)
+                                                       *5    ??? (NMXGPU + 6301804) [0xffffff7f973f986c] (suspended, running)
+                                                       *4    ??? (NMXGPU + 7214765) [0xffffff7f974d86ad] (suspended, running)
+                                                       *3    ??? (NMXGPU + 6301864) [0xffffff7f973f98a8]
+                                                         *2    ??? (kernel + 1986255) [0xffffff80004ccecf] (suspended, running)
+                                                         *1    ??? (NMXGPU + 7213381) [0xffffff7f974d8145] (suspended, running)
+                                                       *2    ??? (NMXGPU + 6301931) [0xffffff7f973f98eb]
+                                                         *2    ??? (NMXGPU + 7208124) [0xffffff7f974d6cbc]
+                                                           *1    ??? (NMXGPU + 7206427) [0xffffff7f974d661b] (suspended, running)
+                                                           *1    ??? (NMXGPU + 7206403) [0xffffff7f974d6603] (suspended, running)
+                                                       *1    ??? (kernel + 1987085) [0xffffff80004cd20d] (suspended, running)
+                                                       *1    ??? (kernel + 1987073) [0xffffff80004cd201] (suspended, running)
+                                                       *1    ??? (kernel + 1987065) [0xffffff80004cd1f9] (suspended, running)
+                                                       *1    ??? (kernel + 1987051) [0xffffff80004cd1eb] (suspended, running)
+                                                       *1    ??? (NMXGPU + 7214756) [0xffffff7f974d86a4] (suspended, running)
+                                                       *1    ??? (NMXGPU + 7213632) [0xffffff7f974d8240] (suspended, running)
+                                                       *1    ??? (NMXGPU + 6302028) [0xffffff7f973f994c]
+                                                         *1    ??? (NMXGPU + 7091517) [0xffffff7f974ba53d]
+                                                           *1    ??? (NMXGPU + 7233918) [0xffffff7f974dd17e]
+                                                             *1    ??? (NMXGPU + 7233535) [0xffffff7f974dcfff] (suspended, running)
+                                                       *1    ??? (NMXGPU + 6301869) [0xffffff7f973f98ad]
+                                                         *1    ??? (NMXGPU + 7208044) [0xffffff7f974d6c6c]
+                                                           *1    ??? [0xffffff7f96d1e6d2] (suspended, running)
+                                                       *1    ??? (NMXGPU + 6301852) [0xffffff7f973f989c]
+                                                         *1    ??? (NMXGPU + 7213645) [0xffffff7f974d824d] (suspended, running)
+                                                       *1    ??? (NMXGPU + 6301844) [0xffffff7f973f9894]
+                                                         *1    ??? (NMXGPU + 7208149) [0xffffff7f974d6cd5] (suspended, running)
+                                                     *7    ??? (NMXGPU + 624976) [0xffffff7f96e8f950]
+                                                       *7    ??? (NMXGPU + 7235018) [0xffffff7f974dd5ca]
+                                                         *3    ??? (NMXGPU + 7233523) [0xffffff7f974dcff3] (suspended, running)
+                                                         *2    ??? (NMXGPU + 7233515) [0xffffff7f974dcfeb] (suspended, running)
+                                                         *1    ??? (NMXGPU + 7233697) [0xffffff7f974dd0a1] (suspended, running)
+                                                         *1    ??? (NMXGPU + 7233678) [0xffffff7f974dd08e]
+                                                           *1    ??? (kernel + 7990736) [0xffffff8000a86dd0]
+                                                             *1    ??? (kernel + 965302) [0xffffff80003d3ab6]
+                                                               *1    ??? (kernel + 966135) [0xffffff80003d3df7]
+                                                                 *1    ??? (kernel + 971145) [0xffffff80003d5189]
+                                                                   *1    ??? (kernel + 881554) [0xffffff80003bf392] (suspended, running)
+                                                     *4    ??? (NMXGPU + 6301670) [0xffffff7f973f97e6]
+                                                       *3    ??? (NMXGPU + 6301408) [0xffffff7f973f96e0]
+                                                         *3    ??? (NMXGPU + 7238959) [0xffffff7f974de52f] (suspended, running)
+                                                       *1    ??? (NMXGPU + 6301434) [0xffffff7f973f96fa]
+                                                         *1    ??? (kernel + 1986243) [0xffffff80004ccec3] (suspended, running)
+                                                     *1    ??? (NMXGPU + 6301700) [0xffffff7f973f9804] (suspended, running)
+                                                 *2    ??? (NMXGPU + 6286239) [0xffffff7f973f5b9f]
+                                                   *1    ??? (NMXGPU + 625344) [0xffffff7f96e8fac0]
+                                                     *1    ??? (NMXGPU + 6312203) [0xffffff7f973fc10b]
+                                                       *1    ??? (NMXGPU + 7218273) [0xffffff7f974d9461]
+                                                         *1    ??? (kernel + 7991707) [0xffffff8000a8719b]
+                                                           *1    ??? (kernel + 1263018) [0xffffff800041c5aa]
+                                                             *1    ??? (kernel + 1320900) [0xffffff800042a7c4]
+                                                               *1    ??? (kernel + 1268324) [0xffffff800041da64]
+                                                                 *1    ??? (kernel + 1270024) [0xffffff800041e108]
+                                                                   *1    ??? (kernel + 1986713) [0xffffff80004cd099] (suspended, running)
+                                                   *1    ??? (NMXGPU + 625316) [0xffffff7f96e8faa4]
+                                                     *1    ??? (NMXGPU + 616869) [0xffffff7f96e8d9a5]
+                                                       *1    ??? (NMXGPU + 7235385) [0xffffff7f974dd739]
+                                                         *1    ??? (NMXGPU + 7288314) [0xffffff7f974ea5fa]
+                                                           *1    ??? (kernel + 8352442) [0xffffff8000adf2ba]
+                                                             *1    ??? (kernel + 1643352) [0xffffff8000479358] (suspended, running)
+                                               *2    ??? (NMXGPU + 4330219) [0xffffff7f972182eb]
+                                                 *1    ??? (NMXGPU + 382969) [0xffffff7f96e547f9]
+                                                   *1    ??? (NMXGPU + 4312103) [0xffffff7f97213c27]
+                                                     *1    ??? (NMXGPU + 7218273) [0xffffff7f974d9461]
+                                                       *1    ??? (kernel + 7991707) [0xffffff8000a8719b]
+                                                         *1    ??? (kernel + 1263018) [0xffffff800041c5aa]
+                                                           *1    ??? (kernel + 1320900) [0xffffff800042a7c4]
+                                                             *1    ??? (kernel + 1268324) [0xffffff800041da64]
+                                                               *1    ??? (kernel + 1270369) [0xffffff800041e261]
+                                                                 *1    ??? (kernel + 1892271) [0xffffff80004b5faf]
+                                                                   *1    ??? (kernel + 1889163) [0xffffff80004b538b]
+                                                                     *1    ??? (kernel + 12819) [0xffffff80002eb213] (suspended, running)
+                                                 *1    ??? (NMXGPU + 382687) [0xffffff7f96e546df]
+                                                   *1    ??? (NMXGPU + 4312026) [0xffffff7f97213bda]
+                                                     *1    ??? (NMXGPU + 7135054) [0xffffff7f974c4f4e]
+                                                       *1    ??? (NMXGPU + 7135127) [0xffffff7f974c4f97]
+                                                         *1    ??? (NMXGPU + 7217725) [0xffffff7f974d923d]
+                                                           *1    ??? (kernel + 7991255) [0xffffff8000a86fd7]
+                                                             *1    ??? (kernel + 1255372) [0xffffff800041a7cc]
+                                                               *1    ??? (kernel + 1256838) [0xffffff800041ad86]
+                                                                 *1    ??? (kernel + 1549013) [0xffffff80004622d5]
+                                                                   *1    ??? (kernel + 1548747) [0xffffff80004621cb]
+                                                                     *1    ??? (kernel + 573749) [0xffffff8000374135] (suspended, running)
+                                     *1    ??? (NMXGPU + 4314931) [0xffffff7f97214733]
+                                       *1    ??? (NMXGPU + 451419) [0xffffff7f96e6535b]
+                                         *1    ??? (NMXGPU + 707551) [0xffffff7f96ea3bdf]
+                                           *1    ??? (NMXGPU + 713112) [0xffffff7f96ea5198]
+                                             *1    ??? (NMXGPU + 472832) [0xffffff7f96e6a700]
+                                               *1    ??? (NMXGPU + 6286218) [0xffffff7f973f5b8a]
+                                                 *1    ??? (NMXGPU + 6312936) [0xffffff7f973fc3e8]
+                                                   *1    ??? (NMXGPU + 6301670) [0xffffff7f973f97e6]
+                                                     *1    ??? (NMXGPU + 6301408) [0xffffff7f973f96e0]
+                                                       *1    ??? [0xffffff8000101106] (suspended, running)
+             *1    ??? (kernel + 764111) [0xffffff80003a28cf]
+               *1    ??? (kernel + 1321196) [0xffffff800042a8ec]
+                 *1    ??? (kernel + 1266387) [0xffffff800041d2d3]
+                   *1    ??? (kernel + 1409472) [0xffffff80004401c0]
+                     *1    ??? (kernel + 1413087) [0xffffff8000440fdf]
+                       *1    ??? (kernel + 1408157) [0xffffff800043fc9d]
+                         *1    ??? (kernel + 1167807) [0xffffff80004051bf]
+                           *1    ??? (kernel + 964992) [0xffffff80003d3980] (suspended, running)
+
+  Binary Images:
+           0x106c56000 -                ???  com.apple.WebKit.GPU 21625 (21625.2.8.18.4) <72C86327-F7E1-305B-BC7E-FC9296B98573>             /System/Volumes/Preboot/Cryptexes/App/System/Library/StagedFrameworks/Safari/WebKit.framework/Versions/A/XPCServices/com.apple.WebKit.GPU.xpc/Contents/MacOS/com.apple.WebKit.GPU
+   *0xffffff7f96dc6000 - 0xffffff7f96ddffff  com.nullmoth.NMXAccel (0.1)                 <7B6A2507-0A04-3DDC-8415-C8005049732E>__TEXT_EXEC  /Library/Extensions/NMXAccel.kext/Contents/MacOS/NMXAccel
+   *0xffffff7f96df7000 - 0xffffff7f976a2fff  com.nullmoth.NMXGPU (1.0.0)                 <2D3806C0-70A5-369D-A465-10D838D29428>__TEXT_EXEC  /Library/Extensions/NMXGPU.kext/Contents/MacOS/NMXGPU
+   *0xffffff80002e8000 - 0xffffff8000ce7fff  kernel (25.6.0)                             <28267FD5-3E1E-3686-8A1C-E73E2466FCFB>__TEXT_EXEC  /System/Library/Kernels/kernel
+
+
+
+Process:          VTDecoderXPCService [78252] (suspended) (zombie)
+UUID:             B9D55463-993B-3D73-BFF6-77EC03EBCF84
+Path:             /System/Library/Frameworks/VideoToolbox.framework/Versions/A/XPCServices/VTDecoderXPCService.xpc/Contents/MacOS/VTDecoderXPCService
+Identifier:       com.apple.coremedia.videodecoder
+Version:          1.0 (1)
+Build Version:    2
+Project Name:     CoreMedia_VideoToolbox
+Source Version:   3330013105004000
+Shared Cache:     21FB8708-FC8E-3765-BE8C-65D612CDF049 slid base address 0x7ff8178dd000, slide 0x178dd000 (System Primary)
+Architecture:     x86_64
+Parent:           launchd [1]
+UID:              501
+Sudden Term:      Tracked (allows idle exit)
+Memory Limit:     1000MB
+Jetsam Priority:  40
+Footprint:        1004.20 MB
+Time Since Fork:  5525s
+Num samples:      101 (1-101)
+CPU Time:         1.000s
+Note:             Suspended for 101 samples
+Note:             Terminated (zombie) for 101 samples
+Num threads:      1
+
+  Thread 0x6dadb    101 samples (1-101)    priority 46 (base 31)    cpu time 1.000s
+  101  <truncated backtrace>
+   *101  ??? (kernel + 15798) [0xffffff80002ebdb6]
+     *101  ??? (kernel + 7508137) [0xffffff8000a110a9]
+       *101  ??? (kernel + 6007976) [0xffffff80008a2ca8]
+         *101  ??? (kernel + 6008626) [0xffffff80008a2f32]
+           *101  ??? (kernel + 764102) [0xffffff80003a28c6]
+             *101  ??? (kernel + 364514) [0xffffff8000340fe2]
+               *101  ??? (kernel + 354618) [0xffffff800033e93a]
+                 *101  ??? (kernel + 8508762) [0xffffff8000b0555a]
+                   *101  ??? (NMXAccel + 77855) [0xffffff7f96dd901f]
+                     *101  ??? (kernel + 2626373) [0xffffff8000569345]
+                       *101  ??? (kernel + 2789047) [0xffffff8000590eb7]
+                         *101  ??? (kernel + 2900174) [0xffffff80005ac0ce]
+                           *101  ??? (NMXGPU + 7259503) [0xffffff7f974e356f]
+                             *101  ??? (NMXGPU + 7170263) [0xffffff7f974cd8d7]
+                               *101  ??? (NMXGPU + 7054584) [0xffffff7f974b14f8]
+                                 *101  ??? (NMXGPU + 4315826) [0xffffff7f97214ab2]
+                                   *101  ??? (NMXGPU + 4314892) [0xffffff7f9721470c]
+                                     *101  ??? (NMXGPU + 4333055) [0xffffff7f97218dff]
+                                       *101  ??? (NMXGPU + 7084537) [0xffffff7f974b89f9]
+                                         *101  ??? (NMXGPU + 7084590) [0xffffff7f974b8a2e]
+                                           *99   ??? (NMXGPU + 4330254) [0xffffff7f9721830e]
+                                             *97   ??? (NMXGPU + 6286218) [0xffffff7f973f5b8a]
+                                               *97   ??? (NMXGPU + 6312936) [0xffffff7f973fc3e8]
+                                                 *79   ??? (NMXGPU + 6301714) [0xffffff7f973f9812]
+                                                   *24   ??? (NMXGPU + 6301782) [0xffffff7f973f9856]
+                                                     *20   ??? (NMXGPU + 7213450) [0xffffff7f974d818a]
+                                                       *13   ??? (kernel + 1981064) [0xffffff80004cba88]
+                                                         *9    ??? (kernel + 12572) [0xffffff80002eb11c] (suspended, running)
+                                                         *1    ??? (kernel + 1982600) [0xffffff80004cc088] (suspended, running)
+                                                         *1    ??? (kernel + 12576) [0xffffff80002eb120] (suspended, running)
+                                                         *1    ??? (kernel + 12563) [0xffffff80002eb113] (suspended, running)
+                                                         *1    ??? (kernel + 12560) [0xffffff80002eb110] (suspended, running)
+                                                       *7    ??? (kernel + 1980322) [0xffffff80004cb7a2] (suspended, running)
+                                                     *3    ??? (kernel + 1986255) [0xffffff80004ccecf] (suspended, running)
+                                                     *1    ??? (NMXGPU + 7213374) [0xffffff7f974d813e] (suspended, running)
+                                                   *14   ??? (NMXGPU + 6301767) [0xffffff7f973f9847]
+                                                     *6    ??? (NMXGPU + 7214646) [0xffffff7f974d8636] (suspended, running)
+                                                     *4    ??? (NMXGPU + 7214655) [0xffffff7f974d863f] (suspended, running)
+                                                     *2    ??? (NMXGPU + 7214659) [0xffffff7f974d8643] (suspended, running)
+                                                     *2    ??? (NMXGPU + 7214651) [0xffffff7f974d863b]
+                                                       *2    ??? (kernel + 560264) [0xffffff8000370c88] (suspended, running)
+                                                   *6    ??? (NMXGPU + 6302052) [0xffffff7f973f9964]
+                                                     *6    ??? (kernel + 564206) [0xffffff8000371bee]
+                                                       *6    ??? (kernel + 563955) [0xffffff8000371af3] (suspended, running)
+                                                   *6    ??? (NMXGPU + 6301864) [0xffffff7f973f98a8]
+                                                     *6    ??? (kernel + 1986255) [0xffffff80004ccecf] (suspended, running)
+                                                   *5    ??? (kernel + 1987083) [0xffffff80004cd20b] (suspended, running)
+                                                   *5    ??? (NMXGPU + 6301844) [0xffffff7f973f9894]
+                                                     *4    ??? (NMXGPU + 7208124) [0xffffff7f974d6cbc]
+                                                       *1    ??? (NMXGPU + 7206447) [0xffffff7f974d662f] (suspended, running)
+                                                       *1    ??? (NMXGPU + 7206415) [0xffffff7f974d660f] (suspended, running)
+                                                       *1    ??? (NMXGPU + 7206382) [0xffffff7f974d65ee] (suspended, running)
+                                                       *1    ??? [0xffffff7f96d1e6d2] (suspended, running)
+                                                     *1    ??? (NMXGPU + 7208104) [0xffffff7f974d6ca8] (suspended, running)
+                                                   *5    ??? (NMXGPU + 6301931) [0xffffff7f973f98eb]
+                                                     *3    ??? (NMXGPU + 7208124) [0xffffff7f974d6cbc]
+                                                       *1    ??? (NMXGPU + 7206432) [0xffffff7f974d6620] (suspended, running)
+                                                       *1    ??? (NMXGPU + 7206415) [0xffffff7f974d660f] (suspended, running)
+                                                       *1    ??? (NMXGPU + 7206308) [0xffffff7f974d65a4] (suspended, running)
+                                                     *1    ??? (NMXGPU + 7206304) [0xffffff7f974d65a0] (suspended, running)
+                                                     *1    ??? [0xffffff7f96d1e61e] (suspended, running)
+                                                   *3    ??? (NMXGPU + 7214765) [0xffffff7f974d86ad] (suspended, running)
+                                                   *3    ??? (NMXGPU + 6301787) [0xffffff7f973f985b]
+                                                     *2    ??? (NMXGPU + 7208044) [0xffffff7f974d6c6c]
+                                                       *1    ??? (NMXGPU + 7206403) [0xffffff7f974d6603] (suspended, running)
+                                                       *1    ??? [0xffffff7f96d1e6d2] (suspended, running)
+                                                     *1    ??? (NMXGPU + 7208020) [0xffffff7f974d6c54] (suspended, running)
+                                                   *2    ??? (NMXGPU + 6301869) [0xffffff7f973f98ad]
+                                                     *2    ??? (NMXGPU + 7208044) [0xffffff7f974d6c6c]
+                                                       *1    ??? (NMXGPU + 7206406) [0xffffff7f974d6606] (suspended, running)
+                                                       *1    ??? (NMXGPU + 7206317) [0xffffff7f974d65ad] (suspended, running)
+                                                   *1    ??? (kernel + 1987073) [0xffffff80004cd201] (suspended, running)
+                                                   *1    ??? (NMXGPU + 7213632) [0xffffff7f974d8240] (suspended, running)
+                                                   *1    ??? (NMXGPU + 7213360) [0xffffff7f974d8130] (suspended, running)
+                                                   *1    ??? (NMXGPU + 6302054) [0xffffff7f973f9966] (suspended, running)
+                                                   *1    ??? (NMXGPU + 6301864) [0xffffff7f973f98a8] (suspended, running)
+                                                   *1    ??? (NMXGPU + 6301939) [0xffffff7f973f98f3]
+                                                     *1    ??? (NMXGPU + 7213674) [0xffffff7f974d826a] (suspended, running)
+                                                 *12   ??? (NMXGPU + 624976) [0xffffff7f96e8f950]
+                                                   *9    ??? (NMXGPU + 7235018) [0xffffff7f974dd5ca]
+                                                     *4    ??? (NMXGPU + 7233523) [0xffffff7f974dcff3] (suspended, running)
+                                                     *4    ??? (NMXGPU + 7233689) [0xffffff7f974dd099]
+                                                       *3    ??? (kernel + 7990750) [0xffffff8000a86dde] (suspended, running)
+                                                       *1    ??? (kernel + 7990736) [0xffffff8000a86dd0]
+                                                         *1    ??? (kernel + 965070) [0xffffff80003d39ce] (suspended, running)
+                                                     *1    ??? (NMXGPU + 7233515) [0xffffff7f974dcfeb] (suspended, running)
+                                                   *2    ??? (NMXGPU + 7234932) [0xffffff7f974dd574]
+                                                     *1    ??? (kernel + 7990750) [0xffffff8000a86dde] (suspended, running)
+                                                     *1    ??? (kernel + 7990736) [0xffffff8000a86dd0]
+                                                       *1    ??? (kernel + 965302) [0xffffff80003d3ab6]
+                                                         *1    ??? (kernel + 966135) [0xffffff80003d3df7]
+                                                           *1    ??? (kernel + 968066) [0xffffff80003d4582] (suspended, running)
+                                                   *1    ??? (NMXGPU + 7235010) [0xffffff7f974dd5c2] (suspended, running)
+                                                 *6    ??? (NMXGPU + 6301670) [0xffffff7f973f97e6]
+                                                   *5    ??? (NMXGPU + 6301408) [0xffffff7f973f96e0]
+                                                     *4    ??? (NMXGPU + 7238959) [0xffffff7f974de52f] (suspended, running)
+                                                     *1    ??? (NMXGPU + 7238954) [0xffffff7f974de52a] (suspended, running)
+                                                   *1    ??? (NMXGPU + 6301434) [0xffffff7f973f96fa]
+                                                     *1    ??? (kernel + 1986243) [0xffffff80004ccec3] (suspended, running)
+                                             *2    ??? (NMXGPU + 6286239) [0xffffff7f973f5b9f]
+                                               *1    ??? (NMXGPU + 625344) [0xffffff7f96e8fac0]
+                                                 *1    ??? (NMXGPU + 6312203) [0xffffff7f973fc10b]
+                                                   *1    ??? (NMXGPU + 7218273) [0xffffff7f974d9461]
+                                                     *1    ??? (kernel + 7991707) [0xffffff8000a8719b]
+                                                       *1    ??? (kernel + 1263018) [0xffffff800041c5aa]
+                                                         *1    ??? (kernel + 1320900) [0xffffff800042a7c4]
+                                                           *1    ??? (kernel + 1268324) [0xffffff800041da64]
+                                                             *1    ??? (kernel + 1270369) [0xffffff800041e261]
+                                                               *1    ??? (kernel + 1892271) [0xffffff80004b5faf]
+                                                                 *1    ??? (kernel + 1889163) [0xffffff80004b538b]
+                                                                   *1    ??? (kernel + 1862017) [0xffffff80004ae981]
+                                                                     *1    ??? (kernel + 2061405) [0xffffff80004df45d] (suspended, running)
+                                               *1    ??? (NMXGPU + 625316) [0xffffff7f96e8faa4]
+                                                 *1    ??? (NMXGPU + 616869) [0xffffff7f96e8d9a5]
+                                                   *1    ??? (NMXGPU + 7235385) [0xffffff7f974dd739]
+                                                     *1    ??? (NMXGPU + 7288314) [0xffffff7f974ea5fa]
+                                                       *1    ??? (kernel + 8352442) [0xffffff8000adf2ba]
+                                                         *1    ??? (kernel + 1643352) [0xffffff8000479358] (suspended, running)
+                                           *2    ??? (NMXGPU + 4330219) [0xffffff7f972182eb]
+                                             *1    ??? (NMXGPU + 382841) [0xffffff7f96e54779]
+                                               *1    ??? (NMXGPU + 702859) [0xffffff7f96ea298b]
+                                                 *1    ??? (kernel + 1987045) [0xffffff80004cd1e5] (suspended, running)
+                                             *1    ??? (NMXGPU + 382720) [0xffffff7f96e54700]
+                                               *1    ??? (NMXGPU + 4313196) [0xffffff7f9721406c]
+                                                 *1    ??? (NMXGPU + 4312506) [0xffffff7f97213dba]
+                                                   *1    ??? (kernel + 1987073) [0xffffff80004cd201] (suspended, running)
+
+  Binary Images:
+           0x10277b000 -                ???  com.apple.coremedia.videodecoder 1.0 (1) <B9D55463-993B-3D73-BFF6-77EC03EBCF84>             /System/Library/Frameworks/VideoToolbox.framework/Versions/A/XPCServices/VTDecoderXPCService.xpc/Contents/MacOS/VTDecoderXPCService
+   *0xffffff7f96dc6000 - 0xffffff7f96ddffff  com.nullmoth.NMXAccel (0.1)              <7B6A2507-0A04-3DDC-8415-C8005049732E>__TEXT_EXEC  /Library/Extensions/NMXAccel.kext/Contents/MacOS/NMXAccel
+   *0xffffff7f96df7000 - 0xffffff7f976a2fff  com.nullmoth.NMXGPU (1.0.0)              <2D3806C0-70A5-369D-A465-10D838D29428>__TEXT_EXEC  /Library/Extensions/NMXGPU.kext/Contents/MacOS/NMXGPU
+   *0xffffff80002e8000 - 0xffffff8000ce7fff  kernel (25.6.0)                          <28267FD5-3E1E-3686-8A1C-E73E2466FCFB>__TEXT_EXEC  /System/Library/Kernels/kernel
+
+

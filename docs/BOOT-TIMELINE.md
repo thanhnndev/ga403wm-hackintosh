@@ -30,6 +30,97 @@ Open, not mine:
 - NMXGPU: `VTDecoderXPCService` hung on exit in `amdgpu_vm_fini` -> `dma_fence_wait` (14:42 stall, section 4).
 - Owner: TAL window restore 37 s (Safari, Xcode); desktop-ready 5 s timeout, to be measured once with TAL off.
 
+### 0.1 Loop-guard false trip, 2026-11-22 (fixed in 0.2.5; wake side hardened in 0.2.6; not installed)
+
+The 11-22 09:12 boot came up in Standard with `gate-tripped`: the previous Eco boot (11-20 11:07, boot 6) was shut down
+cleanly by the user at T+35 s, before the 90 s clear, and the flag was never cleared. Two causes, both in the gate:
+the shutdown clear ran only after the 90 s clear (`&& gCleared`), and the root-domain notifier was general interest.
+Checked in the 25G332 kernel binary (`/System/Library/Kernels/kernel`, symbols): `registerSleepWakeInterest` is
+`registerInterest(gIOGeneralInterest)`; `IOPMrootDomain::handlePlatformHaltRestart` sends WillPowerOff / WillRestart only to
+`gIOPriorityPowerStateInterest`; `IOService::tellClients` (sleep/wake messages) goes to priority, app and general interest.
+So the gate never saw a shutdown, but did get HasPoweredOn (0.2.4's comment said otherwise; corrected in 0.2.5).
+Addresses (x86_64 kernel, llvm-objdump): `registerSleepWakeInterest` 0xffffff8000a72450 loads `_gIOGeneralInterest`;
+`handlePlatformHaltRestart` 0xffffff8000a72a20 references only `_gIOPriorityPowerStateInterest` (0xffffff8000a72b2c,
+0xffffff8000a72ba1, via `applyToInterested`); `IOService::tellClients` 0xffffff80009d6b50 applies
+`_gIOPriorityPowerStateInterest` (0xffffff80009d6db3), `_gIOAppPowerStateInterest` (0xffffff80009d6dde) and
+`_gIOGeneralInterest` (0xffffff80009d6dfb); `IOPMrootDomain::tellChangeUp` loads 0xe0000300 (HasPoweredOn) and tail-calls
+`tellClients` (0xffffff8000a5f169 / 0xffffff8000a5f17c). So 0.2.3's general-interest notifier did run
+`scheduleOff(3000, "wake")` at every full wake; 0.2.5 dropped that by default, 0.2.6 puts back a wake check (below).
+Proof that the shutdown path never ran: boot 5 (11-19 17:17) lived 50 min and shut down cleanly at 18:07, yet
+`strix-gpu-eco-cleared` kept the 5 min value `5:300:ws1`. NVRAM is native (`WriteFlash` true, no `nvram.plist`), and the
+90 s writes do persist. The gate's `IOLog` lines do not reach the unified log on this machine, so the source, the kernel
+binary and the NVRAM record are the evidence.
+
+StrixDgpuGate **0.2.5** (`fix/eco-offbus` 96a7a20, md5 fef972c1e34f02be6d495a82a2466c08; 0.2.4 = 651137c):
+- priority sleep/wake interest; clear on every clean shutdown or restart, at any uptime, if WindowServer's display was
+  ever seen (a boot shut down over ssh from a desktop that never came up keeps try=1);
+- clear once the boot has finished: RTX off and off the bus (or keepbus / dry run) and WindowServer's display, on two 5 s
+  polls in a row, not before 30 s; 90 s at the latest;
+- the wake re-off (pass 3 s after HasPoweredOn) is off by default (`strixgate_wakereoff=1` / `strix-gpu-wake-reoff=1`):
+  never observed running here; no pass runs between WillSleep and HasPoweredOn; a pass that finds GSTA 1 but the card not
+  answering config reads runs nothing (no `_PS3` on a D0 card). The 90 s / 5 min re-checks remain the catch.
+
+First 0.2.5 boot watch list (still valid for 0.2.6):
+- `gate-clear-stage` >= 1 and `gate-eco-cleared` with an uptime of about 30-40 s.
+- Shut down normally (any time after the login window). On the next boot: `gate-prev-cleared` shows the **shutdown**
+  uptime (proof that the NVRAM write at WillPowerOff persists), and `gate-try-at-probe` is "0".
+- Shut down within 60 s of an Eco boot: the boot after it is still Eco, `gate-tripped` No.
+- First owner-started sleep test: `gate-sleep-msgs` and `gate-wake-msgs` grow (messages delivered), `gsta-recheck` after
+  the next re-check, PEGP/HDAU absent under GPP9.
+
+StrixDgpuGate **0.2.6** (`fix/eco-offbus` 7017363, md5 c55bfbcb633a0df3ca1b3704e3fa17dd), review of 0.2.5:
+- every HasPoweredOn schedules a read-only re-check 3 s later (GSTA + RTX nubs; a pass only if the card came back),
+  whatever the switch says; `strixgate_wakereoff=1` only adds the unconditional 0.2.3 pass;
+- a pass cancelled by WillSleep (from `thread_call_cancel`'s return) or skipped because of sleep (now logged) is run at
+  HasPoweredOn / WillNotSleep (`gate-pending-runs`);
+- GSTA 1 with config reads 0xffff: with RTX nubs on the bus the pass marks the card on (`gate-powered-off` false, no
+  takeOffBus on stale values) and retries 3 times 5 s apart per trigger; with no nubs (the idled-bridge case the re-check
+  exists for) it runs `_DSM` + `_PS3` as 0.2.3 did (`gate-defer-retries` counts deferrals);
+- the sleep flag clears itself after 60 s of awake uptime with no wake message (`gate-sleep-heals`);
+- `publish()` copies `gate-eco-cleared` under the clear lock; the shutdown path already reads WindowServer's display
+  itself (a shutdown within 5 s of the first display, before a poll latched it, still clears).
+
+0.2.6 passed main's final review and goes into the 11-22 package (main's build, UUID DCFC8BC3).
+Later **0.2.7** (`fix/eco-offbus` 94e3de2, md5 0c89fa626f79f82714e95b237dad5549, not in the package): a pass that leaves the
+card on (deferred retries used up, or `_PS3` left GSTA 1) gets a slow pass every 5 min until it is off; self-heal 180 s;
+one pass per wake (pending / wake re-off pass or the re-check, not both); a sleep bail that lands after HasPoweredOn is
+rescheduled at once (CAS on the pending latch); the second-claim trigger resets the retry budget; log counts deferred passes.
+
+0.2.6 live, verified on the 2026-11-23 12:22:59 boot (main): Eco, `gate-powered-off` and `gate-off-bus` Yes,
+`gate-tripped` No, `gate-clear-stage` 2, `strix-gpu-eco-cleared` "8:30:ws1", try 0. Not yet seen: a shutdown clear, a wake.
+**0.2.8** (`fix/eco-offbus` f4504a4, md5 112a095e54cb0021dad90397c7c31ecd, not installed; 0.2.7 skipped): the slow pass
+is capped at 6 per wake (reset at HasPoweredOn), never armed when GSTA could not be read, cancelled at WillSleep and
+re-armed at the wake / WillNotSleep / sleep-flag self-heal; `gate-slow-passes` counts it.
+
+Does `mach_absolute_time` run during this machine's sleep? (The 180 s self-heal and every thread-call deadline depend
+on it.)
+- From logs: no evidence. No system sleep is in the retained unified log (20 days: only "System sleep prevented by
+  kPMSystemRestartBootingInProgress" at boot) or in `pmset -g log`, and the current boot has continuous - absolute = 0.0 s.
+- From the kernel binary (25G332): both x86 sleep entries re-base the clock after the halt. `acpi_sleep_kernel`
+  (0xffffff80003fbbd0) reads `rtc_nanotime` around `acpi_sleep_cpu` and calls `rtc_nanotime_init`. `acpi_idle_kernel`
+  (0xffffff80003fc350) calls `pmCPUHalt` then, if `deep_idle_rebase` (xnu default TRUE), `rtc_sleep_wakeup`
+  (0xffffff80003fc585-0xffffff80003fc595). So `mach_absolute_time` stops while the kernel is in either path, and the
+  slept time goes to `mach_continuous_time`.
+- Not covered: an s0ix "sleep" in which WillSleep is sent but the CPU never enters either path (the platform idles in S0
+  with the kernel running its idle loop). Then `mach_absolute_time` advances, timers fire, and the gate's self-heal clears
+  the flag 180 s in; 0.2.8's slow pass is cancelled at WillSleep, so only the self-heal's re-arm could start one.
+- How to measure in the owner-started sleep test: `cc -O -o /tmp/sleep-clock tools/sleep-clock/sleep-clock.c`, run
+  `/tmp/sleep-clock` right before sleep and right after wake. If "slept (cont-abs)" grew by about the wall-clock time
+  asleep, `mach_absolute_time` stopped (normal). If it did not grow while the wall clock moved, it ran through the sleep:
+  then the self-heal must use `mach_continuous_time`. Also note `gate-sleep-heals` (0 expected).
+
+First 0.2.6 boot watch list (the 0.2.5 items stay; also valid for 0.2.7, where `gate-sleep-heals` needs 180 s):
+- Boot: `gate-defer-retries` 0, `gate-pending-runs` 0, `gate-sleep-heals` 0.
+- Owner-started sleep test: `gate-sleep-msgs` and `gate-wake-msgs` grow by one each; `gsta-recheck` is set about 3 s after
+  the wake (wake re-check); `gate-powered-off` true and `gate-off-bus` true afterwards; PEGP/HDAU absent under GPP9.
+  `gate-offbus-passes` grows only if the card came back or a pass was pending.
+- `gate-sleep-heals` must stay 0: a non-zero value means a sleep message came without its wake message.
+- `gate-defer-retries` non-zero after a wake: the bridge was slow; check `gate-powered-off` after the retries.
+
+Loop guard count: keep it at one unfinished boot. The false trips came from a missing clear, not from the threshold.
+After 0.2.4 only a forced power-off, panic or power loss before the boot finished trips it, and those cannot be told
+apart from an Eco hang. A count of 2 would cost a second hung boot whenever the Eco path really hangs.
+
 ## 1. The whole boot in one table
 
 Times are seconds after the kernel's `=== system boot` record (T0), unless marked. "Eco" means the gate held the RTX and
