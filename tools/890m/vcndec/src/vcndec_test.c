@@ -146,6 +146,12 @@ int main(int argc, char **argv) {
           (unsigned long long)g, (unsigned long long)c, (unsigned long long)im);
   uint64_t slow, maxw; vcn_copy_waits(d, &slow, &maxw);
   fprintf(stderr, "copy waits: %llu over 100 ms, longest %llu ms\n", (unsigned long long)slow, (unsigned long long)maxw);
+  { uint64_t n, gs, gm, ws, wm, by, hb[8]; vcn_copy_timing(d, &n, &gs, &gm, &ws, &wm, &by, hb);
+    if (n) fprintf(stderr, "copy timing (%llu copies, %.2f MB each): GPU avg %.3f ms max %.3f ms (%.2f GB/s); copy_out wall avg %.3f ms max %.3f ms; "
+                   "GPU hist <.25/<.5/<1/<2/<4/<8/<16/>=16 ms: %llu/%llu/%llu/%llu/%llu/%llu/%llu/%llu\n",
+                   (unsigned long long)n, by / (double)n / 1e6, gs / (double)n / 1e6, gm / 1e6, gs ? by / (double)gs : 0, ws / (double)n / 1e6, wm / 1e6,
+                   (unsigned long long)hb[0], (unsigned long long)hb[1], (unsigned long long)hb[2], (unsigned long long)hb[3],
+                   (unsigned long long)hb[4], (unsigned long long)hb[5], (unsigned long long)hb[6], (unsigned long long)hb[7]); }
   vcn_close(d);
   if (chk) { fprintf(stderr, "index check: %d ok, %d wrong, %d unreadable\n", ok, bad, unreadable); if (bad || unreadable || !ok) return 3; }
   return 0;

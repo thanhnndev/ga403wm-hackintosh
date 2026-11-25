@@ -182,3 +182,91 @@ Not tested: a real memory-pressure event (simulating one needs root); it calls t
 through a host-pointer import, which pins the pages. Wiring is now bounded (256 MB per session) and dropped on idle,
 pressure, retirement and close. The zero-wire alternative is the staging copy for every frame (5.2 vs 2.0 ms CPU per
 4K10 frame); `VCN_CACHE_MB=0` selects it without a rebuild.
+
+## VCNDec 0.2.1: planes at 256 B aligned offsets (2026-11-23)
+
+The working-load census (13:31) showed 1.74 GB of GPU plane shadows in WindowServer. The 4K 10-bit frames came from
+the Aerial wallpaper (HEVC Main10, decoded by VCNDec 0.2.0 on the VCN). The owner's Edge playback on 14:42 was VP9 8-bit
+up to 3840x2160, also on the VCN. The shadows come from the layout, not the decoder: CoreVideo's default IOSurface
+layout puts plane 0 at +64 and plane 1 at +64 + Y size (measured), both off 256 B, so the NVMTL plugin copies every
+read-only plane into a GPU shadow (12 MB per 4K 8-bit frame, 25 MB at 10-bit) in every process that draws the frame.
+
+Fix (`src/vcnvt.c`): the session's pixel buffer attributes add `kCVPixelBufferPlaneAlignmentKey = 256`
+Same allocation size; the copy already reads the plane offsets from the surface. `vt_check` prints the first frame's
+plane layout (`PLANES ...`).
+
+Rollback, in order of reach:
+
+- `touch /Library/NullMoth/vcndec-noalign` puts back the 0.2.0 layout at the next session, without a rebuild. It is
+  the switch that works for VTDecoderXPCService and WebKit's GPU process, which never see a user's environment.
+- `VCN_PLANE_ALIGN=N` (env, tests only) sets the alignment. It is rounded down to a power of two (100 → 64, 300 → 256,
+  capped at 4096); 0 means the CoreVideo default. The file switch wins over the env.
+- The StartSession log line says which one decided: `plane align N by default | env VCN_PLANE_ALIGN |
+  /Library/NullMoth/vcndec-noalign`.
+- `sudo ./install.sh --undo [--system]` puts back the bundle the install replaced. Every install copies the replaced
+  bundle to `/Library/NullMoth/vcndec-backup/<date>-<mode>/` first, skipped when it is the same build. `--undo`
+  restores the newest backup and marks it `.restored-<date>`, so a second `--undo` goes one version further back.
+  `--undo --purge` removes the bundle only. Tested in library mode on scratch paths: install → reinstall → undo gives
+  0.2.0; purge leaves the backups.
+
+Format changes mid-session (`d_accept`, the decoder's canAcceptFormatDescription). The decoder now says yes only when
+codec, coded size and config atom are unchanged; anything else needs a new session. In practice VideoToolbox does
+not ask the decoder. `vt_check VT_CANACCEPT=<clip>` was run with both the old accept-everything decoder and the new
+one, on an HEVC 1080p60 session:
+
+| format given to the running session | VideoToolbox answer |
+|---|---|
+| the session's own format description | yes |
+| an equal one from another file (`mx-hevc-1080p60-frag`) | yes |
+| 1080p to 2160p (HEVC, and H.264 2160p30) | no |
+| 8-bit to 10-bit | no |
+| the same description with one extension renamed | no |
+
+The answers were the same for both decoders, and the `VCNDEC CanAccept` log line never appeared. So VideoToolbox
+answers this itself from description equality, and a size change always gets a new session and decoder. The stricter
+`d_accept` only guards a future VideoToolbox that does ask.
+
+| clip (vt_check -b, in-process) | align 256 | align 0 (0.2.0) |
+|---|---|---|
+| mx-h264-1080p60 (420v) | +256 / +2073856, 1800/1800 index ok | +64 / +2073664, 1800/1800 |
+| mx-hevc-2160p60 (420v) | +256 / +8294656, 1800/1800 | +64 / +8294464, 1800/1800 |
+| mx-hevc10-1080p60 (x420) | +256 / +4147456, 1800/1800 | +64 / +4147264, 1800/1800 |
+| mx-av110-1080p30 (x420) | +256 / +4147456, 600/600 | +64 / +4147264, 600/600 |
+| mx-av1-1080p30 (420v) | +256 / +2073856, 600/600 | +64 / +2073664, 600/600 |
+
+Plugin side (frame-path-plugin `carender_test` video 4 with `CARENDER_PLANE_ALIGN`, 4K x420 pool of 12, 4000 frames,
+plugin 01d069e): plane shadows 856 MB in 73 -> 2 MB in 1 (watched planes 854 -> 0 MB); CPU 907 -> 681 us per frame,
+wall 1.77 -> 0.84 ms per frame; last-frame checksum identical (92c836e4da78001d).
+
+Install: `tools/890m/vcndec/build.sh`, then `sudo tools/890m/vcndec/install.sh --system` (system volume + bless, next
+boot). Only VCNDec changes; RADV and libavcodec stay as installed.
+
+**On-screen frames and buffer reuse.** Aliasing samples the decoder's output surface itself, so a frame on screen must
+never be written again while it is shown. What protects it is the IOSurface use count: the display path (Core Animation
+/ WindowServer) holds a use count on the surfaces it shows, and the pixel-buffer pool hands a buffer out again only when
+its surface is no longer in use. `vt_check` `VT_USEHOLD=n` does what the display does: each output surface gets
+`IOSurfaceIncrementUseCount`, the CVPixelBuffer is released at once, the last n are held, and a hash of both planes is
+checked when each is released. `VT_USEHOLD_NOUSE=1` is the negative control (retained, no use count).
+
+| clip, VCNDec 0.2.1 in-process | VT_USEHOLD=8 | negative control (no use count) |
+|---|---|---|
+| mx-hevc-2160p60 (420v) | 1800 checked, 0 reused while held, 0 changed | 1799 changed while held |
+| mx-hevc10-1080p60 (x420) | 1800 checked, 0 / 0 | 1799 changed while held |
+| Aerial wallpaper clip (4K HEVC 10-bit, x420, first 600) | 600 checked, 0 / 0 | - |
+
+The Aerial clip (`~/Library/Application Support/com.apple.wallpaper/aerials/videos/*.mov`): hw yes, planes
++256 / +16589056 with 0.2.1 (+64 / +16588864 with `VCN_PLANE_ALIGN=0` or `vcndec-noalign`, the layout WindowServer shadowed at 13:31).
+
+**Cost of one decoded frame today** (all on the GPU: VCN decode into RADV's image, then one `vkCmdCopyImageToBuffer`
+into the output IOSurface through a cached host-pointer import; the CPU only submits and waits. The live sessions'
+close lines show `cpu-copy 0`, `staged 0`). Whole `vt_check` process CPU, AVAssetReader demux included:
+
+| clip | client keeps 0 | client keeps 40 |
+|---|---|---|
+| 4K HEVC 8-bit | 1.03 ms / frame | 1.82 ms |
+| 1080p HEVC 10-bit | 0.78 ms | 1.07 ms |
+| Aerial 4K HEVC 10-bit | 1.90 ms | 4.17 ms |
+
+The one copy per frame is a GPU write of the whole picture (12 MB at 4K 8-bit, 25 MB at 4K 10-bit) into system
+memory. Linux plays the decoder's own image (DMA-BUF) with no copy; doing that here would mean the VCN writing its
+output straight into the IOSurface's pages.

@@ -4,6 +4,7 @@
 // Class layout as in tools/890m/vtstub (reversed from AV1DecoderSW.bundle). Runs in VTDecoderXPCService
 // (Chrome, Safari HEVC/VP9) or in-process via VCNDec_RegisterInProcess (tests).
 // Kill switch: /Library/NullMoth/vcndec-off -> CreateInstance refuses, VideoToolbox moves on (apps decode in software).
+// /Library/NullMoth/vcndec-noalign -> output planes in the CoreVideo default layout (0.2.0 behaviour), next session.
 #include <CoreFoundation/CoreFoundation.h>
 #include <CoreMedia/CoreMedia.h>
 #include <CoreVideo/CoreVideo.h>
@@ -217,10 +218,26 @@ static CFDataRef config_atom(CMVideoFormatDescriptionRef f, FourCharCode codec) 
   return d && CFGetTypeID(d) == CFDataGetTypeID() ? d : NULL;
 }
 
+// VideoToolbox asks this when a client hands a running session a new format description
+// (VTDecompressionSessionCanAcceptFormatDescription: Chromium's VT decoder does it on every new SPS/PPS, AVFoundation on
+// a track edit). Yes means the session goes on with the new format and no new StartSession: libavcodec keeps the old
+// extradata and the output pool keeps the old size and pixel format. So accept only what this session already decodes
+// unchanged: same codec, same coded size, same config atom (profile, bit depth, range, SPS/PPS). Anything else gets a
+// new session (and so a new decoder) from VideoToolbox.
 static Boolean d_accept(VTVideoDecoderRef d, CMFormatDescriptionRef f) {
+  Storage *s = ST(d);
   FourCharCode c = CMFormatDescriptionGetMediaSubType(f);
   int fr, dp;
-  return handled(c) && check_config(c, config_atom(f, c), &fr, &dp);
+  if (!handled(c) || !check_config(c, config_atom(f, c), &fr, &dp)) return false;
+  if (!s->fmt) return true;   // no session yet
+  CMVideoDimensions a = CMVideoFormatDescriptionGetDimensions(s->fmt), b = CMVideoFormatDescriptionGetDimensions(f);
+  CFDataRef ca = config_atom(s->fmt, s->codec), cb = config_atom(f, c);
+  Boolean same = c == s->codec && a.width == b.width && a.height == b.height &&
+                 ((!ca && !cb) || (ca && cb && CFEqual(ca, cb)));
+  char x[5];
+  os_log(L(), "VCNDEC CanAccept %{public}s %dx%d -> %dx%d config %{public}s: %{public}s", cc(c, x), a.width, a.height,
+         b.width, b.height, (ca && cb && CFEqual(ca, cb)) || (!ca && !cb) ? "same" : "changed", same ? "yes" : "no (new session)");
+  return same;
 }
 
 static OSStatus d_start(VTVideoDecoderRef d, VTVideoDecoderSession sess, CMVideoFormatDescriptionRef f) {
@@ -256,12 +273,30 @@ static OSStatus d_start(VTVideoDecoderRef d, VTVideoDecoderSession sess, CMVideo
   CFNumberRef nf = CFNumberCreate(NULL, kCFNumberSInt32Type, &fmt), nw = CFNumberCreate(NULL, kCFNumberSInt32Type, &w),
               nh = CFNumberCreate(NULL, kCFNumberSInt32Type, &h);
   CFDictionaryRef io = CFDictionaryCreate(NULL, NULL, NULL, 0, &kCFTypeDictionaryKeyCallBacks, &kCFTypeDictionaryValueCallBacks);
+  // Plane alignment: CoreVideo's default IOSurface layout starts plane 0 at +64 and plane 1 at +64 + Y size (4K: +8294464
+  // NV12, +16588864 P010; measured), both off 256 B. The GPU samples a plane through a texel buffer / linear image whose
+  // base must be 256 B aligned, so the NVMTL plugin had to copy every such plane into a GPU shadow (12 MB per 4K 8-bit
+  // frame, 25 MB at 10-bit) in every process that draws the frame (WindowServer). With 256 the planes start at +256 and
+  // +256 + Y size, same allocation size, and are aliased in place. The copy below reads the plane offsets from the
+  // surface either way.
+  // Rollback without a rebuild: touch /Library/NullMoth/vcndec-noalign (read by VTDecoderXPCService and WebKit's GPU
+  // process, which never see a user's environment; next StartSession). VCN_PLANE_ALIGN=N (env) is for tests only; the
+  // file wins. Any value is rounded down to a power of two (0 = CoreVideo default).
+  int32_t pa = 256;
+  const char *why = "default";
+  const char *e = getenv("VCN_PLANE_ALIGN");
+  if (e) { pa = atoi(e); why = "env VCN_PLANE_ALIGN"; }
+  if (access("/Library/NullMoth/vcndec-noalign", F_OK) == 0) { pa = 0; why = "/Library/NullMoth/vcndec-noalign"; }
+  if (pa < 0) pa = 0;
+  if (pa > 4096) pa = 4096;
+  while (pa & (pa - 1)) pa &= pa - 1;   // power of two (clear low bits)
+  CFNumberRef npa = CFNumberCreate(NULL, kCFNumberSInt32Type, &pa);
   const void *k[] = {kCVPixelBufferPixelFormatTypeKey, kCVPixelBufferWidthKey, kCVPixelBufferHeightKey,
-                     kCVPixelBufferIOSurfacePropertiesKey, kCVPixelBufferMetalCompatibilityKey};
-  const void *v[] = {nf, nw, nh, io, kCFBooleanTrue};
-  CFDictionaryRef attrs = CFDictionaryCreate(NULL, k, v, 5, &kCFTypeDictionaryKeyCallBacks, &kCFTypeDictionaryValueCallBacks);
-  OSStatus e = VTDecoderSessionSetPixelBufferAttributes(sess, attrs);
-  CFRelease(attrs); CFRelease(io); CFRelease(nf); CFRelease(nw); CFRelease(nh);
+                     kCVPixelBufferIOSurfacePropertiesKey, kCVPixelBufferMetalCompatibilityKey, kCVPixelBufferPlaneAlignmentKey};
+  const void *v[] = {nf, nw, nh, io, kCFBooleanTrue, npa};
+  CFDictionaryRef attrs = CFDictionaryCreate(NULL, k, v, pa ? 6 : 5, &kCFTypeDictionaryKeyCallBacks, &kCFTypeDictionaryValueCallBacks);
+  OSStatus st = VTDecoderSessionSetPixelBufferAttributes(sess, attrs);
+  CFRelease(attrs); CFRelease(io); CFRelease(nf); CFRelease(nw); CFRelease(nh); CFRelease(npa);
 
   // colour tags from the format description go onto every output buffer
   CFMutableDictionaryRef col = CFDictionaryCreateMutable(NULL, 0, &kCFTypeDictionaryKeyCallBacks, &kCFTypeDictionaryValueCallBacks);
@@ -272,8 +307,8 @@ static OSStatus d_start(VTVideoDecoderRef d, VTVideoDecoderSession sess, CMVideo
     if (x) CFDictionarySetValue(col, keys[i], x);
   }
   s->color = col;
-  os_log(L(), "VCNDEC StartSession %{public}s %dx%d %d-bit full-range %d on the 890M VCN (pixel buffer attrs %d)",
-         cc(s->codec, b), dim.width, dim.height, depth, full, (int)e);
+  os_log(L(), "VCNDEC StartSession %{public}s %dx%d %d-bit full-range %d on the 890M VCN (pixel buffer attrs %d, plane align %d by %{public}s)",
+         cc(s->codec, b), dim.width, dim.height, depth, full, (int)st, (int)pa, why);
   return 0;
 }
 
