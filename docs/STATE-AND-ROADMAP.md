@@ -1,5 +1,9 @@
 # GA403WM on macOS 26 Tahoe: state and roadmap (2026-11-25)
 
+**Updated after v2; the tagged copy is older.** Release [v2](https://github.com/thanhnndev/ga403wm-hackintosh/releases/tag/v2)
+was published from tag `v2` at commit 3901d1d on 2026-11-25. This document on branch `release/tahoe-v2` continues to
+be updated after the tag.
+
 State document of the "v2 (macOS 26 Tahoe)" release. Written from the install log of the reference machine, the
 documents in this repository and a read-only check of the running machine on 2026-11-25 (`kmutil showloaded`,
 `sw_vers`, boot-args). Nothing here was tested on a second machine. macOS 15 is the previous release (v1 / kext-v1.1)
@@ -19,12 +23,14 @@ macOS Tahoe 26.7.2 (25G332, Darwin 25.6) under OpenCore 1.0.9 as a daily machine
 all applications run on the Radeon 890M through `NMXGPU`, a source port of Linux amdgpu on a LinuxKPI layer (fork of
 NullMoth's driver), with a Metal-on-Vulkan plugin on RADV in user space. Video decode for H.264, HEVC, VP9 and AV1 runs
 on the 890M's VCN through a VideoToolbox decoder (`VCNDec`). The RTX 5060 is normally powered off and removed from the
-PCI bus at boot (Eco mode, `StrixDgpuGate`). Wi-Fi and Bluetooth (MT7925), audio, the ASUS controls, Docker (through the
-`RyzenHV` hypervisor kext) and the iOS Simulator work. The main open items are: the Android emulator guest stalls under
-RyzenHV (root cause found, the fix is staged and not yet verified); WindowServer costs about 6.5-7 ms of CPU per
-presented frame, and GPU power follows the compositing rate because every present recomposites the whole screen; power
-under a Docker load reaches 62 W and 95 C; sleep/wake has not been re-tested on the current stack; and the reference
-EFI in the repository still describes the October (macOS 15) configuration. Almost all code was written by an AI and tested on this one laptop.
+PCI bus at boot (Eco mode, `StrixDgpuGate`). Wi-Fi and Bluetooth (MT7925), audio, the ASUS controls, Docker and the
+Android emulator (both through the `RyzenHV` hypervisor kext; the emulator since RyzenHV 0.7.24, verified 2026-11-25)
+and the iOS Simulator work. The main open items are: WindowServer costs about 6.5-7 ms of CPU per presented frame, and
+GPU power follows the compositing rate, because every present recomposites the whole screen and runs CoreDisplay's
+full-screen colour pass on the GPU (the display driver reports no hardware colour pipeline and no hardware cursor
+plane); power under a Docker load reaches 62 W and 95 C; sleep/wake has not been re-tested on the current stack. The
+reference EFI in the repository is an export of the live Tahoe ESP (2026-11-25): a reference for this one machine, not
+a ready-to-boot EFI. Almost all code was written by an AI and tested on this one laptop.
 
 ## 2. What works, by area
 
@@ -39,7 +45,7 @@ audio work is not merged into this release. "Log" is the maintainer's install lo
 | OpenCore boot of macOS 26.7.2 from the internal disk | works | OpenCore 1.0.9 debug build (`opencore-version` DBG-109-2026-10-09) with the Zen 5 timer patch | live boot 2026-11-25 10:40 | `patches/opencore`, `efi/README.md` |
 | Eco boot to the login window | works | 14.4 s after kernel start on 2026-11-19 (was 77 s: a 60 s GPU wrangler timeout and a 3.5-4.4 s APFS trim, both fixed). Later boots measured about 23 s and 33 s (cold shader caches once; `MtkBtFw` holds the registry busy for 4-9 s). The owner accepts this | 2026-11-19, 2026-11-23 | `docs/BOOT-TIMELINE.md`; log |
 | OpenCore picker | works | Still shown (2 s). A script to hide it exists; whether Esc at power-on still reaches the picker is not verified | 2026-11-19 | `docs/BOOT-TIMELINE.md` |
-| Reference EFI in the repository (`efi/`) | partly | `efi/OC/config.plist` was last changed 2026-10-13 and describes the macOS 15 setup (with the reference machine's USB map, `UTBMap.kext`). It lacks the Tahoe kexts and the current boot-args, and it does not reference the S0-idle / PTS5 / LIDFIX tables, although their `.aml` files are in `efi/OC/ACPI`. The live ESP was not exported | checked 2026-11-25 | `efi/`, `docs/FRESH-INSTALL.md` 1.1 |
+| Reference EFI in the repository (`efi/`) | partly | `efi/OC/config.plist` and the SSDTs were exported from the live Tahoe ESP on 2026-11-25 with `scripts/export-efi.py`: the current boot-args, the Tahoe kext entries, and the S0-idle / PTS5 / LIDFIX / ECRAM tables enabled. The export replaces serial, MLB, UUID and ROM, zeroes the Bluetooth controller info in NVRAM, empties the 890M's `vbios` device property (vendor firmware, not redistributed) and resets SSDT-RMNE's MAC to NullEthernet's default. Kexts are not included; `efi/kexts.json` lists 32 third-party kexts by hash. It is a reference for this one machine, not a ready-to-boot EFI: with its placeholders and the empty `vbios` the exported copy is not a tested boot configuration | exported 2026-11-25; `scripts/check-efi-privacy.py` passes | `efi/README.md`, `docs/FRESH-INSTALL.md` 1.1 |
 | Fresh install on a blank disk | partly | Done once by hand on 2026-11-07 through the Tahoe installer app. The one-click installer is a design and read-only prototype scripts | 2026-11-07 | `docs/FRESH-INSTALL.md`, `docs/FRESH-INSTALL-LESSONS-2026-11-07.md` |
 
 ### Display, brightness, HDR
@@ -51,7 +57,7 @@ audio work is not merged into this release. "Log" is the maintainer's install lo
 | HiDPI | partly | "Looks like 1440x900" and native 2880x1800, both 120 Hz. No other scaled sizes: the framebuffer reports one mode. Extra modes are deferred | 2026-11-04 (owner report) | `docs/890M-TRACE.md`, "HiDPI scaled modes" |
 | HDR / EDR | not verified | No test on the NMXGPU display path. The earlier HDR work was in `StrixGOP`, which is now switched off by boot-arg | - | - |
 | Display sleep and wake | works | PASS on Step106c (2026-11-04) and listed as passing in the 2026-11-08 state; no run on record for the kernels since out-31 | 2026-11-08 | `docs/890M-ROADMAP.md` |
-| PSR on a static screen | not verified | PSR1 is enabled; whether it is entered is not measured | - | `docs/POWER-FEATURES.md` |
+| PSR on a static screen | partly | PSR1 is enabled. On a static screen the GPU gates and PSR is reported active (`debug.nmx_gpu_metrics`, NMXGPU out-50; GFX rail 0.09 W). Read once, not a controlled measurement | 2026-11-25 (one read) | `docs/POWER-FEATURES.md`; log |
 | HDMI output | partly | The port is wired to the RTX. Dead in Eco. In Standard it needs a re-test with the OLED on the 890M. The mode is decided at boot; no switch without a restart | owner question 2026-11-19 | `docs/890M-ROADMAP.md`; log |
 
 ### GPU acceleration
@@ -60,7 +66,10 @@ audio work is not merged into this release. "Log" is the maintainer's install lo
 |---|---|---|---|---|
 | WindowServer composited on the 890M | works | Frame-path check 19 pass / 0 fail on the 2026-11-25 boot. Trace on out-33: frame total p50 9.27 -> 6.05 ms, late frames 6 % -> 1.3 % | 2026-11-18, 2026-11-25 | `docs/FRAME-PATH.md`; log |
 | WindowServer CPU cost | partly | 6.5-7.1 ms of CPU per present (26 % of a core at about 35 presents/s). The driver stack's share is 1.3-2.3 ms. A real Mac is about 1 ms | 2026-11-19, 2026-11-23 | `docs/WS-CPU.md` |
-| WindowServer GPU work per present | partly | Every present recomposites the full 2880x1800 screen and runs a full-screen colour pass: about 1.1 ms of GPU per present, whatever the size of the change. The cursor is a software cursor (the framebuffer reports no hardware cursor plane), so every cursor move is a full present plus a flip | 2026-11-25 | `docs/WS-CPU.md` 9.6 |
+| WindowServer GPU work per present | partly | Every present recomposites the full 2880x1800 screen and then runs a full-screen colour pass, whatever the size of the change. 80 presents sampled on the live desktop: recomposite about 760 us of GPU (703-1476), colour pass 245 us, two 79x79 software-cursor passes of 8 us each; about 1.1 ms of GPU per present. The colour pass (fragment shader f1c2052c) is CoreDisplay's own GPU pass (`default.metallib` "GPUPass": combined gamma LUT, pre-matrix linearization, CSC matrix, post-gamma CSC). It runs on the GPU because the display driver reports no hardware colour pipeline. The cursor is a software cursor (the framebuffer reports no hardware cursor plane), so every cursor move is a full present plus a flip | 2026-11-25 | `docs/WS-CPU.md` 9.6; log |
+| Who causes the presents (flip census) | partly | First read only: plugin a6cec1ba with `NVMTL_FLIP_CENSUS=1` in WindowServer, about 9 minutes after boot; to be reread under the daily load. With the animated Aerial wallpaper moving, 887 of 899 presents in one 30 s window (30.0 presents/s) were caused by `WallpaperAerialsExtension` (4K HEVC wallpaper video), each one a full-screen recomposite, the colour pass and a flip. In the minutes before, presents fell from 51/s to 3/s with no client surface changed (WindowServer's own login animations and the cursor) | 2026-11-25 (one read) | log |
+| WindowServer memory | works | QuartzCore's 160 MB metallib is mapped, not copied (log line "mapped (160153248 bytes, not copied)"). With VCNDec 0.2.1 the plugin holds 0 MB of plane shadows for VCN-decoded video (1.74 GB with the Aerial wallpaper on 2026-11-23). Census 7 minutes after boot: 1309 MB of imported client surfaces (631 MB of them idle in the surface keep), 181 MB device images, 33 MB buffers and heaps. Verified on plugin 8de348c, the build before the live one | 2026-11-25 | log |
+| Shader caches across boots | works | The lowering cache "low2" is reused across boots: 12.6 s of lowering in WindowServer on the cold boot, 0.46 s on the next boot; 128 disk hits re-checked with 0 mismatches. Its key no longer depends on the plugin build | 2026-11-23, 2026-11-25 | log |
 | Metal in applications | works | Every app gets the 890M (allow list `*`); sandboxed apps go through a user client in NMXAccel | 2026-11-04 (Step102-104) | `docs/890M-ROADMAP.md` |
 | WebGL in Chrome and Edge | works | On the 890M since Step104. Google Maps broken strokes fixed (plugin + translator) | 2026-11-04; Maps fix verified 2026-11-18 | `docs/MAPS-WEBGL.md` |
 | WebGL in Safari | works | Needs `StrixSbxMap`, a kernel-side exception that lets the WebKit GPU process map eight pinned plugin files by code hash. The pins must be refreshed after every plugin or RADV rebuild | A/B on 2026-11-04 (Step105c) | `docs/890M-ROADMAP.md`, "Safari WebGL" |
@@ -85,9 +94,9 @@ the fixes it was 19 pass, 39 fail. Doc: `docs/VIDEO-CODEC-MATRIX.md`.
 
 Limits of this evidence:
 
-- The matrix was run on VCNDec 0.2.0. The live decoder is 0.2.1 (256-byte plane alignment, live since 2026-11-25).
-  0.2.1 was tested in-process (`vt_check`: every frame index right, 0 errors) and read once after the boot. **The
-  full browser matrix has not been rerun on 0.2.1.**
+- The matrix was run on VCNDec 0.2.0. The live decoder is 0.2.1 (256-byte plane alignment; installed 2026-11-23, live
+  since the 2026-11-25 10:40 boot). 0.2.1 was tested in-process (`vt_check`: every frame index right, 0 errors) and
+  read once after the boot. **The full browser matrix has not been rerun on 0.2.1.**
 - Edge was not part of the matrix (the test rule is Chrome only). Edge 4K VP9 on the VCN was observed under the
   owner's use on 2026-11-23.
 - Hardware encode is not covered by any document: not verified.
@@ -129,7 +138,7 @@ Limits of this evidence:
 | Keyboard | works | Internal USB keyboard; needs `ItlXhciKick` (without it key release lags 2 s) | live | `docs/USB-XHCI-LAG.md` |
 | Fn keys | partly | Mute and volume work natively. The vendor-page keys (keyboard light, Aura, profile, airplane mode, M3/M4 and others) need `rogkeyd`, a user-space helper with Input Monitoring and Accessibility grants, plus `AsusWmi`. Fn+F10 (touchpad toggle) and Fn+F6 are not mapped | 2026-11-06 (release rogcontrol-v0.5.2) | rog-control-macos `docs/FN-HOTKEYS.md` |
 | Touchpad | works | VoodooI2C + VoodooI2CHID in forced polling mode (`-vi2c-force-polling`): about 10k interrupts/s on CPU 0. Interrupt mode is not tested | 2026-11-23 | `docs/KERNEL-TASK-POLLERS.md` |
-| USB ports | works | `ItlXhciKick` 0.1.0 polls at 1 kHz. The live ESP has a USB map (USBToolBox + UTBMap); the reference EFI carries the map as it was on 2026-10-13, not compared with the live one | live; map noted 2026-10-12 | `docs/USB-XHCI-LAG.md`, `docs/HANDOFF.md` |
+| USB ports | works | `ItlXhciKick` 0.1.0 polls at 1 kHz. The live ESP has a USB map (USBToolBox + UTBMap). The 2026-11-25 export does not copy kexts, so `efi/OC/Kexts/UTBMap.kext` in the tree is the map as it was on 2026-10-13, not compared with the live one | live; map noted 2026-10-12 | `docs/USB-XHCI-LAG.md`, `docs/HANDOFF.md` |
 | Webcam | works | UVC, last noted with the audio work | 2026-11-05 | `docs/AUDIO-TAHOE.md` |
 | SD card reader | not verified | `Sinetek-rtsx` 9.0.0 is loaded; no function test on record | - | - |
 
@@ -147,8 +156,8 @@ Limits of this evidence:
 |---|---|---|---|---|
 | Light working load | works | Edge video + Claude app + 4 CLI sessions, AC, Eco, EPP 191: **17.0 W package (RAPL, 60 s), Tctl 57 C average (55-60)**, fans low, wired memory 6.6 GB | 2026-11-23 14:54 | `docs/POWER-UNDER-LOAD.md` |
 | Heavy working load | partly | Docker + Android emulator + a Python backend + Claude, AC: **62.2 W package, Tctl 95 C average (91-96)**, fans at maximum, `kernel_task` 108 % from memory compression. Measured at EPP 0 (Turbo), with the RTX powered, Docker on 24 vCPUs and the whole guest wired. **Not re-measured** with EPP 191, Eco, 8 vCPUs and lazy guest wiring | 2026-11-16 18:56 | `docs/HANDOFF-2026-11-16.md` 3; `tools/health/2026-11-16/` |
-| GPU rail readout | partly | First read of the SMU metrics on the 2026-11-25 boot: socket 17.4 W, of which **GFX 9.3 W**, all cores 9.4 W, GFX activity 22 %; the derived "rest of SoC" field came out negative (formula wrong). Later reads the same day: **GPU power follows the compositing rate.** Static screen: 0.09 W on the GFX rail, 6.2 W socket. At 81-91 flips/s: 12-19 W on the GFX rail. So the rail does go down when nothing is composited; the cost is per present (see "WindowServer GPU work per present") | 2026-11-25 | `docs/POWER-FEATURES.md`; log (the static and 81-91 flips/s numbers are in the log only) |
-| Idle floor | not verified | 5.5 W at 47 C was measured once on 2026-11-08 and not since. Cores idle in HLT; no CC6 at run time | 2026-11-08 | `docs/POWER-FLOOR.md` |
+| GPU rail readout | partly | `debug.nmx_gpu_metrics` on NMXGPU out-50. First read, 2 minutes after a boot: socket 17.4 W, of which **GFX 9.3 W**, all cores 9.4 W, GFX activity 22 %; the derived "rest of SoC" field came out negative (formula wrong). Later reads the same day: **GPU power follows the compositing rate.** Static screen: 0.09 W on the GFX rail, 6.2 W socket (the GPU gates, PSR active). 45-66 flips/s: 4.7-6.2 W on the GFX rail. 81-91 flips/s: 12.4-19.3 W on the GFX rail, socket up to 39.9 W. So the rail does go down when nothing is composited; the cost is per present (see "WindowServer GPU work per present") | 2026-11-25 | `docs/POWER-FEATURES.md`; log (the static and per-flip-rate numbers are in the log only) |
+| Idle floor | not verified | 5.5 W at 47 C was measured once on 2026-11-08. A newer data point: 6.2 W socket with a static screen on 2026-11-25 (a single read of the SMU metrics, not a controlled measurement). Cores idle in HLT; no CC6 at run time | 2026-11-08; 2026-11-25 (one read) | `docs/POWER-FLOOR.md`; log |
 | Profiles, fans, power limits, charge limit | works | `AsusWmi` 0.3.1 + RogControl + `AmdCppcPolicy` do what Linux and Windows do for the presets (one thermal-policy write; firmware loads limits and fan curve). The fan-curve read after the 0.3.1 index fix and the per-profile bench are not done | 2026-11-16 | `docs/PLATFORM-LIMITS.md` |
 | Battery | partly | Charge level through SMCBatteryManager. Battery life is not measured in Eco. One reading with the RTX powered and a heavy load: 75 W drain against 31 W package. The "60 W" adapter figure in System Information is a placeholder | 2026-11-16 | `docs/POWER-FLOOR.md` |
 
@@ -156,15 +165,15 @@ Limits of this evidence:
 
 | Item | State | Detail | Evidence | Doc |
 |---|---|---|---|---|
-| Docker Desktop on `RyzenHV` | works | 0.7.23: guest memory is wired lazily (about 3 GB wired for an 8 GB guest instead of 8 GB). Reclaim of cold guest memory is a run-time switch that resets to off at boot (2.86 -> 1.74 GB when on). Idle containers on 8 vCPUs cost 17.5 % of a core | 2026-11-18, 2026-11-23 | `docs/RYZENHV-GUEST-MEM.md` |
+| Docker Desktop on `RyzenHV` | works | Since 0.7.23 guest memory is wired lazily (about 3 GB wired for an 8 GB guest instead of 8 GB). Reclaim of cold guest memory is a run-time switch that resets to off at boot (2.86 -> 1.74 GB when on). Idle containers on 8 vCPUs cost 17.5 % of a core. These figures were measured on 0.7.23 and not re-measured on 0.7.24, which is live since 2026-11-25 | 2026-11-18, 2026-11-23 | `docs/RYZENHV-GUEST-MEM.md` |
 | Docker quit | partly | Quitting Docker Desktop 4.98 can leave a HyperKit process spinning two cores (a HyperKit deadlock, not RyzenHV) | 2026-11-23 | log |
-| Android emulator (QEMU with HVF) | broken (fix staged, not verified) | The guest kernel stops at 13.9 s, adb stays offline, qemu at about 100 %. Not host graphics. Root cause found on 2026-11-25: RyzenHV exposed CPUID PKU/OSPKE to guests while macOS never enables PKRU state in XCR0; see section 4. The fix (RyzenHV 0.7.24) is on the ESP and has not run yet | 2026-11-23 (failure), 2026-11-25 (cause) | log; ryzen-hypervisor.framework fork, branch `fix/vmcb-cache-switch` 11ec930 |
+| Android emulator (QEMU with HVF) | works | Fixed by RyzenHV 0.7.24 (fork commit 11ec930) and verified on 2026-11-25. The owner's own AVD (Medium_Phone, Android 37) boots after "Cold Boot Now". On a scratch AVD (1 vCPU, Android 37 playstore x86_64, Linux 6.12.81) a cold boot reaches `sys.boot_completed` in 23.8-31.6 s (80.8 s on the very first boot, Android's first-boot setup); the guest sees no pku/ospke, and the `xstate.c` WARN is gone in 6 of 6 kernel logs. Limits: a quickboot snapshot saved from a stalled guest restores the stall, so the first start after the fix must be a cold boot (Device Manager > Cold Boot Now). Restoring a snapshot saved from a healthy boot is **not verified**. Tested with the emulator's default software GPU (`hw.gpu.mode` auto resolves to swiftshader); host-GPU rendering is **not verified**. Cause: section 4, item 1 | 2026-11-25 | log; ryzen-hypervisor.framework fork, branch `fix/vmcb-cache-switch` 11ec930 |
 | iOS Simulator | works | Renders on the 890M; SimBench 60 fps; the crash loop that cost 1.1 cores was fixed in the translator. One wallpaper shader still fails. Flutter and Android toolchains are not measured in any committed document | 2026-11-07 | `docs/SIMULATOR-PERF.md` |
 
-## 3. Component versions live on 2026-11-25 (boot 10:40:28)
+## 3. Component versions live on 2026-11-25 (boots of 19:46 and 20:42)
 
-Source: the install log, checked against `kmutil showloaded` on the same boot. UUIDs are the first 8 hex digits of the
-binary's LC_UUID.
+Source: `kextstat` on the boots of 2026-11-25 19:46 and 20:42; source commits from the install log. UUIDs are the first
+8 hex digits of the binary's LC_UUID.
 
 ### Ours (built from the five repositories)
 
@@ -172,30 +181,31 @@ binary's LC_UUID.
 |---|---|---|---|---|
 | NMXGPU (`com.nullmoth.NMXGPU`) | AuxKC | 1.0.0, build out-50 | 7390F47B | nvidia-macos-driver fork, `fix/out31` f47d3ed |
 | NMXAccel (`com.nullmoth.NMXAccel`) | AuxKC | 0.1 | D454C218 | fork, installed 2026-11-18 (fourth package); unchanged since |
-| NMXAGDC (`com.ga403wm.NMXAGDC`) | AuxKC | 0.1 | 90C7A833 | fork; commit not in the log |
-| Metal plugin (NVMTLDriver) | `/Library/GPUBundles` | - | AAC482F2 | fork, `claude/mem-census` 8de348c |
+| NMXAGDC (`com.ga403wm.NMXAGDC`) | AuxKC | 0.1 | 90C7A833 | fork; commit not in the log. Read on the 10:40 boot; not in the list re-read on the evening boots |
+| Metal plugin (NVMTLDriver) | `/Library/GPUBundles` | - | 36577BD4 | fork, `claude/mem-census` a6cec1ba (replaces AAC482F2 / 8de348c) |
 | Shader translator | `/Library/GPUBundles` | - | - | 6208982 (installed 2026-11-18; no later entry in the log) |
 | RADV (`libvulkan_radeon.dylib`) | `/Library/GPUBundles/nvmtl` | - | 07725f8c (hash prefix from the log) | Mesa built with `-Dvideo-codecs=all` + `scripts/radv/radv-disk-cache-euid.patch` |
-| VCNDec | `/System/Library/Video/Plug-Ins` (blessed snapshot) | 0.2.1 | E7D4AB21 | this repo, `tools/890m/vcndec` at 15c33fa (the tree here is one test-only commit newer, d378c71) |
+| VCNDec | `/System/Library/Video/Plug-Ins` (blessed snapshot) | 0.2.1 | E7D4AB21 | this repo, `tools/890m/vcndec` at 15c33fa (the tree here is one test-only commit newer, d378c71). Installed 2026-11-23, live since 2026-11-25 10:40 |
 | StrixDgpuGate | ESP | 0.2.12 | 7AD92287 | rog-control-macos `fix/eco-offbus` 80356b5 |
 | AsusWmi | ESP | 0.3.1 | 42393DEB | rog-control-macos `fix/fan-curve-index` 44ee05c |
 | AmdCppc | ESP | 0.2.1 | 2EBD4419 | rog-control-macos; commit not in the log |
 | RogControl.app, rogkeyd | `/Applications`, user LaunchAgent | 0.6.0, 1.2 | - | rog-control-macos `feat/gpu-mode` (PR #17, open); as of 2026-11-16, not re-read on 2026-11-25 |
-| RyzenHV | ESP | 0.7.23 | 3A045FC8 | ryzen-hypervisor.framework fork, `research/guest-mem-lazy` |
+| RyzenHV | ESP | 0.7.24 | 4DB41FBD | ryzen-hypervisor.framework fork, `fix/vmcb-cache-switch` 11ec930 (replaces 0.7.23 3A045FC8). The kext's own log line still prints "0.7.22": a stale string, cosmetic |
 | itlmt7925 (core) | ESP | 0.1.0 | D2CAADD0 | mt7925-macos `dev/awdl` (0ec468c records the install) |
-| itlmt7925Native | ESP | 0.1.0 | 52A0E786 | mt7925-macos |
+| itlmt7925Native | ESP | 0.1.0 | 149441A4 | mt7925-macos |
 | MtkBtFw | ESP | 0.3.1 | D173A506 | mt7925-macos `fix/bt-waitquiet` 668f400 |
 | BtLeDlFix | ESP | 1.4.0 | C6274348 | mt7925-macos |
 | StrixS0ix | AuxKC | 0.1.17 | 1700FABF | this repo, `kexts/StrixS0ix` |
 | StrixSbxMap | ESP | 0.1.0 | F66BFC76 | this repo, `kexts/StrixSbxMap` |
 | ItlXhciKick | ESP | 0.1.0 | 5D179C74 | this repo, `kexts/ItlXhciKick` |
+| ItlDiag | not recorded (its entry in the exported `config.plist` is disabled) | 0.1.0 | 9FFBB49A | this repo, `kexts/ItlDiag` |
 | StrixAmp | ESP | 0.2.0 | 6E9C3F38 | this repo, branch `research/audio-rog-dolby` |
 | RogAudio HAL driver, rogaudiod | `/Library/Audio`, `/Library/Application Support/RogAudio` | - | - | this repo, branch `research/audio-rog-dolby` (installed 2026-11-23) |
 
 Loaded but switched off by boot-arg on this machine: StrixGOP 0.1.11 (E0F294C0, `-strixgopoff`), StrixAccel 0.1.21
 (AF1F2E29, `-strixaccoff`), StrixMetalGate 0.1.1 (A1DAB568, `-strixmetalgateoff`). Also loaded from the earlier
 research: StrixProbe 0.1.2 (DA6A1F25), StrixHeadroom 0.1.0 (13E8A6D4); their role on the current stack was not
-re-checked.
+re-checked. The versions of these five were re-read on the evening boots; the UUIDs are from the 10:40 boot.
 
 ### Third-party (not ours, not redistributed)
 
@@ -222,13 +232,16 @@ re-checked.
 
 | Component | State | Purpose |
 |---|---|---|
-| RyzenHV 0.7.24 (`fix/vmcb-cache-switch` 11ec930) | on the ESP, loads at the next reboot; **not verified on the machine as of 2026-11-25** | the fix for the Android emulator stall (no CPUID PKU/OSPKE for guests), on top of the cache switches and the exception trace. A first 0.7.24 without the fix (56D13B2B, commit 2e2c95c) was staged at 10:44 the same day; the UUID of the build with the fix is not recorded here |
-| ItlXhciKick 0.2.0 (3A784B45, branch `thermal/xhcikick-pending` 60548a7) | built, not installed, never run on hardware | kick only when an event is queued; back off when idle |
+| ItlXhciKick 0.2.1 | built, not installed, never run on hardware. An earlier 0.2.0 was 3A784B45 (branch `thermal/xhcikick-pending` 60548a7); the UUID and commit of 0.2.1 are not recorded here | kick only when an event is queued; back off when idle |
+| Hardware cursor plane for NMXGPU (fork branch `claude/hw-cursor`, second version) | code only: not built, not tested | a cursor move becomes a plane update instead of a full present |
 
 ### Version conflicts between sources
 
 - `docs/HANDOFF-2026-11-16.md` lists itlmt7925 B9E6878A, RyzenHV 0.7.22, AsusWmi 0.3.0, gate 694511EA, NMXGPU out-29.
-  All were replaced later; the table above follows the log and the loaded-kext list of 2026-11-25.
+  All were replaced later; the table above follows the loaded-kext list of 2026-11-25 and the log.
+- RyzenHV 0.7.24 (4DB41FBD) prints "0.7.22" in its own log line. The string is stale; the loaded binary is 0.7.24.
+  A first 0.7.24 without the emulator fix (56D13B2B, commit 2e2c95c) was staged on 2026-11-25 at 10:44 and replaced
+  the same day.
 - The maintainer's notes say BtLeDlFix 1.3.0 was live on 2026-11-08 with 1.4.0 staged. 1.4.0 is what is loaded now.
 - The mt7925-macos README (status dated 2026-11-02) says Bluetooth is "not checked" on Tahoe. The newer notes
   (2026-11-08, 2026-11-23) record it working on 25G332. The README is out of date.
@@ -242,30 +255,38 @@ re-checked.
 
 ## 4. Known issues, with what is known about the cause
 
-1. **Android emulator guest stalls (owner's blocker). Root cause found, fix not verified.** The guest kernel reaches
-   "dlkm_loader: module load count is 47" at 13.9 s and then goes silent; qemu spins. The emulator uses a software GPU,
-   so host graphics is ruled out. Cause (2026-11-25): RyzenHV exposed the CPUID bits PKU and OSPKE to guests, while
-   macOS never enables PKRU state in XCR0. A Linux 6.12 guest that sees PKU then cannot build signal frames, so user
-   space stops at the first signal delivery. Upstream fixed the same thing in its 0.7.9. The fork's fix is commit
-   11ec930 on branch `fix/vmcb-cache-switch` of the ryzen-hypervisor.framework fork, staged on the ESP as RyzenHV
-   0.7.24. **As of 2026-11-25 it has not been loaded or tested on the machine**, so the emulator still counts as broken.
-   The earlier suspects (lazy guest RAM, the timer path, VMCB caching) are not shown to be involved; a review also found
-   CLTS/LMSW decoded as MOV CR0 (older than this stall, not shown to be related).
+1. **Android emulator guest stalled under RyzenHV: fixed, verified 2026-11-25.** The guest kernel reached
+   "dlkm_loader: module load count is 47" at 13.9 s and then went silent; qemu spun. The emulator uses a software GPU,
+   so host graphics was ruled out. Cause: RyzenHV showed the CPUID bits PKU and OSPKE to guests, while macOS never
+   enables PKRU state in XCR0. A Linux 6.12 guest that sees PKU cannot build signal frames, so init loops. Fix:
+   RyzenHV 0.7.24, commit 11ec930 on branch `fix/vmcb-cache-switch` of the ryzen-hypervisor.framework fork (the same
+   fix as upstream 0.7.9's 62fcd1d, plus CPUID leaf 0xD bit 9). Verified on the owner's AVD and on a scratch AVD; the
+   numbers are in the Virtualization table. The earlier belief that RyzenHV 0.7.22 broke the emulator was wrong: an
+   A/B of its two shortcuts (run-time switch `rhv-info hv cache 0/1/2/3`) boots in all four settings with no
+   measurable difference. Still open: a quickboot snapshot saved from a stalled guest restores the stall, so the first
+   start after the fix must be a cold boot; restoring a snapshot saved from a healthy boot is not verified; host-GPU
+   rendering in the emulator is not verified. A review also found CLTS/LMSW decoded as MOV CR0 (older than the stall,
+   not shown to be related; on the roadmap).
 2. **WindowServer CPU per frame.** 6.5-7.1 ms per present. Found and fixed so far: two shader translations of 3.6 s
    each, an empty Mesa disk cache in WindowServer, plane shadows recopied in every command buffer, address lowering run
-   twice with no cache. Remaining: the per-frame work in QuartzCore plus plugin, and a "static" desktop that still
-   presents about 30 frames/s; the client that keeps it redrawing is not named yet.
+   twice with no cache (the lowering cache now holds across boots). Remaining: the per-frame work in QuartzCore plus
+   plugin. A "static" desktop still presented about 30 frames/s; the first flip census (2026-11-25, one read) names
+   the animated Aerial wallpaper: `WallpaperAerialsExtension` caused 887 of 899 presents in a 30 s window. Who drives
+   the flips under the daily load is not counted yet.
 3. **Heat and fan noise under a Docker load (62 W, 95 C on 2026-11-16).** Ranked causes: the VM's exit path (most guest
    exits go to user-space HyperKit) and its wired memory, which pushed `kernel_task` to 108 % in compression; EPP 0 on
    AC at that time (now 191); the RTX powered on that boot. In Turbo, 95 C is also what the firmware's limits allow
    (80 W sustained), so part of it is the chosen profile. Not re-measured since the fixes.
 4. **GPU and SoC power at light load.** 17 W package while the cores account for 4-6 W. The first rail read gives
    9.3 W to GFX. Every power feature is at the upstream default. Reads on 2026-11-25 show that GPU power follows the
-   compositing rate: a static screen is 0.09 W on the GFX rail (6.2 W socket), 81-91 flips/s is 12-19 W on the GFX
-   rail. So the rail does drop when nothing is presented, and the cost is the work per present, not a missing power
-   feature: every present recomposites the full 2880x1800 screen plus a full-screen colour pass (about 1.1 ms of GPU,
-   `docs/WS-CPU.md` 9.6), and the cursor is a software cursor, so each cursor move is a full present and a flip. Which
-   client asks for each flip is not counted yet.
+   compositing rate: a static screen is 0.09 W on the GFX rail (6.2 W socket, the GPU gates, PSR active), 45-66
+   flips/s is 4.7-6.2 W, 81-91 flips/s is 12.4-19.3 W on the GFX rail (socket up to 39.9 W). So the rail does drop
+   when nothing is presented, and the cost is the work per present, not a missing power feature: every present
+   recomposites the full 2880x1800 screen (about 760 us of GPU) and then runs CoreDisplay's full-screen colour pass
+   (245 us), about 1.1 ms of GPU in all (`docs/WS-CPU.md` 9.6). The colour pass runs on the GPU because the display
+   driver reports no hardware colour pipeline. The cursor is a software cursor, so each cursor move is a full present
+   and a flip. The first flip census names the Aerial wallpaper for an idle desktop (item 2); the read under the daily
+   load is not done.
 5. **`kernel_task` about 20 % of a core with no memory pressure.** Our polling threads: touchpad forced polling
    (est. 5-8 %), the Wi-Fi receive/transmit loop with no interrupt (est. 3-6 %), ItlXhciKick at 1 kHz (est. 1-2 %).
    Estimates; the root spindump that would confirm the split has not been run.
@@ -293,11 +314,16 @@ re-checked.
 16. **Old panics, not ours as far as known.** HoRNDIS (USB tethering) `fq_codel` panics on 2026-11-08; a kernel use
     after free on 2026-11-09 during CloudflareWARP matching whose owning kext was not found.
 17. **Docker Desktop quit leaves a spinning HyperKit.** A HyperKit read deadlock on SIGTERM; not RyzenHV.
-18. **Reference EFI is stale.** See the Boot table. A reader cannot rebuild the live ESP from `efi/` today.
-19. **Versions named here that are not on a default branch or in a release.** RogControl 0.6.0, AsusWmi 0.3.1 and
-    StrixDgpuGate 0.2.12 (rog-control-macos: open PRs #16 and #17 and `fix/*` branches), MtkBtFw 0.3.1 and the
-    itlmt7925 core (mt7925-macos `fix/bt-waitquiet`, `dev/awdl`), RyzenHV (fork branches, no release), NMXGPU and the
-    plugin (fork branches, source only), StrixAmp and RogAudio (this repository, branch `research/audio-rog-dolby`).
+18. **The reference EFI is a reference, not a bootable EFI.** `efi/` was exported from the live ESP on 2026-11-25.
+    A reader must fill in serial, MLB, UUID and ROM, put their own card's VBIOS image into the emptied `vbios`
+    property, and supply every kext. The exported copy was not booted. See `efi/README.md`.
+19. **Where the versions named here are published.** Published: this repository's release `v2` (tag at 3901d1d),
+    and three source tags: nvidia-macos-driver `ga403wm-890m-out50` (kernel, f47d3ed) and
+    `ga403wm-890m-plugin-a6cec1b` (plugin, a6cec1ba), ryzen-hypervisor.framework `v0.7.24-ga403wm`. To follow, not
+    out yet: mt7925-macos `v2.0-beta.1` (Wi-Fi) and `bt-v1.1` (Bluetooth), rog-control-macos `rogcontrol-v0.6.0`;
+    until then those versions exist only on branches (rog-control-macos PRs #16 and #17 and `fix/*`, mt7925-macos
+    `fix/bt-waitquiet` and `dev/awdl`). StrixAmp and RogAudio are still only on branch `research/audio-rog-dolby` of
+    this repository.
 
 ## 5. Roadmap
 
@@ -306,43 +332,46 @@ owner works on it, for hours, under video + Claude + Docker. What counts is smoo
 noise, and memory. Boot, login and shutdown seconds do not matter unless something hangs for minutes. Tests that need
 the machine idle or asleep come last.
 
-### Next (in flight)
+### Next (in order)
 
-1. **Android emulator under RyzenHV.** Reboot into the staged 0.7.24 (fork commit 11ec930: no CPUID PKU/OSPKE for
-   guests) and boot a scratch AVD to adb online. Until that run passes, the fix is unverified. It blocks the owner's
-   work today.
-2. **RyzenHV cost with Docker.** Keep exits in the kernel where HyperKit allows it; make guest-memory reclaim safe to
-   leave on. This is the only lever sized like the 62 W state (estimated 8-15 W).
-3. **GPU power per present.** The readout answered the first question: the GFX rail idles at 0.09 W on a static
-   screen and costs 12-19 W at 81-91 flips/s. The next steps, in order:
-   - **per-client flip census**: count which client causes each present, so the 30 frames/s of a "static" desktop and
-     the flips under video get a name;
-   - **damage-sized composition**: composite only the changed rectangle instead of the full 2880x1800 screen and the
-     full-screen colour pass on every present (about 1.1 ms of GPU each today);
-   - **hardware cursor plane**: expose the amdgpu cursor plane so a cursor move is a plane update, not a full present
-     plus a flip.
-   Also still open from the readout: fix the derived "rest of SoC" field and commit the static and 81-91 flips/s reads
-   to `docs/POWER-FEATURES.md`.
-4. **WindowServer CPU per present, and who redraws a static desktop.** Same root as item 3; the flip census serves both.
-5. **Polling threads in `kernel_task`.** One test boot without touchpad forced polling; a sleep instead of a busy
-   window in the Wi-Fi loop; install ItlXhciKick 0.2.0. They also keep idle cores from sleeping deeply.
-6. **Memory under pressure.** Pinned and parked GPU memory when RAM is short; the `mediaanalysisd` fault if it returns.
-7. **Housekeeping for the release.** Done on branch `release/tahoe-v2`: the side branches with the cited documents and
-   the live VCNDec source are merged, and the branch is reconciled with `main` (moved-out sources removed, build and CI
-   no longer package them). Still to do: export the live EFI through `scripts/export-efi.py` and check it with
-   `scripts/check-efi-privacy.py`; merge rog-control-macos PRs #16 and #17 and the `fix/*` branches the live kexts
-   were built from; decide on `research/audio-rog-dolby` and `thermal/xhcikick-pending`.
+1. **Hardware colour pipeline.** Answer CoreDisplay's AGDC capability queries (pipe CSC, gamma, linearization) and
+   apply the tables through the display-pipe transaction with DCN's degamma / CTM / regamma, so the per-present colour
+   pass (245 us of GPU, full screen) goes away. In design; no code yet.
+2. **Hardware cursor plane.** Code exists on fork branch `claude/hw-cursor` (second version); not built, not tested.
+   WindowServer's handling of a refused cursor image means the plane must never refuse one. To be tested on a
+   dedicated boot.
+3. **Who drives the flips under the daily load, and damage-sized composition.** Reread the flip census under video +
+   Claude + Docker (the first read covers an idle desktop only), then composite only the changed rectangle instead of
+   the full 2880x1800 screen on every present.
+4. **The surface keep's idle imports in WindowServer.** 631 MB of imported client surfaces sat idle in the keep on
+   2026-11-25.
+5. **ItlXhciKick 0.2.1.** Kick only when an event is queued. Built, never run.
+6. **RyzenHV follow-ups.** CLTS/LMSW decode, flush bookkeeping, upstream 0.7.9's read-only map fallback.
+7. **The items listed as not verified.** Sleep/wake with the RTX off the bus, HDR, hardware encode, the SD reader,
+   the headphone jack, emulator quickboot snapshots saved from a healthy boot, host-GPU rendering in the emulator.
 
 ### Later
 
 - Re-measure the Docker load with the current settings (EPP 191, Eco, 8 vCPUs, lazy wiring).
+- RyzenHV cost with Docker: keep exits in the kernel where HyperKit allows it; make guest-memory reclaim safe to leave
+  on. This is the only lever sized like the 62 W state (estimated 8-15 W).
+- WindowServer CPU per present (6.5-7.1 ms).
+- Polling threads in `kernel_task`: one test boot without touchpad forced polling; a sleep instead of a busy window in
+  the Wi-Fi loop. They also keep idle cores from sleeping deeply.
+- Memory under pressure: pinned and parked GPU memory when RAM is short; the `mediaanalysisd` fault if it returns.
+- GPU readout: fix the derived "rest of SoC" field and commit the 2026-11-25 reads to `docs/POWER-FEATURES.md`.
 - Sleep/wake on the current stack, then S0i3; Eco with sleep and charger events (the owner starts these).
-- Idle floor, static-screen PSR/IPS read, per-profile bench and fan-curve read (need a quiet machine).
+- A controlled idle-floor measurement, the IPS read, per-profile bench and fan-curve read (need a quiet machine).
 - Rerun the codec matrix on VCNDec 0.2.1; decode straight into the IOSurface (no per-frame copy).
 - Wi-Fi: interrupts instead of polling, WPA3, AWDL/AirDrop.
 - Audio: microphone gain cause, headphone jack, audio after sleep; merge `research/audio-rog-dolby`.
 - HDMI in Standard mode with the OLED on the 890M.
-- Hide the OpenCore picker after the Esc test; USB map and a clean reference EFI; the one-click installer.
+- Hide the OpenCore picker after the Esc test; compare the USB map in `efi/` with the live one; the one-click
+  installer.
+- Housekeeping: merge the branches the live kexts were built from (rog-control-macos PRs #16 and #17 and `fix/*`,
+  mt7925-macos `fix/bt-waitquiet`); decide on `research/audio-rog-dolby` and `thermal/xhcikick-pending`. Done on
+  branch `release/tahoe-v2`: side branches merged, the branch reconciled with `main`, the live EFI exported through
+  `scripts/export-efi.py` and checked with `scripts/check-efi-privacy.py` (2026-11-25).
 - The unexplained 3 min 50 s restart, if it happens again.
 
 ### Not planned (or deferred by the owner)
@@ -378,3 +407,66 @@ Notes:
   them is an open question for the maintainer.
 - The NVIDIA kexts (NVRM 2.7.1 and friends) are NullMoth's binaries, installed by
   `scripts/macos-install-nvidia-2.7.1.sh`; they are needed only for Standard mode.
+
+## 7. Credits
+
+This setup stands on other people's work. The list covers what the reference machine really uses (checked against
+`efi/kexts.json`, `efi/OC/config.plist`, `NOTICE.md` and the build scripts) and the code the drivers were derived from.
+Third-party binaries are not redistributed here; licences are in [NOTICE.md](../NOTICE.md) and in each project.
+
+**Boot and kernel patches**
+
+| Project | Used for |
+|---|---|
+| [OpenCore](https://github.com/acidanthera/OpenCorePkg) (acidanthera) | the boot loader; `patches/opencore/fix-zen5-fsb.diff` is a patch against its `OcCpuLib` |
+| [nullmoth/1401](https://github.com/nullmoth/1401) (NullMoth) | the base OpenCore configuration and SSDTs that `efi/` derives from |
+| [AMD_Vanilla](https://github.com/AMD-OSX/AMD_Vanilla) kernel patches (AMD-OSX; patch comments name algrey, XLNC, Shaneee, Zormeister, Goldfish64, Visual, laobamac) and CaseySJ's IOPCIFamily patches | the `Kernel > Patch` entries that let XNU run on an AMD CPU, as shipped by the base configuration |
+| [Dortania](https://dortania.github.io/OpenCore-Install-Guide/) guides | read during the bring-up; source of `AppleMCEReporterDisabler` |
+| [MacKernelSDK](https://github.com/acidanthera/MacKernelSDK) (acidanthera) | kernel headers and libraries for `scripts/build.sh` |
+
+**Kexts on the ESP (third-party)**
+
+| Project | Used for |
+|---|---|
+| [Lilu](https://github.com/acidanthera/Lilu) (acidanthera) | patching framework for the plug-ins below and for `StrixSbxMap`, `BtLeDlFix` |
+| [VirtualSMC](https://github.com/acidanthera/VirtualSMC) with SMCBatteryManager and SMCLightSensor (acidanthera) | SMC emulation, battery status; the light-sensor plug-in is on the ESP but disabled |
+| [AppleALC](https://github.com/acidanthera/AppleALC) (acidanthera) | ALC285 codec (a local build with a GA403WM layout) |
+| [SimpleHDA](https://github.com/laobamac/SimpleHDA) (laobamac) | brings AppleHDA back on macOS 26 |
+| [WhateverGreen](https://github.com/acidanthera/WhateverGreen) (acidanthera) | on the ESP, disabled in this configuration |
+| [NVMeFix](https://github.com/acidanthera/NVMeFix) (acidanthera) | NVMe power management |
+| [BrightnessKeys](https://github.com/acidanthera/BrightnessKeys) (acidanthera) | brightness hot keys |
+| [RestrictEvents](https://github.com/acidanthera/RestrictEvents) (acidanthera) | CPU name and the `sbvmm` patch |
+| [BlueToolFixup](https://github.com/acidanthera/BrcmPatchRAM) (acidanthera, BrcmPatchRAM) | lets `bluetoothd` accept a non-Apple controller |
+| [AMFIPass](https://github.com/dortania/OpenCore-Legacy-Patcher) (dhinakg, shipped with OpenCore Legacy Patcher) | lets platform binaries load the ad hoc signed driver bundles |
+| [USBToolBox](https://github.com/USBToolBox/kext) (dhinakg) | USB port map |
+| [VoodooI2C](https://github.com/VoodooI2C/VoodooI2C), [VoodooI2CHID](https://github.com/VoodooI2C/VoodooI2CHID), VoodooGPIO, VoodooInput | the I2C-HID touchpad |
+| [NullEthernet](https://github.com/RehabMan/OS-X-Null-Ethernet) (RehabMan) | the fake `en0` |
+| [ForgedInvariant](https://github.com/ChefKissInc/ForgedInvariant) (ChefKiss) | TSC synchronisation on AMD |
+| [Sinetek-rtsx](https://github.com/sinetek/Sinetek-rtsx) | Realtek SD-card reader driver (loaded; function not verified) |
+| [HoRNDIS](https://github.com/jwise/HoRNDIS) (Joshua Wise) | USB tethering from an Android phone while installing |
+| AppleMCEReporterDisabler | stops the AppleIntelMCEReporter panic on AMD |
+
+**GPU, video and virtualization**
+
+| Project | Used for |
+|---|---|
+| [NullMoth's NVIDIA driver for macOS](https://github.com/nullmoth/nvidia-macos-driver) (NullMoth) | the RTX 5060 driver in Standard mode, and the NMX stack (`NMXGPU`, `NMXAccel`, the Metal plugin and translator) that the 890M work is a [fork](https://github.com/thanhnndev/nvidia-macos-driver) of |
+| The Linux kernel's [amdgpu and DRM](https://gitlab.freedesktop.org/drm/kernel) (AMD and the DRM maintainers) | the driver source `NMXGPU` is a port of (display core included), and the reference flow the documents compare against |
+| FreeBSD [drm-kmod](https://github.com/freebsd/drm-kmod) and LinuxKPI ([freebsd-src](https://github.com/freebsd/freebsd-src)) | the copy of amdgpu that is built, and the compatibility layer the port's "xkpi" layer comes from |
+| [Mesa](https://gitlab.freedesktop.org/mesa/mesa) / RADV, with libdrm and glslang | the Vulkan driver under the Metal plugin and the VCN video decode (built with `scripts/radv`) |
+| [FFmpeg](https://ffmpeg.org/) (libavcodec, LGPL build) and the Khronos Vulkan headers | `VCNDec`: Vulkan video decode of H.264, HEVC, VP9 and AV1 (`tools/890m/vcndec/ff-build.sh`) |
+| [ryzen-hypervisor.framework](https://github.com/OverlordDev/ryzen-hypervisor.framework) (OverlordDev) | `RyzenHV`, the SVM hypervisor Docker and the Android emulator run on; the machine runs a [fork](https://github.com/thanhnndev/ryzen-hypervisor.framework) |
+
+**Wi-Fi, Bluetooth and ASUS controls (through the sibling repositories)**
+
+| Project | Used for |
+|---|---|
+| The Linux kernel's `mt76` / `mt7925` and `btmtk` drivers, and MediaTek's MT7925 firmware | hardware layer, reference and firmware of [mt7925-macos](https://github.com/thanhnndev/mt7925-macos) |
+| [asusctl](https://gitlab.com/asus-linux/asusctl) / [asus-linux.org](https://asus-linux.org/) and the Linux `asus-wmi` / `asus-armoury` drivers | reference for the ASUS WMI and EC interface in [rog-control-macos](https://github.com/thanhnndev/rog-control-macos) |
+| G-Helper, itlwm, k10temp | further design references, listed in the `NOTICE.md` of the two sibling repositories |
+
+**Authoring**
+
+| | |
+|---|---|
+| [Claude](https://www.anthropic.com/claude) (Anthropic) | wrote almost all of the code and documents of this project, directed and tested by the maintainer |

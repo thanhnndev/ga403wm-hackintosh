@@ -27,7 +27,7 @@ Bản tiếng Việt này **không giữ bảng tình trạng riêng**, để tr
 - [README.md](README.md): bảng "Machine" và "What works" của bản Tahoe;
 - [docs/STATE-AND-ROADMAP.md](docs/STATE-AND-ROADMAP.md): từng mục kèm ngày test, bằng chứng, phiên bản từng thành phần, lỗi đã biết và roadmap.
 
-Tóm tắt ngắn (ngày 2026-11-25, chỉ trên máy tham chiếu, macOS 26.7.2 build 25G332): màn hình OLED 2880×1800 120 Hz, WindowServer và mọi app chạy trên Radeon 890M; giải mã video bằng phần cứng (H.264, HEVC, VP9, AV1); Wi-Fi, Bluetooth, loa, điều khiển ROG, Docker và iOS Simulator hoạt động; RTX 5060 thường được tắt lúc boot (chế độ Eco). Chưa xong hoặc chưa kiểm chứng: Android emulator (đã tìm ra nguyên nhân, bản sửa chưa được chạy thử trên máy), sleep/wake trên stack hiện tại, nhiệt khi chạy máy ảo nặng, HDR, cổng tai nghe, đầu đọc thẻ SD, thời lượng pin. EFI tham khảo trong `efi/` vẫn là cấu hình macOS 15.
+Tóm tắt ngắn (ngày 2026-11-25, chỉ trên máy tham chiếu, macOS 26.7.2 build 25G332): màn hình OLED 2880×1800 120 Hz, WindowServer và mọi app chạy trên Radeon 890M; giải mã video bằng phần cứng (H.264, HEVC, VP9, AV1); Wi-Fi, Bluetooth, loa, điều khiển ROG, Docker, Android emulator (từ RyzenHV 0.7.24, đã kiểm chứng ngày 2026-11-25; lần chạy đầu sau khi cập nhật phải là "Cold Boot Now") và iOS Simulator hoạt động; RTX 5060 thường được tắt lúc boot (chế độ Eco). Chưa xong hoặc chưa kiểm chứng: sleep/wake trên stack hiện tại, nhiệt khi chạy máy ảo nặng, HDR, cổng tai nghe, đầu đọc thẻ SD, thời lượng pin. EFI tham khảo trong `efi/` được xuất từ ESP Tahoe đang chạy ngày 2026-11-25: chỉ để tham khảo cho đúng chiếc máy này, không phải EFI boot được ngay (phải tự điền serial, MLB, UUID, ROM, VBIOS của card và tự lấy kext).
 
 ## Các repo
 
@@ -51,6 +51,6 @@ Với **macOS 15**: làm theo [docs/INSTALL.vi.md](docs/INSTALL.vi.md) và [docs
 
 Tác giả và người duy trì: [thanhnndev](https://github.com/thanhnndev). Chủ máy GA403WM có thể gửi issue theo mẫu **Hardware report**; đọc [CONTRIBUTING.md](CONTRIBUTING.md).
 
-Ghi công và giấy phép đầy đủ: [NOTICE.md](NOTICE.md). Mã trong repo này dùng [Clear BSD License](LICENSE). **EFI dẫn xuất từ `nullmoth/1401`, và mọi thứ từ fork nvidia-macos-driver dùng PolyForm Noncommercial 1.0.0: chỉ sử dụng phi thương mại.**
+Ghi công đầy đủ (từng dự án mà máy này dùng hoặc mã được phát triển từ đó, kèm link): mục [Credits trong README.md](README.md#credits). Giấy phép: [NOTICE.md](NOTICE.md). Mã trong repo này dùng [Clear BSD License](LICENSE). **EFI dẫn xuất từ `nullmoth/1401`, và mọi thứ từ fork nvidia-macos-driver dùng PolyForm Noncommercial 1.0.0: chỉ sử dụng phi thương mại.**
 
 Không liên kết với ASUS, Apple, NVIDIA, MediaTek, AMD hay NullMoth. Nhãn hiệu thuộc chủ sở hữu tương ứng; người dùng tự chịu trách nhiệm tuân thủ giấy phép macOS của Apple.

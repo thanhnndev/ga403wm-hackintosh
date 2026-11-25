@@ -1,13 +1,22 @@
 # Reference EFI: ASUS ROG Zephyrus G14 (GA403WM), Ryzen AI 9 HX 370
 
-The OpenCore configuration this project was developed and tested with. On the reference machine it boots **macOS 15.8.1 (24H32)**
-from the internal disk (OpenCore 1.0.9 on the internal ESP; it was first brought up on the 15.6.1 Recovery image from a USB
-stick). macOS 26 is not supported. Install steps: [../docs/INSTALL.md](../docs/INSTALL.md).
+The OpenCore configuration of the reference machine, exported from its live ESP on **2026-11-25** with
+`scripts/export-efi.py`. On that machine the original boots **macOS 26.7.2 Tahoe (25G332)** from the internal disk under
+OpenCore 1.0.9.
+
+**This is a reference for this one machine, not a ready-to-boot EFI.** The export removes the machine's identifiers and
+the vendor firmware, kexts are not included, and the exported copy with its placeholders was never booted. What you must
+fill in is listed under "What you must supply". State of the whole setup, with dates:
+[../docs/STATE-AND-ROADMAP.md](../docs/STATE-AND-ROADMAP.md). There is no tested step-by-step Tahoe guide; the design is
+[../docs/FRESH-INSTALL.md](../docs/FRESH-INSTALL.md).
+
+The macOS 15 configuration (v1, last changed 2026-10-13) is in the git history before commit 3901d1d; its guide is
+[../docs/INSTALL.md](../docs/INSTALL.md). The two do not mix.
 
 | | |
 |---|---|
 | Machine | ASUS ROG Zephyrus G14 GA403WM, Ryzen AI 9 HX 370 (Strix Point / Zen 5), Radeon 890M, RTX 5060 Laptop GPU |
-| Wi-Fi | MediaTek MT7925, PCI `14c3:7925` (driver: `itlmt7925.kext`) |
+| Wi-Fi | MediaTek MT7925, PCI `14c3:7925` (drivers: `itlmt7925.kext` + `itlmt7925Native.kext`) |
 | USB | four AMD xHCI controllers `1022:151e`, `151f`, `151a`, `151b` (fix: `ItlXhciKick.kext`) |
 | Trackpad / keyboard | I2C-HID `093a:3011` via VoodooI2C; USB keyboard `0b05:19b6` |
 | OpenCore | 1.0.9 built from `963025f1382eca619412d527ad82b6d19bee70d9` with `patches/opencore/fix-zen5-fsb.diff` |
@@ -16,107 +25,160 @@ stick). macOS 26 is not supported. Install steps: [../docs/INSTALL.md](../docs/I
 
 ```
 efi/
-  OC/config.plist       the configuration, PlatformInfo identifiers replaced by placeholders
-  OC/ACPI/*.aml         the SSDTs referenced by config.plist
-  kexts.json            third-party kexts used (bundle id, version, SHA-256); see KEXTS.md
+  OC/config.plist       the configuration as exported, identifiers and firmware removed (see below)
+  OC/ACPI/*.aml         the SSDTs referenced by config.plist (.dsl sources for SSDT-XOSI and SSDT-ECRAM)
+  OC/Kexts/UTBMap.kext  the USB port map (codeless); not rewritten by the export, see "Open items"
+  kexts.json            32 third-party kexts found on the ESP (bundle id, version, SHA-256 of the executable)
   KEXTS.md              what each kext is for and where to get it
 ```
 
-Not included, on purpose: OpenCore binaries, OpenCore drivers, third-party kexts, `Resources/`. Download them from their
-projects; the versions are listed in `KEXTS.md`, the OpenCore patch is built by the `opencore` GitHub workflow.
+Not included, on purpose: every kext binary, OpenCore binaries and drivers, `NullMothSafe.efi` (the tool behind the two
+"1401: ..." entries in `Misc > Tools`), `Resources/`. Download them from their projects; the OpenCore patch is built by
+the `opencore` GitHub workflow.
 
-## Before the first boot
+`KEXTS.md` was written for the macOS 15 set. It does not yet describe SimpleHDA, RyzenHV, StrixVFCT and the NullMoth
+entries that `kexts.json` now lists.
 
-1. **Generate your own SMBIOS.** `PlatformInfo > Generic` contains `CHANGE_ME_SN`, `CHANGE_ME_MLB_000`, an all-zero
-   `SystemUUID` and an all-zero `ROM`. Replace them with values you generate (`macserial`, GenSMBIOS). Never publish them.
-   The reference configuration uses `SystemProductName = MacBookPro16,2`, `UpdateSMBIOSMode = Custom`.
-2. **CPU core count.** The four `Force cpuid_cores_per_package to constant` kernel patches contain the core count in their
-   `Replace` bytes: `0x0c` = 12 cores (Ryzen AI 9 HX 370). Change it for another CPU.
-3. **Assemble the folder.** `EFI/OC/` = this `config.plist` + `ACPI/` + the kexts of `KEXTS.md` in `Kexts/` + `Drivers/`
-   (`HfsPlus.efi`, `OpenRuntime.efi`, `ResetNvramEntry.efi`) + the patched `OpenCore.efi`. Add the kexts of this
-   repository (`ItlXhciKick`, optionally `ItlDiag`) from a release or from `scripts/build.sh`, and `itlmt7925.kext` (Wi-Fi) from
-   [mt7925-macos](https://github.com/thanhnndev/mt7925-macos/releases).
-4. **Wi-Fi credentials** (legacy mode, the reference default) go into the personality of `itlmt7925.kext`
-   ([guide §5](https://github.com/thanhnndev/mt7925-macos/blob/main/docs/GUIDE.md#5-legacy-mode-ethernet-style)); native mode needs none ([guide §4](https://github.com/thanhnndev/mt7925-macos/blob/main/docs/GUIDE.md#4-native-mode-recommended)). They are stored in plain text on the
-   stick; do not share the stick or that plist.
-5. Validate with `ocvalidate` from the same OpenCore release. It will complain about the placeholders until you replace them.
+## What the export changed
+
+`scripts/export-efi.py` copies the file byte for byte except for these values:
+
+| Value | In the exported file |
+|---|---|
+| `PlatformInfo > Generic > SystemSerialNumber`, `MLB`, `SystemUUID`, `ROM` | `CHANGE_ME_SN`, `CHANGE_ME_MLB_000`, all-zero UUID, all-zero ROM |
+| `NVRAM > Add > 7C436110-... > bluetoothInternalControllerInfo` | zeroed (it carries the Bluetooth controller's address) |
+| `DeviceProperties > Add > PciRoot(0x0)/Pci(0x8,0x1)/Pci(0x0,0x0) > vbios` | **empty**. It held the Radeon 890M's VBIOS image; vendor firmware is not redistributed |
+| `SSDT-RMNE.aml`, the MAC address in `Name` | NullEthernet's default `11:22:33:44:55:66`, table checksum fixed |
+| `Misc > Entries` | emptied (its device paths carry the disk's identifiers) |
+
+`scripts/check-efi-privacy.py efi/OC/config.plist` checks that only placeholders are left; CI runs it.
+
+## What you must supply
+
+1. **Your own SMBIOS**: serial, MLB, UUID and ROM, generated with `macserial` or GenSMBIOS. Never publish them. The
+   reference uses `SystemProductName = MacBookPro16,2`, `UpdateSMBIOSMode = Custom`.
+2. **Your own card's VBIOS image** in the `vbios` property of `PciRoot(0x0)/Pci(0x8,0x1)/Pci(0x0,0x0)`. Left empty, the
+   property is useless. `StrixVFCT.kext` (enabled in `Kernel > Add`, listed in `kexts.json` without a hash) is in the
+   same position: it carries the firmware's VFCT table and has to be built from a dump of your own machine
+   ([../docs/FRESH-INSTALL.md](../docs/FRESH-INSTALL.md)).
+3. **Every kext.** Third-party ones from their upstream projects, checked against `kexts.json` if you want the exact
+   set. `ItlXhciKick`, `ItlDiag` and `StrixSbxMap` from this repository's release or `scripts/build.sh`; Wi-Fi and
+   Bluetooth from [mt7925-macos](https://github.com/thanhnndev/mt7925-macos/releases); `AsusWmi`, `AmdCppc` and
+   `StrixDgpuGate` from [rog-control-macos](https://github.com/thanhnndev/rog-control-macos/releases); `RyzenHV` from
+   the [ryzen-hypervisor.framework fork](https://github.com/thanhnndev/ryzen-hypervisor.framework). `StrixAmp` exists
+   only on branch `research/audio-rog-dolby`. Disable the `Kernel > Add` entries you do not install.
+4. **A MAC address for the NullEthernet device** if you do not want the default in `SSDT-RMNE`.
+5. **The Bluetooth controller info.** The export zeroes it. Whether Bluetooth comes up with the zero value was not
+   tested.
+6. **CPU core count.** The four `Force cpuid_cores_per_package to constant` kernel patches contain the core count in
+   their `Replace` bytes: `0x0c` = 12 cores (Ryzen AI 9 HX 370). Change it for another CPU.
+7. **OpenCore itself**: the patched `OpenCore.efi`, `Drivers/` (`HfsPlus.efi`, `OpenRuntime.efi`,
+   `ResetNvramEntry.efi`), and your own `Misc > Entries` if you need any.
+
+The GPU stack is not on the ESP at all: `NMXGPU`, `NMXAccel`, `NMXAGDC` and `StrixS0ix` load from the Auxiliary Kernel
+Collection (`/Library/Extensions`), the Metal plugin, translator and RADV live in `/Library/GPUBundles`. The order that
+worked once is in the [v2 release notes](../.github/release-notes/v2.md).
+
+Validate with `ocvalidate` from the same OpenCore release. It will complain about the placeholders until you replace
+them.
 
 ## What the configuration does
 
 * **ACPI.** `SSDT-EC` (fake EC for macOS), `SSDT-PLUG-ALT` (`plugin-type` on the CPU objects), `SSDT-RMNE` (NullEthernet
   device), `SSDT-USB-Reset` (`_STA` of the four root hubs under Darwin), `SSDT-USBX` (USB power properties),
-  `SSDT-XOSI` (+ the `_OSI` to `XOSI` rename: answers "Windows" when macOS asks).
-  `SSDT-Disable_Network_GPP5` hides the Wi-Fi card from macOS; it is **disabled** here so that `itlmt7925.kext` can see it.
-* **Kernel.** AMD vanilla kernel patches (cpuid, `rdmsr`, PAT, non-monotonic time panic) as shipped by the base
-  configuration, plus the two IOPCIFamily `probeBusGated` "disable 10 bit tags" patches. `ProvideCurrentCpuInfo`,
-  `DummyPowerManagement` and `ForgedInvariant.kext` handle CPU info/TSC on AMD.
+  `SSDT-XOSI` (+ the `_OSI` to `XOSI` rename: answers "Windows" when macOS asks). New with Tahoe: `SSDT-ECRAM` (EC RAM
+  access for `AsusWmi`), `SSDT-S0IDLE` (S0 idle sleep, used by `StrixS0ix`), `SSDT-PTS5` with the `_PTS` to `ZPTS`
+  rename (Shut Down stays off), `SSDT-LIDFIX` with the `_LID` to `XLID` rename, and an `ACAD._PSR` patch (AC detection).
+  Each rename must be enabled or disabled together with its table. `SSDT-Disable_Network_GPP5` hides the Wi-Fi card from
+  macOS; it is **disabled** so that the Wi-Fi driver can see the card.
+* **Kernel.** AMD vanilla kernel patches (cpuid, `rdmsr`, PAT, non-monotonic time panic, including the 26.4+ variant) as
+  shipped by the base configuration, the two IOPCIFamily `probeBusGated` "disable 10 bit tags" patches (12.0-15.x and
+  26.0+), and one local patch that clamps a non-monotonic `fq_codel` enqueue time instead of panicking (HoRNDIS
+  tethering on 26.x). `ProvideCurrentCpuInfo`, `DummyPowerManagement` and `ForgedInvariant.kext` handle CPU info/TSC on
+  AMD.
+* **Kernel > Add.** 48 entries. Disabled on the reference machine: the five NullMoth NVIDIA entries (`NVRM`, `NVRMFB`,
+  `NVRMAGDC`, `NVRMEdpBL`, `NVAccel`; the NVIDIA stack loads from the Auxiliary Kernel Collection), `StrixGOP`,
+  `StrixAccel`, `WhateverGreen`, `SMCLightSensor`, `UTBDefault`, `ItlDiag`. `SimpleHDA`, `StrixSbxMap`, `RyzenHV` and
+  `StrixDgpuGate` carry `MaxKernel 25.99.99`: they are gated on Darwin 25.x as a whole.
 * **Booter.** `RebuildAppleMemoryMap`, `SyncRuntimePermissions`, `DevirtualiseMmio`, `EnableSafeModeSlide`,
-  `ProvideCustomSlide`, `AvoidRuntimeDefrag`, `AllowRelocationBlock`.
+  `ProvideCustomSlide`, `AvoidRuntimeDefrag`, `AllowRelocationBlock`, `FixupAppleEfiImages`.
+* **DeviceProperties.** The 890M at `PciRoot(0x0)/Pci(0x8,0x1)/Pci(0x0,0x0)` gets `model`, `VRAM,totalMB`,
+  `VRAM,totalsize`, `name` / `IOName` = `#display` and `vbios` (emptied here). `layout-id` 33 on the HD-audio
+  controller. It is no longer hidden with `disable-gpu`.
 * **Security.** `SecureBootModel = Disabled`, `Vault = Optional`, `DmgLoading = Signed`, `ScanPolicy = 0` (everything is
-  shown by the picker). Test configuration, not a hardened one.
-* **Debug.** `Misc > Debug` is off in the released reference (`Target 0`, `AppleDebug`, `ApplePanic`, `SysReport` false); `ItlDiag.kext` is disabled.
+  shown by the picker), `csr-active-config = 43 0A 00 00`. Test configuration, not a hardened one.
+* **Picker.** Shown, 2 s timeout.
+* **Debug.** `Misc > Debug` has `Target 0`, `AppleDebug` and `SysReport` false, `ApplePanic` true. The boot-args still
+  carry debug and trace flags, as on the live machine (below).
 
-### boot-args (reference machine)
+### boot-args (reference machine, as exported)
 
 ```
--vi2c-force-polling nvfb=1 nvaccel=1 nvfbheads=4 -nvkmsnosmooth
-amfi_get_out_of_my_way=0x1 amfi=0x80 ipc_control_port_options=0 -nvrmnobootscreen nvrmacpibl=1
-itlmt_m1=0 itlmt_m2=1 itlmt_m3=1 itlmt_fast=6
+debug=0x100 keepsyms=1 -vi2c-force-polling nvfb=1 nvaccel=1 nvfbheads=4 -nvkmsnosmooth
+amfi_get_out_of_my_way=0x1 amfi=0x80 msgbuf=1048576 ipc_control_port_options=0 itlmt_m1=0
+-nvrmnobootscreen nvrmacpibl=1 itlmt_native=1 itlmt_native_if=1 itlmt_native_dp=1 itlmt_native_nvtrace=1
+itlmt_fast=6 itlmt_stat=1 alcverbs=1 strixhdr=1 -strixgopoff -strixaccoff -strixmetalgateoff itlmt_awdl=1
+nmxamd=1 rhv_enable_svm=1 rhv_selftest=1 rhv_hv=1 rhv_allow_users=1 rhv_loglevel=4 shda-lang=en -FIOff
 ```
-
-Bring-up extras (not in the config): `-v debug=0x100 keepsyms=1 msgbuf=1048576`, `itldiag=90 itlxr=2`.
 
 | Argument | Meaning |
 |---|---|
-| `-v`, `debug=0x100`, `keepsyms=1` | (bring-up only) verbose boot; keep panic text on screen; keep kernel symbols in panic logs |
+| `debug=0x100`, `keepsyms=1`, `msgbuf=1048576` | keep panic text on screen; keep kernel symbols in panic logs; larger kernel message buffer. Debug aids, not needed for normal use |
 | `-vi2c-force-polling` | VoodooI2C polls the trackpad instead of using GPIO interrupts |
-| `nvfb=1 nvaccel=1 nvfbheads=4 -nvkmsnosmooth` | NullMoth NVIDIA driver: framebuffer, accelerator, 4 display heads (see below) |
-| `amfi_get_out_of_my_way=0x1 amfi=0x80` | disables AMFI so WindowServer can load the NVIDIA driver bundle (NullMoth driver requirement; AMFIPass.kext must also be on) |
+| `nmxamd=1` | NMXGPU: drive the Radeon 890M |
+| `-strixgopoff -strixaccoff -strixmetalgateoff` | switch off the earlier boot-display research kexts (StrixGOP, StrixAccel, StrixMetalGate); NMXGPU replaced them |
+| `strixhdr=1` | StrixGOP HDR override; a leftover, StrixGOP is switched off |
+| `amfi_get_out_of_my_way=0x1 amfi=0x80` | relaxes AMFI so WindowServer can load the ad hoc signed driver bundles (AMFIPass.kext must also be on) |
 | `ipc_control_port_options=0` | with AMFI relaxed, hardened apps such as Firefox crash at launch on their task control port; NullMoth setup 1.11 adds it |
-| `-nvrmnobootscreen` | NullMoth driver: skip the 15-19 s boot-screen copy (`docs/NULLMOTH.md`) |
-| `nvrmacpibl=1` | NullMoth driver: use the ACPI/NBCI backlight tables (opt-in since 1.14.1) |
-| `itlmt_m1=0 itlmt_m2=1 itlmt_m3=1 itlmt_fast=6` | legacy `itlmt7925.kext`: start at once, scan, connect, fast path ([mt7925-macos](https://github.com/thanhnndev/mt7925-macos/blob/main/docs/GUIDE.md#12-boot-arg-reference)) |
-| `itldiag=90 itlxr=2` | (bring-up only) ItlDiag diagnostics and xHCI event-ring sampler (`docs/DEBUGGING.md`) |
-| `msgbuf=1048576` | (bring-up only) larger kernel message buffer, so the kext logs are not truncated |
+| `nvfb=1 nvaccel=1 nvfbheads=4 -nvkmsnosmooth`, `-nvrmnobootscreen`, `nvrmacpibl=1` | NullMoth NVIDIA driver (Standard mode only): framebuffer, accelerator, 4 display heads, no boot-screen copy, ACPI backlight tables. Do **not** add `-nvoff`: it also parks NMXGPU |
+| `itlmt_m1=0 itlmt_native=1 itlmt_native_if=1 itlmt_native_dp=1 itlmt_fast=6` | Wi-Fi in native mode ([mt7925-macos guide](https://github.com/thanhnndev/mt7925-macos/blob/main/docs/GUIDE.md#12-boot-arg-reference)) |
+| `itlmt_native_nvtrace=1`, `itlmt_stat=1` | Wi-Fi trace flags |
+| `itlmt_awdl=1` | AWDL work in progress; no working AirDrop result is recorded |
+| `alcverbs=1` | AppleALC option used by the audio setup |
+| `shda-lang=en` | SimpleHDA: device names in English |
+| `rhv_enable_svm=1 rhv_hv=1 rhv_allow_users=1` | RyzenHV settings (see the fork's documentation) |
+| `rhv_selftest=1`, `rhv_loglevel=4` | RyzenHV trace flags |
+| `-FIOff` | present on the live machine; not documented in this repository |
 | `itlkick=<us>` (not set) | ItlXhciKick period; default 1000 µs, `0` disables (`docs/USB-XHCI-LAG.md`) |
+
+More switches (undo boot-args for single pieces) are in the [v2 release notes](../.github/release-notes/v2.md).
 
 ### Display resolution
 
 `UEFI > Output > Resolution` is `2880x1800@32`, the native mode of the GA403WM's 2.8K panel (GOP mode 0; the firmware also
-offers 1920x1200, 1920x1080 and a dozen 4:3/16:9 modes). While there was no NVIDIA driver the picker and Recovery were
-sluggish at that size because the firmware framebuffer is mapped uncached, and the stick used `1280x720@32` and then
-`1920x1200@32` as a workaround. With the NullMoth driver installed the native mode is the right one. A different panel
-option needs a different value: set `Max` to let OpenCore pick the largest mode. `UIScale` stays `0` (automatic).
+offers 1920x1200, 1920x1080 and a dozen 4:3/16:9 modes). A different panel option needs a different value: set `Max` to
+let OpenCore pick the largest mode. `UIScale` stays `0` (automatic).
 
-### Known leftovers (harmless, not removed because the configuration is published exactly as tested)
+### Known leftovers (harmless, not removed because the configuration is published as it runs)
 
-* `DeviceProperties > Add` has `IOPCIMSIMode = false` on the four xHCI controllers. It does nothing: IOPCIFamily *sets*
-  that property when it enables MSI and never reads it back (`docs/USB-XHCI-LAG.md`). It can be deleted.
-* `ItlDiag.kext` and the `itldiag` / `itlxr` boot-args are debugging tools.
+* `DeviceProperties > Add` has `IOPCIMSIMode = false` on four devices. It does nothing: IOPCIFamily *sets* that property
+  when it enables MSI and never reads it back (`docs/USB-XHCI-LAG.md`). It can be deleted.
+* `ItlDiag.kext` (disabled) and the debug and trace boot-args are debugging tools.
+* `strixhdr=1` and the disabled `StrixGOP` / `StrixAccel` entries belong to the earlier boot-display research.
 
-## NVIDIA dGPU (NullMoth driver)
+## NVIDIA dGPU (NullMoth driver, Standard mode only)
 
-The RTX 5060 is driven by [NullMoth's NVIDIA driver for macOS 15](https://github.com/nullmoth/nvidia-macos-driver)
-(installed with its `install.sh` or the 1401 Mac app, **inside** macOS: kexts go to `/Library/Extensions` and load from the
-Auxiliary Kernel Collection, so nothing NVIDIA is in `EFI/OC/Kexts`). This repository does not contain or modify it. The EFI
-only carries what that driver asks of OpenCore:
+On Tahoe the internal display runs on the Radeon 890M. The RTX 5060 is normally powered off and taken off the PCI bus at
+boot (Eco mode, `StrixDgpuGate`). In Standard mode it is driven by
+[NullMoth's NVIDIA driver](https://github.com/nullmoth/nvidia-macos-driver) 2.7.1, installed **inside** macOS by
+`scripts/macos-install-nvidia-2.7.1.sh`: its kexts load from the Auxiliary Kernel Collection, and the NVIDIA entries in
+`Kernel > Add` are disabled. This repository does not contain the driver. The EFI carries what that driver asks of
+OpenCore, in the driver's installed-system state:
 
-| Setting | Value here | Driver's installed-system value |
-|---|---|---|
-| `NVRAM > csr-active-config` | `43 0A 00 00` (0x0A43) | same |
-| boot-args `nvfb=1 nvaccel=1 nvfbheads=4 -nvkmsnosmooth amfi_get_out_of_my_way=0x1 amfi=0x80 ipc_control_port_options=0` | set | same |
-| `Misc > Security > SecureBootModel` | `Disabled` | same |
-| `Booter > Quirks > ResizeAppleGpuBars` | `0` | `-1` |
-| `UEFI > Quirks > ResizeGpuBars` | `-1` | `13` (8 GB BAR) |
-| `Kernel > Block` `com.apple.iokit.IONDRVSupport` (Exclude) | absent | present |
-| `DeviceProperties` for the card | none | none |
+| Setting | Value here |
+|---|---|
+| `NVRAM > csr-active-config` | `43 0A 00 00` (0x0A43) |
+| boot-args `nvfb=1 nvaccel=1 nvfbheads=4 -nvkmsnosmooth amfi_get_out_of_my_way=0x1 amfi=0x80 ipc_control_port_options=0` | set |
+| `Misc > Security > SecureBootModel` | `Disabled` |
+| `Booter > Quirks > ResizeAppleGpuBars` | `-1` |
+| `UEFI > Quirks > ResizeGpuBars` | `13` (8 GB BAR) |
+| `Kernel > Block` `com.apple.iokit.IONDRVSupport` | present, enabled |
+| `Misc > Tools` | two "1401: ..." entries (`NullMothSafe.efi`): remove the NVIDIA driver, start once without it |
+| `DeviceProperties` for the RTX | none |
 
-The two BAR values and the missing `Block` entry are the driver's *installer-phase* settings; its Mac app switches them when it
-installs the driver. The 890M is hidden with `disable-gpu`, WhateverGreen is disabled, and BIOS needs Above 4G Decoding ON and
-CSM OFF. On the reference machine it works (RTX 5060 + the OLED at 2880x1800 @ 120 Hz; upstream 1.14.2 plus two local patches,
-[docs/NULLMOTH.md](../docs/NULLMOTH.md); install the driver from [our fork](https://github.com/thanhnndev/nvidia-macos-driver/tree/ga403wm), [docs/INSTALL.md §7](../docs/INSTALL.md#7-nvidia-driver-rtx-5060--the-oled)). Read the driver's own README and licence before relying on it. The configuration in this
-folder is in the **installer-safe** state (the "Value here" column; the driver's installer switches the BAR values and the `Block`
-entry and adds its own "1401: ..." tool entries), so do not paste BAR values from another board.
+BIOS needs Above 4G Decoding ON and CSM OFF. The BAR values fit this board; do not paste them into the configuration of
+another one. Read the driver's own README and licence before relying on it. State of Standard mode (apps get no Metal
+device from the RTX, HDMI not re-tested): [../docs/STATE-AND-ROADMAP.md](../docs/STATE-AND-ROADMAP.md).
 
 ## The OpenCore patch (`patches/opencore/fix-zen5-fsb.diff`)
 
@@ -129,10 +191,12 @@ builds OpenCore from the exact upstream commit with the patch applied (manual tr
 
 ## Open items
 
-* **USB port map:** `OC/Kexts/UTBMap.kext` (release `EFI-reference.zip`) is the author's map for this laptop and is enabled;
-  `UTBDefault.kext` is disabled; `XhciPortLimit` is off. It only fits the same model: elsewhere map your ports with the
-  USBToolBox tool. The internal keyboard (`0b05:19b6`) must stay mapped as an internal port.
-* Status of sleep/wake, audio, SD reader and battery readout: see the README status table and `docs/ROADMAP.md`.
+* **USB port map:** `OC/Kexts/UTBMap.kext` is the author's map for this laptop and is enabled; `UTBDefault.kext` is
+  disabled; `XhciPortLimit` is off. The export does not copy kexts, so the file in the tree is the map as it was on
+  2026-10-13; it was not compared with the one on the live ESP. It only fits the same model: elsewhere map your ports
+  with the USBToolBox tool. The internal keyboard (`0b05:19b6`) must stay mapped as an internal port.
+* The exported copy was not booted, and `KEXTS.md` does not cover the Tahoe additions yet.
+* Status of sleep/wake, audio, SD reader and battery readout: [../docs/STATE-AND-ROADMAP.md](../docs/STATE-AND-ROADMAP.md).
 
 ## Provenance
 

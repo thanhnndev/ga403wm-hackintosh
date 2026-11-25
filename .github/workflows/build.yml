@@ -11,7 +11,8 @@ name: build-kexts
 # plugin files (scripts/macos-install-strixsbxmap.sh builds and pins it on the target).
 # Not built here, they have their own CI and releases: Wi-Fi and Bluetooth (https://github.com/thanhnndev/mt7925-macos)
 # and ROG Control, AsusWmi, AmdCppc (https://github.com/thanhnndev/rog-control-macos).
-# The reference EFI (efi/) is not packaged: it still describes the macOS 15 configuration.
+# The reference EFI (efi/) is not packaged by CI: EFI-reference.zip is made by hand from efi/, which was exported from
+# the live Tahoe ESP on 2026-11-25.
 # A tag "v*" additionally builds OpenCore with the Zen 5 patch (opencore.yml), also as a run artifact.
 on:
   push:

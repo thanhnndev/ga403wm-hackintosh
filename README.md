@@ -76,11 +76,11 @@ The screenshot is from the macOS 15 setup of October 2026; there is no Tahoe scr
 | ASUS profiles, fan curves, power limits, charge limit, keyboard light | works | `AsusWmi` + RogControl | [docs/PLATFORM-LIMITS.md](docs/PLATFORM-LIMITS.md), [rog-control-macos](https://github.com/thanhnndev/rog-control-macos) |
 | Sleep / wake | partly | S0 idle sleep with lid and power-button wake passed on 2026-11-07; **not re-tested on the current stack**; S0i3 not reached | [docs/890M-TRACE.md](docs/890M-TRACE.md) |
 | Shut Down | works | stays off | [docs/SHUTDOWN-TIMELINE.md](docs/SHUTDOWN-TIMELINE.md) |
-| Power and heat | partly | light work 17 W / 57 C (2026-11-23); Docker + emulator load 62 W / 95 C (2026-11-16, not re-measured); GPU power follows the compositing rate (static screen 0.09 W on the GFX rail, 81-91 flips/s 12-19 W); idle floor and battery life in Eco not measured | [docs/POWER-UNDER-LOAD.md](docs/POWER-UNDER-LOAD.md), [docs/POWER-FEATURES.md](docs/POWER-FEATURES.md), [docs/POWER-FLOOR.md](docs/POWER-FLOOR.md) |
+| Power and heat | partly | light work 17 W / 57 C (2026-11-23); Docker + emulator load 62 W / 95 C (2026-11-16, not re-measured); GPU power follows the compositing rate (static screen 0.09 W on the GFX rail and 6.2 W socket, 81-91 flips/s 12.4-19.3 W; read 2026-11-25); no controlled idle-floor measurement; battery life in Eco not measured | [docs/POWER-UNDER-LOAD.md](docs/POWER-UNDER-LOAD.md), [docs/POWER-FEATURES.md](docs/POWER-FEATURES.md), [docs/POWER-FLOOR.md](docs/POWER-FLOOR.md) |
 | Docker Desktop | works | on `RyzenHV` (AMD SVM hypervisor kext) | [docs/RYZENHV-GUEST-MEM.md](docs/RYZENHV-GUEST-MEM.md) |
-| Android emulator | **broken** (fix staged, not verified) | the guest stalls during boot under RyzenHV 0.7.23. Root cause found: RyzenHV showed the guest CPUID PKU/OSPKE while macOS never enables PKRU state in XCR0, so a Linux 6.12 guest cannot build signal frames. The fix is RyzenHV 0.7.24 (fork commit 11ec930), staged, not yet run on the machine as of 2026-11-25 | [docs/STATE-AND-ROADMAP.md](docs/STATE-AND-ROADMAP.md) |
+| Android emulator | works | boots since RyzenHV 0.7.24 (verified 2026-11-25; cold boot 24-32 s on a scratch AVD). The first start after the update must be a cold boot (Device Manager > Cold Boot Now): a snapshot saved from a stalled guest restores the stall. Restoring a snapshot from a healthy boot and host-GPU rendering are **not verified** (tested with the default software GPU) | [docs/STATE-AND-ROADMAP.md](docs/STATE-AND-ROADMAP.md) |
 | iOS Simulator | works | renders on the 890M, 60 fps in the bench | [docs/SIMULATOR-PERF.md](docs/SIMULATOR-PERF.md) |
-| Reference EFI in `efi/` | **out of date** | `config.plist` is the macOS 15 configuration of 2026-10-13 (it carries the reference machine's USB map). It has none of the Tahoe kexts or boot-args and does not reference the sleep and shutdown SSDTs that sit next to it. The live Tahoe ESP has not been exported | [efi/README.md](efi/README.md) |
+| Reference EFI in `efi/` | partly | `config.plist` and SSDTs exported from the live Tahoe ESP on 2026-11-25. **A reference for this one machine, not a ready-to-boot EFI**: serial, MLB, UUID and ROM are placeholders, the 890M `vbios` property is emptied (put your own card's VBIOS image back), kexts are not included (32 third-party kexts listed by hash) | [efi/README.md](efi/README.md) |
 | Fresh install on a blank disk | partly | done once by hand; no tested guide or installer yet | [docs/FRESH-INSTALL.md](docs/FRESH-INSTALL.md) |
 
 Dates, evidence, exact versions and known issues: [docs/STATE-AND-ROADMAP.md](docs/STATE-AND-ROADMAP.md).
@@ -100,8 +100,9 @@ drivers live in their own repositories; their sources were removed from this one
 | [strix-890m-macos](https://github.com/thanhnndev/strix-890m-macos) | a copy of the earlier boot-display kexts and traces (last push 2026-11-02). The same files are still here; which repository is their home is not decided |
 
 ```
-efi/                 OpenCore config.plist + SSDTs (serial/MLB/UUID/ROM are placeholders) and the third-party kext list.
-                     Out of date: config.plist describes the macOS 15 setup
+efi/                 OpenCore config.plist + SSDTs exported from the live Tahoe ESP on 2026-11-25 (serial/MLB/UUID/ROM
+                     are placeholders, the vbios property is emptied) and the third-party kext list. A reference, not
+                     a ready-to-boot EFI
 kexts/ItlXhciKick    keeps the second xHCI event ring serviced on single-vector AMD controllers (fixes the USB lag)
 kexts/StrixS0ix      S0 idle sleep: PMC hints, CPU parking, lid and power-button wake
 kexts/StrixSbxMap    Lilu plugin: lets the WebKit GPU process map the pinned 890M Metal plugin files (Safari WebGL)
@@ -146,16 +147,80 @@ assets. [docs/SCRIPTS.md](docs/SCRIPTS.md) and [docs/COMPONENTS.md](docs/COMPONE
 
 ## Next steps
 
-[docs/STATE-AND-ROADMAP.md](docs/STATE-AND-ROADMAP.md), section 5, is the roadmap for this release: the Android emulator
-fix, power under a VM load, GPU power per composited frame (per-client flip census, damage-sized composition, hardware
-cursor plane), sleep on the current stack, a clean Tahoe reference EFI. [docs/ROADMAP.md](docs/ROADMAP.md) is the older
+[docs/STATE-AND-ROADMAP.md](docs/STATE-AND-ROADMAP.md), section 5, is the roadmap for this release: a hardware colour
+pipeline (so the per-frame colour pass on the GPU goes away), a hardware cursor plane, who drives the flips under the
+daily load and damage-sized composition, WindowServer's idle surface imports, RyzenHV follow-ups, and the items still
+not verified (sleep on the current stack, HDR, hardware encode). [docs/ROADMAP.md](docs/ROADMAP.md) is the older
 macOS 15 work tracker.
+
+## Credits
+
+This setup stands on other people's work. The list covers what the reference machine really uses (checked against
+`efi/kexts.json`, `efi/OC/config.plist`, `NOTICE.md` and the build scripts) and the code the drivers were derived from.
+Third-party binaries are not redistributed here; licences are in [NOTICE.md](NOTICE.md) and in each project.
+
+**Boot and kernel patches**
+
+| Project | Used for |
+|---|---|
+| [OpenCore](https://github.com/acidanthera/OpenCorePkg) (acidanthera) | the boot loader; `patches/opencore/fix-zen5-fsb.diff` is a patch against its `OcCpuLib` |
+| [nullmoth/1401](https://github.com/nullmoth/1401) (NullMoth) | the base OpenCore configuration and SSDTs that `efi/` derives from |
+| [AMD_Vanilla](https://github.com/AMD-OSX/AMD_Vanilla) kernel patches (AMD-OSX; patch comments name algrey, XLNC, Shaneee, Zormeister, Goldfish64, Visual, laobamac) and CaseySJ's IOPCIFamily patches | the `Kernel > Patch` entries that let XNU run on an AMD CPU, as shipped by the base configuration |
+| [Dortania](https://dortania.github.io/OpenCore-Install-Guide/) guides | read during the bring-up; source of `AppleMCEReporterDisabler` |
+| [MacKernelSDK](https://github.com/acidanthera/MacKernelSDK) (acidanthera) | kernel headers and libraries for `scripts/build.sh` |
+
+**Kexts on the ESP (third-party)**
+
+| Project | Used for |
+|---|---|
+| [Lilu](https://github.com/acidanthera/Lilu) (acidanthera) | patching framework for the plug-ins below and for `StrixSbxMap`, `BtLeDlFix` |
+| [VirtualSMC](https://github.com/acidanthera/VirtualSMC) with SMCBatteryManager and SMCLightSensor (acidanthera) | SMC emulation, battery status; the light-sensor plug-in is on the ESP but disabled |
+| [AppleALC](https://github.com/acidanthera/AppleALC) (acidanthera) | ALC285 codec (a local build with a GA403WM layout) |
+| [SimpleHDA](https://github.com/laobamac/SimpleHDA) (laobamac) | brings AppleHDA back on macOS 26 |
+| [WhateverGreen](https://github.com/acidanthera/WhateverGreen) (acidanthera) | on the ESP, disabled in this configuration |
+| [NVMeFix](https://github.com/acidanthera/NVMeFix) (acidanthera) | NVMe power management |
+| [BrightnessKeys](https://github.com/acidanthera/BrightnessKeys) (acidanthera) | brightness hot keys |
+| [RestrictEvents](https://github.com/acidanthera/RestrictEvents) (acidanthera) | CPU name and the `sbvmm` patch |
+| [BlueToolFixup](https://github.com/acidanthera/BrcmPatchRAM) (acidanthera, BrcmPatchRAM) | lets `bluetoothd` accept a non-Apple controller |
+| [AMFIPass](https://github.com/dortania/OpenCore-Legacy-Patcher) (dhinakg, shipped with OpenCore Legacy Patcher) | lets platform binaries load the ad hoc signed driver bundles |
+| [USBToolBox](https://github.com/USBToolBox/kext) (dhinakg) | USB port map |
+| [VoodooI2C](https://github.com/VoodooI2C/VoodooI2C), [VoodooI2CHID](https://github.com/VoodooI2C/VoodooI2CHID), VoodooGPIO, VoodooInput | the I2C-HID touchpad |
+| [NullEthernet](https://github.com/RehabMan/OS-X-Null-Ethernet) (RehabMan) | the fake `en0` |
+| [ForgedInvariant](https://github.com/ChefKissInc/ForgedInvariant) (ChefKiss) | TSC synchronisation on AMD |
+| [Sinetek-rtsx](https://github.com/sinetek/Sinetek-rtsx) | Realtek SD-card reader driver (loaded; function not verified) |
+| [HoRNDIS](https://github.com/jwise/HoRNDIS) (Joshua Wise) | USB tethering from an Android phone while installing |
+| AppleMCEReporterDisabler | stops the AppleIntelMCEReporter panic on AMD |
+
+**GPU, video and virtualization**
+
+| Project | Used for |
+|---|---|
+| [NullMoth's NVIDIA driver for macOS](https://github.com/nullmoth/nvidia-macos-driver) (NullMoth) | the RTX 5060 driver in Standard mode, and the NMX stack (`NMXGPU`, `NMXAccel`, the Metal plugin and translator) that the 890M work is a [fork](https://github.com/thanhnndev/nvidia-macos-driver) of |
+| The Linux kernel's [amdgpu and DRM](https://gitlab.freedesktop.org/drm/kernel) (AMD and the DRM maintainers) | the driver source `NMXGPU` is a port of (display core included), and the reference flow the documents compare against |
+| FreeBSD [drm-kmod](https://github.com/freebsd/drm-kmod) and LinuxKPI ([freebsd-src](https://github.com/freebsd/freebsd-src)) | the copy of amdgpu that is built, and the compatibility layer the port's "xkpi" layer comes from |
+| [Mesa](https://gitlab.freedesktop.org/mesa/mesa) / RADV, with libdrm and glslang | the Vulkan driver under the Metal plugin and the VCN video decode (built with `scripts/radv`) |
+| [FFmpeg](https://ffmpeg.org/) (libavcodec, LGPL build) and the Khronos Vulkan headers | `VCNDec`: Vulkan video decode of H.264, HEVC, VP9 and AV1 (`tools/890m/vcndec/ff-build.sh`) |
+| [ryzen-hypervisor.framework](https://github.com/OverlordDev/ryzen-hypervisor.framework) (OverlordDev) | `RyzenHV`, the SVM hypervisor Docker and the Android emulator run on; the machine runs a [fork](https://github.com/thanhnndev/ryzen-hypervisor.framework) |
+
+**Wi-Fi, Bluetooth and ASUS controls (through the sibling repositories)**
+
+| Project | Used for |
+|---|---|
+| The Linux kernel's `mt76` / `mt7925` and `btmtk` drivers, and MediaTek's MT7925 firmware | hardware layer, reference and firmware of [mt7925-macos](https://github.com/thanhnndev/mt7925-macos) |
+| [asusctl](https://gitlab.com/asus-linux/asusctl) / [asus-linux.org](https://asus-linux.org/) and the Linux `asus-wmi` / `asus-armoury` drivers | reference for the ASUS WMI and EC interface in [rog-control-macos](https://github.com/thanhnndev/rog-control-macos) |
+| G-Helper, itlwm, k10temp | further design references, listed in the `NOTICE.md` of the two sibling repositories |
+
+**Authoring**
+
+| | |
+|---|---|
+| [Claude](https://www.anthropic.com/claude) (Anthropic) | wrote almost all of the code and documents of this project, directed and tested by the maintainer |
 
 ## Contributing and license
 
 Maintained by [thanhnndev](https://github.com/thanhnndev). GA403WM owners: use the **Hardware report** issue template and read [CONTRIBUTING.md](CONTRIBUTING.md).
 
-Thanks to [NullMoth](https://github.com/nullmoth/1401) for the EFI base and the NVIDIA driver, [OverlordDev](https://github.com/OverlordDev/ryzen-hypervisor.framework) for the hypervisor, Acidanthera for OpenCore/Lilu/VirtualSMC/AppleALC, Mesa (RADV) and Linux `amdgpu`, `mt76`, `btmtk`, `asus-wmi` and `asusctl` for code and design references. Full credits and licenses: [NOTICE.md](NOTICE.md).
+Credits for the projects this setup uses or derives from: [Credits](#credits) above. Licences: [NOTICE.md](NOTICE.md).
 
 Code in this repository uses the [Clear BSD License](LICENSE). **The EFI derives from `nullmoth/1401`, and everything from the nvidia-macos-driver fork (NMXGPU, NMXAccel, the Metal plugin, the translator) is PolyForm Noncommercial 1.0.0: noncommercial use only**; none of the fork's code is in this repository's release assets.
 
