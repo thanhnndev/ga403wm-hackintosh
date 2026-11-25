@@ -8,7 +8,7 @@
 #   macos-nvmtl-radv-install.sh --undo                     put the newest backup back
 #
 # Build: ~/develop/projects/radv-video/build-res.sh = Mesa bffd919 + NullMoth mesa-macos.patch + radv-nmxmap.patch +
-# scripts/radv/radv-nvmtl-surface-list.patch, then install names -> /usr/lib/libz and /Library/GPUBundles/nvmtl libdrm,
+# scripts/radv/radv-nvmtl-surface-list.patch + scripts/radv/radv-disk-cache-euid.patch (WS-CPU 8.5), then install names -> /usr/lib/libz and /Library/GPUBundles/nvmtl libdrm,
 # rpaths removed, ad hoc signed. The swap is a rename: processes that mapped the old file keep it until they restart;
 # WindowServer picks the new one up at its next start.
 set -euo pipefail
