@@ -744,3 +744,40 @@ says which of imported caller pages (video and window surfaces, plus the surface
 blocks kept by one live buffer, or MTLHeaps make the non-image half, and whether any of it climbs with uptime.
 
 Also bounded already: the SPIR-V NSCache memo (96 MB cost limit, 256 entries, evicts under pressure).
+
+### 9.6 GPU work per present in WindowServer: why full-screen (2026-11-25, pass timer, 10:51 capture)
+
+Source: WindowServer's pass-time log (pid 210, 160 command buffers = 80 presents, plugin AAC482F2), bucketed by
+pass size and fragment-shader hashes (FNV of the SPIR-V, `ptpso` lines). Every present is the same pair, no other
+shape occurs in the 400 lines:
+
+| cb | pass | size | fragment shaders | GPU µs (avg / median / max) |
+|----|------|------|------------------|-----------------------------|
+| A  | 0 | 2880x1800 | c47fdb87 51c25fc1 9661ec86 d99bf777 | 9-31 |
+| A  | 1, 2 | 79x79 (cursor-sized, offscreen) | c47fdb87 | 8.3 each |
+| A  | 3 | 2880x1800 | c47fdb87 f287b0c0 0f78ee2f d3a153b6 | 760 median, 703-1476 |
+| B  | 0 | 2880x1800 | f1c2052c only | 245 / 275 max |
+
+cb A avg 854 µs, cb B 245 µs: about 1.1 ms of GPU per present, 80/80 presents pay both. The cheap ~49 µs
+single-pass cbs (`f287b0c0` only) at the end of the capture file are **not WindowServer**: they are my carender test
+(pid 10828, DAMAGE=1, cursor rects only). The file's second section (pid 3607) is Zalo's GPU helper, armed by the
+same /tmp trigger.
+
+Shaders, matched against the carender scene whose layers are known (same vertex shaders 59184bee / 42e874f9 /
+ef8d79c8): f287b0c0 (vs 59184bee) = solid-colour fill (the only shader of a cursor-rect-only present);
+c47fdb87 (vs 42e874f9) = plain textured layer (the text layer's redraw every 60 frames adds it); 2dd94a1d = rounded
+corners, 02fa1547 (vs ef8d79c8) = shadow. 51c25fc1 / 9661ec86 / d99bf777 are the vs ef8d79c8 family (shapes,
+shadows). f1c2052c and 0f78ee2f / d3a153b6 have no match in the test; their SPIR-V is in root's
+~/Library/Caches/nvmtl/pstat and was not read.
+
+Why full-screen: pass 3 takes 760 µs at 2880x1800, 2.5x the carender full redraw of a 4-window scene at the same
+size (300 µs) and 15-60x its damage-only present (13-50 µs). So WindowServer recomposites the whole screen (textured
+layers + fills) on every present, then runs a second full-screen single-texture pass (cb B). cb B fits CoreDisplay's
+colour stage on the GPU (`Dirty Regamma/Linearize/CSC - GPU`, 890M-MACOS-HANDOFF.md: the framebuffer has no gamma or
+CSC), which is full-screen by design. The likely reason for the full recomposite is that our flip path gives
+WindowServer no preserved back buffer, so each new framebuffer surface is redrawn whole; not yet proven, because the
+live plugin has no draw-rect census. Plugin 9a2922a1 (claude/mem-census) adds one ("frame census draw area per
+present": passes, attachment Mpx, >= 4 Mpx passes by load/repaint, scissored Mpx) and answers it in one boot.
+
+The two 79x79 passes are the software cursor (NMXAMDFB reports no hardware cursor). They cost 17 µs; what the cursor
+costs is that every cursor move is a full 1.1 ms present plus a flip.
