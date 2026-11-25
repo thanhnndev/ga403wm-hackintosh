@@ -62,7 +62,7 @@ int main(int argc, char **argv) { @autoreleasepool {
     NSMutableArray *ballast = [NSMutableArray array];
     { const char *e = getenv("EXTRA_BOS"); int n = e ? atoi(e) : 0;
       for (int i = 0; i < n; i++) [ballast addObject:[d newBufferWithLength:(1<<20) options:MTLResourceStorageModePrivate]]; }
-    const int W = 1920, H = 1200;
+    const int W = getenv("FB_W") ? atoi(getenv("FB_W")) : 1920, H = getenv("FB_H") ? atoi(getenv("FB_H")) : 1200;
     MTLTextureDescriptor *td = [MTLTextureDescriptor texture2DDescriptorWithPixelFormat:MTLPixelFormatBGRA8Unorm width:W height:H mipmapped:NO];
     td.storageMode = MTLStorageModePrivate; td.usage = MTLTextureUsageShaderRead | MTLTextureUsageRenderTarget;
     id<MTLTexture> fb[3];
@@ -152,7 +152,10 @@ int main(int argc, char **argv) { @autoreleasepool {
             id<MTLTexture> jv = [fb[0] newTextureViewWithPixelFormat:MTLPixelFormatBGRA8Unorm_sRGB]; (void)jv; }
         [r setDestination:fb[f % 3]];
         [r beginFrameAtTime:CACurrentMediaTime() timeStamp:NULL];
-        [r addUpdateRect:r.bounds];
+        // DAMAGE=1: only the cursor's old and new rects are dirty (what a cursor move is to WindowServer); default: all
+        { static int dmg = -1; if (dmg < 0) dmg = getenv("DAMAGE") != NULL;
+          if (dmg && f > 0) { [r addUpdateRect:CGRectInset(cursor.frame, -8, -8)]; [r addUpdateRect:CGRectMake(100 + ((f - 1) * 7) % (W - 200) - 20, 100 + ((f - 1) * 3) % (H - 200) - 20, 64, 64)]; }
+          else [r addUpdateRect:r.bounds]; }
         [r render];
         [r endFrame];
         if (census) census(1);   // NVC_CAWUS: one present
