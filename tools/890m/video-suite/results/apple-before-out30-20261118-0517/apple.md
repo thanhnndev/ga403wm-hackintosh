@@ -1,12 +1,12 @@
 | app | codec | profile / depth | size | container | plays | decoder | frame check ok / near / bad / unreadable | VTDec % | WebKit GPU % | WebContent % | QuickTime % | pass | note |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|
 | QuickTime | H.264 | High 8-bit | 1080p30 | MP4 | no | - | n/a (vt_check) | - | - | - | - | FAIL | osascript: Command failed: osascript -e tell application "QuickTime Player" to return current time of (first document wh |
-| QuickTime | H.264 | High 8-bit | 1080p60 | MP4 | no | - | n/a (vt_check) | - | - | - | - | FAIL | osascript: Command failed: osascript -e tell application "QuickTime Player"       set d to open POSIX file "/Users/thanh |
-| QuickTime | H.264 | High 8-bit | 2160p30 | MP4 | no | - | n/a (vt_check) | - | - | - | - | FAIL | osascript: Command failed: osascript -e tell application "QuickTime Player"       set d to open POSIX file "/Users/thanh |
-| QuickTime | H.264 | High 8-bit | 1080p60 | fMP4 | no | - | n/a (vt_check) | - | - | - | - | FAIL | osascript: Command failed: osascript -e tell application "QuickTime Player"       set d to open POSIX file "/Users/thanh |
-| QuickTime | HEVC | Main 8-bit | 1080p60 | MP4 | no | - | n/a (vt_check) | - | - | - | - | FAIL | osascript: Command failed: osascript -e tell application "QuickTime Player"       set d to open POSIX file "/Users/thanh |
+| QuickTime | H.264 | High 8-bit | 1080p60 | MP4 | no | - | n/a (vt_check) | - | - | - | - | FAIL | osascript: Command failed: osascript -e tell application "QuickTime Player"       set d to open POSIX file "~ |
+| QuickTime | H.264 | High 8-bit | 2160p30 | MP4 | no | - | n/a (vt_check) | - | - | - | - | FAIL | osascript: Command failed: osascript -e tell application "QuickTime Player"       set d to open POSIX file "~ |
+| QuickTime | H.264 | High 8-bit | 1080p60 | fMP4 | no | - | n/a (vt_check) | - | - | - | - | FAIL | osascript: Command failed: osascript -e tell application "QuickTime Player"       set d to open POSIX file "~ |
+| QuickTime | HEVC | Main 8-bit | 1080p60 | MP4 | no | - | n/a (vt_check) | - | - | - | - | FAIL | osascript: Command failed: osascript -e tell application "QuickTime Player"       set d to open POSIX file "~ |
 | QuickTime | HEVC | Main10 10-bit | 1080p60 | MP4 | no | - | n/a (vt_check) | - | - | - | - | FAIL | osascript: Command failed: osascript -e tell application "QuickTime Player" to return current time of (first document wh |
 | QuickTime | HEVC | Main 8-bit | 2160p60 | MP4 | no | - | n/a (vt_check) | - | - | - | - | FAIL | osascript: Command failed: osascript -e tell application "QuickTime Player" to return current time of (first document wh |
-| QuickTime | HEVC | Main 8-bit | 1080p60 | fMP4 | no | - | n/a (vt_check) | - | - | - | - | FAIL | osascript: Command failed: osascript -e tell application "QuickTime Player"       set d to open POSIX file "/Users/thanh |
-| QuickTime | AV1 | main 8-bit | 1080p30 | MP4 | no | - | n/a (vt_check) | - | - | - | - | FAIL | osascript: Command failed: osascript -e tell application "QuickTime Player"       set d to open POSIX file "/Users/thanh |
-| QuickTime | AV1 | main 10-bit | 1080p30 | MP4 | no | - | n/a (vt_check) | - | - | - | - | FAIL | osascript: Command failed: osascript -e tell application "QuickTime Player"       set d to open POSIX file "/Users/thanh |
+| QuickTime | HEVC | Main 8-bit | 1080p60 | fMP4 | no | - | n/a (vt_check) | - | - | - | - | FAIL | osascript: Command failed: osascript -e tell application "QuickTime Player"       set d to open POSIX file "~ |
+| QuickTime | AV1 | main 8-bit | 1080p30 | MP4 | no | - | n/a (vt_check) | - | - | - | - | FAIL | osascript: Command failed: osascript -e tell application "QuickTime Player"       set d to open POSIX file "~ |
+| QuickTime | AV1 | main 10-bit | 1080p30 | MP4 | no | - | n/a (vt_check) | - | - | - | - | FAIL | osascript: Command failed: osascript -e tell application "QuickTime Player"       set d to open POSIX file "~ |

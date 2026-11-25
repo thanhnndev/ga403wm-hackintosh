@@ -199,7 +199,7 @@ therefore not needed and no log patch was made.
 ## 7. Root commands for main (run via `launchctl submit` / osascript; output to /var/tmp)
 
 1. Steady probe with IPIs/interrupts (after the owner sets up a true idle, section 1):
-   `sudo /Users/thanhnndev/develop/projects/ga403wm-hackintosh/.claude/worktrees/upbeat-colden-d050ad/tools/health-probe.sh floor 120 /var/tmp/health-floor`
+   `sudo <repo>/tools/health-probe.sh floor 120 /var/tmp/health-floor`
 2. Who is kernel_task (Wi-Fi loop, kick, I2C, VBL), 10 s at 1 ms, during the same steady idle and again with Claude
    streaming:
    `sudo spindump -noProcessingWhileSampling 0 10 1 -o /var/tmp/kt-idle.spindump` then

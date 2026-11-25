@@ -3969,7 +3969,7 @@ keep `0x711` limited to the verified K5/type `0x10` reply and leave `0x925` Unsu
 ## Step66 — exact AGDC 0x2001 ack + first-pipe observability (2026-10-23 17:xx, offline)
 
 Work was done only in the isolated NMX worktree
-`/Users/thanhnndev/develop/projects/nmx-agdc-investigate-20261023`, branch
+`~/develop/projects/nmx-agdc-investigate-20261023`, branch
 `codex/nmx-agdc-clientset-trace`; the dirty development checkout was not reset or overwritten. No kext was installed,
 `nmxamd=1` remains removed, and there was no reboot.
 
@@ -6942,7 +6942,7 @@ still be taken (connect interrupt, like NVRMFB's `fHotplugBorn` path).
 
 Verify over several boots with `-nvrmnohold` (it is a ~0.6 s race): "Done waiting for IOKitWaitQuiet" (bluetoothd) and
 WindowServer's first `IOFBSetDisplayModeAndDepth` on VGA@0 come after "NMXAMDFB published", and no
-`Setting main display 0x00000000 offline`. Report: https://claude.ai/artifact/YaTnhdFy7As59STtf699BM
+`Setting main display 0x00000000 offline`. Report: a private report page (not published)
 
 ## Step114: NMXGPU spin lock timeout panic (`nmx_thread_lock`), root-cause fix in source (2026-11-05, not built, not installed)
 

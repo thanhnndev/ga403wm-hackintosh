@@ -395,7 +395,7 @@ On AC: 27–40 W package, Tctl 78–91 °C.
 
 ## Re-baseline on the 21:51 boot (out-20 Step138, RyzenHV 0.7.17, BtLeDlFix 1.3.0), 21:56–22:00
 
-Load: Chrome video, the Claude app, the pathcan backend's python dev server (one full core, another project).
+Load: Chrome video, the Claude app, the otherproj backend's python dev server (one full core, another project).
 **Docker was not started on this boot** (no hyperkit, RyzenHV `vmCreates 0`), so this is not like-for-like with
 20:52 and the Docker fix is not confirmed yet. Starting Docker is the owner's call.
 
@@ -559,7 +559,7 @@ minute.
 
 ## Boot 23:51 check (plugin 9bfd0c5, ItlXhciKick 5D179C74, StrixS0ix 0.1.15, Wi-Fi 25F33563), 23:55–00:07
 
-Load: Chrome video, Claude app, Docker (pathcan containers idle), pathcan python backend.
+Load: Chrome video, Claude app, Docker (otherproj containers idle), otherproj python backend.
 
 **Power:** 17–28 W, Tctl 64–66 °C (20:52 boot: 27–40 W, 78–91 °C). Wired 16.3 GB, compressor 1.7 GB.
 
@@ -828,16 +828,16 @@ idle of 5.5 W / 47 °C (Tctl) is the best macOS number so far.
 
 Raw outputs of all three runs: `tools/health/2026-11-16/` (`184740-now-1`, `185424-idle-1`, `185636-final`).
 
-| | 18:56 (Docker + Android emulator + pathcan backend + Claude) |
+| | 18:56 (Docker + Android emulator + otherproj backend + Claude) |
 |---|---|
 | Package power (60 s RAPL) | **62.2 W** |
 | Tctl min/avg/max | **91 / 95 / 96 °C**, fans 59/60 (raw) |
 | EPP / idle mode | 0 / 0 |
 | Wired / compressor | **19.5 GB / 5.6 GB (holds 12 GB)**, no swap |
-| Top processes | `com.docker.hyperkit` **445 %**, kernel_task **108 %**, Android emulator `qemu-system-x86_64` (Medium_Phone_API_37) 96 %, `com.docker.backend` 77 %, 8 × pathcan backend `python3.13` 29–52 % each (~3.1 cores), Claude ~0.4 core |
+| Top processes | `com.docker.hyperkit` **445 %**, kernel_task **108 %**, Android emulator `qemu-system-x86_64` (Medium_Phone_API_37) 96 %, `com.docker.backend` 77 %, 8 × otherproj backend `python3.13` 29–52 % each (~3.1 cores), Claude ~0.4 core |
 
 This is the "video + Claude + Docker" class of daily load, with an emulator instead of video. The owner's apps are
-untouched; the pathcan server is the owner's project.
+untouched; the otherproj server is the owner's project.
 
 ## Ranked causes and final state (2026-11-16, close-out of the thermal side session)
 

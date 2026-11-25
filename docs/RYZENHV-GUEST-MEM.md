@@ -83,7 +83,7 @@ Guest `/proc/meminfo` (read via `docker exec`, VM-wide):
 | MemAvailable | 5.60 |
 
 - The hot set is about 2.3-2.8 GB. About 5 GB is cold cache, reclaimable slab or free.
-- The containers: pathcan-p0-pg 1.14 GiB, clamav 1.03 GiB, the rest under 0.1 GiB each.
+- The containers: otherproj-p0-pg 1.14 GiB, clamav 1.03 GiB, the rest under 0.1 GiB each.
 - The guest has 1 GiB of swap, unused. THP is `[always]`, which matches 2 MiB chunks.
 - The VM's virtio devices are net, blk ×2, vsock and rng. **There is no virtio-balloon**: HyperKit has no balloon device, so free-page reporting or
   a balloon cannot work without changing HyperKit.
@@ -204,13 +204,13 @@ The old "in-kernel APIC timer/ICR or AVIC" plan drops out (2.2). The cheap wins 
 
 ### 2.4 Is postgres 217 % real work?
 
-Yes. `docker top pathcan-p0-pg` and `pg_stat_activity` were read through the container's local socket, as `POSTGRES_USER` from the container env, with no
+Yes. `docker top otherproj-p0-pg` and `pg_stat_activity` were read through the container's local socket, as `POSTGRES_USER` from the container env, with no
 password. They show short-lived connections from **172.17.0.1**, which is the Mac side through Docker's gateway. Each lives 1-6 s and runs DDL:
 
-- `CREATE TABLE ...`, `CREATE INDEX ix_access_audit_object_accessed ...`
+- `CREATE TABLE ...`, `CREATE INDEX ix_... ...`
 - `SELECT pg_advisory_xact_lock(...)`, and states "idle in transaction"
 
-Database `pathcan`: 38k commits and 18.6M tuples inserted in 25 min. This is a host-side test or migration runner that recreates schemas in a
+Database `otherproj`: 38k commits and 18.6M tuples inserted in 25 min. This is a host-side test or migration runner that recreates schemas in a
 loop. It is not the guest spinning on timers. Each DDL commit fsyncs WAL, which means virtio-blk work and an APFS fsync on the host.
 
 I could not determine which host process drives it: `com.docker.backend` only forwards the port.

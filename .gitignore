@@ -16,6 +16,20 @@ config.*.plist
 ITLLOG.BIN
 nv*.txt
 
+# local captures: they hold serial numbers, UUIDs, MAC addresses, SSIDs or process lists. out/ and ref/ are ignored
+# above; out/pre-upgrade-24H32/ is the one sanitized snapshot that is tracked on purpose (it was force-added).
+.DS_Store
+captures/
+logs/
+ioreg-*.txt
+ioreg*.plist
+*.ioreg
+*.panic
+*.shutdownStall
+*.spindump.txt
+tools/sim-bench/*.txt
+tools/sim-bench/flutter/out-*.txt
+
 # local tool binaries (fetched by tools/get-ipsw.sh)
 tools/bin/
 scripts/nmx-cstrace/cave.o

@@ -1309,7 +1309,7 @@ What remains is the 12.8 exercise (Preview/Photos Live Text, Photos search, Quic
 - Remedy: quit the Simulator (and Docker Desktop) before Shut Down. A Simulator assertion at device shutdown is an Xcode/CoreSimulator issue; the sims run on the 890M, but the stack is pure CoreSimulator bookkeeping.
 - The 17:47 and 11-16 reports are binary spindump files, readable by root only. Decode them the same way, e.g.:
   ```
-  sudo spindump -i /Library/Logs/DiagnosticReports/shutdown_stall_2026-11-18-174716_Thanhs-MacBook-Pro.shutdownStall -o /tmp/stall-1747.txt
+  sudo spindump -i /Library/Logs/DiagnosticReports/shutdown_stall_2026-11-18-174716_<hostname>.shutdownStall -o /tmp/stall-1747.txt
   ```
   The 17:47 one comes right after the out-33 hang at 17:46, so it may show the GPU side instead.
 
@@ -1422,7 +1422,7 @@ So the static read has to answer two questions, in this order:
 
 **Command (main, no root):**
 ```bash
-/Users/thanhnndev/develop/projects/ga403wm-hackintosh/.claude/worktrees/hungry-mclean-f82082/tools/890m/ips-static-read.sh 30 90
+<repo>/tools/890m/ips-static-read.sh 30 90
 ```
 
 **Reading the verdict:**

@@ -112,7 +112,7 @@ by itself. It has three modes:
    is neither attached nor suspended) and, at the same time, the per-thread `ps -M` delta and the present count.
 
 ```bash
-osascript -e 'do shell script "/Users/thanhnndev/develop/projects/ga403wm-hackintosh/.claude/worktrees/hungry-mclean-f82082/tools/890m/ws-cpu-profile.sh" with administrator privileges'
+osascript -e 'do shell script "<repo>/tools/890m/ws-cpu-profile.sh" with administrator privileges'
 ```
 
 The output goes to `~/ga403-logs/ws-cpu-<time>/` (`<mode>.spin.txt`, `<mode>.cpu.txt`). The owner sees a small window

@@ -266,7 +266,7 @@ CoreAnimation's SOFTWARE rasteriser. The only real cure is a GPU that runs graph
 that WindowServer is allowed to use. Do not drift into side issues ("mấy cái râu ria") and do not propose CPU
 mitigations as the end state (memory: full-port-not-workarounds). They said it hurts the machine; keep it short.
 
-Standing rules the owner enforces (all are in `~/.claude/projects/-Users-thanhnndev-develop-projects-ga403wm-hackintosh/memory/`):
+Standing rules the owner enforces (all are in the assistant's private memory folder on the reference machine, not in the repository):
 - **Batch changes per reboot.** Never ask for a reboot to test one fix. Every reboot must carry all pending fixes plus
   trace/diagnostics for every open question. Do not tell the owner to reboot until the batch is substantial.
 - **Never wait for builds.** Start builds in the background and do other work; no idle monitor loops.

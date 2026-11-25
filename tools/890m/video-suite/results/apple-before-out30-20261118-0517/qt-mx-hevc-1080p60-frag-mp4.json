@@ -10,7 +10,7 @@
  "fps": 60,
  "mode": "file",
  "errors": [
-  "osascript: Command failed: osascript -e tell application \"QuickTime Player\"       set d to open POSIX file \"/Users/thanhnndev/Library/Caches/ga403wm-video-suite/clips/mx-hevc-1080p60-frag.mp4\""
+  "osascript: Command failed: osascript -e tell application \"QuickTime Player\"       set d to open POSIX file \"~/Library/Caches/ga403wm-video-suite/clips/mx-hevc-1080p60-frag.mp4\""
  ],
  "plays": "no",
  "vcn": {

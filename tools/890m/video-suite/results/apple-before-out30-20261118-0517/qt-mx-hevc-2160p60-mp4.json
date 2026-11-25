@@ -10,8 +10,8 @@
  "fps": 60,
  "mode": "file",
  "errors": [
-  "osascript: Command failed: osascript -e tell application \"QuickTime Player\" to return current time of (first document whose path is \"/Users/thanhnndev/Library/Caches/ga403wm-video-suite/clips/mx-hevc-2160p60.mp4\") 46:58: execution error: QuickTime Player got an error: Can’t get path of document. (-1728)",
-  "close: Command failed: osascript -e tell application \"QuickTime Player\" to close (every document whose path is \"/Users/thanhnndev/Library/Caches/ga403wm-video-suite/clips/mx-hevc-2160p60.mp4\") saving no\n39:166: execution error: QuickTime Player got an error: Can’t get path of document. (-1728)\n"
+  "osascript: Command failed: osascript -e tell application \"QuickTime Player\" to return current time of (first document whose path is \"~/Library/Caches/ga403wm-video-suite/clips/mx-hevc-2160p60.mp4\") 46:58: execution error: QuickTime Player got an error: Can’t get path of document. (-1728)",
+  "close: Command failed: osascript -e tell application \"QuickTime Player\" to close (every document whose path is \"~/Library/Caches/ga403wm-video-suite/clips/mx-hevc-2160p60.mp4\") saving no\n39:166: execution error: QuickTime Player got an error: Can’t get path of document. (-1728)\n"
  ],
  "plays": "no",
  "vcn": {

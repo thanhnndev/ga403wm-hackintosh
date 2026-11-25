@@ -85,7 +85,7 @@ The initial visibility investigation above was followed by the system/driver inv
 
 ## System-wide follow-up and upstream candidate
 
-Source checkout: `/Users/thanhnndev/develop/projects/nvidia-macos-driver-ws`, base
+Source checkout: `~/develop/projects/nvidia-macos-driver-ws`, base
 `de9b33aa98dcb0ba6d5bf624fc3817e4a2d8bd66`; candidate commit
 `68b4ce209a32135385ec4b27221fc8c2cecfc484`.
 [Draft PR #139](https://github.com/nullmoth/nvidia-macos-driver/pull/139) proposes an upload-copy optimization.

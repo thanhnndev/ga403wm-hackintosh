@@ -300,7 +300,7 @@ The owner's rule: fix these at the root in the NMXGPU source, with no new binary
    - Fix: in `attachNow()` call `adjustBusy(+1)` right after `nmx_xnu_wait_firmware_root` returns OK. Call `adjustBusy(-1)` on every exit, or once NMXAMDFB is published. Add a cap thread_call (about 30 s) and an `nmxgpu-boot-hold` property.
      - Not in `start()`: a hold there blocks root mount while the attach thread waits for firmware, and the boot hangs at the logo.
    - Secondary, lower priority: WindowServer does not adopt NMXAMDFB when it appears about 0.5 s late.
-   - Status: not written. The report is at https://claude.ai/artifact/YaTnhdFy7As59STtf699BM.
+   - Status: not written. The report is at a private report page (not published).
    - Unblocks: `-nvrmnohold` (NVRM stops holding for the RTX) and about 3 s off boot.
 2. **`nmx_thread_lock` spin lock deadlock in xkpi** (TRACE Step114, b3ece92; panic Kernel-2026-11-05-111129).
    - What happens: WindowServer CS submit → `lkpi_kfree` → `nmx_curthread` → `nmx_thread_get` holds the spin lock while a cross-call IPI waits.
