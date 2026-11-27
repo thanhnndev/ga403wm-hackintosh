@@ -28,7 +28,7 @@
 | ✅ Màn hình | OLED trong máy chạy trên Radeon 890M, 2880x1800 120 Hz, độ sáng, Metal cho mọi app, WebGL; màu và con trỏ xử lý bằng phần cứng |
 | ✅ Video | Giải mã phần cứng H.264, HEVC, VP9, AV1 (`VCNDec`) |
 | ✅ Wi-Fi / Bluetooth | MediaTek MT7925 với menu Wi-Fi gốc; thiết bị BLE ([mt7925-macos](https://github.com/thanhnndev/mt7925-macos)) |
-| ✅ Điều khiển ROG | Chế độ hiệu năng, quạt, giới hạn công suất (đã đo giữ 25 W ngày 2026-11-27), giới hạn sạc, chế độ GPU Eco, đèn bàn phím, Slash, phím Fn ([rog-control-macos](https://github.com/thanhnndev/rog-control-macos)) |
+| ✅ Điều khiển ROG | Chế độ hiệu năng, quạt, giới hạn công suất (đặt mức 25 W và giữ được, đo ngày 2026-11-27), giới hạn sạc, chế độ GPU Eco, đèn bàn phím, Slash, phím Fn ([rog-control-macos](https://github.com/thanhnndev/rog-control-macos)) |
 | ✅ Âm thanh | Cả bốn loa; cặp micro trong có lọc ồn (micro thứ ba chưa dùng được) |
 | ✅ Nhập liệu, USB, webcam | Bàn phím, touchpad (chạy ngắt GPIO với bản build từ [VoodooGPIO PR #22](https://github.com/VoodooI2C/VoodooGPIO/pull/22) upstream, không kèm ở đây; nếu không thì dùng chế độ polling), USB, camera UVC |
 | ✅ Công cụ lập trình | Docker Desktop và Android emulator (`RyzenHV`), iOS Simulator |
@@ -50,7 +50,7 @@ Từng mục kèm ngày và bằng chứng: [docs/STATE-AND-ROADMAP.md](docs/STA
 
 Repo này giữ EFI OpenCore tham khảo (`efi/`, serial là giá trị giả), tài liệu, công cụ cho 890M và các kext nhỏ
 `ItlXhciKick` (sửa lag USB), `StrixS0ix` (ngủ S0), `StrixSbxMap` (WebGL trên Safari) và `TapGuard`.
-Toàn bộ file build của các repo này ở một chỗ: release [v2.1](https://github.com/thanhnndev/ga403wm-hackintosh/releases/tag/v2.1).
+Release [v2.1](https://github.com/thanhnndev/ga403wm-hackintosh/releases/tag/v2.1) gom các file build đã phát hành của các repo này; driver GPU (`NMXGPU`), plugin Metal của nó và RyzenHV chỉ có mã nguồn.
 macOS 15 Sequoia là cấu hình cũ: release [v1](https://github.com/thanhnndev/ga403wm-hackintosh/releases/tag/v1), hướng dẫn [docs/INSTALL.vi.md](docs/INSTALL.vi.md).
 
 ## Ghi công

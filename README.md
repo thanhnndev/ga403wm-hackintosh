@@ -28,7 +28,7 @@
 | ✅ Display | Internal OLED on the Radeon 890M, 2880x1800 at 120 Hz, brightness, Metal for all apps, WebGL; hardware colour pipeline and cursor plane |
 | ✅ Video | Hardware decode of H.264, HEVC, VP9, AV1 (`VCNDec`) |
 | ✅ Wi-Fi / Bluetooth | MediaTek MT7925 with the native Wi-Fi menu; BLE devices ([mt7925-macos](https://github.com/thanhnndev/mt7925-macos)) |
-| ✅ ROG controls | Performance modes, fans, power limits (25 W cap measured 2026-11-27), charge limit, GPU Eco mode, keyboard light, Slash, Fn keys ([rog-control-macos](https://github.com/thanhnndev/rog-control-macos)) |
+| ✅ ROG controls | Performance modes, fans, power limits (a 25 W limit set and held, measured 2026-11-27), charge limit, GPU Eco mode, keyboard light, Slash, Fn keys ([rog-control-macos](https://github.com/thanhnndev/rog-control-macos)) |
 | ✅ Audio | All four speakers; internal microphone pair with noise reduction (third mic not reachable) |
 | ✅ Input, USB, webcam | Keyboard, touchpad (on GPIO interrupts with a build of the upstream [VoodooGPIO PR #22](https://github.com/VoodooI2C/VoodooGPIO/pull/22), not included here; forced polling otherwise), USB, UVC camera |
 | ✅ Dev tools | Docker Desktop and the Android emulator (`RyzenHV`), iOS Simulator |
@@ -50,7 +50,7 @@ Every item with its date and evidence: [docs/STATE-AND-ROADMAP.md](docs/STATE-AN
 
 This repository holds the OpenCore EFI reference (`efi/`, with placeholder serials), the docs, the 890M tools and the
 small kexts `ItlXhciKick` (USB lag fix), `StrixS0ix` (S0 sleep), `StrixSbxMap` (Safari WebGL) and `TapGuard`.
-All binaries of these repositories in one place: release [v2.1](https://github.com/thanhnndev/ga403wm-hackintosh/releases/tag/v2.1).
+Release [v2.1](https://github.com/thanhnndev/ga403wm-hackintosh/releases/tag/v2.1) collects the released binaries of these repositories; the GPU driver (`NMXGPU`), its Metal plugin and RyzenHV are source only.
 macOS 15 Sequoia is the older setup: release [v1](https://github.com/thanhnndev/ga403wm-hackintosh/releases/tag/v1), guide [docs/INSTALL.md](docs/INSTALL.md).
 
 ## Credits
