@@ -179,9 +179,9 @@ package of 2026-11-27 (live since the 15:34 boot) follow its install notes and s
 
 | Component | Where it loads from | Version | UUID | Source commit |
 |---|---|---|---|---|
-| NMXGPU (`com.nullmoth.NMXGPU`) | AuxKC | 1.0.0, build out-51 | DC67434B | nvidia-macos-driver fork, integration build edb0c79a (2026-11-27; replaces out-50 7390F47B, f47d3ed). Boot-args `nmxhwcolor=1 nmxhwcur=1` |
-| NMXAccel (`com.nullmoth.NMXAccel`) | AuxKC | 0.1 | 4C8A5A6E | fork, 2026-11-27 package (replaces D454C218) |
-| NMXAGDC (`com.ga403wm.NMXAGDC`) | AuxKC | 0.1 | 9182A055 | fork, 2026-11-27 package (replaces 90C7A833) |
+| NMXGPU (`com.nullmoth.NMXGPU`) | AuxKC | 1.0.0, build out-51 | DC67434B | nvidia-macos-driver fork, `claude/integ-out51` edb0c79a (2026-11-27; replaces out-50 7390F47B, f47d3ed). Boot-args `nmxhwcolor=1 nmxhwcur=1` |
+| NMXAccel (`com.nullmoth.NMXAccel`) | AuxKC | 0.1 | 4C8A5A6E | fork, `claude/integ-out51` 8c3ad77f, 2026-11-27 package (replaces D454C218) |
+| NMXAGDC (`com.ga403wm.NMXAGDC`) | AuxKC | 0.1 | 9182A055 | fork, `claude/integ-out51` 8c3ad77f, 2026-11-27 package (replaces 90C7A833) |
 | Metal plugin (NVMTLDriver) | `/Library/GPUBundles` | - | 36577BD4 | fork, `claude/mem-census` a6cec1ba (replaces AAC482F2 / 8de348c) |
 | Shader translator | `/Library/GPUBundles` | - | - | 6208982 (installed 2026-11-18; no later entry in the log) |
 | RADV (`libvulkan_radeon.dylib`) | `/Library/GPUBundles/nvmtl` | - | 07725f8c (hash prefix from the log) | Mesa built with `-Dvideo-codecs=all` + `scripts/radv/radv-disk-cache-euid.patch` |
@@ -190,10 +190,10 @@ package of 2026-11-27 (live since the 15:34 boot) follow its install notes and s
 | AsusWmi | ESP | 0.3.2 | 4430BC34 | rog-control-macos PR #21 (curve checks), 2026-11-27 package (replaces 0.3.1 42393DEB) |
 | AmdCppc | ESP | 0.2.1 | 2EBD4419 | rog-control-macos; commit not in the log |
 | RogControl.app, rogkeyd | `/Applications`, user LaunchAgent | 0.6.0, 1.2 | - | rog-control-macos `feat/gpu-mode` (PR #17, open); as of 2026-11-16, not re-read on 2026-11-25 |
-| RyzenHV | ESP | 0.7.25 | CCD7FEC3 | ryzen-hypervisor.framework fork, 2026-11-27 package (replaces 0.7.24 4DB41FBD, `fix/vmcb-cache-switch` 11ec930); commit not recorded here |
+| RyzenHV | ESP | 0.7.25 | CCD7FEC3 | ryzen-hypervisor.framework fork, 42ce5e1 (a CPL fix on top of 0.7.24 11ec930), 2026-11-27 package (replaces 0.7.24 4DB41FBD) |
 | itlmt7925 (core) | ESP | 0.1.0 | D2CAADD0 | mt7925-macos `dev/awdl` (0ec468c records the install) |
 | itlmt7925Native | ESP | 0.1.0 | 149441A4 | mt7925-macos |
-| MtkBtFw | ESP | 0.3.3 | 41826D92 | mt7925-macos, 2026-11-27 package (replaces 0.3.1 D173A506) |
+| MtkBtFw | ESP | 0.3.3 | 41826D92 | mt7925-macos d5c3f8b (MT7922 port on top of 0.3.2), 2026-11-27 package (replaces 0.3.1 D173A506) |
 | BtLeDlFix | ESP | 1.4.0 | C6274348 | mt7925-macos |
 | StrixS0ix | AuxKC | 0.1.17 | 1700FABF | this repo, `kexts/StrixS0ix` |
 | StrixSbxMap | ESP | 0.1.0 | F66BFC76 | this repo, `kexts/StrixSbxMap` |
@@ -360,6 +360,9 @@ Done on 2026-11-27 (NMXGPU out-51, live since the 15:34 boot):
   load (was about 20 %; ItlXhciKick off for the XHCILagFix test).
 
 Open from these: the grey-ramp eye check, colour after an HDMI or client modeset, the cursor after logout/login.
+
+Next build: NMXGPU out-52 (DF3DC7B3, fork `claude/integ-out52` 748651f4: a cursor buffer per image, and run counting
+for thread calls). Built, under review, not installed.
 
 1. **SPL firmware rejection.** Install and verify `AsusWmi` 0.3.3 (section 4, item 20).
 2. **Touchpad forced polling.** The largest remaining polling thread in `kernel_task`.
