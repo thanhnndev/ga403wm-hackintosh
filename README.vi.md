@@ -3,9 +3,9 @@
 **macOS 26 Tahoe trên ASUS ROG Zephyrus G14 2025 (GA403WM)**: Ryzen AI 9 HX 370, Radeon 890M, RTX 5060 Laptop, OLED 2880x1800 120 Hz.
 
 <p align="center">
-  <img src="https://raw.githubusercontent.com/thanhnndev/rog-control-macos/rogcontrol-v0.6.0/docs/images/rogcontrol-window.png" alt="ROG Control trên macOS 26: số đo trực tiếp, chế độ hiệu năng, pin, giới hạn tùy chỉnh, đèn, chế độ GPU Eco" width="600">
+  <img src="https://raw.githubusercontent.com/thanhnndev/rog-control-macos/rogcontrol-v0.6.0/docs/images/rogcontrol-window.png" alt="ROG Control trên macOS 26: số đo trực tiếp, chế độ hiệu năng, pin, giới hạn tùy chỉnh, đèn, chế độ GPU Eco" width="560">
   &nbsp;
-  <img src="https://raw.githubusercontent.com/thanhnndev/rog-control-macos/rogcontrol-v0.6.0/docs/images/rogcontrol-popover.png" alt="Popover của ROG Control trên thanh menu" width="220">
+  <img src="https://raw.githubusercontent.com/thanhnndev/rog-control-macos/rogcontrol-v0.6.0/docs/images/rogcontrol-popover.png" alt="Popover của ROG Control trên thanh menu" width="200">
 </p>
 <p align="center"><em><a href="https://github.com/thanhnndev/rog-control-macos">ROG Control</a> 0.6.0: cửa sổ và popover trên thanh menu (số liệu mẫu)</em></p>
 

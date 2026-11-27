@@ -3,9 +3,9 @@
 **macOS 26 Tahoe on the ASUS ROG Zephyrus G14 2025 (GA403WM)**: Ryzen AI 9 HX 370, Radeon 890M, RTX 5060 Laptop, 2880x1800 120 Hz OLED.
 
 <p align="center">
-  <img src="https://raw.githubusercontent.com/thanhnndev/rog-control-macos/rogcontrol-v0.6.0/docs/images/rogcontrol-window.png" alt="ROG Control on macOS 26: live readings, performance mode, battery, custom limits, lighting, GPU mode Eco" width="600">
+  <img src="https://raw.githubusercontent.com/thanhnndev/rog-control-macos/rogcontrol-v0.6.0/docs/images/rogcontrol-window.png" alt="ROG Control on macOS 26: live readings, performance mode, battery, custom limits, lighting, GPU mode Eco" width="560">
   &nbsp;
-  <img src="https://raw.githubusercontent.com/thanhnndev/rog-control-macos/rogcontrol-v0.6.0/docs/images/rogcontrol-popover.png" alt="ROG Control menu bar popover" width="220">
+  <img src="https://raw.githubusercontent.com/thanhnndev/rog-control-macos/rogcontrol-v0.6.0/docs/images/rogcontrol-popover.png" alt="ROG Control menu bar popover" width="200">
 </p>
 <p align="center"><em><a href="https://github.com/thanhnndev/rog-control-macos">ROG Control</a> 0.6.0: the window and the menu bar popover (sample values)</em></p>
 
