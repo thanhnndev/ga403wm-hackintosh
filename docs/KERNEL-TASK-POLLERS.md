@@ -34,7 +34,7 @@ CPU % column below and names tid 418.
 |---|---|---|---|---|---|---|---|
 | 1 | **VoodooI2C touchpad** (`-vi2c-force-polling`) | ~10k I2C controller IRQs/s on CPU 0 (11-08) | 5-8 % of a core, all on CPU 0 | the boot-arg makes VoodooI2CHID read the touchpad on a timer instead of on its GpioInt | i2c-hid, GpioInt level-low via pinctrl-amd, threaded IRQ: 0 IRQs while idle | One test boot without `-vi2c-force-polling`. VoodooGPIOAMD is already bound to AMDI0030. If the touchpad works in interrupt mode, the cost goes to ~0 at rest. If it does not, the work is in VoodooGPIOAMD's AMD pin handling (third party). | boot-arg: main; code: third party |
 | 2 | **Wi-Fi m3 RX/TX pump** (`itlmt7925_m3.cpp:2789-2792`) | at 144 frames/s the 50 ms "keep polling" window is always re-armed, so the loop runs `IODelay(200)` passes at ~4-5k/s, each pass doing ring MMIO reads | 3-6 % | there is no interrupt: the driver registers no MSI and runs fully polled | mt7925e: MSI, then NAPI (mask IRQ, poll up to budget 64, unmask); 0 CPU when quiet | Short term: `IOSleep(1)` after one empty pass instead of the 50 ms `IODelay(200)` window (throughput has to be re-measured; baseline 29-36 MB/s). Real fix: WFDMA MSI and an interrupt event source that wakes the loop (the NAPI model). | Wi-Fi session (repo was edited today; not touched here) |
-| 3 | **ItlXhciKick** | 1,940 work-loop wakeups/s + 1,000 timer wakeups/s | 1-2 % plus IPIs | Strix xHCI has one MSI vector. Apple's driver puts transfer events on interrupter 1, which never raises it, so ring 1 has to be drained by kicking the event source. | xhci puts every event on interrupter 0, so one vector is enough and there is no poll | **Done on a branch (section 3):** kick only when ring 1/2 has an event queued; back off to 4 ms after 1 s quiet | ours (this session) |
+| 3 | **ItlXhciKick** | 1,940 work-loop wakeups/s + 1,000 timer wakeups/s | 1-2 % plus IPIs | Strix xHCI has one MSI vector. Apple's driver puts transfer events on interrupter 1, which never raises it, so ring 1 has to be drained by kicking the event source. | xhci puts every event on interrupter 0, so one vector is enough and there is no poll | **Replaced (section 5):** XHCILagFix rev2 puts control/bulk/interrupt events on interrupter 0, which raises the vector; live 2026-11-27 with ItlXhciKick off (`itlkick=0`). ItlXhciKick 0.2.x is no longer needed if it holds. | ours (this session) |
 | 4 | **NMXAMDFB software VBL** | 120/s, never stops | < 1 % (also keeps PSR out) | IOFramebuffer VBL emulation | DRM vblank IRQ, disabled after a few idle frames (then PSR) | `patches/power-floor/nmx-fb-vbl-gate.patch` (exists, not built) | main (NMXGPU) |
 | 5 | **NMXGPU work threads** (linuxkpi irq wq, gfx ring, ttm) | ~per frame (~1.6k/s at 11-08's load) | follows frames | real GPU work | the same | none at idle; this cost belongs to the per-frame WS work | main |
 | 6 | **Kernel logging, tid 418** | 28.8 lines/s | < 0.5 % | unknown kext (named by kt-probe) | n/a | Rate-limit or drop the line once it is named | owner of that kext |
@@ -85,3 +85,25 @@ undisturbed, which is the precondition for any CC6 gain (POWER-FLOOR #5).
 - **Not recovery related:** `object-storage-1` is in a restart loop (11 restarts). Its log says
   "MINIO_LICENSE_B64 is required for AIStor": the project's compose file uses the AIStor image without a licence
   variable. This is the owner's config.
+
+## 5. Live: XHCILagFix rev2 instead of ItlXhciKick (boot 2026-11-27 15:34:11)
+
+- **What:** the issue #9 Lilu plugin (hbyonly1/USBXHCIWakeup, local build only, no licence upstream: never published
+  or bundled). It clears the Interrupter Target of control/bulk/interrupt TRBs before Apple links them, and of the slot
+  context in `setAddress`, so those events land on interrupter 0, the one that raises the controller's single MSI.
+  Isochronous transfers are not routed: their filter timestamp is needed by `IsochRequest::update`.
+  Build UUID 987614EA-194A-32B8-8E9E-03CC0C4111EE; audit and test plan in the shared notes (`xhcilagfix-test-plan.md`).
+- **Boot:** `itlkick=0`, so ItlXhciKick logged "off" and started no thread.
+- **ioreg (main):** Active = Yes; `Rewritten` 11,508; `SetAddressRewritten` 4; every skip reason 0; `MaxTDCapacity` 16
+  (well below the 256 limit). Every transfer request was rewritten.
+- **Owner:** keyboard and trackpad normal.
+- **powermetrics** (interrupts, tasks, cpu_power; 6 x 5 s, owner working;
+  `~/ga403-logs/trace-20261127-boot1/powermetrics.txt`):
+  - XHC0 19-25 IRQ/s, XHC1 0.4/s: per event, no poll;
+  - kernel_task 72-132 ms/s CPU, 3.4-4.2k timer deadlines/s, 4.7-5.8k interrupt wakeups/s;
+  - ItlXhciKick's 1,940 work-loop + 1,000 timer wakeups/s (section 1) are gone.
+- **Biggest single source now:** I2CA at 10.1k IRQ/s, constant, on CPU 0: the touchpad under `-vi2c-force-polling`
+  (row 1). That is the next item.
+- **Decision:** if USB input, Bluetooth, webcam and USB storage hold through today's work, retire ItlXhciKick
+  (remove the kext and its config entry together with `itlkick=0`). Branch `thermal/xhcikick-pending` (0.2.1) is then
+  not needed. Undo for XHCILagFix: `-xhcilagfixoff`, then remove `itlkick=0`.
