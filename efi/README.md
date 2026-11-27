@@ -68,8 +68,11 @@ entries that `kexts.json` now lists.
    the [ryzen-hypervisor.framework fork](https://github.com/thanhnndev/ryzen-hypervisor.framework). `StrixAmp` exists
    only on branch `research/audio-rog-dolby`. Disable the `Kernel > Add` entries you do not install.
 4. **A MAC address for the NullEthernet device** if you do not want the default in `SSDT-RMNE`.
-5. **The Bluetooth controller info.** The export zeroes it. Whether Bluetooth comes up with the zero value was not
-   tested.
+5. **The Bluetooth NVRAM values.** Under `7C436110-AB2A-4BBB-A880-FE41995C9F82`, in both `NVRAM > Add` and
+   `NVRAM > Delete`: `bluetoothExternalDongleFailed` = Data `00` and `bluetoothInternalControllerInfo` = exactly 14 zero
+   bytes (the export zeroes it; BlueToolFixup 2.7.x needs 14, with 16 `bluetoothd` falls back to a UART placeholder). The
+   zero value fixed an HP MT7925 card in [#10](https://github.com/thanhnndev/ga403wm-hackintosh/issues/10) (diagnosis by
+   watchthelight); the reference machine itself was not booted with the zeroed export.
 6. **CPU core count.** The four `Force cpuid_cores_per_package to constant` kernel patches contain the core count in
    their `Replace` bytes: `0x0c` = 12 cores (Ryzen AI 9 HX 370). Change it for another CPU.
 7. **OpenCore itself**: the patched `OpenCore.efi`, `Drivers/` (`HfsPlus.efi`, `OpenRuntime.efi`,
