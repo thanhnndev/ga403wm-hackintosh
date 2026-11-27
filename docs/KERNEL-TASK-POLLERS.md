@@ -206,3 +206,42 @@ Read-only trace on 2026-11-27. Nothing installed, no boot-arg changed.
 ### Expected saving
 - About 10k IRQ/s off CPU 0 at rest. The 11-08 estimate was 5-8 % of a core and CPU 0 never idling.
 - This removes the biggest remaining kernel_task interrupt source after XHCILagFix.
+
+### 6b. Installed 2026-11-27 16:30 (main); follow-up build prepared (not installed)
+- Installed: VoodooGPIO 954AEF39 (md5 f38327da…, matches the build), old plugin at
+  `EFI/OC/backup/VoodooGPIO.kext.1.1-733dc80`, `-vi2c-force-polling` removed from config.plist.
+  - `boot-args` is in NVRAM → Delete, so the config value replaces the live one at the next boot. Live NVRAM still
+    shows the flag until then.
+- **Abort criterion (review):** `EoiRecoveries` climbing at the report rate while touching. That means bit 29 of
+  `WAKE_INT_MASTER_REG` does not read 1 when idle on Strix Point, so every `enableInterrupt` spins 1 ms and sends an
+  extra EOI, costing 10-20 % of a core while touching. Undo: `-vi2c-force-polling`.
+- **Follow-up** `local/ga403wm-bitfix` cb32d34 (on 7eb2f19), UUID 75572AE6-44A7-3CD3-AF1A-775826B22065,
+  md5 0d443ddba5a2c01b0dd84b82448c5b99. Its exports are identical to the original 1.1, its imports identical to the
+  installed build, and the undeclared-symbol check is ok.
+  - `BIT(x)` was `1UL << x`, so `~BIT(n)` cleared bits 0..n. Mask/disable wiped debounce, trigger and polarity on
+    every read, and the handler cleared bits 0..11. Now `(1UL << (x))`. The binary now has single-bit masks:
+    mask `0xffffefff`, disable `0xffffe7ff`.
+  - `enableInterrupt` sets the trigger type before enabling, the Linux order.
+  - The spurious branch tested `irq == 0`, which is always true (the provider index). It now masks pins with no
+    owner, as Linux does.
+  - The PR #22 recovery is armed only if bit 29 reads 1 right after an EOI at start. Properties `EoiCheck` and
+    `EoiMasterAtStart` show the result. This guards against the abort case above.
+  - Install it only if the 954AEF39 boot shows a problem it addresses (abort criterion, or erratic pin config), or
+    as a clean-up in a later package.
+
+### 6c. ItlXhciKick retirement
+- **Not yet.** XHCILagFix has one boot (since 15:34) with the owner working. Still open: webcam, USB storage,
+  hot-plug, BT pairing after a cold boot, display sleep/wake. The next boot (the touchpad one) is the second
+  XHCILagFix boot; retire after it if those items pass.
+- **What to remove then:**
+  1. config.plist Kernel → Add `ItlXhciKick.kext`: Enabled = false. Keep the entry and the kext for one package, so
+     undo is one flip.
+  2. Remove `itlkick=0` from boot-args, in the same edit.
+  3. NVRAM variable `itlz0`: stale statistics written by ItlXhciKick (`nvram -d itlz0`, root). Optional.
+  4. One package later: move `EFI/OC/Kexts/ItlXhciKick.kext` to `EFI/OC/backup/` and delete the entry. Close branch
+     `thermal/xhcikick-pending` (0.2.1) without merging. Update docs/USB-XHCI-LAG.md: XHCILagFix is the fix,
+     ItlXhciKick the history.
+- **Undo:**
+  - Enabled = true. If XHCILagFix is also the problem, add `-xhcilagfixoff`.
+  - ItlXhciKick 0.1.x needs no boot-arg (period 1000 µs by default).
+- ItlDiag (`itlxr`, `itlkbd`) is separate and stays.
