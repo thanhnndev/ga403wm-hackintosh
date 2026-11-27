@@ -9,7 +9,7 @@ VoodooI2CServices before VoodooI2C, VoodooI2CHID last.
 
 ## From this repository and its sibling repositories
 
-`ItlXhciKick` and `ItlDiag` are built here; `AsusWmi`, `AmdCppc`, `MtkBtFw` and `BtLeDlFix` come from the releases of the sibling repositories (links in the Role column), with the same bundle ids.
+`ItlXhciKick` and `ItlDiag` are built here; the Wi-Fi and Bluetooth kexts, `AsusWmi`, `AmdCppc`, `StrixDgpuGate` and `RyzenHV` come from the project's other repositories (links in the Role column), with the same bundle ids.
 
 | Kext | Bundle id | Role | Needed |
 |---|---|---|---|
@@ -20,6 +20,9 @@ VoodooI2CServices before VoodooI2C, VoodooI2CHID last.
 | `AmdCppc.kext` | `com.itlmt7925.amdcppc` | Zen 5 CPPC/boost/EPP control, clocks, Tctl, RAPL ([docs](https://github.com/thanhnndev/rog-control-macos/blob/main/docs/CPU-POWER.md), built in [rog-control-macos](https://github.com/thanhnndev/rog-control-macos)) | for full CPU speed |
 | `MtkBtFw.kext` | `com.itlmt7925.mtkbtfw` | loads the MT7925 Bluetooth firmware over USB ([docs](https://github.com/thanhnndev/mt7925-macos/blob/main/docs/BLUETOOTH.md), built in [mt7925-macos](https://github.com/thanhnndev/mt7925-macos)) | for Bluetooth |
 | `BtLeDlFix.kext` | `com.itlmt7925.btledlfix` | Lilu plugin: BLE mice with `bluetoothd` ([docs](https://github.com/thanhnndev/mt7925-macos/blob/main/docs/BLUETOOTH.md), built in [mt7925-macos](https://github.com/thanhnndev/mt7925-macos)) | experimental |
+| `StrixDgpuGate.kext` | `com.itlmt7925.strixdgpugate` | GPU mode: in Eco powers the RTX 5060 off and takes it off the PCI bus ([docs](https://github.com/thanhnndev/rog-control-macos/blob/main/docs/GPU-MODE.md), release [rogcontrol-v0.6.0](https://github.com/thanhnndev/rog-control-macos/releases/tag/rogcontrol-v0.6.0)) | for Eco mode |
+| `RyzenHV.kext` | `com.overlorddev.RyzenHV` | AMD SVM hypervisor for Docker Desktop and the Android emulator, from the [ryzen-hypervisor.framework fork](https://github.com/thanhnndev/ryzen-hypervisor.framework) (source tag [v0.7.24-ga403wm](https://github.com/thanhnndev/ryzen-hypervisor.framework/releases/tag/v0.7.24-ga403wm); build with `make kext-release`) | for Docker / emulator |
+| `StrixVFCT.kext` | `com.ga403wm.StrixVFCT` | codeless kext that carries the 890M VBIOS table (VFCT) for `NMXGPU`; **generated on your machine** by `scripts/macos-strixvfct-install.sh` from your own VBIOS, never redistributed | for the 890M driver |
 
 ## Third-party
 
@@ -31,6 +34,8 @@ VoodooI2CServices before VoodooI2C, VoodooI2CHID last.
 | SMCBatteryManager 1.3.9 | VirtualSMC release | battery status |
 | SMCLightSensor 1.3.9 | VirtualSMC release | ambient light; **disabled** in `config.plist` |
 | AppleALC 1.9.9 | <https://github.com/acidanthera/AppleALC> | audio, `layout-id` 33 on the HD-audio controller |
+| SimpleHDA 1.0.1 | <https://github.com/laobamac/SimpleHDA> | brings AppleHDA back on macOS 26 (audio) |
+| NVRM, NVRMFB, NVRMAGDC, NVRMEdpBL, NVAccel 0.1 | [NullMoth's NVIDIA driver](https://github.com/nullmoth/nvidia-macos-driver) | the RTX 5060 driver for Standard mode; on the ESP but **disabled** in `Kernel > Add` (they load from the Auxiliary KC). The 890M driver (`NMXGPU`) is built from the [fork](https://github.com/thanhnndev/nvidia-macos-driver), PolyForm Noncommercial |
 | AppleMCEReporterDisabler 1.2 | Dortania AMD guide | stops the AppleIntelMCEReporter panic on AMD |
 | BlueToolFixup 2.7.2 | <https://github.com/acidanthera/BrcmPatchRAM> (release zip) | lets `bluetoothd` accept a non-Apple controller (needed by `MtkBtFw`); also needs its NVRAM variables |
 | BrightnessKeys 1.0.4 | <https://github.com/acidanthera/BrightnessKeys> | brightness hot keys |

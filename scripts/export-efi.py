@@ -229,7 +229,7 @@ def main():
 
     mp = os.path.normpath(os.path.join(dst, "..", "kexts.json"))
     with open(mp, "w", encoding="utf-8", newline="\n") as f:
-        json.dump({"note": "Third-party kexts used on the reference machine (SHA-256 of the executable); they are not redistributed. itlmt7925, ItlXhciKick and ItlDiag are built from this repository.",
+        json.dump({"note": "Kexts in the reference EFI that are not built from this repository (SHA-256 of the executable); none of them is redistributed here. From this project's other repositories: itlmt7925, itlmt7925Native, MtkBtFw and BtLeDlFix (mt7925-macos); AsusWmi, AmdCppc and StrixDgpuGate (rog-control-macos); RyzenHV (the ryzen-hypervisor.framework fork). NVRM*, NVAccel and UTBMap come from NullMoth. StrixVFCT is generated locally by scripts/macos-strixvfct-install.sh from your own VBIOS. ItlXhciKick and ItlDiag are built from this repository.",
                    "kexts": manifest(src)}, f, indent=2)
         f.write("\n")
     written.append(mp)
