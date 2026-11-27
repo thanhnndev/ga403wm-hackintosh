@@ -19,7 +19,8 @@ pause() { perl -e "select(undef,undef,undef,$1)"; }
 ktime() {   # kernel_task cumulative CPU seconds; top prints MM:SS.hh or HH:MM:SS
     top -l 1 -pid 0 -stats pid,time | awk '$1=="0"{print $2}' | perl -ne 'chomp; my @p=split /:/; my $s=0; $s=$s*60+$_ for @p; print "$s\n"'
 }
-rhvline() { "$RHV" stats 2>/dev/null | awk -F: '/^  [a-zA-Z]/{gsub(/ /,"",$1); gsub(/ /,"",$2); printf "%s=%s ",$1,$2}'; }
+# counters only ("  name : integer"); the summary lines (per trap, lazy RAM...) carry text and commas
+rhvline() { "$RHV" stats 2>/dev/null | awk -F: '/^  [a-zA-Z]/{gsub(/ /,"",$1); gsub(/ /,"",$2); if ($2 ~ /^[0-9]+$/) printf "%s=%s ",$1,$2}'; }
 vmline()  { vm_stat | awk '/wired down/{w=$4} /occupied by compressor/{c=$5} /^Compressions/{k=$2} /^Decompressions/{d=$2} /^Swapins/{si=$2} /^Swapouts/{so=$2}
                        END{gsub(/\./,"",w); gsub(/\./,"",c); gsub(/\./,"",k); gsub(/\./,"",d); gsub(/\./,"",si); gsub(/\./,"",so);
                            printf "wired=%s cmpocc=%s compr=%s decompr=%s swapin=%s swapout=%s",w,c,k,d,si,so}'; }

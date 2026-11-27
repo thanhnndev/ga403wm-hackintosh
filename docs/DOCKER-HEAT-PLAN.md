@@ -134,6 +134,15 @@ Stop here if VZ checks for Intel (vendor, VMX MSRs) in a way the frontend cannot
 that case lever 3 is dead and lever 4 is the only route.
 
 ### Stage 1: per-reason exit counters (small; useful whatever stage 0 says)
+
+**Built 2026-11-27, not installed:** RyzenHV 0.7.27, branch `research/exit-reasons` ca7da15, on top of queue/after-0.7.25 (0.7.26).
+- Kext UUID E003F87F-D241-3786-9CAA-29767993D0FE, md5 23a1a2c1ae6886e3d58b0f9db3bf9445.
+- `make test` passes, including the new `exit_class_test`.
+- 408 imports resolve; `kext-undeclared-syms.sh` ok; check-kext-abi: gStats 632 bytes = RHVStats V6.
+- The new `build/rhv-info` reads the live 0.7.25 kext through the V5 fallback (checked).
+- As built, the classes are by SVM exit code (`vmExitAll`, `vmExitOut`, plus `Timeslice` on the way out), and `vmApicNpf` is split into
+  EOI/ICR/TMICT/other.
+- Release note: `docs/release-notes/v0.7.27-ga403wm.md` in the RyzenHV repo.
 - Stats V6 gains `vmExitByReason[16]`, counted per vCPU in `fProf` and flushed with the cycle counters. It is keyed by the VMX reason the
   client sees: external interrupt, HLT, I/O, CPUID, RDMSR, WRMSR, CR, EPT violation, the rest.
 - It also gains `vmApicFault[4]`: NPT faults at GPA 0xFEE00000, split by register (EOI 0xB0, ICR 0x300/0x310, TMICT 0x380, other), decoded
