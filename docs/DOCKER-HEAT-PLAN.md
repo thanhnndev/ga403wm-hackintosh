@@ -185,3 +185,22 @@ against gRPC FUSE, and VZ's own device model, are unknowns that stage 0 and one 
 - A decision on stage 0: one run with `hv mode 2` and a VZ start. That means a root run-time switch and an owner app setting, so it is
   their call.
 - Stage 1 can be built on a branch now, with no install.
+
+## Loaded runs, 2026-11-27
+
+The owner's pathcan-academy stack (postgres, valkey, minio, clamav), with video and Claude running.
+
+| run | pkg avg / max | Tctl avg / max | hyperkit | exits/s | traps/s | NPF/s | guest+switch | wired | compressions/s |
+|---|---|---|---|---|---|---|---|---|---|
+| 17:30, 300 s, stack starting | 12.6 / 49.4 W | 50 / 72 °C | 0.30 cores | 12.7k | 12.3k | 8.8k | 0.18 cores | 11.6 GB (4.6 GB guest) | 2021 |
+| 17:34, 590 s, no summary file (session paused), recomputed from samples.csv | 9.9 / 56.0 W | 46 / 60 °C | - | 9.8k | 9.5k | 7.0k | 0.16 cores | 11.5 GB (5.0 GB guest) | 0 |
+| 20:05, 600 s, boot out-54, stack just up | 14.0 / 46.9 W | 58 / 80 °C | 0.23 cores | 11.1k | 10.1k | 7.4k | 0.13 cores | 10.3 GB (3.5 GB guest) | 1493 |
+
+The 20:05 run also had kernel_task at 0.13 cores, TLB flushes on 5.3 % of VMRUNs (every one a new ASID, so all from migration), and no
+re-faults.
+
+**Reading.** At rest, the owner's stack costs about 0.25 cores and 1-2 W. The exit overhead is about 20x below the 11-16 load (216k
+exits/s). The averages go to Claude Helper, WindowServer, Zalo and kernel_task, not Docker. The 62 W case only happens when work runs
+inside the containers (the p0 test/migration loop, builds). So lever 1 (guest work) stands. Lever 3 (in-kernel APIC) scales with the
+exit rate: worth ~0.1 cores at rest, 2.5-4 W only under heavy guest load. The 6.2 GB wired with no VM, and the compression bursts
+(1.5-2k pages/s while the stack starts), are worth chasing on the host side.
