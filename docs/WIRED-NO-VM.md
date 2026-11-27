@@ -43,3 +43,46 @@ stack up.
 
 Under the Docker load, compression ran at 1.5-2k pages/s while the stack started (DOCKER-HEAT-PLAN.md). Items 1 and 2 both reduce
 that pressure.
+
+## Lever 2: idle NMXGPU BOs (census every 10 s for 10 min, 20:41-20:51, daily load: video, Claude, Docker)
+
+Read only: `debug.nmx_tt_census`, sampled 60 times, plus the park counters; data in `~/ga403-logs/nmx-census-20261127-2041/`.
+
+Census classes (from `tt_census_bo` in nmx_fb_bridge.c):
+- **idle**: resident, unpinned, not a user-memory import, every fence signalled. These are exactly TTM swap-out's candidates.
+- **uptr**: IOSurface and other user-memory imports. These are what Step142 parks, after `nmx_userptr_park_ms` = 60000.
+- **pinned**: pinned by a user CPU mapping or scanout, so not evictable.
+
+The census has no age field. "Stays idle" is read as the 10th percentile over the 60 samples, and the spread up to p90 is churn.
+Values per process in MB:
+
+| process | idle p10 | idle p50 | idle p90 | uptr p10 | uptr p50 | uptr p90 | pinned avg |
+|---|---|---|---|---|---|---|---|
+| WindowServer | 95 | 140 | 167 | 440 | 754 | 1293 | 38 |
+| Zalo Helper (GPU) | **115** | 115 | 140 | 50 | 73 | 147 | 18 |
+| Cloudflare WARP | 24 | 33 | 101 | 0 | 8 | 17 | 5 |
+| iconservicesagent | 12 | 12 | 12 | 0 | 0 | 0 | 13 |
+| Microsoft Edge Helper | 10 | 22 | 314 | 28 | 88 | 211 | 98 |
+| Claude Helper | 9 | 27 | 261 | 0 | 137 | 212 | 44 |
+| Docker Desktop Helper | 8 | 8 | 62 | 18 | 18 | 19 | 33 |
+| NotificationCenter | 6 | 6 | 6 | 0 | 0 | 0 | 5 |
+| **sum of p10** | **280** | | | **536** | | | |
+
+Over the window, from the counters:
+- Park counters: parks 10637 → 13115 (+2478), unparks 705 → 873 (+168). That is 7 % of the parks coming back, so the 60 s rule mostly
+  guesses right.
+- userwire pages 199.7k → 433.6k, and `nmx_pages_live` 308.5k → 249.6k.
+- VRAM carve-out: 451 of 512 MB used.
+
+What could go, and how:
+1. **Stable idle BOs, ~280 MB.** Zalo 115, WindowServer 95, WARP 24, iconservicesagent 12, Edge/Claude/Docker/NotificationCenter ~33.
+   - Every fence on them has signalled, so moving them out is safe in the TTM sense. The next use faults them back with a copy.
+   - **There is no path for it today:** xkpi has no `ttm_bo_swapout`/`ttm_device_swapout` caller, only the TTM pool trim and shrink.
+   - It needs a swap-out of idle BOs to pageable memory after N seconds idle. That is the same age-and-sweep shape as Step142, but for
+     non-userptr BOs. Code for main/F.
+   - Zalo is the clearest case: it sits in the background holding 115 MB that never changes.
+2. **userptr above the park age.** The p10 is 536 MB, nearly all WindowServer, and Step142 already parks it after 60 s.
+   - A shorter age (20-30 s) would add roughly 100-300 MB, at the cost of more unparks (7 % today) and a video-drop check.
+   - `nmx_userptr_park_ms` is a sysctl; changing it is main's call. I wrote nothing.
+3. **Not evictable:** pinned (~300 MB in all), busy BOs, and the VRAM carve-out (not system RAM). Edge's and Claude's idle
+   p10 → p90 swings (10 → 314 MB, 9 → 261 MB) are churn and should be left alone.
