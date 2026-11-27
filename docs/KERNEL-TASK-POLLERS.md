@@ -107,3 +107,102 @@ undisturbed, which is the precondition for any CC6 gain (POWER-FLOOR #5).
 - **Decision:** if USB input, Bluetooth, webcam and USB storage hold through today's work, retire ItlXhciKick
   (remove the kext and its config entry together with `itlkick=0`). Branch `thermal/xhcikick-pending` (0.2.1) is then
   not needed. Undo for XHCILagFix: `-xhcilagfixoff`, then remove `itlkick=0`.
+
+## 6. Plan: touchpad off forced polling (I2CA, ~10.1k IRQ/s on CPU 0)
+
+Read-only trace on 2026-11-27. Nothing installed, no boot-arg changed.
+
+### Why it polls today
+- `-vi2c-force-polling` has been in the boot-args since the first EFI. Nothing records an interrupt-mode attempt on this
+  machine (STATE-AND-ROADMAP: "Interrupt mode is not tested").
+- VoodooI2C's own docs recommend polling for "buggy GPIO (various ASUS laptops)".
+- In polling mode VoodooI2CHID reads the pad on a timer: every 5 ms, 2 ms while busy, 50 ms after 1.5 s quiet. Each
+  read is an I2C transfer with many DesignWare controller interrupts, hence I2CA's constant ~10k IRQ/s.
+
+### What the firmware describes (DSDT from OpenCore SysReport)
+- `\_SB.I2CA.TPD1`, `_HID` ASUP1208 (by TPID), `_CID` PNP0C50 (I2C-HID).
+- `_CRS` returns one template:
+  - I2cSerialBus, address 0x15, 400 kHz, `\_SB.I2CA`;
+  - **GpioInt (Level, ActiveLow, ExclusiveAndWake, PullUp) pin 8** on `\_SB.GPIO`.
+  - There is no APIC `Interrupt()` alternative, so interrupt mode means GPIO mode.
+- The GPIO controller AMDI0030 has its own interrupt: IRQ 7, Level, ActiveLow, Shared (registry specifier
+  `07000000 07000000`).
+- No SSDT is needed: VoodooI2C's resource parser takes the GpioInt as is (pin 8, level-low).
+
+### What Linux does with the same tables
+- i2c-hid-acpi binds PNP0C50 and pinctrl-amd provides the irqchip for pin 8 (level-low).
+- i2c-hid requests a threaded, oneshot IRQ: the line stays masked until the thread has read the report. pinctrl-amd
+  sends the controller EOI (`WAKE_INT_MASTER_REG` bit 29) after each handler.
+- At rest there are 0 interrupts; one per report while touching.
+- Not verified on this machine's Linux install: check `/proc/interrupts` for the `pinctrl_amd` / ASUP1208 line on the
+  Linux fallback if wanted.
+
+### What macOS has
+- VoodooGPIO 1.1 (upstream 733dc80, pinned by VoodooI2C v2.9.1) contains VoodooGPIOAMD, a port of pinctrl-amd. It is
+  already bound to AMDI0030.
+  - At start it clears enable, mask and wake on every pin (`amd_gpio_irq_init`).
+  - It registers IRQ 7 only when the first pin is registered, so today, in polling mode, IRQ 7 is not in use at all.
+- Without the boot-arg, VoodooI2CDeviceNub picks GPIO mode (pin 8, level-low). VoodooI2CHID then uses an
+  IOInterruptEventSource. Because the controller IRQ is level, that event source disables and re-enables the
+  interrupt around every report read, and the re-enable re-arms pin 8 (enable, set type, unmask).
+- **Known defect 1, the real risk (upstream PR #22, open, 2026-11-22; Ryzen 5800H, AMDI0030, I2C-HID level-low pin 9):**
+  - A delivery that arrives while the vector is masked for a read never runs the handler, so no EOI is sent. The
+    controller then raises nothing until reboot: the touchpad goes dead with nothing logged.
+  - The PR re-sends the EOI in `enableInterrupt()` when bit 29 is clear and no handler shows up within ~1 ms.
+  - The author ran 6 min of stress plus an 8 h sleep cycle without a dead pad (unpatched: dead within a minute).
+- **Known defect 2, harmless:** `do_amd_gpio_irq_handler(irq)` gets the source index (always 0) as `irq`. So the
+  "Disabling spurious GPIO IRQ" branch runs after every serviced pin and writes the pin word back with its low 12
+  bits cleared (confirmed in the installed binary at +0x17d8).
+  - The next `enableInterrupt()` from the event source restores enable, trigger type and polarity, so it works. Debounce
+    is 0 in `_CRS` anyway.
+  - Its IOLog is skipped in primary interrupt context, so there is no log spam. Not changed.
+
+### Change (built, local, not installed)
+- **VoodooGPIO 1.1 + PR #22 only.** Source `~/develop/projects/vgpio-build/w/voodoogpio-src`, local branch
+  `local/ga403wm-eoi` (7eb2f19 on 733dc80). GPL-3.
+- Built with Xcode 26.5 against our MacKernelSDK: `~/develop/projects/vgpio-build/out/Release/VoodooGPIO.kext`,
+  **UUID 954AEF39-0691-3AD4-B259-126692E0BADD**, md5 f38327da15a93aa8ebacb8863e0016e1.
+- Compared with the installed 1.1:
+  - exported symbols identical, vtables included, so the ABI towards VoodooI2C 2.9.1 is unchanged;
+  - new imports: OSIncrementAtomic and OSDecrementAtomic only;
+  - Info.plist identical except the build-machine fields;
+  - `kext-undeclared-syms.sh`: ok.
+- It adds `PatchVersion` = "eoi-fix-1" and `EoiRecoveries` (the count of swallowed deliveries repaired) to the
+  VoodooGPIOAMD registry entry.
+- There is no VoodooI2C/VoodooI2CHID change and no SSDT.
+
+### Boot test (main installs)
+1. Back up the installed plugin outside the Kexts tree, e.g. `EFI/OC/backup/VoodooGPIO.kext.1.1-733dc80`.
+2. Replace `EFI/OC/Kexts/VoodooI2C.kext/Contents/PlugIns/VoodooGPIO.kext` with the build. The config.plist entry is
+   unchanged.
+3. Remove `-vi2c-force-polling` from boot-args.
+4. Batch it with the next package; one boot.
+
+### Undo
+- **One arg:** add `-vi2c-force-polling` back. The patched VoodooGPIO is then inert: no pin is registered and IRQ 7
+  stays unused, exactly as today.
+- **Full:** restore the backed-up 1.1 plugin.
+- The touchpad is the fallback input if USB breaks; USB input is fine on XHCILagFix. If the pad dies, USB/BT input
+  still works to add the arg back.
+
+### What to measure
+- `ioreg -r -n TPD1 -l | egrep "Interrupt Mode|gpioPin|gpioIRQ"` should show `GPIO`, pin 8 and IRQ type 8
+  (level-low).
+- `ioreg -r -c VoodooGPIOAMD -l | egrep "PatchVersion|EoiRecoveries"` should show `eoi-fix-1`. A count above 0 means a
+  dead pad was averted.
+- `sudo powermetrics --samplers interrupts,tasks,cpu_power -i 5000 -n 6`, under the same conditions as 15:34:
+  - I2CA at rest should be about 0 (was 10.1k/s); while touching, about the report rate times the per-read controller
+    IRQs;
+  - the new GPIO line (IRQ 7) should be about the report rate while touching and 0 at rest;
+  - kernel_task interrupt wake-ups and CPU, and CPU 0 idle residency.
+- Feel: pointer smoothness, tap, two-finger scroll, three/four-finger gestures, palm rejection. Check again after
+  display sleep/wake and after a few hours of work (the PR #22 failure was time- and load-dependent).
+- **Not in this boot:** system sleep. VoodooGPIOAMD now owns IRQ 7, and StrixS0ix arms pin 0 (lid/power button)
+  during s0ix halt. A pin 0 interrupt would reach VoodooGPIOAMD's handler, which services it as unowned: it clears
+  its status and enable before StrixS0ix reads it. The wake itself still happens, but StrixS0ix may log "no wake
+  reason" and skip `_EVT(0)` (the lid/power-button Notify). Check this in an owner-started sleep test, and if needed
+  make StrixS0ix latch pin 0's status from its own ISR path or have VoodooGPIOAMD ignore pins without an owner.
+
+### Expected saving
+- About 10k IRQ/s off CPU 0 at rest. The 11-08 estimate was 5-8 % of a core and CPU 0 never idling.
+- This removes the biggest remaining kernel_task interrupt source after XHCILagFix.
