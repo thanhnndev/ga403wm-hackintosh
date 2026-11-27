@@ -119,7 +119,7 @@ Limits of this evidence:
 | Wi-Fi, native mode (Wi-Fi menu, join from System Settings) | works | `itlmt7925` + `itlmt7925Native`. On 25G241 the mt7925-macos README records 176.6 Mb/s down, 65.0 Mb/s up, HE 160 MHz. In daily use on 25G332; no throughput run on record for 25G332 | 2026-11-02 (numbers), 2026-11-25 (loaded) | mt7925-macos `README.md` |
 | Wi-Fi limits | partly | WPA2-PSK and open networks (an open network was used 2026-11-11, mt7925-macos `v2.0-beta.1` notes); no WPA3, 802.1X, 6 GHz. A-MSDU receive is off on purpose. The driver is fully polled, no interrupt: estimated 3-6 % of a core under traffic | 2026-11-23 | `docs/KERNEL-TASK-POLLERS.md` |
 | AirDrop / AWDL / Continuity | not verified | In progress in mt7925-macos `dev/awdl`. `itlmt_awdl=1` is set on the reference machine; no working result is recorded | - | mt7925-macos `docs/ROADMAP-AWDL.md` |
-| Bluetooth | works | `MtkBtFw` 0.3.3 (since 2026-11-27) + `BtLeDlFix` 1.4.0 + BlueToolFixup. The 15 s `bluetoothd` restart loop after a warm reboot was fixed on 2026-11-08; the `bluetoothd` fault at every boot was fixed on 2026-11-23. A BLE mouse is in daily use. Keyboard pairing is not recorded | 2026-11-08, 2026-11-23 | mt7925-macos `docs/BLUETOOTH.md`; `docs/SHUTDOWN-TIMELINE.md` |
+| Bluetooth | works | `MtkBtFw` 0.3.3 (since 2026-11-27) + `BtLeDlFix` 1.4.0 + BlueToolFixup. The 15 s `bluetoothd` restart loop after a warm reboot was fixed on 2026-11-08; the `bluetoothd` fault at every boot was fixed on 2026-11-23. A BLE mouse is in daily use; verified on 0.3.3 on 2026-11-27 (20:00 boot). Keyboard pairing is not recorded | 2026-11-08, 2026-11-23, 2026-11-27 | mt7925-macos `docs/BLUETOOTH.md`; `docs/SHUTDOWN-TIMELINE.md` |
 
 ### Audio
 
@@ -179,10 +179,10 @@ Source: `kextstat` on the boots of 2026-11-25 19:46 and 20:42; source commits fr
 
 | Component | Where it loads from | Version | UUID | Source commit |
 |---|---|---|---|---|
-| NMXGPU (`com.nullmoth.NMXGPU`) | AuxKC | 1.0.0, build out-53 | C98C699B | nvidia-macos-driver fork, `claude/integ-out53` bdcef38a: a cursor buffer per image, and run counting for thread calls (backlight and paging wake included). Live since the 2026-11-27 16:36 boot; replaces out-51 DC67434B (edb0c79a, 15:34 boot) and out-50 7390F47B. Boot-args `nmxhwcolor=1 nmxhwcur=1` |
-| NMXAccel (`com.nullmoth.NMXAccel`) | AuxKC | 0.1 | 4C8A5A6E | fork, `claude/integ-out51` 8c3ad77f, 2026-11-27 package (replaces D454C218) |
+| NMXGPU (`com.nullmoth.NMXGPU`) | AuxKC | 1.0.0, build out-54 | 9F8C74DB | nvidia-macos-driver fork, `claude/integ-out54` 86d1884f: out-53 plus the measurement sysctls `debug.nmx_gpu_clients` (GPU ring time per DRM file) and `debug.nmxaccel_dirty` (plane dirty rect per present); fork PR #4, open. Live since the 2026-11-27 20:00 boot; replaces out-53 C98C699B (bdcef38a, tag `ga403wm-890m-out53`, merged into the fork's `main`; 16:36 boot), out-51 DC67434B (edb0c79a, 15:34 boot) and out-50 7390F47B. Boot-args `nmxhwcolor=1 nmxhwcur=1` |
+| NMXAccel (`com.nullmoth.NMXAccel`) | AuxKC | 0.1 | 8A33BCBD | fork, `claude/integ-out54` 86d1884f, live since the 2026-11-27 20:00 boot (replaces 4C8A5A6E of `claude/integ-out51` 8c3ad77f, and D454C218) |
 | NMXAGDC (`com.ga403wm.NMXAGDC`) | AuxKC | 0.1 | 9182A055 | fork, `claude/integ-out51` 8c3ad77f, 2026-11-27 package (replaces 90C7A833) |
-| Metal plugin (NVMTLDriver) | `/Library/GPUBundles` | - | 36577BD4 | fork, `claude/mem-census` a6cec1ba (replaces AAC482F2 / 8de348c) |
+| Metal plugin (NVMTLDriver) | `/Library/GPUBundles` | - | 7047933F | fork, `claude/keep-pressure` d70ae280 (surface keep memory pressure; fork PR #3, open). Live since the 2026-11-27 20:00 boot; replaces 36577BD4 (a6cec1ba, tag `ga403wm-890m-plugin-a6cec1b`, merged into the fork's `main`) and AAC482F2 / 8de348c |
 | Shader translator | `/Library/GPUBundles` | - | - | 6208982 (installed 2026-11-18; no later entry in the log) |
 | RADV (`libvulkan_radeon.dylib`) | `/Library/GPUBundles/nvmtl` | - | 07725f8c (hash prefix from the log) | Mesa built with `-Dvideo-codecs=all` + `scripts/radv/radv-disk-cache-euid.patch` |
 | VCNDec | `/System/Library/Video/Plug-Ins` (blessed snapshot) | 0.2.1 | E7D4AB21 | this repo, `tools/890m/vcndec` at 15c33fa (the tree here is one test-only commit newer, d378c71). Installed 2026-11-23, live since 2026-11-25 10:40 |
@@ -326,12 +326,12 @@ redistributed by this project and no binary of it is published here. Test only; 
     property, and supply every kext. The exported copy was not booted. See `efi/README.md`.
 19. **Where the versions named here are published.** Published: this repository's release `v2` (tag at 3901d1d),
     and three source tags: nvidia-macos-driver `ga403wm-890m-out50` (kernel, f47d3ed) and
-    `ga403wm-890m-plugin-a6cec1b` (plugin, a6cec1ba), ryzen-hypervisor.framework `v0.7.24-ga403wm`. Published on
+    `ga403wm-890m-plugin-a6cec1b` (plugin, a6cec1ba), ryzen-hypervisor.framework `v0.7.24-ga403wm`; on 2026-11-27 also nvidia-macos-driver `ga403wm-890m-out53` (kernel, bdcef38a) and ryzen-hypervisor.framework `v0.7.25-ga403wm` (42ce5e1, source only). Published on
     2026-11-25: mt7925-macos `v2.0-beta.1` (Wi-Fi) and `bt-v1.1` (Bluetooth), rog-control-macos `rogcontrol-v0.6.0`.
     Published on 2026-11-27: rog-control-macos `rogcontrol-v0.6.1` (AsusWmi 0.3.3) and mt7925-macos `bt-v1.2`
-    (MtkBtFw 0.3.3; the BLE mouse is not tested on 0.3.3 yet, MT7922 support is experimental and untested). NMXGPU
-    out-51 and out-53 have no source tag yet. StrixAmp and RogAudio are still only on branch `research/audio-rog-dolby` of
-    this repository.
+    (MtkBtFw 0.3.3; BLE mouse verified on 0.3.3, MT7922 support is experimental and untested). NMXGPU out-54 and the
+    keep-pressure plugin have no source tag yet (fork PRs #4 and #3, open). StrixAmp and RogAudio: draft PR #22 here,
+    from branch `research/audio-rog-dolby` without the CS35L56 firmware.
 20. **Manual power limits (SPL, SPPT, FPPT) reported a firmware error: fixed, verified 2026-11-27.** The BIOS's WMI
     method calls `ALIB(0x0C, ...)`, whose handler `A032` sends the SMU message and then has no `Return`, so the AML
     store fails and WMNB aborts (the same pattern as `A026` in `ACAD._PSR`, which the EFI already patches). The limit
@@ -367,7 +367,8 @@ Done on 2026-11-27 (NMXGPU out-51 on the 15:34 boot, out-53 on the 16:36 boot):
 
 Open from these: the grey-ramp eye check, colour after an HDMI or client modeset, the cursor after logout/login.
 
-1. **Measurement build out-54 and plugin keep-pressure.** Built, in review, not installed.
+1. **Measurement build out-54 and plugin keep-pressure.** Live since the 2026-11-27 20:00 boot (NMXGPU 9F8C74DB, NMXAccel
+   8A33BCBD, plugin 7047933F). The measurements under the daily load are not recorded here yet.
 2. **The surface keep in WindowServer.** The 631 MB of idle imported client surfaces seen on 2026-11-25 is a cache
    bounded by its cap, not a leak (analysis of 2026-11-27). What remains is how the keep behaves under memory
    pressure (item 1's plugin change).
