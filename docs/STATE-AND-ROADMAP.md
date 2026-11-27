@@ -118,7 +118,7 @@ Limits of this evidence:
 | Item | State | Detail | Evidence | Doc |
 |---|---|---|---|---|
 | Wi-Fi, native mode (Wi-Fi menu, join from System Settings) | works | `itlmt7925` + `itlmt7925Native`. On 25G241 the mt7925-macos README records 176.6 Mb/s down, 65.0 Mb/s up, HE 160 MHz. In daily use on 25G332; no throughput run on record for 25G332 | 2026-11-02 (numbers), 2026-11-25 (loaded) | mt7925-macos `README.md` |
-| Wi-Fi limits | partly | WPA2-PSK only (no WPA3, open networks, 802.1X, 6 GHz). A-MSDU receive is off on purpose. The driver is fully polled, no interrupt: estimated 3-6 % of a core under traffic | 2026-11-23 | `docs/KERNEL-TASK-POLLERS.md` |
+| Wi-Fi limits | partly | WPA2-PSK and open networks (an open network was used 2026-11-11, mt7925-macos `v2.0-beta.1` notes); no WPA3, 802.1X, 6 GHz. A-MSDU receive is off on purpose. The driver is fully polled, no interrupt: estimated 3-6 % of a core under traffic | 2026-11-23 | `docs/KERNEL-TASK-POLLERS.md` |
 | AirDrop / AWDL / Continuity | not verified | In progress in mt7925-macos `dev/awdl`. `itlmt_awdl=1` is set on the reference machine; no working result is recorded | - | mt7925-macos `docs/ROADMAP-AWDL.md` |
 | Bluetooth | works | `MtkBtFw` 0.3.1 + `BtLeDlFix` 1.4.0 + BlueToolFixup. The 15 s `bluetoothd` restart loop after a warm reboot was fixed on 2026-11-08; the `bluetoothd` fault at every boot was fixed on 2026-11-23. A BLE mouse is in daily use. Keyboard pairing is not recorded | 2026-11-08, 2026-11-23 | mt7925-macos `docs/BLUETOOTH.md`; `docs/SHUTDOWN-TIMELINE.md` |
 
