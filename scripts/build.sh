@@ -63,6 +63,7 @@ TARGETS=("$@")
 
 want ItlXhciKick "${TARGETS[@]+"${TARGETS[@]}"}" && build_kext ItlXhciKick kexts/ItlXhciKick kmod_info.c ItlXhciKick.cpp
 want ItlDiag "${TARGETS[@]+"${TARGETS[@]}"}" && build_kext ItlDiag kexts/ItlDiag kmod_info.c ItlDiag.cpp
+want StrixAmp "${TARGETS[@]+"${TARGETS[@]}"}" && build_kext StrixAmp kexts/StrixAmp kmod_info.c StrixAmp.cpp
 # The Strix* kexts are built only when named. StrixS0ix and StrixSbxMap are part of the Tahoe (890M) setup; StrixProbe,
 # StrixMetalGate, StrixGOP, StrixAccel and StrixHeadroom are the earlier boot-display research (superseded by NMXGPU).
 if [ ${#TARGETS[@]} -gt 0 ] && want StrixProbe "${TARGETS[@]}"; then
