@@ -14,7 +14,11 @@ FT=$(cat /Library/StrixGraphicsFix/nmx-fence-table.mode 2>/dev/null || echo 0)
 for i in $(seq 1 1200); do
     if /usr/sbin/sysctl -n debug.nmxaccel_flip >/dev/null 2>&1; then
         if [[ $FT == 1 ]]; then
-            if /usr/sbin/sysctl -w debug.nmxaccel_fence_table=1; then
+            # every write clears the kernel table, so leave a gate that already reads 1 alone (a rerun of this daemon
+            # while WindowServer uses the table must not drop its rows)
+            if [[ $(/usr/sbin/sysctl -n debug.nmxaccel_fence_table 2>/dev/null) == 1 ]]; then
+                echo "$(date -u) fence table gate already 1, not written"
+            elif /usr/sbin/sysctl -w debug.nmxaccel_fence_table=1; then
                 echo "$(date -u) fence table gate 1 after $((i / 10)).$((i % 10)) s"
             else
                 echo "$(date -u) debug.nmxaccel_fence_table not settable (NMXAccel before c19a0a28?)"
