@@ -6,7 +6,7 @@ be updated after the tag.
 
 State document of the "v2 (macOS 26 Tahoe)" release. Written from the install log of the reference machine, the
 documents in this repository and a read-only check of the running machine on 2026-11-25 (`kmutil showloaded`,
-`sw_vers`, boot-args), updated on 2026-11-27 with the read-only trace of the 15:34 boot. Nothing here was tested on a second machine. macOS 15 is the previous release (v1 / kext-v1.1)
+`sw_vers`, boot-args), updated on 2026-11-27 with the read-only traces of the 15:34 and 16:36 boots. Nothing here was tested on a second machine. macOS 15 is the previous release (v1 / kext-v1.1)
 and is not described here; its documents are [INSTALL.md](INSTALL.md), [HANDOFF.md](HANDOFF.md) and [ROADMAP.md](ROADMAP.md).
 
 Words used in the tables:
@@ -65,7 +65,7 @@ audio work is not merged into this release. "Log" is the maintainer's install lo
 |---|---|---|---|---|
 | WindowServer composited on the 890M | works | Frame-path check 19 pass / 0 fail on the 2026-11-25 boot. Trace on out-33: frame total p50 9.27 -> 6.05 ms, late frames 6 % -> 1.3 % | 2026-11-18, 2026-11-25 | `docs/FRAME-PATH.md`; log |
 | WindowServer CPU cost | partly | 6.5-7.1 ms of CPU per present (26 % of a core at about 35 presents/s). The driver stack's share is 1.3-2.3 ms. A real Mac is about 1 ms | 2026-11-19, 2026-11-23 | `docs/WS-CPU.md` |
-| WindowServer GPU work per present | partly | Every present recomposites the full 2880x1800 screen and then runs a full-screen colour pass, whatever the size of the change. 80 presents sampled on the live desktop: recomposite about 760 us of GPU (703-1476), colour pass 245 us, two 79x79 software-cursor passes of 8 us each; about 1.1 ms of GPU per present. The colour pass (fragment shader f1c2052c) is CoreDisplay's own GPU pass (`default.metallib` "GPUPass": combined gamma LUT, pre-matrix linearization, CSC matrix, post-gamma CSC). Measured on out-50. **Since NMXGPU out-51 (2026-11-27, `nmxhwcolor=1`) the colour pass is gone**: one Metal command buffer per present (1.00 in every sampled line, 38.5-99.5 presents/s, 0 errors), the colour tables applied by the display pipe. **The cursor is a hardware cursor plane since out-51 (`nmxhwcur=1`)**: cursor moves at about 55 states/s give 2-3 flips/s instead of a full present each. The full-screen recomposite per present remains | 2026-11-25; 2026-11-27 (out-51) | `docs/WS-CPU.md` 9.6; log |
+| WindowServer GPU work per present | partly | Every present recomposites the full 2880x1800 screen and then runs a full-screen colour pass, whatever the size of the change. 80 presents sampled on the live desktop: recomposite about 760 us of GPU (703-1476), colour pass 245 us, two 79x79 software-cursor passes of 8 us each; about 1.1 ms of GPU per present. The colour pass (fragment shader f1c2052c) is CoreDisplay's own GPU pass (`default.metallib` "GPUPass": combined gamma LUT, pre-matrix linearization, CSC matrix, post-gamma CSC). Measured on out-50. **Since NMXGPU out-51 (2026-11-27, `nmxhwcolor=1`) the colour pass is gone**: one Metal command buffer per present (1.00 in every sampled line, 38.5-99.5 presents/s, 0 errors), the colour tables applied by the display pipe. **The cursor is a hardware cursor plane since out-51 (`nmxhwcur=1`)**: cursor moves at about 55 states/s give 2-3 flips/s instead of a full present each. Since out-53 (16:36 boot) every cursor image has its own buffer: a cursor-size cycle of 40 to 250 px gave 25 images, 0 errors. The full-screen recomposite per present remains | 2026-11-25; 2026-11-27 (out-51, out-53) | `docs/WS-CPU.md` 9.6; log |
 | Who causes the presents (flip census) | partly | First read only: plugin a6cec1ba with `NVMTL_FLIP_CENSUS=1` in WindowServer, about 9 minutes after boot; to be reread under the daily load. With the animated Aerial wallpaper moving, 887 of 899 presents in one 30 s window (30.0 presents/s) were caused by `WallpaperAerialsExtension` (4K HEVC wallpaper video), each one a full-screen recomposite, the colour pass and a flip. In the minutes before, presents fell from 51/s to 3/s with no client surface changed (WindowServer's own login animations and the cursor) | 2026-11-25 (one read) | log |
 | WindowServer memory | works | QuartzCore's 160 MB metallib is mapped, not copied (log line "mapped (160153248 bytes, not copied)"). With VCNDec 0.2.1 the plugin holds 0 MB of plane shadows for VCN-decoded video (1.74 GB with the Aerial wallpaper on 2026-11-23). Census 7 minutes after boot: 1309 MB of imported client surfaces (631 MB of them idle in the surface keep), 181 MB device images, 33 MB buffers and heaps. Verified on plugin 8de348c, the build before the live one | 2026-11-25 | log |
 | Shader caches across boots | works | The lowering cache "low2" is reused across boots: 12.6 s of lowering in WindowServer on the cold boot, 0.46 s on the next boot; 128 disk hits re-checked with 0 mismatches. Its key no longer depends on the plugin build | 2026-11-23, 2026-11-25 | log |
@@ -134,9 +134,9 @@ Limits of this evidence:
 
 | Item | State | Detail | Evidence | Doc |
 |---|---|---|---|---|
-| Keyboard | works | Internal USB keyboard. Needs a fix for the 2 s key-release lag: `ItlXhciKick` until 2026-11-26; since the 2026-11-27 boot `ItlXhciKick` is off and XHCILagFix (issue #9) is on test | live; XHCILagFix test only | `docs/USB-XHCI-LAG.md` |
+| Keyboard | works | Internal USB keyboard. Needs a fix for the 2 s key-release lag: `ItlXhciKick` until 2026-11-26; since the 2026-11-27 boot `ItlXhciKick` is off and XHCILagFix (issue #9) is on test: checks 1-5 of the test pass; the owner's checks 6-11 are parked | live; XHCILagFix test only | `docs/USB-XHCI-LAG.md` |
 | Fn keys | partly | Mute and volume work natively. The vendor-page keys (keyboard light, Aura, profile, airplane mode, M3/M4 and others) need `rogkeyd`, a user-space helper with Input Monitoring and Accessibility grants, plus `AsusWmi`. Fn+F10 (touchpad toggle) and Fn+F6 are not mapped | 2026-11-06 (release rogcontrol-v0.5.2) | rog-control-macos `docs/FN-HOTKEYS.md` |
-| Touchpad | works | VoodooI2C + VoodooI2CHID in forced polling mode (`-vi2c-force-polling`): about 10k interrupts/s on CPU 0. Interrupt mode is not tested | 2026-11-23 | `docs/KERNEL-TASK-POLLERS.md` |
+| Touchpad | works | VoodooI2C + VoodooI2CHID in **GPIO interrupt mode** since 2026-11-27: VoodooGPIO built from upstream PR #22 (missed end-of-interrupt on AMD), and `-vi2c-force-polling` removed. I2C controller events: idle 10.1k/s (forced polling) -> 0/s; touching 4.4k/s, plus 193/s GPIO interrupts; `EoiRecoveries` 0. Before: forced polling at about 10k/s on CPU 0 | 2026-11-27 (16:36 boot) | `docs/KERNEL-TASK-POLLERS.md` |
 | USB ports | works | `ItlXhciKick` 0.1.0 polled at 1 kHz until 2026-11-26; off on the 2026-11-27 boot (XHCILagFix on test). The live ESP has a USB map (USBToolBox + UTBMap). The 2026-11-25 export does not copy kexts, so `efi/OC/Kexts/UTBMap.kext` in the tree is the map as it was on 2026-10-13, not compared with the live one | live; map noted 2026-10-12 | `docs/USB-XHCI-LAG.md`, `docs/HANDOFF.md` |
 | Webcam | works | UVC, last noted with the audio work | 2026-11-05 | `docs/AUDIO-TAHOE.md` |
 | SD card reader | not verified | `Sinetek-rtsx` 9.0.0 is loaded; no function test on record | - | - |
@@ -157,7 +157,7 @@ Limits of this evidence:
 | Heavy working load | partly | Docker + Android emulator + a Python backend + Claude, AC: **62.2 W package, Tctl 95 C average (91-96)**, fans at maximum, `kernel_task` 108 % from memory compression. Measured at EPP 0 (Turbo), with the RTX powered, Docker on 24 vCPUs and the whole guest wired. **Not re-measured** with EPP 191, Eco, 8 vCPUs and lazy guest wiring | 2026-11-16 18:56 | `docs/HANDOFF-2026-11-16.md` 3; `tools/health/2026-11-16/` |
 | GPU rail readout | partly | `debug.nmx_gpu_metrics` on NMXGPU out-50. First read, 2 minutes after a boot: socket 17.4 W, of which **GFX 9.3 W**, all cores 9.4 W, GFX activity 22 %; the derived "rest of SoC" field came out negative (formula wrong). Later reads the same day: **GPU power follows the compositing rate.** Static screen: 0.09 W on the GFX rail, 6.2 W socket (the GPU gates, PSR active). 45-66 flips/s: 4.7-6.2 W on the GFX rail. 81-91 flips/s: 12.4-19.3 W on the GFX rail, socket up to 39.9 W. So the rail does go down when nothing is composited; the cost is per present (see "WindowServer GPU work per present") | 2026-11-25 | `docs/POWER-FEATURES.md`; log (the static and per-flip-rate numbers are in the log only) |
 | Idle floor | not verified | 5.5 W at 47 C was measured once on 2026-11-08. A newer data point: 6.2 W socket with a static screen on 2026-11-25 (a single read of the SMU metrics, not a controlled measurement). Cores idle in HLT; no CC6 at run time | 2026-11-08; 2026-11-25 (one read) | `docs/POWER-FLOOR.md`; log |
-| Profiles, fans, power limits, charge limit | works | `AsusWmi` 0.3.2 (since 2026-11-27, adds fan-curve sanity checks) + RogControl + `AmdCppcPolicy` do what Linux and Windows do for the presets (one thermal-policy write; firmware loads limits and fan curve). Manual power limits report a firmware error (section 4, item 20). The per-profile bench is not done | 2026-11-16 | `docs/PLATFORM-LIMITS.md` |
+| Profiles, fans, power limits, charge limit | works | `AsusWmi` 0.3.3 (since the 2026-11-27 16:36 boot; fan-curve sanity checks since 0.3.2) + RogControl + `AmdCppcPolicy` do what Linux and Windows do for the presets (one thermal-policy write; firmware loads limits and fan curve). Manual power limits verified on 2026-11-27: a 25 W cap held under an all-core load (section 4, item 20). The per-profile bench is not done | 2026-11-16; 2026-11-27 (power limits) | `docs/PLATFORM-LIMITS.md` |
 | Battery | partly | Charge level through SMCBatteryManager. Battery life is not measured in Eco. One reading with the RTX powered and a heavy load: 75 W drain against 31 W package. The "60 W" adapter figure in System Information is a placeholder | 2026-11-16 | `docs/POWER-FLOOR.md` |
 
 ### Virtualization and the iOS Simulator
@@ -171,15 +171,15 @@ Limits of this evidence:
 
 ## 3. Component versions live on 2026-11-27 (boot of 15:34)
 
-Source: `kextstat` on the boots of 2026-11-25 19:46 and 20:42; source commits from the install log. Rows changed by the
-package of 2026-11-27 (live since the 15:34 boot) follow its install notes and say so. UUIDs are the first
+Source: `kextstat` on the boots of 2026-11-25 19:46 and 20:42; source commits from the install log. Rows changed on
+2026-11-27 (packages live since the 15:34 and 16:36 boots) follow their install notes and say so. UUIDs are the first
 8 hex digits of the binary's LC_UUID.
 
 ### Ours (built from the five repositories)
 
 | Component | Where it loads from | Version | UUID | Source commit |
 |---|---|---|---|---|
-| NMXGPU (`com.nullmoth.NMXGPU`) | AuxKC | 1.0.0, build out-51 | DC67434B | nvidia-macos-driver fork, `claude/integ-out51` edb0c79a (2026-11-27; replaces out-50 7390F47B, f47d3ed). Boot-args `nmxhwcolor=1 nmxhwcur=1` |
+| NMXGPU (`com.nullmoth.NMXGPU`) | AuxKC | 1.0.0, build out-53 | C98C699B | nvidia-macos-driver fork, `claude/integ-out53` bdcef38a: a cursor buffer per image, and run counting for thread calls (backlight and paging wake included). Live since the 2026-11-27 16:36 boot; replaces out-51 DC67434B (edb0c79a, 15:34 boot) and out-50 7390F47B. Boot-args `nmxhwcolor=1 nmxhwcur=1` |
 | NMXAccel (`com.nullmoth.NMXAccel`) | AuxKC | 0.1 | 4C8A5A6E | fork, `claude/integ-out51` 8c3ad77f, 2026-11-27 package (replaces D454C218) |
 | NMXAGDC (`com.ga403wm.NMXAGDC`) | AuxKC | 0.1 | 9182A055 | fork, `claude/integ-out51` 8c3ad77f, 2026-11-27 package (replaces 90C7A833) |
 | Metal plugin (NVMTLDriver) | `/Library/GPUBundles` | - | 36577BD4 | fork, `claude/mem-census` a6cec1ba (replaces AAC482F2 / 8de348c) |
@@ -187,13 +187,13 @@ package of 2026-11-27 (live since the 15:34 boot) follow its install notes and s
 | RADV (`libvulkan_radeon.dylib`) | `/Library/GPUBundles/nvmtl` | - | 07725f8c (hash prefix from the log) | Mesa built with `-Dvideo-codecs=all` + `scripts/radv/radv-disk-cache-euid.patch` |
 | VCNDec | `/System/Library/Video/Plug-Ins` (blessed snapshot) | 0.2.1 | E7D4AB21 | this repo, `tools/890m/vcndec` at 15c33fa (the tree here is one test-only commit newer, d378c71). Installed 2026-11-23, live since 2026-11-25 10:40 |
 | StrixDgpuGate | ESP | 0.2.12 | 7AD92287 | rog-control-macos `fix/eco-offbus` 80356b5 |
-| AsusWmi | ESP | 0.3.2 | 4430BC34 | rog-control-macos PR #21 (curve checks), 2026-11-27 package (replaces 0.3.1 42393DEB) |
+| AsusWmi | ESP | 0.3.3 | 0370E5BC | rog-control-macos main 40d5a6c (PRs #21 and #23), released as `rogcontrol-v0.6.1`. Live since the 2026-11-27 16:36 boot (replaces 0.3.2 4430BC34 of the 15:34 boot and 0.3.1 42393DEB) |
 | AmdCppc | ESP | 0.2.1 | 2EBD4419 | rog-control-macos; commit not in the log |
 | RogControl.app, rogkeyd | `/Applications`, user LaunchAgent | 0.6.0, 1.2 | - | rog-control-macos `feat/gpu-mode` (PR #17, open); as of 2026-11-16, not re-read on 2026-11-25 |
 | RyzenHV | ESP | 0.7.25 | CCD7FEC3 | ryzen-hypervisor.framework fork, 42ce5e1 (a CPL fix on top of 0.7.24 11ec930), 2026-11-27 package (replaces 0.7.24 4DB41FBD) |
 | itlmt7925 (core) | ESP | 0.1.0 | D2CAADD0 | mt7925-macos `dev/awdl` (0ec468c records the install) |
 | itlmt7925Native | ESP | 0.1.0 | 149441A4 | mt7925-macos |
-| MtkBtFw | ESP | 0.3.3 | 41826D92 | mt7925-macos d5c3f8b (MT7922 port on top of 0.3.2), 2026-11-27 package (replaces 0.3.1 D173A506) |
+| MtkBtFw | ESP | 0.3.3 | 41826D92 | mt7925-macos d5c3f8b (MT7922 port on top of 0.3.2), released as `bt-v1.2`; 2026-11-27 package (replaces 0.3.1 D173A506) |
 | BtLeDlFix | ESP | 1.4.0 | C6274348 | mt7925-macos |
 | StrixS0ix | AuxKC | 0.1.17 | 1700FABF | this repo, `kexts/StrixS0ix` |
 | StrixSbxMap | ESP | 0.1.0 | F66BFC76 | this repo, `kexts/StrixSbxMap` |
@@ -222,7 +222,8 @@ redistributed by this project and no binary of it is published here. Test only; 
 | VirtualSMC, SMCBatteryManager | 1.3.9 | FF5A572E, CAF7573C |
 | AppleALC (local layout build) | 1.9.9 | 58752E4F |
 | SimpleHDA | 1.0.1 | F1EA3386 |
-| VoodooI2C, VoodooI2CHID, VoodooGPIO, VoodooInput | 2.9.1, 1, 1.1, 1.1.7 | 0BD5308D, 92D5DDB4, 5D44616D, 15EDDA4B |
+| VoodooI2C, VoodooI2CHID, VoodooInput | 2.9.1, 1, 1.1.7 | 0BD5308D, 92D5DDB4, 15EDDA4B |
+| VoodooGPIO | 1.1, built from upstream [VoodooGPIO PR #22](https://github.com/VoodooI2C/VoodooGPIO/pull/22) by [brkbrlz16](https://github.com/brkbrlz16) (AMD end-of-interrupt fix; open upstream, not in a release). Live since 2026-11-27; replaces 5D44616D | 954AEF39 |
 | BrightnessKeys | 1.0.4 | AE157CF3 |
 | ForgedInvariant | 1.5.0 | F0302C2D |
 | NVMeFix | 1.1.4 | BDF0CF20 |
@@ -291,10 +292,11 @@ redistributed by this project and no binary of it is published here. Test only; 
    the display pipe and the cursor is a hardware plane (roadmap items 1 and 2, done). Power at 45-66 flips/s on out-51
    is about the same as on out-50, so **no saving is measured yet**; the full-screen recomposite remains. The first flip census names the Aerial wallpaper for an idle desktop (item 2); the read under the daily
    load is not done.
-5. **`kernel_task` with no memory pressure: about 7 % of a core at light load on 2026-11-27 (was about 20 %).** The
-   2026-11-27 boot has ItlXhciKick off (`itlkick=0`, XHCILagFix on test). Remaining polling: touchpad forced polling
-   (est. 5-8 %) and the Wi-Fi receive/transmit loop with no interrupt (est. 3-6 %). Estimates; the root spindump that
-   would confirm the split has not been run.
+5. **`kernel_task` with no memory pressure.** About 20 % of a core before 2026-11-27; about 7 % at light load on the
+   15:34 boot (ItlXhciKick off, `itlkick=0`, XHCILagFix on test). On the 16:36 boot the touchpad left forced polling
+   (GPIO interrupts, 0 controller events/s when idle), and `kernel_task` measured **100 ms of CPU per second (10 % of a
+   core) in steady state under work** (difference of its CPU time over an interval). Remaining known poller: the Wi-Fi
+   receive/transmit loop with no interrupt (est. 3-6 %).
 6. **Memory exhaustion hang (2026-11-18 17:46).** 25.2 of 32 GB wired. Cause found: WindowServer leaked about 330 MB of
    GPU memory per Aerial wallpaper clip (plugin keep cache). Fixed in the plugin on 2026-11-19 and verified flat over
    14 min. Parked-buffer and pinned-memory work under real memory pressure is still open.
@@ -324,17 +326,19 @@ redistributed by this project and no binary of it is published here. Test only; 
     property, and supply every kext. The exported copy was not booted. See `efi/README.md`.
 19. **Where the versions named here are published.** Published: this repository's release `v2` (tag at 3901d1d),
     and three source tags: nvidia-macos-driver `ga403wm-890m-out50` (kernel, f47d3ed) and
-    `ga403wm-890m-plugin-a6cec1b` (plugin, a6cec1ba), ryzen-hypervisor.framework `v0.7.24-ga403wm`. To follow, not
-    out yet: mt7925-macos `v2.0-beta.1` (Wi-Fi) and `bt-v1.1` (Bluetooth), rog-control-macos `rogcontrol-v0.6.0`;
-    until then those versions exist only on branches (rog-control-macos PRs #16 and #17 and `fix/*`, mt7925-macos
-    `fix/bt-waitquiet` and `dev/awdl`). StrixAmp and RogAudio are still only on branch `research/audio-rog-dolby` of
+    `ga403wm-890m-plugin-a6cec1b` (plugin, a6cec1ba), ryzen-hypervisor.framework `v0.7.24-ga403wm`. Published on
+    2026-11-25: mt7925-macos `v2.0-beta.1` (Wi-Fi) and `bt-v1.1` (Bluetooth), rog-control-macos `rogcontrol-v0.6.0`.
+    Published on 2026-11-27: rog-control-macos `rogcontrol-v0.6.1` (AsusWmi 0.3.3) and mt7925-macos `bt-v1.2`
+    (MtkBtFw 0.3.3; the BLE mouse is not tested on 0.3.3 yet, MT7922 support is experimental and untested). NMXGPU
+    out-51 and out-53 have no source tag yet. StrixAmp and RogAudio are still only on branch `research/audio-rog-dolby` of
     this repository.
-20. **Manual power limits (SPL, SPPT, FPPT) report a firmware error.** The BIOS's WMI method calls
-    `ALIB(0x0C, ...)`, whose handler `A032` sends the SMU message and then has no `Return`, so the AML store fails,
-    WMNB aborts and `AsusWmi` sees an error (the same pattern as `A026` in `ACAD._PSR`, which the EFI already
-    patches). Whether the SMU applied the limit is not measured. A fix that counts this case as sent is in
-    `AsusWmi` 0.3.3 (rog-control-macos PR #23): built, not installed, not verified. The check: Manual mode, SPL 25 W
-    on AC under an all-core load, package power should settle near 25 W.
+20. **Manual power limits (SPL, SPPT, FPPT) reported a firmware error: fixed, verified 2026-11-27.** The BIOS's WMI
+    method calls `ALIB(0x0C, ...)`, whose handler `A032` sends the SMU message and then has no `Return`, so the AML
+    store fails and WMNB aborts (the same pattern as `A026` in `ACAD._PSR`, which the EFI already patches). The limit
+    is applied anyway: on 0.3.2 (AC, Balanced + custom curve, 24 busy threads) package power went from 64-71 W to
+    24.4-25.0 W within 5 s of `spl=25`, Tctl 91-93 -> 66 C. `AsusWmi` 0.3.3 counts this one error as sent: on the
+    16:36 boot the writes return 0, the 25 W cap held and RogControl applied its limits (61 / 65 / 68 W) at boot.
+    Released as `rogcontrol-v0.6.1`.
 21. **Hardware colour: open checks.** A grey-ramp eye check is not done. The colour tables are not re-applied after
     a modeset by HDMI or a client. The profile readback matches (sRGB pure; Adobe RGB red 219/2/0, green 144/255/60,
     blue 2/0/250; the panel default is P3-like), so the profile is applied in composition.
@@ -350,29 +354,30 @@ the machine idle or asleep come last.
 
 ### Next (in order)
 
-Done on 2026-11-27 (NMXGPU out-51, live since the 15:34 boot):
+Done on 2026-11-27 (NMXGPU out-51 on the 15:34 boot, out-53 on the 16:36 boot):
 
 - **Hardware colour pipeline** (`nmxhwcolor=1`). CoreDisplay's GPU colour pass is gone: one command buffer per present
   (1.00), 0 errors. Night Shift works through the CTM. Profile readback in section 4, item 21.
 - **Hardware cursor plane** (`nmxhwcur=1`). Cursor moves at about 55 states/s give 2-3 flips/s instead of a full
-  present each.
+  present each. out-53 (16:36 boot) gives every cursor image its own buffer: 40-250 px size cycle, 25 images, 0 errors.
+- **Manual power limits** (`AsusWmi` 0.3.3, section 4 item 20) and **touchpad interrupts** (VoodooGPIO PR #22, forced
+  polling removed; `kernel_task` 100 ms/s in steady state under work).
 - Power at 45-66 flips/s is about the same as on out-50: no measured saving yet. `kernel_task` is about 7 % at light
   load (was about 20 %; ItlXhciKick off for the XHCILagFix test).
 
 Open from these: the grey-ramp eye check, colour after an HDMI or client modeset, the cursor after logout/login.
 
-Next build: NMXGPU out-52 (DF3DC7B3, fork `claude/integ-out52` 748651f4: a cursor buffer per image, and run counting
-for thread calls). Built, under review, not installed.
-
-1. **SPL firmware rejection.** Install and verify `AsusWmi` 0.3.3 (section 4, item 20).
-2. **Touchpad forced polling.** The largest remaining polling thread in `kernel_task`.
-3. **Who drives the flips under the daily load, and damage-sized composition.** Reread the flip census under video +
+1. **Measurement build out-54 and plugin keep-pressure.** Built, in review, not installed.
+2. **The surface keep in WindowServer.** The 631 MB of idle imported client surfaces seen on 2026-11-25 is a cache
+   bounded by its cap, not a leak (analysis of 2026-11-27). What remains is how the keep behaves under memory
+   pressure (item 1's plugin change).
+3. **Heat under the Docker load** (moved up). Re-measure the 62 W / 95 C state with the current settings (EPP 191,
+   Eco, 8 vCPUs, lazy wiring), then the RyzenHV exit path.
+4. **Who drives the flips under the daily load, and damage-sized composition.** Reread the flip census under video +
    Claude + Docker (the first read covers an idle desktop only), then composite only the changed rectangle instead of
    the full 2880x1800 screen on every present.
-4. **The surface keep's idle imports in WindowServer.** 631 MB of imported client surfaces sat idle in the keep on
-   2026-11-25.
 5. **USB event lag: XHCILagFix test (issue #9) against ItlXhciKick 0.2.1.** XHCILagFix is on test since 2026-11-27
-   with ItlXhciKick off; if it holds (keyboard key-up, webcam, USB audio, sleep/wake), ItlXhciKick is not needed.
+   with ItlXhciKick off; checks 1-5 pass, the owner's checks 6-11 are parked. If it holds (keyboard key-up, webcam, USB audio, sleep/wake), ItlXhciKick is not needed.
    ItlXhciKick 0.2.1 (kick only when an event is queued) stays built, never run.
 6. **Aerial lock screen** (9-10 W, not on VCN).
 7. **RyzenHV follow-ups.** CLTS/LMSW decode, flush bookkeeping, upstream 0.7.9's read-only map fallback.
@@ -381,12 +386,11 @@ for thread calls). Built, under review, not installed.
 
 ### Later
 
-- Re-measure the Docker load with the current settings (EPP 191, Eco, 8 vCPUs, lazy wiring).
 - RyzenHV cost with Docker: keep exits in the kernel where HyperKit allows it; make guest-memory reclaim safe to leave
   on. This is the only lever sized like the 62 W state (estimated 8-15 W).
 - WindowServer CPU per present (6.5-7.1 ms).
-- Polling threads in `kernel_task`: one test boot without touchpad forced polling; a sleep instead of a busy window in
-  the Wi-Fi loop. They also keep idle cores from sleeping deeply.
+- Polling in `kernel_task`: a sleep instead of a busy window in the Wi-Fi loop (it also keeps idle cores from sleeping
+  deeply).
 - Memory under pressure: pinned and parked GPU memory when RAM is short; the `mediaanalysisd` fault if it returns.
 - GPU readout: fix the derived "rest of SoC" field and commit the 2026-11-25 reads to `docs/POWER-FEATURES.md`.
 - Sleep/wake on the current stack, then S0i3; Eco with sleep and charger events (the owner starts these).
